@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cookster – recepti koji uvek uspeju</title>
+  <meta name="description" content="Cookster: jednostavni recepti, planer obroka i spisak za kupovinu na jednom mestu.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="container nav__inner">
+    <a href="#" class="logo" aria-label="Cookster početna">🍳 Cook<span>ster</span></a>
+    <nav class="nav__links" id="menu">
+      <a href="#kategorije">Kategorije</a>
+      <a href="#recepti">Recepti</a>
+      <a href="#kako-radi">Kako radi</a>
+      <a href="#newsletter" class="btn btn--small">Prijavi se</a>
+    </nav>
+    <button class="nav__toggle" aria-label="Meni" aria-controls="menu" aria-expanded="false">☰</button>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="container hero__inner">
+      <div class="hero__text">
+        <span class="pill">Nova jela svake nedelje</span>
+        <h1>Šta ćemo danas <em>kuvati?</em></h1>
+        <p>Proverene recepte, planer obroka i spisak za kupovinu – sve na jednom mestu. Manje razmišljanja, više uživanja.</p>
+        <form class="search" role="search" onsubmit="return false">
+          <input type="search" id="q" placeholder="Pretraži: pasta, palačinke, čorba…" aria-label="Pretraga recepata">
+          <button class="btn" type="submit">Traži</button>
+        </form>
+        <ul class="hero__stats">
+          <li><strong>1.200+</strong> recepata</li>
+          <li><strong>30 min</strong> ili manje</li>
+          <li><strong>4.8★</strong> ocena</li>
+        </ul>
+      </div>
+      <div class="hero__art" aria-hidden="true">
+        <div class="plate">🍝</div>
+        <span class="float f1">🍅</span>
+        <span class="float f2">🌿</span>
+        <span class="float f3">🧀</span>
+        <span class="float f4">🧄</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="kategorije" class="section">
+    <div class="container">
+      <h2>Izaberi po raspoloženju</h2>
+      <div class="cats">
+        <a href="#recepti" class="cat" data-filter="dorucak"><span>🥞</span>Doručak</a>
+        <a href="#recepti" class="cat" data-filter="rucak"><span>🍲</span>Ručak</a>
+        <a href="#recepti" class="cat" data-filter="veceru"><span>🥗</span>Večera</a>
+        <a href="#recepti" class="cat" data-filter="dezert"><span>🍰</span>Dezert</a>
+        <a href="#recepti" class="cat" data-filter="all"><span>✨</span>Sve</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="recepti" class="section section--alt">
+    <div class="container">
+      <div class="section__head">
+        <h2>Popularno ove nedelje</h2>
+        <p id="count" class="muted"></p>
+      </div>
+      <div class="grid" id="grid">
+        <article class="card" data-cat="rucak">
+          <div class="card__img" style="--a:#ffb36b;--b:#ff6b5e">🍝</div>
+          <div class="card__body">
+            <span class="tag">Ručak</span>
+            <h3>Špagete sa paradajzom i bosiljkom</h3>
+            <p class="meta">⏱ 25 min · 👩‍🍳 Lako · ★ 4.9</p>
+          </div>
+        </article>
+        <article class="card" data-cat="dorucak">
+          <div class="card__img" style="--a:#ffe08a;--b:#f4a340">🥞</div>
+          <div class="card__body">
+            <span class="tag">Doručak</span>
+            <h3>Pufnaste palačinke sa jagodama</h3>
+            <p class="meta">⏱ 20 min · 👩‍🍳 Lako · ★ 4.8</p>
+          </div>
+        </article>
+        <article class="card" data-cat="veceru">
+          <div class="card__img" style="--a:#b6e388;--b:#4caf7a">🥗</div>
+          <div class="card__body">
+            <span class="tag">Večera</span>
+            <h3>Cezar salata sa piletinom</h3>
+            <p class="meta">⏱ 30 min · 👩‍🍳 Lako · ★ 4.7</p>
+          </div>
+        </article>
+        <article class="card" data-cat="rucak">
+          <div class="card__img" style="--a:#ff9f80;--b:#c8423b">🍲</div>
+          <div class="card__body">
+            <span class="tag">Ručak</span>
+            <h3>Domaći gulaš sa mladim krompirom</h3>
+            <p class="meta">⏱ 90 min · 👩‍🍳 Srednje · ★ 4.9</p>
+          </div>
+        </article>
+        <article class="card" data-cat="dezert">
+          <div class="card__img" style="--a:#d9b38c;--b:#7a4a2b">🍰</div>
+          <div class="card__body">
+            <span class="tag">Dezert</span>
+            <h3>Čokoladni fondan za dvoje</h3>
+            <p class="meta">⏱ 25 min · 👩‍🍳 Srednje · ★ 5.0</p>
+          </div>
+        </article>
+        <article class="card" data-cat="veceru">
+          <div class="card__img" style="--a:#ffd27a;--b:#e2703a">🍕</div>
+          <div class="card__body">
+            <span class="tag">Večera</span>
+            <h3>Domaća pica margarita</h3>
+            <p class="meta">⏱ 45 min · 👩‍🍳 Lako · ★ 4.8</p>
+          </div>
+        </article>
+      </div>
+      <p class="empty" id="empty" hidden>Nema rezultata. Probaj neku drugu reč. 🙈</p>
+    </div>
+  </section>
+
+  <section id="kako-radi" class="section">
+    <div class="container">
+      <h2>Kako Cookster radi</h2>
+      <ol class="steps">
+        <li><span class="num">1</span><h3>Izaberi jela</h3><p>Pregledaj recepte ili ih filtriraj po vremenu i težini.</p></li>
+        <li><span class="num">2</span><h3>Isplaniraj nedelju</h3><p>Prevuci recepte u planer obroka za svaki dan.</p></li>
+        <li><span class="num">3</span><h3>Kupi i kuvaj</h3><p>Automatski spisak namirnica i uputstvo korak po korak.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="newsletter" class="cta">
+    <div class="container cta__inner">
+      <h2>Nedeljni recepti u inboksu</h2>
+      <p>Pet novih ideja svakog ponedeljka. Bez spama, obećavamo.</p>
+      <form class="search search--cta" id="nl">
+        <input type="email" required placeholder="tvoj@email.com" aria-label="Email adresa">
+        <button class="btn btn--light" type="submit">Prijavi me</button>
+      </form>
+      <p id="nl-msg" class="cta__msg" role="status"></p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container footer__inner">
+    <span class="logo">🍳 Cook<span>ster</span></span>
+    <span class="muted">© 2026 Cookster. Napravljeno sa ljubavlju i puno bibera.</span>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
