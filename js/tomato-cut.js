@@ -128,7 +128,7 @@
   function drawFlesh(g,f,tex,tomImg){
     const tx=-f.ox-ART.w/2,ty=-f.oy-ART.h/2+ART.offY;
     g.save();roundedPath(g,f.v);g.clip();
-    g.drawImage(tex,ART.fx,ART.fy,ART.fw,ART.fh,-f.ox-100*K,-f.oy-82*K,200*K,165*K);
+    {const dh=200*K*ART.fh/ART.fw;g.drawImage(tex,ART.fx,ART.fy,ART.fw,ART.fh,-f.ox-100*K,-f.oy-dh/2,200*K,dh);}
     g.lineWidth=7;g.strokeStyle='rgba(255,215,170,.28)';roundedPath(g,f.v);g.stroke();
     let pat=null;
     try{pat=g.createPattern(tomImg,'no-repeat');pat.setTransform(new DOMMatrix().translate(tx,ty).scale(ART.w/tomImg.width));}catch(_){}
@@ -162,9 +162,9 @@
     t.save();roundedPath(t,f.v);t.clip();
     t.drawImage(tomImg,tx,ty,ART.w,ART.h);
     t.globalCompositeOperation='source-atop';
-    const sx=200*K/ART.fw,sy=165*K/ART.fh;
+    const sx=200*K/ART.fw,sy=sx,dh=200*K*ART.fh/ART.fw;
     let pat=null;
-    try{pat=t.createPattern(tex,'no-repeat');pat.setTransform(new DOMMatrix().translate(-f.ox-100*K-ART.fx*sx,-f.oy-82*K-ART.fy*sy).scale(sx,sy));}catch(_){}
+    try{pat=t.createPattern(tex,'no-repeat');pat.setTransform(new DOMMatrix().translate(-f.ox-100*K-ART.fx*sx,-f.oy-dh/2-ART.fy*sy).scale(sx,sy));}catch(_){}
     t.lineJoin=t.lineCap='round';
     const L=f.v.length;
     for(let i=0;i<L;i++)if(!f.skin[i]){
@@ -271,7 +271,17 @@
   const VEGS={
     paradajz:{label:'paradajza',max:210,flesh:[.215,.375,.59,.486],color:'#d9301a',rim:'#6b1006',hull:false},
     paprika_zelena:{label:'zelene paprike',max:200,flesh:[.3,.6,.25,.27],color:'#6fae2c',rim:'#1d3a0a',hull:true},
-    sargarepa:{label:'šargarepe',max:250,flesh:[.15,.52,.35,.39],color:'#f08a1c',rim:'#7a3408',hull:true}
+    sargarepa:{label:'šargarepe',max:250,flesh:[.15,.52,.35,.39],color:'#f08a1c',rim:'#7a3408',hull:true},
+    paprika:{label:'paprike',max:200,flesh:[.25,.5,.5,.35],color:'#d3261c',rim:'#5a0d08',hull:true},
+    luk:{label:'luka',max:190,flesh:[.3,.45,.4,.35],color:'#efe6d0',rim:'#8a6a2a',hull:true},
+    krastavac:{label:'krastavca',max:250,flesh:[.34,.3,.28,.46],color:'#cfe3a0',rim:'#1b3d14',hull:true},
+    beli_luk:{label:'belog luka',max:170,flesh:[.42,.72,.2,.18],color:'#efe3c2',rim:'#7a6a4a',hull:true},
+    zelena_salata:{label:'zelene salate',max:200,flesh:[.3,.35,.4,.35],color:'#8bbd3a',rim:'#2a4d0c',hull:true},
+    kupus:{label:'kupusa',max:200,flesh:[.25,.3,.5,.45],color:'#a9cf6b',rim:'#4d6b1f',hull:true},
+    patlidzan:{label:'patlidžana',max:250,flesh:[.3,.62,.3,.3],color:'#e6dca8',rim:'#2a0f33',hull:true},
+    tikvice:{label:'tikvica',max:250,flesh:[.3,.05,.37,.3],color:'#cfe3a0',rim:'#1f3d12',hull:true},
+    rotkvice:{label:'rotkvica',max:190,flesh:[.2,.08,.35,.3],color:'#f6e3ea',rim:'#8f1d3a',hull:true},
+    persun:{label:'peršuna',max:200,flesh:[.3,.3,.4,.4],color:'#2f6b24',rim:'#173d12',hull:true}
   };
   let ART={w:210*K,h:210*K,offY:-4*K,fx:270,fy:470,fw:740,fh:610,color:'#d9301a',rim:'#6b1006'};
 
@@ -281,7 +291,17 @@
     const c=document.createElement('canvas');c.width=cw;c.height=ch;
     const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(img,0,0,cw,ch);
     const d=g.getImageData(0,0,cw,ch).data,pts=[];
-    for(let y=0;y<ch;y++)for(let x=0;x<cw;x++)if(d[(y*cw+x)*4+3]>60)pts.push([x+.5,y+.5]);
+    // keep only the biggest connected blob (some pictures carry a stray bit of another object)
+    const lab=new Int32Array(cw*ch),sizes=[0];let nl=0;
+    for(let y0=0;y0<ch;y0++)for(let x0=0;x0<cw;x0++){
+      if(d[(y0*cw+x0)*4+3]<=60||lab[y0*cw+x0])continue;
+      nl++;sizes[nl]=0;const st=[[x0,y0]];lab[y0*cw+x0]=nl;
+      while(st.length){const [x,y]=st.pop();sizes[nl]++;
+        for(const [nx,ny] of [[x+1,y],[x-1,y],[x,y+1],[x,y-1],[x+1,y+1],[x-1,y-1],[x+1,y-1],[x-1,y+1]])
+          if(nx>=0&&ny>=0&&nx<cw&&ny<ch&&!lab[ny*cw+nx]&&d[(ny*cw+nx)*4+3]>60){lab[ny*cw+nx]=nl;st.push([nx,ny]);}}
+    }
+    let best=1;for(let i=2;i<=nl;i++)if(sizes[i]>sizes[best])best=i;
+    for(let y=0;y<ch;y++)for(let x=0;x<cw;x++)if(lab[y*cw+x]===best)pts.push([x+.5,y+.5]);
     pts.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
     const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
     const lo=[],up=[];
@@ -298,6 +318,7 @@
   function supports(el){
     if(!el||el.dataset.vegetable!=='1')return false;
     if(!VEGS[el.dataset.vegKey||''])return false;
+    if((+el.dataset.roastProgress||0)>0||(+el.dataset.roastPhase||0)>=2||el.dataset.steamedPepper==='1')return false;
     return (el.dataset.cutState||'whole')==='whole';
   }
 
