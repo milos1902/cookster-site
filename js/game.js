@@ -5127,10 +5127,19 @@ function slicedIngredientKinds(vessel){
    return diced?!!(def?.dicedSrc||def?.slicedSrc):!!def?.slicedSrc;
  });
 }
+// Stirring works in every vessel: pans and pots keep their cooking model, bowls use the container model (mix only).
+function stirTotal(vessel){return isHeatableCookwareItem(vessel)?CooksterPan.total(vessel):CooksterContainer.total(vessel);}
+function stirModelFor(vessel){
+ if(isHeatableCookwareItem(vessel))return CooksterPan.read(vessel);
+ const m=CooksterContainer.read(vessel),ingredients={};
+ for(const [k,e] of Object.entries(m.items||{}))if(e.type!=='staple')ingredients[k]=Math.max(0,+e.count||0);
+ return {ingredients,burnt:false,mix:+m.transfer?.mix||0,batches:m.transfer?.batches||[],heat:0};
+}
+function stirMetaFor(vessel){return isHeatableCookwareItem(vessel)?readPanIngredientMeta(vessel):CooksterContainer.read(vessel).items;}
 function stirEligible(vessel){
- if(!vessel||!isHeatableCookwareItem(vessel))return false;
- if(CooksterPan.total(vessel)<=0)return false;
- if(CooksterPan.read(vessel).burnt)return false;
+ if(!vessel||!isContainerItem(vessel))return false;
+ if(stirTotal(vessel)<=0)return false;
+ if(isHeatableCookwareItem(vessel)&&CooksterPan.read(vessel).burnt)return false;
  return true;
 }
 function stirVesselAt(x,y,proximity=true){
@@ -5306,8 +5315,8 @@ function positionStirSpoon(e){
  // everything. Cheap trick — no need to actually crop/mask the spoon
  // sprite or the food layer.
  const dip=ensureStirDipOverlay();
- const model=CooksterPan.read(stirVessel);
- const mix=allSlicedIngredientMix(model.ingredients||{},readPanIngredientMeta(stirVessel));
+ const model=stirModelFor(stirVessel);
+ const mix=allSlicedIngredientMix(model.ingredients||{},stirMetaFor(stirVessel));
  if(mix.length){
    const [dr,dg,db]=ingredientMixBaseColor(mix,1);
    dip.style.background=`radial-gradient(circle at 42% 38%,rgba(${dr},${dg},${db},.62) 0%,rgba(${dr},${dg},${db},.30) 55%,transparent 78%)`;
@@ -5336,6 +5345,22 @@ function commitPendingStir(force=false){
  stirPendingActive=0;
  stirLastApplyAt=now;
 
+ if(!isHeatableCookwareItem(stirVessel)){
+   // bowl / basin: no cooking, only the mixing level changes
+   const cm=CooksterContainer.read(stirVessel),beforeMix=+cm.transfer.mix||0;
+   cm.transfer.mix=Math.min(1,beforeMix+(activeSeconds>0?activeSeconds/2.0:effort/(Math.PI*2*1.55)));
+   CooksterContainer.write(stirVessel,cm);
+   renderVesselContents(stirVessel);
+   if(beforeMix<.995&&cm.transfer.mix>=.995){
+     stirVessel.classList.add('stir-mixed-pop');
+     setTimeout(()=>stirVessel?.classList.remove('stir-mixed-pop'),360);
+     showToast('Sastojci su potpuno izmešani.');
+   }
+   stirLastMixBucket=Math.floor(cm.transfer.mix*20);
+   stirVessel.dataset.lastStirAt=String(Date.now());
+   stirVessel.dataset.lastStirArc=String(stirArc);
+   return cm;
+ }
  const before=CooksterPan.read(stirVessel);
  const beforeState=window.CooksterFoodStateMachine?.vesselState(before);
  const beforeMixed=(+before.mix||0)>=.995;
@@ -5366,13 +5391,13 @@ function commitPendingStir(force=false){
  return after;
 }
 function beginStirring(vessel,e){
- if(!holding||!isStirSpoon(holding)||!vessel||!isHeatableCookwareItem(vessel))return false;
+ if(!holding||!isStirSpoon(holding)||!vessel||!isContainerItem(vessel))return false;
 
- if(CooksterPan.total(vessel)<=0){
+ if(stirTotal(vessel)<=0){
    showToast('Posuđe je prazno — nema šta da se meša.');
    return true;
  }
- const model=CooksterPan.read(vessel);
+ const model=stirModelFor(vessel);
  if(model.burnt){
    showToast('Hrana je već izgorela — mešanje je više ne može spasiti.');
    return true;
