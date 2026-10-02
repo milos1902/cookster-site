@@ -6,7 +6,7 @@
 (function(){
   const W=1280,H=720,K=1.36;           // canvas size and scale vs. the lab prototype
   const BOARD={w:426*1.9,h:285*1.9};
-  const SNAP={w:420,h:332};            // same aspect as the diced item box (96x76)
+  const SNAP={w:300,h:237};            // same aspect as the diced item box (96x76)
   const rnd=(a,b)=>a+Math.random()*(b-a);
   const imgCache={};
   function load(src){
@@ -229,7 +229,8 @@
     const g=c.getContext('2d');
     g.translate(SNAP.w/2,SNAP.h/2);g.scale(s,s);g.translate(-(x0+x1)/2,-(y0+y1)/2);
     for(const f of [...frags].sort((a,b)=>a.y-b.y)){f.baked=true;drawPiece(g,f,tex,tomImg);}
-    return c.toDataURL('image/png');
+    // WebP keeps the transparent pile ~10x smaller than PNG (browsers without WebP encode fall back to PNG)
+    return c.toDataURL('image/webp',.82);
   }
 
   let active=null;

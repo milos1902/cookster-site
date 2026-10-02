@@ -79,7 +79,9 @@
       count:(+prev.count||0)+addCount,
       type:String(meta.type||prev.type||'ingredient'),
       label:String(meta.label||prev.label||k),
-      src:String(meta.src||prev.src||''),
+      src:(window.CooksterPiles&&(window.CooksterPiles.is(meta.src)||window.CooksterPiles.is(prev.src)))
+        ?window.CooksterPiles.join(prev.src,meta.src)
+        :String(meta.src||prev.src||''),
       form:String(meta.form||prev.form||''),
       baseKey:String(meta.baseKey||prev.baseKey||''),
       cutState:String(meta.cutState||prev.cutState||'')
