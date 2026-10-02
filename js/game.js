@@ -2362,7 +2362,8 @@ function makeSoundTarget(key,label,action){
  el.dataset.soundTarget=key;el.dataset.label=label;el.dataset.soundAction=action;
  document.body.appendChild(el);return el;
 }
-const buttonSoundTarget=makeSoundTarget('__ui_buttons','Dugmići — klik','click');
+const buttonSoundTarget=makeSoundTarget('__ui_buttons','Dugmići — klik i prelaz mišem','click');
+buttonSoundTarget.dataset.soundActions='click,hover';
 const firewoodSoundTarget=makeSoundTarget('__firewood_insert','Cepanica — ubacivanje u šporet','insert');
 const bookSoundTarget=makeSoundTarget('__recipe_book','Bakina knjiga — otvaranje/zatvaranje','');
 bookSoundTarget.dataset.soundActions='open,close,pageTurn';
@@ -2409,6 +2410,7 @@ function resolvedImpactConfig(el,action='drop'){
  else if(action==='pickup'&&isItem){sound='pickup';volume=.18;}
  else if(action==='click'){sound='uiClick';volume=.22;}
  else if(action==='insert'){sound='woodDrop';volume=.40;}
+ else if(action==='hover'){sound='';volume=.25;}
  else if(action==='cut'){sound='tomatoChop';volume=.78;}
  else if(action==='putIn'){sound='metalDrop';volume=.18;}
  else if(action==='open'||action==='close'){
@@ -2417,7 +2419,7 @@ function resolvedImpactConfig(el,action='drop'){
    else if(el?._lidMeta||isAjvarJar(el))sound=action==='open'?'lidOpen':'lidClose';
    volume=action==='open'?.50:.52;
  }
- return{...SOUND_DEFAULTS,volume,cooldown:action==='click'?.04:action==='cut'?.06:SOUND_DEFAULTS.cooldown,variants:sound&&!isLibrarySoundDeleted(sound)?[sound]:[]};
+ return{...SOUND_DEFAULTS,volume,cooldown:action==='click'?.04:action==='hover'?.05:action==='cut'?.06:SOUND_DEFAULTS.cooldown,variants:sound&&!isLibrarySoundDeleted(sound)?[sound]:[]};
 }
 function removeSoundReferences(key){
  let used=0;
@@ -2478,6 +2480,18 @@ window.addEventListener('click',e=>{
     /preslu[sš]aj|pauziraj/i.test((button.title||'')+' '+(button.getAttribute('aria-label')||'')))return;
  playImpactSound(buttonSoundTarget,'click');
 },true);
+// Hover over a button: plays the sound chosen under "Dugmići — Prelaz mišem" (silent until one is added).
+let lastHoverButton=null;
+window.addEventListener('pointerover',e=>{
+ if(e.pointerType&&e.pointerType!=='mouse')return;
+ const button=e.target?.closest?.('button,[role="button"],input[type="button"],input[type="submit"]');
+ if(!button){lastHoverButton=null;return;}
+ if(button===lastHoverButton)return;
+ lastHoverButton=button;
+ if(button.disabled||button.getAttribute('aria-disabled')==='true'||
+    button.closest('.item,#fireboxHotspot,#ovenHotspot,.ss-preview-btn,[data-sound-preview]'))return;
+ playImpactSound(buttonSoundTarget,'hover');
+},true);
 /* ==========================================================================
    Cookster · Zvuk studio (v2.28)
    Replaces the old "Zvukovi kontakta" <details> panel.
@@ -2525,7 +2539,7 @@ ssStyle.textContent=`
 document.head.appendChild(ssStyle);
 
 /* --- state --- */
-const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme']];
+const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta']];
 const ssState={open:false,tab:'objekti',action:'drop',query:'',libQuery:'',libOpen:false};
 
 /* --- helpers (reuse ls* from light-studio) --- */
@@ -2716,7 +2730,7 @@ ssControls.push(()=>{
  const el=ssSel(),acts=el?ssObjActions(el):[];
  for(const [v,b] of ssActionBtns){
   const supported=el?.dataset?.soundActions?.split(',');
-  b.hidden=supported?!supported.includes(v):el?.dataset?.soundAction?v!==el.dataset.soundAction:(['click','insert','cut','putIn','pageTurn','water'].includes(v));
+  b.hidden=supported?!supported.includes(v):el?.dataset?.soundAction?v!==el.dataset.soundAction:(['click','insert','cut','putIn','pageTurn','water','hover'].includes(v));
   b.setAttribute('aria-pressed',v===ssState.action?'true':'false');
   b.dataset.has=acts.includes(v)?'true':'false';
  }
