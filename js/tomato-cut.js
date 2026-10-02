@@ -169,9 +169,20 @@
     const L=f.v.length;
     for(let i=0;i<L;i++)if(!f.skin[i]){
       const a=f.v[i],b=f.v[(i+1)%L];
-      t.beginPath();t.moveTo(a.x,a.y);t.lineTo(b.x,b.y);
-      t.strokeStyle=pat||'#d9301a';t.lineWidth=46*K;t.stroke();
-      t.strokeStyle='rgba(110,16,6,.9)';t.lineWidth=3;t.stroke();
+      const ex=b.x-a.x,ey=b.y-a.y,len=Math.hypot(ex,ey);
+      if(len<8)continue;
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,ux=ex/len,uy=ey/len;
+      // inward side = towards the piece centre (local origin)
+      const inward=((-uy)*(-mx)+ux*(-my))>0;
+      const ry=Math.min(len*.30,34*K),rx=len/2*.97;
+      // the cut face, seen at a slant: a half-ellipse hanging off the cut edge
+      t.beginPath();
+      t.ellipse(mx,my,rx,ry,Math.atan2(uy,ux),inward?0:Math.PI,inward?Math.PI:Math.PI*2);
+      t.closePath();
+      t.fillStyle=pat||'#d9301a';t.fill();
+      t.strokeStyle='rgba(255,205,170,.55)';t.lineWidth=3;t.stroke();
+      t.strokeStyle='rgba(110,16,6,.9)';t.lineWidth=2.5;
+      t.beginPath();t.moveTo(a.x,a.y);t.lineTo(b.x,b.y);t.stroke();
     }
     t.restore();
     g.save();
@@ -255,7 +266,7 @@
     for(let i=0;i<n;i++){const a=i/n*Math.PI*2;verts.push({x:Math.cos(a)*rx,y:Math.sin(a)*ry});skin.push(true);}
     const bx=W/2-BOARD.w/2,by=H/2-BOARD.h/2+10;
     let frags=[mk(verts,skin,W/2,H/2+10)];frags[0].whole=true;
-    let trail=[],strokeId=0,raf=0,closed=false,cuts=0;const MAX_CUTS=5;
+    const TRAIL_MS=650;let trail=[],strokeId=0,raf=0,closed=false,cuts=0;const MAX_CUTS=5;
 
     function frame(){
       for(const f of frags){
@@ -294,28 +305,33 @@
 
     const pos=e=>{const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};};
     let stroke=null,lastChop=0;
-    const TRAIL_MS=700;
-    function trailColor(t){
-      // blue -> violet -> pink -> amber, like the "circle to search" glow
-      const st=[[76,141,255],[165,107,255],[255,95,162],[255,179,71]];
-      const x=Math.min(.999,Math.max(0,t))*(st.length-1),i=Math.floor(x),f=x-i;
-      return st[i].map((c,k)=>Math.round(c+(st[i+1][k]-c)*f));
-    }
+    // one continuous tapered ribbon with a blue -> violet -> pink -> amber gradient and a soft glow
     function drawTrail(g){
       const now=performance.now();
       trail=trail.filter(q=>now-q.t<TRAIL_MS);
       const n=trail.length;if(n<2)return;
-      g.save();g.lineCap=g.lineJoin='round';
-      for(let i=1;i<n;i++){
-        const a=trail[i-1],b=trail[i],life=1-(now-b.t)/TRAIL_MS,pos=i/n;
-        const [r,gr,bl]=trailColor(1-pos),w=(5+12*life)*(.3+.7*pos);
-        for(const [mul,al,blur] of [[3.4,.22*life,26],[1.5,.95*life,14],[.45,.95*life,6]]){
-          g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);
-          g.lineWidth=w*mul;
-          g.strokeStyle=mul<1?`rgba(255,255,255,${al})`:`rgba(${r},${gr},${bl},${al})`;
-          g.shadowColor=`rgb(${r},${gr},${bl})`;g.shadowBlur=blur;g.stroke();
+      const w=trail.map((q,i)=>{const life=1-(now-q.t)/TRAIL_MS;return 6.5*(.12+.88*i/(n-1))*Math.pow(Math.max(0,life),.55);});
+      const ribbon=scale=>{
+        const L=[],R=[];
+        for(let i=0;i<n;i++){
+          const a=trail[Math.max(0,i-1)],b=trail[Math.min(n-1,i+1)];
+          let dx=b.x-a.x,dy=b.y-a.y;const d=Math.hypot(dx,dy)||1;dx/=d;dy/=d;
+          const h=w[i]*scale/2;
+          L.push({x:trail[i].x-dy*h,y:trail[i].y+dx*h});R.push({x:trail[i].x+dy*h,y:trail[i].y-dx*h});
         }
-      }
+        g.beginPath();g.moveTo(L[0].x,L[0].y);
+        for(let i=1;i<n;i++)g.lineTo(L[i].x,L[i].y);
+        for(let i=n-1;i>=0;i--)g.lineTo(R[i].x,R[i].y);
+        g.closePath();
+      };
+      const t0=trail[0],t1=trail[n-1];
+      const gr=g.createLinearGradient(t0.x,t0.y,t1.x,t1.y);
+      gr.addColorStop(0,'rgba(255,179,71,0)');gr.addColorStop(.35,'rgba(255,95,162,.75)');
+      gr.addColorStop(.7,'rgba(165,107,255,.95)');gr.addColorStop(1,'rgba(76,141,255,1)');
+      g.save();
+      g.fillStyle=gr;g.shadowColor='rgba(150,110,255,.9)';g.shadowBlur=22;ribbon(2.6);g.globalAlpha=.35;g.fill();
+      g.globalAlpha=1;g.shadowBlur=10;ribbon(1);g.fill();
+      g.shadowBlur=0;g.fillStyle='rgba(255,255,255,.95)';ribbon(.32);g.fill();
       g.restore();
     }
     cv.addEventListener('pointerdown',e=>{
