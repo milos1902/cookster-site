@@ -126,12 +126,12 @@
   }
   // "flesh" look: the real cross-section art, with a skin rim along the outer edges
   function drawFlesh(g,f,tex,tomImg){
-    const S=210*K,tx=-f.ox-S/2,ty=-f.oy-S/2-4*K;
+    const tx=-f.ox-ART.w/2,ty=-f.oy-ART.h/2+ART.offY;
     g.save();roundedPath(g,f.v);g.clip();
-    g.drawImage(tex,270,470,740,610,-f.ox-100*K,-f.oy-82*K,200*K,165*K);
+    g.drawImage(tex,ART.fx,ART.fy,ART.fw,ART.fh,-f.ox-100*K,-f.oy-82*K,200*K,165*K);
     g.lineWidth=7;g.strokeStyle='rgba(255,215,170,.28)';roundedPath(g,f.v);g.stroke();
     let pat=null;
-    try{pat=g.createPattern(tomImg,'no-repeat');pat.setTransform(new DOMMatrix().translate(tx,ty).scale(S/tomImg.width));}catch(_){}
+    try{pat=g.createPattern(tomImg,'no-repeat');pat.setTransform(new DOMMatrix().translate(tx,ty).scale(ART.w/tomImg.width));}catch(_){}
     if(pat){
       g.strokeStyle=pat;g.lineWidth=20*K;g.lineJoin=g.lineCap='round';
       const L=f.v.length;
@@ -143,14 +143,14 @@
     for(let i=0;i<L;i++){
       const a=f.v[i],b=f.v[(i+1)%L];
       g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);
-      g.lineWidth=f.skin[i]?4:2.5;g.strokeStyle=f.skin[i]?'#6b1006':'#5a1208';g.stroke();
+      g.lineWidth=f.skin[i]?4:2.5;g.strokeStyle=f.skin[i]?ART.rim:'#5a1208';g.stroke();
     }
   }
   // piece of the whole tomato's art. Only the art's own pixels are drawn (no filler shape behind it),
   // and the cut faces show the real red flesh with seeds.
   let tmp=null;
   function drawArt(g,f,tex,tomImg){
-    const S=210*K,tx=-f.ox-S/2,ty=-f.oy-S/2-4*K;
+    const tx=-f.ox-ART.w/2,ty=-f.oy-ART.h/2+ART.offY;
     let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
     for(const p of f.v){x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x);y1=Math.max(y1,p.y);}
     const bx=Math.floor(x0-30),by=Math.floor(y0-30),bw=Math.ceil(x1-x0+60),bh=Math.ceil(y1-y0+60);
@@ -160,11 +160,11 @@
     t.setTransform(1,0,0,1,0,0);t.clearRect(0,0,tmp.width,tmp.height);
     t.translate(-bx,-by);
     t.save();roundedPath(t,f.v);t.clip();
-    t.drawImage(tomImg,tx,ty,S,S);
+    t.drawImage(tomImg,tx,ty,ART.w,ART.h);
     t.globalCompositeOperation='source-atop';
-    const sx=200*K/740,sy=165*K/610;
+    const sx=200*K/ART.fw,sy=165*K/ART.fh;
     let pat=null;
-    try{pat=t.createPattern(tex,'no-repeat');pat.setTransform(new DOMMatrix().translate(-f.ox-100*K-270*sx,-f.oy-82*K-470*sy).scale(sx,sy));}catch(_){}
+    try{pat=t.createPattern(tex,'no-repeat');pat.setTransform(new DOMMatrix().translate(-f.ox-100*K-ART.fx*sx,-f.oy-82*K-ART.fy*sy).scale(sx,sy));}catch(_){}
     t.lineJoin=t.lineCap='round';
     const L=f.v.length;
     for(let i=0;i<L;i++)if(!f.skin[i]){
@@ -179,7 +179,7 @@
       t.beginPath();
       t.ellipse(mx,my,rx,ry,Math.atan2(uy,ux),inward?0:Math.PI,inward?Math.PI:Math.PI*2);
       t.closePath();
-      t.fillStyle=pat||'#d9301a';t.fill();
+      t.fillStyle=pat||ART.color;t.fill();
       t.strokeStyle='rgba(255,205,170,.55)';t.lineWidth=3;t.stroke();
       t.strokeStyle='rgba(110,16,6,.9)';t.lineWidth=2.5;
       t.beginPath();t.moveTo(a.x,a.y);t.lineTo(b.x,b.y);t.stroke();
@@ -197,7 +197,7 @@
     if(bk>0){
       if(bk>=1){
         g.save();g.shadowColor='rgba(40,12,0,.45)';g.shadowBlur=10;g.shadowOffsetY=5;
-        roundedPath(g,f.v);g.fillStyle='#d9301a';g.fill();g.restore();
+        roundedPath(g,f.v);g.fillStyle=ART.color;g.fill();g.restore();
       }
       g.globalAlpha=bk;
       drawFlesh(g,f,tex,tomImg);
@@ -266,17 +266,52 @@
     return cv.toDataURL('image/webp',.82)+'#'+JSON.stringify(meta);
   }
 
+  // Settings per vegetable. hull: the shape comes from the picture's silhouette (tomato uses an ellipse).
+  // flesh: part of the "sliced" picture (normalised x,y,w,h) used as the texture of the cut faces.
+  const VEGS={
+    paradajz:{label:'paradajza',max:210,flesh:[.215,.375,.59,.486],color:'#d9301a',rim:'#6b1006',hull:false},
+    paprika_zelena:{label:'zelene paprike',max:200,flesh:[.3,.6,.25,.27],color:'#6fae2c',rim:'#1d3a0a',hull:true},
+    sargarepa:{label:'šargarepe',max:250,flesh:[.15,.52,.35,.39],color:'#f08a1c',rim:'#7a3408',hull:true}
+  };
+  let ART={w:210*K,h:210*K,offY:-4*K,fx:270,fy:470,fw:740,fh:610,color:'#d9301a',rim:'#6b1006'};
+
+  // convex outline of the picture's visible pixels, in display units centred on the picture
+  function silhouette(img,w,h){
+    const R=96,k=R/Math.max(img.width,img.height),cw=Math.max(8,Math.round(img.width*k)),ch=Math.max(8,Math.round(img.height*k));
+    const c=document.createElement('canvas');c.width=cw;c.height=ch;
+    const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(img,0,0,cw,ch);
+    const d=g.getImageData(0,0,cw,ch).data,pts=[];
+    for(let y=0;y<ch;y++)for(let x=0;x<cw;x++)if(d[(y*cw+x)*4+3]>60)pts.push([x+.5,y+.5]);
+    pts.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+    const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+    const lo=[],up=[];
+    for(const p of pts){while(lo.length>1&&cr(lo[lo.length-2],lo[lo.length-1],p)<=0)lo.pop();lo.push(p);}
+    for(const p of [...pts].reverse()){while(up.length>1&&cr(up[up.length-2],up[up.length-1],p)<=0)up.pop();up.push(p);}
+    let hull=lo.slice(0,-1).concat(up.slice(0,-1));
+    // keep it light: drop points that hardly change the outline
+    for(let i=0;i<hull.length&&hull.length>26;){const a=hull[(i+hull.length-1)%hull.length],b=hull[i],c2=hull[(i+1)%hull.length];if(Math.abs(cr(a,b,c2))<1.2)hull.splice(i,1);else i++;}
+    const sx=w/cw,sy=h/ch;
+    return hull.map(([x,y])=>({x:(x-cw/2)*sx*.97,y:(y-ch/2)*sy*.97}));
+  }
+
   let active=null;
   function supports(el){
     if(!el||el.dataset.vegetable!=='1')return false;
-    if((el.dataset.vegKey||'')!=='paradajz')return false;
+    if(!VEGS[el.dataset.vegKey||''])return false;
     return (el.dataset.cutState||'whole')==='whole';
   }
 
   async function start(el,def,cb){
     if(active)return;
+    const key=el.dataset.vegKey||'paradajz',V=VEGS[key]||VEGS.paradajz;
     const [tomImg,sliceImg,boardImg]=await Promise.all([
       load(def.src),load(def.slicedSrc),load('assets/new_props/daska.png')]);
+    {
+      const k=V.max*K/Math.max(tomImg.width,tomImg.height);
+      ART={w:tomImg.width*k,h:tomImg.height*k,offY:V.hull?0:-4*K,
+        fx:V.flesh[0]*sliceImg.width,fy:V.flesh[1]*sliceImg.height,fw:V.flesh[2]*sliceImg.width,fh:V.flesh[3]*sliceImg.height,
+        color:V.color,rim:V.rim};
+    }
     const root=document.createElement('div');
     root.id='tomatoCutOverlay';
     root.style.cssText='position:fixed;inset:0;z-index:30000;background:rgba(18,9,3,.62);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .25s';
@@ -286,7 +321,7 @@
     bar.style.cssText='position:fixed;left:50%;top:14px;transform:translateX(-50%);display:flex;gap:8px;z-index:1;font:15px system-ui,sans-serif';
     const hint=document.createElement('div');
     hint.style.cssText='position:fixed;left:50%;bottom:14px;transform:translateX(-50%);color:#fff3d6;font:15px system-ui,sans-serif;text-shadow:0 1px 3px #000;text-align:center;max-width:90vw';
-    hint.textContent='Prevuci nož preko paradajza da ga iseckaš (posle petog reza postaje iseckan). Kad završiš, klikni „Gotovo“.';
+    hint.textContent='Prevuci nož preko '+V.label+' da ga iseckaš (posle petog reza postaje iseckan). Kad završiš, klikni „Gotovo“.';
     const mkBtn=(t,fn)=>{const b=document.createElement('button');b.textContent=t;b.style.cssText='font:inherit;padding:8px 14px;border-radius:10px;border:2px solid #4a2a12;background:#f1d9a6;color:#3b1d0a;cursor:pointer';b.onclick=fn;bar.appendChild(b);return b;};
     // the overlay must not leak clicks/drags to the game underneath (it would pick the tomato up)
     for(const ev of ['pointerdown','pointerup','pointermove','mousedown','mouseup','mousemove','click','dblclick','touchstart','touchmove','touchend','contextmenu','wheel'])
@@ -296,8 +331,9 @@
     const g=cv.getContext('2d');
 
     // tomato = ellipse polygon whose rim edges are flagged as "skin"
-    const n=22,rx=88*K,ry=80*K,verts=[],skin=[];
-    for(let i=0;i<n;i++){const a=i/n*Math.PI*2;verts.push({x:Math.cos(a)*rx,y:Math.sin(a)*ry});skin.push(true);}
+    let verts=[],skin=[];
+    if(V.hull){verts=silhouette(tomImg,ART.w,ART.h).map(p=>({x:p.x,y:p.y+ART.offY}));skin=verts.map(()=>true);}
+    else{const n=22,rx=88*K,ry=80*K;for(let i=0;i<n;i++){const a=i/n*Math.PI*2;verts.push({x:Math.cos(a)*rx,y:Math.sin(a)*ry});skin.push(true);}}
     const bx=W/2-BOARD.w/2,by=H/2-BOARD.h/2+10;
     let frags=[mk(verts,skin,W/2,H/2+10)];frags[0].whole=true;
     const TRAIL_MS=650;let trail=[],strokeId=0,raf=0,closed=false,cuts=0;const MAX_CUTS=5;
@@ -328,8 +364,8 @@
       g.save();g.shadowColor='rgba(0,0,0,.5)';g.shadowBlur=30;g.shadowOffsetY=14;
       g.drawImage(boardImg,bx,by,BOARD.w,BOARD.h);g.restore();
       for(const f of [...frags].sort((a,b)=>a.y-b.y)){
-        if(f.whole){const s=210*K;g.save();g.shadowColor='rgba(0,0,0,.35)';g.shadowBlur=16;g.shadowOffsetY=8;
-          g.drawImage(tomImg,f.x-s/2,f.y-s/2-4*K,s,s);g.restore();}
+        if(f.whole){g.save();g.shadowColor='rgba(0,0,0,.35)';g.shadowBlur=16;g.shadowOffsetY=8;
+          g.drawImage(tomImg,f.x-ART.w/2,f.y-ART.h/2+ART.offY,ART.w,ART.h);g.restore();}
         else drawPiece(g,f,sliceImg,tomImg);
       }
       drawTrail(g);
@@ -399,7 +435,7 @@
         stroke.cut=true;cuts++;
         if(cuts===MAX_CUTS){
           for(const f of frags)f.bkT=1;      // the whole-tomato picture turns into the sliced tomato
-          hint.textContent='Paradajz je iseckan. Možeš da nastaviš da seckaš, ili klikni „Gotovo“.';
+          hint.textContent='Povrće je iseckano. Možeš da nastaviš da seckaš, ili klikni „Gotovo“.';
         }else if(cuts<MAX_CUTS)hint.textContent='Rez '+cuts+' od '+MAX_CUTS+'. Nastavi da seckaš, ili klikni „Gotovo“.';
       }
     });
@@ -415,7 +451,7 @@
     }
     function finish(){
       if(closed)return;
-      if(frags.length===1&&frags[0].whole){hint.textContent='Prvo iseckaj paradajz nožem.';return;}
+      if(frags.length===1&&frags[0].whole){hint.textContent='Prvo iseckaj nožem.';return;}
       const baked=bakePile(diceBig(frags),sliceImg,tomImg);
       close();cb.onDone(baked.heap,baked.atlas);
     }
