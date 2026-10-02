@@ -8030,6 +8030,13 @@ function ensureSceneOilBottleMeta(item){
   return item;
 }
 
+// Custom "piles": the heap of pieces the player cut is baked into a small PNG (data URL).
+// A vessel remembers up to 4 of them for one ingredient, joined with '|'.
+const CooksterPiles=window.CooksterPiles={
+ is:s=>typeof s==='string'&&/^data:image\/(png|webp);base64,/.test(s),
+ split:s=>String(s||'').split('|').filter(x=>/^data:image\/(png|webp);base64,/.test(x)),
+ join(a,b){const list=this.split(a);for(const x of this.split(b))if(!list.includes(x))list.push(x);return list.slice(-4).join('|');}
+};
 function ingredientVisualMeta(item){
   if(isSceneOilBottle(item))ensureSceneOilBottleMeta(item);
   if(item&&(item.dataset?.vegetable==='1'||item.dataset?.fruit==='1')){
@@ -8076,11 +8083,12 @@ function ingredientVisualMeta(item){
         :roastedUnpeeledEggplant
           ?'Seckan pečen neoljušten patlidžan'
           :(def.dicedLabel||item.dataset.label||key);
+      const bodySrc=item.querySelector('.body')?.getAttribute('src')||'';
       const visualSrc=roastedChopped
         ?roastedChoppedPepperSrc(roastedKey)
         :roastedUnpeeledEggplant
           ?(def.roastedUnpeeledDicedSrc||def.dicedSrc||'')
-          :(def.dicedSrc||def.slicedSrc||item.querySelector('.body')?.getAttribute('src')||def.src||'');
+          :(CooksterPiles.is(bodySrc)?bodySrc:(def.dicedSrc||def.slicedSrc||bodySrc||def.src||''));
       return {
         key:roastedKey,
         baseKey:key,
@@ -8137,6 +8145,7 @@ function readPanIngredientMeta(vessel){
 function rememberPanIngredientMeta(vessel,meta){
   if(!vessel||!meta?.key)return;
   const all=readPanIngredientMeta(vessel);
+  const prevMeta=all[meta.key];
   all[meta.key]={
     key:String(meta.key||''),
     baseKey:String(meta.baseKey||''),
@@ -8144,7 +8153,9 @@ function rememberPanIngredientMeta(vessel,meta){
     form:String(meta.form||''),
     cutState:String(meta.cutState||''),
     label:String(meta.label||meta.key||''),
-    src:String(meta.src||'')
+    src:(CooksterPiles.is(meta.src)||CooksterPiles.is(prevMeta?.src))
+      ?CooksterPiles.join(prevMeta?.src,meta.src)
+      :String(meta.src||'')
   };
   try{vessel.dataset.panIngredientMeta=JSON.stringify(all);}catch(_){}
 }
@@ -11791,13 +11802,16 @@ function allSlicedIngredientMix(counts,metaItems={}){
     const base=roastedPepper?'paprika':(roastedEggplant?'patlidzan':(diced?key.slice(0,-6):key));
     const def=VEGETABLES[base]||CooksterCatalog.FRUITS?.[base];
     if(!def?.slicedSrc&&!def?.dicedSrc)continue;
+    const piles=(diced&&!roastedChopped)?CooksterPiles.split(metaItems?.[key]?.src):[];
     entries.push({
       kind:base,
       storageKey:key,
       cutState:diced?'diced':'sliced',
       count,
-      def,
-      src:roastedPepper
+      // a player-cut pile replaces the stock diced art (and its fried variants, so the generic cook tint applies)
+      def:piles.length?{...def,dicedSrc:piles[0],friedDicedSrc:undefined,wellDoneDicedSrc:undefined}:def,
+      piles:piles.length?piles:null,
+      src:piles.length?piles[0]:roastedPepper
         ?roastedChoppedPepperSrc(key)
         :roastedEggplant
           ?(metaItems?.[key]?.src||def.roastedUnpeeledDicedSrc||def.dicedSrc||def.slicedSrc||def.src)
@@ -11865,7 +11879,9 @@ function appendExactChoppedSprite(layer,part,stage,vessel,fillState,compositionS
   if(!layer||!part)return null;
   // v198.5.76: same reasoning as the floor — prefer diced art so a sliced
   // (ring/thin) cut doesn't look inconsistently sparse next to solid cubes.
-  const rawSrc=part.roastedChopped
+  const rawSrc=part.piles?.length
+    ?part.piles[Math.abs((+part.insertionIndex||stackIndex+1)-1)%part.piles.length]
+    :part.roastedChopped
     ?part.src
     :(part.def?.dicedSrc||part.src||part.def?.slicedSrc||part.def?.src);
   if(!rawSrc)return null;
