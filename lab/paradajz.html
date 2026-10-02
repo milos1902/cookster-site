@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cookster lab – paradajz</title>
+<style>
+  html,body{margin:0;height:100%;background:#2a1a10;color:#fff3d6;font:15px system-ui,sans-serif;overflow:hidden}
+  #wrap{position:relative;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
+  canvas{max-width:100vw;max-height:100vh;background:#7a5230;touch-action:none;cursor:grab}
+  #bar{position:fixed;left:12px;top:12px;display:flex;gap:8px;flex-wrap:wrap;z-index:2}
+  button{font:inherit;padding:8px 14px;border-radius:10px;border:2px solid #4a2a12;background:#f1d9a6;color:#3b1d0a;cursor:pointer}
+  button.on{background:#e8a21c;box-shadow:0 0 0 2px #fff3d6}
+  #hint{position:fixed;left:12px;bottom:10px;opacity:.85;max-width:90vw}
+</style>
+</head>
+<body>
+<div id="bar">
+  <button id="bMove" class="on">Premesti</button>
+  <button id="bKnife">Nož (prevuci preko komada)</button>
+  <button id="bDice">Iseckaj sitno</button>
+  <button id="bStir">Mešaj</button>
+  <button id="bFire">Vatra: isključena</button>
+  <button id="bReset">Novi paradajz</button>
+</div>
+<div id="hint">Probaj: uključi Nož, prevuci liniju preko paradajza. Prevuci komade u tiganj, uključi vatru i mešaj.</div>
+<div id="wrap"><canvas id="c" width="1280" height="720"></canvas></div>
+<script>
+const W=1280,H=720,cv=document.getElementById('c'),g=cv.getContext('2d');
+const IMG={};
+const SRC={tom:'../assets/povrce_paradajz.png',slice:'../assets/povrce_paradajz_secen.png',board:'../assets/new_props/daska.png',pan:'../assets/new_props/tiganj_veliki.png'};
+const BOARD={x:30,y:210,s:1.65}, PAN={x:700,y:150,s:1.5};
+const PAN_C={x:PAN.x+200*PAN.s,y:PAN.y+150*PAN.s,rx:185,ry:120};
+let frags=[],parts=[],mode='move',fire=false,drag=null,knife=null,time=0;
+const rnd=(a,b)=>a+Math.random()*(b-a);
+
+function newTomato(){
+  frags=[];parts=[];
+  const n=22,rx=88,ry=80,verts=[],skin=[];
+  for(let i=0;i<n;i++){const a=i/n*Math.PI*2;verts.push({x:Math.cos(a)*rx,y:Math.sin(a)*ry});skin.push(true);}
+  frags.push(mk(verts,skin,BOARD.x+340,BOARD.y+250,true));
+}
+function centroid(v){let x=0,y=0;for(const p of v){x+=p.x;y+=p.y}return{x:x/v.length,y:y/v.length};}
+function area(v){let a=0;for(let i=0;i<v.length;i++){const p=v[i],q=v[(i+1)%v.length];a+=p.x*q.y-q.x*p.y}return Math.abs(a/2);}
+function mk(verts,skin,x,y,whole=false){
+  const c=centroid(verts);
+  verts=verts.map(p=>({x:p.x-c.x,y:p.y-c.y}));
+  return{v:verts,skin,x:x+c.x,y:y+c.y,ox:c.x,oy:c.y,vx:0,vy:0,rot:0,whole,done:0,
+    tx:rnd(330,700),ty:rnd(520,760),sc:rnd(.9,1.15),a:area(verts),r:Math.sqrt(area(verts)/Math.PI),seed:Math.random()*1000};
+}
+// presek konveksnog poligona pravom (tacka p, normala n)
+function split(f,p,n){
+  const A=[],B=[],sa=[],sb=[],cut=[];
+  const side=q=>(q.x-p.x)*n.x+(q.y-p.y)*n.y;
+  const L=f.v.length;
+  for(let i=0;i<L;i++){
+    const a=f.v[i],b=f.v[(i+1)%L],da=side(a),db=side(b),sk=f.skin[i];
+    (da>=0?(A.push(a),sa.push(sk)):(B.push(a),sb.push(sk)));
+    if((da>0&&db<0)||(da<0&&db>0)){
+      const t=da/(da-db),q={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};
+      cut.push(q);
+      // ivica a->q ostaje u strani od a; posle q pocinje druga strana
+      if(da>=0){sa[sa.length-1]=sk;A.push(q);sa.push(false);B.push(q);sb.push(sk);}
+      else{sb[sb.length-1]=sk;B.push(q);sb.push(false);A.push(q);sa.push(sk);}
+    }
+  }
+  if(A.length<3||B.length<3||area(A)<30||area(B)<30)return null;
+  return[A,sa,B,sb];
+}
+function cutAt(f,p1,p2){
+  // p1,p2 u svetskim koordinatama; pretvori u lokalne (bez rotacije radi jednostavnosti)
+  const lp={x:p1.x-f.x,y:p1.y-f.y},lq={x:p2.x-f.x,y:p2.y-f.y};
+  const dx=lq.x-lp.x,dy=lq.y-lp.y,len=Math.hypot(dx,dy)||1;
+  const n={x:-dy/len,y:dx/len};
+  // linija mora stvarno presecati komad (segment)
+  let hit=false;const L=f.v.length;
+  for(let i=0;i<L;i++){
+    const a=f.v[i],b=f.v[(i+1)%L];
+    const da=(a.x-lp.x)*n.x+(a.y-lp.y)*n.y,db=(b.x-lp.x)*n.x+(b.y-lp.y)*n.y;
+    if(da*db<0){
+      const t=da/(da-db),q={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};
+      const s=((q.x-lp.x)*dx+(q.y-lp.y)*dy)/(len*len);
+      if(s>=0&&s<=1){hit=true;break;}
+    }
+  }
+  if(!hit)return[f];
+  const r=split(f,lp,n);if(!r)return[f];
+  const out=[];
+  [[r[0],r[1],1],[r[2],r[3],-1]].forEach(([v,sk,sg])=>{
+    const nf=mk(v,sk,f.x,f.y);nf.done=f.done;nf.rot=0;nf.ox+=f.ox;nf.oy+=f.oy;
+    nf.vx=n.x*sg*rnd(1.5,2.6);nf.vy=n.y*sg*rnd(1.5,2.6);
+    out.push(nf);
+  });
+  return out;
+}
+function doKnife(p1,p2){
+  const next=[];
+  for(const f of frags){
+    const pieces=cutAt(f,p1,p2);next.push(...pieces);
+    if(pieces.length>1)for(let i=0;i<6;i++)parts.push({x:f.x+rnd(-20,20),y:f.y+rnd(-20,20),vx:rnd(-1,1),vy:rnd(-2,0),life:1,t:'juice'});
+  }
+  frags=next;
+}
+function cutLine(f,n,c){
+  // svetska linija n·p = c, presecena sa komadom f
+  const off=c-(f.x*n.x+f.y*n.y);
+  const r=split(f,{x:n.x*off,y:n.y*off},n);
+  if(!r)return[f];
+  const out=[];
+  [[r[0],r[1],1],[r[2],r[3],-1]].forEach(([v,sk,sg])=>{
+    const nf=mk(v,sk,f.x,f.y);nf.done=f.done;nf.ox+=f.ox;nf.oy+=f.oy;
+    nf.vx=n.x*sg*rnd(.4,.9);nf.vy=n.y*sg*rnd(.4,.9);out.push(nf);
+  });
+  return out;
+}
+function diceAll(){
+  // seckanje po mrezi: dve upravne grupe paralelnih rezova, pa dobijamo kockice, ne krhotine
+  const th=rnd(0,Math.PI/2),size=34;
+  for(const ang of [th,th+Math.PI/2]){
+    const n={x:Math.cos(ang),y:Math.sin(ang)},base=rnd(0,size);
+    for(let c=-1400+base;c<1800;c+=size+rnd(-4,4)){
+      const next=[];
+      for(const f of frags){
+        const proj=f.x*n.x+f.y*n.y,d=c-proj;
+        next.push(...(Math.abs(d)<f.r*1.5?cutLine(f,n,c):[f]));
+      }
+      frags=next;
+    }
+  }
+  frags=frags.filter(f=>f.a>140);
+  for(const f of frags){f.rot=rnd(-.15,.15);}
+}
+// ---- crtanje
+function roundedPath(v){
+  const L=v.length;g.beginPath();
+  for(let i=0;i<L;i++){
+    const a=v[i],b=v[(i+1)%L],m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+    if(i===0){const z=v[L-1],m0={x:(z.x+a.x)/2,y:(z.y+a.y)/2};g.moveTo(m0.x,m0.y);}
+    g.quadraticCurveTo(a.x,a.y,m.x,m.y);
+  }
+  g.closePath();
+}
+function drawFrag(f){
+  g.save();g.translate(f.x,f.y);g.rotate(f.rot);
+  if(f.whole&&IMG.tom){const s=210;g.shadowColor='rgba(0,0,0,.35)';g.shadowBlur=16;g.shadowOffsetY=8;g.drawImage(IMG.tom,-s/2,-s/2-4,s,s);g.restore();return;}
+  g.shadowColor='rgba(40,12,0,.45)';g.shadowBlur=10;g.shadowOffsetY=5;
+  roundedPath(f.v);g.fillStyle='#d9301a';g.fill();
+  g.shadowColor='transparent';
+  g.save();roundedPath(f.v);g.clip();
+  // tekstura mesa iz prave slike preseka
+  g.drawImage(IMG.slice,270,470,740,610,-f.ox-100,-f.oy-82,200,165);
+  // pecenje: tamnjenje, pege, pocrnjenje
+  const d=f.done;
+  if(d>0){
+    g.globalCompositeOperation='multiply';
+    g.fillStyle=`rgba(${190-d*60|0},${90-d*40|0},${40},${Math.min(.85,d*.55)})`;g.fillRect(-f.r*2,-f.r*2,f.r*4,f.r*4);
+    if(d>1){g.fillStyle=`rgba(25,12,5,${Math.min(.9,(d-1)*1.1)})`;g.fillRect(-f.r*2,-f.r*2,f.r*4,f.r*4);}
+    g.globalCompositeOperation='source-over';
+  }
+  // svetla unutrasnja ivica na mestima reza (volumen)
+  g.lineWidth=7;g.strokeStyle='rgba(255,215,170,.28)';g.stroke();
+  g.restore();
+  // kontura kao u tvojim slikama; kora je deblja i crvenija
+  const L=f.v.length;
+  for(let i=0;i<L;i++){
+    const a=f.v[i],b=f.v[(i+1)%L],m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+    g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);
+    g.lineWidth=f.skin[i]?5:2.5;g.strokeStyle=f.skin[i]?'#8a1608':'#5a1208';g.lineJoin=g.lineCap='round';g.stroke();
+  }
+  // odsjaj ulja kad se prži
+  if(f.done>.3){g.globalAlpha=.35;g.strokeStyle='#fff';g.lineWidth=2;roundedPath(f.v.map(p=>({x:p.x*.6-f.r*.1,y:p.y*.6-f.r*.1})));g.stroke();g.globalAlpha=1;}
+  g.restore();
+}
+function inPan(f){const dx=(f.x-PAN_C.x)/PAN_C.rx,dy=(f.y-PAN_C.y)/PAN_C.ry;return dx*dx+dy*dy<1;}
+function step(){
+  time+=1/60;
+  for(const f of frags){
+    const moving=drag&&drag.f===f;
+    if(!moving){f.x+=f.vx;f.y+=f.vy;f.vx*=.9;f.vy*=.9;f.rot+=(f.vx*.01);}
+    if(inPan(f)&&fire){
+      f.done+=0.0007;
+      if(Math.random()<.03*f.r/20)parts.push({x:f.x+rnd(-f.r,f.r),y:f.y+rnd(-f.r,f.r)*.5,vx:rnd(-.3,.3),vy:rnd(-1.4,-.5),life:1,t:f.done>1?'smoke':'steam'});
+      if(Math.random()<.02)parts.push({x:f.x+rnd(-f.r,f.r),y:f.y,vx:rnd(-.5,.5),vy:rnd(-1.2,-.4),life:.5,t:'spark'});
+    }
+  }
+  // odbijanje komada da se ne slepe (blago)
+  for(let i=0;i<frags.length;i++)for(let j=i+1;j<frags.length;j++){
+    const a=frags[i],b=frags[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,m=(a.r+b.r)*.78;
+    if(d<m){const k=(m-d)/d*.12;if(!(drag&&drag.f===a)){a.x-=dx*k;a.y-=dy*k;}if(!(drag&&drag.f===b)){b.x+=dx*k;b.y+=dy*k;}}
+  }
+  for(const p of parts){p.x+=p.vx;p.y+=p.vy;p.life-=p.t==='juice'?.04:.012;if(p.t==='juice')p.vy+=.15;}
+  parts=parts.filter(p=>p.life>0);
+}
+function draw(){
+  g.clearRect(0,0,W,H);
+  // pod
+  const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#8c6038');gr.addColorStop(1,'#5a3a1e');g.fillStyle=gr;g.fillRect(0,0,W,H);
+  g.drawImage(IMG.board,BOARD.x,BOARD.y,426*BOARD.s,285*BOARD.s);
+  g.drawImage(IMG.pan,PAN.x,PAN.y,365*PAN.s,343*PAN.s);
+  if(fire){g.save();g.globalCompositeOperation='screen';const fg=g.createRadialGradient(PAN_C.x,PAN_C.y+30,10,PAN_C.x,PAN_C.y+30,230);fg.addColorStop(0,'rgba(255,120,20,.30)');fg.addColorStop(1,'rgba(255,60,0,0)');g.fillStyle=fg;g.fillRect(PAN_C.x-260,PAN_C.y-200,520,460);g.restore();}
+  const sorted=[...frags].sort((a,b)=>(drag&&drag.f===a)-(drag&&drag.f===b)||a.y-b.y);
+  for(const f of sorted)drawFrag(f);
+  for(const p of parts){
+    g.globalAlpha=Math.max(0,p.life);
+    if(p.t==='juice'){g.fillStyle='#d9301a';g.beginPath();g.arc(p.x,p.y,3,0,7);g.fill();}
+    else if(p.t==='spark'){g.fillStyle='#ffd27a';g.beginPath();g.arc(p.x,p.y,2,0,7);g.fill();}
+    else{g.fillStyle=p.t==='smoke'?'rgba(60,60,60,.5)':'rgba(255,255,255,.45)';g.beginPath();g.arc(p.x,p.y,10+(1-p.life)*18,0,7);g.fill();}
+    g.globalAlpha=1;
+  }
+  if(knife){g.strokeStyle='#fff';g.setLineDash([8,6]);g.lineWidth=3;g.shadowColor='#000';g.shadowBlur=4;g.beginPath();g.moveTo(knife.a.x,knife.a.y);g.lineTo(knife.b.x,knife.b.y);g.stroke();g.setLineDash([]);g.shadowBlur=0;}
+}
+function loop(){step();draw();requestAnimationFrame(loop);}
+// ---- unos
+function pos(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};}
+function hit(p){
+  for(const f of [...frags].reverse()){let inside=false;const L=f.v.length;
+    // jednostavan test: krug oko komada
+    if(Math.hypot(p.x-f.x,p.y-f.y)<(f.whole?95:f.r*1.05))return f;}
+  return null;
+}
+cv.addEventListener('pointerdown',e=>{
+  const p=pos(e);cv.setPointerCapture(e.pointerId);
+  if(mode==='knife'){knife={a:p,b:p};return;}
+  if(mode==='stir'){drag={stir:true};return;}
+  const f=hit(p);if(f)drag={f,dx:f.x-p.x,dy:f.y-p.y};
+});
+cv.addEventListener('pointermove',e=>{
+  const p=pos(e);
+  if(knife)knife.b=p;
+  else if(drag&&drag.stir){for(const f of frags)if(inPan(f)){const d=Math.hypot(f.x-p.x,f.y-p.y);if(d<140){f.vx+=(f.x-p.x)/d*rnd(.3,1.1)+rnd(-.5,.5);f.vy+=(f.y-p.y)/d*rnd(.3,1.1)+rnd(-.5,.5);}}}
+  else if(drag&&drag.f){drag.f.x=p.x+drag.dx;drag.f.y=p.y+drag.dy;drag.f.vx=drag.f.vy=0;}
+});
+cv.addEventListener('pointerup',()=>{
+  if(knife){const k=knife;knife=null;if(Math.hypot(k.b.x-k.a.x,k.b.y-k.a.y)>20)doKnife(k.a,k.b);}
+  drag=null;
+});
+function setMode(m){mode=m;bMove.classList.toggle('on',m==='move');bKnife.classList.toggle('on',m==='knife');bStir.classList.toggle('on',m==='stir');cv.style.cursor=m==='knife'?'crosshair':'grab';}
+bMove.onclick=()=>setMode('move');bKnife.onclick=()=>setMode('knife');bStir.onclick=()=>setMode('stir');
+bDice.onclick=diceAll;bReset.onclick=newTomato;
+bFire.onclick=()=>{fire=!fire;bFire.textContent='Vatra: '+(fire?'upaljena':'isključena');bFire.classList.toggle('on',fire);};
+Promise.all(Object.entries(SRC).map(([k,s])=>new Promise(r=>{const i=new Image();i.onload=()=>{IMG[k]=i;r();};i.src=s;}))).then(()=>{newTomato();loop();});
+window.__lab={get frags(){return frags},doKnife,diceAll,setFire:v=>{fire=v},PAN_C};
+</script>
+</body>
+</html>
