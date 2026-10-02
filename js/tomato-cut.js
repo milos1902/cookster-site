@@ -47,6 +47,7 @@
       const nf=mk(v,sk,0,0);                 // x,y,ox,oy = centroid in the parent's local frame
       const c={x:nf.x,y:nf.y},cw=rotv(c,f.rot);
       nf.x=f.x+cw.x;nf.y=f.y+cw.y;nf.ox=c.x+f.ox;nf.oy=c.y+f.oy;nf.rot=f.rot;
+      nf.bk=f.bk||0;nf.bkT=f.bkT||0;
       const nw=rotv({x:n.x*sg,y:n.y*sg},f.rot);   // outward direction in world
       if(fall){
         // heavy: topples outward around the lowest vertex on the cut edge, overshoots and settles
@@ -123,36 +124,18 @@
     }
     g.closePath();
   }
-  function drawPiece(g,f,tex,tomImg){
-    g.save();g.translate(f.x,f.y);g.rotate(f.rot);
-    g.shadowColor='rgba(40,12,0,.45)';g.shadowBlur=10;g.shadowOffsetY=5;
-    roundedPath(g,f.v);g.fillStyle='#d9301a';g.fill();
-    g.shadowColor='transparent';
+  // "flesh" look: the real cross-section art, with a skin rim along the outer edges
+  function drawFlesh(g,f,tex,tomImg){
     const S=210*K,tx=-f.ox-S/2,ty=-f.oy-S/2-4*K;
     g.save();roundedPath(g,f.v);g.clip();
-    if(!f.baked&&tomImg){
-      // while cutting, every piece is simply a part of the whole tomato's art;
-      // only the cut faces get a pale flesh edge
-      g.drawImage(tomImg,tx,ty,S,S);
-      g.lineJoin=g.lineCap='round';
+    g.drawImage(tex,270,470,740,610,-f.ox-100*K,-f.oy-82*K,200*K,165*K);
+    g.lineWidth=7;g.strokeStyle='rgba(255,215,170,.28)';roundedPath(g,f.v);g.stroke();
+    let pat=null;
+    try{pat=g.createPattern(tomImg,'no-repeat');pat.setTransform(new DOMMatrix().translate(tx,ty).scale(S/tomImg.width));}catch(_){}
+    if(pat){
+      g.strokeStyle=pat;g.lineWidth=20*K;g.lineJoin=g.lineCap='round';
       const L=f.v.length;
-      for(let i=0;i<L;i++)if(!f.skin[i]){
-        const a=f.v[i],b=f.v[(i+1)%L];
-        g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);
-        g.strokeStyle='rgba(255,176,128,.95)';g.lineWidth=13*K;g.stroke();
-        g.strokeStyle='rgba(255,226,196,.55)';g.lineWidth=5*K;g.stroke();
-      }
-    }else{
-      g.drawImage(tex,270,470,740,610,-f.ox-100*K,-f.oy-82*K,200*K,165*K);
-      g.lineWidth=7;g.strokeStyle='rgba(255,215,170,.28)';roundedPath(g,f.v);g.stroke();
-      // skin rim: the tomato's real skin art along the outer edges
-      let pat=null;
-      try{pat=g.createPattern(tomImg,'no-repeat');pat.setTransform(new DOMMatrix().translate(tx,ty).scale(S/tomImg.width));}catch(_){}
-      if(pat){
-        g.strokeStyle=pat;g.lineWidth=20*K;g.lineJoin=g.lineCap='round';
-        const L=f.v.length;
-        for(let i=0;i<L;i++)if(f.skin[i]){const a=f.v[i],b=f.v[(i+1)%L];g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke();}
-      }
+      for(let i=0;i<L;i++)if(f.skin[i]){const a=f.v[i],b=f.v[(i+1)%L];g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke();}
     }
     g.restore();
     const L=f.v.length;
@@ -161,6 +144,53 @@
       const a=f.v[i],b=f.v[(i+1)%L];
       g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);
       g.lineWidth=f.skin[i]?4:2.5;g.strokeStyle=f.skin[i]?'#6b1006':'#5a1208';g.stroke();
+    }
+  }
+  // piece of the whole tomato's art. Only the art's own pixels are drawn (no filler shape behind it),
+  // and the cut faces show the real red flesh with seeds.
+  let tmp=null;
+  function drawArt(g,f,tex,tomImg){
+    const S=210*K,tx=-f.ox-S/2,ty=-f.oy-S/2-4*K;
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+    for(const p of f.v){x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x);y1=Math.max(y1,p.y);}
+    const bx=Math.floor(x0-30),by=Math.floor(y0-30),bw=Math.ceil(x1-x0+60),bh=Math.ceil(y1-y0+60);
+    if(!tmp)tmp=document.createElement('canvas');
+    if(tmp.width<bw)tmp.width=bw;if(tmp.height<bh)tmp.height=bh;
+    const t=tmp.getContext('2d');
+    t.setTransform(1,0,0,1,0,0);t.clearRect(0,0,tmp.width,tmp.height);
+    t.translate(-bx,-by);
+    t.save();roundedPath(t,f.v);t.clip();
+    t.drawImage(tomImg,tx,ty,S,S);
+    t.globalCompositeOperation='source-atop';
+    const sx=200*K/740,sy=165*K/610;
+    let pat=null;
+    try{pat=t.createPattern(tex,'no-repeat');pat.setTransform(new DOMMatrix().translate(-f.ox-100*K-270*sx,-f.oy-82*K-470*sy).scale(sx,sy));}catch(_){}
+    t.lineJoin=t.lineCap='round';
+    const L=f.v.length;
+    for(let i=0;i<L;i++)if(!f.skin[i]){
+      const a=f.v[i],b=f.v[(i+1)%L];
+      t.beginPath();t.moveTo(a.x,a.y);t.lineTo(b.x,b.y);
+      t.strokeStyle=pat||'#d9301a';t.lineWidth=46*K;t.stroke();
+      t.strokeStyle='rgba(110,16,6,.9)';t.lineWidth=3;t.stroke();
+    }
+    t.restore();
+    g.save();
+    g.shadowColor='rgba(40,12,0,.45)';g.shadowBlur=10;g.shadowOffsetY=5;
+    g.drawImage(tmp,0,0,bw,bh,bx,by,bw,bh);
+    g.restore();
+  }
+  function drawPiece(g,f,tex,tomImg){
+    g.save();g.translate(f.x,f.y);g.rotate(f.rot);
+    const bk=f.baked?1:(f.bk||0);
+    if(bk<1&&tomImg)drawArt(g,f,tex,tomImg);
+    if(bk>0){
+      if(bk>=1){
+        g.save();g.shadowColor='rgba(40,12,0,.45)';g.shadowBlur=10;g.shadowOffsetY=5;
+        roundedPath(g,f.v);g.fillStyle='#d9301a';g.fill();g.restore();
+      }
+      g.globalAlpha=bk;
+      drawFlesh(g,f,tex,tomImg);
+      g.globalAlpha=1;
     }
     g.restore();
   }
@@ -211,7 +241,7 @@
     bar.style.cssText='position:fixed;left:50%;top:14px;transform:translateX(-50%);display:flex;gap:8px;z-index:1;font:15px system-ui,sans-serif';
     const hint=document.createElement('div');
     hint.style.cssText='position:fixed;left:50%;bottom:14px;transform:translateX(-50%);color:#fff3d6;font:15px system-ui,sans-serif;text-shadow:0 1px 3px #000;text-align:center;max-width:90vw';
-    hint.textContent='Prevuci nož preko paradajza da ga iseckaš (pet rezova). Kad završiš ranije, klikni „Gotovo“.';
+    hint.textContent='Prevuci nož preko paradajza da ga iseckaš (posle petog reza postaje iseckan). Kad završiš, klikni „Gotovo“.';
     const mkBtn=(t,fn)=>{const b=document.createElement('button');b.textContent=t;b.style.cssText='font:inherit;padding:8px 14px;border-radius:10px;border:2px solid #4a2a12;background:#f1d9a6;color:#3b1d0a;cursor:pointer';b.onclick=fn;bar.appendChild(b);return b;};
     // the overlay must not leak clicks/drags to the game underneath (it would pick the tomato up)
     for(const ev of ['pointerdown','pointerup','pointermove','mousedown','mouseup','mousemove','click','dblclick','touchstart','touchmove','touchend','contextmenu','wheel'])
@@ -229,6 +259,7 @@
 
     function frame(){
       for(const f of frags){
+        if(f.bkT&&(f.bk||0)<1)f.bk=Math.min(1,(f.bk||0)+1/40);
         if(f.fall){
           // damped swing: topples outward, overshoots a little, settles (feels heavy)
           const q=f.fall;q.t+=1/60;const t=q.t;
@@ -316,8 +347,10 @@
       if(now-lastChop>140&&typeof playChop==='function'){lastChop=now;try{playChop();}catch(_){}}
       if(!stroke.cut){
         stroke.cut=true;cuts++;
-        if(cuts>=MAX_CUTS){hint.textContent='Gotovo, paradajz je iseckan.';setTimeout(finish,1100);}
-        else hint.textContent='Rez '+cuts+' od '+MAX_CUTS+'. Nastavi da seckaš, ili klikni „Gotovo“.';
+        if(cuts===MAX_CUTS){
+          for(const f of frags)f.bkT=1;      // the whole-tomato picture turns into the sliced tomato
+          hint.textContent='Paradajz je iseckan. Možeš da nastaviš da seckaš, ili klikni „Gotovo“.';
+        }else if(cuts<MAX_CUTS)hint.textContent='Rez '+cuts+' od '+MAX_CUTS+'. Nastavi da seckaš, ili klikni „Gotovo“.';
       }
     });
     const endStroke=()=>{stroke=null;};
