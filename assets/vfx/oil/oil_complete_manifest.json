@@ -1,0 +1,9 @@
+{
+  "oilPourRateMeasuresPerSecond": 1.25,
+  "maxMeasuresPerVessel": 8,
+  "idleFrames": 12,
+  "hotFrames": 12,
+  "hotFps": 10,
+  "interaction": "hold left mouse over open vessel to pour continuously",
+  "notes": "Requires existing assets/vfx/oil/oil_idle_01..12.png from previous oil update."
+}

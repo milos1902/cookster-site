@@ -1,0 +1,840 @@
+
+/* =========================================================
+   Cookster UI Pop-Art Refresh — Pass #2
+   More serious, cleaner, still distinctly pop-art.
+   Palette focus: olive green + harvest yellow + soft cream.
+   ========================================================= */
+
+:root{
+  --ui-ink:#29201a;
+  --ui-ink-soft:#5b4d40;
+  --ui-cream:#f7f1de;
+  --ui-cream-2:#efe5c8;
+  --ui-paper:#fffaf0;
+  --ui-olive:#7d8d49;
+  --ui-olive-deep:#5f6d34;
+  --ui-sage:#a9b68c;
+  --ui-harvest:#d8b64b;
+  --ui-harvest-deep:#b9922d;
+  --ui-wheat:#ead8a4;
+  --ui-clay:#c98c6b;
+  --ui-rose:#cf8f87;
+  --ui-sky:#a8c4c6;
+  --ui-money:#8db27b;
+  --ui-danger:#bb665c;
+  --ui-shadow:0 7px 0 rgba(41,32,26,.96), 0 16px 28px rgba(0,0,0,.18);
+  --ui-shadow-soft:0 5px 0 rgba(41,32,26,.95), 0 10px 20px rgba(0,0,0,.14);
+  --ui-card:
+    linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,.12) 42%),
+    linear-gradient(180deg, var(--ui-paper), var(--ui-cream-2));
+  --ui-dots:
+    radial-gradient(circle at 1px 1px, rgba(41,32,26,.08) 1.2px, transparent 1.3px);
+  --ui-stripe:
+    linear-gradient(135deg, rgba(255,255,255,.16) 0 12%, rgba(255,255,255,0) 12% 24%, rgba(255,255,255,.12) 24% 36%, rgba(255,255,255,0) 36% 48%);
+}
+
+html,body,button,input,select,textarea{
+  font-family:"Trebuchet MS","Arial",sans-serif;
+  letter-spacing:.01em;
+}
+
+body{
+  color:var(--ui-ink);
+}
+
+/* =========================================================
+   CLEANUP: remove noisy helper UI the user no longer wants
+   ========================================================= */
+#label,
+#toast{
+  display:none !important;
+  opacity:0 !important;
+  visibility:hidden !important;
+  pointer-events:none !important;
+}
+
+#marketNotice{
+  display:none !important;
+}
+
+/* =========================================================
+   Shared buttons
+   ========================================================= */
+#hud > button,
+#modal button,
+#dishReport button,
+#kitchenElementsClose,
+#marketBack,
+#marketHaggleBtn,
+#marketAcceptBtn,
+#marketCollectBags,
+#marketExtras button,
+#gardenBackBtn,
+.garden-action,
+.ke-card{
+  appearance:none;
+  border:3px solid var(--ui-ink) !important;
+  color:var(--ui-ink) !important;
+  font-weight:900 !important;
+  transition:transform .12s ease, box-shadow .12s ease, filter .12s ease, background .18s ease;
+  will-change:transform,box-shadow;
+  text-shadow:none !important;
+}
+
+#hud > button,
+#modal button,
+#dishReport button,
+#kitchenElementsClose,
+#marketBack,
+#marketHaggleBtn,
+#marketAcceptBtn,
+#marketCollectBags,
+#marketExtras button,
+#gardenBackBtn,
+.garden-action{
+  border-radius:16px !important;
+  box-shadow:var(--ui-shadow-soft) !important;
+  background:var(--ui-card) !important;
+}
+
+#hud > button:hover,
+#modal button:hover,
+#dishReport button:hover,
+#kitchenElementsClose:hover,
+#marketBack:hover,
+#marketHaggleBtn:hover,
+#marketAcceptBtn:hover,
+#marketCollectBags:hover,
+#marketExtras button:hover,
+#gardenBackBtn:hover,
+.garden-action:hover,
+.ke-card:hover:not(:disabled){
+  transform:translateY(-2px);
+  filter:saturate(1.04);
+}
+
+#day:active,
+#hud > button:active,
+#modal button:active,
+#dishReport button:active,
+#kitchenElementsClose:active,
+#marketBack:active,
+#marketHaggleBtn:active,
+#marketAcceptBtn:active,
+#marketCollectBags:active,
+#marketExtras button:active,
+#gardenBackBtn:active,
+.garden-action:active,
+.ke-card:active{
+  transform:translateY(4px) scale(.97) !important;
+  filter:brightness(.93) saturate(.96);
+  box-shadow:
+    inset 0 3px 5px rgba(55,34,22,.28),
+    inset 0 -1px 0 rgba(255,248,220,.36),
+    0 1px 0 rgba(41,32,26,.96),
+    0 4px 9px rgba(0,0,0,.10) !important;
+}
+
+#hud > button:focus-visible,
+#modal button:focus-visible,
+#dishReport button:focus-visible,
+#kitchenElementsClose:focus-visible,
+#marketBack:focus-visible,
+#marketHaggleBtn:focus-visible,
+#marketAcceptBtn:focus-visible,
+#marketCollectBags:focus-visible,
+#marketExtras button:focus-visible,
+#gardenBackBtn:focus-visible,
+.garden-action:focus-visible,
+.ke-card:focus-visible{
+  outline:3px solid rgba(216,182,75,.95) !important;
+  outline-offset:3px;
+}
+
+/* =========================================================
+   HUD
+   ========================================================= */
+#hud{
+  top:18px !important;
+  left:18px !important;
+  display:flex !important;
+  flex-wrap:wrap;
+  gap:12px !important;
+  align-items:stretch !important;
+  max-width:min(92vw, 1100px);
+}
+
+#day,
+#money,
+#hud > button{
+  min-height:52px;
+  display:flex !important;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  overflow:hidden;
+  padding:11px 16px !important;
+  border:3px solid var(--ui-ink) !important;
+  border-radius:18px !important;
+  box-shadow:var(--ui-shadow) !important;
+}
+
+#day::before,
+#money::before,
+#hud > button::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image:var(--ui-dots);
+  background-size:12px 12px;
+  opacity:.28;
+  pointer-events:none;
+}
+
+#day{
+  min-width:112px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.45), rgba(255,255,255,0) 46%),
+    linear-gradient(135deg, var(--ui-wheat), var(--ui-harvest)) !important;
+  font-size:18px !important;
+  font-weight:950 !important;
+  color:var(--ui-ink) !important;
+}
+
+#money{
+  min-width:188px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.45), rgba(255,255,255,0) 46%),
+    linear-gradient(135deg, #bed1a9, var(--ui-money)) !important;
+  color:#1d3218 !important;
+  border-color:#304124 !important;
+  font-size:18px !important;
+  font-weight:950 !important;
+}
+
+#hud > button{
+  font-size:16px !important;
+  font-weight:950 !important;
+  white-space:nowrap;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0) 44%),
+    linear-gradient(135deg, #f6f0da, #eadbb7) !important;
+}
+
+#marketBtn{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.52), rgba(255,255,255,0) 44%),
+    linear-gradient(135deg, #eee1a9, var(--ui-harvest)) !important;
+}
+#kitchenElementsBtn{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.52), rgba(255,255,255,0) 44%),
+    linear-gradient(135deg, #cbd6b0, var(--ui-sage)) !important;
+}
+#serveBtn{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.52), rgba(255,255,255,0) 44%),
+    linear-gradient(135deg, #e6c5a2, var(--ui-clay)) !important;
+}
+#saveBtn{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.52), rgba(255,255,255,0) 44%),
+    linear-gradient(135deg, #c1d6ae, #8fb177) !important;
+}
+#loadBtn{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.52), rgba(255,255,255,0) 44%),
+    linear-gradient(135deg, #f1e8c0, #ddc875) !important;
+}
+
+/* =========================================================
+   Overlays / modal cards
+   ========================================================= */
+#modalShade,
+#kitchenElementsScene,
+#dishReport{
+  background:rgba(19,14,11,.55) !important;
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+}
+
+#modal,
+.kitchen-elements-card,
+#dishReport .dish-card,
+#gardenPanel,
+#crateHelp,
+#marketHoverCard,
+#marketQuantityDialog,
+#marketBagShelf,
+#marketExtras,
+.market-seller-bubble{
+  border:4px solid var(--ui-ink) !important;
+  border-radius:24px !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.72), rgba(255,255,255,.08) 48%),
+    var(--ui-dots),
+    linear-gradient(180deg, #fcf7ea, #efe4c7) !important;
+  background-size:auto, 14px 14px, auto !important;
+  color:var(--ui-ink) !important;
+  box-shadow:0 12px 0 rgba(41,32,26,.96), 0 24px 42px rgba(0,0,0,.22) !important;
+}
+
+#modal header,
+.kitchen-elements-card > header{
+  position:relative;
+  overflow:hidden;
+  border-bottom:4px solid var(--ui-ink) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0) 45%),
+    linear-gradient(135deg, #c4cf9c, var(--ui-olive)) !important;
+  color:#fffdf6 !important;
+}
+
+#modal header::after,
+.kitchen-elements-card > header::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image:var(--ui-dots);
+  background-size:13px 13px;
+  opacity:.22;
+  pointer-events:none;
+}
+
+#modal header h3,
+.kitchen-elements-card h2{
+  margin:0;
+  font-size:28px !important;
+  line-height:1.05;
+  letter-spacing:.02em;
+  color:#fffdf6 !important;
+}
+
+.kitchen-elements-card > header p{
+  color:rgba(255,250,238,.92) !important;
+  font-size:14px !important;
+  font-weight:800 !important;
+  opacity:1 !important;
+}
+
+/* =========================================================
+   Tables / dish modal
+   ========================================================= */
+#modal table{
+  border-collapse:separate !important;
+  border-spacing:0 10px !important;
+  background:transparent !important;
+}
+
+#modal th{
+  background:linear-gradient(135deg, #eee0a2, #d6b24b) !important;
+  color:var(--ui-ink) !important;
+  border:3px solid var(--ui-ink) !important;
+  padding:10px 12px !important;
+  font-size:14px;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+}
+
+#modal td{
+  background:rgba(255,255,255,.68) !important;
+  border-top:3px solid rgba(41,32,26,.2) !important;
+  border-bottom:3px solid rgba(41,32,26,.2) !important;
+  padding:10px 12px !important;
+}
+
+#modal tr td:first-child,
+#modal tr th:first-child{
+  border-left:3px solid rgba(41,32,26,.2) !important;
+  border-top-left-radius:12px;
+  border-bottom-left-radius:12px;
+}
+#modal tr td:last-child,
+#modal tr th:last-child{
+  border-right:3px solid rgba(41,32,26,.2) !important;
+  border-top-right-radius:12px;
+  border-bottom-right-radius:12px;
+}
+
+#dishReport .dish-card{
+  width:min(760px, 92vw) !important;
+  padding:22px !important;
+}
+
+#dishClose,
+#kitchenElementsClose{
+  width:46px !important;
+  height:46px !important;
+  font-size:28px !important;
+  border-radius:50% !important;
+  border:3px solid #5f312a !important;
+  color:#fff !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.26), rgba(255,255,255,0) 42%),
+    linear-gradient(135deg, #d7988e, var(--ui-danger)) !important;
+}
+
+/* =========================================================
+   Kitchen Elements
+   ========================================================= */
+.kitchen-elements-card{
+  width:min(1180px, 94vw) !important;
+  height:min(90vh, 830px) !important;
+}
+
+.kitchen-elements-columns{
+  gap:0 !important;
+}
+
+.kitchen-elements-columns > section{
+  position:relative;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0)),
+    linear-gradient(180deg, #f8f2e2, #efe4c7) !important;
+}
+
+.kitchen-elements-columns > section + section{
+  border-left:3px dashed rgba(95,109,52,.35) !important;
+}
+
+.ke-section-title{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:14px;
+  margin-bottom:14px !important;
+}
+
+.ke-section-title strong{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 14px;
+  border:3px solid var(--ui-ink);
+  border-radius:999px;
+  font-size:20px !important;
+  font-weight:950 !important;
+  color:var(--ui-ink) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.4), rgba(255,255,255,0) 46%),
+    linear-gradient(135deg, #e9dfb0, var(--ui-harvest)) !important;
+}
+
+.kitchen-elements-owned .ke-section-title strong{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.4), rgba(255,255,255,0) 46%),
+    linear-gradient(135deg, #cdd7ad, var(--ui-sage)) !important;
+}
+
+.ke-section-title span{
+  font-size:14px !important;
+  font-weight:900 !important;
+  color:var(--ui-ink-soft) !important;
+}
+
+.ke-grid{
+  gap:14px !important;
+}
+
+.ke-card{
+  display:grid !important;
+  grid-template-columns:86px 1fr !important;
+  gap:14px !important;
+  align-items:center !important;
+  text-align:left !important;
+  padding:14px !important;
+  border-radius:20px !important;
+  box-shadow:var(--ui-shadow-soft) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0) 45%),
+    var(--ui-dots),
+    linear-gradient(135deg, #fdf8ea, #eee2c2) !important;
+  background-size:auto, 12px 12px, auto !important;
+  color:var(--ui-ink) !important;
+}
+
+.ke-card:hover:not(:disabled){
+  box-shadow:0 8px 0 rgba(41,32,26,.95), 0 16px 28px rgba(0,0,0,.16) !important;
+}
+
+.ke-card:disabled{
+  opacity:.58 !important;
+  filter:saturate(.8) !important;
+}
+
+.ke-card img{
+  width:86px !important;
+  height:86px !important;
+  object-fit:contain !important;
+  padding:8px !important;
+  border:3px solid var(--ui-ink) !important;
+  border-radius:18px !important;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(255,255,255,.92), rgba(255,255,255,.72)),
+    linear-gradient(135deg, #f5edd4, #e0cf9b) !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.45);
+}
+
+.ke-card strong{
+  display:block;
+  margin-bottom:6px;
+  font-size:18px !important;
+  font-weight:950 !important;
+}
+
+.ke-card small,
+.ke-card span{
+  display:block;
+  font-size:13px !important;
+  line-height:1.3;
+  color:var(--ui-ink-soft) !important;
+  font-weight:800 !important;
+}
+
+.ke-card .ke-state{
+  display:inline-flex !important;
+  align-items:center;
+  width:max-content;
+  margin-top:8px;
+  padding:5px 10px;
+  border:2px solid var(--ui-ink);
+  border-radius:999px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.4), rgba(255,255,255,0) 46%),
+    linear-gradient(135deg, #d0dcaf, #e7d98a) !important;
+  color:var(--ui-ink) !important;
+  font-size:12px !important;
+  font-weight:950 !important;
+}
+
+/* =========================================================
+   Market redesign
+   ========================================================= */
+#marketScene{
+  background:
+    radial-gradient(circle at 50% 10%, rgba(216,182,75,.14), transparent 28%),
+    radial-gradient(circle at 10% 75%, rgba(125,141,73,.12), transparent 24%),
+    radial-gradient(circle at 85% 80%, rgba(201,140,107,.1), transparent 24%),
+    radial-gradient(circle at center, #62482f 0%, #2f2015 54%, #1b120d 100%) !important;
+}
+
+#marketMoneyLive{
+  border:3px solid #304124 !important;
+  border-radius:18px !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.48), rgba(255,255,255,0) 46%),
+    linear-gradient(135deg, #c2d4b1, var(--ui-money)) !important;
+  color:#21331a !important;
+  box-shadow:var(--ui-shadow) !important;
+  font-size:18px !important;
+  font-weight:950 !important;
+  padding:10px 16px !important;
+}
+
+.market-seller-bubble,
+#marketHoverCard,
+#marketQuantityDialog,
+#marketBagShelf,
+#marketExtras{
+  border-radius:22px !important;
+  padding:16px 18px !important;
+}
+
+.market-seller-bubble{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.56), rgba(255,255,255,0) 48%),
+    var(--ui-dots),
+    linear-gradient(135deg, #f9f1d9, #e7d6ad) !important;
+}
+
+#marketHoverCard,
+#marketQuantityDialog{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.52), rgba(255,255,255,0) 48%),
+    var(--ui-dots),
+    linear-gradient(135deg, #fbf7ea, #eadfbe) !important;
+}
+
+#marketBagShelf,
+#marketExtras{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.44), rgba(255,255,255,0) 48%),
+    var(--ui-dots),
+    linear-gradient(135deg, #f5eed8, #e5d7af) !important;
+}
+
+#marketSellerText,
+#marketHoverCard h3,
+#marketQuantityDialog h3{
+  margin:0 0 8px !important;
+  font-size:22px !important;
+  line-height:1.1;
+  font-weight:950 !important;
+  color:var(--ui-ink) !important;
+}
+
+#marketSellerBubblePrice,
+#marketHoverPrice,
+#marketTotalPrice,
+#marketOfferReadout,
+#marketRoundInfo,
+#marketBagRow{
+  color:var(--ui-olive-deep) !important;
+  font-size:17px !important;
+  font-weight:950 !important;
+}
+
+#marketBack{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,0) 46%),
+    linear-gradient(135deg, #e2d19b, #cba065) !important;
+}
+
+#marketHaggleBtn{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,0) 46%),
+    linear-gradient(135deg, #d7dfb7, var(--ui-olive)) !important;
+  color:#21311a !important;
+}
+
+#marketAcceptBtn,
+#marketCollectBags{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,0) 46%),
+    linear-gradient(135deg, #efe1a7, var(--ui-harvest)) !important;
+}
+
+#marketExtras{
+  border-radius:22px !important;
+}
+
+#marketExtras button{
+  width:100%;
+  margin:0 0 10px 0 !important;
+  justify-content:space-between !important;
+  font-size:15px !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.48), rgba(255,255,255,0) 46%),
+    linear-gradient(135deg, #f6efdd, #e4d5ad) !important;
+}
+#marketExtras button:last-child{
+  margin-bottom:0 !important;
+}
+#marketExtras button span{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:28px;
+  height:28px;
+  padding:0 8px;
+  border:2px solid var(--ui-ink);
+  border-radius:999px;
+  background:#fffdf7;
+  color:var(--ui-ink) !important;
+  font-weight:950 !important;
+}
+
+.market-step{
+  border-radius:12px !important;
+}
+.market-step::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border:2px solid rgba(41,32,26,.82);
+  border-radius:12px;
+  background:rgba(255,250,240,.08);
+  opacity:0;
+  transition:opacity .12s ease;
+}
+.market-step:hover::before,
+.market-step:focus-visible::before{
+  opacity:1;
+}
+
+.market-qty{
+  border:3px solid var(--ui-ink) !important;
+  border-radius:12px !important;
+  background:rgba(253,249,239,.94) !important;
+  box-shadow:0 4px 0 rgba(41,32,26,.92) !important;
+  color:var(--ui-ink) !important;
+  font-weight:950 !important;
+  text-shadow:none !important;
+  letter-spacing:.02em;
+}
+
+/* More refined hover highlight over produce piles */
+.market-pile::after{
+  border:3px solid rgba(95,109,52,.86) !important;
+  border-radius:22px !important;
+}
+
+.market-pile.market-selected{
+  background:rgba(210,190,105,.16) !important;
+  filter:
+    drop-shadow(0 0 8px rgba(216,182,75,.62))
+    drop-shadow(0 0 16px rgba(125,141,73,.35)) !important;
+}
+
+/* =========================================================
+   Garden panels
+   ========================================================= */
+#gardenPanel,
+#crateHelp{
+  color:var(--ui-ink) !important;
+}
+
+#gardenBackBtn{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,0) 46%),
+    linear-gradient(135deg, #e7d79e, #cfa25d) !important;
+}
+
+.garden-action{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,0) 46%),
+    linear-gradient(135deg, #cfdbb0, #b7c684) !important;
+}
+
+/* =========================================================
+   Tiny layout cleanups
+   ========================================================= */
+#hud,
+#marketMoneyLive,
+#marketHoverCard,
+#marketQuantityDialog,
+#marketBagShelf,
+#marketExtras,
+.kitchen-elements-card,
+#modal,
+#gardenPanel,
+#crateHelp,
+#dishReport .dish-card{
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+/* =========================================================
+   Pass #2.1 — hover glow and stronger placement ghost
+   ========================================================= */
+
+/* Make placement ghost easier to read. User requested ~40%. */
+.placement-ghost{
+  opacity:.40 !important;
+  filter:
+    drop-shadow(0 0 4px rgba(50,36,27,.14))
+    drop-shadow(0 2px 5px rgba(0,0,0,.10));
+}
+
+/* =========================================================
+   Pass #2.5 — warm amber gameplay glow + cookware puff + firebox aura
+   ========================================================= */
+
+@keyframes cooksterHoverPopWarm{
+  0%   { transform:scale(1); }
+  46%  { transform:scale(1.085); }
+  100% { transform:scale(1); }
+}
+
+.item > .body,
+.detached-lid .lid-crop,
+.lid-hit .lid-crop{
+  backface-visibility:hidden;
+}
+
+.item.hovered > .body,
+.detached-lid.hovered .lid-crop,
+.lid-hit.hover-lid .lid-crop{
+  transform-origin:center center;
+  animation:cooksterHoverPopWarm .20s cubic-bezier(.2,.9,.28,1) 1;
+  filter:
+    drop-shadow(0 0 8px rgba(194,148,58,.76))
+    drop-shadow(0 0 2px rgba(103,67,31,.72)) !important;
+}
+
+.item.held.valid > .body,
+.item.detached-lid.held.valid .lid-crop{
+  filter:
+    drop-shadow(0 0 8px rgba(194,148,58,.76))
+    drop-shadow(0 0 2px rgba(103,67,31,.72)) !important;
+}
+#fireboxGlow{
+  position:absolute;
+  left:1264px;
+  top:454px;
+  width:138px;
+  height:128px;
+  pointer-events:none;
+  opacity:0;
+  z-index:9;
+  border-radius:48% 52% 46% 54% / 42% 42% 58% 58%;
+  background:
+    radial-gradient(circle at 50% 76%,
+      rgba(255,236,152,.42) 0%,
+      rgba(230,186,82,.30) 26%,
+      rgba(173,108,43,.16) 48%,
+      rgba(94,54,28,.06) 66%,
+      rgba(94,54,28,0) 82%);
+  filter:blur(3px);
+  transform-origin:center bottom;
+  transition:opacity .22s ease;
+}
+#fireboxGlow.live{
+  opacity:1;
+  animation:fireboxAuraPulse 1.65s ease-in-out infinite;
+}
+@keyframes fireboxAuraPulse{
+  0%,100%{transform:scale(1);filter:blur(3px)}
+  50%{transform:scale(1.05);filter:blur(4px)}
+}
+
+#fireboxSparkles{
+  position:absolute;
+  left:1268px;
+  top:450px;
+  width:130px;
+  height:122px;
+  pointer-events:none;
+  opacity:0;
+  z-index:10;
+}
+#fireboxSparkles.live{opacity:1}
+#fireboxSparkles span{
+  position:absolute;
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  opacity:0;
+  transform:translate(-50%,-50%) scale(.22);
+  background:radial-gradient(circle,
+    rgba(255,255,245,.98) 0%,
+    rgba(255,232,159,.95) 28%,
+    rgba(224,183,83,.70) 54%,
+    rgba(224,183,83,0) 76%);
+  box-shadow:
+    0 0 6px rgba(255,242,191,.55),
+    0 0 14px rgba(232,195,105,.22);
+}
+#fireboxSparkles.live span{
+  animation:fireboxSparkRise ease-in-out infinite;
+}
+@keyframes fireboxSparkRise{
+  0%{opacity:0;transform:translate(-50%,0) scale(.20)}
+  18%{opacity:.92}
+  100%{opacity:0;transform:translate(-50%,-34px) scale(.92)}
+}
+
+
+/* Object calibration mode: keep legacy food-calibration HUD buttons hidden.
+   Object perspective editing is handled only by the current dock/panel in js/game.js. */
+body #choppedCalibrationBtn,
+body #choppedCalibrationClearVesselsBtn{
+  display:none!important;
+}
+
+/* Unlimited template cards remain available while object-calibration mode is enabled. */
+.ke-card.calibration-template-card .ke-state{
+  background:#d8b64b!important;
+  color:#29201a!important;
+}
+}

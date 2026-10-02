@@ -1,0 +1,39 @@
+#cooksterRakijaAnimationOverlay{
+  position:fixed;
+  inset:0;
+  z-index:2147483000;
+  overflow:hidden;
+  pointer-events:none;
+  opacity:0;
+  visibility:hidden;
+  transition:none;
+}
+
+#cooksterRakijaAnimationOverlay.is-visible{
+  opacity:1;
+  visibility:visible;
+  transition:opacity 60ms ease,visibility 0s;
+}
+
+#cooksterRakijaAnimationOverlay .rakija-animation-video{
+  position:absolute;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:center;
+  background:transparent;
+  -webkit-mask-image:radial-gradient(ellipse 100% 100% at center,#000 99%,transparent 100%);
+  mask-image:radial-gradient(ellipse 100% 100% at center,#000 99%,transparent 100%);
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+}
+
+@media (prefers-reduced-motion:reduce){
+  #cooksterRakijaAnimationOverlay,
+  #cooksterRakijaAnimationOverlay *{
+    transition-duration:80ms!important;
+  }
+}

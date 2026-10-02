@@ -1,0 +1,96 @@
+{
+  "tableDropSoft": [
+    "assets/sfx/game/tableDropSoft_1.wav",
+    "assets/sfx/game/tableDropSoft_2.wav",
+    "assets/sfx/game/tableDropSoft_3.wav"
+  ],
+  "tableDropBright": [
+    "assets/sfx/game/tableDropBright_1.wav",
+    "assets/sfx/game/tableDropBright_2.wav",
+    "assets/sfx/game/tableDropBright_3.wav"
+  ],
+  "tableDropMediumA": [
+    "assets/sfx/game/tableDropMediumA_1.wav",
+    "assets/sfx/game/tableDropMediumA_2.wav",
+    "assets/sfx/game/tableDropMediumA_3.wav"
+  ],
+  "tableDropMediumB": [
+    "assets/sfx/game/tableDropMediumB_1.wav",
+    "assets/sfx/game/tableDropMediumB_2.wav",
+    "assets/sfx/game/tableDropMediumB_3.wav"
+  ],
+  "tableDropHeavy": [
+    "assets/sfx/game/tableDropHeavy_1.wav",
+    "assets/sfx/game/tableDropHeavy_2.wav",
+    "assets/sfx/game/tableDropHeavy_3.wav"
+  ],
+  "tableDropGlass": [
+    "assets/sfx/game/tableDropGlass_1.wav",
+    "assets/sfx/game/tableDropGlass_2.wav",
+    "assets/sfx/game/tableDropGlass_3.wav"
+  ],
+  "tomatoChop": [
+    "assets/sfx/game/tomatoChop_1.wav",
+    "assets/sfx/game/tomatoChop_2.wav",
+    "assets/sfx/game/tomatoChop_3.wav"
+  ],
+  "boardPlace": [
+    "assets/sfx/game/boardPlace_1.wav",
+    "assets/sfx/game/boardPlace_2.wav",
+    "assets/sfx/game/boardPlace_3.wav"
+  ],
+  "pickup": [
+    "assets/sfx/game/pickup_1.wav",
+    "assets/sfx/game/pickup_2.wav",
+    "assets/sfx/game/pickup_3.wav"
+  ],
+  "uiClick": [
+    "assets/sfx/game/uiClick_1.wav",
+    "assets/sfx/game/uiClick_2.wav",
+    "assets/sfx/game/uiClick_3.wav"
+  ],
+  "stoveDoorOpen": [
+    "assets/sfx/game/stoveDoorOpen_1.wav",
+    "assets/sfx/game/stoveDoorOpen_2.wav"
+  ],
+  "stoveDoorClose": [
+    "assets/sfx/game/stoveDoorClose_1.wav",
+    "assets/sfx/game/stoveDoorClose_2.wav",
+    "assets/sfx/game/stoveDoorClose_3.wav"
+  ],
+  "oilSizzle": [
+    "assets/sfx/game/oilSizzle_1.wav",
+    "assets/sfx/game/oilSizzle_2.wav"
+  ],
+  "panPlace": [
+    "assets/sfx/game/panPlace_1.wav",
+    "assets/sfx/game/panPlace_2.wav"
+  ],
+  "woodDrop": [
+    "assets/sfx/game/woodDrop_1.wav",
+    "assets/sfx/game/woodDrop_2.wav",
+    "assets/sfx/game/woodDrop_3.wav"
+  ],
+  "metalDrop": [
+    "assets/sfx/game/metalDrop_1.wav",
+    "assets/sfx/game/metalDrop_2.wav",
+    "assets/sfx/game/metalDrop_3.wav"
+  ],
+  "lidOpen": [
+    "assets/sfx/game/lidOpen_1.wav",
+    "assets/sfx/game/lidOpen_2.wav"
+  ],
+  "lidClose": [
+    "assets/sfx/game/lidClose_1.wav",
+    "assets/sfx/game/lidClose_2.wav"
+  ],
+  "simmerLoop": [
+    "assets/sfx/game/simmerLoop.wav"
+  ],
+  "sizzleLoop": [
+    "assets/sfx/game/sizzleLoop.wav"
+  ],
+  "morningAmbience": [
+    "assets/sfx/game/morningAmbience.wav"
+  ]
+}
