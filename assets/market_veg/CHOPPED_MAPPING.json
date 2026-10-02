@@ -1,0 +1,146 @@
+{
+  "paprika_zelena": {
+    "source_bbox": [
+      34,
+      45,
+      413,
+      403
+    ],
+    "source_center": [
+      223.5,
+      224.0
+    ],
+    "output_size": [
+      403,
+      382
+    ]
+  },
+  "beli_luk": {
+    "source_bbox": [
+      437,
+      51,
+      816,
+      402
+    ],
+    "source_center": [
+      626.5,
+      226.5
+    ],
+    "output_size": [
+      403,
+      375
+    ]
+  },
+  "sargarepa": {
+    "source_bbox": [
+      843,
+      62,
+      1216,
+      394
+    ],
+    "source_center": [
+      1029.5,
+      228.0
+    ],
+    "output_size": [
+      397,
+      356
+    ]
+  },
+  "zelena_salata": {
+    "source_bbox": [
+      30,
+      447,
+      414,
+      806
+    ],
+    "source_center": [
+      222.0,
+      626.5
+    ],
+    "output_size": [
+      408,
+      383
+    ]
+  },
+  "kupus": {
+    "source_bbox": [
+      436,
+      447,
+      820,
+      800
+    ],
+    "source_center": [
+      628.0,
+      623.5
+    ],
+    "output_size": [
+      408,
+      377
+    ]
+  },
+  "patlidzan": {
+    "source_bbox": [
+      840,
+      460,
+      1223,
+      812
+    ],
+    "source_center": [
+      1031.5,
+      636.0
+    ],
+    "output_size": [
+      407,
+      376
+    ]
+  },
+  "tikvice": {
+    "source_bbox": [
+      30,
+      846,
+      414,
+      1199
+    ],
+    "source_center": [
+      222.0,
+      1022.5
+    ],
+    "output_size": [
+      408,
+      377
+    ]
+  },
+  "rotkvice": {
+    "source_bbox": [
+      445,
+      847,
+      815,
+      1195
+    ],
+    "source_center": [
+      630.0,
+      1021.0
+    ],
+    "output_size": [
+      394,
+      372
+    ]
+  },
+  "persun": {
+    "source_bbox": [
+      840,
+      847,
+      1223,
+      1201
+    ],
+    "source_center": [
+      1031.5,
+      1024.0
+    ],
+    "output_size": [
+      407,
+      378
+    ]
+  }
+}

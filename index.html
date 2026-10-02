@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+
+<html lang="sr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cookster 2D</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23B54A1A'/%3E%3Cpath d='M8 11h16l-2 13H10L8 11Zm3-5h10v3H11V6Z' fill='%23fff3d6'/%3E%3C/svg%3E" rel="icon" type="image/svg+xml"/>
+<link href="css/game.css?v=2.86" rel="stylesheet"/>
+<link href="css/ui-popart-overrides.css?v=2.86" rel="stylesheet"/>
+<link href="css/wood-refill-scene.css?v=2.92" rel="stylesheet"/>
+<link href="css/ui-bottom-buttons.css?v=2.83" rel="stylesheet"/>
+<link href="css/cutura-drink-animation.css?v=2.66" rel="stylesheet"/>
+<link href="css/vessel-food-mask-tool.css" rel="stylesheet"/>
+<link href="css/save-transfer.css" rel="stylesheet"/>
+<link href="css/pantry-scene.css?v=3.11" rel="stylesheet"/>
+</head>
+<body>
+<details id="saveTransfer">
+<summary>Napredak · JSON</summary>
+<div class="save-transfer-content">
+<p>Za prelazak u novi folder izvezi trenutnu igru, pa u novoj kopiji uvezi taj JSON fajl.</p>
+<button id="saveTransferExport" type="button">Izvezi napredak</button>
+<button id="saveTransferImport" type="button">Uvezi napredak</button>
+<button id="saveTransferExportSaved" type="button">Izvezi raniji ručni save</button>
+<input id="saveTransferFile" type="file" accept=".json,application/json" hidden/>
+<p id="saveTransferStatus" role="status" aria-live="polite"></p>
+</div>
+</details>
+<svg aria-hidden="true" width="0" height="0" style="position:absolute"><filter id="cooksterMeshWarp" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.018 0.035" numOctaves="2" seed="7" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter></svg>
+<svg aria-hidden="true" height="0" style="position:absolute" width="0">
+<defs>
+<filter height="150%" id="cooksterSwirlFilter" width="150%" x="-25%" y="-25%">
+<feturbulence basefrequency="0.012 0.03" id="cooksterSwirlNoise" numoctaves="2" result="noise" seed="4" type="fractalNoise"></feturbulence>
+<fedisplacementmap in="SourceGraphic" in2="noise" scale="16" xchannelselector="R" ychannelselector="G"></fedisplacementmap>
+</filter>
+</defs>
+</svg>
+<div id="viewport"><div aria-hidden="true" id="sceneAmbient"></div><div id="scene"><div id="waterStream"></div><div id="waterSplash"></div><div id="tableOccluder"></div><div aria-hidden="true" id="sceneOcclusionLayer"><div aria-hidden="true" class="scene-occluder scene-occluder-left-leg" id="tableLegOccluderLeft"></div><div aria-hidden="true" class="scene-occluder scene-occluder-right-leg" id="tableLegOccluderRight"></div></div><div aria-hidden="true" id="fireTimerBar"><i></i></div><button aria-label="Vrata ložišta" class="stove-hotspot" id="fireboxHotspot"></button><button aria-label="Vrata rerne" class="stove-hotspot" id="ovenHotspot"></button></div></div>
+<button aria-label="Levo" class="edge-arrow left" id="leftArrow">‹</button>
+<button aria-label="Desno" class="edge-arrow right" id="rightArrow">›</button>
+<div id="cursor"></div><div id="label"></div>
+<div id="hud"><div id="day">Dan 1</div><div id="money">Novac: 1000 дин</div><button id="marketBtn">🧺 Pijaca</button><button id="kitchenElementsBtn">🍳 Kuhinjski elementi</button><button id="serveBtn">🍽️ Oceni jelo</button><button id="saveBtn" title="Sačuvaj igru">💾 Sačuvaj</button><button id="loadBtn" title="Učitaj poslednji ručni save">📂 Učitaj</button></div><div aria-hidden="true" hidden="" id="quickToolWheel"><img alt="" class="quick-tool-wheel-art" src="assets/ui/radial_serbian_wheel.png"/><button aria-label="Ruka" class="quick-tool-hotspot kind-tool" data-wheel-tool="hand" style="--hx:50%;--hy:50%;--hw:24%;--hh:24%;" type="button"></button><button aria-label="Metla" class="quick-tool-hotspot kind-tool" data-wheel-tool="metla" style="--hx:25%;--hy:28%;--hw:28%;--hh:30%;" type="button"></button><button aria-label="Nož" class="quick-tool-hotspot kind-tool" data-wheel-tool="noz" style="--hx:76%;--hy:25%;--hw:28%;--hh:29%;" type="button"></button><button aria-label="Sunđer" class="quick-tool-hotspot kind-tool" data-wheel-tool="sundjer" style="--hx:82%;--hy:52%;--hw:28%;--hh:29%;" type="button"></button><button aria-label="Rakija" class="quick-tool-hotspot kind-future" data-wheel-tool="rakija" style="--hx:19%;--hy:66%;--hw:24%;--hh:27%;" type="button"></button><button aria-label="Opanci" class="quick-tool-hotspot kind-future" data-wheel-tool="opanci" style="--hx:44%;--hy:83%;--hw:28%;--hh:22%;" type="button"></button><button aria-label="Zaključano" class="quick-tool-hotspot kind-locked" data-wheel-tool="locked_top" style="--hx:50%;--hy:18%;--hw:22%;--hh:20%;" type="button"></button><button aria-label="Zaključano" class="quick-tool-hotspot kind-locked" data-wheel-tool="locked_bottom" style="--hx:74%;--hy:79%;--hw:23%;--hh:22%;" type="button"></button></div>
+<div id="toast"></div><div aria-hidden="true" id="dishReport"><div class="dish-card"><button aria-label="Zatvori" id="dishClose">×</button><div id="dishReportBody"></div></div></div>
+<div aria-hidden="true" id="kitchenElementsScene">
+<div aria-labelledby="kitchenElementsTitle" aria-modal="true" class="kitchen-elements-card" role="dialog">
+<header>
+<div>
+<h2 id="kitchenElementsTitle">🍳 Kuhinjski elementi</h2>
+<p>Drži posuđe van radne površine dok ti ne zatreba.</p>
+</div>
+<button aria-label="Zatvori" id="kitchenElementsClose">×</button>
+</header>
+<div class="kitchen-elements-columns">
+<section class="kitchen-elements-owned">
+<div class="ke-section-title"><strong>Moja kuhinja</strong><span>Klik = stvori na stolu</span></div>
+<div class="ke-grid" id="kitchenOwnedGrid"></div>
+</section>
+<section class="kitchen-elements-shop">
+<div class="ke-section-title"><strong>Prodavnica</strong><span id="kitchenShopMoney"></span></div>
+<div class="ke-grid" id="kitchenShopGrid"></div>
+</section>
+</div>
+</div>
+</div>
+<div aria-hidden="true" id="marketScene">
+<div id="marketStage">
+<img alt="Srpska pijaca" class="market-art" src="assets/market_scene_serbian_stall.png"/>
+<div id="marketMoneyLive">1000 дин</div>
+<button aria-label="Smanji količinu paradajza" class="market-step" id="marketMinusTomato"></button>
+<div class="market-qty" id="marketQtyTomato"></div>
+<button aria-label="Povećaj količinu paradajza" class="market-step" id="marketPlusTomato"></button>
+<button aria-label="Kupi gajbicu paradajza" class="market-hotspot" id="marketBuyTomato"></button>
+<button aria-label="Smanji količinu paprika" class="market-step" id="marketMinusPepper"></button>
+<div class="market-qty" id="marketQtyPepper"></div>
+<button aria-label="Povećaj količinu paprika" class="market-step" id="marketPlusPepper"></button>
+<button aria-label="Kupi gajbicu paprika" class="market-hotspot" id="marketBuyPepper"></button>
+<button aria-label="Nazad u kuhinju" class="market-hotspot" id="marketBack"></button>
+<div id="marketNotice">Пређи мишем преко производа</div>
+<div aria-label="Pijačni proizvodi" id="marketHoverLayer">
+<button aria-label="Парадајз" class="market-pile pile-tomato" data-key="paradajz" data-product="Парадајз"></button>
+<button aria-label="Краставац" class="market-pile pile-cucumber" data-key="krastavac" data-product="Краставац"></button>
+<button aria-label="Црвена паприка" class="market-pile pile-pepper-red" data-key="paprika_crvena" data-product="Црвена паприка"></button>
+<button aria-label="Зелена паприка" class="market-pile pile-pepper-green" data-key="paprika_zelena" data-product="Зелена паприка"></button>
+<button aria-label="Црни лук" class="market-pile pile-onion" data-key="luk" data-product="Црни лук"></button>
+<button aria-label="Бели лук" class="market-pile pile-garlic" data-key="beli_luk" data-product="Бели лук"></button>
+<button aria-label="Шаргарепа" class="market-pile pile-carrot" data-key="sargarepa" data-product="Шаргарепа"></button>
+<button aria-label="Зелена салата" class="market-pile pile-lettuce" data-key="zelena_salata" data-product="Зелена салата"></button>
+<button aria-label="Купус" class="market-pile pile-cabbage" data-key="kupus" data-product="Купус"></button>
+<button aria-label="Патлиџан" class="market-pile pile-eggplant" data-key="patlidzan" data-product="Патлиџан"></button>
+<button aria-label="Тиквице" class="market-pile pile-zucchini" data-key="tikvice" data-product="Тиквице"></button>
+<button aria-label="Ротквице" class="market-pile pile-radish" data-key="rotkvice" data-product="Ротквице"></button>
+<button aria-label="Першун" class="market-pile pile-parsley" data-key="persun" data-product="Першун"></button>
+</div>
+<section aria-label="Корпа за куповину" class="market-cart" id="marketCart">
+<strong>КОРПА <span id="marketCartCount">0</span></strong>
+<div aria-live="polite" class="market-cart-items" id="marketCartItems">Изабери поврће са тезге.</div>
+<div class="market-cart-total" id="marketCartTotal"></div>
+<button id="marketCartBuy" type="button" disabled>КУПИ СВЕ · ЦЕНКАЈ СЕ</button>
+</section>
+<div aria-hidden="true" aria-live="polite" class="market-seller-bubble" id="marketSellerBubble">
+<div id="marketSellerText"></div>
+<div aria-hidden="true" class="market-seller-bubble-price" id="marketSellerBubblePrice"></div>
+</div>
+<section aria-hidden="true" aria-label="Ценкање" class="market-bargain-panel" id="marketBargainPanel">
+<button aria-label="Затвори ценкање" class="market-bargain-close" id="marketBargainClose" type="button">×</button>
+<div class="market-bargain-head">
+<strong id="marketBargainProduct">Производ</strong>
+<span id="marketSellerAskWrap">Продавац тражи: <b id="marketSellerPrice">0 дин</b></span>
+</div>
+<div class="market-quantity-step" id="marketQuantityStep">
+<div class="market-quantity-title">Колико желиш?</div>
+<div class="market-quantity-buttons">
+<button data-kg="0.5" type="button">500 г</button>
+<button data-kg="1" type="button">1 кг</button>
+<button data-kg="1.5" type="button">1,5 кг</button>
+<button data-kg="2" type="button">2 кг</button>
+</div>
+</div>
+<div aria-hidden="true" class="market-haggle-step" id="marketHaggleStep">
+<div class="market-offer-readout">
+<span>Твоја понуда</span>
+<strong id="marketOfferValue">0 дин</strong>
+</div>
+<div class="market-slider-row">
+<span id="marketOfferMin">0</span>
+<input aria-label="Твоја понуда" id="marketOfferSlider" max="100" min="0" step="5" type="range" value="50"/>
+<span id="marketOfferMax">0</span>
+</div>
+<div class="market-bargain-actions">
+<button id="marketHaggleBtn" type="button">🤝 ЦЕНКАЈ СЕ</button>
+<button id="marketAcceptBtn" type="button">ПРИХВАТИ ЦЕНУ</button>
+</div>
+<div class="market-round-info" id="marketRoundInfo">Ценкање 1/5</div>
+</div>
+</section>
+<div aria-label="Купљене кесе" class="market-bag-shelf" id="marketBagShelf">
+<div class="market-bag-row" id="marketBagRow"></div>
+<button class="market-collect-bags" id="marketCollectBags" type="button">ПОКУПИ СВЕ КЕСЕ</button>
+</div>
+<div class="market-extras" id="marketExtras">
+<strong>Još namirnica</strong>
+<button id="marketBuyOnion">🧅 Luk — 200 дин / gajbica</button>
+<button id="marketBuyCucumber">🥒 Krastavac — 280 дин / gajbica (10)</button>
+<button id="marketBuyOil">🫒 Ulje — 120 дин</button>
+<button id="marketBuySalt">🧂 So — 60 дин</button>
+<div class="market-seed-divider">Семенке за башту</div>
+<button id="marketBuyTomatoSeeds">🌱 Семе парадајза — 45 дин <span id="seedTomatoCount">0</span></button>
+<button id="marketBuyCucumberSeeds">🥒 Семе краставца — 40 дин <span id="seedCucumberCount">0</span></button>
+</div>
+</div>
+</div>
+<div aria-hidden="true" id="gardenScene">
+<div aria-label="Bašta" id="gardenStage">
+<img alt="Srpska bašta" id="gardenArt" src="assets/garden_serbian_popart.png"/>
+<button aria-label="Povratak u kuhinju" class="garden-action garden-back" id="gardenBack" type="button">← KUHINJA</button>
+<button aria-label="Uzmi praznu gajbu" class="garden-action garden-crate-source" id="gardenCrateSource" type="button">
+<img alt="" src="assets/gajbica_paradajz_0.png"/><span>+ prazna gajba</span>
+</button>
+<div id="gardenCrateLayer"></div>
+<div aria-hidden="true" id="gardenBedLayer"></div>
+</div>
+</div>
+<div aria-hidden="true" id="woodSupplyScene">
+<div aria-label="Dvorište za punjenje korpe" id="woodSupplyFrame">
+<img alt="Dvorište sa gomilom cjepanica" class="wood-supply-art" id="woodSupplyArt" src="assets/wood_basket/wood-supply-yard.png?v=2.87"/>
+<img alt="" aria-hidden="true" class="wood-supply-wind wood-supply-wind-left" src="assets/wood_basket/wood-supply-leaves-left.png?v=2.87"/>
+<img alt="" aria-hidden="true" class="wood-supply-wind wood-supply-wind-center" src="assets/wood_basket/wood-supply-leaves-center.png?v=2.87"/>
+<img alt="" aria-hidden="true" class="wood-supply-wind wood-supply-wind-right" src="assets/wood_basket/wood-supply-leaves-right.png?v=2.87"/>
+<header class="wood-supply-hud">
+<strong>Drvarnica</strong>
+<p aria-live="polite" id="woodSupplyMessage">Prevuci cjepanicu sa gomile u korpu.</p>
+<output aria-label="Broj ubačenih cjepanica" id="woodSupplyCount">0 / 4</output>
+</header>
+<button aria-label="Uzmi cjepanicu sa gomile i prevuci je u korpu" class="wood-supply-pile-hit" id="woodSupplyPile" type="button"></button>
+<div class="wood-supply-tools">
+<button id="woodSupplyScaleToggle" type="button">Skala korpe</button>
+<button id="woodSupplyShadowToggle" type="button">Senka korpe napolju</button>
+</div>
+<div class="wood-supply-scale-panel" id="woodSupplyScalePanel" hidden>
+<div class="wood-supply-scale-title">Korpa · veličina i perspektiva</div>
+<label>Veličina <input id="woodSupplyScale" type="range" min="0.5" max="2.2" step="0.01"/><output id="woodSupplyScaleValue"></output></label>
+<label>Nagib napred/nazad <input id="woodSupplyTiltX" type="range" min="-55" max="55" step="1"/><output id="woodSupplyTiltXValue"></output></label>
+<label>Bočni nagib <input id="woodSupplyTiltY" type="range" min="-55" max="55" step="1"/><output id="woodSupplyTiltYValue"></output></label>
+<div class="wood-supply-scale-actions"><button id="woodSupplyScaleReset" type="button">Resetuj</button><button id="woodSupplyScaleExport" type="button">Izvezi JSON</button></div>
+</div>
+<div aria-hidden="true" class="wood-supply-contact-shadow" id="woodSupplyShadow"></div>
+<img alt="Prazna korpa za drva" class="wood-supply-basket" id="woodSupplyBasket" draggable="false" src="assets/wood_basket/basket-empty.png?v=2.87"/>
+<div aria-hidden="true" id="woodSupplyLogLayer"></div>
+<div aria-hidden="true" aria-label="Opcije korpe" class="wood-supply-context-menu" id="woodSupplyContextMenu" role="menu" hidden>
+<button id="woodSupplyReturn" role="menuitem" type="button">Natrag u kuću</button>
+</div>
+</div>
+</div>
+<div id="crateHelp">Gajbica: 10 komada povrća<br/>levi klik = uzmi 1 komad · desni = nosi celu gajbicu<br/>na stolu / ispod stola / na podu menja perspektivu</div>
+<div id="modalShade"><div id="modal"><header><span>Pijaca — paradajz</span><button id="closeModal">Zatvori</button></header><table><thead><tr><th>Namirnica</th><th>Cena</th><th></th></tr></thead><tbody id="marketRows"></tbody></table></div></div>
+<script src="js/core/build-info.js?v=3.12"></script>
+<script>(()=>{try{if(!localStorage.getItem('cookster.calibration-removal.v1')){['cookster.chopped-calibration.v1','cookster.vessel-depth-calibration.v1','cookster.vessel-food-area.v1','cookster.stain-calibration.v1'].forEach(k=>localStorage.removeItem(k));localStorage.setItem('cookster.calibration-removal.v1','done')}}catch(_){}})();</script>
+<script>window.__COOKSTER_IMPORTED_GEOMETRY__={"serpa_plava":{"bottom":[[27,51],[30.5,44.5],[37,40],[45,37.2],[53,37],[61,39.5],[68,44],[73,50.5],[69,55],[61.5,58.5],[52,60.3],[42,59.8],[34,56.7]],"full":[[26,51],[24.8,45],[26,38.5],[30,32.5],[36.5,27.8],[44.5,24.7],[53,24],[61,26.3],[67.8,31],[72,37],[74.5,44],[74,50],[69,55],[61.5,58.5],[52,60.3],[42,59.8],[34,56.7]]},"serpa_velika":{"bottom":[[23.303,51.995],[36.653,39.395],[54.218,31.613],[72.782,39.022],[81.657,53.542],[69.528,64.897],[48.375,69.737],[30.154,66.585],[21.195,61.943]],"full":[[17.013,45.909],[23.8,32.623],[34.691,22.113],[47.95,19.139],[59.315,19.139],[71.086,23.393],[78.563,30.344],[82.451,41.803],[82.6,51.76],[72.889,61.772],[60.735,67.522],[44.635,68.514],[33.744,66.134],[23.169,59.789],[18.151,54.202]]},"tiganj_veliki":{"bottom":[[68.567,71.562],[80.958,64.608],[88.915,50.3],[86.828,35.189],[75.089,22.485],[50.426,15.456],[36.351,21.682],[22.916,29.973],[18.351,41.875],[17.177,51.904],[23.307,62.335],[33.872,70.225],[50.046,73.568]],"full":[[63.676,12.99],[75.423,17.128],[84.666,24.025],[90.058,32.498],[91.792,42.745],[90.636,52.204],[83.511,62.844],[68.683,70.135],[52.506,72.894],[34.597,68.559],[24.775,62.056],[16.109,53.386],[16.302,38.41],[19.961,29.149],[26.701,22.055],[36.137,16.734],[51.736,12.596]]},"tiganj_mali":{"bottom":[[41.676,21.502],[69.593,19.84],[83.67,28.069],[88.724,40.577],[84.176,52.061],[70.704,61.712],[47.826,69.598],[25.173,65.784],[14.063,58.419],[13.053,45.267],[19.544,37.147],[27.563,27.351]],"full":[[64.307,12.818],[80.179,20.998],[86.752,31.368],[87.233,47.289],[76.812,57.66],[57.734,65.401],[33.527,65.109],[20.221,57.368],[13.808,47.289],[13.808,35.02],[22.144,22.459],[35.932,14.863],[51.322,11.504]]},"vangla_srednja":{"bottom":[[19.554,66.21],[18.005,53.744],[23.814,43.317],[34.658,33.343],[50.343,30.17],[64.285,33.116],[74.935,40.37],[81.131,48.983],[82.874,59.637],[79.776,65.304],[72.319,72.642],[53.265,79.714],[38.394,78.082],[28.479,74.274],[22.846,70.064]],"full":[]},"lavor_emajl_veliki":{"bottom":[[51.454,29.841],[65.097,31.188],[73.887,35.036],[81.758,40.039],[88.377,45.553],[90.901,49.412],[88.251,54.694],[77.429,60.242],[67.328,64.475],[54.602,65.052],[41.046,68.7],[26.408,65.699],[14.266,60.696],[13.018,54.86],[16.427,46.388],[21.149,39.076],[31.907,32.15],[43.202,30.015]],"full":[]}};</script>
+<script>window.__COOKSTER_IMPORTED_CALIBRATION__={"serpa_velika":{"luk_diced":{"offsetX":-11.747,"offsetY":-12.125,"scale":0.83,"rotation":18.88,"tilt":-11.48},"paprika_diced":{"offsetX":1.328,"offsetY":-7.385,"scale":0.91,"rotation":-7.08,"tilt":4.1},"beli_luk_diced":{"offsetX":12.792,"offsetY":-33.618,"scale":0.64,"rotation":-35.4,"tilt":32.8},"paprika_zelena_diced":{"offsetX":-14.816,"offsetY":-15.616,"scale":1.01,"rotation":31.86,"tilt":-17.22},"rotkvice_diced":{"offsetX":17.746,"offsetY":-102.675,"scale":1.1,"rotation":-172.28,"tilt":-24.7},"patlidzan_diced":{"offsetX":10.6,"offsetY":6.301,"scale":1.09,"rotation":-21.24,"tilt":2.46},"sargarepa_diced":{"offsetX":-9.185,"offsetY":-12.242,"scale":1.01,"rotation":16.52,"tilt":-9.02},"zelena_salata_diced":{"offsetX":1.821,"offsetY":12.919,"scale":1.19,"rotation":-3.54,"tilt":2.46},"kupus_diced":{"offsetX":-13.801,"offsetY":-0.388,"scale":1.09,"rotation":11.8,"tilt":-18.86},"tikvice_diced":{"offsetX":9.526,"offsetY":10.795,"scale":1,"rotation":-12.98,"tilt":7.38},"persun_diced":{"offsetX":-29.676,"offsetY":-63.807,"scale":0.91,"rotation":139.24,"tilt":31.16},"krastavac_diced":{"offsetX":0.112,"offsetY":-1.86,"scale":0.86,"rotation":-3.54,"tilt":-0.82},"paprika_zelena":{"offsetX":1.362,"offsetY":16.678,"scale":0.37,"rotation":0,"tilt":0},"zelena_salata":{"offsetX":12.477,"offsetY":-50.824,"scale":1,"rotation":0,"tilt":0},"paradajz":{"offsetX":-18.722,"offsetY":-28.043,"scale":1,"rotation":0,"tilt":0},"sargarepa":{"offsetX":-0.321,"offsetY":-59.64,"scale":0.82,"rotation":9.44,"tilt":0},"patlidzan":{"offsetX":-15.819,"offsetY":-24.918,"scale":0.82,"rotation":123.9,"tilt":22.96},"rotkvice":{"offsetX":-12.083,"offsetY":-15.537,"scale":0.73,"rotation":0,"tilt":0},"persun":{"offsetX":-10.822,"offsetY":12.174,"scale":0.55,"rotation":-7.08,"tilt":0},"luk":{"offsetX":8.331,"offsetY":25.739,"scale":0.29,"rotation":0,"tilt":0},"paprika":{"offsetX":0,"offsetY":0,"scale":0.65,"rotation":0,"tilt":0},"krastavac":{"offsetX":0,"offsetY":0,"scale":0.46,"rotation":0,"tilt":0},"tikvice":{"offsetX":0,"offsetY":0,"scale":0.82,"rotation":0,"tilt":0},"paradajz_diced":{"offsetX":-2.533,"offsetY":7.185,"scale":1.1,"rotation":-3.54,"tilt":-8.2}},"tiganj_veliki":{"paradajz_diced":{"offsetX":12.068,"offsetY":-74.194,"scale":0.74,"rotation":705.64,"tilt":12.3},"krastavac_diced":{"offsetX":4.442,"offsetY":-71.061,"scale":0.65,"rotation":-8.26,"tilt":0.82},"paprika_diced":{"offsetX":0.942,"offsetY":-71.917,"scale":0.64,"rotation":0,"tilt":0},"paprika_zelena_diced":{"offsetX":0.563,"offsetY":-69.742,"scale":0.73,"rotation":0,"tilt":0},"luk_diced":{"offsetX":2.5,"offsetY":-71.239,"scale":0.65,"rotation":-5.9,"tilt":1.64},"beli_luk_diced":{"offsetX":0.157,"offsetY":-80.351,"scale":0.47,"rotation":1.18,"tilt":-0.82},"sargarepa_diced":{"offsetX":1.572,"offsetY":-68.81,"scale":0.64,"rotation":0,"tilt":0},"zelena_salata_diced":{"offsetX":1.109,"offsetY":-70.359,"scale":0.64,"rotation":3.54,"tilt":5.74},"kupus_diced":{"offsetX":-0.001,"offsetY":-68.33,"scale":0.64,"rotation":0,"tilt":0},"patlidzan_diced":{"offsetX":1.386,"offsetY":-67.991,"scale":0.64,"rotation":0,"tilt":0},"tikvice_diced":{"offsetX":-0.547,"offsetY":-63.949,"scale":0.64,"rotation":0,"tilt":0},"rotkvice_diced":{"offsetX":-1.019,"offsetY":-59.862,"scale":0.73,"rotation":0,"tilt":0},"persun_diced":{"offsetX":0.581,"offsetY":-65.128,"scale":0.64,"rotation":0,"tilt":0}},"vangla_srednja":{"paradajz_diced":{"offsetX":5.901,"offsetY":24.78,"scale":1.27,"rotation":0,"tilt":0},"paprika_diced":{"offsetX":-10.817,"offsetY":18.88,"scale":1.54,"rotation":0,"tilt":0},"paprika_zelena_diced":{"offsetX":-3.934,"offsetY":-14.16,"scale":1.36,"rotation":0,"tilt":0},"sargarepa_diced":{"offsetX":2.95,"offsetY":-18.88,"scale":1.09,"rotation":0,"tilt":0},"zelena_salata_diced":{"offsetX":0,"offsetY":0,"scale":0.91,"rotation":0,"tilt":0},"patlidzan_diced":{"offsetX":0,"offsetY":0,"scale":0.91,"rotation":0,"tilt":0},"tikvice_diced":{"offsetX":0,"offsetY":0,"scale":0.82,"rotation":0,"tilt":0},"rotkvice_diced":{"offsetX":0,"offsetY":0,"scale":1,"rotation":0,"tilt":0},"persun_diced":{"offsetX":0,"offsetY":0,"scale":0.82,"rotation":8.26,"tilt":22.14},"krastavac_diced":{"offsetX":0,"offsetY":0,"scale":1.18,"rotation":0,"tilt":0},"beli_luk_diced":{"offsetX":0,"offsetY":0,"scale":0.73,"rotation":0,"tilt":0},"kupus_diced":{"offsetX":0.983,"offsetY":12.98,"scale":1.01,"rotation":0,"tilt":0}},"tiganj_mali":{"paradajz_diced":{"offsetX":-3.95,"offsetY":-66.512,"scale":0.82,"rotation":5.9,"tilt":-4.1},"krastavac_diced":{"offsetX":1.211,"offsetY":-67.963,"scale":0.73,"rotation":0,"tilt":0},"paprika_zelena_diced":{"offsetX":1.69,"offsetY":-66.717,"scale":0.73,"rotation":0,"tilt":0},"beli_luk_diced":{"offsetX":-0.563,"offsetY":-81.249,"scale":0.46,"rotation":0,"tilt":0},"kupus_diced":{"offsetX":1.127,"offsetY":-63.414,"scale":0.73,"rotation":0,"tilt":0},"patlidzan_diced":{"offsetX":0.563,"offsetY":-70.019,"scale":0.64,"rotation":0,"tilt":0},"rotkvice_diced":{"offsetX":-0.564,"offsetY":-58.129,"scale":0.73,"rotation":0,"tilt":0},"paprika_diced":{"offsetX":0.564,"offsetY":-72.661,"scale":0.82,"rotation":0,"tilt":0},"luk_diced":{"offsetX":-0.563,"offsetY":-66.717,"scale":0.73,"rotation":0,"tilt":0},"sargarepa_diced":{"offsetX":2.254,"offsetY":-66.716,"scale":0.73,"rotation":0,"tilt":0},"zelena_salata_diced":{"offsetX":0,"offsetY":-68.038,"scale":0.64,"rotation":0,"tilt":0},"tikvice_diced":{"offsetX":0.563,"offsetY":-63.413,"scale":0.64,"rotation":0,"tilt":0},"persun_diced":{"offsetX":0.563,"offsetY":-62.093,"scale":0.46,"rotation":0,"tilt":0}},"lavor_emajl_veliki":{"paradajz_diced":{"offsetX":-2.253,"offsetY":-3.54,"scale":1.27,"rotation":-9.44,"tilt":-39.36},"krastavac_diced":{"offsetX":26.211,"offsetY":3.54,"scale":0.82,"rotation":0,"tilt":0},"sargarepa_diced":{"offsetX":-7.863,"offsetY":-1.18,"scale":1,"rotation":0,"tilt":0},"patlidzan_diced":{"offsetX":0,"offsetY":0,"scale":0.91,"rotation":0,"tilt":0},"tikvice_diced":{"offsetX":0,"offsetY":0,"scale":0.82,"rotation":0,"tilt":0}}};</script>
+<script src="js/core/state.js"></script>
+<script src="js/core/save-file.js"></script>
+<script src="js/core/save.js"></script>
+<script src="js/core/placement-geometry.js"></script>
+<script src="js/core/scene-surfaces.js"></script>
+<script src="js/core/stove-zones.js"></script>
+<script src="js/core/surface-cast.js"></script>
+<script src="js/core/tween.js"></script>
+<script src="js/core/placement.js"></script>
+<script src="js/data/catalog.js?v=3.02"></script>
+<script src="js/core/pan.js"></script>
+<script src="js/core/food-state-machine.js"></script>
+<script src="js/core/transfer-thermal.js"></script>
+<script src="js/core/cooking-system.js"></script>
+<script src="js/core/food-mesh.js"></script>
+<script src="js/core/container.js"></script>
+<script src="js/core/recipes.js"></script>
+<script src="js/core/collision.js?v=2.95"></script>
+<script src="js/core/vessel-food-calibration.js"></script>
+<script>(()=>{try{if(!localStorage.getItem('cookster.object-perspective-legacy-cleanup.v1')){localStorage.removeItem('cookster.geometry-perspective-corrections.v1');localStorage.setItem('cookster.object-perspective-legacy-cleanup.v1','done')}}catch(_){}})();</script>
+<script>window.__COOKSTER_OBJECT_CALIBRATION__=true;</script>
+<script src="js/data/perspective-master.js?v=3.00"></script>
+<script src="js/pantry-camera.js?v=3.11"></script>
+<script src="js/pantry-scene.js?v=3.11"></script>
+<script src="js/game.js?v=3.12"></script>
+<script src="js/wood-refill-scene.js?v=2.93"></script>
+<script src="js/ui-bottom-buttons.js?v=2.83"></script>
+<script src="js/ui-button-calibration.js?v=2.76"></script>
+<script src="js/cutura-drink-animation.js?v=2.74"></script>
+<script src="js/core/scene-zone-calibration.js"></script>
+<script src="js/canvas-mesh.js"></script>
+<script src="js/garden.js"></script>
+<script src="js/market-hover.js"></script>
+<script src="js/vessel-food-mask-tool.js"></script>
+<script src="js/save-transfer-ui.js"></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+{
+  "source_9": "colorful_chopped_ingredient_sprite_sheet.png",
+  "mapping_9": [
+    [
+      "paprika_zelena",
+      "beli_luk",
+      "sargarepa"
+    ],
+    [
+      "zelena_salata",
+      "kupus",
+      "patlidzan"
+    ],
+    [
+      "tikvice",
+      "rotkvice",
+      "persun"
+    ]
+  ],
+  "source_4": "diced_vegetable_sprite_collection.png",
+  "mapping_4": [
+    [
+      "paradajz",
+      "paprika"
+    ],
+    [
+      "krastavac",
+      "luk"
+    ]
+  ],
+  "assets": {
+    "beli_luk": "assets/diced_veg/beli_luk_diced.png",
+    "krastavac": "assets/diced_veg/krastavac_diced.png",
+    "kupus": "assets/diced_veg/kupus_diced.png",
+    "luk": "assets/diced_veg/luk_diced.png",
+    "paprika": "assets/diced_veg/paprika_diced.png",
+    "paprika_zelena": "assets/diced_veg/paprika_zelena_diced.png",
+    "paradajz": "assets/diced_veg/paradajz_diced.png",
+    "patlidzan": "assets/diced_veg/patlidzan_diced_board.png",
+    "persun": "assets/diced_veg/persun_diced.png",
+    "rotkvice": "assets/diced_veg/rotkvice_diced.png",
+    "sargarepa": "assets/diced_veg/sargarepa_diced.png",
+    "tikvice": "assets/diced_veg/tikvice_diced.png",
+    "zelena_salata": "assets/diced_veg/zelena_salata_diced.png"
+  }
+}

@@ -1,0 +1,320 @@
+/* Cookster — vessel food visibility calibration tool */
+#vesselFoodMaskBtn{
+  border-color:#174b3b;
+  background:#d6f2d4;
+  color:#173d30;
+}
+#vesselFoodMaskBtn.active{
+  background:#8bd9a1;
+  box-shadow:0 0 0 3px rgba(56,142,88,.25);
+}
+#vesselFoodMaskTool{
+  position:fixed;
+  inset:0;
+  z-index:12000;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(20,12,7,.72);
+  font-family:inherit;
+}
+#vesselFoodMaskTool.open{display:flex}
+.vfmm-card{
+  width:min(1120px,96vw);
+  height:min(900px,94vh);
+  min-height:560px;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  overflow:hidden;
+  border:4px solid #351b0d;
+  border-radius:22px;
+  background:#fff4d8;
+  color:#351b0d;
+  box-shadow:0 18px 60px rgba(0,0,0,.42);
+}
+.vfmm-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  padding:16px 20px 13px;
+  border-bottom:2px solid rgba(53,27,13,.18);
+}
+.vfmm-head h2{margin:0 0 4px;font-size:clamp(18px,2.2vw,28px)}
+.vfmm-head p{margin:0;max-width:760px;line-height:1.35;font-size:13px;opacity:.82}
+#vesselFoodMaskClose{
+  flex:0 0 auto;
+  width:40px;
+  height:40px;
+  border:3px solid #351b0d;
+  border-radius:50%;
+  background:#f3d6a4;
+  color:#351b0d;
+  font-size:25px;
+  font-weight:900;
+  cursor:pointer;
+}
+.vfmm-body{
+  min-height:0;
+  display:grid;
+  grid-template-columns:260px minmax(0,1fr);
+  gap:16px;
+  padding:16px;
+}
+.vfmm-controls{
+  min-height:0;
+  overflow:auto;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.vfmm-label{
+  display:block;
+  margin-bottom:5px;
+  font-size:12px;
+  font-weight:950;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+}
+#vesselFoodMaskVessel{
+  width:100%;
+  padding:10px 9px;
+  border:3px solid #351b0d;
+  border-radius:11px;
+  background:#fffaf0;
+  color:#351b0d;
+  font:inherit;
+  font-weight:850;
+}
+.vfmm-mode-list{
+  display:grid;
+  gap:8px;
+}
+.vfmm-mode{
+  width:100%;
+  padding:11px 12px;
+  border:3px solid #654022;
+  border-radius:12px;
+  background:#fffaf0;
+  color:#351b0d;
+  text-align:left;
+  font:inherit;
+  font-weight:850;
+  cursor:pointer;
+}
+.vfmm-mode small{display:block;margin-top:3px;font-weight:600;opacity:.7}
+.vfmm-mode.active[data-mode="mask"]{
+  border-color:#ad2f22;
+  background:#ffd9d2;
+  box-shadow:0 0 0 3px rgba(216,67,50,.18);
+}
+.vfmm-mode.active[data-mode="foodVisible"]{
+  border-color:#237345;
+  background:#d5f1dc;
+  box-shadow:0 0 0 3px rgba(46,125,50,.18);
+}
+.vfmm-mode.active[data-mode="bottom"]{
+  border-color:#1e668d;
+  background:#d2edff;
+  box-shadow:0 0 0 3px rgba(30,110,157,.18);
+}
+.vfmm-mode.active[data-mode="depthBottom"]{
+  border-color:#9a6710;
+  background:#ffedb7;
+  box-shadow:0 0 0 3px rgba(198,140,25,.18);
+}
+.vfmm-mode.active[data-mode="depthTop"]{
+  border-color:#68439a;
+  background:#eadbff;
+  box-shadow:0 0 0 3px rgba(112,73,166,.18);
+}
+.vfmm-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+}
+.vfmm-actions button,.vfmm-footer button{
+  padding:9px 8px;
+  border:2px solid #351b0d;
+  border-radius:10px;
+  background:#f2dfb5;
+  color:#351b0d;
+  font:inherit;
+  font-weight:900;
+  cursor:pointer;
+}
+.vfmm-actions button:hover,.vfmm-footer button:hover,.vfmm-mode:hover{filter:brightness(1.04)}
+#vesselFoodMaskClearAll{grid-column:1 / -1;background:#f7c9ad}
+.vfmm-help{
+  padding:11px;
+  border:2px dashed rgba(53,27,13,.3);
+  border-radius:11px;
+  line-height:1.42;
+  font-size:12px;
+  background:rgba(255,255,255,.34);
+}
+.vfmm-legend{
+  display:grid;
+  gap:6px;
+  padding:10px;
+  border-radius:11px;
+  background:rgba(255,255,255,.35);
+  font-size:12px;
+  font-weight:800;
+}
+.vfmm-legend span{display:flex;align-items:center;gap:7px}
+.vfmm-dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+.vfmm-dot.mask{background:#e53e30;border:2px solid #8e1d16}
+.vfmm-dot.food{background:#42b96b;border:2px solid #176b38}
+.vfmm-dot.bottom{background:#49a9dd;border:2px solid #145d83}
+.vfmm-status{
+  min-height:37px;
+  padding:9px 10px;
+  border-radius:10px;
+  background:#3b281b;
+  color:#fff6e4;
+  font-size:12px;
+  line-height:1.35;
+}
+.vfmm-canvas-wrap{
+  min-width:0;
+  min-height:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:auto;
+  padding:10px;
+  border:3px solid #8a6039;
+  border-radius:16px;
+  background:
+    linear-gradient(45deg,rgba(100,65,35,.06) 25%,transparent 25%,transparent 75%,rgba(100,65,35,.06) 75%),
+    linear-gradient(45deg,rgba(100,65,35,.06) 25%,transparent 25%,transparent 75%,rgba(100,65,35,.06) 75%);
+  background-size:28px 28px;
+  background-position:0 0,14px 14px;
+}
+.vfmm-stage{
+  position:relative;
+  width:min(100%,760px);
+  aspect-ratio:1.45;
+  flex:0 0 auto;
+  border:3px solid rgba(53,27,13,.75);
+  border-radius:12px;
+  overflow:hidden;
+  background:#e8d1a7;
+  box-shadow:0 7px 18px rgba(58,32,14,.23);
+  touch-action:none;
+}
+.vfmm-stage img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:fill;
+  user-select:none;
+  -webkit-user-drag:none;
+}
+.vfmm-stage svg{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  overflow:visible;
+}
+.vfmm-grid{
+  fill:none;
+  stroke:rgba(53,27,13,.2);
+  stroke-width:.22;
+  vector-effect:non-scaling-stroke;
+  pointer-events:none;
+}
+.vfmm-polygon{
+  stroke-width:.65;
+  stroke-linejoin:round;
+  vector-effect:non-scaling-stroke;
+  pointer-events:none;
+}
+.vfmm-polygon.mask{fill:rgba(229,62,48,.28);stroke:#b6291e}
+.vfmm-polygon.foodVisible{fill:rgba(66,185,107,.29);stroke:#208047}
+.vfmm-polygon.bottom{fill:rgba(73,169,221,.30);stroke:#1e729e}
+.vfmm-line{
+  fill:none;
+  stroke-width:.72;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  vector-effect:non-scaling-stroke;
+  pointer-events:none;
+}
+.vfmm-line.mask{stroke:#e53e30}
+.vfmm-line.foodVisible{stroke:#36a961}
+.vfmm-line.bottom{stroke:#2e8fbd}
+.vfmm-point{
+  stroke:#fff;
+  stroke-width:.42;
+  vector-effect:non-scaling-stroke;
+  cursor:grab;
+}
+.vfmm-point:active{cursor:grabbing}
+.vfmm-point.mask{fill:#e53e30}
+.vfmm-point.foodVisible{fill:#42b96b}
+.vfmm-point.bottom{fill:#49a9dd}
+.vfmm-depth-line{
+  fill:none;
+  stroke-width:.72;
+  stroke-dasharray:2.2 1.5;
+  vector-effect:non-scaling-stroke;
+  pointer-events:none;
+}
+.vfmm-depth-line.depthBottom{stroke:#c88918}
+.vfmm-depth-line.depthTop{stroke:#8254b2}
+.vfmm-depth-point{
+  stroke:#fff;
+  stroke-width:.45;
+  vector-effect:non-scaling-stroke;
+  cursor:grab;
+}
+.vfmm-depth-point:active{cursor:grabbing}
+.vfmm-depth-point.depthBottom{fill:#e1a52c}
+.vfmm-depth-point.depthTop{fill:#9b6acb}
+.vfmm-depth-label{
+  font-size:3px;
+  font-weight:900;
+  paint-order:stroke;
+  stroke:#fff4d8;
+  stroke-width:.8px;
+  stroke-linejoin:round;
+  pointer-events:none;
+}
+.vfmm-depth-label.depthBottom{fill:#8b5d0f}
+.vfmm-depth-label.depthTop{fill:#63398e}
+.vfmm-crosshair{
+  fill:none;
+  stroke:rgba(53,27,13,.18);
+  stroke-width:.22;
+  vector-effect:non-scaling-stroke;
+  pointer-events:none;
+}
+.vfmm-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 16px;
+  border-top:2px solid rgba(53,27,13,.18);
+}
+.vfmm-footer strong{font-size:13px}
+#vesselFoodMaskExport{
+  padding:12px 17px;
+  background:#79d59a;
+  border-color:#174b30;
+  box-shadow:0 3px 0 #3e8f5a;
+}
+@media (max-width:760px){
+  #vesselFoodMaskTool{padding:7px}
+  .vfmm-card{width:99vw;height:98vh;min-height:0;border-width:3px;border-radius:15px}
+  .vfmm-body{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);overflow:auto;padding:10px;gap:10px}
+  .vfmm-controls{overflow:visible}
+  .vfmm-help,.vfmm-legend{display:none}
+  .vfmm-canvas-wrap{min-height:300px}
+  .vfmm-footer{padding:9px 10px}
+}

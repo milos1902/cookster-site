@@ -1,0 +1,328 @@
+#woodSupplyScene{
+  position:fixed;
+  inset:0;
+  z-index:80000;
+  display:none;
+  overflow:hidden;
+  background:#182018;
+  cursor:default;
+  touch-action:none;
+}
+#woodSupplyScene.open{display:block}
+#woodSupplyFrame{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:min(100vw,177.7778vh);
+  aspect-ratio:16/9;
+  overflow:hidden;
+  isolation:isolate;
+  transform:translate(-50%,-50%);
+  background:#24331f;
+  box-shadow:0 18px 70px rgba(0,0,0,.48);
+  touch-action:none;
+}
+.wood-supply-art{
+  position:absolute;
+  z-index:0;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+}
+.wood-supply-wind{
+  position:absolute;
+  z-index:1;
+  display:block;
+  height:auto;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  opacity:.56;
+  will-change:transform;
+}
+.wood-supply-wind-left{
+  left:0;
+  top:0;
+  width:25.390625%;
+  animation:wood-supply-breeze-left 7.4s ease-in-out -2.1s infinite;
+  transform-origin:88% 17%;
+}
+.wood-supply-wind-center{
+  left:25.390625%;
+  top:0;
+  width:41.992188%;
+  animation:wood-supply-breeze-center 8.9s ease-in-out -5.3s infinite;
+  transform-origin:52% 14%;
+}
+.wood-supply-wind-right{
+  left:67.382813%;
+  top:0;
+  width:32.617188%;
+  animation:wood-supply-breeze-right 9.8s ease-in-out -3.7s infinite;
+  transform-origin:12% 8%;
+}
+@keyframes wood-supply-breeze-left{
+  0%,100%{transform:translate3d(0,0,0) rotate(0deg)}
+  50%{transform:translate3d(1.4px,.7px,0) rotate(.12deg)}
+}
+@keyframes wood-supply-breeze-center{
+  0%,100%{transform:translate3d(0,0,0) rotate(0deg)}
+  50%{transform:translate3d(-1.5px,1px,0) rotate(-.16deg)}
+}
+@keyframes wood-supply-breeze-right{
+  0%,100%{transform:translate3d(0,0,0) rotate(0deg)}
+  50%{transform:translate3d(-1px,.6px,0) rotate(.13deg)}
+}
+.wood-supply-hud{
+  position:absolute;
+  z-index:12;
+  left:1.5%;
+  right:1.5%;
+  top:1.8%;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:clamp(8px,1.4vw,20px);
+  min-height:42px;
+  padding:8px 12px;
+  border:1px solid rgba(255,241,202,.76);
+  border-radius:12px;
+  background:rgba(35,30,21,.74);
+  box-shadow:0 4px 18px rgba(0,0,0,.28);
+  color:#fff8e7;
+  font:700 clamp(11px,1.15vw,16px)/1.25 system-ui,sans-serif;
+  backdrop-filter:blur(5px);
+  pointer-events:none;
+}
+.wood-supply-hud strong{
+  color:#ffe09a;
+  white-space:nowrap;
+}
+.wood-supply-hud p{
+  margin:0;
+  text-align:center;
+  font-weight:600;
+}
+#woodSupplyCount{
+  min-width:56px;
+  padding:6px 9px;
+  border:1px solid rgba(255,232,168,.62);
+  border-radius:999px;
+  background:rgba(112,69,31,.88);
+  color:#fff7dc;
+  text-align:center;
+  white-space:nowrap;
+}
+.wood-supply-pile-hit{
+  position:absolute;
+  z-index:4;
+  left:43%;
+  top:47%;
+  width:54%;
+  height:31%;
+  margin:0;
+  padding:0;
+  border:2px solid transparent;
+  border-radius:24px;
+  background:transparent;
+  cursor:grab;
+  touch-action:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.wood-supply-pile-hit:hover,
+.wood-supply-pile-hit:focus-visible{
+  border-color:rgba(255,237,186,.38);
+  outline:none;
+  background:rgba(255,235,174,.035);
+  box-shadow:inset 0 0 24px rgba(255,238,180,.08);
+}
+.wood-supply-pile-hit::after{
+  content:"UZMI CJEPANICU";
+  position:absolute;
+  left:50%;
+  top:13%;
+  transform:translate(-50%,-50%);
+  padding:6px 10px;
+  border:1px solid rgba(255,244,210,.45);
+  border-radius:999px;
+  background:rgba(39,28,18,.72);
+  color:#fff7e4;
+  font:800 clamp(9px,.9vw,12px)/1 system-ui,sans-serif;
+  letter-spacing:.035em;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .16s ease;
+}
+.wood-supply-pile-hit:hover::after,
+.wood-supply-pile-hit:focus-visible::after{opacity:1}
+.wood-supply-pile-hit:disabled{
+  cursor:default;
+  border-color:transparent;
+  background:transparent;
+}
+.wood-supply-pile-hit:disabled::after{display:none}
+.wood-supply-contact-shadow{
+  position:absolute;
+  z-index:7;
+  border-radius:50%;
+  pointer-events:none;
+  transform-origin:center;
+}
+.wood-supply-tools{
+  position:absolute;
+  z-index:22;
+  left:1.5%;
+  top:12%;
+  display:flex;
+  gap:6px;
+}
+.wood-supply-tools button,
+.wood-supply-scale-actions button{
+  border:1px solid #efcc83;
+  border-radius:6px;
+  background:rgba(44,32,20,.93);
+  color:#fff3d5;
+  padding:7px 10px;
+  font:700 clamp(10px,.85vw,13px)/1.2 system-ui,sans-serif;
+  cursor:pointer;
+}
+.wood-supply-tools button:hover,
+.wood-supply-scale-actions button:hover{background:#72502b}
+.wood-supply-scale-panel{
+  position:absolute;
+  z-index:23;
+  left:1.5%;
+  top:19%;
+  width:min(280px,40%);
+  box-sizing:border-box;
+  padding:12px;
+  border:1px solid #edc982;
+  border-radius:9px;
+  background:rgba(38,29,21,.94);
+  box-shadow:0 6px 22px rgba(0,0,0,.36);
+  color:#fff4da;
+  font:600 12px/1.4 system-ui,sans-serif;
+}
+.wood-supply-scale-panel[hidden]{display:none!important}
+.wood-supply-scale-title{font-weight:800;margin-bottom:10px}
+.wood-supply-scale-panel label{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 55px;
+  gap:4px 8px;
+  align-items:center;
+  margin:8px 0;
+}
+.wood-supply-scale-panel input{
+  grid-column:1;
+  width:100%;
+  margin:0;
+  accent-color:#ecb65f;
+}
+.wood-supply-scale-panel output{grid-column:2;grid-row:2;text-align:right}
+.wood-supply-scale-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+body.wood-supply-open #contactShadowLab{z-index:80050!important}
+.wood-supply-basket{
+  position:absolute;
+  z-index:8;
+  left:72%;
+  top:77%;
+  width:clamp(56px,13.4%,190px);
+  height:auto;
+  aspect-ratio:1;
+  transform:translate(-50%,-50%);
+  transform-origin:50% 70%;
+  object-fit:contain;
+  filter:drop-shadow(0 9px 8px rgba(35,20,8,.48));
+  user-select:none;
+  -webkit-user-drag:none;
+  cursor:default;
+  touch-action:none;
+}
+.wood-supply-basket-pop{animation:wood-supply-basket-pop .2s ease-out}
+@keyframes wood-supply-basket-pop{
+  0%{filter:drop-shadow(0 9px 8px rgba(35,20,8,.48)) brightness(1)}
+  48%{filter:drop-shadow(0 11px 9px rgba(35,20,8,.5)) brightness(1.1)}
+  100%{filter:drop-shadow(0 9px 8px rgba(35,20,8,.48)) brightness(1)}
+}
+#woodSupplyLogLayer{
+  position:absolute;
+  z-index:10;
+  inset:0;
+  overflow:visible;
+  pointer-events:none;
+}
+.wood-supply-held-log{
+  position:absolute;
+  width:clamp(75px,8.5%,118px);
+  height:auto;
+  transform:translate(-50%,-50%) rotate(-7deg);
+  filter:drop-shadow(0 5px 5px rgba(28,19,11,.48));
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  will-change:left,top,transform,opacity;
+}
+.wood-supply-held-log.is-flying-into-basket{
+  transition:left .24s cubic-bezier(.2,.7,.25,1),top .24s cubic-bezier(.2,.7,.25,1),
+    transform .24s ease-in,opacity .24s ease-in;
+}
+.wood-supply-context-menu{
+  position:absolute;
+  z-index:20;
+  display:flex;
+  min-width:165px;
+  padding:7px;
+  border:1px solid rgba(255,224,160,.82);
+  border-radius:9px;
+  background:rgba(39,28,19,.97);
+  box-shadow:0 7px 24px rgba(0,0,0,.52);
+}
+.wood-supply-context-menu[hidden]{display:none!important}
+.wood-supply-context-menu button{
+  width:100%;
+  padding:9px 13px;
+  border:0;
+  border-radius:6px;
+  background:linear-gradient(#f1c66f,#d98e3b);
+  color:#2d1a0b;
+  font:800 14px/1.1 system-ui,sans-serif;
+  cursor:pointer;
+}
+.wood-supply-context-menu button:hover,
+.wood-supply-context-menu button:focus-visible{
+  outline:2px solid #fff2ce;
+  outline-offset:2px;
+  filter:brightness(1.08);
+}
+body.wood-supply-open #hud,
+body.wood-supply-open #cursor,
+body.wood-supply-open #label{display:none!important}
+@media(max-width:540px){
+  .wood-supply-hud{
+    left:1%;
+    right:1%;
+    top:1.5%;
+    grid-template-columns:auto 1fr auto;
+    gap:5px;
+    min-height:32px;
+    padding:5px 7px;
+    border-radius:8px;
+    font-size:10px;
+  }
+  #woodSupplyCount{min-width:42px;padding:4px 6px}
+  .wood-supply-pile-hit{border-radius:12px}
+  .wood-supply-basket{width:clamp(52px,16%,145px)}
+  .wood-supply-tools{top:22%}
+  .wood-supply-scale-panel{top:37%;width:min(230px,55%);padding:7px;font-size:10px}
+  .wood-supply-tools button{padding:4px 6px;font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+  .wood-supply-wind{animation:none}
+  .wood-supply-basket-pop{animation:none}
+  .wood-supply-held-log.is-flying-into-basket{transition:none}
+}

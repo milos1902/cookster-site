@@ -1,0 +1,3755 @@
+:root{--bg:#1d0e04;--gold:#f1af33;--deep:#2c1408;--scene-bg:url('../assets/stove_states/fire_off_closed.png')}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#140b05;font-family:Arial,sans-serif}
+#viewport{position:fixed;inset:0;overflow:hidden;background:#1a0c04;cursor:none}
+/* The gameplay scene keeps its original 1672×941 calibration. This layer only
+   fills letterbox space, so wide/tall screens never stretch or crop the kitchen. */
+#sceneAmbient{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;background:#1a0c04}
+#sceneAmbient::before{content:"";position:absolute;inset:-48px;background:var(--scene-bg) center/cover no-repeat;filter:blur(18px) saturate(.72) brightness(.52);transform:scale(1.08)}
+#sceneAmbient::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 38%,rgba(20,10,4,.42) 100%)}
+#scene{position:absolute;left:0;top:0;z-index:1;width:1672px;height:941px;transform-origin:0 0;background:var(--scene-bg) center/100% 100% no-repeat;transition:transform .65s cubic-bezier(.22,.8,.22,1),background-image .16s ease}
+#cooksterIntoxicationCamera{position:absolute;inset:0;width:100%;height:100%;z-index:1;overflow:visible;transform-origin:50% 50%;pointer-events:auto}
+#cooksterIntoxicationCamera[data-intoxication="active"]{animation:cooksterProgressiveCamera var(--cookster-cycle,7s) ease-in-out infinite;will-change:transform}
+#cooksterIntoxicationBlur,
+#cooksterIntoxicationShade,
+#cooksterIntoxicationGlow{position:absolute;inset:0;pointer-events:none}
+#cooksterIntoxicationBlur{z-index:10;opacity:0;will-change:opacity,backdrop-filter}
+#cooksterIntoxicationBlur[data-intoxication="active"]{
+  opacity:var(--cookster-blur-opacity-low,.2);
+  -webkit-backdrop-filter:blur(var(--cookster-blur-strength,0px));
+  backdrop-filter:blur(var(--cookster-blur-strength,0px));
+  -webkit-mask-image:radial-gradient(ellipse at center,transparent var(--cookster-blur-clear,52%),rgba(0,0,0,.72) calc(var(--cookster-blur-clear,52%) + 24%),#000 100%);
+  mask-image:radial-gradient(ellipse at center,transparent var(--cookster-blur-clear,52%),rgba(0,0,0,.72) calc(var(--cookster-blur-clear,52%) + 24%),#000 100%);
+  animation:cooksterProgressiveBlur var(--cookster-cycle,7s) ease-in-out infinite
+}
+#cooksterIntoxicationShade{z-index:11;opacity:0;background:radial-gradient(ellipse at center,rgba(16,7,3,.08) 10%,rgba(16,7,3,.62) 100%);mix-blend-mode:multiply}
+#cooksterIntoxicationShade[data-intoxication="active"]{animation:cooksterProgressiveShade var(--cookster-cycle,7s) ease-in-out infinite}
+#cooksterIntoxicationGlow{z-index:12;opacity:0;background:radial-gradient(ellipse at 50% 46%,rgba(255,226,168,.35) 0%,rgba(255,220,157,.17) 43%,rgba(255,220,157,0) 100%);mix-blend-mode:screen}
+#cooksterIntoxicationGlow[data-intoxication="active"]{animation:cooksterProgressiveGlow var(--cookster-cycle,7s) ease-in-out infinite}
+@keyframes cooksterProgressiveCamera{
+  0%,100%{transform:translate3d(0,0,0) rotate(0) scale(var(--cookster-zoom,1))}
+  24%{transform:translate3d(var(--cookster-sway-x,0px),var(--cookster-sway-y,0px),0) rotate(var(--cookster-sway-angle,0deg)) scale(var(--cookster-zoom,1))}
+  51%{transform:translate3d(var(--cookster-sway-negative-x,0px),var(--cookster-sway-negative-y,0px),0) rotate(var(--cookster-sway-negative-angle,0deg)) scale(var(--cookster-zoom,1))}
+  77%{transform:translate3d(var(--cookster-sway-half-x,0px),var(--cookster-sway-half-y,0px),0) rotate(var(--cookster-sway-half-angle,0deg)) scale(var(--cookster-zoom,1))}
+}
+@keyframes cooksterProgressiveBlur{
+  0%,100%{opacity:var(--cookster-blur-opacity-low,.2)}
+  36%{opacity:var(--cookster-blur-opacity-high,.35)}
+  57%{opacity:var(--cookster-blur-opacity-mid,.25)}
+  79%{opacity:var(--cookster-blur-opacity-high,.35)}
+}
+@keyframes cooksterProgressiveShade{
+  0%,100%{opacity:0}
+  20%{opacity:var(--cookster-shade-peak,0)}
+  38%{opacity:var(--cookster-shade-mid,0)}
+  52%{opacity:0}
+  73%{opacity:var(--cookster-shade-peak,0)}
+  86%{opacity:0}
+}
+@keyframes cooksterProgressiveGlow{
+  0%,100%{opacity:0}
+  43%{opacity:0}
+  59%{opacity:var(--cookster-glow-peak,0)}
+  71%{opacity:var(--cookster-glow-mid,0)}
+  85%{opacity:0}
+}
+@media(prefers-reduced-motion:reduce){
+  #cooksterIntoxicationCamera[data-intoxication="active"],
+  #cooksterIntoxicationBlur[data-intoxication],
+  #cooksterIntoxicationShade[data-intoxication],
+  #cooksterIntoxicationGlow[data-intoxication]{animation:none!important}
+}
+#tableOccluder,
+#tableOccluder::before,
+#tableOccluder::after{position:absolute;inset:0;background:var(--scene-bg) 0 0/1672px 941px no-repeat;pointer-events:none}
+#tableOccluder{z-index:25;clip-path:polygon(322px 243px,1211px 243px,1243px 548px,1212px 612px,365px 612px,320px 548px)}
+#tableOccluder::before{content:"";clip-path:polygon(370px 548px,418px 548px,403px 820px,365px 820px)}
+#tableOccluder::after{content:"";clip-path:polygon(1135px 548px,1186px 548px,1197px 820px,1152px 820px)}
+#sceneOcclusionLayer{position:absolute;inset:0;pointer-events:none}
+.scene-occluder{position:absolute;inset:0;pointer-events:none;background:var(--scene-bg) 0 0/1672px 941px no-repeat;display:none}
+.scene-occluder.active{display:block}
+#tableLegOccluderLeft{clip-path:polygon(370px 548px,418px 548px,403px 820px,365px 820px)}
+#tableLegOccluderRight{clip-path:polygon(1135px 548px,1186px 548px,1197px 820px,1152px 820px)}
+#sceneZoneOverlay{display:none;position:absolute;inset:0;width:1672px;height:941px;z-index:12000;pointer-events:none;overflow:visible}
+body.scene-zone-calibration-active #sceneZoneOverlay{display:block;pointer-events:auto;cursor:crosshair}
+#sceneCalibrationToggleBtn{position:fixed;left:18px;top:60px;z-index:14000;border:2px solid #351b0d;border-radius:9px;background:#f1c15a;color:#351b0d;font-size:11px;font-weight:900;padding:6px 8px;box-shadow:0 2px 0 rgba(53,27,13,.32);cursor:pointer}
+#sceneZoneCalibrationBtn{position:fixed;left:18px;top:98px;z-index:14000;border:2px solid #351b0d;border-radius:9px;background:#42d6e8;color:#351b0d;font-size:12px;font-weight:900;padding:6px 9px;box-shadow:0 3px 0 rgba(53,27,13,.32);cursor:pointer}
+#sceneZoneCalibration{display:none;position:fixed;left:12px;top:146px;width:286px;z-index:14001;background:#fff5dc;color:#351b0d;border:3px solid #351b0d;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.35);padding:10px;font:700 12px/1.3 system-ui,sans-serif}
+#sceneZoneCalibration.open{display:grid;gap:8px}
+#sceneZoneCalibration header{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+#sceneZoneCalibration header button{border:0;background:transparent;font-size:22px;line-height:1;cursor:pointer}
+#sceneZoneCalibration label{display:grid;gap:4px}
+#sceneZoneCalibration select,#sceneZoneCalibration textarea{width:100%;box-sizing:border-box;border:2px solid #70421f;border-radius:7px;background:#fffdf4;color:#351b0d;padding:5px;font:inherit}
+#sceneZoneCalibration textarea{height:120px;font:10px/1.2 ui-monospace,monospace;resize:vertical}
+.scene-zone-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.scene-volume-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+#sceneVolumeInfo{font-size:11px;font-weight:900;padding:4px 0}
+#sceneZoneCalibration button:not([data-close]){border:2px solid #70421f;border-radius:7px;background:#f1c15a;color:#351b0d;padding:5px;font-weight:900;cursor:pointer}
+#sceneZoneCalibration small{opacity:.78}
+.edge-arrow{display:none!important;position:fixed;top:50%;transform:translateY(-50%);width:72px;height:118px;border:0;border-radius:18px;background:rgba(30,15,6,.72);color:#fff;font-size:54px;font-weight:900;display:none;align-items:center;justify-content:center;z-index:50000;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35);backdrop-filter:blur(4px)}
+.edge-arrow.show{display:flex}.edge-arrow.left{left:12px}.edge-arrow.right{right:12px}.edge-arrow:hover{background:rgba(72,37,14,.88);transform:translateY(-50%) scale(1.04)}
+.item{position:absolute;user-select:none;-webkit-user-drag:none;transform-origin:center bottom;cursor:none}
+.item>.body{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.item.hovered>.body,.detached-lid.hovered .lid-crop{
+ filter:drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff) drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff)
+ drop-shadow(1px 1px 0 rgba(255,255,255,.9)) drop-shadow(-1px 1px 0 rgba(255,255,255,.9))
+ drop-shadow(1px -1px 0 rgba(255,255,255,.9)) drop-shadow(-1px -1px 0 rgba(255,255,255,.9))
+}
+.item.held{pointer-events:none;z-index:var(--held-z,9999)!important}
+.item.held.valid>.body,.item.detached-lid.held.valid .lid-crop{filter:
+    drop-shadow(0 0 8px rgba(194,148,58,.76))
+    drop-shadow(0 0 2px rgba(103,67,31,.72));}
+.item.held.invalid>.body,.item.detached-lid.held.invalid .lid-crop{
+ filter:drop-shadow(1px 0 0 #e24a4a) drop-shadow(-1px 0 0 #e24a4a) drop-shadow(0 1px 0 #e24a4a) drop-shadow(0 -1px 0 #e24a4a)
+ drop-shadow(1px 1px 0 rgba(226,74,74,.95)) drop-shadow(-1px 1px 0 rgba(226,74,74,.95))
+ drop-shadow(1px -1px 0 rgba(226,74,74,.95)) drop-shadow(-1px -1px 0 rgba(226,74,74,.95));
+}
+
+.placement-ghost{position:absolute;pointer-events:none;display:none;opacity:.30;z-index:7450;transform-origin:center bottom;will-change:left,top,width,height,transform}
+.placement-ghost img,.placement-ghost .ghost-layer,.placement-ghost .ghost-layer img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none;max-width:none;max-height:none}
+.placement-ghost.ok img,.placement-ghost.ok .ghost-layer,.placement-ghost.ok .ghost-layer img{filter:none!important;opacity:1!important}
+.placement-ghost.blocked img,.placement-ghost.blocked .ghost-layer,.placement-ghost.blocked .ghost-layer img{filter:none!important;opacity:1!important}
+.placement-ghost.source img,.placement-ghost.source .ghost-layer,.placement-ghost.source .ghost-layer img{filter:none!important;opacity:1!important}
+
+/* Real separate lid layer */
+.lid-hit{position:absolute;overflow:hidden;z-index:6;cursor:none}
+.lid-hit .lid-crop{position:absolute;pointer-events:none;user-select:none;-webkit-user-drag:none;max-width:none;max-height:none}
+.lid-hit.hover-lid .lid-crop{
+ filter:drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff) drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff)
+ drop-shadow(1px 1px 0 rgba(255,255,255,.95)) drop-shadow(-1px 1px 0 rgba(255,255,255,.95))
+ drop-shadow(1px -1px 0 rgba(255,255,255,.95)) drop-shadow(-1px -1px 0 rgba(255,255,255,.95))
+}
+.item.open>.lid-hit{display:none}
+
+/* Visible open mouth/interior, deliberately larger than lid so the closed lid in the original PNG is fully covered */
+.interior{position:absolute;display:none;z-index:5;border-radius:50%;pointer-events:none;
+ background:linear-gradient(#d9c4a7,#9c7a57);
+ border:3px solid #5a4634;
+ box-shadow:inset 0 3px 0 rgba(255,255,255,.5), inset 0 -8px 12px rgba(43,26,14,.42),0 1px 0 rgba(255,255,255,.2)}
+.item.open>.interior{display:block}
+.interior::after{content:"";position:absolute;left:8%;right:8%;top:22%;bottom:12%;border-radius:50%;
+ background:radial-gradient(ellipse at 42% 30%,var(--inside-hi,#d6a064) 0%,var(--inside,#99602f) 55%,var(--inside-dark,#5b3519) 100%);
+ box-shadow:inset 0 5px 9px rgba(0,0,0,.28)}
+.interior.jar{border-color:#806037;background:linear-gradient(#d3ae72,#a7783e)}
+.interior.jar::after{top:30%;bottom:4%}
+.interior.pot::after{top:18%;bottom:15%}
+
+/* Strong warm cast shadow, light comes from upper-left window so the shadow goes lower-right */
+.cast-shadow{position:absolute;pointer-events:none;border-radius:50%;z-index:1;opacity:0;
+ background:radial-gradient(ellipse at 40% 42%,
+   rgba(22,10,4,.92) 0%,
+   rgba(43,20,9,.88) 18%,
+   rgba(73,38,18,.74) 40%,
+   rgba(108,66,33,.46) 62%,
+   rgba(146,101,63,.18) 80%,
+   rgba(146,101,63,0) 94%);
+ box-shadow:0 12px 24px rgba(28,11,4,.30);
+ transform-origin:center center;will-change:left,top,width,height,opacity,transform,filter}
+.cast-shadow::after{content:"";position:absolute;left:10%;right:22%;top:28%;bottom:14%;border-radius:50%;
+ background:rgba(96,58,30,.24);filter:blur(7px)}
+.contact-shadow-sprite{position:absolute;pointer-events:none;z-index:2;opacity:0;transform-origin:center bottom;will-change:left,top,width,height,opacity,transform,filter;mix-blend-mode:multiply}
+.contact-shadow-sprite img,.contact-shadow-sprite .lid-crop{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none;max-width:none;max-height:none;filter:brightness(0) saturate(0);opacity:1}
+.contact-shadow-sprite.silhouette{overflow:visible}
+.contact-shadow-sprite.front-edge{overflow:hidden}
+.contact-shadow-sprite.front-edge img{clip-path:polygon(8% 56%,93% 47%,93% 100%,7% 100%)}
+.contact-shadow-sprite.front-edge .lid-crop{clip-path:polygon(8% 56%,93% 47%,93% 100%,7% 100%)}
+
+
+.pan-content{position:absolute;left:var(--vessel-food-left,0%);top:var(--vessel-food-top,0%);width:var(--vessel-food-width,100%);height:var(--vessel-food-height,100%);display:none;pointer-events:none;z-index:7;overflow:hidden;transform:none;--food-fill:.42}
+.pan-content.visible{display:block}
+.pan-content img{position:absolute;left:50%;top:50%;width:100%;height:100%;object-fit:fill;filter:none}
+.item.pan-target>.body{filter:
+    drop-shadow(0 0 8px rgba(194,148,58,.76))
+    drop-shadow(0 0 2px rgba(103,67,31,.72))}
+.item.sizzling .pan-content.visible,
+.item.sizzling .vessel-content.visible{animation:panSimmer .72s ease-in-out infinite alternate}
+.item.sizzling .pan-content.visible::after,
+.item.sizzling .vessel-content.visible::after{content:"";position:absolute;inset:8% 12%;border-radius:50%;pointer-events:none;background:radial-gradient(circle at 24% 55%,rgba(255,230,170,.9) 0 2px,transparent 3px),radial-gradient(circle at 58% 34%,rgba(255,230,170,.8) 0 2px,transparent 3px),radial-gradient(circle at 72% 63%,rgba(255,230,170,.75) 0 2px,transparent 3px),radial-gradient(circle at 40% 22%,rgba(255,230,170,.8) 0 2px,transparent 3px),radial-gradient(circle at 85% 40%,rgba(255,230,170,.75) 0 2px,transparent 3px),radial-gradient(circle at 15% 30%,rgba(255,230,170,.7) 0 2px,transparent 3px),radial-gradient(circle at 62% 75%,rgba(255,230,170,.7) 0 2px,transparent 3px);animation:bubblePop .8s steps(2,end) infinite}
+/* v198.5.56: mixing crackles harder — a few extra fast highlights while the
+   spoon is actually turning, on top of the base simmer bubbles above. */
+.item.sizzling.stirring-vessel .vessel-content.visible::before,
+.item.sizzling.stirring-vessel .pan-content.visible::before{content:"";position:absolute;inset:6% 10%;border-radius:50%;pointer-events:none;background:radial-gradient(circle at 38% 68%,rgba(255,244,214,.95) 0 2px,transparent 3px),radial-gradient(circle at 66% 48%,rgba(255,238,196,.9) 0 2px,transparent 3px),radial-gradient(circle at 46% 30%,rgba(255,230,175,.85) 0 2px,transparent 3px),radial-gradient(circle at 20% 40%,rgba(255,236,190,.85) 0 2px,transparent 3px),radial-gradient(circle at 78% 22%,rgba(255,238,196,.85) 0 2px,transparent 3px),radial-gradient(circle at 55% 60%,rgba(255,230,175,.8) 0 2px,transparent 3px),radial-gradient(circle at 30% 78%,rgba(255,236,190,.8) 0 2px,transparent 3px);animation:bubblePop .46s steps(2,end) infinite reverse}
+.sauce-mash{position:absolute;left:8%;top:14%;width:84%;height:68%;border-radius:50%;background:radial-gradient(ellipse at 44% 38%,rgba(239,92,50,.94) 0 20%,rgba(217,64,39,.82) 44%,rgba(169,35,28,.58) 76%,rgba(117,25,20,.18) 100%);box-shadow:inset 0 4px 8px rgba(255,190,120,.20),inset 0 -5px 8px rgba(88,16,8,.18);filter:saturate(1.05) blur(2px);transform:rotate(-3deg);opacity:.42}
+@keyframes panSimmer{from{transform:rotate(-2deg) scale(1)}to{transform:rotate(-1deg) scale(1.018)}}
+@keyframes bubblePop{0%{opacity:.35;transform:scale(.95)}50%{opacity:.95;transform:scale(1.04)}100%{opacity:.45;transform:scale(.98)}}
+@keyframes groundPepperGrindPulse{0%,100%{scale:1 1;filter:drop-shadow(0 1px 2px rgba(70,15,8,.18)) brightness(1)}50%{scale:1.018 .982;filter:drop-shadow(0 2px 3px rgba(70,15,8,.25)) brightness(1.08)}}
+.ground-pepper-single-mass.ground-pepper-grinding{animation:groundPepperGrindPulse .52s ease-in-out infinite}
+#cursor{position:fixed;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.55),0 0 10px rgba(255,255,255,.95);margin-left:-4px;margin-top:-4px;pointer-events:none;z-index:100000}
+/* v198.5.114 — soft blob that makes the spoon tip look dipped into the food. */
+#stirDipOverlay{
+  position:absolute;
+  display:none;
+  border-radius:50%;
+  pointer-events:none;
+  filter:blur(2px);
+}
+#label{position:fixed;display:none;transform:translate(-50%,-150%);padding:4px 8px;background:rgba(0,0,0,.72);color:#fff;border-radius:8px;font-size:13px;font-weight:800;white-space:nowrap;pointer-events:none;z-index:100000}
+/* v198.5.106 — quantity badge shown while scrolling over a market bag. */
+#bagQtyBadge{
+  position:fixed;
+  display:none;
+  transform:translate(-50%,-50%);
+  align-items:center;
+  justify-content:center;
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  background:#e7c778;
+  border:3px solid #351b0d;
+  color:#351b0d;
+  font-size:16px;
+  font-weight:950;
+  box-shadow:0 3px 0 #765414;
+  pointer-events:none;
+  z-index:100001;
+}
+#hud{position:fixed;top:18px;left:18px;right:auto;display:flex;flex-direction:column;gap:8px;align-items:flex-start;z-index:20000}
+#hud.hud-collapsed> :not(#day){display:none!important}
+#hud.hud-expanded> :not(#day){display:block}
+#day{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;padding:6px 9px;border-radius:10px;background:rgba(36,18,8,.82);color:#fff4df;font-size:13px;font-weight:900;box-shadow:0 2px 0 rgba(0,0,0,.3)}
+#day::before{content:'☰';font-size:20px;line-height:1}
+#hud.hud-expanded #day::before{content:'✕'}
+#money{padding:9px 12px;border-radius:12px;background:rgba(36,18,8,.80);color:#fff4df;font-size:16px;font-weight:900;border:1px solid rgba(255,255,255,.14)}
+#marketBtn{padding:10px 16px;border-radius:13px;border:3px solid var(--deep);background:var(--gold);color:var(--deep);font-weight:900;font-size:18px;box-shadow:0 4px 0 #76410d;cursor:pointer}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;border-radius:14px;padding:10px 14px;font-size:14px;font-weight:800;opacity:0;transition:opacity .25s ease;pointer-events:none;z-index:20000}
+#modalShade{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:30000}
+#modal{width:min(620px,92vw);background:#fff0cf;border:4px solid #311706;border-radius:18px;overflow:hidden;box-shadow:0 20px 70px rgba(0,0,0,.5)}
+#modal header{display:flex;justify-content:space-between;align-items:center;background:#d68e2c;color:#221005;padding:14px 18px;font-size:22px;font-weight:900}
+#closeModal{background:#311706;color:#fff;border:0;border-radius:8px;padding:8px 12px;font-weight:900;cursor:pointer}
+table{width:100%;border-collapse:collapse;color:#241005;background:#fff7e8}th,td{padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.12);text-align:left}th{background:#ffe2a1}.buy{background:#318439;color:#fff;border:0;border-radius:9px;padding:7px 11px;font-weight:900;cursor:pointer}
+
+/* Fullscreen illustrated market */
+#marketScene{position:fixed;inset:0;z-index:70000;display:none;overflow:hidden;background:radial-gradient(circle at center,#6a4320 0%,#2a160b 52%,#160b05 100%);cursor:default}
+#marketScene.open{display:block}
+#marketStage{position:absolute;left:50%;top:50%;width:min(1536px,95vw,calc(95vh * 3 / 2));aspect-ratio:3/2;transform:translate(-50%,-50%)}
+#marketScene .market-art{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;pointer-events:none;user-select:none;-webkit-user-drag:none;filter:drop-shadow(0 18px 40px rgba(0,0,0,.28))}
+.market-hotspot,.market-step{position:absolute;border:0;background:transparent;cursor:pointer;border-radius:12px;outline:none;box-shadow:none;transform-origin:center;transition:transform .09s cubic-bezier(.2,.8,.2,1)}
+.market-hotspot:hover,.market-step:hover{border:0;outline:none;box-shadow:none;background:transparent}
+.market-hotspot.market-press,.market-step.market-press{transform:scale(.95) translateY(2px);background:rgba(0,0,0,.18);box-shadow:inset 0 3px 7px rgba(0,0,0,.22);filter:none}
+
+.market-qty{position:absolute;display:flex;align-items:center;justify-content:center;color:#fff4de;font-size:22px;font-weight:700;line-height:1;text-align:center;letter-spacing:0;text-shadow:0 1px 0 rgba(0,0,0,.4);pointer-events:none}
+#marketBack{left:1.95%;top:89.15%;width:12.45%;height:7.85%}
+#marketMinusTomato{left:24.80%;top:42.58%;width:2.41%;height:3.71%}
+#marketQtyTomato{left:27.21%;top:42.48%;width:4.75%;height:3.91%}
+#marketPlusTomato{left:31.97%;top:42.58%;width:2.47%;height:3.71%}
+#marketBuyTomato{left:24.28%;top:47.17%;width:10.55%;height:4.88%}
+#marketMinusPepper{left:41.27%;top:42.58%;width:2.41%;height:3.71%}
+#marketQtyPepper{left:43.75%;top:42.48%;width:5.12%;height:3.91%}
+#marketPlusPepper{left:48.57%;top:42.58%;width:2.41%;height:3.71%}
+#marketBuyPepper{left:40.75%;top:47.17%;width:10.91%;height:4.88%}
+#marketMoneyLive{position:absolute;left:79.45%;top:4.20%;width:17.80%;height:7.70%;min-width:0;padding:0 4.8% 0 0;display:flex;align-items:center;justify-content:flex-end;border:0;border-radius:16px;background:transparent;color:#fffdf7;font-size:25px;font-weight:800;text-shadow:0 1px 0 rgba(0,0,0,.45);box-shadow:none}
+#marketMoneyLive::before{content:'';margin-right:0}
+#marketNotice{position:absolute;left:50%;bottom:3.5%;transform:translateX(-50%) translateY(14px);padding:10px 18px;border-radius:13px;background:rgba(38,18,7,.92);color:#fff3d8;border:2px solid rgba(255,219,126,.7);font-weight:900;font-size:16px;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+#marketNotice.show{opacity:1;transform:translateX(-50%) translateY(0)}
+body.market-open #hud,body.market-open #cursor,body.market-open #label,body.market-open .edge-arrow{display:none!important}
+
+/* v198.5.126 — landing puff is now your illustrated GIF asset
+   (assets/effects/puff_impact.gif) instead of hand-built CSS shapes. It's
+   already a self-contained animation, so this just needs basic placement. */
+.pop-puff-img{
+  position:absolute;
+  width:96px;
+  height:96px;
+  pointer-events:none;
+  z-index:9997;
+  object-fit:cover;
+}
+
+/* Produce crates */
+.produce-crate{overflow:visible}
+.produce-crate>.body{z-index:4}
+/* Povrće je isečeno tačno po otvoru gajbice, pa vizuelno ostaje unutra. */
+.crate-fill{
+ position:absolute;left:0;top:0;width:100%;height:100%;z-index:5;pointer-events:none;overflow:hidden;
+ clip-path:polygon(18% 18%,50% 7%,84% 20%,82% 53%,50% 63%,18% 53%);
+ -webkit-clip-path:polygon(18% 18%,50% 7%,84% 20%,82% 53%,50% 63%,18% 53%);
+}
+.crate-fill img{position:absolute;object-fit:contain;filter:drop-shadow(0 3px 2px rgba(55,28,8,.32));pointer-events:none;user-select:none;-webkit-user-drag:none}
+
+.produce-crate.empty .crate-fill{opacity:0}
+.produce-crate.empty 
+.produce-crate.tucked-under 
+#crateHelp{display:none!important;position:fixed;left:16px;bottom:16px;z-index:19000;background:rgba(30,15,6,.80);color:#fff4df;padding:9px 12px;border-radius:12px;font-size:13px;font-weight:800;line-height:1.35;pointer-events:none;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.12)}
+
+
+
+/* Sink / faucet washing system */
+#waterStream{position:absolute;left:1478px;top:118px;width:12px;height:70px;z-index:10020;pointer-events:none;opacity:0;transform-origin:50% 0%;border-radius:6px;background:linear-gradient(90deg,rgba(196,239,255,.10),rgba(246,254,255,.98) 32%,rgba(150,221,248,.82) 66%,rgba(233,250,255,.20));box-shadow:0 0 5px rgba(170,230,255,.58),inset 1px 0 0 rgba(255,255,255,.92);filter:drop-shadow(0 2px 2px rgba(53,112,135,.18));transition:opacity .12s ease;overflow:visible;clip-path:polygon(30% 0,70% 0,70% 100%,30% 100%)}
+#waterStream.on{opacity:.90;animation:waterShimmer .28s linear infinite alternate}
+#waterStream::before{content:"";position:absolute;left:-11px;right:-11px;bottom:-8px;height:18px;border-radius:50%;background:radial-gradient(ellipse at center,rgba(232,250,255,.78) 0 16%,rgba(143,218,246,.46) 20% 36%,rgba(126,207,238,0) 72%);opacity:.64}
+#waterStream::after{content:"";position:absolute;left:4px;top:1px;width:2px;height:95%;border-radius:4px;background:rgba(255,255,255,.74);box-shadow:3px 0 0 rgba(139,216,246,.18)}
+#waterSplash{position:absolute;left:1470px;top:116px;width:28px;height:22px;z-index:10021;pointer-events:none;opacity:0;transition:opacity .12s ease}
+#waterSplash.on{opacity:.96}
+#waterSplash::before,#waterSplash::after{content:"";position:absolute;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.92) 0 26%,rgba(181,234,250,.82) 30% 56%,rgba(181,234,250,0) 67%);filter:drop-shadow(0 1px 1px rgba(87,150,176,.18))}
+#waterSplash::before{left:9px;top:8px;width:7px;height:7px;box-shadow:-6px 4px 0 -2px rgba(188,236,250,.62),-2px -2px 0 -2px rgba(238,253,255,.74);animation:faucetSprayL .42s ease-out infinite}
+#waterSplash::after{left:12px;top:9px;width:7px;height:7px;box-shadow:6px 4px 0 -2px rgba(188,236,250,.60),2px -2px 0 -2px rgba(238,253,255,.70);animation:faucetSprayR .46s ease-out infinite .10s}
+#sinkProduceLayer{
+  position:absolute;
+  z-index:10012;
+  overflow:hidden;
+  pointer-events:none;
+  perspective:420px;
+}
+#sinkProduceLayer.drop-physics-active{
+  overflow:visible;
+}
+#sinkProduceLayer .sink-produce-piece{
+  position:absolute;
+  display:block;
+  height:auto;
+  max-width:none;
+  object-fit:contain;
+  pointer-events:auto;
+  user-select:none;
+  -webkit-user-drag:none;
+  cursor:pointer;
+  transform:translate(-50%,calc(-50% + var(--sink-drop-y,0px))) rotate(calc(var(--sink-rot,0deg) + var(--sink-drop-r,0deg))) scaleX(var(--sink-scale-x,var(--sink-scale,1))) scaleY(var(--sink-scale-y,var(--sink-scale,1)));
+  filter:drop-shadow(0 2px 1px rgba(41,73,83,.34)) saturate(1.02);
+  transition:filter .25s ease,transform .22s ease,opacity .22s ease;
+}
+#sinkProduceLayer .sink-produce-piece.drop-queued{visibility:hidden}
+#sinkProduceLayer .sink-produce-piece.physics-dropping{transition:none}
+#sinkProduceLayer .sink-produce-piece[data-washed="1"]{
+  filter:drop-shadow(0 2px 1px rgba(41,73,83,.28)) saturate(.88) brightness(1.08);
+}
+#sinkProduceLayer.washing .sink-produce-piece{
+  animation:sinkProduceWashBob .72s ease-in-out infinite alternate;
+  filter:drop-shadow(0 1px 2px rgba(72,157,188,.40)) saturate(.94) brightness(1.08);
+}
+#sinkProduceLayer.washing .sink-produce-piece.physics-dropping{
+  animation:none;
+}
+@keyframes sinkProduceWashBob{
+  from{transform:translate(-50%,-50%) rotate(calc(var(--sink-rot,0deg) - 2deg)) translateY(1px) scaleX(var(--sink-scale-x,var(--sink-scale,1))) scaleY(var(--sink-scale-y,var(--sink-scale,1)))}
+  to{transform:translate(-50%,-50%) rotate(calc(var(--sink-rot,0deg) + 2deg)) translateY(-3px) scaleX(var(--sink-scale-x,var(--sink-scale,1))) scaleY(var(--sink-scale-y,var(--sink-scale,1)))}
+}
+@keyframes waterShimmer{from{transform:scaleX(.96) scaleY(.99);filter:brightness(.98) drop-shadow(0 2px 2px rgba(53,112,135,.16))}to{transform:scaleX(1.05) scaleY(1.02);filter:brightness(1.10) drop-shadow(0 2px 3px rgba(53,112,135,.24))}}
+@keyframes faucetSprayL{0%{transform:translate(0,0) scale(.45);opacity:0}18%{opacity:.78}100%{transform:translate(-16px,-10px) scale(.85);opacity:0}}
+@keyframes faucetSprayR{0%{transform:translate(0,0) scale(.45);opacity:0}20%{opacity:.72}100%{transform:translate(15px,-9px) scale(.84);opacity:0}}
+.wash-foam{position:absolute;left:24%;top:18%;width:49%;height:45%;z-index:14;pointer-events:none;border-radius:50%;opacity:0;background:radial-gradient(circle at 27% 42%,rgba(255,255,255,.95) 0 5px,transparent 6px),radial-gradient(circle at 48% 25%,rgba(233,250,255,.95) 0 4px,transparent 5px),radial-gradient(circle at 69% 55%,rgba(255,255,255,.92) 0 6px,transparent 7px),radial-gradient(circle at 42% 70%,rgba(202,239,250,.88) 0 5px,transparent 6px),radial-gradient(ellipse at center,rgba(220,247,255,.48),rgba(220,247,255,.08) 62%,transparent 72%);filter:drop-shadow(0 1px 1px rgba(67,126,150,.24));transition:opacity .08s linear}
+.item.pan-washing .wash-foam{animation:foamPulse .48s ease-in-out infinite alternate}
+@keyframes foamPulse{from{transform:scale(.96) rotate(-2deg)}to{transform:scale(1.04) rotate(2deg)}}
+
+/* Cooking / cleaning system */
+.pan-status{
+  position:absolute;
+  left:50%;
+  top:-24%;
+  transform:translateX(-50%);
+  z-index:15;
+  display:none;
+  width:118px;
+  pointer-events:none;
+  filter:drop-shadow(0 3px 4px rgba(0,0,0,.28));
+}
+.pan-status.visible{display:block}
+.cook-progress-bar{
+  width:118px;
+  height:14px;
+  border-radius:9px;
+  overflow:hidden;
+  border:2px solid rgba(53,23,8,.88);
+  background:rgba(32,20,13,.52);
+  box-shadow:inset 0 0 0 1px rgba(255,240,207,.24);
+}
+.cook-progress-bar>i{
+  display:block;
+  width:0%;
+  height:100%;
+  border-radius:6px;
+  background:linear-gradient(90deg,#d6a832,#83bd59);
+  transition:width .10s linear;
+}
+.pan-status.ready .cook-progress-bar>i{filter:brightness(1.18)}
+.pan-status.burnt .cook-progress-bar>i{filter:brightness(.58) saturate(.45)}
+.pan-smoke{position:absolute;left:var(--vessel-food-left,31%);top:calc(var(--vessel-food-top,16.8%) - 18%);width:var(--vessel-food-width,44%);height:var(--vessel-food-height,55%);z-index:12;pointer-events:none;opacity:0;transition:opacity .25s ease}
+.pan-smoke.visible{opacity:.85}
+.pan-smoke.strong{opacity:1}
+
+/* v198.5.108 — vortex removed again (final decision: gone for good). */
+
+
+.stir-sparkles{
+  position:absolute;
+  left:var(--vessel-food-left,19.5%);
+  top:var(--vessel-food-top,16.8%);
+  width:var(--vessel-food-width,69.5%);
+  height:var(--vessel-food-height,56.8%);
+  pointer-events:none;
+  z-index:11;
+}
+.stir-sparkles span{
+  position:absolute;
+  width:5px;
+  height:5px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.98) 0%,rgba(255,244,196,.9) 42%,rgba(255,225,140,0) 76%);
+  box-shadow:0 0 5px 1px rgba(255,250,220,.85);
+  opacity:0;
+  transform:translate(-50%,-50%) scale(.3);
+}
+.item.stirring-vessel .stir-sparkles span{
+  animation-name:stirSparkleTwinkle;
+  animation-timing-function:ease-in-out;
+  animation-iteration-count:infinite;
+}
+@keyframes stirSparkleTwinkle{
+  0%,100%{opacity:0;transform:translate(-50%,-50%) scale(.3)}
+  50%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}
+}
+
+/* v198.5.104 — ripple rings spawned from the spoon's live position while
+   stirring (see updateStirring). Pool of 4 reusable elements; the .active
+   class is removed+re-added (forcing a reflow) each time one is reused, so
+   the CSS animation restarts cleanly instead of being ignored. */
+.stir-ripples{
+  position:absolute;
+  left:var(--vessel-food-left,19.5%);
+  top:var(--vessel-food-top,16.8%);
+  width:var(--vessel-food-width,69.5%);
+  height:var(--vessel-food-height,56.8%);
+  pointer-events:none;
+  z-index:9;
+}
+.item.stirring-vessel .stir-ripples{
+  opacity:.78;
+  animation:stirRippleSwirl 2.8s linear infinite;
+}
+@keyframes stirRippleSwirl{
+  from{transform:rotate(0deg) scale(.985)}
+  50%{transform:rotate(180deg) scale(1)}
+  to{transform:rotate(360deg) scale(.985)}
+}
+.stir-ripple{
+  position:absolute;
+  width:14%;
+  height:14%;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,.65);
+  box-shadow:0 0 4px rgba(255,255,255,.35);
+  transform:translate(-50%,-50%) scale(.2);
+  opacity:0;
+  pointer-events:none;
+}
+.stir-ripple.active{
+  animation:stirRippleExpand .65s ease-out;
+}
+@keyframes stirRippleExpand{
+  0%{transform:translate(-50%,-50%) scale(.2);opacity:.85}
+  100%{transform:translate(-50%,-50%) scale(2.1);opacity:0}
+}
+
+.stir-bubbles{
+  position:absolute;
+  left:var(--vessel-food-left,19.5%);
+  top:var(--vessel-food-top,16.8%);
+  width:var(--vessel-food-width,69.5%);
+  height:var(--vessel-food-height,56.8%);
+  pointer-events:none;
+  z-index:10;
+}
+.stir-bubbles span{
+  position:absolute;
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.85) 0%,rgba(255,255,255,.35) 30%,rgba(255,255,255,.08) 60%,rgba(255,255,255,0) 78%);
+  border:1px solid rgba(255,255,255,.45);
+  opacity:0;
+  transform:translate(-50%,-50%) scale(.5);
+}
+.item.stirring-vessel .stir-bubbles span{
+  animation-name:stirBubbleRise;
+  animation-timing-function:ease-out;
+  animation-iteration-count:infinite;
+}
+@keyframes stirBubbleRise{
+  0%{opacity:0;transform:translate(-50%,-50%) translateY(0) scale(.4)}
+  15%{opacity:.85}
+  75%{opacity:.55}
+  100%{opacity:0;transform:translate(-50%,-50%) translateY(-14%) scale(1.05)}
+}
+
+/* v198.5.84 — radial blur, delayed until "deep" stirring (~2.5 turns, see
+   updateStirring). True CSS radial/zoom blur isn't possible on the content
+   itself without duplicating it, so this uses a separate overlay whose
+   backdrop-filter blurs whatever is BEHIND it — masked with a hole in the
+   middle, so the center of the dish stays sharp and only the outer ring
+   blurs, matching the classic cartoon "spinning fast" look. */
+.stir-radial-blur{
+  position:absolute;
+  left:var(--vessel-food-left,19.5%);
+  top:var(--vessel-food-top,16.8%);
+  width:var(--vessel-food-width,69.5%);
+  height:var(--vessel-food-height,56.8%);
+  border-radius:50%;
+  pointer-events:none;
+  z-index:8;
+  opacity:0;
+  transition:opacity .45s ease;
+  /* v198.5.86 — much subtler: this was drowning out everything else and
+     reading as "just blurred". Small ring, gentle blur — a hint of speed at
+     the rim, not a smear over the whole dish. */
+  backdrop-filter:blur(0.9px);
+  -webkit-backdrop-filter:blur(0.9px);
+}
+.stir-radial-blur{display:none!important}
+.item.stir-deep .stir-radial-blur{
+  opacity:1;
+}
+
+/* v198.5.90 — replaced the plain scale-pulse with an actual jelly-like
+   jiggle (alternating skew), on top of the now much smaller radial blur —
+   reads as "wobbly, soft" rather than a metronomic breathing pulse. */
+/* v198.5.104 — per-piece micro-wobble, independent of the whole-dish jiggle.
+   Registering --wobble-rot as a real <angle> lets the browser smoothly
+   interpolate it (otherwise custom-property animation just jumps between
+   keyframe values with no in-between frames). Each piece already carries
+   its own animation-delay/duration (set in JS for the jostle system), so
+   reusing those here means every piece wobbles at its own random pace. */
+@property --wobble-rot{
+  syntax:'<angle>';
+  inherits:false;
+  initial-value:0deg;
+}
+@keyframes pieceWobble{
+  0%,100%{--wobble-rot:-4deg}
+  50%{--wobble-rot:4deg}
+}
+.item.stir-deep .exact-chopped-sprite{
+  /* Circular orbit supplies the motion; the old independent wobble made
+     pieces appear to jitter randomly left/right and up/down. */
+  animation:none;
+}
+
+@keyframes stirJiggle{
+  0%,100%{transform:skew(0deg,0deg) translateX(0) scale(1)}
+  25%{transform:skew(3.2deg,1.6deg) translateX(2.2%) scale(1.022)}
+  50%{transform:skew(-.8deg,-.4deg) translateX(-.6%) scale(1)}
+  75%{transform:skew(-3.2deg,-1.6deg) translateX(-2.2%) scale(1.022)}
+}
+.item.stir-deep .vessel-content.visible,
+.item.stir-deep .pan-content.visible{
+  animation:stirJiggle .85s ease-in-out infinite;
+  filter:url(#cooksterSwirlFilter);
+}
+
+.pan-smoke span{position:absolute;bottom:0;width:38px;height:74px;border-radius:50%;background:radial-gradient(ellipse at 50% 70%,rgba(255,255,255,.98),rgba(255,255,255,.5) 45%,rgba(255,255,255,0) 75%);filter:blur(2.5px);animation:steamRise 1.6s ease-out infinite}
+.pan-smoke span:nth-child(1){left:10%;animation-delay:0s}.pan-smoke span:nth-child(2){left:43%;animation-delay:.55s}.pan-smoke span:nth-child(3){left:72%;animation-delay:1.05s}
+@keyframes steamRise{0%{transform:translateY(10px) scale(.7);opacity:0}25%{opacity:.8}100%{transform:translateY(-42px) translateX(8px) scale(1.45);opacity:0}}
+/* v198.5.128 — stains are now <canvas> elements the tool actually erases
+   (destination-out compositing in JS), so no more CSS-driven fade/scale by
+   a --clean progress variable — the canvas pixels themselves ARE the
+   remaining stain. This just handles position/size/z-index. */
+.spill-stain{position:absolute;width:110px;height:78px;z-index:38;pointer-events:auto;transform:translate(-50%,-50%) rotate(var(--r,0deg));filter:drop-shadow(1px 2px 1px rgba(70,20,8,.25));transition:filter .08s linear}
+body.chopped-calibration-active .stain-calib-layout{cursor:grab}
+body.chopped-calibration-active .stain-calib-layout:active{cursor:grabbing}
+.spill-stain.scrubbing{filter:brightness(1.06) drop-shadow(1px 2px 1px rgba(70,20,8,.18))}
+/* v198.5.127 — floor stains, cleaned with the mop. PLACEHOLDER look until
+   your floor-stain PNG is in — swap paintPlaceholderStain() in game.js to
+   ctx.drawImage(img,...) instead, no other logic needs to change. */
+.floor-stain{position:absolute;width:110px;height:78px;z-index:3;pointer-events:auto;transform:translate(-50%,-50%) rotate(var(--r,0deg));filter:drop-shadow(1px 2px 1px rgba(20,14,8,.25));transition:filter .08s linear}
+.floor-stain.scrubbing{filter:brightness(1.06) drop-shadow(1px 2px 1px rgba(20,14,8,.18))}
+.item[data-item-id="dzoger"]>.body{filter:drop-shadow(2px 3px 2px rgba(40,20,8,.25))}
+.item[data-item-id="dzoger"].cleaning-tool>.body{filter:drop-shadow(2px 3px 2px rgba(40,20,8,.18)) brightness(1.05)}
+.item[data-item-id="sundjer"]>.body{filter:drop-shadow(2px 3px 2px rgba(40,20,8,.25))}
+.item[data-item-id="sundjer"].cleaning-tool>.body{filter:drop-shadow(2px 3px 2px rgba(40,20,8,.18)) brightness(1.05)}
+
+.cut-progress{position:absolute;width:82px;height:82px;pointer-events:none;z-index:12000;transform:translate(-50%,-50%);filter:drop-shadow(0 4px 10px rgba(0,0,0,.28))}
+.cut-progress .ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(#f6d96f calc(var(--p,0)*1%), rgba(66,34,12,.22) 0)}
+.cut-progress .ring::before{content:"";position:absolute;inset:6px;border-radius:50%;background:rgba(32,15,7,.82);box-shadow:inset 0 0 0 2px rgba(255,246,222,.22)}
+.cut-progress .ring::after{content:"";position:absolute;inset:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #fff6db 0%, #f0cc72 28%, #c8872d 75%, #8a4e16 100%);box-shadow:0 0 0 2px rgba(40,18,6,.8), inset 0 2px 2px rgba(255,255,255,.35)}
+.cut-progress .txt{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff8e7;font-size:12px;font-weight:900;letter-spacing:.3px;text-shadow:0 2px 4px rgba(0,0,0,.55)}
+body.cutting-active #leftArrow,body.cutting-active #rightArrow{display:none!important}
+
+
+
+/* Cookstove interaction */
+.stove-hotspot{position:absolute;border:0;background:transparent;cursor:pointer;border-radius:10px;outline:none;box-shadow:none;z-index:41}
+.stove-hotspot:hover,.stove-hotspot:focus{outline:none;box-shadow:none;background:transparent}
+#fireboxHotspot{left:1258px;top:428px;width:152px;height:190px}
+#ovenHotspot{left:1394px;top:450px;width:185px;height:180px}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#dishReport{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.48);z-index:30000;font-family:system-ui,sans-serif}
+#dishReport.open{display:flex}
+.dish-card{position:relative;min-width:320px;max-width:440px;padding:24px 26px 22px;border-radius:18px;background:#f5ead5;color:#2d2318;box-shadow:0 24px 80px rgba(0,0,0,.45)}
+#dishClose{position:absolute;right:12px;top:10px;border:0;background:transparent;font-size:30px;cursor:pointer}
+.dish-card h2{margin:0 0 12px;font-size:26px}.dish-score{display:flex;justify-content:space-between;gap:18px;padding:7px 0;border-bottom:1px solid rgba(45,35,24,.12)}
+.dish-total{margin-top:16px;font-weight:800;font-size:18px}.dish-reward{margin-top:8px;font-weight:700}
+
+/* v131 market extension */
+ .market-extras{position:absolute;right:28px;top:28px;width:270px;padding:12px;background:rgba(25,18,12,.88);border:1px solid rgba(255,255,255,.24);border-radius:12px;display:grid;gap:7px;color:#fff;z-index:20;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+.market-extras strong{font-size:15px;letter-spacing:.02em}
+.market-extras button{cursor:pointer;border:0;border-radius:8px;padding:9px 10px;text-align:left;background:rgba(255,255,255,.92);font-weight:700;color:#2a2119}
+.market-extras button:hover{transform:translateY(-1px)}
+
+.crate-fill .crate-onion{position:relative!important;display:inline-block;width:18%!important;height:auto!important;margin:-2% 0 0 -2%;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25));}
+
+.dish-balance{margin-top:14px;padding:10px 12px;border-radius:10px;background:rgba(45,35,24,.06)}
+.dish-balance-title{font-weight:800;margin-bottom:6px}
+.dish-ingredient-row{display:flex;justify-content:space-between;gap:18px;padding:4px 0;font-size:14px}
+.dish-ingredient-row b{text-align:right}
+
+
+#fireTimerBar{
+  position:absolute;
+  left:1260px;
+  top:600px;
+  width:150px;
+  height:13px;
+  border-radius:8px;
+  border:2px solid rgba(53,23,8,.90);
+  background:rgba(32,20,13,.62);
+  box-shadow:0 2px 5px rgba(0,0,0,.30),inset 0 0 0 1px rgba(255,240,207,.22);
+  overflow:hidden;
+  z-index:70;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .15s ease;
+}
+#fireTimerBar.visible{opacity:1}
+#fireTimerBar>i{
+  display:block;
+  width:0%;
+  height:100%;
+  border-radius:5px;
+  background:linear-gradient(90deg,#d95826,#efb43a);
+  transition:width .12s linear;
+}
+
+
+
+
+
+.pan-mix-base{
+  position:absolute;left:50%;top:50%;width:96%;height:92%;
+  border-radius:50%;
+  background:
+    radial-gradient(ellipse at 42% 36%,
+      rgba(var(--mix-light),.48) 0%,
+      rgba(var(--mix-color),.62) 54%,
+      rgba(var(--mix-dark),.42) 100%);
+  transform:translate(-50%,-50%) scale(var(--food-fill,1));
+  transform-origin:50% 52%;
+  transition:transform .22s ease-out,background .22s linear;
+  z-index:4;
+}
+.pan-ingredient-layer{
+  position:absolute!important;
+  left:calc(50% + var(--layer-x,0%))!important;
+  top:calc(50% + var(--layer-y,0%))!important;
+  width:117%!important;
+  height:148%!important;
+  object-fit:fill!important;
+  transform:
+    translate(-50%,-50%)
+    rotate(var(--layer-rot,0deg))
+    scale(calc(var(--food-fill,1) * var(--layer-scale,1)))!important;
+  transform-origin:50% 52%!important;
+  opacity:var(--layer-opacity,1)!important;
+  filter:none!important;
+  transition:transform .22s ease-out,opacity .18s linear!important;
+}
+
+
+/* v150 — Kitchen Elements storage / shop */
+#kitchenElementsBtn{padding:10px 16px;border-radius:13px;border:3px solid var(--deep);background:#e7c778;color:var(--deep);font-weight:900;font-size:17px;box-shadow:0 4px 0 #765414;cursor:pointer}
+#kitchenElementsScene{position:fixed;inset:0;z-index:65000;display:none;align-items:center;justify-content:center;padding:28px;background:rgba(22,12,7,.72);backdrop-filter:blur(5px);cursor:default}
+#kitchenElementsScene.open{display:flex}
+.kitchen-elements-card{width:min(1120px,94vw);height:min(90vh,860px);max-height:90vh;display:flex;flex-direction:column;overflow:hidden;background:#f6ead1;border:4px solid #351b0d;border-radius:22px;box-shadow:0 28px 90px rgba(0,0,0,.55);color:#2d160b}
+.kitchen-elements-card>header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 22px;background:linear-gradient(#d79b45,#c77d28);border-bottom:3px solid #5f3215}
+.kitchen-elements-card h2{margin:0;font-size:26px}.kitchen-elements-card header p{margin:4px 0 0;font-weight:700;opacity:.78}
+#kitchenElementsClose{width:42px;height:42px;border:0;border-radius:12px;background:#32180b;color:#fff;font-size:28px;font-weight:900;cursor:pointer}
+.kitchen-elements-columns{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:1.15fr .85fr;gap:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable}
+.kitchen-elements-columns>section{min-width:0;padding:18px 20px;overflow:visible}.kitchen-elements-shop{background:#ead8b9;border-left:2px solid rgba(74,37,15,.25)}
+.ke-section-title{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:14px}.ke-section-title strong{font-size:21px}.ke-section-title span{font-size:13px;font-weight:800;opacity:.7}
+.ke-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ke-card{position:relative;display:grid;grid-template-columns:104px 1fr;gap:10px;align-items:center;min-height:112px;padding:10px;border:2px solid #7c4b25;border-radius:15px;background:#fff8e9;box-shadow:0 4px 0 rgba(80,42,19,.18);cursor:pointer;text-align:left;color:#2c1509}
+.ke-card:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 0 rgba(80,42,19,.18)}
+.ke-card:disabled{cursor:default;opacity:.54;filter:saturate(.7)}
+.ke-card img{width:100px;height:88px;object-fit:contain;pointer-events:none;filter:drop-shadow(0 5px 5px rgba(0,0,0,.18))}
+.ke-card strong{display:block;font-size:16px;line-height:1.12;margin-bottom:5px}.ke-card small{display:block;font-size:12px;font-weight:800;opacity:.72}
+.ke-card .ke-price{margin-top:8px;font-size:14px;font-weight:900;color:#5f370e}
+.ke-card .ke-state{margin-top:7px;display:inline-block;padding:4px 7px;border-radius:8px;background:#e7d2a5;font-size:18px;font-weight:900}
+.ke-card.owned-on-table .ke-state{background:#bdd5b4;color:#24421c}
+.ke-empty{grid-column:1/-1;padding:24px;text-align:center;font-weight:800;opacity:.7}
+body.kitchen-elements-open #cursor,body.kitchen-elements-open #label,body.kitchen-elements-open .edge-arrow{display:none!important}
+@media(max-width:780px){.kitchen-elements-columns{grid-template-columns:1fr}.kitchen-elements-shop{border-left:0;border-top:2px solid rgba(74,37,15,.25)}.ke-grid{grid-template-columns:1fr}}
+
+
+
+
+/* v152 — calibrated food zones for every current vessel */
+.vessel{--vessel-food-left:0%;--vessel-food-top:0%;--vessel-food-width:100%;--vessel-food-height:100%;--vessel-clip-x:50%;--vessel-clip-y:50%;--vessel-front-top:50%}
+.vessel-content{
+  position:absolute;
+  left:var(--vessel-food-left);
+  top:var(--vessel-food-top);
+  width:var(--vessel-food-width);
+  height:var(--vessel-food-height);
+  display:none;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:thin;
+  pointer-events:none;
+  z-index:5;
+}
+.vessel-content.visible{display:block}
+.vessel-front-mask{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  z-index:6;
+  clip-path:inset(var(--vessel-front-top) 0 0 0);
+}
+/* While stirring, the vessel's front wall must sit above the spoon bowl so
+   the bowl reads as submerged; the handle remains visible above it. */
+.item.stirring-vessel .vessel-front-mask{z-index:11010}
+.item[data-item-id="vangla_srednja"] .vessel-front-mask{
+  clip-path:polygon(
+    0 50%,
+    8% 59%,
+    16% 67%,
+    27% 73%,
+    39% 77%,
+    50% 79%,
+    61% 77%,
+    73% 73%,
+    84% 67%,
+    92% 59%,
+    100% 50%,
+    100% 100%,
+    0 100%
+  );
+}
+.item.container-target{filter:
+    drop-shadow(0 0 8px rgba(194,148,58,.76))
+    drop-shadow(0 0 2px rgba(103,67,31,.72))}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* v198.5.90 — the more it's cooked, the more everything softly blurs
+   together, like the pieces are melting into one dish rather than staying
+   as distinct cut cubes. Blur grows with cook stage; burnt (7) stays a flat
+   terminal look rather than getting blurrier still. */
+.food-stage-layer[data-food-stage="1"]{filter:none}
+.food-stage-layer[data-food-stage="2"],
+.food-stage-layer[data-food-stage="3"],
+.food-stage-layer[data-food-stage="4"],
+.food-stage-layer[data-food-stage="5"],
+.food-stage-layer[data-food-stage="6"]{filter:none}
+
+/* v166.1 — cooking texture cross-fade.
+   Each cooking phase is rendered as a complete food layer; old and new
+   phases overlap briefly so raw -> cooked -> browned -> burnt is continuous. */
+.food-stage-layer{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  opacity:1;
+}
+.food-stage-layer .pan-mix-base,
+.food-stage-layer .pan-ingredient-layer{
+  pointer-events:none;
+}
+
+
+/* v168 — stove/oven state tween layer.
+   Full scene coordinates guarantee the final state remains exactly aligned. */
+#sceneStateTransition{
+  position:absolute;
+  inset:0;
+  width:1672px;
+  height:941px;
+  background-size:1672px 941px;
+  background-position:0 0;
+  background-repeat:no-repeat;
+  pointer-events:none;
+  display:none;
+  opacity:0;
+  z-index:1;
+  will-change:opacity,transform,filter;
+}
+
+
+/* v169 — whole roasted peppers retain the same silhouette/art used on the hotplate. */
+.whole-roasted-pepper{
+  position:absolute;
+  height:auto;
+  object-fit:contain;
+  transform-origin:50% 68%;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  filter:none;
+}
+
+
+/* v172 — roasted whole peppers use the same centered food-zone behavior as other ingredients. */
+.vessel-content .whole-roasted-pepper,
+.pan-content .whole-roasted-pepper{
+  transform-origin:50% 50%;
+}
+
+/* v174 — roasted peppers use the centered food-zone composition used by chopped ingredients. */
+.vessel-content .whole-roasted-pepper,
+.pan-content .whole-roasted-pepper{
+  transform-origin:50% 50%;
+  object-fit:contain;
+}
+
+
+/* v178 — enamel basin:
+   show only actual ingredient artwork; no circular/green mix backing plate.
+   The calibrated food zone is also kept behind the basin's front/lower rim. */
+
+.item[data-item-id="lavor_emajl_veliki"] .vessel-content{
+  overflow:hidden;
+  clip-path:ellipse(49% 46% at 50% 49%);
+}
+
+
+/* v179 — no artificial mix backing plate anywhere.
+   Only the actual ingredient/vegetable texture layers remain visible. */
+.pan-mix-base{
+  display:none !important;
+}
+
+/* v184 — whole produce remains visibly whole inside every cookware/container.
+   It only switches to canonical chopped textures after cutState === 'sliced'. */
+.whole-produce-piece{
+  position:absolute;
+  height:auto;
+  object-fit:contain;
+  transform-origin:50% 50%;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+}
+
+/* v185 — direct in-game Serbian garden scene. No bitmap background. */
+#gardenScene{position:fixed;inset:0;z-index:68000;display:none;overflow:hidden;background:#18351f;cursor:default}
+#gardenScene.open{display:block}
+#gardenStage{
+  position:absolute;left:50%;top:50%;width:min(1672px,100vw,calc(100vh * 1672 / 941));
+  aspect-ratio:1672/941;transform:translate(-50%,-50%);overflow:hidden;
+  background:#9bcf70;box-shadow:0 20px 70px rgba(0,0,0,.45);
+}
+#gardenArt{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+.garden-action{
+  position:absolute;border:3px solid rgba(54,32,17,.85);border-radius:14px;
+  background:linear-gradient(#f1bc52,#ce7f25);color:#321b0d;font-weight:900;
+  box-shadow:0 5px 0 #6f3e18,0 10px 22px rgba(0,0,0,.22);cursor:pointer;
+  user-select:none;transform-origin:center;transition:transform .12s ease,filter .12s ease;
+}
+.garden-action:hover{filter:brightness(1.08);transform:translateY(-2px)}
+.garden-action:active{transform:translateY(3px);box-shadow:0 2px 0 #6f3e18}
+.garden-back{right:2.4%;top:2.6%;padding:10px 15px;font-size:15px}
+.garden-crate-source{left:2.1%;bottom:2.4%;width:148px;height:104px;background:rgba(103,62,29,.78);display:flex;align-items:center;justify-content:center;padding:0}
+.garden-crate-source img{position:absolute;inset:2px 8px 22px;width:132px;height:77px;object-fit:contain;filter:drop-shadow(0 4px 4px rgba(0,0,0,.28))}
+.garden-crate-source span{position:absolute;left:0;right:0;bottom:5px;color:#fff5db;text-shadow:0 2px 2px #2d1609;font-size:13px}
+#gardenCrateLayer,#gardenBedLayer{position:absolute;inset:0;pointer-events:none}
+.garden-bed-hit{position:absolute;border:2px solid transparent;border-radius:50%;pointer-events:auto;cursor:pointer;background:transparent;transform:rotate(-2deg)}
+.garden-bed-hit:hover{border-color:rgba(255,236,149,.9);box-shadow:inset 0 0 34px rgba(255,227,111,.17),0 0 14px rgba(255,237,167,.24)}
+.garden-bed-hit::after{
+  content:attr(data-bed-label);position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);
+  padding:5px 9px;border-radius:10px;background:rgba(40,25,14,.77);color:#fff6d9;font-size:12px;font-weight:800;
+  opacity:0;white-space:nowrap;transition:opacity .12s ease;pointer-events:none;
+}
+.garden-bed-hit:hover::after{opacity:1}
+.garden-loose-crate{position:absolute;width:124px;height:92px;pointer-events:auto;cursor:grab;user-select:none;touch-action:none;transform-origin:50% 78%}
+.garden-loose-crate.dragging{cursor:grabbing;z-index:100}
+.garden-loose-crate img{width:100%;height:100%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 6px 5px rgba(35,21,10,.34))}
+.garden-loose-crate:hover img{filter:drop-shadow(0 0 2px #fff7d2) drop-shadow(0 6px 5px rgba(35,21,10,.34))}
+.garden-window-hotspot{position:absolute;left:0;top:5%;width:18%;height:31%;z-index:40;border:0;background:transparent;cursor:pointer;border-radius:12px}
+.garden-window-hotspot:hover{box-shadow:inset 0 0 0 3px rgba(255,239,181,.38),inset 0 0 28px rgba(255,226,117,.13)}
+.garden-window-hotspot::after{content:'BAŠTA';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(49,28,14,.72);color:#fff1c8;padding:8px 12px;border-radius:10px;font-weight:900;opacity:0;transition:opacity .12s}
+.garden-window-hotspot:hover::after{opacity:1}
+body.garden-open #hud{display:none}
+body.garden-open #cursor,body.garden-open #label{display:none!important}
+
+
+/* v186 — high-detail direct-drawn garden graphics pass.
+   No bitmap garden background: scene remains vector/game-native. */
+#gardenScene{
+  background:#35563b;
+}
+#gardenStage{
+  overflow:hidden;
+  isolation:isolate;
+}
+#gardenArt{
+  image-rendering:auto;
+  filter:saturate(.96) contrast(1.02);
+}
+#gardenStage::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:1;
+  background:
+    radial-gradient(ellipse at 50% 44%,transparent 48%,rgba(33,27,20,.12) 100%),
+    linear-gradient(180deg,rgba(255,247,216,.06),transparent 25%,transparent 78%,rgba(55,35,21,.05));
+  mix-blend-mode:multiply;
+}
+#gardenBedLayer,#gardenCrateLayer,.garden-action{
+  z-index:5;
+}
+.garden-bed-hit{
+  border-width:2px;
+  border-color:transparent;
+  background:transparent;
+  border-radius:48% 52% 46% 54% / 52% 46% 54% 48%;
+  transition:box-shadow .12s ease,border-color .12s ease,filter .12s ease;
+}
+.garden-bed-hit:nth-child(2n){transform:rotate(1.2deg)}
+.garden-bed-hit:nth-child(3n){transform:rotate(-1.4deg)}
+.garden-bed-hit:hover{
+  border-color:rgba(255,239,170,.68);
+  box-shadow:inset 0 0 26px rgba(255,230,130,.13),0 0 11px rgba(255,240,186,.16);
+  filter:brightness(1.03);
+}
+.garden-bed-hit::after{
+  content:attr(data-bed-label);
+  position:absolute;
+  left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  padding:5px 9px;
+  border-radius:9px;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.02em;
+  color:#fff4d4;
+  background:rgba(48,31,21,.78);
+  box-shadow:0 2px 7px rgba(0,0,0,.26);
+  opacity:0;
+  white-space:nowrap;
+  pointer-events:none;
+}
+.garden-bed-hit:hover::after{opacity:1}
+.garden-loose-crate img{
+  filter:drop-shadow(0 7px 5px rgba(36,24,16,.38));
+}
+.garden-crate-source{
+  border:2px solid rgba(255,224,165,.32);
+  background:linear-gradient(180deg,rgba(101,64,35,.9),rgba(63,38,24,.9));
+  backdrop-filter:blur(2px);
+}
+.garden-back{
+  background:linear-gradient(180deg,#9c642f,#70431f);
+  border-color:#4f2e18;
+}
+
+/* v187 — exact generated pop-art garden background + per-bed hover polygons */
+#gardenArt{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:fill;
+  pointer-events:none;
+  display:block;
+  filter:none !important;
+}
+#gardenStage::after{display:none !important}
+#gardenBedLayer{
+  position:absolute;
+  inset:0;
+  z-index:4;
+  pointer-events:none;
+}
+.garden-bed-hit{
+  position:absolute !important;
+  inset:0 !important;
+  width:100% !important;
+  height:100% !important;
+  pointer-events:auto !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:rgba(255,226,92,0) !important;
+  box-shadow:none !important;
+  transform:none !important;
+  transition:background .12s ease,filter .12s ease !important;
+}
+.garden-bed-hit:hover{
+  background:rgba(255,225,87,.22) !important;
+  filter:drop-shadow(0 0 7px rgba(255,245,175,.68)) brightness(1.05);
+}
+.garden-bed-hit::after{
+  content:attr(data-bed-label);
+  position:absolute;
+  left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  padding:6px 10px;
+  border-radius:9px;
+  color:#fff6d8;
+  background:rgba(39,25,16,.82);
+  font-weight:900;
+  font-size:13px;
+  opacity:0;
+  pointer-events:none;
+  white-space:nowrap;
+}
+.garden-bed-hit:hover::after{opacity:1}
+.market-seed-divider{
+  margin-top:5px;
+  padding-top:8px;
+  border-top:1px solid rgba(255,255,255,.22);
+  font-size:13px;
+  font-weight:900;
+  color:#ffe8a8;
+}
+#marketBuyTomatoSeeds,#marketBuyCucumberSeeds{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+#marketBuyTomatoSeeds span,#marketBuyCucumberSeeds span{
+  min-width:26px;
+  padding:2px 7px;
+  border-radius:999px;
+  text-align:center;
+  background:#315b2b;
+  color:#fff;
+  font-weight:900;
+}
+
+/* v188 — bed hover geometry traced from user's red-outline reference */
+.garden-bed-hit{
+  background:rgba(255,225,87,0) !important;
+  outline:0 solid transparent;
+}
+.garden-bed-hit:hover{
+  background:rgba(255,231,112,.18) !important;
+  filter:drop-shadow(0 0 5px rgba(255,247,190,.82)) brightness(1.045) !important;
+}
+
+/* v190 — tomato planting/growth prototype on Bed 1 */
+#gardenPlantLayer{
+  position:absolute;
+  inset:0;
+  z-index:6;
+  pointer-events:none;
+}
+.tomato-seed-slot{
+  position:absolute;
+  width:24px;height:24px;
+  margin:-12px 0 0 -12px;
+  border-radius:50%;
+  border:3px solid #fff2a9;
+  background:rgba(91,54,26,.52);
+  box-shadow:0 0 0 3px rgba(59,34,17,.48),0 0 13px rgba(255,238,137,.75);
+  cursor:pointer;
+  pointer-events:auto;
+  animation:tomatoSeedPulse 1.15s ease-in-out infinite alternate;
+}
+.tomato-seed-slot:hover{
+  background:rgba(255,222,94,.72);
+  transform:scale(1.16);
+}
+.tomato-seed-slot.planted{
+  opacity:0;
+  transform:scale(.35);
+  transition:opacity .18s ease,transform .18s ease;
+}
+@keyframes tomatoSeedPulse{
+  from{filter:brightness(.92)}
+  to{filter:brightness(1.25)}
+}
+.tomato-plant{
+  position:absolute;
+  width:320px;
+  height:430px;
+  margin-left:-160px;
+  margin-top:-430px;
+  transform:scale(var(--plant-scale,.3));
+  transform-origin:50% 100%;
+  pointer-events:none;
+}
+.tomato-stage-img{
+  position:absolute;
+  left:50%;bottom:0;
+  width:100%;height:100%;
+  object-fit:contain;
+  object-position:center bottom;
+  transform:translateX(-50%);
+  opacity:1;
+  transition:opacity 5s linear;
+  filter:drop-shadow(0 5px 4px rgba(43,28,17,.32));
+}
+.tomato-stage-img.tomato-stage-enter{opacity:0}
+.tomato-stage-img.tomato-stage-exit{opacity:0}
+
+/* v190.1 — planting slot visibility / active-bed correction */
+#gardenPlantLayer{
+  z-index:20 !important;
+}
+.tomato-seed-slot{
+  z-index:30 !important;
+  width:30px !important;
+  height:30px !important;
+  margin:-15px 0 0 -15px !important;
+  border:4px solid #fff4a8 !important;
+  background:rgba(112,68,28,.72) !important;
+  box-shadow:0 0 0 3px rgba(54,31,14,.72),0 0 18px rgba(255,238,111,.95) !important;
+}
+.garden-bed-hit.planting-active{
+  background:rgba(255,225,87,.10) !important;
+  filter:drop-shadow(0 0 4px rgba(255,245,175,.6)) brightness(1.025) !important;
+}
+
+/* v191 — invisible bed hover + tiny planting dots on user's exact center lines */
+.garden-bed-hit,
+.garden-bed-hit:hover,
+.garden-bed-hit.planting-active{
+  background:transparent !important;
+  border-color:transparent !important;
+  box-shadow:none !important;
+  filter:none !important;
+  outline:none !important;
+}
+.garden-bed-hit::after,
+.garden-bed-hit:hover::after{
+  display:none !important;
+  opacity:0 !important;
+}
+.tomato-seed-slot{
+  width:8px !important;
+  height:8px !important;
+  margin:-4px 0 0 -4px !important;
+  padding:0 !important;
+  border:1px solid rgba(255,248,205,.95) !important;
+  border-radius:50% !important;
+  background:#f1c84b !important;
+  box-shadow:0 0 2px rgba(0,0,0,.82),0 0 4px rgba(255,238,110,.72) !important;
+  animation:none !important;
+  transform:none !important;
+  cursor:pointer !important;
+}
+.tomato-seed-slot:hover{
+  width:10px !important;
+  height:10px !important;
+  margin:-5px 0 0 -5px !important;
+  background:#ffe66b !important;
+  transform:none !important;
+}
+.tomato-seed-slot.planted{
+  opacity:0 !important;
+  transform:scale(.1) !important;
+  transition:opacity .12s linear,transform .12s linear !important;
+}
+
+/* v192 — corrected plant perspective + ripe tomato harvesting */
+.tomato-plant{
+  pointer-events:none;
+}
+.tomato-plant.ripe{
+  pointer-events:auto;
+}
+.ripe-fruit-hit{
+  position:absolute;
+  width:42px;
+  height:42px;
+  margin:-21px 0 0 -21px;
+  padding:0;
+  border:0;
+  border-radius:50%;
+  background:transparent;
+  cursor:pointer;
+  pointer-events:auto;
+  z-index:12;
+}
+.ripe-fruit-hit:hover{
+  outline:2px solid rgba(255,244,174,.82);
+  box-shadow:0 0 9px rgba(255,228,101,.7);
+}
+.ripe-fruit-hit.picked{
+  pointer-events:none;
+  opacity:0;
+}
+.garden-loose-crate.full img{
+  filter:drop-shadow(0 7px 5px rgba(36,24,16,.38)) brightness(1.03);
+}
+
+/* v192.1 — harvest click-through fix.
+   Large plant wrappers overlap strongly on the front beds; only the tomato
+   hit circles may receive pointer events. */
+.tomato-plant,
+.tomato-plant.ripe{
+  pointer-events:none !important;
+}
+.tomato-stage-img{
+  pointer-events:none !important;
+}
+.ripe-fruit-hit{
+  pointer-events:auto !important;
+  width:52px !important;
+  height:52px !important;
+  margin:-26px 0 0 -26px !important;
+  z-index:50 !important;
+}
+.ripe-fruit-hit.picked{
+  pointer-events:none !important;
+}
+
+/* v194 — right-click seed selector */
+.garden-seed-menu{
+  position:absolute;
+  z-index:1000;
+  min-width:190px;
+  padding:8px;
+  border:2px solid rgba(67,43,24,.92);
+  border-radius:12px;
+  background:rgba(42,29,20,.96);
+  box-shadow:0 10px 28px rgba(0,0,0,.38);
+  backdrop-filter:blur(3px);
+  color:#fff7df;
+  pointer-events:auto;
+}
+.garden-seed-menu-title{
+  padding:4px 7px 7px;
+  margin-bottom:5px;
+  font-size:12px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:#f3d38a;
+  border-bottom:1px solid rgba(255,255,255,.16);
+}
+.garden-seed-option{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:8px 9px;
+  margin:3px 0;
+  border:0;
+  border-radius:8px;
+  background:rgba(255,255,255,.08);
+  color:#fff7df;
+  font-weight:800;
+  cursor:pointer;
+  text-align:left;
+}
+.garden-seed-option:hover{
+  background:rgba(255,255,255,.16);
+}
+.garden-seed-option.selected{
+  background:rgba(90,135,61,.72);
+  box-shadow:inset 0 0 0 1px rgba(227,255,196,.35);
+}
+.garden-seed-option b{
+  min-width:26px;
+  text-align:center;
+  padding:2px 6px;
+  border-radius:999px;
+  background:rgba(0,0,0,.28);
+}
+.garden-seed-empty{
+  padding:8px;
+  font-size:12px;
+  color:#e6d8c0;
+}
+
+/* v194.2 — dedicated harvest overlay.
+   Harvest hit-zones are no longer children of overlapping plant wrappers. */
+#gardenHarvestLayer{
+  position:absolute;
+  inset:0;
+  z-index:2500;
+  pointer-events:none;
+}
+#gardenHarvestLayer .ripe-fruit-hit{
+  position:absolute !important;
+  width:46px !important;
+  height:46px !important;
+  margin:-23px 0 0 -23px !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:50% !important;
+  background:transparent !important;
+  cursor:pointer !important;
+  pointer-events:auto !important;
+  z-index:1 !important;
+}
+#gardenHarvestLayer .ripe-fruit-hit:hover{
+  outline:2px solid rgba(255,244,174,.9) !important;
+  box-shadow:0 0 10px rgba(255,228,101,.78) !important;
+}
+.tomato-plant,
+.tomato-plant.ripe,
+.tomato-stage-img{
+  pointer-events:none !important;
+}
+
+
+/* v196 — persistent physical garden crates and carry state. */
+.garden-loose-crate .garden-crate-carry-badge{
+  position:absolute;left:50%;top:-12px;transform:translateX(-50%);
+  display:none;padding:4px 8px;border-radius:9px;background:rgba(40,25,14,.92);
+  color:#fff2b9;font-size:11px;font-weight:900;letter-spacing:.04em;white-space:nowrap;
+  pointer-events:none;box-shadow:0 2px 5px rgba(0,0,0,.28);
+}
+.garden-loose-crate.carried .garden-crate-carry-badge{display:block}
+.garden-loose-crate.carried img{
+  filter:drop-shadow(0 0 3px #fff2a8) drop-shadow(0 0 8px rgba(255,210,72,.92)) drop-shadow(0 6px 5px rgba(35,21,10,.34));
+}
+
+
+/* v197 — generalized cookware thermal HUD (pans + heatable pots). */
+.cooking-status{
+  width:124px;
+  top:-31%;
+  text-align:center;
+}
+.cook-state-label{
+  display:inline-block;
+  margin:0 auto 3px;
+  padding:2px 7px;
+  border-radius:8px;
+  background:rgba(37,20,11,.82);
+  color:#fff4df;
+  border:1px solid rgba(255,244,223,.22);
+  font-size:10px;
+  line-height:13px;
+  font-weight:900;
+  letter-spacing:.25px;
+  text-shadow:0 1px 2px rgba(0,0,0,.45);
+}
+.cooking-status .cook-progress-bar{
+  position:relative;
+  width:124px;
+  background:linear-gradient(90deg,rgba(31,20,13,.62) 0 78%,rgba(74,34,13,.70) 78% 100%);
+}
+.cook-safe-mark{
+  position:absolute;
+  left:78%;
+  top:-2px;
+  bottom:-2px;
+  width:2px;
+  background:rgba(255,246,210,.88);
+  box-shadow:0 0 4px rgba(255,235,164,.6);
+  pointer-events:none;
+}
+.cooking-status[data-phase="raw"] .cook-progress-bar>i{background:linear-gradient(90deg,#6aa7d7,#84c1d6)}
+.cooking-status[data-phase="heating"] .cook-progress-bar>i{background:linear-gradient(90deg,#d4ad43,#82bd59)}
+.cooking-status[data-phase="cooked"] .cook-progress-bar>i{background:linear-gradient(90deg,#79b955,#c9c94a)}
+.cooking-status[data-phase="browned"] .cook-progress-bar>i{background:linear-gradient(90deg,#d39b36,#bd652f)}
+.cooking-status[data-phase="burnt"] .cook-progress-bar>i{background:linear-gradient(90deg,#7b3e27,#332018)}
+.item.vessel-pot .cooking-status{top:-27%}
+
+/* v197 — pseudo-3D instanced food mesh used when 2+ sliced ingredients mix. */
+.food-mesh-instance{
+  position:absolute!important;
+  height:auto!important;
+  object-fit:contain!important;
+  transform:
+    translate(-50%,-50%)
+    rotate(var(--mesh-rot,0deg))
+    scaleY(calc(.78 + var(--mesh-depth,.5)*.18))!important;
+  transform-origin:50% 58%!important;
+  opacity:.94;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  filter:drop-shadow(0 calc(1px + var(--mesh-depth,.5)*1.4px) calc(1px + var(--mesh-depth,.5)*1.2px) rgba(48,22,9,.26));
+  transition:filter .35s linear,opacity .25s linear;
+}
+.food-stage-layer[data-food-stage="2"] .food-mesh-instance{filter:brightness(.98) saturate(.98) drop-shadow(0 1px 1px rgba(48,22,9,.25))}
+.food-stage-layer[data-food-stage="3"] .food-mesh-instance{filter:brightness(.94) saturate(.96) sepia(.03) drop-shadow(0 1.5px 1.3px rgba(48,22,9,.27))}
+.food-stage-layer[data-food-stage="4"] .food-mesh-instance{filter:brightness(.89) saturate(.93) sepia(.07) drop-shadow(0 1.8px 1.5px rgba(48,22,9,.29))}
+.food-stage-layer[data-food-stage="5"] .food-mesh-instance{filter:brightness(.83) saturate(.90) sepia(.11) drop-shadow(0 2px 1.7px rgba(48,22,9,.31))}
+.food-stage-layer[data-food-stage="6"] .food-mesh-instance{filter:brightness(.72) saturate(.82) sepia(.20) drop-shadow(0 2px 1.8px rgba(48,22,9,.34))}
+.food-stage-layer[data-food-stage="7"] .food-mesh-instance{filter:brightness(.43) saturate(.55) sepia(.42) drop-shadow(0 2px 2px rgba(32,14,6,.42))}
+
+/* Per-batch thermal tint overrides the aggregate vessel stage for the 2.5D mesh. */
+.food-mesh-instance[data-food-state="raw"]{filter:brightness(1.02) saturate(1.04) drop-shadow(0 1px 1px rgba(48,22,9,.22))!important}
+.food-mesh-instance[data-food-state="heating"]{filter:brightness(.94) saturate(.98) sepia(.04) drop-shadow(0 1.4px 1.2px rgba(48,22,9,.26))!important}
+.food-mesh-instance[data-food-state="cooked"]{filter:brightness(.84) saturate(.91) sepia(.10) drop-shadow(0 1.8px 1.5px rgba(48,22,9,.30))!important}
+.food-mesh-instance[data-food-state="browned"]{filter:brightness(.68) saturate(.82) sepia(.23) drop-shadow(0 2px 1.8px rgba(48,22,9,.35))!important}
+.food-mesh-instance[data-food-state="burnt"]{filter:brightness(.40) saturate(.52) sepia(.45) drop-shadow(0 2px 2px rgba(32,14,6,.44))!important}
+
+/* v198.4 — crate grounding:
+   crate shadows are a compact neutral contact ellipse only.
+   The generic warm/diagonal cast-shadow styling is intentionally disabled. */
+.cast-shadow.crate-contact-only{
+  background:radial-gradient(ellipse at center,
+    rgba(14,10,7,.64) 0%,
+    rgba(20,14,10,.52) 38%,
+    rgba(28,20,15,.26) 68%,
+    rgba(28,20,15,0) 100%);
+  box-shadow:none;
+  mix-blend-mode:multiply;
+}
+.cast-shadow.crate-contact-only::after{display:none}
+
+
+
+/* v198.5 — dual-axis calibration.
+   The scene itself stays 2D; each sprite gets a very subtle local rotateX pitch. */
+.item{
+  transform-style:preserve-3d;
+}
+.item>.body,
+.item .lid-hit,
+.item .lid-crop{
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+
+
+
+/* v198.5.1 — rollback-safe smooth placement ghost only.
+   Visual movement is eased/slowed slightly, but all placement/depth logic
+   remains exactly on the v198.5 base. */
+.placement-ghost{
+  transition:
+    left 90ms linear,
+    top 90ms linear,
+    width 90ms linear,
+    height 90ms linear,
+    transform 110ms ease,
+    opacity 110ms ease;
+  will-change:left,top,width,height,transform,opacity;
+}
+
+
+
+/* v198.5.2 — reliable vertical scrolling for Kitchen Elements. */
+@media (max-width:760px){
+  #kitchenElementsScene{padding:12px}
+  .kitchen-elements-card{width:96vw;height:92vh;max-height:92vh}
+  .kitchen-elements-columns{grid-template-columns:1fr}
+  .kitchen-elements-shop{border-left:0;border-top:2px solid rgba(74,37,15,.25)}
+}
+
+
+
+/* v198.5.7 — loose produce Green Ghost is smoothed by requestAnimationFrame.
+   Disable the generic CSS transition only for vegetables/fruits to prevent
+   two smoothing systems from fighting each other and causing micro-snaps. */
+.placement-ghost.produce-smooth{
+  transition:none!important;
+}
+
+
+
+/* v198.5.8 — physical spoon stirring.
+   0 = separated ingredient piles, 1 = one interleaved multicolor mixture. */
+.stir-pile-layer,
+.stir-mesh-layer{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  transform-origin:50% 52%;
+}
+.stir-pile-layer{
+  opacity:calc(1 - var(--stir-mix,0));
+}
+.stir-mesh-layer{opacity:0}
+.stir-pile-piece{
+  position:absolute;
+  height:auto;
+  object-fit:contain;
+  transform:translate(-50%,-50%) rotate(var(--pile-rot,0deg)) scaleY(.84);
+  transform-origin:50% 58%;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  filter:drop-shadow(0 1.3px 1.2px rgba(48,22,9,.24));
+}
+.food-stage-layer[data-food-stage="2"] .stir-pile-piece{filter:brightness(.98) saturate(.98) drop-shadow(0 1px 1px rgba(48,22,9,.23))}
+.food-stage-layer[data-food-stage="3"] .stir-pile-piece{filter:brightness(.94) saturate(.96) sepia(.03) drop-shadow(0 1.3px 1.1px rgba(48,22,9,.25))}
+.food-stage-layer[data-food-stage="4"] .stir-pile-piece{filter:brightness(.89) saturate(.93) sepia(.07) drop-shadow(0 1.5px 1.3px rgba(48,22,9,.27))}
+.food-stage-layer[data-food-stage="5"] .stir-pile-piece{filter:brightness(.83) saturate(.90) sepia(.11) drop-shadow(0 1.7px 1.5px rgba(48,22,9,.29))}
+.food-stage-layer[data-food-stage="6"] .stir-pile-piece{filter:brightness(.72) saturate(.82) sepia(.20) drop-shadow(0 2px 1.8px rgba(48,22,9,.33))}
+.food-stage-layer[data-food-stage="7"] .stir-pile-piece{filter:brightness(.43) saturate(.55) sepia(.42) drop-shadow(0 2px 2px rgba(32,14,6,.42))}
+
+.stir-pile-layer,
+.stir-old-mix-layer{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  overflow:hidden;
+  transform:none!important;
+  transform-origin:50% 50%;
+  transition:opacity 85ms linear;
+}
+.stir-old-mix-layer{
+  opacity:var(--stir-mix,0);
+}
+
+/* Stationary masks above; only these INNER rotors turn. */
+.stir-pile-rotor{
+  position:absolute;
+  inset:0;
+  transform:rotate(var(--stir-turn,0deg));
+  transform-origin:50% 50%;
+  will-change:transform;
+}
+.stir-old-mix-rotor{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:148%;
+  height:148%;
+  transform:translate(-50%,-50%) rotate(var(--stir-turn,0deg));
+  transform-origin:50% 50%;
+  will-change:transform;
+}
+
+/* A composition-weighted base fills the entire bottom ellipse. */
+.stir-old-mix-fill{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background:
+    radial-gradient(
+      ellipse at 44% 38%,
+      rgba(var(--old-mix-light),.96) 0%,
+      rgba(var(--old-mix-color),.94) 52%,
+      rgba(var(--old-mix-dark),.90) 100%
+    );
+  box-shadow:
+    inset 0 3px 5px rgba(255,235,190,.15),
+    inset 0 -4px 7px rgba(70,28,12,.14);
+  pointer-events:none;
+}
+.item[data-item-id="kasika_mesanje"].stirring-tool>.body{
+  filter:brightness(1.06) drop-shadow(0 1px 1px rgba(38,20,9,.16));
+}
+.pan-status.stirring .cook-progress-bar>i{
+  filter:brightness(1.16) saturate(.90);
+}
+.pan-status.stirring .cook-state-label{
+  letter-spacing:.02em;
+}
+/* Mixing must never replace the cooking label with a separate text state. */
+.pan-status.stirring .cook-state-label{display:none!important}
+
+
+
+/* v198.5.9 — tool affordance: same green visual language used when an
+   ingredient can be dropped into cookware. No text prompt is required. */
+.item.stir-ready-target{filter:
+    drop-shadow(0 0 8px rgba(194,148,58,.76))
+    drop-shadow(0 0 2px rgba(103,67,31,.72))!important;}
+.item[data-item-id="kasika_mesanje"].stir-ready-tool>.body{filter:
+    drop-shadow(0 0 8px rgba(194,148,58,.76))
+    drop-shadow(0 0 2px rgba(103,67,31,.72))!important;}
+.item.stir-ready-target,
+.item[data-item-id="kasika_mesanje"].stir-ready-tool>.body{
+  transition:filter 90ms ease-out;
+}
+.item.stir-mixed-pop{
+  animation:stirMixedGlow .34s ease-out 1;
+}
+@keyframes stirMixedGlow{
+  0%{filter:drop-shadow(0 0 2px rgba(194,148,58,.28))}
+  45%{filter:drop-shadow(0 0 13px rgba(194,148,58,.76))}
+  100%{filter:none}
+}
+
+
+
+/* v198.5.11 — cookware bottom silhouette stays fixed while the food rotor moves.
+   This prevents the rectangular/flattened texture edge seen during rotation. */
+.item.stirring-vessel .stir-pile-layer,
+.item.stirring-vessel .stir-old-mix-layer{
+  will-change:opacity;
+}
+
+
+
+/* === V198.5.12 Serbian market hover stall === */
+#marketScene{
+  background:
+    radial-gradient(circle at 50% 30%, rgba(72,44,18,.62) 0%, rgba(22,12,5,.92) 68%, rgba(12,6,3,.98) 100%) !important;
+}
+#marketStage{
+  width:min(1672px, 97vw) !important;
+  aspect-ratio:1672/941 !important;
+  max-height:95vh;
+}
+#marketScene .market-art{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  border-radius:18px;
+  filter:drop-shadow(0 20px 42px rgba(0,0,0,.32));
+}
+
+/* hide old quantity purchase widgets; keep only back button + notice */
+#marketMoneyLive,
+#marketMinusTomato,#marketQtyTomato,#marketPlusTomato,#marketBuyTomato,
+#marketMinusPepper,#marketQtyPepper,#marketPlusPepper,#marketBuyPepper,
+#marketExtras{
+  display:none !important;
+}
+
+#marketBack{
+  left:2.0% !important;
+  top:2.4% !important;
+  width:11.8% !important;
+  height:6.4% !important;
+  background:rgba(55,35,18,.88) !important;
+  border:2px solid rgba(255,225,170,.88) !important;
+  border-radius:14px !important;
+  box-shadow:0 8px 16px rgba(0,0,0,.25) !important;
+}
+#marketBack::before{
+  content:"← КУХИЊА";
+  color:#fff5d8;
+  font-weight:900;
+  font-size:clamp(12px,1.15vw,18px);
+  letter-spacing:.04em;
+}
+#marketBack:hover{
+  background:rgba(78,54,30,.95) !important;
+  filter:none !important;
+}
+#marketBack:focus-visible{
+  outline:3px solid rgba(104,255,164,.9);
+  outline-offset:3px;
+}
+
+#marketNotice{
+  position:absolute;
+  left:50%;
+  bottom:2.9%;
+  transform:translateX(-50%);
+  min-width:min(48vw,540px);
+  max-width:70%;
+  min-height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:10px 18px;
+  border-radius:999px;
+  background:rgba(20,16,12,.72);
+  border:1px solid rgba(255,244,214,.22);
+  color:#fff8e9;
+  font-weight:800;
+  font-size:clamp(14px,1.18vw,20px);
+  letter-spacing:.02em;
+  text-align:center;
+  z-index:20;
+  box-shadow:0 10px 24px rgba(0,0,0,.26);
+  pointer-events:none;
+  backdrop-filter:blur(4px);
+}
+
+#marketHoverLayer{
+  position:absolute;
+  inset:0;
+  z-index:10;
+}
+
+.market-pile{
+  position:absolute;
+  border:0;
+  padding:0;
+  margin:0;
+  appearance:none;
+  background:rgba(96,255,160,0);
+  cursor:pointer;
+  outline:none;
+  transition:
+    transform .12s ease-out,
+    background .12s ease-out,
+    filter .14s ease-out;
+}
+.market-pile:hover,
+.market-pile:focus-visible{
+  background:rgba(88,255,160,.14);
+  filter:
+    drop-shadow(0 0 6px rgba(88,255,160,.85))
+    drop-shadow(0 0 18px rgba(88,255,160,.62));
+  transform:translateY(-1px) scale(1.01);
+}
+.market-pile.market-selected{
+  background:rgba(88,255,160,.18);
+  filter:
+    drop-shadow(0 0 8px rgba(88,255,160,.92))
+    drop-shadow(0 0 22px rgba(88,255,160,.74));
+}
+.market-pile::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border:2px solid rgba(122,255,185,.75);
+  border-radius:20px;
+  opacity:0;
+  transition:opacity .12s ease-out;
+  pointer-events:none;
+}
+.market-pile:hover::after,
+.market-pile:focus-visible::after,
+.market-pile.market-selected::after{
+  opacity:1;
+}
+
+.pile-tomato{
+  left:1.2%; top:36.0%; width:20.8%; height:16.5%;
+  clip-path:polygon(8% 76%, 3% 56%, 9% 26%, 24% 7%, 63% 8%, 90% 21%, 99% 43%, 97% 68%, 84% 92%, 47% 98%, 16% 95%);
+}
+.pile-cucumber{
+  left:19.6%; top:36.7%; width:14.1%; height:15.2%;
+  clip-path:polygon(8% 67%, 1% 43%, 11% 17%, 38% 3%, 74% 5%, 97% 24%, 99% 58%, 87% 90%, 49% 98%, 18% 90%);
+}
+.pile-pepper-red{
+  left:29.1%; top:36.5%; width:14.8%; height:16.1%;
+  clip-path:polygon(9% 73%, 2% 41%, 11% 14%, 34% 3%, 72% 7%, 93% 23%, 99% 56%, 92% 87%, 71% 98%, 27% 95%);
+}
+.pile-pepper-green{
+  left:43.3%; top:36.4%; width:10.9%; height:16.2%;
+  clip-path:polygon(7% 70%, 1% 46%, 8% 20%, 32% 4%, 78% 7%, 97% 32%, 98% 61%, 85% 88%, 55% 97%, 15% 91%);
+}
+.pile-onion{
+  left:50.8%; top:37.6%; width:16.8%; height:15.5%;
+  clip-path:polygon(7% 77%, 2% 40%, 12% 12%, 36% 4%, 71% 8%, 92% 28%, 99% 55%, 93% 83%, 72% 97%, 26% 96%);
+}
+.pile-garlic{
+  left:66.3%; top:39.0%; width:12.0%; height:13.7%;
+  clip-path:polygon(9% 79%, 3% 42%, 15% 13%, 40% 4%, 71% 8%, 92% 28%, 99% 55%, 93% 88%, 63% 98%, 23% 96%);
+}
+.pile-carrot{
+  left:77.2%; top:35.6%; width:16.8%; height:16.7%;
+  clip-path:polygon(4% 73%, 0% 45%, 9% 16%, 32% 3%, 82% 7%, 96% 19%, 100% 44%, 95% 76%, 82% 95%, 31% 96%, 8% 93%);
+}
+
+.pile-lettuce{
+  left:0.8%; top:57.3%; width:19.3%; height:25.0%;
+  clip-path:polygon(9% 83%, 1% 54%, 6% 23%, 27% 4%, 63% 8%, 89% 28%, 99% 56%, 96% 86%, 77% 99%, 35% 97%, 13% 95%);
+}
+.pile-cabbage{
+  left:18.3%; top:59.0%; width:16.7%; height:22.5%;
+  clip-path:polygon(8% 80%, 2% 49%, 11% 21%, 35% 5%, 74% 6%, 95% 26%, 99% 54%, 93% 83%, 66% 98%, 23% 95%);
+}
+.pile-eggplant{
+  left:36.0%; top:59.2%; width:16.0%; height:24.0%;
+  clip-path:polygon(10% 84%, 2% 50%, 10% 18%, 31% 4%, 77% 6%, 98% 28%, 99% 58%, 92% 87%, 68% 98%, 22% 96%);
+}
+.pile-zucchini{
+  left:51.2%; top:58.0%; width:16.0%; height:24.0%;
+  clip-path:polygon(9% 80%, 2% 47%, 9% 18%, 32% 4%, 79% 5%, 99% 28%, 98% 58%, 91% 90%, 61% 98%, 18% 95%);
+}
+.pile-radish{
+  left:67.8%; top:60.1%; width:14.1%; height:22.0%;
+  clip-path:polygon(8% 83%, 2% 51%, 10% 18%, 37% 4%, 79% 6%, 98% 29%, 99% 61%, 89% 88%, 61% 98%, 19% 95%);
+}
+.pile-parsley{
+  left:81.2%; top:57.9%; width:14.8%; height:24.0%;
+  clip-path:polygon(10% 82%, 1% 44%, 10% 14%, 35% 5%, 78% 7%, 98% 25%, 100% 56%, 94% 90%, 68% 98%, 22% 96%);
+}
+
+body.market-open #viewport,
+body.market-open #gardenScene,
+body.market-open #kitchenElementsScene{
+  user-select:none;
+}
+
+
+/* === V198.5.12.1 top shelf hover correction ===
+   Top produce hotspots moved downward to match the user's red-marked reference
+   while leaving the lower shelf untouched. */
+
+
+/* === V198.5.13 Serbian market bargaining === */
+#marketScene.bargaining-open #marketNotice{opacity:0}
+
+.market-seller-bubble{
+  position:absolute;
+  left:54.5%;
+  top:8.2%;
+  width:min(35%,520px);
+  min-height:78px;
+  padding:16px 20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:40;
+  border:3px solid #3b2615;
+  border-radius:22px;
+  background:#fff8df;
+  color:#2c1b10;
+  font-size:clamp(15px,1.35vw,23px);
+  line-height:1.22;
+  font-weight:900;
+  text-align:center;
+  box-shadow:
+    0 10px 0 rgba(54,31,14,.18),
+    0 16px 30px rgba(0,0,0,.25);
+  opacity:0;
+  transform:translateY(-8px) scale(.96);
+  pointer-events:none;
+  transition:opacity .14s ease,transform .14s ease;
+}
+.market-seller-bubble::before{
+  content:"";
+  position:absolute;
+  left:10%;
+  bottom:-28px;
+  width:0;height:0;
+  border:15px solid transparent;
+  border-top-color:#3b2615;
+  transform:rotate(19deg);
+}
+.market-seller-bubble::after{
+  content:"";
+  position:absolute;
+  left:10.7%;
+  bottom:-21px;
+  width:0;height:0;
+  border:12px solid transparent;
+  border-top-color:#fff8df;
+  transform:rotate(19deg);
+}
+.market-seller-bubble.show{
+  opacity:1;
+  transform:translateY(0) scale(1);
+}
+
+.market-bargain-panel{
+  position:absolute;
+  left:50%;
+  bottom:2.2%;
+  width:min(78%,1040px);
+  min-height:174px;
+  z-index:50;
+  padding:17px 22px 16px;
+  border:3px solid #3d2817;
+  border-radius:22px;
+  background:
+    linear-gradient(180deg,rgba(61,86,57,.98),rgba(37,58,38,.98)),
+    #34563b;
+  color:#fff8e8;
+  box-shadow:
+    0 9px 0 rgba(41,27,15,.40),
+    0 18px 34px rgba(0,0,0,.34),
+    inset 0 1px 0 rgba(255,255,255,.16);
+  transform:translate(-50%,130%);
+  opacity:0;
+  pointer-events:none;
+  transition:transform .20s cubic-bezier(.2,.8,.2,1),opacity .15s ease;
+}
+.market-bargain-panel.open{
+  transform:translate(-50%,0);
+  opacity:1;
+  pointer-events:auto;
+}
+.market-bargain-close{
+  position:absolute;
+  right:12px;
+  top:9px;
+  width:35px;height:35px;
+  border:2px solid rgba(255,247,218,.68);
+  border-radius:50%;
+  background:rgba(32,39,27,.66);
+  color:#fff7dc;
+  font-size:23px;
+  line-height:1;
+  font-weight:900;
+  cursor:pointer;
+}
+.market-bargain-head{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:24px;
+  padding-right:40px;
+  margin-bottom:8px;
+}
+.market-bargain-head strong{
+  font-size:clamp(20px,1.65vw,29px);
+  color:#fff1b0;
+  text-shadow:0 2px 0 rgba(0,0,0,.25);
+}
+.market-bargain-head span{
+  font-size:clamp(14px,1.12vw,18px);
+}
+.market-offer-readout{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:13px;
+  margin:4px 0 4px;
+  font-size:15px;
+}
+.market-offer-readout strong{
+  min-width:110px;
+  color:#fff3a6;
+  font-size:clamp(22px,1.9vw,32px);
+  text-align:center;
+}
+.market-slider-row{
+  display:grid;
+  grid-template-columns:78px 1fr 78px;
+  align-items:center;
+  gap:12px;
+}
+.market-slider-row>span{
+  font-size:13px;
+  font-weight:800;
+  text-align:center;
+  color:#dfead6;
+}
+#marketOfferSlider{
+  --offer-pct:50%;
+  appearance:none;
+  width:100%;
+  height:14px;
+  border-radius:999px;
+  outline:none;
+  cursor:grab;
+  border:2px solid rgba(25,24,15,.62);
+  background:
+    linear-gradient(90deg,
+      #e0a438 0%,
+      #f4ce57 var(--offer-pct),
+      #23372a var(--offer-pct),
+      #23372a 100%);
+  box-shadow:inset 0 2px 4px rgba(0,0,0,.35),0 1px 0 rgba(255,255,255,.15);
+}
+#marketOfferSlider:active{cursor:grabbing}
+#marketOfferSlider::-webkit-slider-thumb{
+  appearance:none;
+  width:28px;height:34px;
+  border-radius:9px;
+  border:3px solid #3b2413;
+  background:#f5cf61;
+  box-shadow:0 4px 8px rgba(0,0,0,.34);
+}
+#marketOfferSlider::-moz-range-thumb{
+  width:25px;height:31px;
+  border-radius:9px;
+  border:3px solid #3b2413;
+  background:#f5cf61;
+  box-shadow:0 4px 8px rgba(0,0,0,.34);
+}
+.market-bargain-actions{
+  display:flex;
+  justify-content:center;
+  gap:13px;
+  margin-top:10px;
+}
+.market-bargain-actions button{
+  min-width:185px;
+  padding:10px 18px;
+  border:2px solid #3c2614;
+  border-radius:11px;
+  color:#27170d;
+  font-weight:950;
+  font-size:15px;
+  cursor:pointer;
+  box-shadow:0 4px 0 rgba(33,22,13,.46);
+  transition:transform .08s ease,filter .08s ease;
+}
+.market-bargain-actions button:active{
+  transform:translateY(3px);
+  box-shadow:0 1px 0 rgba(33,22,13,.46);
+}
+#marketHaggleBtn{background:#f2c94f}
+#marketAcceptBtn{background:#8ee083}
+.market-bargain-actions button:hover{filter:brightness(1.06)}
+.market-bargain-actions button:disabled{opacity:.52;cursor:default;filter:grayscale(.4)}
+.market-round-info{
+  position:absolute;
+  right:23px;
+  bottom:13px;
+  font-size:11px;
+  color:rgba(255,255,255,.58);
+  font-weight:800;
+}
+
+@media (max-width:760px){
+  .market-seller-bubble{
+    left:46%;
+    top:6%;
+    width:46%;
+    padding:10px 12px;
+    min-height:60px;
+  }
+  .market-bargain-panel{
+    width:91%;
+    min-height:0;
+    padding:12px 14px 13px;
+  }
+  .market-bargain-head{gap:8px;flex-direction:column;margin-bottom:3px}
+  .market-slider-row{grid-template-columns:58px 1fr 58px;gap:7px}
+  .market-bargain-actions{gap:7px}
+  .market-bargain-actions button{min-width:0;flex:1;padding:9px 7px;font-size:12px}
+  .market-round-info{display:none}
+}
+
+
+
+/* === v198.5.13.1 market-open interaction hotfix ===
+   The full-screen hover layer is visual/structural only. It must not block
+   the back button or other controls; only individual produce piles are clickable. */
+#marketHoverLayer{
+  pointer-events:none !important;
+}
+#marketHoverLayer .market-pile{
+  pointer-events:auto !important;
+}
+#marketBack{
+  z-index:90 !important;
+  pointer-events:auto !important;
+}
+#marketBargainPanel{
+  z-index:110 !important;
+}
+#marketSellerBubble{
+  z-index:105 !important;
+}
+
+/* Avoid costly backdrop-filter work on the market hint while the scene opens. */
+#marketNotice{
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+
+
+/* === v198.5.14 market dialogue / three-haggle limit === */
+.market-seller-bubble{
+  flex-direction:column;
+  gap:7px;
+}
+.market-seller-bubble-price{
+  display:none;
+  min-width:122px;
+  padding:5px 13px 4px;
+  border-top:1px solid rgba(58,37,20,.22);
+  color:#8d2f1e;
+  font-size:clamp(18px,1.55vw,27px);
+  font-weight:950;
+  line-height:1;
+  letter-spacing:.015em;
+  text-align:center;
+}
+.market-seller-bubble-price.show{
+  display:block;
+}
+
+
+/* === v198.5.15 quantity-first bargaining === */
+#marketSellerAskWrap.hidden{display:none!important}
+
+.market-quantity-step{
+  margin:10px 0 6px;
+  transition:opacity .15s ease,transform .15s ease;
+}
+.market-quantity-step.hidden{display:none}
+.market-quantity-title{
+  text-align:center;
+  margin:3px 0 9px;
+  font-weight:900;
+  font-size:17px;
+  color:#fff0bd;
+}
+.market-quantity-buttons{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+}
+.market-quantity-buttons button{
+  padding:12px 8px;
+  border:2px solid #3c2614;
+  border-radius:11px;
+  background:#f6e0a2;
+  color:#2d1b0f;
+  font-weight:950;
+  font-size:16px;
+  cursor:pointer;
+  box-shadow:0 4px 0 rgba(33,22,13,.42);
+}
+.market-quantity-buttons button:hover{filter:brightness(1.06)}
+.market-quantity-buttons button:active{
+  transform:translateY(3px);
+  box-shadow:0 1px 0 rgba(33,22,13,.42);
+}
+.market-quantity-buttons button.selected{
+  background:#9fe08f;
+  outline:2px solid rgba(255,255,255,.68);
+}
+.market-haggle-step{
+  display:none;
+}
+.market-haggle-step.active{
+  display:block;
+}
+@media(max-width:760px){
+  .market-quantity-buttons{grid-template-columns:repeat(2,1fr)}
+  .market-quantity-buttons button{padding:9px 6px;font-size:14px}
+}
+
+
+/* === v198.5.16 market bag shelf + kitchen paper bags === */
+.market-pile.market-unavailable,
+.market-pile:disabled{
+  pointer-events:none !important;
+  cursor:default !important;
+  background:transparent !important;
+  filter:none !important;
+  transform:none !important;
+}
+.market-pile.market-unavailable::after,
+.market-pile:disabled::after{opacity:0!important}
+
+/* Produce targets remain clickable without drawing selection shapes over the art. */
+#marketHoverLayer .market-pile,
+#marketHoverLayer .market-pile:hover,
+#marketHoverLayer .market-pile:focus-visible,
+#marketHoverLayer .market-pile.market-selected{
+  background:transparent!important;
+  box-shadow:none!important;
+  filter:none!important;
+  transform:none!important;
+  outline:none!important;
+}
+#marketHoverLayer .market-pile::after{content:none!important;display:none!important}
+
+.market-cart{
+  position:absolute;right:1.6%;top:8%;width:min(28%,390px);max-height:27%;
+  display:flex;flex-direction:column;gap:7px;box-sizing:border-box;
+  padding:12px 14px;border:2px solid #594026;border-radius:14px;
+  background:rgba(34,24,17,.93);color:#fff2d4;
+  box-shadow:0 12px 30px rgba(0,0,0,.32);z-index:32;
+  font:600 clamp(11px,.95vw,15px)/1.25 system-ui,sans-serif;
+}
+.market-cart>strong{font-size:1.15em;display:flex;justify-content:space-between}
+.market-cart-items{overflow:auto;min-height:24px;max-height:145px}
+.market-cart-row{display:flex;align-items:center;gap:5px;padding:5px 0;border-top:1px solid rgba(255,240,210,.2)}
+.market-cart-row span:first-child{flex:1;min-width:0}
+.market-cart-row small{white-space:nowrap;color:#ead4ab}
+.market-cart-row button{flex:none;width:25px;height:25px;padding:0;border:1px solid #baa47d;border-radius:5px;background:#6a4a2b;color:white;cursor:pointer}
+.market-cart-row button:focus-visible,.market-cart>button:focus-visible{outline:2px solid #fff2b8}
+.market-cart-total{text-align:right;min-height:19px}
+.market-cart>button{padding:9px 5px;border:1px solid #e5ad62;border-radius:7px;background:#a84924;color:#fff;font-weight:800;cursor:pointer}
+.market-cart>button:disabled{opacity:.48;cursor:default}
+#marketScene.bargaining-open .market-cart{pointer-events:none;opacity:.42}
+@media(max-width:760px){.market-cart{width:35%;top:8%;max-height:27%;padding:7px;font-size:10px}.market-cart-row{flex-wrap:wrap}.market-cart-items{max-height:90px}}
+
+.market-bag-shelf{
+  position:absolute;
+  left:1.6%;
+  bottom:.6%;
+  width:min(83%,1390px);
+  min-height:238px;
+  display:none;
+  align-items:flex-end;
+  gap:14px;
+  z-index:38;
+  pointer-events:none;
+}
+.market-bag-shelf.show{display:flex}
+.market-bag-row{
+  flex:1 1 auto;
+  min-width:0;
+  display:flex;
+  align-items:flex-end;
+  gap:8px;
+  overflow:hidden;
+  pointer-events:none;
+}
+.market-mini-bag{
+  position:relative;
+  flex:0 0 184px;
+  height:224px;
+  filter:drop-shadow(0 7px 9px rgba(0,0,0,.30));
+}
+.market-mini-bag img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  pointer-events:none;
+}
+.market-mini-bag span{
+  position:absolute;
+  left:17%;
+  right:17%;
+  top:48%;
+  padding:2px 3px;
+  overflow:hidden;
+  color:#3a2415;
+  font-size:11px;
+  font-weight:950;
+  line-height:1.05;
+  text-align:center;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  transform:rotate(-2deg);
+  pointer-events:none;
+}
+.market-mini-bag small{
+  position:absolute;
+  left:18%;
+  right:18%;
+  top:62%;
+  color:#654530;
+  font-size:13px;
+  font-weight:900;
+  text-align:center;
+  pointer-events:none;
+}
+.market-collect-bags{
+  flex:0 0 auto;
+  margin-bottom:8px;
+  padding:11px 15px;
+  border:2px solid #3c2614;
+  border-radius:11px;
+  background:#8ee083;
+  color:#26170c;
+  font-weight:950;
+  font-size:13px;
+  cursor:pointer;
+  box-shadow:0 4px 0 rgba(33,22,13,.45);
+  pointer-events:auto;
+}
+.market-collect-bags:hover{filter:brightness(1.06)}
+.market-collect-bags:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(33,22,13,.45)}
+#marketScene.bargaining-open .market-bag-shelf{opacity:.17;pointer-events:none}
+#marketScene.bargaining-open .market-collect-bags{pointer-events:none}
+
+.market-bag-item .market-bag-tag{
+  position:absolute;
+  left:18%;
+  right:18%;
+  top:48%;
+  z-index:5;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:2px;
+  padding:2px 3px;
+  color:#3a2415;
+  text-align:center;
+  pointer-events:none;
+  transform:rotate(-2deg);
+  text-shadow:0 1px rgba(255,255,255,.32);
+}
+.market-bag-item .market-bag-tag strong{
+  max-width:100%;
+  overflow:hidden;
+  font-size:11px;
+  line-height:1;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.market-bag-item .market-bag-tag small{
+  font-size:8px;
+  line-height:1;
+  font-weight:800;
+  opacity:.78;
+}
+.market-bag-item.empty{filter:saturate(.72) brightness(.93)}
+.market-bag-item.empty .market-bag-tag small{opacity:.55}
+
+@media(max-width:760px){
+  .market-bag-shelf{width:92%;min-height:164px}
+  .market-mini-bag{flex-basis:128px;height:156px}
+  .market-mini-bag span{font-size:12px}
+  .market-mini-bag small{font-size:10px}
+  .market-collect-bags{padding:8px 9px;font-size:10px}
+}
+
+
+/* v198.5.16.1: the bag row is intentionally 2x larger than v198.5.16. */
+.market-bag-row::-webkit-scrollbar{height:5px}
+.market-bag-row::-webkit-scrollbar-thumb{background:rgba(60,38,20,.38);border-radius:999px}
+
+
+/* === v198.5.19 generic chopped market vegetables in cookware === */
+.generic-sliced-layer{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  pointer-events:none;
+  z-index:23;
+}
+.generic-sliced-rotor{
+  position:absolute;
+  inset:0;
+  transform:rotate(var(--stir-turn,0deg));
+  transform-origin:50% 50%;
+  will-change:transform;
+}
+.generic-sliced-piece{
+  position:absolute;
+  height:auto;
+  object-fit:contain;
+  transform-origin:50% 50%;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  filter:none;
+}
+
+
+/* === v198.5.20 — separated ingredient piles -> spoon blend -> cooking phases === */
+.stir-pile-layer{
+  opacity:calc(1 - var(--stir-mix,0))!important;
+  transition:opacity 110ms linear;
+}
+.stir-old-mix-layer.stir-combined-layer{
+  opacity:var(--stir-mix,0)!important;
+  transition:opacity 110ms linear;
+}
+.stir-combined-layer{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  pointer-events:none;
+  transform:none!important;
+  transform-origin:50% 50%;
+}
+.stir-combined-base{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background:
+    radial-gradient(
+      ellipse at 44% 38%,
+      rgba(var(--combined-light),.82) 0%,
+      rgba(var(--combined-color),.78) 54%,
+      rgba(var(--combined-dark),.74) 100%
+    );
+  box-shadow:
+    inset 0 2px 4px rgba(255,240,205,.12),
+    inset 0 -4px 7px rgba(64,28,13,.13);
+  pointer-events:none;
+  z-index:5;
+}
+.stir-combined-piece-rotor{
+  position:absolute;
+  inset:0;
+  transform:rotate(var(--stir-turn,0deg));
+  transform-origin:50% 50%;
+  will-change:transform;
+  z-index:30;
+}
+.stir-combined-piece{
+  position:absolute;
+  height:auto;
+  object-fit:contain;
+  transform-origin:50% 50%;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  filter:none;
+  transition:filter 2.4s linear,opacity .25s linear;
+}
+.single-sliced-pile{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  pointer-events:none;
+}
+.single-sliced-piece{
+  position:absolute;
+  height:auto;
+  object-fit:contain;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  transform-origin:50% 50%;
+}
+
+/* Cooking phases stay readable even BEFORE mixing: each pile cooks in place.
+   Stage changes are already cross-faded by renderFoodContents over 3 seconds. */
+.food-stage-layer[data-food-stage="1"] .stir-combined-base{filter:none}
+.food-stage-layer[data-food-stage="2"] .stir-combined-base{filter:brightness(.99) saturate(.99)}
+.food-stage-layer[data-food-stage="3"] .stir-combined-base{filter:brightness(.96) saturate(.97)}
+.food-stage-layer[data-food-stage="4"] .stir-combined-base{filter:brightness(.91) saturate(.94) sepia(.04)}
+.food-stage-layer[data-food-stage="5"] .stir-combined-base{filter:brightness(.84) saturate(.90) sepia(.10)}
+.food-stage-layer[data-food-stage="6"] .stir-combined-base{filter:brightness(.72) saturate(.81) sepia(.20)}
+.food-stage-layer[data-food-stage="7"] .stir-combined-base{filter:brightness(.45) saturate(.58) sepia(.42)}
+
+/* Only inner content rotates with the signed spoon gesture.
+   The full vessel-bottom ellipse itself stays stationary. */
+.item.stirring-vessel .stir-combined-layer{
+  transform:none!important;
+  will-change:opacity;
+}
+
+
+/* === v198.5.21 — universal vessel-to-vessel pouring === */
+.item.pour-target-ready{filter:
+    drop-shadow(0 0 8px rgba(194,148,58,.76))
+    drop-shadow(0 0 2px rgba(103,67,31,.72)) !important;}
+.item.pour-target-blocked{
+  filter:
+    drop-shadow(0 0 10px rgba(236,82,62,.96))
+    drop-shadow(0 0 3px rgba(105,28,20,.96)) !important;
+}
+.item.pour-source-ready>.body{filter:
+    drop-shadow(0 0 8px rgba(194,148,58,.76))
+    drop-shadow(0 0 2px rgba(103,67,31,.72)) !important;}
+.item.pouring-source{
+  pointer-events:none!important;
+  z-index:12040!important;
+}
+.item.pouring-receiver{
+  animation:pourReceiverPulse .72s ease-out 1;
+}
+@keyframes pourReceiverPulse{
+  0%{filter:drop-shadow(0 0 4px rgba(194,148,58,.24))}
+  42%{filter:drop-shadow(0 0 16px rgba(194,148,58,.76))}
+  100%{filter:none}
+}
+.pour-particle{
+  position:absolute;
+  height:auto;
+  object-fit:contain;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  filter:drop-shadow(0 2px 2px rgba(45,23,10,.28));
+  transform-origin:50% 50%;
+}
+
+
+/* === v198.5.22 — Dynamic Visual Fill / 2.5D Mesh Stacking ===
+   The outer cookware mask never rotates or warps. Only food internals grow/rise. */
+
+.pan-content,
+.vessel-content{
+  --fill-ratio:0;
+  --fill-scale-x:.58;
+  --fill-scale-y:.62;
+  --fill-rotor-scale:.58;
+  --fill-rise:0%;
+  --fill-stack-gap:3.5%;
+}
+
+/* A quick quantity change feels like food accumulating instead of popping. */
+.food-stage-layer{
+  transition:opacity 260ms ease-out;
+}
+.food-stage-layer.fill-entering{
+  transition:opacity 260ms ease-out;
+}
+
+/* Legacy authored tomato/onion/pepper/cucumber textures now participate in fill. */
+.pan-ingredient-layer{
+  top:calc(50% - var(--fill-rise,0%))!important;
+  transition:
+    top .28s cubic-bezier(.18,.72,.24,1),
+    transform .28s cubic-bezier(.18,.72,.24,1),
+    opacity .18s linear!important;
+}
+
+/* Separate piles: the stationary clipped island mask stays put;
+   the INNER rotor rises as cookware fills. */
+.stir-pile-rotor{
+  transform:
+    translateY(calc(-1 * var(--fill-rise,0%)))
+    rotate(var(--stir-turn,0deg))!important;
+  transition:transform .28s cubic-bezier(.18,.72,.24,1);
+}
+
+/* Mixed dish: keep the external ellipse stationary, grow the internal mass. */
+.stir-combined-base,
+.stir-old-mix-fill{
+  transform:
+    translateY(calc(-1 * var(--fill-rise,0%)))
+    scaleX(var(--fill-scale-x,1))
+    scaleY(var(--fill-scale-y,1));
+  transform-origin:50% 58%;
+  transition:transform .30s cubic-bezier(.18,.72,.24,1),filter .24s linear;
+}
+.stir-old-mix-rotor{
+  transform:
+    translate(-50%,-50%)
+    translateY(calc(-1 * var(--fill-rise,0%)))
+    rotate(var(--stir-turn,0deg))
+    scale(var(--fill-rotor-scale,1))!important;
+  transition:transform .28s cubic-bezier(.18,.72,.24,1);
+}
+.stir-combined-piece-rotor{
+  transform:
+    translateY(calc(-1 * var(--fill-rise,0%)))
+    rotate(var(--stir-turn,0deg))!important;
+  transition:transform .28s cubic-bezier(.18,.72,.24,1);
+}
+
+/* Tiny contact shadows under separate ingredient piles give the extra visual layer
+   needed for stacked food to read as depth rather than enlarged stickers. */
+.ingredient-pile-shadow{
+  position:absolute;
+  height:8%;
+  border-radius:50%;
+  transform:translate(-50%,-50%) scaleY(.52);
+  background:radial-gradient(ellipse,rgba(55,26,10,.34) 0%,rgba(55,26,10,.16) 52%,transparent 76%);
+  filter:blur(.6px);
+  pointer-events:none;
+  z-index:8;
+}
+
+/* Higher stack levels get a tiny highlight/drop shadow so vertical piling is legible. */
+.stir-pile-piece[data-stack-level="1"],
+.single-sliced-piece[data-stack-level="1"],
+.stir-combined-piece[data-stack-level="1"],
+.whole-produce-piece[data-stack-level="1"]{
+  filter:drop-shadow(0 1.2px 1.2px rgba(42,20,8,.22));
+}
+.stir-pile-piece[data-stack-level="2"],
+.single-sliced-piece[data-stack-level="2"],
+.stir-combined-piece[data-stack-level="2"],
+.whole-produce-piece[data-stack-level="2"]{
+  filter:drop-shadow(0 2px 1.5px rgba(42,20,8,.25));
+}
+.stir-pile-piece[data-stack-level="3"],
+.single-sliced-piece[data-stack-level="3"],
+.stir-combined-piece[data-stack-level="3"],
+.whole-produce-piece[data-stack-level="3"]{
+  filter:drop-shadow(0 2.8px 2px rgba(42,20,8,.28));
+}
+
+/* Fill-level micro-settle: pans mainly spread; pots/bowls visibly mound upward. */
+.pan-content[data-fill-level="5"] .food-stage-layer,
+.vessel-content[data-fill-level="5"] .food-stage-layer{
+  filter:saturate(1.015);
+}
+
+/* === v198.5.24 — universal true-color ghost + cutting micro-motion === */
+.placement-ghost .ghost-item-copy{
+  position:absolute!important;inset:0!important;
+  width:100%!important;height:100%!important;
+  margin:0!important;opacity:1!important;filter:none!important;
+  pointer-events:none!important;
+}
+.placement-ghost .ghost-item-copy>.body{filter:none!important;opacity:1!important}
+.placement-ghost.placement-smooth{transition:none!important}
+body.cutting-active .item[data-attached-to-board="1"]>.body{will-change:transform}
+
+
+/* === v198.5.25 — cooking/stirring performance pass === */
+
+/* The old panSimmer transformed the entire clipped food DOM tree every frame.
+   With many stacked ingredient sprites this forced expensive repaints.
+   Keep the lightweight bubble overlay, but keep the actual food geometry stable. */
+.item.sizzling .pan-content.visible{
+  animation:none!important;
+}
+
+/* Vessel content is a masked visual layer, never an actual scroll area. */
+.vessel-content{
+  overflow:hidden!important;
+  contain:layout paint style;
+}
+.pan-content,
+.food-stage-layer{
+  contain:layout paint style;
+}
+
+/* Drop-shadow filters on dozens of rotating ingredient sprites are expensive.
+   While the player is actively stirring, preserve cooking tint but remove only
+   the decorative per-piece shadow. Once stirring stops, normal art returns. */
+.item.stirring-vessel .food-stage-layer[data-food-stage="1"] .stir-pile-piece{filter:none!important}
+.item.stirring-vessel .food-stage-layer[data-food-stage="2"] .stir-pile-piece{filter:brightness(.98) saturate(.98)!important}
+.item.stirring-vessel .food-stage-layer[data-food-stage="3"] .stir-pile-piece{filter:brightness(.94) saturate(.96) sepia(.03)!important}
+.item.stirring-vessel .food-stage-layer[data-food-stage="4"] .stir-pile-piece{filter:brightness(.89) saturate(.93) sepia(.07)!important}
+.item.stirring-vessel .food-stage-layer[data-food-stage="5"] .stir-pile-piece{filter:brightness(.83) saturate(.90) sepia(.11)!important}
+.item.stirring-vessel .food-stage-layer[data-food-stage="6"] .stir-pile-piece{filter:brightness(.72) saturate(.82) sepia(.20)!important}
+.item.stirring-vessel .food-stage-layer[data-food-stage="7"] .stir-pile-piece{filter:brightness(.43) saturate(.55) sepia(.42)!important}
+
+.item.stirring-vessel .stir-combined-piece{
+  transition:none!important;
+}
+.item.stirring-vessel .exact-chopped-sprite{transition:none!important}
+
+/* === v198.5.26 — burnt-stage performance + 30% ghost === */
+
+/* Fully burnt food is composited once. Individual sprite filters are disabled. */
+.food-stage-layer.burnt-lite-layer{
+  filter:brightness(.56) saturate(.62) sepia(.34);
+  transition:none!important;
+  contain:strict;
+}
+.food-stage-layer.burnt-lite-layer .stir-pile-piece,
+.food-stage-layer.burnt-lite-layer .single-sliced-piece,
+.food-stage-layer.burnt-lite-layer .stir-combined-piece,
+.food-stage-layer.burnt-lite-layer .whole-produce-piece,
+.food-stage-layer.burnt-lite-layer .stir-combined-base{
+  filter:none!important;
+  transition:none!important;
+}
+.food-stage-layer.burnt-lite-layer .ingredient-pile-shadow{
+  display:none!important;
+}
+
+/* Burnt smoke used to animate three blurred elements while a heavily filtered
+   food tree was also being composited. Use one low-cost smoke wisp instead. */
+.item.food-burnt .pan-smoke span:nth-child(2),
+.item.food-burnt .pan-smoke span:nth-child(3){
+  display:none!important;
+}
+.item.food-burnt .pan-smoke span:first-child{
+  left:42%!important;
+  width:24px!important;
+  height:42px!important;
+  filter:none!important;
+  opacity:.48;
+  animation:burnSmokeLite 2.1s steps(5,end) infinite!important;
+  background:radial-gradient(ellipse at 50% 70%,rgba(64,58,52,.52),rgba(64,58,52,0) 74%)!important;
+}
+@keyframes burnSmokeLite{
+  0%{transform:translate3d(0,8px,0) scale(.78);opacity:.10}
+  40%{opacity:.48}
+  100%{transform:translate3d(7px,-38px,0) scale(1.30);opacity:0}
+}
+
+/* Requested visibility: true-color placement preview at 30%. */
+.placement-ghost{opacity:.30!important}
+.placement-ghost.grinder-placement-ghost{opacity:.12!important}
+
+
+/* === v198.5.27 — stability audit / leak fix === */
+
+/* Never filter the full clipped food subtree in BURNT state. A simple alpha
+   overlay gives the dark burnt read without creating an offscreen filter surface. */
+.food-stage-layer.burnt-lite-layer{
+  filter:none!important;
+  transition:none!important;
+  contain:layout paint style!important;
+}
+.food-stage-layer.burnt-lite-layer::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:999;
+  pointer-events:none;
+  border-radius:50%;
+  background:rgba(38,20,12,.43);
+}
+.food-stage-layer.burnt-lite-layer .stir-pile-piece,
+.food-stage-layer.burnt-lite-layer .single-sliced-piece,
+.food-stage-layer.burnt-lite-layer .stir-combined-piece,
+.food-stage-layer.burnt-lite-layer .whole-produce-piece,
+.food-stage-layer.burnt-lite-layer .stir-combined-base,
+.food-stage-layer.burnt-lite-layer .pan-ingredient-layer{
+  filter:none!important;
+  transition:none!important;
+}
+
+/* Burnt smoke is static. Cooking state is already obvious from art + HUD and
+   this avoids an infinite compositor animation after the terminal state. */
+.item.food-burnt .pan-smoke span:first-child{
+  animation:none!important;
+  transform:translate3d(5px,-20px,0) scale(1.10)!important;
+  opacity:.34!important;
+}
+.item.food-burnt .pan-smoke span:nth-child(2),
+.item.food-burnt .pan-smoke span:nth-child(3){
+  display:none!important;
+}
+
+
+/* === v198.5.28 — Cookster Creator Camera / LIVE === */
+.creator-camera-item{isolation:isolate}
+.creator-camera-item>.body{filter:drop-shadow(0 7px 5px rgba(28,14,7,.30))}
+.creator-camera-record{
+  position:absolute;left:69%;top:13.5%;width:13%;aspect-ratio:1;min-width:12px;padding:0;
+  border-radius:50%;border:2px solid rgba(255,235,216,.95);background:#d92525;
+  box-shadow:0 0 0 2px rgba(48,18,9,.78),0 1px 4px rgba(0,0,0,.42);
+  z-index:6;pointer-events:auto;cursor:pointer
+}
+.creator-camera-record:hover{background:#f03a31;transform:scale(1.08)}
+.creator-camera-item.camera-live .creator-camera-record{
+  background:#ff2e2e;
+  box-shadow:0 0 0 2px rgba(48,18,9,.82),0 0 0 5px rgba(255,50,42,.18),0 1px 5px rgba(0,0,0,.42)
+}
+.placement-ghost .creator-camera-record,.ghost-item-copy .creator-camera-record{display:none!important}
+
+.creator-camera-fov{
+  position:absolute;display:none;overflow:visible;z-index:34;pointer-events:none;
+  transform-origin:50% 100%
+}
+.creator-camera-fov.visible{display:block}
+.creator-camera-fov polygon{
+  fill:rgba(110,196,255,.105);stroke:rgba(226,247,255,.82);
+  stroke-width:1.05;stroke-dasharray:3.6 2.8
+}
+.creator-camera-fov.is-live polygon{fill:rgba(83,184,255,.145);stroke:rgba(237,251,255,.98)}
+
+#creatorLivePanel{
+  position:fixed;right:18px;top:18px;width:min(438px,36vw);min-width:330px;display:none;overflow:hidden;
+  z-index:24000;color:#2d160b;background:#f6ead1;border:4px solid #351b0d;border-radius:18px;
+  box-shadow:0 16px 48px rgba(0,0,0,.44);font-family:inherit
+}
+#creatorLivePanel.visible{display:block}
+.creator-live-header{
+  height:48px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;
+  padding:0 10px 0 12px;background:linear-gradient(#d79b45,#c77d28);border-bottom:3px solid #5f3215
+}
+.creator-live-header>strong{text-align:center;font-size:17px;letter-spacing:.02em}
+.creator-live-badge{
+  display:inline-flex;align-items:center;gap:7px;padding:6px 9px;color:#fff6e6;background:#32180b;
+  border-radius:9px;font-weight:950;font-size:14px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)
+}
+.creator-live-badge>i{width:11px;height:11px;border-radius:50%;background:#f02f29;box-shadow:0 0 0 2px rgba(255,255,255,.82)}
+.creator-live-close{
+  width:32px;height:32px;padding:0;border:0;border-radius:9px;background:#32180b;color:#fff;
+  font-size:24px;font-weight:900;cursor:pointer
+}
+
+#creatorLiveViewport{
+  position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:#1c110a;
+  border-bottom:2px solid rgba(70,35,15,.34)
+}
+#creatorLiveWorld{
+  position:absolute;left:0;top:0;width:1672px;height:941px;transform-origin:0 0;
+  pointer-events:none;will-change:transform
+}
+#creatorLiveWorld .item,#creatorLiveWorld #tableOccluder,
+#creatorLiveWorld #waterStream,#creatorLiveWorld #waterSplash{pointer-events:none!important}
+.creator-live-grid{
+  position:absolute;inset:0;pointer-events:none;z-index:99999;opacity:.14;
+  background:
+    linear-gradient(90deg,transparent 33.1%,rgba(255,248,225,.7) 33.2%,rgba(255,248,225,.7) 33.45%,transparent 33.55%,transparent 66.45%,rgba(255,248,225,.7) 66.55%,rgba(255,248,225,.7) 66.8%,transparent 66.9%),
+    linear-gradient(0deg,transparent 33.1%,rgba(255,248,225,.7) 33.2%,rgba(255,248,225,.7) 33.45%,transparent 33.55%,transparent 66.45%,rgba(255,248,225,.7) 66.55%,rgba(255,248,225,.7) 66.8%,transparent 66.9%)
+}
+#creatorLiveNoSignal{
+  position:absolute;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;
+  background:rgba(26,14,8,.88);color:#fff1d9;font-size:16px;font-weight:900
+}
+#creatorLivePanel.no-signal #creatorLiveNoSignal{display:flex}
+
+.creator-live-footer{
+  display:grid;grid-template-columns:auto auto 1fr;align-items:center;gap:10px;
+  padding:10px 12px 11px;background:#fff7e8
+}
+#creatorLiveStop{
+  display:inline-flex;align-items:center;gap:8px;border:2px solid #572d15;border-radius:10px;
+  padding:7px 10px;background:#32180b;color:#fff4df;font-weight:950;cursor:pointer
+}
+#creatorLiveStop>i{width:14px;height:14px;border-radius:50%;background:#ef312b;box-shadow:0 0 0 2px rgba(255,255,255,.75)}
+#creatorLiveTime{min-width:48px;font-size:14px;font-weight:950;color:#5f3215;font-variant-numeric:tabular-nums}
+#creatorLiveHint{text-align:right;font-size:11px;line-height:1.2;font-weight:850;color:#6d4a31}
+
+body.market-open #creatorLivePanel,body.garden-open #creatorLivePanel,body.kitchen-elements-open #creatorLivePanel{display:none!important}
+
+@media (max-width:1100px){
+  #creatorLivePanel{width:min(370px,42vw);min-width:290px;right:10px;top:10px}
+  #creatorLiveHint{display:none}
+  .creator-live-footer{grid-template-columns:1fr auto}
+}
+
+
+/* === v198.5.29 — camera opposite table + LIVE static-scene fix === */
+.creator-camera-fov{
+  transform-origin:50% 0!important;
+}
+.creator-camera-item.camera-behind-table{
+  z-index:24!important;
+}
+.creator-camera-item.camera-behind-table .creator-camera-record{
+  z-index:8;
+}
+
+
+/* === v198.5.30 — board center snap / knife === */
+.item[data-item-id="daska"].cut-snap-active::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:53%;
+  width:34px;
+  height:34px;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  border:3px solid rgba(101,231,118,.96);
+  background:rgba(78,214,96,.16);
+  box-shadow:0 0 0 4px rgba(255,255,255,.72),0 0 18px rgba(73,226,94,.55);
+  pointer-events:none;
+  z-index:12;
+}
+
+/* Fill the visually truncated wooden handle without touching blade pixels. */
+.item[data-item-id="noz"]>.body{
+  z-index:2;
+}
+
+
+/* === v198.5.33 — exact chopped PNG stack / calibration === */
+/* v198.5.109 — cleanup: .vessel-fill-base removed (unused since the
+   fill-base experiment was reverted — same flat-mask look you disliked). */
+
+/* v198.5.120 — .ketchup-base removed (reverted). */
+
+/* Fixed bed made from an existing food PNG. The image is deliberately
+   oversized under the same cookware mask; only the real pieces above it move. */
+.vessel-food-bed{
+  position:absolute;
+  left:-40%;
+  top:auto;
+  bottom:-42%;
+  width:180%;
+  height:180%;
+  z-index:1;
+  pointer-events:none;
+  object-fit:contain;
+  object-position:center bottom;
+  transform-origin:center bottom;
+  transform:translate(var(--bed-offset-x,0%),var(--bed-offset-y,0%)) rotate(var(--bed-rotation,0deg)) skewX(var(--bed-tilt,0deg)) scale(var(--bed-scale,1));
+  filter:drop-shadow(0 2px 1px rgba(52,22,8,.16));
+}
+.item[data-item-id="serpa_velika"] .vessel-food-bed{display:none}
+.item[data-item-id="tiganj_veliki"] .vessel-food-bed,
+.item[data-item-id="tiganj_mali"] .vessel-food-bed{display:none}
+/* Both pans use the same full-depth static bed sizing as the large pot. */
+.item[data-item-id="tiganj_veliki"] .vessel-food-bed,
+.item[data-item-id="tiganj_mali"] .vessel-food-bed{
+  left:-40%;
+  bottom:-42%;
+  width:180%;
+  height:180%;
+}
+
+.exact-chopped-stack{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  opacity:1!important;
+  pointer-events:none;
+  overflow:hidden;
+}
+.cookster-mesh-renderer{position:absolute;inset:0;width:100%;height:100%;z-index:90;pointer-events:none;}
+.exact-chopped-stack>.exact-chopped-rotor{opacity:0!important;}
+.exact-chopped-rotor{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  z-index:2;
+  pointer-events:none;
+  /* v198.5.121 — no more rigid whole-mass rotation (looked like one image
+     spinning). Individual pieces now orbit independently — see the
+     per-piece angle/radius physics in updateStirring / stirPhysicsTick. */
+}
+.stir-coverage-rotor{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  z-index:1;
+  pointer-events:none;
+  opacity:.82;
+  filter:saturate(.92) brightness(.94);
+}
+.stir-coverage-rotor .exact-chopped-sprite{
+  pointer-events:none!important;
+}
+/* Mesh-like stirring experiment: deform the texture instead of rotating the
+   whole food layer. The SVG displacement filter is defined in index.html. */
+.item.stirring-vessel .exact-chopped-rotor{
+  transform:none!important;
+  filter:url(#cooksterMeshWarp);
+  animation:cooksterMeshBend 1.8s ease-in-out infinite;
+  transform-origin:50% 50%;
+}
+@keyframes cooksterMeshBend{
+  0%,100%{transform:none;}
+  50%{transform:skewX(1.8deg) skewY(-1.2deg) scale(1.015, .985);}
+}
+/* Large pot uses the same piece-by-piece rotational stirring as the pans.
+   Its fixed coverage rotor underneath keeps calibrated floor coverage full. */
+.item[data-item-id="serpa_velika"].stirring-vessel .exact-chopped-rotor{
+  transform:none!important;
+  filter:url(#cooksterMeshWarp);
+  animation:cooksterMeshBend 1.8s ease-in-out infinite;
+}
+.item[data-item-id="serpa_velika"].stirring-vessel .stir-coverage-rotor{
+  transform:none!important;
+  filter:none!important;
+  animation:none!important;
+  opacity:1;
+}
+.item[data-item-id="serpa_velika"] .trail-ghost-rotor{
+  display:none!important;
+}
+/* v198.5.82 — comet-trail ghosts: two faded/blurred copies of the rotor,
+   kept a fixed angle behind the live spoon direction (see updateStirring),
+   so the whole pile reads as smearing/stretching behind its own motion. */
+.trail-ghost-rotor{
+  opacity:0;
+  transition:opacity .2s ease;
+}
+.item.stirring-vessel .trail-ghost-rotor.trail-ghost-near{
+  opacity:.32;
+  filter:blur(1.5px);
+}
+.item.stirring-vessel .trail-ghost-rotor.trail-ghost-far{
+  opacity:.16;
+  filter:blur(3px);
+}
+/* Ghost copies are visual-only — never interactive, even in calibration mode. */
+.trail-ghost-rotor,
+.trail-ghost-rotor *{
+  pointer-events:none!important;
+}
+body.chopped-calibration-active .trail-ghost-rotor .food-calibration-target{
+  pointer-events:none!important;
+  cursor:default!important;
+}
+/* v198.5.109 — cleanup: static-mix-rotor / foodJostle removed — the vessel
+   that used them (rotation-free, jostle-in-place) no longer exists; every
+   vessel rotates normally now, nothing references this class anymore. */
+.exact-chopped-sprite,
+.food-calibration-target{
+  position:absolute;
+  height:auto!important;
+  max-width:none!important;
+  object-fit:contain!important;
+  transform:
+    translate(-50%,-50%)
+    translateY(var(--stir-lift,0%))
+    perspective(390px)
+    rotateX(var(--chopped-tilt,0deg))
+    rotateZ(calc(var(--chopped-rot,0deg) + var(--wobble-rot,0deg)))
+    scaleX(var(--stir-squash-x,1))
+    scaleY(var(--stir-squash-y,1))!important;
+  transform-origin:50% 50%;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  transition:left .13s ease,top .13s ease,width .13s ease,filter 2.4s linear;
+}
+/* v198.5.119 — .floor-anchor removed (reverted the onFloor/bottom-anchor
+   experiment per request). */
+body.chopped-calibration-active .exact-chopped-sprite,
+body.chopped-calibration-active .food-calibration-target{
+  pointer-events:auto!important;
+  cursor:crosshair;
+}
+body.chopped-calibration-over-food{cursor:grab!important}
+.vessel-food-bed.food-calibration-target{
+  height:180%!important;
+  transform:translate(var(--bed-offset-x,0%),var(--bed-offset-y,0%)) rotate(var(--bed-rotation,0deg)) skewX(var(--bed-tilt,0deg)) scale(var(--bed-scale,1))!important;
+  transform-origin:center bottom!important;
+}
+body.chopped-calibration-active .food-calibration-target.calib-hover{
+  outline:2px dashed rgba(255,236,111,.92);
+  outline-offset:2px;
+  filter:
+    drop-shadow(0 0 5px rgba(255,227,91,.95))
+    drop-shadow(0 0 9px rgba(255,198,57,.58))!important;
+}
+body.chopped-calibration-active .food-calibration-target.calib-selected{cursor:grab!important}
+body.chopped-calibration-active .food-calibration-target.calib-selected:active{cursor:grabbing!important}
+
+body.chopped-calibration-active .exact-chopped-sprite.calib-selected,
+body.chopped-calibration-active .food-calibration-target.calib-selected{
+  filter:
+    drop-shadow(1px 0 0 rgba(105,235,105,.96))
+    drop-shadow(-1px 0 0 rgba(105,235,105,.96))
+    drop-shadow(0 1px 0 rgba(105,235,105,.96))
+    drop-shadow(0 -1px 0 rgba(105,235,105,.96))
+    drop-shadow(0 0 7px rgba(77,221,91,.72))!important;
+}
+
+/* Calibration button uses the existing Cookster HUD language. */
+#choppedCalibrationBtn{
+  padding:10px 13px;
+  border-radius:13px;
+  border:3px solid var(--deep);
+  background:#e7c778;
+  color:var(--deep);
+  font-weight:950;
+  font-size:15px;
+  box-shadow:0 4px 0 #765414;
+  cursor:pointer;
+}
+#choppedCalibrationBtn.active{
+  background:#79d36e;
+  box-shadow:0 4px 0 #2f702a,0 0 14px rgba(80,222,91,.36);
+}
+
+#choppedCalibrationPanel{
+  position:fixed;
+  right:16px;
+  top:16px;
+  width:338px;
+  display:none;
+  z-index:75000;
+  overflow:hidden;
+  border:4px solid #351b0d;
+  border-radius:18px;
+  background:#f6ead1;
+  color:#2d160b;
+  box-shadow:0 18px 60px rgba(0,0,0,.46);
+}
+#choppedCalibrationPanel.open{display:block}
+#choppedCalibrationPanel>header{
+  display:grid;
+  grid-template-columns:1fr 34px 34px 34px;
+  gap:8px;
+  align-items:center;
+  padding:11px 12px 10px 14px;
+  background:linear-gradient(#d79b45,#c77d28);
+  border-bottom:3px solid #5f3215;
+}
+#choppedCalibrationPanel>header strong{
+  display:block;
+  font-size:13px;
+  letter-spacing:.035em;
+}
+#choppedCalibrationPanel>header small{
+  display:block;
+  margin-top:2px;
+  font-size:10px;
+  font-weight:800;
+  opacity:.72;
+}
+#ingredientCalibrationExportBtn{
+  width:32px;height:32px;border:0;border-radius:9px;
+  background:#3f7a2c;color:#fff;font-size:16px;font-weight:950;cursor:pointer
+}
+#ingredientCalibrationImportBtn{
+  width:32px;height:32px;border:0;border-radius:9px;
+  background:#2c5c7a;color:#fff;font-size:16px;font-weight:950;cursor:pointer
+}
+#choppedCalibrationClose{
+  width:32px;height:32px;border:0;border-radius:9px;
+  background:#32180b;color:#fff;font-size:23px;font-weight:950;cursor:pointer
+}
+#ingredientCalibrationImportModal{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:90000;
+  background:rgba(20,11,5,.62);
+  align-items:center;
+  justify-content:center;
+}
+#ingredientCalibrationImportModal.open{display:flex}
+.ingredient-import-box{
+  width:min(560px,92vw);
+  background:#fff7e8;
+  border:4px solid #351b0d;
+  border-radius:16px;
+  padding:16px;
+  display:grid;
+  gap:10px;
+  color:#2d160b;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+#ingredientCalibrationImportText{
+  width:100%;
+  height:220px;
+  resize:vertical;
+  border-radius:10px;
+  border:2px solid rgba(53,27,13,.35);
+  padding:8px;
+  font-family:monospace;
+  font-size:12px;
+}
+.ingredient-import-actions{display:flex;gap:10px;justify-content:flex-end}
+.ingredient-import-actions button{
+  padding:9px 14px;border-radius:10px;border:0;font-weight:900;cursor:pointer;
+}
+#ingredientCalibrationImportApply{background:#3f7a2c;color:#fff}
+#ingredientCalibrationImportCancel{background:#ccc;color:#222}
+
+.chopped-calib-body{padding:12px;display:grid;gap:10px;max-height:calc(100vh - 90px);overflow-y:auto;}
+.stain-calib-section{
+  display:flex;flex-direction:column;gap:6px;
+  padding:8px;margin:6px 0;
+  border:2px dashed #914b1e;border-radius:10px;
+  background:rgba(145,75,30,.06);
+}
+.stain-calib-section header{font-weight:900;margin-bottom:2px}
+.stain-calib-section select{border:2px solid #351b0d;border-radius:8px;padding:4px 6px;font-weight:800}
+.stain-calib-section canvas{
+  width:100%;max-width:220px;height:160px;align-self:center;
+  background:
+    linear-gradient(45deg,#ddd 25%,transparent 25%),
+    linear-gradient(-45deg,#ddd 25%,transparent 25%),
+    linear-gradient(45deg,transparent 75%,#ddd 75%),
+    linear-gradient(-45deg,transparent 75%,#ddd 75%);
+  background-size:16px 16px;
+  background-position:0 0,0 8px,8px -8px,-8px 0;
+  border:2px solid #351b0d;border-radius:8px;
+}
+.stain-calib-section label{display:flex;align-items:center;gap:6px;font-weight:700;font-size:12px}
+.stain-calib-section label input[type="range"]{flex:1}
+.stain-calib-section output{min-width:44px;text-align:right}
+.chopped-calib-selection{
+  display:grid;
+  grid-template-columns:72px 1fr;
+  gap:5px 8px;
+  align-items:center;
+  padding:9px;
+  border-radius:11px;
+  background:#fff7e8;
+  border:1px solid rgba(83,46,21,.20);
+}
+.chopped-calib-selection span{font-size:10px;font-weight:900;opacity:.65}
+.chopped-calib-selection b{font-size:11px}
+.chopped-calib-values{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+}
+.chopped-calib-values label{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  padding:7px 8px;
+  border-radius:9px;
+  background:#ead8bb;
+  font-size:10px;
+  font-weight:900;
+}
+.chopped-calib-values output{
+  font-variant-numeric:tabular-nums;
+  color:#6d3518;
+}
+.chopped-calib-help{
+  padding:9px 10px;
+  border-radius:10px;
+  background:#3b2112;
+  color:#fff0dd;
+  font-size:10px;
+  line-height:1.55;
+}
+.chopped-calib-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chopped-calib-actions button{
+  border:2px solid #572d15;
+  border-radius:10px;
+  padding:9px 8px;
+  font-weight:950;
+  cursor:pointer;
+}
+#choppedCalibSave{background:#3b7d36;color:#fff}
+#choppedCalibReset{background:#fff3dc;color:#4c2713}
+.chopped-calib-autosave{
+  text-align:center;
+  font-size:9px;
+  font-weight:850;
+  opacity:.64;
+}
+
+/* Calibration supply bags: compact, visible, but kept out of the work area. */
+.market-bag-item[data-calibration-bag="1"] .market-bag-tag strong{font-size:9px}
+.market-bag-item[data-calibration-bag="1"] .market-bag-tag small{font-size:7px}
+.market-bag-item[data-calibration-bag="1"]{
+  filter:drop-shadow(0 4px 3px rgba(0,0,0,.28));
+}
+
+
+/* === v198.5.37 calibration-only branch ===
+   This version intentionally prioritizes food calibration over cookware input. */
+body.cookster-calibration-only-build.chopped-calibration-active .pan-content.visible,
+body.cookster-calibration-only-build.chopped-calibration-active .vessel-content.visible,
+body.cookster-calibration-only-build.chopped-calibration-active .food-stage-layer{
+  pointer-events:auto!important;
+}
+body.cookster-calibration-only-build.chopped-calibration-active .food-calibration-target{
+  pointer-events:auto!important;
+}
+body.cookster-calibration-only-build.chopped-calibration-active .food-calibration-target.calib-hover,
+body.cookster-calibration-only-build.chopped-calibration-active .food-calibration-target.calib-selected{
+  outline:3px dashed rgba(255,239,92,.98);
+  outline-offset:3px;
+}
+body.cookster-calibration-only-build #choppedCalibrationBtn{
+  background:#79d36e!important;
+  box-shadow:0 4px 0 #2f702a,0 0 16px rgba(80,222,91,.42)!important;
+}
+
+
+/* === v198.5.39 pot depth guides === */
+#choppedCalibrationClearVesselsBtn{
+  padding:10px 13px;
+  border-radius:13px;
+  border:3px solid var(--deep);
+  background:#d9c9a5;
+  color:var(--deep);
+  font-weight:900;
+  font-size:14px;
+  box-shadow:0 4px 0 #7a6747;
+  cursor:pointer;
+}
+.chopped-calib-guide-legend{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:8px;
+}
+.chopped-calib-guide-legend span{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:4px 8px;
+  border-radius:999px;
+  font-weight:800;
+  font-size:11px;
+  letter-spacing:.2px;
+}
+.chopped-calib-guide-legend .legend-full{
+  background:rgba(52,157,228,.18);
+  color:#0f5f94;
+  border:2px solid rgba(52,157,228,.45);
+}
+.chopped-calib-guide-legend .legend-bottom{
+  background:rgba(255,50,50,.14);
+  color:#9a1111;
+  border:2px solid rgba(255,50,50,.4);
+}
+.calibration-depth-guide{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:7;
+}
+.calibration-depth-guide .guide-zone{
+  position:absolute;
+  border-radius:50%;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.5px;
+  text-transform:uppercase;
+  box-sizing:border-box;
+}
+.calibration-depth-guide .guide-zone span{
+  margin-top:6px;
+  padding:2px 6px;
+  border-radius:999px;
+}
+.calibration-depth-guide .guide-full{
+  background:rgba(48,157,232,.34);
+  border:2px solid rgba(45,130,191,.55);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);
+}
+.calibration-depth-guide .guide-full span{
+  background:rgba(255,255,255,.42);
+  color:#0f5f94;
+}
+.calibration-depth-guide .guide-bottom{
+  background:rgba(255,35,35,.48);
+  border:2px solid rgba(150,0,0,.42);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);
+}
+.calibration-depth-guide .guide-bottom span{
+  background:rgba(255,255,255,.42);
+  color:#8f1010;
+}
+
+
+/* === v198.5.40 rising pot layers === */
+#choppedCalibDepth{
+  font-variant-numeric:tabular-nums;
+  font-weight:900;
+}
+body.chopped-calibration-active .vessel-content-serpa_plava.visible{
+  overflow:visible;
+}
+
+
+/* === v198.5.41 six-insertion rise === */
+#choppedCalibDepth{min-width:130px}
+
+
+/* === v198.5.42 manual vessel depth-zone editor === */
+.calibration-depth-guide{
+  display:none!important; /* old ellipse approximation is no longer authoritative */
+}
+
+.depth-zone-editor-controls{
+  display:grid;
+  gap:7px;
+  margin-bottom:10px;
+  padding:9px;
+  border:2px solid rgba(53,27,13,.28);
+  border-radius:12px;
+  background:rgba(255,255,255,.32);
+}
+.depth-zone-mode-row,
+.depth-zone-action-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.depth-zone-editor-controls button{
+  border:2px solid #351b0d;
+  border-radius:9px;
+  padding:6px 8px;
+  font-weight:900;
+  cursor:pointer;
+  background:#f2dfb5;
+  color:#351b0d;
+}
+#depthZoneFullBtn.active{
+  background:#38c9df;
+  box-shadow:0 0 0 3px rgba(56,201,223,.24);
+}
+#depthZoneBottomBtn.active{
+  background:#ff5b5b;
+  box-shadow:0 0 0 3px rgba(255,91,91,.22);
+}
+#depthZoneFoodBtn.active{
+  background:#79d36e;
+}
+#depthZoneApplyFoodAreaBtn{
+  background:#4caf50!important;
+  color:#fff!important;
+  border-color:#1b5e20!important;
+  font-weight:950;
+}
+#depthZoneApplyFoodAreaBtn:hover{
+  filter:brightness(1.08);
+}
+#depthZoneVesselSelect{
+  border:2px solid #351b0d;
+  border-radius:9px;
+  padding:5px 6px;
+  font-weight:800;
+  background:#fff7e8;
+  color:#351b0d;
+}
+#depthZoneTarget{
+  font-weight:850;
+}
+.depth-zone-help{
+  line-height:1.35;
+  opacity:.86;
+}
+
+.depth-zone-editor-overlay{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  z-index:8800;
+  overflow:visible;
+  pointer-events:none;
+}
+.depth-zone-editor-overlay.editing{
+  pointer-events:auto;
+  cursor:crosshair;
+}
+.depth-zone-editor-overlay:not(.editing){opacity:0;}
+.depth-zone-shape{
+  pointer-events:none;
+  vector-effect:non-scaling-stroke;
+  stroke-width:.65;
+  stroke-linejoin:round;
+}
+.depth-zone-full{
+  fill:rgba(42,199,222,.25);
+  stroke:rgba(20,177,202,.98);
+}
+.depth-zone-bottom{
+  fill:rgba(255,49,49,.31);
+  stroke:rgba(220,20,20,.98);
+}
+.depth-zone-handle{
+  vector-effect:non-scaling-stroke;
+  stroke:#fff;
+  stroke-width:.55;
+  cursor:grab;
+  pointer-events:auto;
+}
+.depth-zone-handle-full{fill:#28c5de}
+.depth-zone-handle-bottom{fill:#ff3d3d}
+.depth-zone-handle:active{cursor:grabbing}
+
+body.depth-zone-editing .food-calibration-target{
+  pointer-events:none!important;
+}
+
+
+/* === v198.5.44 vessel-local wheel zoom === */
+.item.depth-zone-wheel-zoom-target{
+  z-index:8810!important;
+  filter:drop-shadow(0 18px 34px rgba(0,0,0,.38));
+  will-change:transform;
+}
+.item.depth-zone-wheel-zoom-target .depth-zone-editor-overlay{
+  z-index:8820!important;
+}
+#depthZoneZoomReadout{
+  display:inline-block;
+  font-weight:950;
+  font-variant-numeric:tabular-nums;
+  color:#5b3214;
+}
+#depthZoneZoomResetBtn{
+  background:#eadfbf!important;
+}
+
+
+/* === v198.5.45 one-click geometry export === */
+#vesselGeometryExportBtn{
+  padding:10px 13px;
+  border-radius:13px;
+  border:3px solid var(--deep);
+  background:#9fd4ff;
+  color:var(--deep);
+  font-weight:950;
+  font-size:14px;
+  box-shadow:0 4px 0 #4479a6;
+  cursor:pointer;
+}
+#vesselGeometryExportBtn:hover{
+  filter:brightness(1.05);
+}
+
+
+/* The imported JSON polygon is the only food boundary for the large pot.
+   Retired ellipse masks and feathered alpha layers must not participate. */
+.item[data-item-id="serpa_velika"] .vessel-content{
+  -webkit-mask-image:none!important;
+  mask-image:none!important;
+}
+.item[data-item-id="serpa_velika"] .vessel-content .exact-chopped-stack,
+.item[data-item-id="serpa_velika"] .vessel-content .stir-pile-layer,
+.item[data-item-id="serpa_velika"] .vessel-content .stir-old-mix-layer,
+.item[data-item-id="serpa_velika"] .vessel-content .generic-sliced-layer,
+.item[data-item-id="serpa_velika"] .vessel-content .stir-combined-layer,
+.item[data-item-id="serpa_velika"] .vessel-content .single-sliced-pile,
+.item[data-item-id="serpa_velika"] .vessel-content .stir-sparkles,
+.item[data-item-id="serpa_velika"] .vessel-content .stir-bubbles,
+.item[data-item-id="serpa_velika"] .vessel-content .stir-ripples{
+  clip-path:polygon(0 0,100% 0,100% 100%,0 100%)!important;
+  -webkit-mask-image:none!important;
+  mask-image:none!important;
+  border-radius:0!important;
+}
+
+
+/* v198.5.141 — Serbian radial wheel + genie-pop animation */
+#quickToolWheel[hidden]{display:none!important}
+#quickToolWheel{
+  position:fixed;
+  left:50%;
+  top:50%;
+  width:min(520px,72vmin);
+  aspect-ratio:1;
+  z-index:12000;
+  transform:translate(-50%,-50%) scale(.04,.02);
+  transform-origin:50% 50%;
+  opacity:0;
+  user-select:none;
+  pointer-events:auto;
+  will-change:transform,opacity,filter;
+}
+#quickToolWheel.opening{
+  animation:cookster-wheel-genie-pop 500ms cubic-bezier(.16,.82,.25,1.08) both;
+}
+#quickToolWheel.open{
+  opacity:.86;
+  transform:translate(-50%,-50%) scale(1);
+}
+#quickToolWheel.closing{
+  animation:cookster-wheel-suck-in 120ms cubic-bezier(.45,.02,.72,.36) both;
+}
+.quick-tool-wheel-art{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+  pointer-events:none;
+  filter:drop-shadow(0 18px 28px rgba(0,0,0,.34));
+}
+.quick-tool-hotspot{
+  position:absolute;
+  left:calc(var(--hx) - var(--hw)/2);
+  top:calc(var(--hy) - var(--hh)/2);
+  width:var(--hw);
+  height:var(--hh);
+  border:0;
+  border-radius:42%;
+  padding:0;
+  background:transparent;
+  cursor:pointer;
+  outline:none;
+  transform:scale(1);
+  transition:transform 80ms ease, background 80ms ease, box-shadow 80ms ease;
+}
+.quick-tool-hotspot::after{
+  content:"";
+  position:absolute;
+  inset:8%;
+  border-radius:42%;
+  opacity:0;
+  box-shadow:0 0 0 4px rgba(255,221,94,.0),0 0 28px rgba(255,197,54,.0);
+  transition:opacity 80ms ease,box-shadow 80ms ease;
+}
+.quick-tool-hotspot:hover::after,
+.quick-tool-hotspot.active::after{
+  opacity:1;
+  box-shadow:0 0 0 4px rgba(255,225,112,.72),0 0 28px rgba(255,190,44,.65);
+}
+.quick-tool-hotspot:hover,
+.quick-tool-hotspot.active{transform:scale(1.035)}
+.quick-tool-hotspot.kind-locked{cursor:default}
+.quick-tool-hotspot.kind-locked::after{display:none}
+.quick-tool-hotspot.kind-future:hover::after{box-shadow:0 0 0 4px rgba(233,198,128,.48),0 0 20px rgba(180,129,62,.34)}
+#quickToolWheel.select-pulse .quick-tool-hotspot.active{
+  animation:cookster-wheel-slot-pulse 110ms ease-out both;
+}
+body.quick-tool-wheel-open #cursor,
+body.quick-tool-wheel-open #label{display:none!important}
+
+@keyframes cookster-wheel-genie-pop{
+  0%{
+    opacity:0;
+    transform:translate(-50%,-50%) scale(.035) rotate(-1.8deg);
+    filter:blur(16px);
+  }
+  12%{
+    opacity:.44;
+    transform:translate(-50%,-50%) scale(.30) rotate(-1.0deg);
+    filter:blur(12px);
+  }
+  24%{
+    opacity:.82;
+    transform:translate(-50%,-50%) scale(.84) rotate(.7deg);
+    filter:blur(5px);
+  }
+  33%{
+    opacity:.95;
+    transform:translate(-50%,-50%) scale(1.11) rotate(2.2deg);
+    filter:blur(.7px);
+  }
+  43%{
+    opacity:.92;
+    transform:translate(-50%,-50%) scale(.955) rotate(-2.4deg);
+    filter:blur(0);
+  }
+  56%{
+    transform:translate(-50%,-50%) scale(1.045) rotate(1.55deg);
+  }
+  69%{
+    transform:translate(-50%,-50%) scale(.985) rotate(-1.05deg);
+  }
+  81%{
+    transform:translate(-50%,-50%) scale(1.022) rotate(.62deg);
+  }
+  90%{
+    transform:translate(-50%,-50%) scale(.994) rotate(-.34deg);
+  }
+  96%{
+    transform:translate(-50%,-50%) scale(1.006) rotate(.16deg);
+  }
+  100%{
+    opacity:.86;
+    transform:translate(-50%,-50%) scale(1) rotate(0deg);
+    filter:blur(0);
+  }
+}
+@keyframes cookster-wheel-suck-in{
+  0%{opacity:.86;transform:translate(-50%,-50%) scale(1)}
+  35%{opacity:.75;transform:translate(-50%,-50%) scale(.90,1.03)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(.04,.02)}
+}
+@keyframes cookster-wheel-slot-pulse{
+  0%{transform:scale(1.035)}
+  45%{transform:scale(.94)}
+  100%{transform:scale(1.06)}
+}
+@media (prefers-reduced-motion: reduce){
+  #quickToolWheel.opening,#quickToolWheel.closing,.quick-tool-hotspot{animation:none!important;transition:none!important}
+}
+
+
+/* v198.5.158 — remove yellow circles/highlights */
+.quick-tool-hotspot::before,
+.quick-tool-hotspot::after,
+.quick-tool-slot::before,
+.quick-tool-slot::after{
+ display:none !important;
+ content:none !important;
+ border:none !important;
+ box-shadow:none !important;
+ background:none !important;
+ opacity:0 !important;
+}
+
+/* v198.5.158 — clean quick-tool flight from wheel to hand */
+.quick-tool-flyer-clean{
+ position:fixed;
+ z-index:12150;
+ pointer-events:none;
+ transform:translate(-50%,-50%);
+ transform-origin:50% 50%;
+ animation:cookster-tool-fly-clean 220ms cubic-bezier(.12,.82,.20,1) both;
+ will-change:transform,opacity,filter;
+}
+.quick-tool-flyer-clean img{
+ width:100%;
+ height:100%;
+ display:block;
+ object-fit:contain;
+}
+@keyframes cookster-tool-fly-clean{
+ 0%{
+  opacity:1;
+  transform:translate(-50%,-50%) scale(1,1) rotate(0deg);
+  filter:blur(0);
+ }
+ 60%{
+  opacity:1;
+  transform:
+   translate(calc(-50% + (var(--fly-dx) * .84)),calc(-50% + (var(--fly-dy) * .84)))
+   scale(calc(1 + ((var(--fly-scale-x) - 1) * .84)),calc(1 + ((var(--fly-scale-y) - 1) * .84)))
+   rotate(calc(var(--fly-rot) * .84));
+  filter:blur(.55px);
+ }
+ 84%{
+  opacity:1;
+  transform:
+   translate(calc(-50% + (var(--fly-dx) * 1.03)),calc(-50% + (var(--fly-dy) * 1.03)))
+   scale(calc(1 + ((var(--fly-scale-x) - 1) * 1.03)),calc(1 + ((var(--fly-scale-y) - 1) * 1.03)))
+   rotate(calc(var(--fly-rot) * 1.03));
+  filter:blur(.05px);
+ }
+ 100%{
+  opacity:1;
+  transform:
+   translate(calc(-50% + var(--fly-dx)),calc(-50% + var(--fly-dy)))
+   scale(var(--fly-scale-x),var(--fly-scale-y))
+   rotate(var(--fly-rot));
+  filter:blur(0);
+ }
+}
+
+/* v198.5.160 — new horizontal knife, no legacy clipping */
+.item[data-item-id="noz"]>.body{
+  clip-path:none !important;
+  object-fit:contain !important;
+}
+
+/* v198.5.162 — knife blade enlarged to match the existing handle scale */
+.item[data-item-id="noz"]>.body{
+  clip-path:none !important;
+  object-fit:contain !important;
+}
+
+/* v198.5.163 — one complete knife only */
+.item[data-item-id="noz"]::after{
+  content:none !important;
+  display:none !important;
+}
+.item[data-item-id="noz"]>.body{
+  clip-path:none !important;
+  object-fit:contain !important;
+  z-index:2;
+}
+
+
+/* v198.5.169 — polished sponge pickup */
+.quick-tool-flyer-sponge{
+  position:fixed;
+  z-index:12150;
+  pointer-events:none;
+  transform:translate(-50%,-50%);
+  transform-origin:50% 50%;
+  animation:cookster-sponge-fast-arrive 185ms cubic-bezier(.18,.82,.22,1) both;
+  will-change:transform,filter;
+}
+.quick-tool-flyer-sponge img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:contain;
+}
+@keyframes cookster-sponge-fast-arrive{
+  0%{
+    transform:translate(-50%,-50%) scale(1,1) rotate(0deg);
+    filter:blur(0);
+  }
+  55%{
+    transform:
+      translate(calc(-50% + (var(--fly-dx) * .82)),calc(-50% + (var(--fly-dy) * .82)))
+      scale(calc(1 + ((var(--fly-scale-x) - 1) * .82)),calc(1 + ((var(--fly-scale-y) - 1) * .82)))
+      rotate(calc(var(--fly-rot) * .82));
+    filter:blur(.55px);
+  }
+  88%{
+    transform:
+      translate(calc(-50% + (var(--fly-dx) * .99)),calc(-50% + (var(--fly-dy) * .99)))
+      scale(calc(1 + ((var(--fly-scale-x) - 1) * .99)),calc(1 + ((var(--fly-scale-y) - 1) * .99)))
+      rotate(calc(var(--fly-rot) * .99));
+    filter:blur(.08px);
+  }
+  100%{
+    transform:
+      translate(calc(-50% + var(--fly-dx)),calc(-50% + var(--fly-dy)))
+      scale(var(--fly-scale-x),var(--fly-scale-y))
+      rotate(var(--fly-rot));
+    filter:blur(0);
+  }
+}
+
+/* Short arrival jiggle: arrives, grows a touch, settles immediately. */
+.item[data-item-id="sundjer"].sponge-arrive-jiggle{
+  animation:cookster-sponge-hand-jiggle 145ms cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes cookster-sponge-hand-jiggle{
+  0%{ scale:1; }
+  55%{ scale:1.045; }
+  100%{ scale:1; }
+}

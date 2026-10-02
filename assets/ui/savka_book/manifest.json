@@ -1,0 +1,16 @@
+{
+  "cover": "cover_closed.png",
+  "pages": [
+    "page_00_title.png",
+    "page_01_ajvar_ingredients.png",
+    "page_02_ajvar_preparation.png",
+    "page_03_notes.png"
+  ],
+  "ui": {
+    "position": "left side",
+    "openHotkey": "R",
+    "closeHotkey": "Escape",
+    "nextHotkey": "ArrowRight",
+    "prevHotkey": "ArrowLeft"
+  }
+}

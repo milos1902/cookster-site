@@ -1,0 +1,10 @@
+#saveTransfer{position:fixed;top:10px;left:10px;z-index:2147483646;font:13px/1.45 system-ui,sans-serif;color:#f7efe5;max-width:min(310px,calc(100vw - 20px))}
+#saveTransfer summary{cursor:pointer;list-style:none;width:max-content;padding:7px 11px;border:1px solid #ffffff40;border-radius:8px;background:#28231ee8;box-shadow:0 2px 6px #0004}
+#saveTransfer summary::-webkit-details-marker{display:none}
+#saveTransfer[open] summary{margin-bottom:5px}
+#saveTransfer .save-transfer-content{padding:12px;background:#28231ef5;border:1px solid #ffffff40;border-radius:8px;box-shadow:0 4px 14px #0005}
+#saveTransfer p{margin:0 0 9px}
+#saveTransfer button{font:inherit;cursor:pointer;padding:7px 10px;background:#f5e9d7;color:#30271f;border:0;border-radius:5px;margin:0 4px 5px 0}
+#saveTransfer button:disabled{opacity:.5;cursor:wait}
+#saveTransfer :focus-visible{outline:2px solid #efb674;outline-offset:3px}
+#saveTransfer #saveTransferStatus{margin:5px 0 0;font-size:12px}
