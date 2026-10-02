@@ -3753,3 +3753,6 @@ body.quick-tool-wheel-open #label{display:none!important}
   55%{ scale:1.045; }
   100%{ scale:1; }
 }
+
+/* the cooking progress bar above pans and pots is not used any more */
+.pan-status,.pan-status.visible{display:none!important}
