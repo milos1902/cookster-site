@@ -31,14 +31,14 @@ const IMG={};
 const SRC={tom:'../assets/povrce_paradajz.png',slice:'../assets/povrce_paradajz_secen.png',board:'../assets/new_props/daska.png',pan:'../assets/new_props/tiganj_veliki.png'};
 const BOARD={x:30,y:210,s:1.65}, PAN={x:700,y:150,s:1.5};
 const PAN_C={x:PAN.x+200*PAN.s,y:PAN.y+150*PAN.s,rx:185,ry:120};
-let frags=[],parts=[],mode='move',fire=false,drag=null,knife=null,time=0;
+let gid=0,frags=[],parts=[],mode='move',fire=false,drag=null,knife=null,time=0;
 const rnd=(a,b)=>a+Math.random()*(b-a);
 
 function newTomato(){
   frags=[];parts=[];
   const n=22,rx=88,ry=80,verts=[],skin=[];
   for(let i=0;i<n;i++){const a=i/n*Math.PI*2;verts.push({x:Math.cos(a)*rx,y:Math.sin(a)*ry});skin.push(true);}
-  frags.push(mk(verts,skin,BOARD.x+340,BOARD.y+250,true));
+  gid++;const t=mk(verts,skin,BOARD.x+340,BOARD.y+250,true);t.g=gid;frags.push(t);
 }
 function centroid(v){let x=0,y=0;for(const p of v){x+=p.x;y+=p.y}return{x:x/v.length,y:y/v.length};}
 function area(v){let a=0;for(let i=0;i<v.length;i++){const p=v[i],q=v[(i+1)%v.length];a+=p.x*q.y-q.x*p.y}return Math.abs(a/2);}
@@ -87,7 +87,7 @@ function cutAt(f,p1,p2){
   const r=split(f,lp,n);if(!r)return[f];
   const out=[];
   [[r[0],r[1],1],[r[2],r[3],-1]].forEach(([v,sk,sg])=>{
-    const nf=mk(v,sk,f.x,f.y);nf.done=f.done;nf.rot=0;nf.ox+=f.ox;nf.oy+=f.oy;
+    const nf=mk(v,sk,f.x,f.y);nf.done=f.done;nf.rot=0;nf.ox+=f.ox;nf.oy+=f.oy;nf.g=f.g;nf.inP=f.inP;
     nf.vx=n.x*sg*rnd(1.5,2.6);nf.vy=n.y*sg*rnd(1.5,2.6);
     out.push(nf);
   });
@@ -108,7 +108,7 @@ function cutLine(f,n,c){
   if(!r)return[f];
   const out=[];
   [[r[0],r[1],1],[r[2],r[3],-1]].forEach(([v,sk,sg])=>{
-    const nf=mk(v,sk,f.x,f.y);nf.done=f.done;nf.ox+=f.ox;nf.oy+=f.oy;
+    const nf=mk(v,sk,f.x,f.y);nf.done=f.done;nf.ox+=f.ox;nf.oy+=f.oy;nf.g=f.g;nf.inP=f.inP;
     nf.vx=n.x*sg*rnd(.4,.9);nf.vy=n.y*sg*rnd(.4,.9);out.push(nf);
   });
   return out;
@@ -171,11 +171,12 @@ function drawFrag(f){
   if(f.done>.3){g.globalAlpha=.35;g.strokeStyle='#fff';g.lineWidth=2;roundedPath(f.v.map(p=>({x:p.x*.6-f.r*.1,y:p.y*.6-f.r*.1})));g.stroke();g.globalAlpha=1;}
   g.restore();
 }
+function held(f){return !!(drag&&drag.grp&&drag.grp.includes(f));}
 function inPan(f){const dx=(f.x-PAN_C.x)/PAN_C.rx,dy=(f.y-PAN_C.y)/PAN_C.ry;return dx*dx+dy*dy<1;}
 function step(){
   time+=1/60;
   for(const f of frags){
-    const moving=drag&&drag.f===f;
+    const moving=held(f);
     if(!moving){f.x+=f.vx;f.y+=f.vy;f.vx*=.9;f.vy*=.9;f.rot+=(f.vx*.01);}
     if(inPan(f)&&fire){
       f.done+=0.0007;
@@ -183,10 +184,19 @@ function step(){
       if(Math.random()<.02)parts.push({x:f.x+rnd(-f.r,f.r),y:f.y,vx:rnd(-.5,.5),vy:rnd(-1.2,-.4),life:.5,t:'spark'});
     }
   }
+  for(const f of frags){
+    if(held(f))continue;
+    if(!f.inP&&inPan(f))f.inP=true;
+    if(f.inP){
+      const rx=PAN_C.rx*.86-f.r*.5,ry=PAN_C.ry*.84-f.r*.4;
+      let dx=f.x-PAN_C.x,dy=f.y-PAN_C.y;const q=(dx/rx)**2+(dy/ry)**2;
+      if(q>1){const k=1/Math.sqrt(q);f.x=PAN_C.x+dx*k;f.y=PAN_C.y+dy*k;f.vx*=.5;f.vy*=.5;}
+    }
+  }
   // odbijanje komada da se ne slepe (blago)
-  for(let i=0;i<frags.length;i++)for(let j=i+1;j<frags.length;j++){
-    const a=frags[i],b=frags[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,m=(a.r+b.r)*.78;
-    if(d<m){const k=(m-d)/d*.12;if(!(drag&&drag.f===a)){a.x-=dx*k;a.y-=dy*k;}if(!(drag&&drag.f===b)){b.x+=dx*k;b.y+=dy*k;}}
+  for(let pass=0;pass<3;pass++)for(let i=0;i<frags.length;i++)for(let j=i+1;j<frags.length;j++){
+    const a=frags[i],b=frags[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,m=(a.r+b.r)*.95;
+    if(d<m){const k=(m-d)/d*.4;if(!held(a)){a.x-=dx*k;a.y-=dy*k;}if(!held(b)){b.x+=dx*k;b.y+=dy*k;}}
   }
   for(const p of parts){p.x+=p.vx;p.y+=p.vy;p.life-=p.t==='juice'?.04:.012;if(p.t==='juice')p.vy+=.15;}
   parts=parts.filter(p=>p.life>0);
@@ -221,14 +231,26 @@ function hit(p){
 cv.addEventListener('pointerdown',e=>{
   const p=pos(e);cv.setPointerCapture(e.pointerId);
   if(mode==='knife'){knife={a:p,b:p};return;}
-  if(mode==='stir'){drag={stir:true};return;}
-  const f=hit(p);if(f)drag={f,dx:f.x-p.x,dy:f.y-p.y};
+  if(mode==='stir'){drag={stir:true,last:p};return;}
+  const f=hit(p);if(f){const grp=frags.filter(o=>o.g===f.g&&inPan(o)===inPan(f));drag={f,last:p,grp};}
 });
 cv.addEventListener('pointermove',e=>{
   const p=pos(e);
   if(knife)knife.b=p;
-  else if(drag&&drag.stir){for(const f of frags)if(inPan(f)){const d=Math.hypot(f.x-p.x,f.y-p.y);if(d<140){f.vx+=(f.x-p.x)/d*rnd(.3,1.1)+rnd(-.5,.5);f.vy+=(f.y-p.y)/d*rnd(.3,1.1)+rnd(-.5,.5);}}}
-  else if(drag&&drag.f){drag.f.x=p.x+drag.dx;drag.f.y=p.y+drag.dy;drag.f.vx=drag.f.vy=0;}
+  else if(drag&&drag.stir){
+    const mx=p.x-(drag.last?.x??p.x),my=p.y-(drag.last?.y??p.y);drag.last=p;
+    for(const f of frags)if(f.inP||inPan(f)){
+      const d=Math.hypot(f.x-p.x,f.y-p.y);
+      if(d<170){const w=1-d/170;
+        // pomera se u smeru kretanja kasike + blago vrti oko sredine tiganja
+        const cx=f.x-PAN_C.x,cy=f.y-PAN_C.y,cl=Math.hypot(cx,cy)||1;
+        f.vx+=mx*.18*w+(-cy/cl)*w*.5+rnd(-.2,.2);
+        f.vy+=my*.18*w+(cx/cl)*w*.5+rnd(-.2,.2);
+        f.rot+=rnd(-.05,.05)*w;f.vx*=.96;f.vy*=.96;
+      }
+    }
+  }
+  else if(drag&&drag.f){const mx=p.x-drag.last.x,my=p.y-drag.last.y;drag.last=p;for(const o of drag.grp){o.x+=mx;o.y+=my;o.vx=o.vy=0;o.inP=false;}}
 });
 cv.addEventListener('pointerup',()=>{
   if(knife){const k=knife;knife=null;if(Math.hypot(k.b.x-k.a.x,k.b.y-k.a.y)>20)doKnife(k.a,k.b);}
