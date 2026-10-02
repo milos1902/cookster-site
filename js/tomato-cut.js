@@ -39,19 +39,38 @@
     if(A.length<3||B.length<3||area(A)<30*K*K||area(B)<30*K*K)return null;
     return[A,sa,B,sb];
   }
-  function children(f,r,n,kick){
+  const rotv=(p,a)=>({x:p.x*Math.cos(a)-p.y*Math.sin(a),y:p.x*Math.sin(a)+p.y*Math.cos(a)});
+  // n is the cut normal in the piece's own (rotated) frame. fall: 'whole' | 'piece' | null
+  function children(f,r,n,kick,fall){
     const out=[];
     [[r[0],r[1],1],[r[2],r[3],-1]].forEach(([v,sk,sg])=>{
-      const nf=mk(v,sk,f.x,f.y);
-      nf.ox+=f.ox;nf.oy+=f.oy;
-      nf.vx=n.x*sg*kick*rnd(.6,1.1);nf.vy=n.y*sg*kick*rnd(.6,1.1);
+      const nf=mk(v,sk,0,0);                 // x,y,ox,oy = centroid in the parent's local frame
+      const c={x:nf.x,y:nf.y},cw=rotv(c,f.rot);
+      nf.x=f.x+cw.x;nf.y=f.y+cw.y;nf.ox=c.x+f.ox;nf.oy=c.y+f.oy;nf.rot=f.rot;
+      if(f.open!==undefined&&!f.fall)nf.open=f.open;
+      const nw=rotv({x:n.x*sg,y:n.y*sg},f.rot);   // outward direction in world
+      if(fall){
+        // heavy: topples outward around the lowest vertex on the cut edge, overshoots and settles
+        let pi=-1,py=-1e9;
+        for(let i=0;i<nf.v.length;i++){
+          if(sk[i])continue;
+          for(const j of [i,(i+1)%nf.v.length]){const y=rotv(nf.v[j],nf.rot).y;if(y>py){py=y;pi=j;}}
+        }
+        const pv=rotv(nf.v[Math.max(0,pi)],nf.rot),big=fall==='whole';
+        const sc=big?1:Math.min(1,nf.r/(60*K))*.7+.3;
+        if(big)nf.open=0;
+        nf.fall={t:0,sign:nw.x>=0?1:-1,target:big?.42:.26*sc+.06,rot0:nf.rot,c0x:nf.x,c0y:nf.y,
+          px:nf.x+pv.x,py:nf.y+pv.y,sx:nw.x*(big?46:30)*K*sc,sy:nw.y*(big?14:10)*K*sc};
+      }else{
+        nf.vx=nw.x*kick*rnd(.6,1.1);nf.vy=nw.y*kick*rnd(.6,1.1);
+      }
       out.push(nf);
     });
     return out;
   }
   // knife drag p1->p2 (world coords); cuts every piece the segment crosses
   function cutSegment(f,p1,p2){
-    const lp={x:p1.x-f.x,y:p1.y-f.y},lq={x:p2.x-f.x,y:p2.y-f.y};
+    const lp=rotv({x:p1.x-f.x,y:p1.y-f.y},-f.rot),lq=rotv({x:p2.x-f.x,y:p2.y-f.y},-f.rot);
     const dx=lq.x-lp.x,dy=lq.y-lp.y,len=Math.hypot(dx,dy)||1,n={x:-dy/len,y:dx/len};
     let hit=false;const L=f.v.length;
     for(let i=0;i<L&&!hit;i++){
@@ -65,12 +84,12 @@
     }
     if(!hit)return[f];
     const r=split(f,lp,n);
-    return r?children(f,r,n,2):[f];
+    return r?children(f,r,n,0,f.whole?'whole':'piece'):[f];
   }
   function cutWorldLine(f,n,c){
-    const off=c-(f.x*n.x+f.y*n.y);
-    const r=split(f,{x:n.x*off,y:n.y*off},n);
-    return r?children(f,r,n,.7):[f];
+    const lp=rotv({x:n.x*c-f.x,y:n.y*c-f.y},-f.rot),nl=rotv(n,-f.rot);
+    const r=split(f,lp,nl);
+    return r?children(f,r,nl,.7,null):[f];
   }
   // grid cuts, so we get cubes instead of slivers
   function diceGrid(frags){
@@ -87,7 +106,7 @@
       }
     }
     frags=frags.filter(f=>f.a>240*K*K);
-    for(const f of frags)f.rot=rnd(-.15,.15);
+    for(const f of frags)f.rot+=rnd(-.15,.15);
     return frags;
   }
 
@@ -106,27 +125,45 @@
     }
     g.closePath();
   }
-  function drawPiece(g,f,tex){
+  function drawPiece(g,f,tex,tomImg){
     g.save();g.translate(f.x,f.y);g.rotate(f.rot);
     g.shadowColor='rgba(40,12,0,.45)';g.shadowBlur=10;g.shadowOffsetY=5;
     roundedPath(g,f.v);g.fillStyle='#d9301a';g.fill();
     g.shadowColor='transparent';
+    const S=210*K,tx=-f.ox-S/2,ty=-f.oy-S/2-4*K;
     g.save();roundedPath(g,f.v);g.clip();
-    // meat texture from the real cross-section art; every piece samples the same shared slice
-    g.drawImage(tex,270,470,740,610,-f.ox-100*K,-f.oy-82*K,200*K,165*K);
+    const open=f.open===undefined?1:f.open;
+    // right after the cut it is still the whole tomato's art; the inside shows as it falls open
+    if(open<1&&tomImg)g.drawImage(tomImg,tx,ty,S,S);
+    if(open>0){
+      g.globalAlpha=open;
+      g.drawImage(tex,270,470,740,610,-f.ox-100*K,-f.oy-82*K,200*K,165*K);
+      g.globalAlpha=1;
+    }
     g.lineWidth=7;g.strokeStyle='rgba(255,215,170,.28)';g.stroke();
+    // skin rim: the tomato's real skin art along the outer edges
+    if(tomImg&&open>0){
+      let pat=null;
+      try{pat=g.createPattern(tomImg,'no-repeat');pat.setTransform(new DOMMatrix().translate(tx,ty).scale(S/tomImg.width));}catch(_){}
+      if(pat){
+        g.globalAlpha=open;g.strokeStyle=pat;g.lineWidth=20*K;g.lineJoin=g.lineCap='round';
+        const L=f.v.length;
+        for(let i=0;i<L;i++)if(f.skin[i]){const a=f.v[i],b=f.v[(i+1)%L];g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke();}
+        g.globalAlpha=1;
+      }
+    }
     g.restore();
     const L=f.v.length;
     g.lineJoin=g.lineCap='round';
     for(let i=0;i<L;i++){
       const a=f.v[i],b=f.v[(i+1)%L];
       g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);
-      g.lineWidth=f.skin[i]?5:2.5;g.strokeStyle=f.skin[i]?'#8a1608':'#5a1208';g.stroke();
+      g.lineWidth=f.skin[i]?4:2.5;g.strokeStyle=f.skin[i]?'#6b1006':'#5a1208';g.stroke();
     }
     g.restore();
   }
 
-  function bakePile(frags,tex){
+  function bakePile(frags,tex,tomImg){
     // toss the cubes into a heap: random tilt, random bit of the flesh texture, slight overlap
     const total=frags.reduce((t,f)=>t+f.a,0),R=Math.sqrt(total/1.0/Math.PI);
     frags=frags.map(f=>f);
@@ -148,7 +185,7 @@
     const c=document.createElement('canvas');c.width=SNAP.w;c.height=SNAP.h;
     const g=c.getContext('2d');
     g.translate(SNAP.w/2,SNAP.h/2);g.scale(s,s);g.translate(-(x0+x1)/2,-(y0+y1)/2);
-    for(const f of [...frags].sort((a,b)=>a.y-b.y))drawPiece(g,f,tex);
+    for(const f of [...frags].sort((a,b)=>a.y-b.y)){f.open=undefined;drawPiece(g,f,tex,tomImg);}
     return c.toDataURL('image/png');
   }
 
@@ -172,8 +209,11 @@
     bar.style.cssText='position:fixed;left:50%;top:14px;transform:translateX(-50%);display:flex;gap:8px;z-index:1;font:15px system-ui,sans-serif';
     const hint=document.createElement('div');
     hint.style.cssText='position:fixed;left:50%;bottom:14px;transform:translateX(-50%);color:#fff3d6;font:15px system-ui,sans-serif;text-shadow:0 1px 3px #000;text-align:center;max-width:90vw';
-    hint.textContent='Prevuci nož preko paradajza da ga iseckaš. Kad završiš, klikni „Gotovo“.';
+    hint.textContent='Prevuci nož preko paradajza da ga iseckaš (pet rezova). Kad završiš ranije, klikni „Gotovo“.';
     const mkBtn=(t,fn)=>{const b=document.createElement('button');b.textContent=t;b.style.cssText='font:inherit;padding:8px 14px;border-radius:10px;border:2px solid #4a2a12;background:#f1d9a6;color:#3b1d0a;cursor:pointer';b.onclick=fn;bar.appendChild(b);return b;};
+    // the overlay must not leak clicks/drags to the game underneath (it would pick the tomato up)
+    for(const ev of ['pointerdown','pointerup','pointermove','mousedown','mouseup','mousemove','click','dblclick','touchstart','touchmove','touchend','contextmenu','wheel'])
+      root.addEventListener(ev,e=>e.stopPropagation());
     root.append(cv,bar,hint);document.body.appendChild(root);
     requestAnimationFrame(()=>{root.style.opacity='1';cv.style.transform='scale(1)';});
     const g=cv.getContext('2d');
@@ -183,12 +223,27 @@
     for(let i=0;i<n;i++){const a=i/n*Math.PI*2;verts.push({x:Math.cos(a)*rx,y:Math.sin(a)*ry});skin.push(true);}
     const bx=W/2-BOARD.w/2,by=H/2-BOARD.h/2+10;
     let frags=[mk(verts,skin,W/2,H/2+10)];frags[0].whole=true;
-    let knife=null,raf=0,closed=false;
+    let knife=null,raf=0,closed=false,cuts=0;const MAX_CUTS=5;
 
     function frame(){
-      for(const f of frags){f.x+=f.vx;f.y+=f.vy;f.vx*=.9;f.vy*=.9;}
+      for(const f of frags){
+        if(f.fall){
+          // damped swing: topples outward, overshoots a little, settles (feels heavy)
+          const q=f.fall;q.t+=1/60;const t=q.t;
+          const k=1-Math.exp(-5.5*t)*(Math.cos(9*t)+.6*Math.sin(9*t));
+          const th=q.sign*q.target*k,c=Math.cos(th),sn=Math.sin(th);
+          const dx=q.c0x-q.px,dy=q.c0y-q.py;
+          const sl=1-Math.exp(-4*t);
+          f.x=q.px+dx*c-dy*sn+q.sx*sl;f.y=q.py+dx*sn+dy*c+q.sy*sl;
+          f.rot=q.rot0+th;if(f.open!==undefined&&f.open<1)f.open=Math.min(1,t/.45);
+          if(t>1.8){f.fall=null;if(f.open!==undefined)f.open=1;}
+          continue;
+        }
+        f.x+=f.vx;f.y+=f.vy;f.vx*=.9;f.vy*=.9;
+      }
       for(let i=0;i<frags.length;i++)for(let j=i+1;j<frags.length;j++){
-        const a=frags[i],b=frags[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,m=(a.r+b.r)*.9;
+        const a=frags[i],b=frags[j];if(a.fall||b.fall)continue;
+        const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,m=(a.r+b.r)*.9;
         if(d<m){const k=(m-d)/d*.2;a.x-=dx*k;a.y-=dy*k;b.x+=dx*k;b.y+=dy*k;}
       }
       g.clearRect(0,0,W,H);
@@ -197,7 +252,7 @@
       for(const f of [...frags].sort((a,b)=>a.y-b.y)){
         if(f.whole){const s=210*K;g.save();g.shadowColor='rgba(0,0,0,.35)';g.shadowBlur=16;g.shadowOffsetY=8;
           g.drawImage(tomImg,f.x-s/2,f.y-s/2-4*K,s,s);g.restore();}
-        else drawPiece(g,f,sliceImg);
+        else drawPiece(g,f,sliceImg,tomImg);
       }
       if(knife){
         g.save();g.strokeStyle='#fff';g.setLineDash([8,6]);g.lineWidth=3;g.shadowColor='#000';g.shadowBlur=4;
@@ -216,7 +271,11 @@
       let cutAny=false;const next=[];
       for(const f of frags){const r=cutSegment(f,k.a,k.b);if(r.length>1)cutAny=true;next.push(...r);}
       frags=next;
-      if(cutAny&&typeof playChop==='function')try{playChop();}catch(_){}
+      if(!cutAny)return;
+      cuts++;
+      if(typeof playChop==='function')try{playChop();}catch(_){}
+      if(cuts>=MAX_CUTS){hint.textContent='Gotovo, paradajz je iseckan.';setTimeout(finish,1000);}
+      else hint.textContent='Rez '+cuts+' od '+MAX_CUTS+'. Nastavi da seckaš, ili klikni „Gotovo“.';
     });
 
     function close(){
@@ -227,8 +286,9 @@
       active=null;
     }
     function finish(){
+      if(closed)return;
       if(frags.length===1&&frags[0].whole){hint.textContent='Prvo iseckaj paradajz nožem.';return;}
-      const src=bakePile(diceBig(frags),sliceImg);
+      const src=bakePile(diceBig(frags),sliceImg,tomImg);
       close();cb.onDone(src);
     }
     function cancel(){close();cb.onCancel&&cb.onCancel();}
