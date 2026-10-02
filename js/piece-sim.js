@@ -81,6 +81,7 @@
       return this.canvases;
     }
     sync(parts){
+      this.parts=parts;
       this.measure();
       const want=new Set(),created=[];
       for(const part of parts){
@@ -182,6 +183,38 @@
       if(energy>0){this.collide(ps,.24,.8);this.collide(ps,.14,.8);for(const p of ps)this.wall(p);}
       return energy;
     }
+    // Static "bed": the stock art of the cooked vegetable covers the bottom of the vessel, so stirring never uncovers it.
+    // It follows the same stages as the loose pieces (raw -> fried -> well done -> burnt).
+    drawBed(g,w,h,sc,stage){
+      const parts=this.parts||[];
+      if(!parts.length)return;
+      const bl=BLEND[Math.max(1,Math.min(7,stage))-1];
+      g.save();
+      g.beginPath();g.ellipse(50*sc,this.H/2*sc,41*sc,this.H*.38*sc,0,0,Math.PI*2);g.clip();
+      // several overlapping copies of the stock pile fill the whole food area (one pile alone is a small heap)
+      const SPOTS=[[0,0,1],[-21,2,.9],[21,-2,.9],[-4,-12,.85],[5,13,.85],[-26,-10,.7],[27,9,.7]];
+      parts.forEach((part,i)=>{
+        const d=part.def||{};
+        const units=Math.max(1,Math.round(part.count||1));
+        const spots=SPOTS.slice(0,units>=2?7:5);
+        const draw=(src,alpha)=>{
+          if(!src||alpha<=0)return;
+          let e=imgCache.get(src);
+          if(!e){loadImg(src,()=>{this.dirty=true;kick();});return;}
+          if(!e.ready)return;
+          g.globalAlpha=alpha;
+          for(const [sx,sy,s] of spots){
+            const bw=56*s*sc,bh=bw*.76,seedRot=(sx*7+sy*3)*.02;
+            g.save();g.translate((50+sx+i*3)*sc,(this.H/2+sy*this.H/80)*sc);g.rotate(seedRot);
+            g.drawImage(e.img,-bw/2,-bh/2,bw,bh);g.restore();
+          }
+        };
+        draw(d.dicedSrc||d.slicedSrc,1);
+        draw(d.friedDicedSrc,bl[0]);
+        draw(d.wellDoneDicedSrc,bl[1]);
+      });
+      g.globalAlpha=1;g.restore();
+    }
     draw(){
       const ps=[...this.pieces.values()].sort((a,b)=>a.y-b.y);
       for(const c of this.liveCanvases()){
@@ -192,6 +225,7 @@
         const g=el.getContext('2d'),sc=w/SIM_W;
         g.setTransform(dpr,0,0,dpr,0,0);
         g.clearRect(0,0,w,h);
+        this.drawBed(g,w,h,sc,c.stage);
         for(const p of ps){
           const e=p.entry;if(!e.ready)continue;
           g.save();
@@ -244,6 +278,8 @@
     },
     stir(vessel,x,y,mx,my){sims.get(vessel)?.stir(x,y,mx,my);},
     running:()=>running,
+    debugClear:v=>{const s=sims.get(v);if(s){s.pieces.clear();s.dirty=true;kick();}},
+    debugBed:v=>{const s=sims.get(v);return s?{parts:(s.parts||[]).map(p=>({k:p.storageKey,c:p.count,d:p.def&&p.def.dicedSrc,f:p.def&&p.def.friedDicedSrc})),img:[...imgCache.entries()].map(([k,e])=>[k.slice(-30),e.ready])}:null;},
     debugPieces(vessel){return [...(sims.get(vessel)?.pieces.values()||[])].map(p=>({id:p.id,x:p.x,y:p.y}));}
   };
 })();
