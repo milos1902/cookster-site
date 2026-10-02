@@ -60,7 +60,7 @@
             want.add(id);
             if(this.pieces.has(id))return;
             const [sx,sy,sw,sh,ax,ay,x,y,rot]=q;
-            const piece={id,entry,k,sx,sy,sw,sh,ax,ay,rot:rot||0,vx:0,vy:0,
+            const piece={id,entry,k,sx,sy,sw,sh,ax,ay,rot:rot||0,vx:0,vy:0,mass:.8+Math.random()*.9,
               x:50+off[0]+x*k,y:this.H/2+off[1]*this.H/100+y*k,
               r:Math.max(4,(Math.max(sw,sh)-PAD*2)/2*k)};
             this.pieces.set(id,piece);created.push(piece);
@@ -112,16 +112,16 @@
       const cx=50,cy=this.H/2;
       // which way round is the spoon going? sign of the cross product of (spoon - centre) and its movement
       const dir=((lx-cx)*vy-(ly-cy)*vx)>=0?1:-1;
-      const R=36;
+      const R=26;
       for(const p of this.pieces.values()){
         const dx=p.x-lx,dy=p.y-ly,d=Math.hypot(dx,dy);
         if(d>=R)continue;
-        const w=(1-d/R)*(1-d/R*.3);
+        const w=(1-d/R)*(1-d/R*.3)/p.mass;          // heavy pieces answer more slowly
         const ox=p.x-cx,oy=p.y-cy,ol=Math.hypot(ox,oy)||1;
-        const swirl=Math.min(1.4,speed*.25);
-        p.vx+=vx*.55*w+(-oy/ol)*dir*swirl*w+(Math.random()-.5)*.25*w;
-        p.vy+=vy*.55*w+(ox/ol)*dir*swirl*w+(Math.random()-.5)*.25*w;
-        p.rot+=(Math.random()-.5)*.12*w;
+        const swirl=Math.min(.45,speed*.07);
+        p.vx+=vx*.10*w+(-oy/ol)*dir*swirl*w*.5+(Math.random()-.5)*.05*w;
+        p.vy+=vy*.10*w+(ox/ol)*dir*swirl*w*.5+(Math.random()-.5)*.05*w;
+        p.rot+=(Math.random()-.5)*.05*w;
       }
       this.activeUntil=performance.now()+500;
       this.dirty=true;kick();
@@ -132,15 +132,18 @@
       let energy=0;
       for(const p of ps){
         // food settles back towards the middle of the vessel, so stirring never leaves it piled against one wall
-        if(settling){p.vx+=(50-p.x)*.0025;p.vy+=(this.H/2-p.y)*.0025;}
+        if(settling){p.vx+=(50-p.x)*.0009;p.vy+=(this.H/2-p.y)*.0009;}
         p.x+=p.vx;p.y+=p.vy;
         energy=Math.max(energy,Math.abs(p.vx)+Math.abs(p.vy));
-        p.rot+=p.vx*.012;
-        p.vx*=.9;p.vy*=.9;
+        p.rot+=p.vx*.01;
+        // cap the speed and add drag: a thick, heavy mixture, never a quick stream
+        const sp=Math.hypot(p.vx,p.vy),cap=.42/p.mass;
+        if(sp>cap){p.vx*=cap/sp;p.vy*=cap/sp;}
+        p.vx*=.86;p.vy*=.86;
         if(Math.abs(p.vx)<.001)p.vx=0;
         if(Math.abs(p.vy)<.001)p.vy=0;
       }
-      if(energy>0){this.collide(ps,.32,.8);this.collide(ps,.2,.8);for(const p of ps)this.wall(p);}
+      if(energy>0){this.collide(ps,.24,.8);this.collide(ps,.14,.8);for(const p of ps)this.wall(p);}
       return energy;
     }
     draw(){

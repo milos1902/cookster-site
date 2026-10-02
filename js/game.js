@@ -5317,7 +5317,7 @@ function positionStirSpoon(e){
  const dip=ensureStirDipOverlay();
  const model=stirModelFor(stirVessel);
  const mix=allSlicedIngredientMix(model.ingredients||{},stirMetaFor(stirVessel));
- if(mix.length){
+ if(false&&mix.length){
    const [dr,dg,db]=ingredientMixBaseColor(mix,1);
    dip.style.background=`radial-gradient(circle at 42% 38%,rgba(${dr},${dg},${db},.62) 0%,rgba(${dr},${dg},${db},.30) 55%,transparent 78%)`;
    // Cover the spoon bowl with the dish surface; only the handle should read
@@ -6390,9 +6390,20 @@ function ghostKeyFor(el){
  ].join(':');
 }
 
+// cloneNode() does not copy what is painted on a <canvas>, so the piece simulation's canvases are copied by hand
+function copyCanvasContents(src,dst){
+  if(!src||!dst)return;
+  const from=src.querySelectorAll('canvas'),to=dst.querySelectorAll('canvas');
+  from.forEach((c,i)=>{
+    const d=to[i];if(!d||!c.width||!c.height)return;
+    d.width=c.width;d.height=c.height;
+    try{d.getContext('2d').drawImage(c,0,0);}catch(_){}
+  });
+}
 function fillGhostContainer(container,el){
   container.innerHTML='';
   const copy=el.cloneNode(true);
+  copyCanvasContents(el,copy);
   copy.removeAttribute('id');
   copy.querySelectorAll('[id]').forEach(n=>n.removeAttribute('id'));
   copy.classList.remove(
@@ -10502,6 +10513,7 @@ function syncBackpackHeldPreview(source=placementGhost){
  if(!backpackHeldPreview||backpackHeldPreview.dataset.sourceKey!==key){
   hideBackpackHeldPreview();
   backpackHeldPreview=source.cloneNode(true);
+  copyCanvasContents(source,backpackHeldPreview);
   backpackHeldPreview.removeAttribute('id');
   backpackHeldPreview.querySelectorAll('[id]').forEach(node=>node.removeAttribute('id'));
   backpackHeldPreview.dataset.sourceKey=key;
@@ -10613,6 +10625,7 @@ function animateBackpackTransfer(item,button,direction,event,onFinish){
    }
  }
  const flyer=item.cloneNode(true);
+ copyCanvasContents(item,flyer);
  flyer.classList.remove('held','hovered','valid','invalid','pour-target-ready',
   'pour-target-blocked','pouring-source','pouring-receiver','stir-ready-target','stirring-vessel');
  flyer.classList.add('cookster-backpack-flight');
