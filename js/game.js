@@ -5457,6 +5457,7 @@ function updateStirring(e){
  const moveX=e.clientX-stirLastX,moveY=e.clientY-stirLastY;
  stirLastX=e.clientX;stirLastY=e.clientY;
  const moveLen=Math.hypot(moveX,moveY);
+ if(moveLen>0)window.CooksterPieceSim?.stir(stirVessel,e.clientX,e.clientY,moveX,moveY);
  const angleNow=Math.atan2(ry,rx);
  window.CooksterCanvasMesh?.setGesture?.({x:e.clientX,y:e.clientY,speed:moveLen,angle:angleNow,radius,active:true});
  let angleDelta=angleNow-stirLastAngle;
@@ -8035,7 +8036,7 @@ function ensureSceneOilBottleMeta(item){
 const CooksterPiles=window.CooksterPiles={
  is:s=>typeof s==='string'&&/^data:image\/(png|webp);base64,/.test(s),
  split:s=>String(s||'').split('|').filter(x=>/^data:image\/(png|webp);base64,/.test(x)),
- join(a,b){const list=this.split(a);for(const x of this.split(b))if(!list.includes(x))list.push(x);return list.slice(-4).join('|');}
+ join(a,b){const list=this.split(a);for(const x of this.split(b))if(!list.includes(x))list.push(x);return list.slice(-3).join('|');}
 };
 function ingredientVisualMeta(item){
   if(isSceneOilBottle(item))ensureSceneOilBottleMeta(item);
@@ -8088,7 +8089,7 @@ function ingredientVisualMeta(item){
         ?roastedChoppedPepperSrc(roastedKey)
         :roastedUnpeeledEggplant
           ?(def.roastedUnpeeledDicedSrc||def.dicedSrc||'')
-          :(CooksterPiles.is(bodySrc)?bodySrc:(def.dicedSrc||def.slicedSrc||bodySrc||def.src||''));
+          :(item.dataset.pieceAtlas&&CooksterPiles.is(item.dataset.pieceAtlas)?item.dataset.pieceAtlas:CooksterPiles.is(bodySrc)?bodySrc:(def.dicedSrc||def.slicedSrc||bodySrc||def.src||''));
       return {
         key:roastedKey,
         baseKey:key,
@@ -10344,7 +10345,7 @@ function openKitchenElements(){
 
 function serializeWorldItem(el){
  const body=el.querySelector('.body');
-  const keep=['crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
+  const keep=['pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
  const data={};
  for(const k of keep)if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
  for(const k of ['ajvarMl','ajvarBatchMl'])if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
@@ -11802,7 +11803,9 @@ function allSlicedIngredientMix(counts,metaItems={}){
     const base=roastedPepper?'paprika':(roastedEggplant?'patlidzan':(diced?key.slice(0,-6):key));
     const def=VEGETABLES[base]||CooksterCatalog.FRUITS?.[base];
     if(!def?.slicedSrc&&!def?.dicedSrc)continue;
-    const piles=(diced&&!roastedChopped)?CooksterPiles.split(metaItems?.[key]?.src):[];
+    const allPiles=(diced&&!roastedChopped)?CooksterPiles.split(metaItems?.[key]?.src):[];
+    const atlas=allPiles.filter(x=>x.includes('#'));   // per-piece atlases are drawn by CooksterPieceSim
+    const piles=atlas.length?[]:allPiles;
     entries.push({
       kind:base,
       storageKey:key,
@@ -11811,7 +11814,8 @@ function allSlicedIngredientMix(counts,metaItems={}){
       // a player-cut pile replaces the stock diced art (and its fried variants, so the generic cook tint applies)
       def:piles.length?{...def,dicedSrc:piles[0],friedDicedSrc:undefined,wellDoneDicedSrc:undefined}:def,
       piles:piles.length?piles:null,
-      src:piles.length?piles[0]:roastedPepper
+      atlas:atlas.length?atlas:null,
+      src:atlas.length?(def.dicedSrc||def.slicedSrc||def.src):piles.length?piles[0]:roastedPepper
         ?roastedChoppedPepperSrc(key)
         :roastedEggplant
           ?(metaItems?.[key]?.src||def.roastedUnpeeledDicedSrc||def.dicedSrc||def.slicedSrc||def.src)
@@ -12813,7 +12817,9 @@ function buildFoodStageLayer(counts,stage,metaItems={},batches=[],heat=0,mixLeve
   const mixAmount=Math.max(0,Math.min(1,+mixLevel||0));
   layer.style.setProperty('--stir-mix',mixAmount.toFixed(4));
 
-  const allMix=allSlicedIngredientMix(counts,metaItems);
+  const allMixRaw=allSlicedIngredientMix(counts,metaItems);
+  const simParts=allMixRaw.filter(p=>p.atlas?.length);
+  const allMix=allMixRaw.filter(p=>!p.atlas?.length);
   // v198.5.124 — sauce base removed for good. Back to just the pieces you
   // actually add, nothing extra underneath — no more vessel floor
   // experiments for now.
@@ -12829,6 +12835,7 @@ function buildFoodStageLayer(counts,stage,metaItems={},batches=[],heat=0,mixLeve
     // scatter layer to keep in sync.
     appendCenteredChoppedStack(layer,allMix,stage,fillState,vessel,batches);
   }
+  if(simParts.length&&window.CooksterPieceSim)CooksterPieceSim.append(layer,simParts,stage,vessel,fillState);
 
   // Ground vegetables use their own complete transparent PNG and the same
   // vessel geometry. Keep them separate from sliced/whole produce rendering.
@@ -13817,8 +13824,9 @@ function beginCutAction(){
  if(window.CooksterTomatoCut?.supports(target)){
    const def=VEGETABLES[target.dataset.vegKey]||{};
    if(def.src&&def.slicedSrc){
-     CooksterTomatoCut.start(target,def,{onCutSound(){playImpactSound(vegSoundTarget(target),'cut');},onDone(src){
+     CooksterTomatoCut.start(target,def,{onCutSound(){playImpactSound(vegSoundTarget(target),'cut');},onDone(src,atlas){
        showToast(setVegetableDiced(target));
+       if(atlas)target.dataset.pieceAtlas=atlas;
        const body=target.querySelector('.body');if(body)body.src=src;
        const shadowImg=target._contactShadow?.querySelector('img');if(shadowImg)shadowImg.src=src;
        CooksterSave.schedule();updateHover();
