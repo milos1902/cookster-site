@@ -12767,7 +12767,7 @@ function buildFoodStageLayer(counts,stage,metaItems={},batches=[],heat=0,mixLeve
 }
 
 
-const FOOD_STAGE_FADE_MS=560;
+const FOOD_STAGE_FADE_MS=1600;
 const FOOD_FILL_FADE_MS=220;
 
 function foodStageLayers(wrap){
@@ -13707,6 +13707,18 @@ function beginCutAction(){
  const knife=getKnifeEl();
  const target=findCutTargetOnBoard();
  if(!board||!knife||!target){showToast('Stavi sastojak na dasku.');return;}
+ if(window.CooksterTomatoCut?.supports(target)){
+   const def=VEGETABLES[target.dataset.vegKey]||{};
+   if(def.src&&def.slicedSrc){
+     CooksterTomatoCut.start(target,def,{onDone(src){
+       showToast(setVegetableDiced(target));
+       const body=target.querySelector('.body');if(body)body.src=src;
+       const shadowImg=target._contactShadow?.querySelector('img');if(shadowImg)shadowImg.src=src;
+       CooksterSave.schedule();updateHover();
+     }});
+     return;
+   }
+ }
  isCutting=true;document.body.classList.add('cutting-active');clearHover();
  releaseKnifeFromBoardForCut(board);
  const tCx=+target.dataset.cx, tBy=+target.dataset.by, tVis=+target.dataset.vis||1;
