@@ -230,7 +230,40 @@
     g.translate(SNAP.w/2,SNAP.h/2);g.scale(s,s);g.translate(-(x0+x1)/2,-(y0+y1)/2);
     for(const f of [...frags].sort((a,b)=>a.y-b.y)){f.baked=true;drawPiece(g,f,tex,tomImg);}
     // WebP keeps the transparent pile ~10x smaller than PNG (browsers without WebP encode fall back to PNG)
-    return c.toDataURL('image/webp',.82);
+    const heap=c.toDataURL('image/webp',.82);
+    return {heap,atlas:bakeAtlas(frags,tex,tomImg,s,(x0+x1)/2,(y0+y1)/2,bw*s,bh*s)};
+  }
+
+  // Every piece baked as its own cut-out in one shared atlas image, plus where it sits in the heap.
+  // The vessel then moves each piece on its own when stirring.
+  // Format: "<webp data URL>#<json>", json = {W,H,p:[[sx,sy,sw,sh,ax,ay,x,y,rot],...]} (heap pixels, centre-relative).
+  function bakeAtlas(frags,tex,tomImg,s,cx,cy,heapW,heapH){
+    const PAD=10,cells=[];
+    for(const f of frags){
+      let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+      for(const p of f.v){x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x);y1=Math.max(y1,p.y);}
+      cells.push({f,bcx:(x0+x1)/2,bcy:(y0+y1)/2,w:Math.ceil((x1-x0)*s+PAD*2),h:Math.ceil((y1-y0)*s+PAD*2)});
+    }
+    // shelf packing, tallest first
+    const order=[...cells].sort((a,b)=>b.h-a.h),maxW=480;
+    let x=0,y=0,rowH=0,usedW=0;
+    for(const c of order){
+      if(x+c.w>maxW){x=0;y+=rowH;rowH=0;}
+      c.sx=x;c.sy=y;x+=c.w;rowH=Math.max(rowH,c.h);usedW=Math.max(usedW,x);
+    }
+    const W=Math.max(8,usedW),H=Math.max(8,y+rowH);
+    const cv=document.createElement('canvas');cv.width=W;cv.height=H;
+    const g=cv.getContext('2d');
+    for(const c of cells){
+      g.save();
+      g.translate(c.sx+c.w/2,c.sy+c.h/2);g.scale(s,s);g.translate(-c.bcx,-c.bcy);
+      drawPiece(g,{...c.f,x:0,y:0,rot:0,baked:true},tex,tomImg);
+      g.restore();
+    }
+    const r1=v=>Math.round(v*10)/10;
+    const meta={W:r1(heapW),H:r1(heapH),p:cells.map(c=>[c.sx,c.sy,c.w,c.h,r1(c.w/2-c.bcx*s),r1(c.h/2-c.bcy*s),
+      r1((c.f.x-cx)*s),r1((c.f.y-cy)*s),Math.round(c.f.rot*1000)/1000])};
+    return cv.toDataURL('image/webp',.82)+'#'+JSON.stringify(meta);
   }
 
   let active=null;
@@ -383,8 +416,8 @@
     function finish(){
       if(closed)return;
       if(frags.length===1&&frags[0].whole){hint.textContent='Prvo iseckaj paradajz nožem.';return;}
-      const src=bakePile(diceBig(frags),sliceImg,tomImg);
-      close();cb.onDone(src);
+      const baked=bakePile(diceBig(frags),sliceImg,tomImg);
+      close();cb.onDone(baked.heap,baked.atlas);
     }
     function cancel(){close();cb.onCancel&&cb.onCancel();}
     function onKey(e){if(e.key==='Escape'){e.stopPropagation();cancel();}}
