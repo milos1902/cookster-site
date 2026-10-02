@@ -69,7 +69,7 @@
   class Sim{
     constructor(vessel){
       this.vessel=vessel;this.pieces=new Map();this.canvases=new Set();
-      this.H=SIM_W*.8;this.dirty=true;this.activeUntil=0;
+      this.H=SIM_W*.8;this.dirty=true;this.activeUntil=0;this.layers=1;this.room=3000;
     }
     wrapOf(){return this.vessel._panContent||this.vessel._vesselContent||null;}
     measure(){
@@ -110,14 +110,18 @@
       if(created.length)this.relax(26);
       this.dirty=true;
     }
-    // Everything must fit in the vessel: with several ingredients the pieces are made smaller, otherwise they
-    // overlap, keep pushing each other and never settle (the "ant hill" effect).
+    // Depth: pieces keep their real size. When there are more than fit on the floor of the vessel they are
+    // spread over up to 5 layers (a heap): each layer is drawn a little higher, with a soft shadow, and stirring
+    // swaps pieces between layers so the ingredients really mix.
     fit(){
-      let area=0;
-      for(const p of this.pieces.values())area+=Math.PI*p.r0*p.r0;
-      const room=Math.PI*46*this.H*.44*.55;
-      const s=area>room?Math.sqrt(room/area):1;
-      for(const p of this.pieces.values()){p.k=p.k0*s;p.r=p.r0*s;}
+      let area=0;const ps=[...this.pieces.values()];
+      for(const p of ps)area+=Math.PI*p.r0*p.r0;
+      this.room=Math.PI*46*this.H*.44*.62;
+      const need=Math.max(1,Math.ceil(area/this.room));
+      this.layers=Math.min(5,need);
+      // beyond 5 layers (very many pieces) shrink them a little
+      const s=need>5?Math.sqrt(5*this.room/area):1;
+      ps.forEach((p,i)=>{p.k=p.k0*s;p.r=p.r0*s;if(p.layer===undefined||p.layer>=this.layers)p.layer=i%this.layers;});
     }
     relax(iters){
       const ps=[...this.pieces.values()];
@@ -143,7 +147,7 @@
         for(let ix=gx-1;ix<=gx+1;ix++)for(let iy=gy-1;iy<=gy+1;iy++){
           const bucket=grid.get(ix+','+iy);if(!bucket)continue;
           for(const b of bucket){
-            if(b.id<=a.id)continue;
+            if(b.id<=a.id||b.layer!==a.layer)continue;
             const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||.01,m=(a.r+b.r)*range;
             if(d<m){const f=(m-d)/d*push;a.x-=dx*f;a.y-=dy*f;b.x+=dx*f;b.y+=dy*f;}
           }
@@ -168,15 +172,24 @@
         const w=(1-d/R)*(1-d/R*.3)/(p.mass*crowd);   // heavy pieces answer more slowly, and the more food there is the heavier it all feels
         const ox=p.x-cx,oy=p.y-cy,ol=Math.hypot(ox,oy)||1;
         const swirl=Math.min(.45,speed*.07);
-        p.vx+=vx*.10*w+(-oy/ol)*dir*swirl*w*.5+(Math.random()-.5)*.05*w;
-        p.vy+=vy*.10*w+(ox/ol)*dir*swirl*w*.5+(Math.random()-.5)*.05*w;
+        p.vx+=vx*.07*w+(-oy/ol)*dir*swirl*w*.5+(Math.random()-.5)*.05*w;
+        p.vy+=vy*.07*w+(ox/ol)*dir*swirl*w*.5+(Math.random()-.5)*.05*w;
         p.rot+=(Math.random()-.5)*.05*w;
+      }
+      if(this.layers>1){
+        // pieces dive under / come up through their neighbours: swap layers of nearby pieces
+        const near=[...this.pieces.values()].filter(q=>Math.hypot(q.x-lx,q.y-ly)<R);
+        const swaps=Math.min(6,Math.ceil(speed*.5));
+        for(let i=0;i<swaps&&near.length>1;i++){
+          const a=near[Math.floor(Math.random()*near.length)],b=near[Math.floor(Math.random()*near.length)];
+          if(a!==b&&a.layer!==b.layer&&Math.hypot(a.x-b.x,a.y-b.y)<9){const l=a.layer;a.layer=b.layer;b.layer=l;}
+        }
       }
       this.activeUntil=performance.now()+500;
       this.dirty=true;kick();
     }
     // many pieces (several ingredients) must not move faster than a few: scale the weight with how crowded the vessel is
-    crowd(){return 1+Math.max(0,this.pieces.size-20)/80;}
+    crowd(){return 1+Math.max(0,this.pieces.size-20)/45;}
     step(now){
       const ps=[...this.pieces.values()];
       const crowd=this.crowd();
@@ -189,9 +202,9 @@
         energy=Math.max(energy,Math.abs(p.vx)+Math.abs(p.vy));
         p.rot+=p.vx*.01;
         // cap the speed and add drag: a thick, heavy mixture, never a quick stream
-        const sp=Math.hypot(p.vx,p.vy),cap=.42/(p.mass*Math.sqrt(crowd));
+        const sp=Math.hypot(p.vx,p.vy),cap=.27/(p.mass*Math.sqrt(crowd));
         if(sp>cap){p.vx*=cap/sp;p.vy*=cap/sp;}
-        p.vx*=.86;p.vy*=.86;
+        p.vx*=.83;p.vy*=.83;
         if(Math.abs(p.vx)<.001)p.vx=0;
         if(Math.abs(p.vy)<.001)p.vy=0;
       }
@@ -231,7 +244,7 @@
       g.globalAlpha=1;g.restore();
     }
     draw(){
-      const ps=[...this.pieces.values()].sort((a,b)=>a.y-b.y);
+      const ps=[...this.pieces.values()].sort((a,b)=>a.layer-b.layer||a.y-b.y);
       for(const c of this.liveCanvases()){
         const el=c.el,w=el.clientWidth,h=el.clientHeight;
         if(!w||!h)continue;
@@ -244,7 +257,11 @@
         for(const p of ps){
           const e=p.entry;if(!e.ready)continue;
           g.save();
-          g.translate(p.x*sc,p.y*sc);g.rotate(p.rot);
+          // each layer sits higher; the heap is a little domed in the middle
+          const rho=Math.min(1,Math.hypot((p.x-50)/46,(p.y-this.H/2)/(this.H*.44)));
+          const lift=p.layer*1.7+(1-rho*rho)*1.6*(this.layers-1)/4;
+          if(p.layer>0){g.shadowColor='rgba(20,8,0,.45)';g.shadowBlur=3*sc/1.2;g.shadowOffsetY=1.2*sc/1.2;}
+          g.translate(p.x*sc,(p.y-lift)*sc);g.rotate(p.rot);
           const dx=-p.ax*p.k*sc,dy=-p.ay*p.k*sc,dw=p.sw*p.k*sc,dh=p.sh*p.k*sc;
           const bl=BLEND[Math.max(1,Math.min(7,c.stage))-1];
           if(e.part)ensureCooked(e,e.part);
