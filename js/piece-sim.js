@@ -10,12 +10,46 @@
   const MAX_UNITS=6;                     // units of one ingredient drawn as pieces
   const UNIT_OFFSETS=[[0,0],[-16,5],[16,-5],[-6,-14],[8,13],[-21,-8],[21,10]];
   // cooking tint per visual stage (1 raw .. 7 burnt), painted over the pieces only
-  const TINT=[null,null,'rgba(150,60,20,.07)','rgba(125,45,14,.16)','rgba(100,34,10,.27)','rgba(70,24,8,.40)','rgba(14,8,4,.78)'];
+  const TINT=[null,null,null,null,null,null,'rgba(14,8,4,.78)'];   // only burnt gets a dark tint, the other stages use the real cooked art
 
   const atlasCache=new Map();
   const sims=new WeakMap();
   const live=new Set();
   let running=false;
+
+  // Real "fried" / "well done" art of each vegetable (piles of cubes) used as the texture of the pieces.
+  const imgCache=new Map();
+  function loadImg(src,cb){
+    let e=imgCache.get(src);
+    if(!e){e={img:new Image(),ready:false,subs:[]};e.img.onload=()=>{e.ready=true;e.subs.splice(0).forEach(f=>f());};e.img.src=src;imgCache.set(src,e);}
+    if(e.ready)cb(e.img);else e.subs.push(()=>cb(e.img));
+  }
+  // atlas copy where every piece takes its colours from the cooked art (pieces keep their own shape)
+  function cookedAtlas(entry,cookedImg){
+    const src=entry.img,m=entry.meta;
+    const c=document.createElement('canvas');c.width=src.width;c.height=src.height;
+    const g=c.getContext('2d');
+    g.drawImage(src,0,0);
+    g.globalCompositeOperation='source-atop';
+    const cw=cookedImg.width,ch=cookedImg.height,k=.5*cw/Math.max(20,m.W||100);
+    for(const q of m.p){
+      const [sx,sy,sw,sh,ax,ay,x,y]=q;
+      const cx=cw/2+x*k*1.0,cy=ch/2+y*k*1.0,w=sw*k,h=sh*k;
+      g.save();g.beginPath();g.rect(sx,sy,sw,sh);g.clip();
+      g.drawImage(cookedImg,cx-w/2,cy-h/2,w,h,sx,sy,sw,sh);
+      g.restore();
+    }
+    return c;
+  }
+  function ensureCooked(entry,part){
+    if(entry.cooked||!entry.ready)return;
+    entry.cooked={fried:null,well:null};
+    const d=part.def||{};
+    if(d.friedDicedSrc)loadImg(d.friedDicedSrc,im=>{entry.cooked.fried=cookedAtlas(entry,im);for(const s of live)s.dirty=true;kick();});
+    if(d.wellDoneDicedSrc)loadImg(d.wellDoneDicedSrc,im=>{entry.cooked.well=cookedAtlas(entry,im);for(const s of live)s.dirty=true;kick();});
+  }
+  // how much of each look is shown at a visual stage (1 raw .. 7 burnt)
+  const BLEND=[[0,0],[.12,0],[.45,0],[.8,0],[1,0],[1,.85],[1,1]];
 
   function loadAtlas(str){
     let e=atlasCache.get(str);
@@ -26,6 +60,7 @@
     const img=new Image();
     e={img,meta,ready:false};
     img.onload=()=>{e.ready=true;for(const s of live)s.dirty=true;kick();};
+    e.parts=[];
     img.src=str.slice(0,hash);
     atlasCache.set(str,e);
     return e;
@@ -52,6 +87,7 @@
         const units=Math.min(MAX_UNITS,Math.max(1,Math.round(part.count||1)));
         for(let u=0;u<units;u++){
           const entry=loadAtlas(part.atlas[u%part.atlas.length]);
+          entry.part=part;
           const m=entry.meta;if(!m||!Array.isArray(m.p))continue;
           const k=HEAP_W/Math.max(20,m.W||100);
           const off=UNIT_OFFSETS[u%UNIT_OFFSETS.length];
@@ -160,7 +196,13 @@
           const e=p.entry;if(!e.ready)continue;
           g.save();
           g.translate(p.x*sc,p.y*sc);g.rotate(p.rot);
-          g.drawImage(e.img,p.sx,p.sy,p.sw,p.sh,-p.ax*p.k*sc,-p.ay*p.k*sc,p.sw*p.k*sc,p.sh*p.k*sc);
+          const dx=-p.ax*p.k*sc,dy=-p.ay*p.k*sc,dw=p.sw*p.k*sc,dh=p.sh*p.k*sc;
+          const bl=BLEND[Math.max(1,Math.min(7,c.stage))-1];
+          if(e.part)ensureCooked(e,e.part);
+          g.drawImage(e.img,p.sx,p.sy,p.sw,p.sh,dx,dy,dw,dh);
+          if(bl[0]>0&&e.cooked?.fried){g.globalAlpha=bl[0];g.drawImage(e.cooked.fried,p.sx,p.sy,p.sw,p.sh,dx,dy,dw,dh);}
+          if(bl[1]>0&&e.cooked?.well){g.globalAlpha=bl[1];g.drawImage(e.cooked.well,p.sx,p.sy,p.sw,p.sh,dx,dy,dw,dh);}
+          g.globalAlpha=1;
           g.restore();
         }
         const tint=TINT[Math.max(1,Math.min(7,c.stage))-1];
