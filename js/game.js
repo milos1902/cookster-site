@@ -13109,7 +13109,7 @@ function updateCookingStatus(vessel,modelOverride=null,stateOverride=null,countO
   // v198.5.88: steam now starts exactly when the cook progress bar crosses
   // its halfway point, per request — simple and matches what the player
   // sees on the bar, instead of a separate stirring-based early trigger.
-  const smokeVisible=heating&&count>0&&progress>=.12;
+  const smokeVisible=count>0&&progress>=.12&&(heating||(+model.heat||0)>.1);   // also while the pan cools off the fire
 
   const uiKey=`${visible?1:0}|${phase}|${isBurnt?1:0}|${heating?1:0}|${strongSmoke?1:0}|${smokeVisible?1:0}|${labelText}`;
   if(vessel._cookUiKey!==uiKey){

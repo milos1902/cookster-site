@@ -138,13 +138,6 @@
       for(let i=0;i<L;i++)if(f.skin[i]){const a=f.v[i],b=f.v[(i+1)%L];g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke();}
     }
     g.restore();
-    const L=f.v.length;
-    g.lineJoin=g.lineCap='round';
-    for(let i=0;i<L;i++){
-      const a=f.v[i],b=f.v[(i+1)%L];
-      g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);
-      g.lineWidth=f.skin[i]?4:2.5;g.strokeStyle=f.skin[i]?ART.rim:'#5a1208';g.stroke();
-    }
   }
   // piece of the whole tomato's art. Only the art's own pixels are drawn (no filler shape behind it),
   // and the cut faces show the real red flesh with seeds.
@@ -181,8 +174,6 @@
       t.closePath();
       t.fillStyle=pat||ART.color;t.fill();
       t.strokeStyle='rgba(255,205,170,.55)';t.lineWidth=3;t.stroke();
-      t.strokeStyle='rgba(110,16,6,.9)';t.lineWidth=2.5;
-      t.beginPath();t.moveTo(a.x,a.y);t.lineTo(b.x,b.y);t.stroke();
     }
     t.restore();
     g.save();
@@ -427,24 +418,21 @@
     }
     cv.addEventListener('pointerdown',e=>{
       cv.setPointerCapture(e.pointerId);const p=pos(e);
-      stroke={id:++strokeId,pts:[p],cut:false};trail.push({x:p.x,y:p.y,t:performance.now()});
+      stroke={id:++strokeId,start:p,cut:false};trail.push({x:p.x,y:p.y,t:performance.now()});
     });
     cv.addEventListener('pointermove',e=>{
       if(!stroke)return;
-      const p=pos(e),prev=stroke.pts[stroke.pts.length-1];
-      if(Math.hypot(p.x-prev.x,p.y-prev.y)<3)return;
-      stroke.pts.push(p);trail.push({x:p.x,y:p.y,t:performance.now()});
-      // the cut line follows the last ~40px of the stroke, so it cuts the moment the knife crosses a piece
-      let back=stroke.pts[0],acc=0;
-      for(let i=stroke.pts.length-1;i>0;i--){
-        acc+=Math.hypot(stroke.pts[i].x-stroke.pts[i-1].x,stroke.pts[i].y-stroke.pts[i-1].y);
-        if(acc>=40){back=stroke.pts[i-1];break;}
-      }
-      if(Math.hypot(p.x-back.x,p.y-back.y)<12)return;
+      // the knife always cuts a straight line from where the drag started to the pointer,
+      // however the hand wanders in between
+      const p=pos(e),s=stroke.start,dist=Math.hypot(p.x-s.x,p.y-s.y);
+      if(dist<14)return;
+      const end=p;
+      const steps=Math.max(2,Math.ceil(dist/6)),now0=performance.now();
+      trail=[];for(let i=0;i<=steps;i++)trail.push({x:s.x+(p.x-s.x)*i/steps,y:s.y+(p.y-s.y)*i/steps,t:now0});
       let cutAny=false;const next=[];
       for(const f of frags){
         if(f.stroke===stroke.id){next.push(f);continue;}
-        const r=cutSegment(f,back,p);
+        const r=cutSegment(f,s,end);
         if(r.length>1){cutAny=true;for(const c of r)c.stroke=stroke.id;}
         next.push(...r);
       }

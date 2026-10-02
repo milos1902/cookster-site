@@ -99,14 +99,25 @@
             const [sx,sy,sw,sh,ax,ay,x,y,rot]=q;
             const piece={id,entry,k,sx,sy,sw,sh,ax,ay,rot:rot||0,vx:0,vy:0,mass:.8+Math.random()*.9,
               x:50+off[0]+x*k,y:this.H/2+off[1]*this.H/100+y*k,
-              r:Math.max(4,(Math.max(sw,sh)-PAD*2)/2*k)};
+              k0:k,r:Math.max(4,(Math.max(sw,sh)-PAD*2)/2*k)};
+            piece.r0=piece.r;
             this.pieces.set(id,piece);created.push(piece);
           });
         }
       }
       for(const id of [...this.pieces.keys()])if(!want.has(id))this.pieces.delete(id);
+      this.fit();
       if(created.length)this.relax(26);
       this.dirty=true;
+    }
+    // Everything must fit in the vessel: with several ingredients the pieces are made smaller, otherwise they
+    // overlap, keep pushing each other and never settle (the "ant hill" effect).
+    fit(){
+      let area=0;
+      for(const p of this.pieces.values())area+=Math.PI*p.r0*p.r0;
+      const room=Math.PI*46*this.H*.44*.55;
+      const s=area>room?Math.sqrt(room/area):1;
+      for(const p of this.pieces.values()){p.k=p.k0*s;p.r=p.r0*s;}
     }
     relax(iters){
       const ps=[...this.pieces.values()];
@@ -150,10 +161,11 @@
       // which way round is the spoon going? sign of the cross product of (spoon - centre) and its movement
       const dir=((lx-cx)*vy-(ly-cy)*vx)>=0?1:-1;
       const R=26;
+      const crowd=this.crowd();
       for(const p of this.pieces.values()){
         const dx=p.x-lx,dy=p.y-ly,d=Math.hypot(dx,dy);
         if(d>=R)continue;
-        const w=(1-d/R)*(1-d/R*.3)/p.mass;          // heavy pieces answer more slowly
+        const w=(1-d/R)*(1-d/R*.3)/(p.mass*crowd);   // heavy pieces answer more slowly, and the more food there is the heavier it all feels
         const ox=p.x-cx,oy=p.y-cy,ol=Math.hypot(ox,oy)||1;
         const swirl=Math.min(.45,speed*.07);
         p.vx+=vx*.10*w+(-oy/ol)*dir*swirl*w*.5+(Math.random()-.5)*.05*w;
@@ -163,8 +175,11 @@
       this.activeUntil=performance.now()+500;
       this.dirty=true;kick();
     }
+    // many pieces (several ingredients) must not move faster than a few: scale the weight with how crowded the vessel is
+    crowd(){return 1+Math.max(0,this.pieces.size-20)/80;}
     step(now){
       const ps=[...this.pieces.values()];
+      const crowd=this.crowd();
       const settling=now<this.activeUntil+1400;   // the pull towards the middle only acts shortly after stirring
       let energy=0;
       for(const p of ps){
@@ -174,7 +189,7 @@
         energy=Math.max(energy,Math.abs(p.vx)+Math.abs(p.vy));
         p.rot+=p.vx*.01;
         // cap the speed and add drag: a thick, heavy mixture, never a quick stream
-        const sp=Math.hypot(p.vx,p.vy),cap=.42/p.mass;
+        const sp=Math.hypot(p.vx,p.vy),cap=.42/(p.mass*Math.sqrt(crowd));
         if(sp>cap){p.vx*=cap/sp;p.vy*=cap/sp;}
         p.vx*=.86;p.vy*=.86;
         if(Math.abs(p.vx)<.001)p.vx=0;

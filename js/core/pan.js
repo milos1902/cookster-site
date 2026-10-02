@@ -234,17 +234,17 @@
     fireLevel=Math.max(1,Math.min(3,+fireLevel||1));
     const targetHeat=fireLevel===1?.58:(fireLevel===2?.78:1);
     if(heating)d.heat+=(targetHeat-d.heat)*Math.min(1,dt*.95);
-    else d.heat=Math.max(0,d.heat-dt*.24);
+    else d.heat=Math.max(0,d.heat-dt*.045);   // cools slowly: steam keeps rising for a good while after the pan leaves the fire
 
     if(heating){
-      const baseCookSeconds=fireLevel===1?45:(fireLevel===2?36:28);
+      const baseCookSeconds=(fireLevel===1?45:(fireLevel===2?36:28))*1.7;   // cooking takes ~70% longer
       for(const b of d.batches){
         if(b.burnt||b.count<=0)continue;
         if(b.doneness<1){
           b.doneness=Math.min(1,b.doneness+(dt/baseCookSeconds)*b.cookSpeed);
           b.overcook=0;
         }else{
-          b.overcook+=dt*b.burnSpeed;
+          b.overcook+=dt*b.burnSpeed*.35;   // and it takes about three times as long to burn after it is done
           if(b.overcook>=2)b.burnt=true;
         }
       }
