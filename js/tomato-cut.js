@@ -310,7 +310,7 @@
       const now=performance.now();
       trail=trail.filter(q=>now-q.t<TRAIL_MS);
       const n=trail.length;if(n<2)return;
-      const w=trail.map((q,i)=>{const life=1-(now-q.t)/TRAIL_MS;return 6.5*(.12+.88*i/(n-1))*Math.pow(Math.max(0,life),.55);});
+      const w=trail.map((q,i)=>{const life=1-(now-q.t)/TRAIL_MS;return 10*(.12+.88*i/(n-1))*Math.pow(Math.max(0,life),.55);});
       const ribbon=scale=>{
         const L=[],R=[];
         for(let i=0;i<n;i++){
@@ -360,7 +360,7 @@
       frags=next;
       if(!cutAny)return;
       const now=performance.now();
-      if(now-lastChop>140&&typeof playChop==='function'){lastChop=now;try{playChop();}catch(_){}}
+      if(now-lastChop>140){lastChop=now;try{if(cb.onCutSound)cb.onCutSound();else if(typeof playChop==='function')playChop();}catch(_){}}
       if(!stroke.cut){
         stroke.cut=true;cuts++;
         if(cuts===MAX_CUTS){

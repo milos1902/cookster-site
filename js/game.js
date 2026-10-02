@@ -2365,7 +2365,26 @@ function makeSoundTarget(key,label,action){
 const buttonSoundTarget=makeSoundTarget('__ui_buttons','Dugmići — klik','click');
 const firewoodSoundTarget=makeSoundTarget('__firewood_insert','Cepanica — ubacivanje u šporet','insert');
 const bookSoundTarget=makeSoundTarget('__recipe_book','Bakina knjiga — otvaranje/zatvaranje','');
-bookSoundTarget.dataset.soundActions='open,close';
+bookSoundTarget.dataset.soundActions='open,close,pageTurn';
+const faucetSoundTarget=makeSoundTarget('__faucet','Česma — voda','water');
+// one virtual sound target per vegetable/fruit type: cutting and putting into a vessel share it
+const produceSoundTargets={};
+function produceSoundTarget(isFruit,key,label){
+ const id=(isFruit?'fruit_':'veg_')+key;
+ if(!produceSoundTargets[id]){
+  const t=makeSoundTarget(id,`${isFruit?'Voće':'Povrće'} — ${label||key}`,'');
+  t.dataset.soundActions='cut,putIn';t.dataset.soundGroup='produce';
+  produceSoundTargets[id]=t;
+ }
+ return produceSoundTargets[id];
+}
+function vegSoundTarget(el){
+ const isFruit=el?.dataset?.fruit==='1';
+ const key=el?.dataset?.vegKey||el?.dataset?.fruitKey||'';
+ if(!key)return el;
+ const def=(isFruit?(CooksterCatalog.FRUITS||{}):VEGETABLES)[key]||{};
+ return produceSoundTarget(isFruit,key,def.label);
+}
 [fireboxHotspot,ovenHotspot].forEach(el=>{
  if(!el)return;
  el.dataset.soundTarget=el.dataset.soundTarget||el.id;
@@ -2390,13 +2409,15 @@ function resolvedImpactConfig(el,action='drop'){
  else if(action==='pickup'&&isItem){sound='pickup';volume=.18;}
  else if(action==='click'){sound='uiClick';volume=.22;}
  else if(action==='insert'){sound='woodDrop';volume=.40;}
+ else if(action==='cut'){sound='tomatoChop';volume=.78;}
+ else if(action==='putIn'){sound='metalDrop';volume=.18;}
  else if(action==='open'||action==='close'){
    const door=el===fireboxHotspot||el===ovenHotspot;
    if(door)sound=action==='open'?'stoveDoorOpen':'stoveDoorClose';
    else if(el?._lidMeta||isAjvarJar(el))sound=action==='open'?'lidOpen':'lidClose';
    volume=action==='open'?.50:.52;
  }
- return{...SOUND_DEFAULTS,volume,cooldown:action==='click'?.04:SOUND_DEFAULTS.cooldown,variants:sound&&!isLibrarySoundDeleted(sound)?[sound]:[]};
+ return{...SOUND_DEFAULTS,volume,cooldown:action==='click'?.04:action==='cut'?.06:SOUND_DEFAULTS.cooldown,variants:sound&&!isLibrarySoundDeleted(sound)?[sound]:[]};
 }
 function removeSoundReferences(key){
  let used=0;
@@ -2504,7 +2525,7 @@ ssStyle.textContent=`
 document.head.appendChild(ssStyle);
 
 /* --- state --- */
-const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice']];
+const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme']];
 const ssState={open:false,tab:'objekti',action:'drop',query:'',libQuery:'',libOpen:false};
 
 /* --- helpers (reuse ls* from light-studio) --- */
@@ -2615,6 +2636,7 @@ ssControls.push(()=>{ssPickBtn.classList.toggle('is-on',!!soundToolActive);lsSet
 const ssSearch=ssEl('input',{type:'search',class:'ls-input',placeholder:'Traži…','aria-label':'Traži predmet'});
 ssSearch.addEventListener('input',()=>{ssState.query=ssSearch.value.trim().toLowerCase();ssRenderObjList();});
 const ssObjList=ssEl('div',{class:'ls-list'});
+ssObjList.style.maxHeight='40vh';
 const ssObjCard=ssEl('div',{class:'ls-card'});
 const ssInspector=ssEl('div',{});
 
@@ -2623,8 +2645,24 @@ function ssSceneItems(){
  const items=[...scene.querySelectorAll('.item')].filter(el=>el.dataset.itemId&&el.style.display!=='none'&&el.offsetWidth>0);
  const hotspots=[fireboxHotspot,ovenHotspot].filter(el=>el?.isConnected);
  hotspots.forEach(el=>{if(!el.dataset.soundTarget)el.dataset.soundTarget=el.id;if(!el.dataset.label)el.dataset.label=el.id;});
- return [buttonSoundTarget,firewoodSoundTarget,bookSoundTarget,...items,...hotspots];
+ // every object that exists in the game, even when it is not on the scene right now
+ const present=new Set(items.map(el=>el.dataset.itemId));
+ const catalogProps=[];
+ try{
+  for(const def of KITCHEN_EQUIPMENT){
+   if(!def?.id||present.has(def.id))continue;
+   if(!ssCatalogTargets[def.id]){ssCatalogTargets[def.id]=makeSoundTarget(def.id,def.label||def.id,'');ssCatalogTargets[def.id].dataset.soundGroup='props';}
+   catalogProps.push(ssCatalogTargets[def.id]);
+  }
+ }catch(_){}
+ const produce=[];
+ try{
+  for(const [key,def] of Object.entries(VEGETABLES))produce.push(produceSoundTarget(false,key,def.label));
+  for(const [key,def] of Object.entries(CooksterCatalog.FRUITS||{}))produce.push(produceSoundTarget(true,key,def.label));
+ }catch(_){}
+ return [buttonSoundTarget,firewoodSoundTarget,bookSoundTarget,faucetSoundTarget,...items,...catalogProps,...hotspots,...produce];
 }
+const ssCatalogTargets={};
 
 function ssSelectItem(el){
  selectedSoundItem=el;
@@ -2635,20 +2673,28 @@ function ssSelectItem(el){
 
 let ssObjCount=-1;
 function ssRenderObjList(){
- const all=ssSceneItems(),q=ssState.query,sel=ssSel();ssObjCount=all.length;
- const rows=all.filter(el=>!q||ssObjLabel(el).toLowerCase().includes(q)||ssObjKey(el).toLowerCase().includes(q)).sort((a,b)=>{
-  const ha=ssHasAnySound(a)?0:1,hb=ssHasAnySound(b)?0:1;
-  if(ha!==hb)return ha-hb;
-  return ssObjLabel(a).localeCompare(ssObjLabel(b),'sr');
- });
- if(!rows.length){ssObjList.replaceChildren(ssEl('div',{class:'ls-empty'},q?'Nema rezultata.':'Nema predmeta na sceni.'));return;}
- ssObjList.replaceChildren(...rows.map(el=>{
+ const all=ssSceneItems(),sel=ssSel();ssObjCount=all.length;
+ const byName=(a,b)=>ssObjLabel(a).localeCompare(ssObjLabel(b),'sr');
+ const groups=[
+  ['Zvuci igre',all.filter(el=>String(el.dataset.soundTarget||'').startsWith('__'))],
+  ['Predmeti',all.filter(el=>el.dataset.soundGroup!=='produce'&&!String(el.dataset.soundTarget||'').startsWith('__'))],
+  ['Povrće i voće',all.filter(el=>el.dataset.soundGroup==='produce')]
+ ];
+ const rowFor=el=>{
   const acts=ssObjActions(el);
   const tags=ssEl('span',{class:'ss-obj-tags'},acts.length?acts.map(a=>{const label=SS_ACTIONS.find(x=>x[0]===a)?.[1]||a;return ssEl('span',{class:'ss-obj-tag'},label);}):null);
   const row=ssEl('div',{class:'ls-item'+(el===sel?' is-sel':''),role:'button',tabindex:0},ssEl('span',{class:'ls-item-n'},ssObjLabel(el)),tags);
   row.onclick=()=>ssSelectItem(el);
   return row;
- }));
+ };
+ const out=[];
+ for(const [title,list] of groups){
+  if(!list.length)continue;
+  out.push(ssEl('small',{style:'display:block;padding:8px 6px 2px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em'},title));
+  out.push(...list.sort(byName).map(rowFor));
+ }
+ if(!out.length){ssObjList.replaceChildren(ssEl('div',{class:'ls-empty'},'Nema predmeta.'));return;}
+ ssObjList.replaceChildren(...out);
 }
 
 function ssRenderObjCard(){
@@ -2670,7 +2716,7 @@ ssControls.push(()=>{
  const el=ssSel(),acts=el?ssObjActions(el):[];
  for(const [v,b] of ssActionBtns){
   const supported=el?.dataset?.soundActions?.split(',');
-  b.hidden=supported?!supported.includes(v):el?.dataset?.soundAction?v!==el.dataset.soundAction:(v==='click'||v==='insert');
+  b.hidden=supported?!supported.includes(v):el?.dataset?.soundAction?v!==el.dataset.soundAction:(['click','insert','cut','putIn','pageTurn','water'].includes(v));
   b.setAttribute('aria-pressed',v===ssState.action?'true':'false');
   b.dataset.has=acts.includes(v)?'true':'false';
  }
@@ -2825,7 +2871,7 @@ ssInspector.append(
 
 ssPanes.objekti.append(
  lsSection('ssobjlist','Predmeti','sun',
-  ssEl('div',{style:'display:grid;grid-template-columns:1fr auto;gap:6px;margin:2px 0 4px'},ssSearch,ssPickBtn),
+  ssEl('div',{style:'display:grid;grid-template-columns:1fr;gap:6px;margin:2px 0 4px'},ssPickBtn),
   ssObjList,ssObjCard,ssInspector
  )
 );
@@ -5547,12 +5593,18 @@ function startStirMomentumDecay(wrap,vessel){
 }
 
 function washCenterScreen(){return sceneToScreen(1484,158)}
+let faucetWaterAudio=null;
 function setFaucet(on){
   faucetOn=!!on;CooksterState.kitchen.faucetOn=faucetOn;waterStream.classList.toggle('on',faucetOn);if(waterSplash)waterSplash.classList.toggle('on',faucetOn);
  if(!faucetOn&&panWashing)endPanWashing();
   if(!faucetOn&&sinkWashTimer){clearTimeout(sinkWashTimer);sinkWashTimer=0;}
   renderSinkProduce();
   if(faucetOn)startSinkProduceWash();
+ if(faucetWaterAudio){try{faucetWaterAudio.pause();}catch(_){}faucetWaterAudio=null;}
+ if(faucetOn){
+  const cfg=resolvedImpactConfig(faucetSoundTarget,'water'),snd=pickActionSound(faucetSoundTarget,'water',cfg);
+  if(snd){faucetWaterAudio=playSfx(snd,Math.max(0,Math.min(1,+cfg.volume||0)),true)||null;if(faucetWaterAudio)faucetWaterAudio.loop=true;}
+ }
  showToast(faucetOn?'Voda je puštena.':'Voda je zatvorena.');
 }
 function perspectiveAt(by){const top=245,bottom=705,min=.88,max=1.18,t=Math.max(0,Math.min(1,(by-top)/(bottom-top)));return min+t*(max-min)}
@@ -9485,7 +9537,7 @@ function addIngredientToContainer(item,vessel){
    CooksterContainer.add(vessel,meta.key,meta,1);renderCookwareContents(vessel);
  }
  const cx=+vessel.dataset.cx,by=+vessel.dataset.by,vis=+vessel.dataset.vis||1;
- popArtPuff(cx,by-16*vis,Math.max(.52,vis*.65));playSfxVariant('metalDrop',.18);
+ popArtPuff(cx,by-16*vis,Math.max(.52,vis*.65));playImpactSound(vegSoundTarget(item),'putIn');
  removeItem(item);holding=null;hidePlacementGhost();hideOriginGhost();clearPanTargets();updateHover();CooksterSave.schedule();
  showToast(`${meta.label} je stavljen u ${vessel.dataset.label}.`);return true;
 }
@@ -13710,7 +13762,7 @@ function beginCutAction(){
  if(window.CooksterTomatoCut?.supports(target)){
    const def=VEGETABLES[target.dataset.vegKey]||{};
    if(def.src&&def.slicedSrc){
-     CooksterTomatoCut.start(target,def,{onDone(src){
+     CooksterTomatoCut.start(target,def,{onCutSound(){playImpactSound(vegSoundTarget(target),'cut');},onDone(src){
        showToast(setVegetableDiced(target));
        const body=target.querySelector('.body');if(body)body.src=src;
        const shadowImg=target._contactShadow?.querySelector('img');if(shadowImg)shadowImg.src=src;
@@ -13744,7 +13796,7 @@ function beginCutAction(){
  const chopCount=Math.max(1,Math.round(willDice?(+targetDef.diceChopCount||+targetDef.chopCount||5):(+targetDef.chopCount||4)));
  const duration=Math.max(760,chopCount*(willDice?205:225)), start=performance.now();
  // Broj fizičkih poteza dolazi iz catalog-a, pa svaka namirnica može imati svoj ritam sečenja.
- playChop();
+ playImpactSound(vegSoundTarget(target),'cut');
  // v198.5.127 — occasionally a bit of mess ends up on the floor while
  // chopping (separate from the counter splash trigger while stirring).
  if(Math.random()<0.18)createFloorSpill(targetKey);
@@ -15235,6 +15287,7 @@ showToast(window.__COOKSTER_EXPLICIT_LOAD__?'Sačuvana igra je učitana.':'Nova 
     if(target<0||target>=SAVKA_BOOK_PAGES.length)return false;
     if(savkaTurnRaf){cancelAnimationFrame(savkaTurnRaf);savkaTurnRaf=0;}
     savkaTurning=true;
+    playImpactSound(bookSoundTarget,'pageTurn');
     savkaTurn={
       dir,from,target,
       pointerId:pointerEvent?.pointerId??null,
