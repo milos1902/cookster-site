@@ -47,7 +47,6 @@
       const nf=mk(v,sk,0,0);                 // x,y,ox,oy = centroid in the parent's local frame
       const c={x:nf.x,y:nf.y},cw=rotv(c,f.rot);
       nf.x=f.x+cw.x;nf.y=f.y+cw.y;nf.ox=c.x+f.ox;nf.oy=c.y+f.oy;nf.rot=f.rot;
-      if(f.open!==undefined&&!f.fall)nf.open=f.open;
       const nw=rotv({x:n.x*sg,y:n.y*sg},f.rot);   // outward direction in world
       if(fall){
         // heavy: topples outward around the lowest vertex on the cut edge, overshoots and settles
@@ -58,7 +57,6 @@
         }
         const pv=rotv(nf.v[Math.max(0,pi)],nf.rot),big=fall==='whole';
         const sc=big?1:Math.min(1,nf.r/(60*K))*.7+.3;
-        if(big)nf.open=0;
         nf.fall={t:0,sign:nw.x>=0?1:-1,target:big?.42:.26*sc+.06,rot0:nf.rot,c0x:nf.x,c0y:nf.y,
           px:nf.x+pv.x,py:nf.y+pv.y,sx:nw.x*(big?46:30)*K*sc,sy:nw.y*(big?14:10)*K*sc};
       }else{
@@ -132,24 +130,28 @@
     g.shadowColor='transparent';
     const S=210*K,tx=-f.ox-S/2,ty=-f.oy-S/2-4*K;
     g.save();roundedPath(g,f.v);g.clip();
-    const open=f.open===undefined?1:f.open;
-    // right after the cut it is still the whole tomato's art; the inside shows as it falls open
-    if(open<1&&tomImg)g.drawImage(tomImg,tx,ty,S,S);
-    if(open>0){
-      g.globalAlpha=open;
+    if(!f.baked&&tomImg){
+      // while cutting, every piece is simply a part of the whole tomato's art;
+      // only the cut faces get a pale flesh edge
+      g.drawImage(tomImg,tx,ty,S,S);
+      g.lineJoin=g.lineCap='round';
+      const L=f.v.length;
+      for(let i=0;i<L;i++)if(!f.skin[i]){
+        const a=f.v[i],b=f.v[(i+1)%L];
+        g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);
+        g.strokeStyle='rgba(255,176,128,.95)';g.lineWidth=13*K;g.stroke();
+        g.strokeStyle='rgba(255,226,196,.55)';g.lineWidth=5*K;g.stroke();
+      }
+    }else{
       g.drawImage(tex,270,470,740,610,-f.ox-100*K,-f.oy-82*K,200*K,165*K);
-      g.globalAlpha=1;
-    }
-    g.lineWidth=7;g.strokeStyle='rgba(255,215,170,.28)';g.stroke();
-    // skin rim: the tomato's real skin art along the outer edges
-    if(tomImg&&open>0){
+      g.lineWidth=7;g.strokeStyle='rgba(255,215,170,.28)';roundedPath(g,f.v);g.stroke();
+      // skin rim: the tomato's real skin art along the outer edges
       let pat=null;
       try{pat=g.createPattern(tomImg,'no-repeat');pat.setTransform(new DOMMatrix().translate(tx,ty).scale(S/tomImg.width));}catch(_){}
       if(pat){
-        g.globalAlpha=open;g.strokeStyle=pat;g.lineWidth=20*K;g.lineJoin=g.lineCap='round';
+        g.strokeStyle=pat;g.lineWidth=20*K;g.lineJoin=g.lineCap='round';
         const L=f.v.length;
         for(let i=0;i<L;i++)if(f.skin[i]){const a=f.v[i],b=f.v[(i+1)%L];g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke();}
-        g.globalAlpha=1;
       }
     }
     g.restore();
@@ -185,7 +187,7 @@
     const c=document.createElement('canvas');c.width=SNAP.w;c.height=SNAP.h;
     const g=c.getContext('2d');
     g.translate(SNAP.w/2,SNAP.h/2);g.scale(s,s);g.translate(-(x0+x1)/2,-(y0+y1)/2);
-    for(const f of [...frags].sort((a,b)=>a.y-b.y)){f.open=undefined;drawPiece(g,f,tex,tomImg);}
+    for(const f of [...frags].sort((a,b)=>a.y-b.y)){f.baked=true;drawPiece(g,f,tex,tomImg);}
     return c.toDataURL('image/png');
   }
 
@@ -223,7 +225,7 @@
     for(let i=0;i<n;i++){const a=i/n*Math.PI*2;verts.push({x:Math.cos(a)*rx,y:Math.sin(a)*ry});skin.push(true);}
     const bx=W/2-BOARD.w/2,by=H/2-BOARD.h/2+10;
     let frags=[mk(verts,skin,W/2,H/2+10)];frags[0].whole=true;
-    let knife=null,raf=0,closed=false,cuts=0;const MAX_CUTS=5;
+    let trail=[],strokeId=0,raf=0,closed=false,cuts=0;const MAX_CUTS=5;
 
     function frame(){
       for(const f of frags){
@@ -235,8 +237,8 @@
           const dx=q.c0x-q.px,dy=q.c0y-q.py;
           const sl=1-Math.exp(-4*t);
           f.x=q.px+dx*c-dy*sn+q.sx*sl;f.y=q.py+dx*sn+dy*c+q.sy*sl;
-          f.rot=q.rot0+th;if(f.open!==undefined&&f.open<1)f.open=Math.min(1,t/.45);
-          if(t>1.8){f.fall=null;if(f.open!==undefined)f.open=1;}
+          f.rot=q.rot0+th;
+          if(t>1.8)f.fall=null;
           continue;
         }
         f.x+=f.vx;f.y+=f.vy;f.vx*=.9;f.vy*=.9;
@@ -254,29 +256,72 @@
           g.drawImage(tomImg,f.x-s/2,f.y-s/2-4*K,s,s);g.restore();}
         else drawPiece(g,f,sliceImg,tomImg);
       }
-      if(knife){
-        g.save();g.strokeStyle='#fff';g.setLineDash([8,6]);g.lineWidth=3;g.shadowColor='#000';g.shadowBlur=4;
-        g.beginPath();g.moveTo(knife.a.x,knife.a.y);g.lineTo(knife.b.x,knife.b.y);g.stroke();g.restore();
-      }
+      drawTrail(g);
       raf=requestAnimationFrame(frame);
     }
     raf=requestAnimationFrame(frame);
 
     const pos=e=>{const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};};
-    cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);const p=pos(e);knife={a:p,b:p};});
-    cv.addEventListener('pointermove',e=>{if(knife)knife.b=pos(e);});
-    cv.addEventListener('pointerup',()=>{
-      if(!knife)return;const k=knife;knife=null;
-      if(Math.hypot(k.b.x-k.a.x,k.b.y-k.a.y)<20)return;
+    let stroke=null,lastChop=0;
+    const TRAIL_MS=700;
+    function trailColor(t){
+      // blue -> violet -> pink -> amber, like the "circle to search" glow
+      const st=[[76,141,255],[165,107,255],[255,95,162],[255,179,71]];
+      const x=Math.min(.999,Math.max(0,t))*(st.length-1),i=Math.floor(x),f=x-i;
+      return st[i].map((c,k)=>Math.round(c+(st[i+1][k]-c)*f));
+    }
+    function drawTrail(g){
+      const now=performance.now();
+      trail=trail.filter(q=>now-q.t<TRAIL_MS);
+      const n=trail.length;if(n<2)return;
+      g.save();g.lineCap=g.lineJoin='round';
+      for(let i=1;i<n;i++){
+        const a=trail[i-1],b=trail[i],life=1-(now-b.t)/TRAIL_MS,pos=i/n;
+        const [r,gr,bl]=trailColor(1-pos),w=(5+12*life)*(.3+.7*pos);
+        for(const [mul,al,blur] of [[3.4,.22*life,26],[1.5,.95*life,14],[.45,.95*life,6]]){
+          g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);
+          g.lineWidth=w*mul;
+          g.strokeStyle=mul<1?`rgba(255,255,255,${al})`:`rgba(${r},${gr},${bl},${al})`;
+          g.shadowColor=`rgb(${r},${gr},${bl})`;g.shadowBlur=blur;g.stroke();
+        }
+      }
+      g.restore();
+    }
+    cv.addEventListener('pointerdown',e=>{
+      cv.setPointerCapture(e.pointerId);const p=pos(e);
+      stroke={id:++strokeId,pts:[p],cut:false};trail.push({x:p.x,y:p.y,t:performance.now()});
+    });
+    cv.addEventListener('pointermove',e=>{
+      if(!stroke)return;
+      const p=pos(e),prev=stroke.pts[stroke.pts.length-1];
+      if(Math.hypot(p.x-prev.x,p.y-prev.y)<3)return;
+      stroke.pts.push(p);trail.push({x:p.x,y:p.y,t:performance.now()});
+      // the cut line follows the last ~40px of the stroke, so it cuts the moment the knife crosses a piece
+      let back=stroke.pts[0],acc=0;
+      for(let i=stroke.pts.length-1;i>0;i--){
+        acc+=Math.hypot(stroke.pts[i].x-stroke.pts[i-1].x,stroke.pts[i].y-stroke.pts[i-1].y);
+        if(acc>=40){back=stroke.pts[i-1];break;}
+      }
+      if(Math.hypot(p.x-back.x,p.y-back.y)<12)return;
       let cutAny=false;const next=[];
-      for(const f of frags){const r=cutSegment(f,k.a,k.b);if(r.length>1)cutAny=true;next.push(...r);}
+      for(const f of frags){
+        if(f.stroke===stroke.id){next.push(f);continue;}
+        const r=cutSegment(f,back,p);
+        if(r.length>1){cutAny=true;for(const c of r)c.stroke=stroke.id;}
+        next.push(...r);
+      }
       frags=next;
       if(!cutAny)return;
-      cuts++;
-      if(typeof playChop==='function')try{playChop();}catch(_){}
-      if(cuts>=MAX_CUTS){hint.textContent='Gotovo, paradajz je iseckan.';setTimeout(finish,1000);}
-      else hint.textContent='Rez '+cuts+' od '+MAX_CUTS+'. Nastavi da seckaš, ili klikni „Gotovo“.';
+      const now=performance.now();
+      if(now-lastChop>140&&typeof playChop==='function'){lastChop=now;try{playChop();}catch(_){}}
+      if(!stroke.cut){
+        stroke.cut=true;cuts++;
+        if(cuts>=MAX_CUTS){hint.textContent='Gotovo, paradajz je iseckan.';setTimeout(finish,1100);}
+        else hint.textContent='Rez '+cuts+' od '+MAX_CUTS+'. Nastavi da seckaš, ili klikni „Gotovo“.';
+      }
     });
+    const endStroke=()=>{stroke=null;};
+    cv.addEventListener('pointerup',endStroke);cv.addEventListener('pointercancel',endStroke);
 
     function close(){
       if(closed)return;closed=true;cancelAnimationFrame(raf);
