@@ -131,7 +131,7 @@
       const poly=lvl>=1?full:Sim.clip(full,(lo+hi)/2);
       if(poly.length<3)return;
       const m=Sim.measure(poly);
-      this.poly=poly;this.cx=m.cx;this.cy=m.cy;this.area=m.area;
+      this.poly=poly;this.cx=m.cx;this.cy=m.cy;this.area=m.area;this.bedSpots=null;
     }
     inside(x,y){
       const poly=this.poly;let c=false;
@@ -279,11 +279,10 @@
     step(now){
       const ps=[...this.pieces.values()];
       const crowd=this.crowd();
-      const settling=now<this.activeUntil+1400;   // the pull towards the middle only acts shortly after stirring
+      const settling=now<this.activeUntil+1400;   // the evening-out only acts while and shortly after stirring
       let energy=0;
       for(const p of ps){
         // food settles back towards the middle of the vessel, so stirring never leaves it piled against one wall
-        if(settling){p.vx+=(this.cx-p.x)*.0009;p.vy+=(this.cy-p.y)*.0009;}
         p.x+=p.vx;p.y+=p.vy;
         energy=Math.max(energy,Math.abs(p.vx)+Math.abs(p.vy));
         p.rot+=p.vx*.01;
@@ -295,19 +294,43 @@
         if(Math.abs(p.vy)<.001)p.vy=0;
       }
       if(energy>0){this.collide(ps,.24,.8);this.collide(ps,.14,.8);for(const p of ps)this.wall(p);}
+      // while and just after stirring the food evens itself out over the whole area (soft pressure between neighbours),
+      // so it never ends up bunched in the middle with the floor showing at the sides
+      if(settling){this.collide(ps,.045,1.9);for(const p of ps)this.wall(p);this.dirty=true;}
       return energy;
     }
     // Static "bed": the stock art of the cooked vegetable covers the bottom of the vessel, so stirring never uncovers it.
     // It follows the same stages as the loose pieces (raw -> fried -> well done -> burnt).
     drawBed(g,w,h,sc,stage){
-      const parts=this.parts||[];
-      if(!parts.length)return;
+      const ps=[...this.pieces.values()].filter(p=>p.entry.ready);
+      if(!ps.length)return;
       const bl=BLEND[Math.max(1,Math.min(7,stage))-1];
+      // under the loose pieces lies a settled layer made of the same cut pieces (they do not move), so stirring never
+      // uncovers the floor: it covers exactly the area the food has risen to
+      if(!this.bedSpots){
+        const xs=this.poly.map(q=>q.x),ys=this.poly.map(q=>q.y);
+        const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),st=8;
+        this.bedSpots=[];let n=0;
+        for(let y=y0;y<=y1+st/2;y+=st)for(let x=x0;x<=x1+st/2;x+=st){
+          n++;const jx=x+((n*37%11)/11-.5)*st*.8,jy=y+((n*53%13)/13-.5)*st*.8;
+          if(this.inside(jx,jy))this.bedSpots.push([jx,jy,(n*29%17)/17*6.28,n]);
+        }
+      }
       g.save();
-      // the bed fills the same calibrated area as the pieces, so nothing of the floor shows
-      const f=Math.sqrt(this.area/5000);
       g.beginPath();this.poly.forEach((q,i)=>i?g.lineTo(q.x*sc,q.y*sc):g.moveTo(q.x*sc,q.y*sc));g.closePath();g.clip();
-      g.globalAlpha=1;g.restore();
+      for(const [x,y,rot,n] of this.bedSpots){
+        const p=ps[n%ps.length],e=p.entry;
+        g.save();g.translate(x*sc,y*sc);g.rotate(rot);
+        const dx=-p.ax*p.k*sc,dy=-p.ay*p.k*sc,dw=p.sw*p.k*sc,dh=p.sh*p.k*sc;
+        if(e.part)ensureCooked(e,e.part);
+        g.drawImage(e.img,p.sx,p.sy,p.sw,p.sh,dx,dy,dw,dh);
+        if(bl[0]>0&&e.cooked?.fried){g.globalAlpha=bl[0];g.drawImage(e.cooked.fried,p.sx,p.sy,p.sw,p.sh,dx,dy,dw,dh);}
+        if(bl[1]>0&&e.cooked?.well){g.globalAlpha=bl[1];g.drawImage(e.cooked.well,p.sx,p.sy,p.sw,p.sh,dx,dy,dw,dh);}
+        g.globalAlpha=1;g.restore();
+      }
+      // the settled layer lies deeper: a little darker than the loose pieces on top
+      g.fillStyle='rgba(30,10,0,.32)';g.fill();
+      g.restore();
     }
     draw(){
       const ps=[...this.pieces.values()].sort((a,b)=>a.layer-b.layer||a.y-b.y);
