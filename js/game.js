@@ -10372,6 +10372,8 @@ function serializeWorldItem(el){
 function restoreWorldItem(saved){
  // v198.5.31: creator camera was removed from the gameplay build.
  if(saved?.id==='kamera_stativ')return null;
+ // the blue pot with a lid was removed from the game; old saves may still contain it
+ if(saved?.id==='serpa_plava')return null;
  // The knife is now a physical item and can live in the backpack.
  // Only the remaining legacy quick-wheel tools must be skipped.
  if(saved?.id==='sundjer'||saved?.id==='metla')return null;
