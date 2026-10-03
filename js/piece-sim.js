@@ -7,6 +7,7 @@
   const SIM_W=100;                       // simulation units across the food area
   const PAD=10;                          // padding baked around each piece
   const HEAP_W=62;                       // one ingredient unit's heap is this wide (units)
+  const PIECE_SCALE=1.6;                 // pieces are drawn a little larger, so a few additions are enough to fill a vessel
   const MAX_UNITS=6;                     // units of one ingredient drawn as pieces
   const UNIT_OFFSETS=[[0,0],[-16,5],[16,-5],[-6,-14],[8,13],[-21,-8],[21,10]];
   // cooking tint per visual stage (1 raw .. 7 burnt), painted over the pieces only
@@ -118,7 +119,7 @@
           const entry=loadAtlas(part.atlas[u%part.atlas.length]);
           entry.part=part;
           const m=entry.meta;if(!m||!Array.isArray(m.p))continue;
-          const k=HEAP_W/Math.max(20,m.W||100);
+          const k=PIECE_SCALE*HEAP_W/Math.max(20,m.W||100);
           const off=UNIT_OFFSETS[u%UNIT_OFFSETS.length];
           m.p.forEach((q,i)=>{
             const id=`${part.storageKey}|${u}|${i}`;
@@ -129,13 +130,13 @@
               x:0,y:0,
               k0:k,r:Math.max(4,(Math.max(sw,sh)-PAD*2)/2*k)};
             piece.r0=piece.r;
-            this.scatter(piece);
             this.pieces.set(id,piece);created.push(piece);
           });
         }
       }
       for(const id of [...this.pieces.keys()])if(!want.has(id))this.pieces.delete(id);
       this.fit();
+      for(const p of created)this.scatter(p);
       if(created.length)this.relax(60);
       this.dirty=true;
     }
@@ -146,6 +147,7 @@
       let area=0;const ps=[...this.pieces.values()];
       for(const p of ps)area+=Math.PI*p.r0*p.r0;
       this.room=this.area*.62;
+      this.fill=area/this.room;   // 1 = the floor of the vessel is covered
       const need=Math.max(1,Math.ceil(area/this.room));
       this.layers=Math.min(5,need);
       // beyond 5 layers (very many pieces) shrink them a little
@@ -156,8 +158,10 @@
     scatter(p){
       const xs=this.poly.map(q=>q.x),ys=this.poly.map(q=>q.y);
       const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+      // a small amount of food lies as a heap in the middle, more and more food spreads towards the walls
+      const f=Math.max(.3,Math.min(1,Math.sqrt(this.fill||1)));
       for(let i=0;i<40;i++){
-        const x=x0+Math.random()*(x1-x0),y=y0+Math.random()*(y1-y0);
+        const x=this.cx+(x0+Math.random()*(x1-x0)-this.cx)*f,y=this.cy+(y0+Math.random()*(y1-y0)-this.cy)*f;
         if(this.inside(x,y)){p.x=x;p.y=y;return;}
       }
       p.x=this.cx;p.y=this.cy;
@@ -270,36 +274,6 @@
       // the bed fills the same calibrated area as the pieces, so nothing of the floor shows
       const f=Math.sqrt(this.area/5000);
       g.beginPath();this.poly.forEach((q,i)=>i?g.lineTo(q.x*sc,q.y*sc):g.moveTo(q.x*sc,q.y*sc));g.closePath();g.clip();
-      // copies of the stock art tile the whole calibrated area (jittered grid), so no floor shows anywhere
-      if(!this.bedSpots){
-        const xs=this.poly.map(q=>q.x),ys=this.poly.map(q=>q.y);
-        const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),st=11;
-        this.bedSpots=[];let n=0;
-        for(let y=y0-st/2;y<=y1+st;y+=st)for(let x=x0-st/2;x<=x1+st;x+=st){
-          n++;const j=(n*37%11)/11-.5,j2=(n*53%13)/13-.5;
-          this.bedSpots.push([x+j*st*.8,y+j2*st*.8,(n*29%17)/17*6.28]);
-        }
-      }
-      parts.forEach((part,i)=>{
-        const d=part.def||{};
-        const draw=(src,alpha)=>{
-          if(!src||alpha<=0)return;
-          let e=imgCache.get(src);
-          if(!e){loadImg(src,()=>{this.dirty=true;kick();});return;}
-          if(!e.ready)return;
-          g.globalAlpha=alpha;
-          // each ingredient takes a share of the tiles, so a mix of vegetables looks mixed
-          this.bedSpots.forEach(([sx,sy,rot],k)=>{
-            if(k%parts.length!==i)return;
-            const bw=30*sc,bh=bw*.76;
-            g.save();g.translate(sx*sc,sy*sc);g.rotate(rot);
-            g.drawImage(e.img,-bw/2,-bh/2,bw,bh);g.restore();
-          });
-        };
-        draw(d.dicedSrc||d.slicedSrc,1);
-        draw(d.friedDicedSrc,bl[0]);
-        draw(d.wellDoneDicedSrc,bl[1]);
-      });
       g.globalAlpha=1;g.restore();
     }
     draw(){
