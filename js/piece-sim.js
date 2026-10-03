@@ -126,16 +126,17 @@
             if(this.pieces.has(id))return;
             const [sx,sy,sw,sh,ax,ay,x,y,rot]=q;
             const piece={id,entry,k,sx,sy,sw,sh,ax,ay,rot:rot||0,vx:0,vy:0,mass:.8+Math.random()*.9,
-              x:this.cx+off[0]*this.area/3000+x*k,y:this.cy+off[1]*this.H/100+y*k,
+              x:0,y:0,
               k0:k,r:Math.max(4,(Math.max(sw,sh)-PAD*2)/2*k)};
             piece.r0=piece.r;
+            this.scatter(piece);
             this.pieces.set(id,piece);created.push(piece);
           });
         }
       }
       for(const id of [...this.pieces.keys()])if(!want.has(id))this.pieces.delete(id);
       this.fit();
-      if(created.length)this.relax(26);
+      if(created.length)this.relax(60);
       this.dirty=true;
     }
     // Depth: pieces keep their real size. When there are more than fit on the floor of the vessel they are
@@ -150,6 +151,16 @@
       // beyond 5 layers (very many pieces) shrink them a little
       const s=need>5?Math.sqrt(5*this.room/area):1;
       ps.forEach((p,i)=>{p.k=p.k0*s;p.r=p.r0*s;if(p.layer===undefined||p.layer>=this.layers)p.layer=i%this.layers;});
+    }
+    // new pieces land at a random spot of the whole food area, so the heap fills it from the start
+    scatter(p){
+      const xs=this.poly.map(q=>q.x),ys=this.poly.map(q=>q.y);
+      const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+      for(let i=0;i<40;i++){
+        const x=x0+Math.random()*(x1-x0),y=y0+Math.random()*(y1-y0);
+        if(this.inside(x,y)){p.x=x;p.y=y;return;}
+      }
+      p.x=this.cx;p.y=this.cy;
     }
     relax(iters){
       const ps=[...this.pieces.values()];
@@ -259,23 +270,31 @@
       // the bed fills the same calibrated area as the pieces, so nothing of the floor shows
       const f=Math.sqrt(this.area/5000);
       g.beginPath();this.poly.forEach((q,i)=>i?g.lineTo(q.x*sc,q.y*sc):g.moveTo(q.x*sc,q.y*sc));g.closePath();g.clip();
-      // several overlapping copies of the stock pile fill the whole food area (one pile alone is a small heap)
-      const SPOTS=[[0,0,1],[-21,2,.9],[21,-2,.9],[-4,-12,.85],[5,13,.85],[-26,-10,.7],[27,9,.7]];
+      // copies of the stock art tile the whole calibrated area (jittered grid), so no floor shows anywhere
+      if(!this.bedSpots){
+        const xs=this.poly.map(q=>q.x),ys=this.poly.map(q=>q.y);
+        const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),st=11;
+        this.bedSpots=[];let n=0;
+        for(let y=y0-st/2;y<=y1+st;y+=st)for(let x=x0-st/2;x<=x1+st;x+=st){
+          n++;const j=(n*37%11)/11-.5,j2=(n*53%13)/13-.5;
+          this.bedSpots.push([x+j*st*.8,y+j2*st*.8,(n*29%17)/17*6.28]);
+        }
+      }
       parts.forEach((part,i)=>{
         const d=part.def||{};
-        const units=Math.max(1,Math.round(part.count||1));
-        const spots=SPOTS.slice(0,units>=2?7:5);
         const draw=(src,alpha)=>{
           if(!src||alpha<=0)return;
           let e=imgCache.get(src);
           if(!e){loadImg(src,()=>{this.dirty=true;kick();});return;}
           if(!e.ready)return;
           g.globalAlpha=alpha;
-          for(const [sx,sy,s] of spots){
-            const bw=56*s*f*sc,bh=bw*.76,seedRot=(sx*7+sy*3)*.02;
-            g.save();g.translate((this.cx+(sx+i*3)*f)*sc,(this.cy+sy*f*.9)*sc);g.rotate(seedRot);
+          // each ingredient takes a share of the tiles, so a mix of vegetables looks mixed
+          this.bedSpots.forEach(([sx,sy,rot],k)=>{
+            if(k%parts.length!==i)return;
+            const bw=30*sc,bh=bw*.76;
+            g.save();g.translate(sx*sc,sy*sc);g.rotate(rot);
             g.drawImage(e.img,-bw/2,-bh/2,bw,bh);g.restore();
-          }
+          });
         };
         draw(d.dicedSrc||d.slicedSrc,1);
         draw(d.friedDicedSrc,bl[0]);
@@ -352,6 +371,7 @@
     running:()=>running,
     debugClear:v=>{const s=sims.get(v);if(s){s.pieces.clear();s.dirty=true;kick();}},
     debugBed:v=>{const s=sims.get(v);return s?{parts:(s.parts||[]).map(p=>({k:p.storageKey,c:p.count,d:p.def&&p.def.dicedSrc,f:p.def&&p.def.friedDicedSrc})),img:[...imgCache.entries()].map(([k,e])=>[k.slice(-30),e.ready])}:null;},
+    debugSim:v=>{const s=sims.get(v);return s?{H:s.H,cx:s.cx,cy:s.cy,area:s.area,layers:s.layers,ymin:Math.min(...s.poly.map(q=>q.y)),ymax:Math.max(...s.poly.map(q=>q.y)),xmin:Math.min(...s.poly.map(q=>q.x)),xmax:Math.max(...s.poly.map(q=>q.x))}:null;},
     debugPieces(vessel){return [...(sims.get(vessel)?.pieces.values()||[])].map(p=>({id:p.id,x:p.x,y:p.y}));}
   };
 })();
