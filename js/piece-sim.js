@@ -80,9 +80,37 @@
       for(const c of [...this.canvases])if(!c.el.isConnected)this.canvases.delete(c);
       return this.canvases;
     }
+    // The area where food may be: the calibrated "food visible" polygon of this vessel (floor up to the rim),
+    // in simulation units. Vessels without a profile get an ellipse.
+    region(){
+      this.measure();
+      const cal=window.CooksterVesselFoodCalibration;
+      const prof=cal?.get?.(this.vessel),frame=cal?.frame?.(this.vessel);
+      let poly=null;
+      if(prof?.foodVisible?.length>=3&&frame?.width&&frame?.height){
+        poly=prof.foodVisible.map(([x,y])=>({
+          x:((x-frame.left)/frame.width)*SIM_W,
+          y:((y-frame.top)/frame.height)*this.H}));
+      }
+      if(!poly){poly=[];for(let i=0;i<28;i++){const a=i/28*Math.PI*2;poly.push({x:50+Math.cos(a)*46,y:this.H/2+Math.sin(a)*this.H*.44});}}
+      let ar=0,cx=0,cy=0;
+      for(let i=0;i<poly.length;i++){
+        const a=poly[i],b=poly[(i+1)%poly.length],cr=a.x*b.y-b.x*a.y;
+        ar+=cr;cx+=(a.x+b.x)*cr;cy+=(a.y+b.y)*cr;
+      }
+      ar/=2;this.cx=cx/(6*ar||1);this.cy=cy/(6*ar||1);this.area=Math.abs(ar);this.poly=poly;
+    }
+    inside(x,y){
+      const poly=this.poly;let c=false;
+      for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+        const a=poly[i],b=poly[j];
+        if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)c=!c;
+      }
+      return c;
+    }
     sync(parts){
       this.parts=parts;
-      this.measure();
+      this.region();
       const want=new Set(),created=[];
       for(const part of parts){
         const units=Math.min(MAX_UNITS,Math.max(1,Math.round(part.count||1)));
@@ -98,7 +126,7 @@
             if(this.pieces.has(id))return;
             const [sx,sy,sw,sh,ax,ay,x,y,rot]=q;
             const piece={id,entry,k,sx,sy,sw,sh,ax,ay,rot:rot||0,vx:0,vy:0,mass:.8+Math.random()*.9,
-              x:50+off[0]+x*k,y:this.H/2+off[1]*this.H/100+y*k,
+              x:this.cx+off[0]*this.area/3000+x*k,y:this.cy+off[1]*this.H/100+y*k,
               k0:k,r:Math.max(4,(Math.max(sw,sh)-PAD*2)/2*k)};
             piece.r0=piece.r;
             this.pieces.set(id,piece);created.push(piece);
@@ -116,7 +144,7 @@
     fit(){
       let area=0;const ps=[...this.pieces.values()];
       for(const p of ps)area+=Math.PI*p.r0*p.r0;
-      this.room=Math.PI*46*this.H*.44*.62;
+      this.room=this.area*.62;
       const need=Math.max(1,Math.ceil(area/this.room));
       this.layers=Math.min(5,need);
       // beyond 5 layers (very many pieces) shrink them a little
@@ -131,9 +159,19 @@
       }
     }
     wall(p){
-      const rx=46-p.r*.5,ry=this.H*.44-p.r*.5;
-      const dx=p.x-50,dy=p.y-this.H/2,q=(dx/rx)**2+(dy/ry)**2;
-      if(q>1){const k=1/Math.sqrt(q);p.x=50+dx*k;p.y=this.H/2+dy*k;p.vx*=.5;p.vy*=.5;}
+      if(this.inside(p.x,p.y)){
+        // keep clear of the edge by about the piece's own radius
+        return;
+      }
+      // outside: move to the nearest point on the outline, then a little way back in
+      const poly=this.poly;let bx=p.x,by=p.y,bd=1e9;
+      for(let i=0;i<poly.length;i++){
+        const a=poly[i],b=poly[(i+1)%poly.length],ex=b.x-a.x,ey=b.y-a.y,l2=ex*ex+ey*ey||1;
+        const tt=Math.max(0,Math.min(1,((p.x-a.x)*ex+(p.y-a.y)*ey)/l2)),qx=a.x+ex*tt,qy=a.y+ey*tt,d=(p.x-qx)**2+(p.y-qy)**2;
+        if(d<bd){bd=d;bx=qx;by=qy;}
+      }
+      const dx=this.cx-bx,dy=this.cy-by,dl=Math.hypot(dx,dy)||1,inset=Math.min(p.r*.35,3);
+      p.x=bx+dx/dl*inset;p.y=by+dy/dl*inset;p.vx*=.5;p.vy*=.5;
     }
     collide(ps,push,range){
       // spatial hash so ~150 pieces stay cheap
@@ -161,7 +199,7 @@
       const lx=(clientX-rect.left)/rect.width*SIM_W,ly=(clientY-rect.top)/rect.height*this.H;
       const vx=mx/rect.width*SIM_W,vy=my/rect.height*this.H;
       const speed=Math.hypot(vx,vy);
-      const cx=50,cy=this.H/2;
+      const cx=this.cx,cy=this.cy;
       // which way round is the spoon going? sign of the cross product of (spoon - centre) and its movement
       const dir=((lx-cx)*vy-(ly-cy)*vx)>=0?1:-1;
       const R=26;
@@ -197,7 +235,7 @@
       let energy=0;
       for(const p of ps){
         // food settles back towards the middle of the vessel, so stirring never leaves it piled against one wall
-        if(settling){p.vx+=(50-p.x)*.0009;p.vy+=(this.H/2-p.y)*.0009;}
+        if(settling){p.vx+=(this.cx-p.x)*.0009;p.vy+=(this.cy-p.y)*.0009;}
         p.x+=p.vx;p.y+=p.vy;
         energy=Math.max(energy,Math.abs(p.vx)+Math.abs(p.vy));
         p.rot+=p.vx*.01;
@@ -218,7 +256,9 @@
       if(!parts.length)return;
       const bl=BLEND[Math.max(1,Math.min(7,stage))-1];
       g.save();
-      g.beginPath();g.ellipse(50*sc,this.H/2*sc,41*sc,this.H*.38*sc,0,0,Math.PI*2);g.clip();
+      // the bed fills the same calibrated area as the pieces, so nothing of the floor shows
+      const f=Math.sqrt(this.area/5000);
+      g.beginPath();this.poly.forEach((q,i)=>i?g.lineTo(q.x*sc,q.y*sc):g.moveTo(q.x*sc,q.y*sc));g.closePath();g.clip();
       // several overlapping copies of the stock pile fill the whole food area (one pile alone is a small heap)
       const SPOTS=[[0,0,1],[-21,2,.9],[21,-2,.9],[-4,-12,.85],[5,13,.85],[-26,-10,.7],[27,9,.7]];
       parts.forEach((part,i)=>{
@@ -232,8 +272,8 @@
           if(!e.ready)return;
           g.globalAlpha=alpha;
           for(const [sx,sy,s] of spots){
-            const bw=56*s*sc,bh=bw*.76,seedRot=(sx*7+sy*3)*.02;
-            g.save();g.translate((50+sx+i*3)*sc,(this.H/2+sy*this.H/80)*sc);g.rotate(seedRot);
+            const bw=56*s*f*sc,bh=bw*.76,seedRot=(sx*7+sy*3)*.02;
+            g.save();g.translate((this.cx+(sx+i*3)*f)*sc,(this.cy+sy*f*.9)*sc);g.rotate(seedRot);
             g.drawImage(e.img,-bw/2,-bh/2,bw,bh);g.restore();
           }
         };
@@ -258,7 +298,7 @@
           const e=p.entry;if(!e.ready)continue;
           g.save();
           // each layer sits higher; the heap is a little domed in the middle
-          const rho=Math.min(1,Math.hypot((p.x-50)/46,(p.y-this.H/2)/(this.H*.44)));
+          const rho=Math.min(1,Math.hypot((p.x-this.cx)/46,(p.y-this.cy)/(this.H*.44)));
           const lift=p.layer*1.7+(1-rho*rho)*1.6*(this.layers-1)/4;
           if(p.layer>0){g.shadowColor='rgba(20,8,0,.45)';g.shadowBlur=3*sc/1.2;g.shadowOffsetY=1.2*sc/1.2;}
           g.translate(p.x*sc,(p.y-lift)*sc);g.rotate(p.rot);
