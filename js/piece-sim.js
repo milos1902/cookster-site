@@ -8,6 +8,7 @@
   const PAD=10;                          // padding baked around each piece
   const HEAP_W=62;                       // one ingredient unit's heap is this wide (units)
   const PIECE_SCALE=1.6;                 // pieces are drawn a little larger, so a few additions are enough to fill a vessel
+  const LEVEL_FULL=4;                    // the food reaches the top line after about 3 additions (fill measured in floor areas)
   const MAX_UNITS=6;                     // units of one ingredient drawn as pieces
   const UNIT_OFFSETS=[[0,0],[-16,5],[16,-5],[-6,-14],[8,13],[-21,-8],[21,10]];
   // cooking tint per visual stage (1 raw .. 7 burnt), painted over the pieces only
@@ -100,6 +101,37 @@
         ar+=cr;cx+=(a.x+b.x)*cr;cy+=(a.y+b.y)*cr;
       }
       ar/=2;this.cx=cx/(6*ar||1);this.cy=cy/(6*ar||1);this.area=Math.abs(ar);this.poly=poly;
+      this.fullPoly=poly;this.fullArea=this.area;this.fullCx=this.cx;this.fullCy=this.cy;
+    }
+    static clip(poly,yL){
+      const out=[];
+      for(let i=0;i<poly.length;i++){
+        const a=poly[i],b=poly[(i+1)%poly.length],ia=a.y>=yL,ib=b.y>=yL;
+        if(ia)out.push(a);
+        if(ia!==ib){const t=(yL-a.y)/(b.y-a.y);out.push({x:a.x+(b.x-a.x)*t,y:yL});}
+      }
+      return out;
+    }
+    static measure(poly){
+      let ar=0,cx=0,cy=0;
+      for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length],cr=a.x*b.y-b.x*a.y;ar+=cr;cx+=(a.x+b.x)*cr;cy+=(a.y+b.y)*cr;}
+      ar/=2;return {area:Math.abs(ar),cx:cx/(6*ar||1),cy:cy/(6*ar||1)};
+    }
+    // The food lies on the floor of the vessel and rises with every addition: the area it may occupy is the part of the
+    // calibrated "food visible" area below a level line, which climbs from the bottom up to the top (the calibrated food top).
+    applyLevel(){
+      const full=this.fullPoly,ys=full.map(q=>q.y),yMin=Math.min(...ys),yMax=Math.max(...ys);
+      const lvl=(this.fill||1)/LEVEL_FULL;   // how high the food stands: 0 = on the floor, 1 = up to the top line
+      const target=Math.max(.16,Math.min(1,lvl))*this.fullArea;
+      let lo=yMin,hi=yMax;   // bisection: higher level line = smaller area
+      for(let i=0;i<22;i++){
+        const mid=(lo+hi)/2,m=Sim.measure(Sim.clip(full,mid));
+        if(m.area>target)lo=mid;else hi=mid;
+      }
+      const poly=lvl>=1?full:Sim.clip(full,(lo+hi)/2);
+      if(poly.length<3)return;
+      const m=Sim.measure(poly);
+      this.poly=poly;this.cx=m.cx;this.cy=m.cy;this.area=m.area;
     }
     inside(x,y){
       const poly=this.poly;let c=false;
@@ -136,6 +168,7 @@
       }
       for(const id of [...this.pieces.keys()])if(!want.has(id))this.pieces.delete(id);
       this.fit();
+      this.applyLevel();
       for(const p of created)this.scatter(p);
       if(created.length)this.relax(60);
       this.dirty=true;
@@ -146,7 +179,7 @@
     fit(){
       let area=0;const ps=[...this.pieces.values()];
       for(const p of ps)area+=Math.PI*p.r0*p.r0;
-      this.room=this.area*.62;
+      this.room=(this.fullArea||this.area)*.62;
       this.fill=area/this.room;   // 1 = the floor of the vessel is covered
       const need=Math.max(1,Math.ceil(area/this.room));
       this.layers=Math.min(5,need);
@@ -159,7 +192,7 @@
       const xs=this.poly.map(q=>q.x),ys=this.poly.map(q=>q.y);
       const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
       // a small amount of food lies as a heap in the middle, more and more food spreads towards the walls
-      const f=Math.max(.3,Math.min(1,Math.sqrt(this.fill||1)));
+      const f=1;
       for(let i=0;i<40;i++){
         const x=this.cx+(x0+Math.random()*(x1-x0)-this.cx)*f,y=this.cy+(y0+Math.random()*(y1-y0)-this.cy)*f;
         if(this.inside(x,y)){p.x=x;p.y=y;return;}
@@ -345,7 +378,7 @@
     running:()=>running,
     debugClear:v=>{const s=sims.get(v);if(s){s.pieces.clear();s.dirty=true;kick();}},
     debugBed:v=>{const s=sims.get(v);return s?{parts:(s.parts||[]).map(p=>({k:p.storageKey,c:p.count,d:p.def&&p.def.dicedSrc,f:p.def&&p.def.friedDicedSrc})),img:[...imgCache.entries()].map(([k,e])=>[k.slice(-30),e.ready])}:null;},
-    debugSim:v=>{const s=sims.get(v);return s?{H:s.H,cx:s.cx,cy:s.cy,area:s.area,layers:s.layers,ymin:Math.min(...s.poly.map(q=>q.y)),ymax:Math.max(...s.poly.map(q=>q.y)),xmin:Math.min(...s.poly.map(q=>q.x)),xmax:Math.max(...s.poly.map(q=>q.x))}:null;},
+    debugSim:v=>{const s=sims.get(v);return s?{fill:s.fill,H:s.H,cx:s.cx,cy:s.cy,area:s.area,layers:s.layers,ymin:Math.min(...s.poly.map(q=>q.y)),ymax:Math.max(...s.poly.map(q=>q.y)),xmin:Math.min(...s.poly.map(q=>q.x)),xmax:Math.max(...s.poly.map(q=>q.x))}:null;},
     debugPieces(vessel){return [...(sims.get(vessel)?.pieces.values()||[])].map(p=>({id:p.id,x:p.x,y:p.y}));}
   };
 })();
