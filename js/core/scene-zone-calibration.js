@@ -16,6 +16,9 @@
   const VD={'left-leg':[392,680,55,260,0,20],'right-leg':[1165,680,55,260,0,20],'sink-front':[1470,190,250,55,0,30],'stove-front':[1435,500,320,250,0,35],'cabinet-left':[90,760,180,320,0,40],'chimney-left':[205,120,100,330,0,20],'chimney-right':[1600,140,100,360,0,20],'woodpile-left':[210,215,120,230,0,30]};
   let root,svg,sel,active='table',data={},drag=null,pending=null,raf=0,nodes={};
   try{data=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(_){data={}}
+  // The editor starts from the geometry that ships with the game (assets/scene-calibration.json); what was saved in this browser wins per zone.
+  // Without this a browser with empty storage showed every zone reset to the rough starting shapes.
+  try{const x=new XMLHttpRequest();x.open('GET','assets/scene-calibration.json',false);x.send(null);if(x.status>=200&&x.status<300){const bundled=JSON.parse(x.responseText)||{};data={...bundled,...data};}}catch(_){}
   // Remove the retired under-table zone from existing saved calibration too.
   if(data['under-table']){delete data['under-table'];localStorage.setItem(KEY,JSON.stringify(data))}
   const scene=()=>document.getElementById('scene');
