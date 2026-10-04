@@ -20,6 +20,8 @@
   const FRONT_POLY=[[0,558],[0,30],[126,30],[126,176],[150,210],[200,222],[250,229],[300,231],[350,229],[400,222],[440,210],[449,190],[449,30],[560,30],[560,558]]
     .map(([x,y])=>`${toPx(x).toFixed(2)}% ${toPy(y).toFixed(2)}%`).join(',');
   const LID_LEFT=-34/527*100,LID_TOP=-50/560*100,LID_W=560*1.08/527*100,LID_H=558*1.08/560*100;
+  // opening of the open barrel in the empty-barrel picture (527x560): centre (280,135), radii (195,55)
+  const WATER_CX=280/527*100,WATER_CY=135/560*100,WATER_RX=195/527*100,WATER_RY=55/560*100;
   const depthRest=n=>((MAX-n)/MAX)*150/560*100;      // how deep the lid sits on n cabbages (percent of the barrel's height)
   const pressTravel=p=>p/100*38/560*100;             // and how much it goes down while pressing
 
@@ -69,8 +71,12 @@
     const armR=img(DIR+'kaca_lid_armR.webp','kaca-arm');armR.style.transformOrigin='52.14% 50%';
     const hit=mk('div','kaca-lid-hit','position:absolute;left:17.9%;top:0;width:67.9%;height:23%;pointer-events:auto;cursor:grab');
     top.append(topImg,armL,armR,hit);
-    el.append(shaftWrap,disc,front,top);
-    el._kaca={lid:disc,shaftWrap,shaft,disc,top,armL,armR,hit,front,turn:0,all:[shaftWrap,disc,front,top]};
+    // water in the open barrel: the surface is an ellipse as wide as the opening, pushed down by the depth and cut by the opening
+    const waterClip=mk('div','kaca-water-clip',`position:absolute;inset:0;z-index:1;pointer-events:none;display:none;clip-path:ellipse(${WATER_RX}% ${WATER_RY}% at ${WATER_CX}% ${WATER_CY}%);-webkit-clip-path:ellipse(${WATER_RX}% ${WATER_RY}% at ${WATER_CX}% ${WATER_CY}%)`);
+    const waterSurf=mk('div','kaca-water',`position:absolute;left:${WATER_CX-WATER_RX}%;top:${WATER_CY-WATER_RY}%;width:${WATER_RX*2}%;height:${WATER_RY*2}%;border-radius:50%;background:radial-gradient(ellipse at 50% 38%,rgba(190,236,246,.9) 0 14%,rgba(92,176,206,.92) 40%,rgba(36,104,138,.95) 100%);box-shadow:inset 0 4px 10px rgba(255,255,255,.35),inset 0 -6px 12px rgba(10,50,80,.45)`);
+    waterClip.appendChild(waterSurf);
+    el.append(waterClip,shaftWrap,disc,front,top);
+    el._kaca={water:waterClip,waterSurf,lid:disc,shaftWrap,shaft,disc,top,armL,armR,hit,front,turn:0,all:[shaftWrap,disc,front,top]};
     return el._kaca;
   }
 
@@ -82,6 +88,9 @@
     const cs=el._contactShadow?.querySelector('img');if(cs&&cs.getAttribute('src')!==src)cs.src=src;
     if(L.front.getAttribute('src')!==src)L.front.src=src;
     for(const x of L.all)x.style.display=closed?'block':'none';
+    const w=Math.max(0,Math.min(100,num(el,'kacaWater')));
+    L.water.style.display=(w>0&&!closed&&n<VISIBLE_FROM)?'block':'none';
+    L.waterSurf.style.transform=`translateY(${((1-w/100)*WATER_RY*2*1.04).toFixed(2)}%)`;
     if(closed){
       const p=num(el,'kacaP');
       const dPct=depthRest(n)+pressTravel(p);                 // how far the disc is down, percent of the barrel's height
@@ -115,6 +124,7 @@
     if(!el||!el.isConnected||performance.now()>hudT){hud.style.display='none';return;}
     const r=el.getBoundingClientRect(),n=num(el,'kacaN'),closed=el.dataset.kacaLid==='1',p=num(el,'kacaP');
     let t=n+'/'+MAX+' kupusa';
+    const wl=Math.round(num(el,'kacaWater'));if(wl>0)t+=' · voda '+wl+'%';
     if(el.dataset.kacaRuined==='1')t='Pokvaren kupus — klikni da baciš';
     else if(closed){
       const left=daysLeft(el);
@@ -175,7 +185,7 @@
     const n=num(el,'kacaN');
     if(n<=0||el.dataset.kacaLid==='1')return false;
     if(el.dataset.kacaRuined==='1'){          // spoiled: throw it all away
-      el.dataset.kacaN='0';el.dataset.kacaRuined='';el.dataset.kacaDay0='';el.dataset.kacaP='0';
+      el.dataset.kacaN='0';el.dataset.kacaRuined='';el.dataset.kacaDay0='';el.dataset.kacaP='0';el.dataset.kacaWater='0';
       refresh(el);showHud(el,2);CooksterSave.schedule();return true;
     }
     const ph=phase(el),veg=VEGETABLES.kupus;if(!veg)return false;
@@ -268,6 +278,23 @@
   window.CooksterKaca={
     attach(el){if(isKaca(el)){build(el);refresh(el);}},
     refresh,
+    // the hose asks: is this scene point above the open barrel's opening? -> {el, y (scene y of the water surface), full}
+    openingAt(sx,sy){
+      const sp=sceneToScreen(sx,sy);
+      for(const el of (window.items||items)){
+        if(!isKaca(el)||el===holding)continue;
+        const r=el.getBoundingClientRect();
+        const w=Math.max(0,Math.min(100,num(el,'kacaWater')))/100,sy=r.top+r.height*(.25+(1-w)*.05);   // water surface inside the opening
+        if(sp.x<r.left+r.width*.2||sp.x>r.right-r.width*.2||sp.y>sy)continue;
+        const surf=screenToScene(sp.x,sy);
+        return{el,y:surf.y,closed:el.dataset.kacaLid==='1',full:num(el,'kacaWater')>=100};
+      }
+      return null;
+    },
+    addWater(el,amount){
+      const w=Math.min(100,num(el,'kacaWater')+amount);
+      el.dataset.kacaWater=w.toFixed(2);refresh(el);showHud(el,1.5);return w;
+    },
     // called when something is let go of in the world; returns true when the barrel used it
     tryDrop(item){
       if(!item)return false;
