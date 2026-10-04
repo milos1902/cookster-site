@@ -268,7 +268,7 @@
     krastavac:{label:'krastavca',max:250,flesh:[.34,.3,.28,.46],color:'#cfe3a0',rim:'#1b3d14',hull:true},
     beli_luk:{label:'belog luka',max:170,flesh:[.42,.72,.2,.18],color:'#efe3c2',rim:'#7a6a4a',hull:true},
     zelena_salata:{label:'zelene salate',max:200,flesh:[.3,.35,.4,.35],color:'#8bbd3a',rim:'#2a4d0c',hull:true},
-    kupus:{label:'kupusa',max:200,flesh:[.25,.3,.5,.45],color:'#a9cf6b',rim:'#4d6b1f',hull:true},
+    kupus:{label:'kupusa',max:200,flesh:[.2,.2,.6,.6],sections:[1,2,3,4].map(i=>'assets/market_veg/kupus_presek_'+i+'.webp'),color:'#a9cf6b',rim:'#4d6b1f',hull:true},
     patlidzan:{label:'patlidžana',max:250,flesh:[.3,.62,.3,.3],color:'#e6dca8',rim:'#2a0f33',hull:true},
     tikvice:{label:'tikvica',max:250,flesh:[.3,.05,.37,.3],color:'#cfe3a0',rim:'#1f3d12',hull:true},
     rotkvice:{label:'rotkvica',max:190,flesh:[.2,.08,.35,.3],color:'#f6e3ea',rim:'#8f1d3a',hull:true},
@@ -316,8 +316,10 @@
   async function start(el,def,cb){
     if(active)return;
     const key=el.dataset.vegKey||'paradajz',V=VEGS[key]||VEGS.paradajz;
-    const [tomImg,sliceImg,boardImg]=await Promise.all([
+    let [tomImg,sliceImg,boardImg]=await Promise.all([
       load(def.src),load(def.slicedSrc),load('assets/new_props/daska.png')]);
+    // some vegetables have real cross-section pictures: one of them is the texture of the cut faces
+    if(V.sections&&V.sections.length)sliceImg=await load(V.sections[Math.floor(Math.random()*V.sections.length)]);
     {
       const k=V.max*K/Math.max(tomImg.width,tomImg.height);
       ART={w:tomImg.width*k,h:tomImg.height*k,offY:V.hull?0:-4*K,
