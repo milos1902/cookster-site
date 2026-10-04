@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="sr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cookster – 3D paradajz</title><link rel="icon" href="data:,">
+<style>
+html,body{margin:0;height:100%;background:radial-gradient(ellipse at 50% 40%,#5a3a1c,#24140a);overflow:hidden;font:15px system-ui,sans-serif;color:#fff3d6}
+canvas{display:block;width:100vw;height:100vh;touch-action:none;cursor:grab}
+canvas:active{cursor:grabbing}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);text-shadow:0 1px 3px #000;text-align:center}
+#bar{position:fixed;left:50%;top:12px;transform:translateX(-50%);display:flex;gap:8px}
+button{font:inherit;padding:7px 13px;border-radius:10px;border:2px solid #4a2a12;background:#f1d9a6;color:#3b1d0a;cursor:pointer}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="bar"><button id="spin">Automatsko okretanje: uključeno</button><button id="reset">Početni pogled</button></div>
+<div id="hint">Prevuci mišem da okreneš paradajz · točkić miša za zumiranje</div>
+<script type="module">
+import * as THREE from './three.module.min.js';
+
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(35,1,.1,50);
+camera.position.set(0,.55,4.6);camera.lookAt(0,.05,0);
+
+// lights: soft warm key from upper left (like the painted highlight), cool fill, gentle rim
+scene.add(new THREE.HemisphereLight(0xfff0dc,0x6a2a18,1.05));
+const key=new THREE.DirectionalLight(0xfff2dd,1.9);key.position.set(-3,4,3.5);key.castShadow=false;scene.add(key);
+const rim=new THREE.DirectionalLight(0xffb48a,.8);rim.position.set(3,1,-3);scene.add(rim);
+
+const RX=1,RY=.84,RZ=1;
+const tomato=new THREE.Group();scene.add(tomato);
+
+// ---- body: a squashed sphere with a dimple around the stem, a slightly flat bottom and faint lobes ----
+const tex=new THREE.TextureLoader().load('../assets/povrce_paradajz.png');
+tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=8;
+const geo=new THREE.SphereGeometry(1,128,96);
+{
+  const pos=geo.attributes.position,uv=geo.attributes.uv;
+  const back=new Float32Array(pos.count),ypos=new Float32Array(pos.count);
+  const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
+  for(let i=0;i<pos.count;i++){
+    let x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
+    const ang=Math.atan2(z,x),r=Math.hypot(x,z);
+    // faint lobes
+    const lobe=1+.022*Math.cos(ang*5+.6)*(1-Math.abs(y))*1.0;
+    x*=lobe*RX;z*=lobe*RZ;
+    let yy=y*RY;
+    // dimple around the stem
+    yy-=.22*Math.exp(-(r*r)/.075)*smooth(.4,.95,y);
+    // flatter bottom
+    if(y<0)yy*=1-.1*smooth(.3,1,-y);
+    pos.setXYZ(i,x,yy,z);
+    // texture: project the game's painted tomato straight from the front, so the front looks exactly like the picture
+    // (body in the picture: centre x .502, y .552 from the top; half width .402, half height .348)
+    let u=.502+x/RX*.402,v=.448+(yy/RY)*.348;
+    // around the stem the picture has the leaves: use a plain red patch of the body there instead (the real 3D leaves go on top)
+    const cap=smooth(.12,.5,y);
+    u+= (.50-u)*cap;v+=(.30-v)*cap;
+    uv.setXY(i,u,v);
+    // how much of the painted front is used: full on the front, fading out towards the sides and back
+    const nz=z/Math.max(1e-4,Math.hypot(x,yy*1.2,z));
+    back[i]=Math.max(1-smooth(.12,.5,nz),cap);
+    ypos[i]=yy;
+  }
+  geo.setAttribute('aBack',new THREE.BufferAttribute(back,1));
+  geo.setAttribute('aY',new THREE.BufferAttribute(ypos,1));
+  geo.computeVertexNormals();
+}
+const bodyMat=new THREE.MeshPhysicalMaterial({map:tex,roughness:.5,metalness:0,clearcoat:.22,clearcoatRoughness:.55});
+bodyMat.onBeforeCompile=sh=>{
+  sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute float aBack;attribute float aY;varying float vBack;varying float vY;varying vec3 vP;')
+    .replace('#include <begin_vertex>','#include <begin_vertex>\nvBack=aBack;vY=aY;vP=position;');
+  sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vBack;varying float vY;varying vec3 vP;\nfloat h3(vec3 p){return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453);}')
+    .replace('#include <map_fragment>',`
+      vec4 texel=texture2D(map,vMapUv);
+      // sides and back: the same red, a little darker towards the bottom, with the fine painted speckle
+      float g=clamp((vY+.8)/1.6,0.,1.);
+      vec3 red=mix(vec3(.30,.010,.006),vec3(.74,.045,.014),g);
+      vec3 sp=floor(vP*90.);
+      float n=h3(sp);
+      red*=1.+.22*(n-.5);red+=vec3(.16,.05,.0)*step(.992,h3(sp+3.1));
+      diffuseColor.rgb*=mix(texel.rgb,red,vBack);`);
+};
+const body=new THREE.Mesh(geo,bodyMat);tomato.add(body);
+
+// ---- calyx: five curled sepals + a stem ----
+const leafMat=new THREE.MeshStandardMaterial({color:0x5f7d2b,roughness:.55,side:THREE.DoubleSide,vertexColors:true});
+function sepal(len,wid,curl,lift){
+  const g=new THREE.PlaneGeometry(1,1,8,28);
+  const p=g.attributes.position,col=new Float32Array(p.count*3);
+  for(let i=0;i<p.count;i++){
+    const u=p.getX(i),t=p.getY(i)+.5;               // u across (-.5..5), t along (0..1)
+    const shape=Math.pow(Math.sin(Math.PI*Math.min(1,Math.pow(t,.55))),.9);   // pointed leaf
+    const w=wid*.5*shape*u*2*(1-.35*t);
+    const rad=len*t;
+    // lies on the fruit, then the tip lifts and curls: lift = base height, curl = how far the tip rises
+    const h=.05+lift*.2*Math.sin(Math.min(1,t*1.1)*Math.PI*.7)-.06*t+curl*.09*Math.pow(t,3);
+    const fold=-Math.abs(u)*.1*wid*(1-t*.5);          // folded along the middle vein
+    p.setXYZ(i,w,h+fold,rad);
+    const c=new THREE.Color().setHSL(.24-.02*t,.52,.30+.14*t+(Math.abs(u)<.06?.07:0));
+    col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b;
+  }
+  g.setAttribute('color',new THREE.BufferAttribute(col,3));
+  g.computeVertexNormals();
+  return new THREE.Mesh(g,leafMat);
+}
+const calyx=new THREE.Group();
+const topY=RY-.22*.0-.18;     // top of the dimple
+for(let i=0;i<5;i++){
+  const s=sepal(.72+(i%2)*.12,.3,1+(i%3)*.8,1+(i%2)*.4);
+  s.rotation.y=i/5*Math.PI*2+.3;
+  calyx.add(s);
+}
+calyx.position.y=topY+.03;
+const disc=new THREE.Mesh(new THREE.CylinderGeometry(.22,.3,.07,24),new THREE.MeshStandardMaterial({color:0x547424,roughness:.6}));
+disc.position.y=topY+.01;tomato.add(disc);
+tomato.add(calyx);
+const stem=new THREE.Mesh(new THREE.CylinderGeometry(.06,.085,.3,16,1),new THREE.MeshStandardMaterial({color:0x6e8a30,roughness:.6}));
+stem.position.y=topY+.17;stem.rotation.z=.12;
+tomato.add(stem);
+const cut=new THREE.Mesh(new THREE.CircleGeometry(.06,16),new THREE.MeshStandardMaterial({color:0xd8c785,roughness:.7}));
+cut.rotation.x=-Math.PI/2;cut.position.set(Math.sin(.12)*.15*-1,topY+.32,0);cut.rotation.z=-.12;
+stem.add(cut);cut.position.set(0,.151,0);cut.rotation.set(-Math.PI/2,0,0);
+
+tomato.rotation.set(.32,-.5,0);
+
+// soft contact shadow
+{
+  const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');
+  const gr=g.createRadialGradient(64,64,4,64,64,62);gr.addColorStop(0,'rgba(0,0,0,.5)');gr.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=gr;g.fillRect(0,0,128,128);
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(3.2,3.2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));
+  m.rotation.x=-Math.PI/2;m.position.y=-RY-.02;scene.add(m);
+}
+
+// ---- controls: drag to turn, wheel to zoom, slow auto-rotate ----
+let auto=true,drag=false,lx=0,ly=0,zoom=1;
+const start=tomato.rotation.clone();
+canvas.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener('pointerup',()=>drag=false);
+canvas.addEventListener('pointermove',e=>{if(!drag)return;tomato.rotation.y+=(e.clientX-lx)*.01;tomato.rotation.x=Math.max(-1.3,Math.min(1.3,tomato.rotation.x+(e.clientY-ly)*.01));lx=e.clientX;ly=e.clientY;});
+canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.5,Math.min(2.2,zoom*(e.deltaY>0?.92:1.08)));},{passive:false});
+document.getElementById('spin').onclick=e=>{auto=!auto;e.target.textContent='Automatsko okretanje: '+(auto?'uključeno':'isključeno');};
+document.getElementById('reset').onclick=()=>{tomato.rotation.copy(start);zoom=1;};
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+addEventListener('resize',resize);resize();
+window.__tomato=tomato;window.__setAuto=v=>{auto=v;};
+renderer.setAnimationLoop(()=>{
+  if(auto&&!drag)tomato.rotation.y+=.006;
+  camera.position.z=4.6/zoom;
+  renderer.render(scene,camera);
+});
+</script></body></html>
