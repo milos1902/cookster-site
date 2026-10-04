@@ -27,7 +27,7 @@
   const lerpV=(a,b,k)=>{const o=new Array(8);for(let i=0;i<8;i++)o[i]=a[i]+(b[i]-a[i])*k;
     const l=Math.hypot(o[5],o[6],o[7])||1;o[5]/=l;o[6]/=l;o[7]/=l;return o;};
 
-  function vegTris(shape){
+  function vegTris(shape,scale){
     const {SphereGeometry}=T;
     const geo=new SphereGeometry(1,112,80);
     const pos=geo.attributes.position;
@@ -66,7 +66,10 @@
       const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
       const cx=uy*vz-uz*vy,cy=uz*vx-ux*vz,cz=ux*vy-uy*vx;
       if(cx*cx+cy*cy+cz*cz<1e-14)continue;
-      tris.push({v:[a.slice(),b.slice(),c.slice()],cap:0});
+      const k=scale||1;
+      const A=a.slice(),B=b.slice(),C=c.slice();
+      if(k!==1)for(const v of [A,B,C]){v[0]*=k;v[1]*=k;v[2]*=k;}
+      tris.push({v:[A,B,C],cap:0});
     }
     return tris;
   }
@@ -155,8 +158,20 @@
     try{await loadThree();}catch(_){return false;}
     const THREE=T;
     const cfg=VEG[el.dataset.vegKey]||VEG.paradajz;
-    const elRect=el.getBoundingClientRect();
+    const elRect=((el.querySelector('.body')||el).getBoundingClientRect());
     const peelSrc=(el.querySelector('.body')||{}).src||def.src;
+    // where the visible onion sits inside its picture (fractions of the picture), to match the 3D onion to it exactly
+    const alphaBox=img=>{
+      try{
+        const c=document.createElement('canvas'),W=Math.min(200,img.naturalWidth),H=Math.round(W*img.naturalHeight/img.naturalWidth);
+        c.width=W;c.height=H;const g=c.getContext('2d');g.drawImage(img,0,0,W,H);const d=g.getImageData(0,0,W,H).data;
+        let x0=W,y0=H,x1=-1,y1=-1;
+        for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(d[(y*W+x)*4+3]>40){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
+        if(x1<0)return null;return {x0:x0/W,x1:(x1+1)/W,y0:y0/H,y1:(y1+1)/H};
+      }catch(_){return null;}
+    };
+    const peelPic=cfg.peel?await loadImg(peelSrc).catch(()=>null):null;
+    const peelBox=peelPic?alphaBox(peelPic):null;
     // the peel that falls off: three pictures (ring round the onion / bunches left and right / a pile), one at random
     const pileVariant=cfg.peelPile?Math.floor(Math.random()*cfg.peelPile.length):0;
     const pileImg=cfg.peelPile?await loadImg('assets/market_veg/'+cfg.peelPile[pileVariant]+'.webp').catch(()=>null):null;
@@ -308,11 +323,37 @@
     }
     // the whole vegetable rests on the board (an onion first shows as the 2D picture with its peel, see below)
     function placeWhole(drop){
-      const tris=vegTris(cfg.shape);
+      // an onion must look exactly as big, and sit exactly where, the picture with the peel showed it:
+      // measure the 3D one on screen, then scale it and move it to match the picture's visible onion
+      let scale=1,target=null;
+      if(cfg.peel&&peelBox){
+        const lo=layout(),br=(cb.board||el).getBoundingClientRect();
+        const sc=Math.max(.05,br.width/lo.Wf),cx=lo.W/2,cy=lo.H/2,px=lo.L+lo.Wf/2,py=lo.T+lo.Hf/2;
+        const dx=(br.left+br.width/2)-cx-sc*(px-cx),dy=(br.top+br.height/2)-cy-sc*(py-cy);
+        const toL=(x,y)=>({x:cx+(x-cx-dx)/sc,y:cy+(y-cy-dy)/sc});
+        const a=toL(elRect.left+elRect.width*peelBox.x0,elRect.top+elRect.height*peelBox.y0),b=toL(elRect.left+elRect.width*peelBox.x1,elRect.top+elRect.height*peelBox.y1);
+        target={x:(a.x+b.x)/2,y:(a.y+b.y)/2,w:b.x-a.x,h:b.y-a.y};
+        const probe=vegTris(cfg.shape,1);
+        let lowP=1e9;for(const t of probe)for(const v of t.v)lowP=Math.min(lowP,v[1]);
+        let xmin=1e9,xmax=-1e9,ymin=1e9,ymax=-1e9;
+        for(const t of probe)for(const v of t.v){const q=new THREE.Vector3(v[0],v[1]-lowP+FLOOR,v[2]).project(camera);const X=(q.x+1)/2*innerWidth,Y=(1-q.y)/2*innerHeight;if(X<xmin)xmin=X;if(X>xmax)xmax=X;if(Y<ymin)ymin=Y;if(Y>ymax)ymax=Y;}
+        scale=Math.max(.3,Math.min(3,target.w/(xmax-xmin)));
+      }
+      const tris=vegTris(cfg.shape,scale);
       let low=1e9;for(const t of tris)for(const v of t.v)low=Math.min(low,v[1]);
-      addPiece(tris,new THREE.Vector3(0,0,0),new THREE.Quaternion(),new THREE.Vector3(),new THREE.Vector3(),cfg.calyx?[0,.64,0]:null);
+      addPiece(tris,new THREE.Vector3(0,0,0),new THREE.Quaternion(),new THREE.Vector3(),new THREE.Vector3(),cfg.calyx?[0,.64*scale,0]:null);
       const b=pieces[pieces.length-1];
-      b.pos.y=FLOOR-(low-b.com[1])+(drop||0);b.mesh.position.copy(b.pos);
+      let wx=0,wz=0;
+      if(target){
+        // move it so its on-screen middle is where the picture's onion was (ray from the camera to the board plane)
+        let xmin=1e9,xmax=-1e9,ymin=1e9,ymax=-1e9;
+        for(const t of tris)for(const v of t.v){const q=new THREE.Vector3(v[0]-b.com[0],v[1]-low+FLOOR-b.com[1]+b.com[1],v[2]-b.com[2]).add(new THREE.Vector3(b.com[0],b.com[1],b.com[2])).project(camera);const X=(q.x+1)/2*innerWidth,Y=(1-q.y)/2*innerHeight;if(X<xmin)xmin=X;if(X>xmax)xmax=X;if(Y<ymin)ymin=Y;if(Y>ymax)ymax=Y;}
+        const cur=new THREE.Vector3(0,0,0);
+        const ray=(X,Y)=>{const d=new THREE.Vector3((X/innerWidth)*2-1,-(Y/innerHeight)*2+1,.5).unproject(camera).sub(camera.position).normalize();const t=(FLOOR-camera.position.y)/d.y;return camera.position.clone().add(d.multiplyScalar(t));};
+        const p1=ray((xmin+xmax)/2,(ymin+ymax)/2),p2=ray(target.x,target.y);
+        wx=p2.x-p1.x;wz=p2.z-p1.z;
+      }
+      b.pos.set(wx,FLOOR-(low-b.com[1])+(drop||0),wz);b.mesh.position.copy(b.pos);
       if(drop)b.asleep=false;
     }
     if(!cfg.peel)placeWhole(0);
@@ -512,6 +553,7 @@
     const tg=trail.getContext('2d');
     const TRAIL_MS=650;
     let stroke=null,orbit=null,trailPts=[],strokeId=0;
+    const spin={y:0,p:0};
     const pt=e=>({x:e.clientX,y:e.clientY});
     function drawTrail(){
       tg.clearRect(0,0,trail.width,trail.height);
@@ -569,12 +611,18 @@
     cv.addEventListener('pointerdown',e=>{
       if(!ready||!peeled)return;
       cv.setPointerCapture(e.pointerId);
-      if(e.button===2){orbit={x:e.clientX,y:e.clientY};return;}
+      if(e.button===2){orbit={x:e.clientX,y:e.clientY,t:performance.now(),vy:0,vp:0};spin.y=0;spin.p=0;return;}
       if(e.button===0){stroke={id:++strokeId,start:pt(e),cut:false};trailPts.push({x:e.clientX,y:e.clientY,t:performance.now()});}
     });
     let lastChop=0;
     cv.addEventListener('pointermove',e=>{
-      if(orbit){turnPieces((e.clientX-orbit.x)*.011,(e.clientY-orbit.y)*.009);orbit={x:e.clientX,y:e.clientY};return;}
+      if(orbit){
+        const now=performance.now(),dt=Math.max(4,now-orbit.t),dyaw=(e.clientX-orbit.x)*.011,dpit=(e.clientY-orbit.y)*.009;
+        turnPieces(dyaw,dpit);
+        // remember how fast it is being turned, so it keeps turning for a moment after letting go
+        orbit.vy=(orbit.vy||0)*.6+dyaw/dt*1000*.4;orbit.vp=(orbit.vp||0)*.6+dpit/dt*1000*.4;
+        orbit.x=e.clientX;orbit.y=e.clientY;orbit.t=now;return;
+      }
       if(!stroke)return;
       const p=pt(e),s0=stroke.start,dd0=Math.hypot(p.x-s0.x,p.y-s0.y);
       if(dd0<14)return;
@@ -590,7 +638,15 @@
         if(now-lastChop>140){lastChop=now;try{cb.onCutSound&&cb.onCutSound();}catch(_){}}
       }
     });
-    const endStroke=e=>{if(orbit&&e&&e.button===2){orbit=null;return;}stroke=null;};
+    const endStroke=e=>{
+      if(orbit&&e&&e.button===2){
+        // let go: the tomato/onion carries on turning and slows down smoothly (unless the hand had stopped before letting go)
+        const idle=performance.now()-orbit.t>160;
+        spin.y=idle?0:Math.max(-14,Math.min(14,orbit.vy));spin.p=idle?0:Math.max(-10,Math.min(10,orbit.vp));
+        orbit=null;return;
+      }
+      stroke=null;
+    };
     cv.addEventListener('pointerup',endStroke);cv.addEventListener('pointercancel',endStroke);
     cv.addEventListener('wheel',e=>e.preventDefault(),{passive:false});
 
@@ -601,6 +657,11 @@
       raf=requestAnimationFrame(loop);
       const dt=Math.min(.033,(now-last)/1000);last=now;
       for(let i=0;i<4;i++)stepPhysics(dt/4);
+      if(!orbit&&(Math.abs(spin.y)>.02||Math.abs(spin.p)>.02)){
+        turnPieces(spin.y*dt,spin.p*dt);
+        const f=Math.exp(-dt*2.4);spin.y*=f;spin.p*=f;     // smooth slowing down, about a second and a half
+        if(Math.abs(spin.y)<=.02&&Math.abs(spin.p)<=.02){spin.y=0;spin.p=0;}
+      }
       for(const b of pieces){b.mesh.position.copy(b.pos);b.mesh.quaternion.copy(b.quat);}
       drawTrail();
       renderer.render(scene,camera);
