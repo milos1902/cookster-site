@@ -125,6 +125,52 @@ stem.add(cut);cut.position.set(0,.151,0);cut.rotation.set(-Math.PI/2,0,0);
 
 tomato.rotation.set(.32,-.5,0);
 
+
+// ---- "realistic" look: glossy smooth skin with soft studio highlights, in the spirit of a product photo ----
+const geoR=new THREE.SphereGeometry(1,160,112);
+{
+  const pos=geoR.attributes.position;
+  const sm=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
+  for(let i=0;i<pos.count;i++){
+    let x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
+    const ang=Math.atan2(z,x),r=Math.hypot(x,z);
+    // broad lobes with soft creases, strongest on the shoulders
+    const lobe=1+.022*Math.cos(ang*5+.4)*Math.sin(Math.min(1,Math.abs(y)*1.1+.15)*Math.PI*.9)*(1-.5*Math.abs(y));
+    x*=lobe;z*=lobe;
+    let yy=y*RY;
+    yy-=.2*Math.exp(-(r*r)/.09)*sm(.4,.95,y)*(1+.15*Math.cos(ang*5+.4));
+    if(y<0)yy*=1-.08*sm(.35,1,-y);
+    pos.setXYZ(i,x,yy,z);
+  }
+  geoR.computeVertexNormals();
+}
+const skin=(()=>{const c=document.createElement('canvas');c.width=1024;c.height=512;const g=c.getContext('2d');
+  const gr=g.createLinearGradient(0,0,0,512);gr.addColorStop(0,'#c8301a');gr.addColorStop(.35,'#d92a18');gr.addColorStop(.7,'#c2200f');gr.addColorStop(1,'#8e1409');
+  g.fillStyle=gr;g.fillRect(0,0,1024,512);
+  for(let i=0;i<260;i++){g.fillStyle=`rgba(${i%2?255:120},${i%2?90:10},10,${.04+Math.random()*.05})`;const r=30+Math.random()*90;g.beginPath();g.ellipse(Math.random()*1024,Math.random()*512,r,r*.6,Math.random()*3,0,7);g.fill();}
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=THREE.RepeatWrapping;return t;})();
+const matR=new THREE.MeshPhysicalMaterial({map:skin,roughness:.28,metalness:0,clearcoat:1,clearcoatRoughness:.12});
+// studio environment for the reflections: two big soft boxes and a dim room
+{
+  const c=document.createElement('canvas');c.width=512;c.height=256;const g=c.getContext('2d');
+  g.fillStyle='#3a2e28';g.fillRect(0,0,512,256);
+  const lg=g.createLinearGradient(0,0,0,256);lg.addColorStop(0,'#fff');lg.addColorStop(.4,'#8a7d74');lg.addColorStop(1,'#2a201a');g.fillStyle=lg;g.fillRect(0,0,512,256);
+  g.fillStyle='#fff';g.fillRect(70,60,90,50);g.fillRect(300,50,70,60);
+  const t=new THREE.CanvasTexture(c);t.mapping=THREE.EquirectangularReflectionMapping;t.colorSpace=THREE.SRGBColorSpace;
+  const pm=new THREE.PMREMGenerator(renderer);window.__env=pm.fromEquirectangular(t).texture;
+}
+let real=false;
+const lookBtn=document.createElement('button');lookBtn.textContent='Izgled: crtani (iz igre)';
+document.getElementById('bar').prepend(lookBtn);
+lookBtn.onclick=()=>{
+  real=!real;
+  body.geometry=real?geoR:geo;body.material=real?matR:bodyMat;
+  scene.environment=real?window.__env:null;scene.environmentIntensity=.55;
+  calyx.scale.setScalar(real?.8:1);
+  lookBtn.textContent=real?'Izgled: realističan (kao fotka)':'Izgled: crtani (iz igre)';
+};
+window.__setReal=v=>{if(real!==v)lookBtn.onclick();};
+
 // soft contact shadow
 {
   const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');
