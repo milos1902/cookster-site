@@ -11,8 +11,17 @@
     {id:'vangla_srednja',label:'Srednja vangla',src:'assets/new_props/vangla_srednja.png'},
     {id:'vangla_mala',label:'Mala vangla',src:'assets/new_props/vangla_mala.png'},
     {id:'vangla_velika',label:'Velika vangla',src:'assets/new_props/vangla_velika.png'},
-    {id:'lavor_emajl_veliki',label:'Veliki emajlirani lavor',src:'assets/new_props/lavor_emajl_veliki.png'}
+    {id:'lavor_emajl_veliki',label:'Veliki emajlirani lavor',src:'assets/new_props/lavor_emajl_veliki.png'},
+    {id:'kaca_prazna',label:'Bačva za kiseljenje (crevo: crveno prekriva, zeleno se vidi)',src:'assets/calibration_props/kaca_za_kupus/kaca_prazna.webp'}
   ];
+  // the barrel: red = the front of the barrel that hides the hose, green = where the hose can be seen (the inside of the opening)
+  function seedBarrel(force){
+    const d=window.CooksterKaca?.hoseDefaults?.();
+    const v=data.vessels.kaca_prazna;
+    if(!d||!v)return;
+    if(force||!v.mask.length)v.mask=d.mask.map(normalizePoint);
+    if(force||!v.foodVisible.length)v.foodVisible=d.foodVisible.map(normalizePoint);
+  }
   const MODE_LABELS={
     mask:'Maska koja prekriva hranu',
     foodVisible:'Deo gde se hrana vidi',
@@ -51,6 +60,7 @@
         data.vessels[v.id].depth[k]=point&&typeof point==='object'?normalizePoint(point):null;
       });
     });
+    seedBarrel(false);
   }
   function persist(){
     data.format='cookster-vessel-food-visibility-calibration';
@@ -128,7 +138,7 @@
     if(last&&Array.isArray(current()[mode])){
       svg.appendChild(svgEl('circle',{cx:last.x,cy:last.y,r:2.3},'vfmm-crosshair vfmm-dynamic'));
     }
-    setStatus(countText()+' Klikni za novu tačku. Prevuci postojeću tačku za pomeranje.');
+    setStatus(countText()+' Klikni za novu tačku. Prevuci postojeću tačku za pomeranje.'+(currentId==='kaca_prazna'?' BAČVA: crveno = deo bačve koji prekriva crevo (prednja strana), zeleno = gde se crevo vidi (unutrašnjost otvora). Dno i tačke dubine se za bačvu ne koriste.':''));
   }
   function onStagePointerDown(e){
     if(e.button!==0||e.target!==stage&&e.target!==img&&e.target!==svg)return;
@@ -185,6 +195,7 @@
   }
   function clearCurrentVessel(){
     data.vessels[currentId]=emptyShape();
+    if(currentId==='kaca_prazna')seedBarrel(true);
     persist();draw();
   }
   function clearAll(){
