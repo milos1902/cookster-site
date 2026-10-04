@@ -138,7 +138,10 @@
     if(!webglOK())return false;
     try{await loadThree();}catch(_){return false;}
     const THREE=T;
-    const [capImg,boardImg]=await Promise.all([loadImg('assets/market_veg/paradajz_presek_3d.webp').catch(()=>null),loadImg('assets/new_props/daska.png').catch(()=>null)]);
+    const [capImgs,skinImg,boardImg]=await Promise.all([
+      Promise.all([1,2,3].map(i=>loadImg('assets/market_veg/paradajz_presek_'+i+'.webp').catch(()=>null))),
+      loadImg('assets/market_veg/paradajz_koza.webp').catch(()=>null),
+      loadImg('assets/new_props/daska.png').catch(()=>null)]);
 
     // ---------- DOM ----------
     const root=document.createElement('div');
@@ -165,42 +168,49 @@
     renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
     renderer.outputColorSpace=THREE.SRGBColorSpace;
     renderer.setClearColor(0x000000,0);
+    renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.VSMShadowMap;
     const scene=new THREE.Scene();
     const camera=new THREE.PerspectiveCamera(16,1,.1,80);
     const FLOOR=-.76,HX=3.1,HZ=1.89;           // the board's top surface: 6.2 x 3.78 units
     let az=.0,el2=1.32,dist=20;
     const placeCam=()=>{camera.position.set(Math.sin(az)*Math.cos(el2)*dist,FLOOR+Math.sin(el2)*dist,Math.cos(az)*Math.cos(el2)*dist);camera.lookAt(0,FLOOR,0);camera.updateMatrixWorld();};
-    // no lamps, no shadows: only an even soft light, so nothing looks lit from one side
-    scene.add(new THREE.AmbientLight(0xffffff,.92));
-    scene.add(new THREE.HemisphereLight(0xffffff,0xd8b8a8,.34));
+    // soft warm light from the upper left, with soft (blurred, light) shadows
+    scene.add(new THREE.HemisphereLight(0xfff0dc,0x6a3a20,.8));
+    const key=new THREE.DirectionalLight(0xfff2dd,2.1);key.position.set(-3,6,3.5);key.castShadow=true;
+    key.shadow.mapSize.set(1024,1024);Object.assign(key.shadow.camera,{left:-4,right:4,top:4,bottom:-4,near:1,far:16});key.shadow.bias=-.0005;key.shadow.radius=9;key.shadow.blurSamples=20;
+    scene.add(key);
+    const rimL=new THREE.DirectionalLight(0xffb48a,.7);rimL.position.set(3,2,-3);scene.add(rimL);
+    const makeEnv=rend=>{
+      const c=document.createElement('canvas');c.width=512;c.height=256;const g=c.getContext('2d');
+      const lg=g.createLinearGradient(0,0,0,256);lg.addColorStop(0,'#fff');lg.addColorStop(.4,'#8a7d74');lg.addColorStop(1,'#2a201a');g.fillStyle=lg;g.fillRect(0,0,512,256);
+      g.fillStyle='#fff';g.fillRect(70,60,90,50);g.fillRect(300,50,70,60);
+      const t=new THREE.CanvasTexture(c);t.mapping=THREE.EquirectangularReflectionMapping;t.colorSpace=THREE.SRGBColorSpace;
+      return new THREE.PMREMGenerator(rend).fromEquirectangular(t).texture;
+    };
+    scene.environment=makeEnv(renderer);scene.environmentIntensity=.55;
+    // the board picture is flat behind the canvas; this transparent plane only catches the soft shadows
+    {
+      const sh=new THREE.Mesh(new THREE.PlaneGeometry(HX*2,HZ*2),new THREE.ShadowMaterial({opacity:.24}));
+      sh.rotation.x=-Math.PI/2;sh.position.y=FLOOR+.004;sh.receiveShadow=true;scene.add(sh);
+    }
 
     // ---------- materials ----------
-    const skinTex=(()=>{const c=document.createElement('canvas');c.width=1024;c.height=512;const g=c.getContext('2d');
-      const gr=g.createLinearGradient(0,0,0,512);gr.addColorStop(0,'#c8301a');gr.addColorStop(.35,'#d92a18');gr.addColorStop(.7,'#c2200f');gr.addColorStop(1,'#8e1409');
-      g.fillStyle=gr;g.fillRect(0,0,1024,512);
-      for(let i=0;i<260;i++){g.fillStyle=`rgba(${i%2?255:120},${i%2?90:10},10,${.04+Math.random()*.05})`;const r=30+Math.random()*90;g.beginPath();g.ellipse(Math.random()*1024,Math.random()*512,r,r*.6,Math.random()*3,0,7);g.fill();}
-      const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=THREE.RepeatWrapping;return t;})();
-    const skinMat=new THREE.MeshStandardMaterial({map:skinTex,roughness:.75,metalness:0});
-    // inside of the tomato: the flesh part of the game's cross-section picture
-    const capTex=(()=>{const c=document.createElement('canvas');c.width=c.height=512;const g=c.getContext('2d');
-      // skin red all round: the cut face of a tomato is framed by a thin red skin, and only inside it comes the flesh with the seeds
-      const sk=g.createRadialGradient(256,256,200,256,256,300);sk.addColorStop(0,'#e03420');sk.addColorStop(1,'#c42a16');
-      g.fillStyle=sk;g.fillRect(0,0,512,512);
-      if(capImg){
-        const k=capImg.width/1250,IN=.95;          // flesh covers 91.5 % of the width: the rest is the skin ring
-        g.save();g.beginPath();g.ellipse(256,256,256*IN,256*IN,0,0,Math.PI*2);g.clip();
-        g.filter='saturate(1.45) contrast(1.05) brightness(1.04)';
-        g.drawImage(capImg,150*k,128*k,1055*k,870*k,256*(1-IN),256*(1-IN),512*IN,512*IN);
-        g.filter='none';
-        // pale flesh becomes a clean tomato red: colour from a strong red, light and dark from the picture
-        g.globalAlpha=.7;g.globalCompositeOperation='hue';g.fillStyle='#ff2810';g.fillRect(0,0,512,512);
-        g.globalAlpha=.85;g.globalCompositeOperation='saturation';g.fillStyle='#ff2a12';g.fillRect(0,0,512,512);
-        g.globalAlpha=1;g.globalCompositeOperation='source-over';g.restore();
-        // the thin ring where flesh meets skin
-        g.strokeStyle='rgba(255,110,80,.55)';g.lineWidth=6;g.beginPath();g.ellipse(256,256,256*IN,256*IN,0,0,Math.PI*2);g.stroke();
-      }
-      const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t;})();
-    const capMat=new THREE.MeshStandardMaterial({map:capTex,roughness:.8,metalness:0});
+    // skin: the painted skin texture you made, wrapped round the tomato
+    const skinTex=(()=>{
+      const c=document.createElement('canvas');c.width=1024;c.height=512;const g=c.getContext('2d');
+      g.fillStyle='#d9301c';g.fillRect(0,0,1024,512);
+      if(skinImg){g.drawImage(skinImg,0,0,512,512);g.drawImage(skinImg,512,0,512,512);}   // two tiles side by side round the equator
+      const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=THREE.RepeatWrapping;t.anisotropy=8;return t;})();
+    const skinMat=new THREE.MeshPhysicalMaterial({map:skinTex,roughness:.45,clearcoat:.3,clearcoatRoughness:.3});
+    // inside: one of your three cross-section pictures per cut (skin ring on the edge, flesh and seeds inside)
+    const capMats=[0,1,2].map(i=>{
+      const c=document.createElement('canvas');c.width=c.height=512;const g=c.getContext('2d');
+      g.fillStyle='#c9281a';g.fillRect(0,0,512,512);
+      const im=capImgs[i];if(im)g.drawImage(im,0,0,512,512);
+      const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;
+      return new THREE.MeshPhysicalMaterial({map:t,roughness:.45,clearcoat:.35,clearcoatRoughness:.3});
+    });
+    const meshMats=[skinMat,...capMats];
     const leafMat=new THREE.MeshStandardMaterial({color:0x5f7d2b,roughness:.55,side:THREE.DoubleSide,vertexColors:true});
     const stemMat=new THREE.MeshStandardMaterial({color:0x6e8a30,roughness:.6});
 
@@ -219,13 +229,13 @@
         col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b;
       }
       g.setAttribute('color',new THREE.BufferAttribute(col,3));g.computeVertexNormals();
-      const m=new THREE.Mesh(g,leafMat);return m;
+      const m=new THREE.Mesh(g,leafMat);m.castShadow=true;return m;
     }
     function makeCalyx(){
       const grp=new THREE.Group(),topY=.64;
       for(let i=0;i<5;i++){const s=sepal((.72+(i%2)*.12)*.8,.3,1+(i%3)*.8,1+(i%2)*.4);s.rotation.y=i/5*Math.PI*2+.3;s.position.y=.03;grp.add(s);}
-      const disc=new THREE.Mesh(new THREE.CylinderGeometry(.22,.3,.07,24),new THREE.MeshStandardMaterial({color:0x547424,roughness:.6}));disc.position.y=.01;grp.add(disc);
-      const stem=new THREE.Mesh(new THREE.CylinderGeometry(.06,.085,.3,16),stemMat);stem.position.y=.17;stem.rotation.z=.12;grp.add(stem);
+      const disc=new THREE.Mesh(new THREE.CylinderGeometry(.22,.3,.07,24),new THREE.MeshStandardMaterial({color:0x547424,roughness:.6}));disc.position.y=.01;disc.castShadow=true;grp.add(disc);
+      const stem=new THREE.Mesh(new THREE.CylinderGeometry(.06,.085,.3,16),stemMat);stem.position.y=.17;stem.rotation.z=.12;stem.castShadow=true;grp.add(stem);
       const cut=new THREE.Mesh(new THREE.CircleGeometry(.06,16),new THREE.MeshStandardMaterial({color:0xd8c785,roughness:.7}));cut.rotation.x=-Math.PI/2;cut.position.y=.151;stem.add(cut);
       grp.userData.base=[0,topY,0];
       return grp;
@@ -234,8 +244,9 @@
     // ---------- pieces ----------
     const pieces=[];
     function geoOf(tris,com){
-      const skin=tris.filter(t=>!t.cap),caps=tris.filter(t=>t.cap);
-      const all=skin.concat(caps),n=all.length*3;
+      const groups=[[],[],[],[]];                 // 0 skin, 1..3 cut faces (picture 1..3)
+      for(const t of tris)groups[t.cap?1+(t.cap%3):0].push(t);
+      const all=[].concat(...groups),n=all.length*3;
       const P=new Float32Array(n*3),U=new Float32Array(n*2),N=new Float32Array(n*3);
       let k=0;
       for(const t of all)for(const v of t.v){
@@ -243,7 +254,7 @@
       }
       const g=new THREE.BufferGeometry();
       g.setAttribute('position',new THREE.BufferAttribute(P,3));g.setAttribute('uv',new THREE.BufferAttribute(U,2));g.setAttribute('normal',new THREE.BufferAttribute(N,3));
-      g.addGroup(0,skin.length*3,0);g.addGroup(skin.length*3,caps.length*3,1);
+      {let at=0;groups.forEach((gr,gi)=>{if(gr.length){g.addGroup(at*3,gr.length*3,gi);}at+=gr.length;});}
       g.computeBoundingSphere();
       return g;
     }
@@ -252,7 +263,7 @@
       // re-centre on the centre of mass
       const com=pr.com;
       const g=geoOf(tris,com);
-      const mesh=new THREE.Mesh(g,[skinMat,capMat]);
+      const mesh=new THREE.Mesh(g,meshMats);mesh.castShadow=true;
       // collision sample points: a subset of the unique vertices
       const seen=new Set(),samples=[];
       for(const t of tris)for(const v of t.v){const k=Math.round(v[0]*40)+','+Math.round(v[1]*40)+','+Math.round(v[2]*40);if(!seen.has(k)){seen.add(k);samples.push(new THREE.Vector3(v[0]-com[0],v[1]-com[1],v[2]-com[2]));}}
@@ -528,7 +539,9 @@
       br.setPixelRatio(1);br.setSize(SZ,SZ,false);br.outputColorSpace=THREE.SRGBColorSpace;br.setClearColor(0x000000,0);
       const bcv=br.domElement;
       const bs=new THREE.Scene();
-      bs.add(new THREE.AmbientLight(0xffffff,.92));bs.add(new THREE.HemisphereLight(0xffffff,0xd8b8a8,.34));
+      bs.add(new THREE.HemisphereLight(0xfff0dc,0x6a3a20,.9));
+      const kl=new THREE.DirectionalLight(0xfff2dd,1.9);kl.position.set(-2,6,2.5);bs.add(kl);
+      bs.environment=makeEnv(br);bs.environmentIntensity=.55;
       const oc=new THREE.OrthographicCamera(-SZ/2/PU,SZ/2/PU,SZ/2/PU,-SZ/2/PU,.1,20);
       oc.position.set(0,8,0);oc.up.set(0,0,-1);oc.lookAt(0,0,0);
       const sprites=[];
@@ -544,7 +557,7 @@
         const q=new Q();
         if(best)q.setFromUnitVectors(new V3(...best.n).normalize(),new V3(0,1,0));
         q.premultiply(new Q().setFromAxisAngle(new V3(0,1,0),Math.random()*Math.PI*2));
-        const m=new THREE.Mesh(b.mesh.geometry,[skinMat,capMat]);m.quaternion.copy(q);bs.add(m);
+        const m=new THREE.Mesh(b.mesh.geometry,meshMats);m.quaternion.copy(q);bs.add(m);
         // centre the piece's bounding box under the camera so the sprite fits
         m.position.set(0,0,0);
         br.clear();br.render(bs,oc);
