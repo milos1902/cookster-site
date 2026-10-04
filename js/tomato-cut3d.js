@@ -1,4 +1,4 @@
-/* Cookster - 3D tomato cutting.
+/* Cookster - 3D vegetable cutting (tomato, onion).
    The tomato is a real 3D solid. A knife stroke on the screen defines a plane (through the camera and the stroke); every
    piece that plane crosses is sliced into two closed solids, the cut faces are filled with the inside of the tomato, and each
    new piece becomes a rigid body: it is pushed apart, falls onto the board and rocks to a stop.
@@ -8,6 +8,11 @@
   const SNAP={w:300,h:237};
   let T=null,active=null;
   const RX=1,RY=.84;
+  // per-vegetable settings: shape, textures, the pictures of the inside, and (onion) the peeling step
+  const VEG={
+    paradajz:{shape:'tomato',label:'paradaja',skin:'assets/market_veg/paradajz_koza.webp',caps:['paradajz_presek_1','paradajz_presek_2','paradajz_presek_3'],calyx:true,fill:'#d9301c',capFill:'#c9281a',tile:2,rough:.45,clear:.3},
+    luk:{shape:'onion',label:'luka',skin:'assets/market_veg/luk_koza.webp',caps:['luk_presek_1','luk_presek_2'],calyx:false,fill:'#f3e3b4',capFill:'#f0e0b0',tile:2,rough:.5,clear:.2,mirror:true,peel:true,peelPile:'assets/market_veg/luk_kora.webp'}
+  };
 
   function webglOK(){
     try{const c=document.createElement('canvas');return !!(c.getContext('webgl2')||c.getContext('webgl'));}catch(_){return false;}
@@ -22,7 +27,7 @@
   const lerpV=(a,b,k)=>{const o=new Array(8);for(let i=0;i<8;i++)o[i]=a[i]+(b[i]-a[i])*k;
     const l=Math.hypot(o[5],o[6],o[7])||1;o[5]/=l;o[6]/=l;o[7]/=l;return o;};
 
-  function tomatoTris(){
+  function vegTris(shape){
     const {SphereGeometry}=T;
     const geo=new SphereGeometry(1,112,80);
     const pos=geo.attributes.position;
@@ -30,6 +35,15 @@
     for(let i=0;i<pos.count;i++){
       let x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
       const ang=Math.atan2(z,x),r=Math.hypot(x,z);
+      if(shape==='onion'){
+        // a bulb: round and wide low down, narrowing to a pointed neck on top, flat base with a tiny root dimple
+        const rs=1-.5*Math.pow(sm(.15,1,y),1.5);
+        x*=rs*1.05;z*=rs*1.05;
+        let yy=y>0?y*.82+.2*Math.pow(sm(.5,1,y),2):y*.76;
+        if(y<-.8)yy+=.04*sm(-.8,-1,y);
+        pos.setXYZ(i,x,yy,z);
+        continue;
+      }
       const lobe=1+.022*Math.cos(ang*5+.4)*Math.sin(Math.min(1,Math.abs(y)*1.1+.15)*Math.PI*.9)*(1-.5*Math.abs(y));
       x*=lobe;z*=lobe;
       let yy=y*RY;
@@ -140,10 +154,15 @@
     if(!webglOK())return false;
     try{await loadThree();}catch(_){return false;}
     const THREE=T;
+    const cfg=VEG[el.dataset.vegKey]||VEG.paradajz;
+    const elRect=el.getBoundingClientRect();
+    const peelSrc=(el.querySelector('.body')||{}).src||def.src;
+    const pileImg=cfg.peelPile?await loadImg(cfg.peelPile).catch(()=>null):null;
     const [capImgs,skinImg,boardImg]=await Promise.all([
-      Promise.all([1,2,3].map(i=>loadImg('assets/market_veg/paradajz_presek_'+i+'.webp').catch(()=>null))),
-      loadImg('assets/market_veg/paradajz_koza.webp').catch(()=>null),
+      Promise.all(cfg.caps.map(n=>loadImg('assets/market_veg/'+n+'.webp').catch(()=>null))),
+      loadImg(cfg.skin).catch(()=>null),
       loadImg('assets/new_props/daska.png').catch(()=>null)]);
+    let peeled=!cfg.peel;
 
     // ---------- DOM ----------
     const root=document.createElement('div');
@@ -153,7 +172,7 @@
     const trail=document.createElement('canvas');trail.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none';
     const hint=document.createElement('div');
     hint.style.cssText='position:fixed;left:50%;bottom:14px;transform:translateX(-50%);color:#fff3d6;font:15px system-ui,sans-serif;text-shadow:0 1px 3px #000;text-align:center;max-width:90vw';
-    hint.textContent='Levi klik i povuci nož preko paradajza · desni klik i povuci = okreni paradajz · E = gotovo, daska se vraća na sto';
+    hint.textContent=cfg.peel?'Luk sa korom ne može da se seče: klikni „Očisti luk“. E = vrati dasku na sto.':'Levi klik i povuci nož preko '+cfg.label+' · desni klik i povuci = okreni · E = gotovo, daska se vraća na sto';
     for(const ev of ['pointerdown','pointerup','pointermove','mousedown','mouseup','mousemove','click','dblclick','touchstart','touchmove','touchend','contextmenu','wheel'])
       root.addEventListener(ev,e=>{e.stopPropagation();if(ev==='contextmenu')e.preventDefault();});
     // the board is the game's own picture, flat behind the 3D canvas; the stage (picture + canvas) moves as one
@@ -200,14 +219,18 @@
     // skin: the painted skin texture you made, wrapped round the tomato
     const skinTex=(()=>{
       const c=document.createElement('canvas');c.width=1024;c.height=512;const g=c.getContext('2d');
-      g.fillStyle='#d9301c';g.fillRect(0,0,1024,512);
-      if(skinImg){g.drawImage(skinImg,0,0,512,512);g.drawImage(skinImg,512,0,512,512);}   // two tiles side by side round the equator
+      g.fillStyle=cfg.fill;g.fillRect(0,0,1024,512);
+      if(skinImg){
+        if(cfg.mirror){      // pole to pole stripes: draw the picture and its mirror image next to each other, so there is no seam
+          g.drawImage(skinImg,0,0,512,512);g.save();g.translate(1024,0);g.scale(-1,1);g.drawImage(skinImg,0,0,512,512);g.restore();
+        }else{g.drawImage(skinImg,0,0,512,512);g.drawImage(skinImg,512,0,512,512);}
+      }
       const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=THREE.RepeatWrapping;t.anisotropy=8;return t;})();
-    const skinMat=new THREE.MeshPhysicalMaterial({map:skinTex,roughness:.45,clearcoat:.3,clearcoatRoughness:.3});
+    const skinMat=new THREE.MeshPhysicalMaterial({map:skinTex,roughness:cfg.rough,clearcoat:cfg.clear,clearcoatRoughness:.3});
     // inside: one of your three cross-section pictures per cut (skin ring on the edge, flesh and seeds inside)
-    const capMats=[0,1,2].map(i=>{
+    const capMats=capImgs.map((_,i)=>{
       const c=document.createElement('canvas');c.width=c.height=512;const g=c.getContext('2d');
-      g.fillStyle='#c9281a';g.fillRect(0,0,512,512);
+      g.fillStyle=cfg.capFill;g.fillRect(0,0,512,512);
       const im=capImgs[i];if(im)g.drawImage(im,0,0,512,512);
       const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;
       return new THREE.MeshPhysicalMaterial({map:t,roughness:.45,clearcoat:.35,clearcoatRoughness:.3});
@@ -246,8 +269,8 @@
     // ---------- pieces ----------
     const pieces=[];
     function geoOf(tris,com){
-      const groups=[[],[],[],[]];                 // 0 skin, 1..3 cut faces (picture 1..3)
-      for(const t of tris)groups[t.cap?1+(t.cap%3):0].push(t);
+      const groups=[[]];for(let i=0;i<capImgs.length;i++)groups.push([]);   // 0 skin, 1..n cut faces (one per picture)
+      for(const t of tris)groups[t.cap?1+(t.cap%capImgs.length):0].push(t);
       const all=[].concat(...groups),n=all.length*3;
       const P=new Float32Array(n*3),U=new Float32Array(n*2),N=new Float32Array(n*3);
       let k=0;
@@ -281,12 +304,16 @@
       }
       return b;
     }
-    // the whole tomato rests on the board
-    {
-      const tris=tomatoTris();
-      addPiece(tris,new THREE.Vector3(0,0,0),new THREE.Quaternion(),new THREE.Vector3(),new THREE.Vector3(),[0,.64,0]);
-      pieces[0].pos.y=FLOOR+.756+0;pieces[0].mesh.position.copy(pieces[0].pos);
+    // the whole vegetable rests on the board (an onion first shows as the 2D picture with its peel, see below)
+    function placeWhole(drop){
+      const tris=vegTris(cfg.shape);
+      let low=1e9;for(const t of tris)for(const v of t.v)low=Math.min(low,v[1]);
+      addPiece(tris,new THREE.Vector3(0,0,0),new THREE.Quaternion(),new THREE.Vector3(),new THREE.Vector3(),cfg.calyx?[0,.64,0]:null);
+      const b=pieces[pieces.length-1];
+      b.pos.y=FLOOR-(low-b.com[1])+(drop||0);b.mesh.position.copy(b.pos);
+      if(drop)b.asleep=false;
     }
+    if(!cfg.peel)placeWhole(0);
 
     // ---------- cutting ----------
     let cuts=0;
@@ -418,13 +445,29 @@
       const ox=(o.x+1)/2*lo.W,oy=(1-o.y)/2*lo.H;
       camera.setViewOffset(lo.W,lo.H,ox-tx,oy-ty,lo.W,lo.H);
     }
+    // the onion with its peel: the game's own 2D picture, exactly where the onion lay on the board, growing with the board
+    let peelImg=null,peelBtn=null;
+    if(cfg.peel){
+      peelImg=document.createElement('img');peelImg.src=peelSrc;peelImg.draggable=false;
+      peelImg.style.cssText='position:absolute;pointer-events:none;user-select:none;filter:drop-shadow(0 6px 8px rgba(40,18,4,.35))';
+      stage.insertBefore(peelImg,cv);
+    }
+    function placePeel(){
+      if(!peelImg)return;
+      const lo=layout(),br=(cb.board||el).getBoundingClientRect();
+      const sc=Math.max(.05,br.width/lo.Wf),cx=lo.W/2,cy=lo.H/2,px=lo.L+lo.Wf/2,py=lo.T+lo.Hf/2;
+      const dx=(br.left+br.width/2)-cx-sc*(px-cx),dy=(br.top+br.height/2)-cy-sc*(py-cy);
+      const toL=(x,y)=>({x:cx+(x-cx-dx)/sc,y:cy+(y-cy-dy)/sc});
+      const a=toL(elRect.left,elRect.top);
+      Object.assign(peelImg.style,{left:a.x+'px',top:a.y+'px',width:(elRect.width/sc)+'px',height:(elRect.height/sc)+'px'});
+    }
     function boardTransform(){
       const lo=layout(),r=(cb.board||el).getBoundingClientRect();
       const sc=Math.max(.05,r.width/lo.Wf),cx=lo.W/2,cy=lo.H/2,px=lo.L+lo.Wf/2,py=lo.T+lo.Hf/2;
       const dx=(r.left+r.width/2)-cx-sc*(px-cx),dy=(r.top+r.height/2)-cy-sc*(py-cy);
       return `translate(${dx}px,${dy}px) scale(${sc})`;
     }
-    const resize=()=>{const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();trail.width=w;trail.height=h;fitCamera();};
+    const resize=()=>{const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();trail.width=w;trail.height=h;fitCamera();placePeel();};
     addEventListener('resize',resize);resize();
     // start: the canvas sits exactly over the board in the game, then grows to full size while the background blurs
     stage.style.transform=boardTransform();
@@ -434,6 +477,29 @@
       root.style.background='rgba(18,9,3,.4)';root.style.backdropFilter=root.style.webkitBackdropFilter='blur(9px)';
       setTimeout(()=>{ready=true;},ANIM_MS);
     }));
+    // peeling: the picture with the peel turns into the 3D peeled onion at once (no animation, just a sound)
+    function peelNow(){
+      if(peeled||!ready)return;
+      peeled=true;
+      try{cb.onPeelSound&&cb.onPeelSound();}catch(_){}
+      if(peelImg){peelImg.remove();peelImg=null;}
+      if(pileImg){   // the discarded peel lies on the board for about 5 seconds, then fades away
+        const lo=layout(),w=lo.Wf*.2,h=w*pileImg.height/pileImg.width;
+        const pe=document.createElement('img');pe.src=pileImg.src;pe.draggable=false;
+        pe.style.cssText='position:absolute;pointer-events:none;user-select:none;opacity:0;transition:opacity .25s;filter:drop-shadow(0 5px 6px rgba(40,18,4,.35));left:'+(lo.L+lo.Wf*.72-w/2)+'px;top:'+(lo.T+lo.Hf*.62-h/2)+'px;width:'+w+'px;height:'+h+'px;transform:rotate(-8deg)';
+        stage.insertBefore(pe,cv);
+        requestAnimationFrame(()=>{pe.style.opacity='1';});
+        setTimeout(()=>{pe.style.transition='opacity .8s';pe.style.opacity='0';setTimeout(()=>pe.remove(),900);},5000);
+      }
+      if(peelBtn){peelBtn.remove();peelBtn=null;}
+      placeWhole(.12);
+      hint.textContent='Levi klik i povuci nož preko '+cfg.label+' · desni klik i povuci = okreni · E = gotovo, daska se vraća na sto';
+    }
+    if(cfg.peel){
+      peelBtn=document.createElement('button');peelBtn.textContent='Očisti luk';
+      peelBtn.style.cssText='position:fixed;left:50%;top:18px;transform:translateX(-50%);font:600 17px system-ui,sans-serif;padding:10px 22px;border-radius:12px;border:2px solid #4a2a12;background:#f1d9a6;color:#3b1d0a;cursor:pointer;z-index:2;box-shadow:0 3px 8px rgba(0,0,0,.35)';
+      peelBtn.onclick=peelNow;root.appendChild(peelBtn);
+    }
 
     // ---------- input: a straight knife stroke from where the drag started to the pointer, glowing ribbon like the 2D version ----------
     const tg=trail.getContext('2d');
@@ -494,7 +560,7 @@
     const toRay=p=>{const nd=new V3((p.x/innerWidth)*2-1,-(p.y/innerHeight)*2+1,.5).unproject(camera);return nd.sub(camera.position).normalize();};
     cv.addEventListener('contextmenu',e=>e.preventDefault());
     cv.addEventListener('pointerdown',e=>{
-      if(!ready)return;
+      if(!ready||!peeled)return;
       cv.setPointerCapture(e.pointerId);
       if(e.button===2){orbit={x:e.clientX,y:e.clientY};return;}
       if(e.button===0){stroke={id:++strokeId,start:pt(e),cut:false};trailPts.push({x:e.clientX,y:e.clientY,t:performance.now()});}
@@ -610,7 +676,7 @@
 
     // leaving: the board goes back to its place on the table (0.2 s) and the background sharpens again
     function close(){
-      if(closed)return;closed=true;cancelAnimationFrame(raf);ready=false;
+      if(closed)return;closed=true;cancelAnimationFrame(raf);ready=false;if(peelBtn)peelBtn.style.display='none';
       removeEventListener('resize',resize);document.removeEventListener('keydown',onKey,true);
       stage.style.transition='transform '+ANIM_MS+'ms cubic-bezier(.5,0,.8,.3)';stage.style.transform=boardTransform();
       root.style.background='rgba(18,9,3,0)';root.style.backdropFilter=root.style.webkitBackdropFilter='blur(0px)';
@@ -620,7 +686,7 @@
     // the loop keeps drawing during the going-back animation
     function finish(){
       if(closed||!ready)return;
-      if(!cuts){cancel();return;}
+      if(!peeled||!cuts){cancel();return;}
       const baked=bake();
       if(baked)cb.onDone(baked.heap,baked.atlas);
       close();
@@ -637,7 +703,7 @@
   }
 
   window.CooksterTomatoCut3D={
-    supports(el){return !!el&&el.dataset.vegKey==='paradajz'&&(el.dataset.cutState||'whole')==='whole'&&webglOK();},
+    supports(el){return !!el&&!!VEG[el.dataset.vegKey||'']&&(el.dataset.cutState||'whole')==='whole'&&webglOK();},
     start
   };
 })();

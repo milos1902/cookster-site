@@ -2374,7 +2374,7 @@ function produceSoundTarget(isFruit,key,label){
  const id=(isFruit?'fruit_':'veg_')+key;
  if(!produceSoundTargets[id]){
   const t=makeSoundTarget(id,`${isFruit?'Voće':'Povrće'} — ${label||key}`,'');
-  t.dataset.soundActions='cut,putIn';t.dataset.soundGroup='produce';
+  t.dataset.soundActions='cut,putIn,peel';t.dataset.soundGroup='produce';
   produceSoundTargets[id]=t;
  }
  return produceSoundTargets[id];
@@ -2413,6 +2413,7 @@ function resolvedImpactConfig(el,action='drop'){
  else if(action==='hover'){sound='';volume=.25;}
  else if(action==='cut'){sound='tomatoChop';volume=.78;}
  else if(action==='putIn'){sound='metalDrop';volume=.18;}
+ else if(action==='peel'){sound='pickup';volume=.35;}
  else if(action==='open'||action==='close'){
    const door=el===fireboxHotspot||el===ovenHotspot;
    if(door)sound=action==='open'?'stoveDoorOpen':'stoveDoorClose';
@@ -2539,7 +2540,7 @@ ssStyle.textContent=`
 document.head.appendChild(ssStyle);
 
 /* --- state --- */
-const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta']];
+const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta']];
 const ssState={open:false,tab:'objekti',action:'drop',query:'',libQuery:'',libOpen:false};
 
 /* --- helpers (reuse ls* from light-studio) --- */
@@ -2730,7 +2731,7 @@ ssControls.push(()=>{
  const el=ssSel(),acts=el?ssObjActions(el):[];
  for(const [v,b] of ssActionBtns){
   const supported=el?.dataset?.soundActions?.split(',');
-  b.hidden=supported?!supported.includes(v):el?.dataset?.soundAction?v!==el.dataset.soundAction:(['click','insert','cut','putIn','pageTurn','water','hover'].includes(v));
+  b.hidden=supported?!supported.includes(v):el?.dataset?.soundAction?v!==el.dataset.soundAction:(['click','insert','cut','peel','putIn','pageTurn','water','hover'].includes(v));
   b.setAttribute('aria-pressed',v===ssState.action?'true':'false');
   b.dataset.has=acts.includes(v)?'true':'false';
  }
@@ -13839,7 +13840,7 @@ function beginCutAction(){
  if(window.CooksterTomatoCut?.supports(target)){
    const def=VEGETABLES[target.dataset.vegKey]||{};
    if(def.src&&def.slicedSrc){
-     const cutCallbacks={board,onCutSound(){playImpactSound(vegSoundTarget(target),'cut');},onDone(src,atlas){
+     const cutCallbacks={board,onCutSound(){playImpactSound(vegSoundTarget(target),'cut');},onPeelSound(){playImpactSound(vegSoundTarget(target),'peel');},onDone(src,atlas){
        showToast(setVegetableDiced(target));
        if(atlas)target.dataset.pieceAtlas=atlas;
        const body=target.querySelector('.body');if(body)body.src=src;
