@@ -6,14 +6,14 @@
    pulls are "asleep" and keep their place; pulling an end wakes them one by one, like pulling a rope out of a coil. */
 (function(){
   'use strict';
-  const N=40,SEG=27,W=11;                           // points, length of one piece, thickness (scene pixels)
+  const N=40,SEG=27,W=17,TH=17;                           // points, length of one piece, thickness (scene pixels)
   const LEN=(N-1)*SEG;
   const TAP={x:1482,y:116};                         // where the tap's spout is (scene coordinates)
   const TAP_FIT=50;                                 // an end let go within this distance snaps to the tap
   const COIL={x:960,y:194};                         // centre of the coil on the floor
   const SQ=.34;                                      // the coil is squashed because of the camera angle
   const RES=1.5,G=2600,DAMP=.945,STEP=1/90;
-  const FILL_PER_SEC=5;                             // percent of the barrel per second
+  const FILL_PER_SEC=5,POUR_H=95;                             // percent of the barrel per second
   let scene=null,cv=null,cx=null;
   let P=[];                                         // {x,y,px,py,asleep}
   const ends=[{mode:'floor',floor:0},{mode:'floor',floor:0}];   // per end: 'floor' | 'tap' | 'held'
@@ -76,14 +76,7 @@
     if(!free.length)return -1;
     return free.length===1?free[0]:near;           // clicked the middle: the end that is not on the tap
   }
-  function floorY(){
-    let f=0;
-    for(let e=0;e<2;e++){
-      const m=ends[e];
-      f=Math.max(f,m.mode==='held'?hand.y+14:m.mode==='floor'?m.floor:0);
-    }
-    return f||P[0].y+14;
-  }
+  const floorY=()=>930;                              // no floor under the hose: it hangs by its weight wherever the ends are, only the bottom of the screen stops it
 
   // ---------- physics ----------
   function wake(p){if(p.asleep){p.asleep=false;p.px=p.x;p.py=p.y;}}
@@ -94,10 +87,12 @@
       const p=P[idxOf(e)],m=ends[e];
       if(m.mode==='held'){wake(p);const k=.2;p.x+=(hand.x-p.x)*k;p.y+=(hand.y-p.y)*k;p.px=p.x;p.py=p.y;}   // the heavy hose lags a little behind the hand
       else if(m.mode==='tap'){p.x=p.px=TAP.x;p.y=p.py=TAP.y;p.asleep=false;}
+      else if(m.mode==='drop'){p.x=p.px=m.x;p.y=p.py=m.y;p.asleep=false;}   // an end let go in mid-air stays where it was put
     }
     const fixed=(p,i)=>{
-      if(i===0&&(ends[0].mode==='held'||ends[0].mode==='tap'))return true;
-      if(i===N-1&&(ends[1].mode==='held'||ends[1].mode==='tap'))return true;
+      const fx=m=>m==='held'||m==='tap'||m==='drop';
+      if(i===0&&fx(ends[0].mode))return true;
+      if(i===N-1&&fx(ends[1].mode))return true;
       return false;
     };
     let speed=0,awake=0;
@@ -154,6 +149,73 @@
     cx.setLineDash(dash||[]);cx.lineDashOffset=dashOff||0;
     path(from===undefined?0:from,to===undefined?N-1:to);cx.stroke();cx.restore();
   }
+  // ---------- picture of the hose ----------
+  const IMG=new Image();IMG.src='assets/calibration_props/crevo/crevo.webp';
+  IMG.onload=()=>{dirty=true;if(cx)frameDraw(performance.now());};
+  const BODY={x:200,w:850,y:24,h:108},FIT_F={x:0,w:172},FIT_M={x:1078,w:164},IMG_H=153;
+  const SC=TH/BODY.h,ST=4;
+  function dense(){                                 // the smooth curve through the chain, as points 4 px apart: {x,y,a,s}
+    const raw=[{x:P[0].x,y:P[0].y}];
+    let prev={x:P[0].x,y:P[0].y};
+    for(let i=1;i<N;i++){
+      const a=P[i-1],m={x:(a.x+P[i].x)/2,y:(a.y+P[i].y)/2};
+      for(let k=1;k<=4;k++){
+        const t=k/4,u=1-t;
+        raw.push({x:u*u*prev.x+2*u*t*a.x+t*t*m.x,y:u*u*prev.y+2*u*t*a.y+t*t*m.y});
+      }
+      prev=m;
+    }
+    raw.push({x:P[N-1].x,y:P[N-1].y});
+    const out=[];let carry=0,len=0;
+    out.push({x:raw[0].x,y:raw[0].y,s:0});
+    for(let i=1;i<raw.length;i++){
+      let ax=raw[i-1].x,ay=raw[i-1].y;const bx=raw[i].x,by=raw[i].y;
+      let d=Math.hypot(bx-ax,by-ay);
+      while(carry+d>=ST&&d>0){
+        const t=(ST-carry)/d;ax+=(bx-ax)*t;ay+=(by-ay)*t;d=Math.hypot(bx-ax,by-ay);
+        len+=ST;out.push({x:ax,y:ay,s:len});carry=0;
+      }
+      carry+=d;
+    }
+    for(let i=0;i<out.length;i++){
+      const a=out[Math.max(0,i-1)],b=out[Math.min(out.length-1,i+1)];
+      out[i].a=Math.atan2(b.y-a.y,b.x-a.x);
+    }
+    return out;
+  }
+  function drawBody(){
+    if(!IMG.complete||!IMG.naturalWidth){stroke('#3f9650',TH);return;}
+    const pts=dense(),sw=ST/SC+.9,wrap=BODY.w-sw;
+    for(const q of pts){
+      const c=Math.cos(q.a),sn=Math.sin(q.a),flip=c<0;
+      const sx=BODY.x+((q.s/SC)%wrap);
+      // keep the light coming from above: strips that run leftwards are drawn turned round
+      const k=flip?-1:1;
+      cx.setTransform(RES*c*k,RES*sn*k,-RES*sn*k,RES*c*k,RES*q.x,RES*q.y);
+      if(flip)cx.drawImage(IMG,sx,BODY.y,sw,BODY.h,-ST-.4,-TH/2,ST+.9,TH);
+      else cx.drawImage(IMG,sx,BODY.y,sw,BODY.h,-.4,-TH/2,ST+.9,TH);
+    }
+    cx.setTransform(RES,0,0,RES,0,0);
+  }
+  function endDir(e){
+    const a=P[idxOf(e)],b=P[e===0?2:N-3];
+    return Math.atan2(a.y-b.y,a.x-b.x);              // pointing out of the hose
+  }
+  function tipOf(e){                                 // where the water comes out
+    const p=P[e===0?0:N-1],a=endDir(e),L=(e===0?FIT_F.w:FIT_M.w)*SC;
+    return{x:p.x+Math.cos(a)*L*.65,y:p.y+Math.sin(a)*L*.65};
+  }
+  function drawFitting(e){
+    if(!IMG.complete||!IMG.naturalWidth)return;
+    const p=P[idxOf(e)],a=endDir(e),c=Math.cos(a),sn=Math.sin(a),flip=c<0;
+    const src=e===0?FIT_F:FIT_M,L=src.w*SC,H=IMG_H*SC;
+    cx.setTransform(RES*c,RES*sn,-RES*sn,RES*c,RES*p.x,RES*p.y);
+    cx.translate(L*.65,0);
+    if(flip)cx.scale(1,-1);
+    if(e===0){cx.scale(-1,1);cx.drawImage(IMG,src.x,0,src.w,IMG_H,0,-H/2,L,H);}
+    else{cx.translate(-L,0);cx.drawImage(IMG,src.x,0,src.w,IMG_H,0,-H/2,L,H);}
+    cx.setTransform(RES,0,0,RES,0,0);
+  }
   function frameDraw(now){
     cx.setTransform(RES,0,0,RES,0,0);
     cx.clearRect(0,0,cv.width/RES,cv.height/RES);
@@ -169,40 +231,30 @@
       const near=Math.hypot(hand.x-TAP.x,hand.y-TAP.y)<TAP_FIT&&!ends.some(m=>m.mode==='tap');
       if(near){cx.save();cx.strokeStyle='rgba(255,255,255,.9)';cx.lineWidth=2.5;cx.setLineDash([5,4]);cx.beginPath();cx.arc(TAP.x,TAP.y,16,0,Math.PI*2);cx.stroke();cx.restore();}
     }
-    // hose: shadow, outline, body, ribs, highlight
-    stroke('rgba(0,0,0,.13)',W+6,5,9);
-    stroke('rgba(0,0,0,.20)',W+2,3,6);
-    stroke('#17381f',W+2.4);
-    stroke('#3f9650',W);
-    stroke('rgba(10,40,18,.28)',W,0,0,0,N-1,[1.6,5.4]);
-    stroke('#97dba3',3,-1.6,-1.8);
-    stroke('rgba(255,255,255,.22)',1.3,-2.2,-2.6);
-    // water running inside the hose
+    // hose: shadow, then the picture of the hose (body strips + the two brass couplings), then the water inside
+    stroke('rgba(0,0,0,.13)',TH+6,5,9);
+    stroke('rgba(0,0,0,.20)',TH+2,3,6);
+    drawBody();
     const tapEnd=ends[0].mode==='tap'?0:ends[1].mode==='tap'?1:-1;
     if(tapEnd>=0&&flow>0){
       const reach=Math.max(1,Math.round(flow*(N-1)));
       const from=tapEnd===0?0:N-1-reach,to=tapEnd===0?reach:N-1;
       const off=tapEnd===0?-now/35:now/35;
-      stroke('rgba(120,205,255,.62)',5.2,0,0,from,to,[9,11],off);
-      stroke('rgba(235,250,255,.55)',1.8,-.6,-.8,from,to,[5,15],off*1.3);
+      stroke('rgba(150,222,255,.5)',5.2,0,0,from,to,[9,11],off);
+      stroke('rgba(240,252,255,.5)',1.8,-.6,-.8,from,to,[5,15],off*1.3);
     }
-    // the two openings
-    for(let e=0;e<2;e++){
-      const p=P[idxOf(e)];
-      cx.fillStyle='#10281a';cx.beginPath();cx.arc(p.x,p.y,W*.58,0,Math.PI*2);cx.fill();
-      cx.fillStyle='#050d08';cx.beginPath();cx.arc(p.x,p.y,W*.34,0,Math.PI*2);cx.fill();
-    }
+    drawFitting(0);drawFitting(1);
     // the stream
     const out=freeEnd();
-    if(out>=0&&flow>=.995){
-      const p=P[idxOf(out)],land=landing(p);
-      const x=p.x+Math.sin(now/90)*.8,len=Math.max(8,land.y-p.y);
-      const gr=cx.createLinearGradient(0,p.y,0,p.y+len);
+    if(out>=0&&flow>=.995&&!landing(P[idxOf(out)]).inside){
+      const p=P[idxOf(out)],land=landing(p),tip=tipOf(out);
+      const x=tip.x+Math.sin(now/90)*.8,len=Math.max(8,land.y-tip.y);
+      const gr=cx.createLinearGradient(0,tip.y,0,tip.y+len);
       gr.addColorStop(0,'rgba(190,232,252,.95)');gr.addColorStop(1,'rgba(150,215,245,.78)');
       cx.save();cx.lineCap='round';
-      cx.strokeStyle=gr;cx.lineWidth=7;cx.beginPath();cx.moveTo(x,p.y+2);cx.lineTo(x+Math.sin(now/130)*.6,land.y);cx.stroke();
+      cx.strokeStyle=gr;cx.lineWidth=7;cx.beginPath();cx.moveTo(x,tip.y+2);cx.lineTo(x+Math.sin(now/130)*.6,land.y);cx.stroke();
       cx.strokeStyle='rgba(255,255,255,.85)';cx.lineWidth=2;cx.setLineDash([7,9]);cx.lineDashOffset=-now/9;
-      cx.beginPath();cx.moveTo(x-1.4,p.y+2);cx.lineTo(x-1.4,land.y);cx.stroke();
+      cx.beginPath();cx.moveTo(x-1.4,tip.y+2);cx.lineTo(x-1.4,land.y);cx.stroke();
       cx.setLineDash([]);
       // splash at the bottom
       for(let k=0;k<7;k++){
@@ -222,8 +274,33 @@
   }
   function landing(p){
     const o=window.CooksterKaca&&CooksterKaca.openingAt(p.x,p.y);
-    if(o&&!o.closed&&p.y<=o.y)return{y:o.y,barrel:o};
+    if(o&&!o.closed){
+      if(o.inside)return{y:p.y,barrel:o,inside:true};                    // the end is down in the barrel
+      if(p.y<=o.y&&o.y-p.y<=POUR_H)return{y:o.y,barrel:o};               // close above the opening: pours in
+    }
     return{y:p.y+56,barrel:null};
+  }
+  // the front of the barrel is drawn over the hose while an end is inside the barrel
+  let maskEl=null,maskImg=null,maskFor=null;
+  function updateMask(){
+    let o=null;
+    for(let e=0;e<2&&!o;e++){
+      const q=window.CooksterKaca&&CooksterKaca.openingAt(P[idxOf(e)].x,P[idxOf(e)].y);
+      if(q&&q.inside&&!q.closed)o=q;
+    }
+    if(!maskEl){
+      maskEl=document.createElement('div');maskEl.id='hoseBarrelMask';
+      maskEl.style.cssText='position:absolute;z-index:10401;pointer-events:none;display:none';
+      maskImg=document.createElement('img');maskImg.alt='';maskImg.draggable=false;
+      maskImg.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none';
+      maskEl.appendChild(maskImg);scene.appendChild(maskEl);
+    }
+    if(!o){maskEl.style.display='none';maskFor=null;return;}
+    const m=CooksterKaca.maskInfo(o.el);
+    maskEl.style.left=m.x+'px';maskEl.style.top=m.y+'px';maskEl.style.width=m.w+'px';maskEl.style.height=m.h+'px';
+    if(maskImg.getAttribute('src')!==m.src)maskImg.src=m.src;
+    maskImg.style.clipPath=maskImg.style.webkitClipPath='polygon('+m.poly+')';
+    maskEl.style.display='block';maskFor=o.el;
   }
 
   // ---------- main loop ----------
@@ -281,7 +358,7 @@
     for(const q of puddles){if(!q.live)q.a-=dt*.22;}
     puddles=puddles.filter(q=>q.a>0);
     const active=moving||heldNow||flow>0||puddles.length>0||prev!==flow;
-    frameDraw(t);
+    frameDraw(t);updateMask();
     if(active)requestAnimationFrame(loop);else{running=false;}
   }
   function kick(){if(!running){running=true;lastT=performance.now();requestAnimationFrame(loop);}}
@@ -290,10 +367,12 @@
   function inScene(e){return !!(e.target&&e.target.closest&&e.target.closest('#scene'));}
   function setHand(e){const s=sceneOf(e.clientX,e.clientY);hand.x=Math.max(8,Math.min(1664,s.x));hand.y=Math.max(8,Math.min(930,s.y));
     // while the other end is on the tap the hose can only reach so far
-    const tapEnd=ends[0].mode==='tap'?0:ends[1].mode==='tap'?1:-1;
-    if(tapEnd>=0){
-      const dx=hand.x-TAP.x,dy=hand.y-TAP.y,d=Math.hypot(dx,dy),m=LEN*.985;
-      if(d>m){hand.x=TAP.x+dx/d*m;hand.y=TAP.y+dy/d*m;}
+    for(let e=0;e<2;e++){
+      const m=ends[e];
+      if(m.mode!=='tap'&&m.mode!=='drop')continue;
+      const ax=m.mode==='tap'?TAP.x:m.x,ay=m.mode==='tap'?TAP.y:m.y;
+      const dx=hand.x-ax,dy=hand.y-ay,d=Math.hypot(dx,dy),lim=LEN*.985;
+      if(d>lim){hand.x=ax+dx/d*lim;hand.y=ay+dy/d*lim;}
     }
   }
   function release(){
@@ -306,7 +385,7 @@
         try{showToast('Crevo je na slavini. Klikni na slavinu da pustiš vodu.');}catch(_){}
       }
     }else{
-      ends[e]={mode:'floor',floor:hand.y+14};
+      ends[e]={mode:'drop',x:hand.x,y:hand.y};p.x=p.px=hand.x;p.y=p.py=hand.y;
     }
     held=null;settleT=0;calm=0;settled=false;
     kick();

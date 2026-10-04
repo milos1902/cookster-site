@@ -286,12 +286,19 @@
       for(const el of (window.items||items)){
         if(!isKaca(el)||el===holding)continue;
         const r=el.getBoundingClientRect();
-        const w=visWater(el)/100,sy=r.top+r.height*(.25+(1-w)*.05);   // water surface inside the opening
-        if(sp.x<r.left+r.width*.2||sp.x>r.right-r.width*.2||sp.y>sy)continue;
-        const surf=screenToScene(sp.x,sy);
-        return{el,y:surf.y,closed:el.dataset.kacaLid==='1',full:num(el,'kacaWater')>=100};
+        const w=visWater(el)/100,sy2=r.top+r.height*(.25+(1-w)*.05);   // water surface inside the opening
+        if(sp.x<r.left+r.width*.22||sp.x>r.right-r.width*.22)continue;
+        const inside=sp.y>=r.top+r.height*.08&&sp.y<=r.top+r.height*.58;   // the end went down into the barrel (the front hides it)
+        if(!inside&&sp.y>sy2)continue;
+        const surf=screenToScene(sp.x,sy2);
+        return{el,y:surf.y,closed:el.dataset.kacaLid==='1',full:num(el,'kacaWater')>=100,inside};
       }
       return null;
+    },
+    // the front of the barrel (a picture clipped to the front polygon) so that something put into the barrel is covered by it
+    maskInfo(el){
+      const r=el.getBoundingClientRect(),a=screenToScene(r.left,r.top),b=screenToScene(r.right,r.bottom);
+      return{x:a.x,y:a.y,w:b.x-a.x,h:b.y-a.y,src:bodySrc(el),poly:FRONT_POLY};
     },
     addWater(el,amount){
       const w=Math.min(100,num(el,'kacaWater')+amount);
