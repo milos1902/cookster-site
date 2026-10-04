@@ -22,25 +22,6 @@
   const LID_LEFT=-34/527*100,LID_TOP=-50/560*100,LID_W=560*1.08/527*100,LID_H=558*1.08/560*100;
   // opening of the open barrel in the empty-barrel picture (527x560): centre (280,135), radii (195,55)
   const WATER_CX=280/527*100,WATER_CY=135/560*100,WATER_RX=195/527*100,WATER_RY=55/560*100;
-  // ---------- where the hose may be seen at the barrel (drawn by the user in the tool "Maska posude", % of the picture) ----------
-  const CAL_KEY='cookster.vessel-food-mask-calibration.v1';
-  const FRONT_PTS=[[0,558],[0,30],[126,30],[126,176],[150,210],[200,222],[250,229],[300,231],[350,229],[400,222],[440,210],[449,190],[449,30],[560,30],[560,558]]
-    .map(([x,y])=>({x:+toPx(x).toFixed(3),y:+toPy(y).toFixed(3)}));
-  const OPEN_PTS=Array.from({length:28},(_,i)=>{const a=i/28*Math.PI*2;return{x:+(280/527*100+195/527*100*Math.cos(a)).toFixed(3),y:+(135/560*100+55/560*100*Math.sin(a)).toFixed(3)};});
-  function hoseCal(){
-    let m=null;
-    try{m=JSON.parse(localStorage.getItem(CAL_KEY)||'null')?.vessels?.kaca_prazna||null;}catch(_){}
-    if(!m)m=window.__COOKSTER_KACA_HOSE__||null;
-    const ok=a=>Array.isArray(a)&&a.length>=3;
-    return{mask:ok(m?.mask)?m.mask:FRONT_PTS,visible:ok(m?.foodVisible)?m.foodVisible:OPEN_PTS};
-  }
-  function pip(poly,x,y){let ins=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])ins=!ins;}return ins;}
-  function bbox(poly){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const q of poly){x0=Math.min(x0,q[0]);x1=Math.max(x1,q[0]);y0=Math.min(y0,q[1]);y1=Math.max(y1,q[1]);}return{x0,y0,x1,y1};}
-  function hoseGeom(el){
-    const r=el.getBoundingClientRect(),a=screenToScene(r.left,r.top),b=screenToScene(r.right,r.bottom),W=b.x-a.x,H=b.y-a.y,cal=hoseCal();
-    const tr=pts=>pts.map(p=>[a.x+p.x/100*W,a.y+p.y/100*H]);
-    return{x:a.x,y:a.y,w:W,h:H,maskPct:cal.mask,visible:tr(cal.visible)};
-  }
   const depthRest=n=>((MAX-n)/MAX)*150/560*100;      // how deep the lid sits on n cabbages (percent of the barrel's height)
   const pressTravel=p=>p/100*38/560*100;             // and how much it goes down while pressing
 
@@ -297,34 +278,9 @@
   },{passive:true});
 
   window.CooksterKaca={
-    hoseDefaults:()=>({mask:FRONT_PTS,foodVisible:OPEN_PTS}),
     attach(el){if(isKaca(el)){build(el);refresh(el);}},
     refresh,
-    // the hose asks: is this scene point above the open barrel's opening? -> {el, y (scene y of the water surface), full}
-    // the hose asks (scene coordinates): is this point in an open barrel's visible area / just above its opening? -> {el, y (the water surface), closed, full, inside}
-    openingAt(sx,sy){
-      for(const el of (window.items||items)){
-        if(!isKaca(el)||el===holding)continue;
-        const g=hoseGeom(el);
-        const w=visWater(el)/100,surfY=g.y+g.h*(.25+(1-w)*.05);
-        const inside=pip(g.visible,sx,sy);
-        const bb=bbox(g.visible),mx=(bb.x1-bb.x0)*.1;
-        if(!inside&&!(sx>=bb.x0+mx&&sx<=bb.x1-mx&&sy<=surfY&&sy>=g.y-g.h*.4))continue;
-        return{el,y:surfY,closed:el.dataset.kacaLid==='1',full:num(el,'kacaWater')>=100,inside};
-      }
-      return null;
-    },
-    // areas where the hose may be seen even if something else (the table) would hide it: the inside of the open barrels
-    visibleAreas(){
-      const out=[];
-      for(const el of (window.items||items))if(isKaca(el)&&el!==holding&&el.dataset.kacaLid!=='1')out.push(hoseGeom(el).visible);
-      return out;
-    },
-    // the front of the barrel (a picture clipped to the mask polygon) so that the hose put into the barrel is covered by it
-    maskInfo(el){
-      const g=hoseGeom(el);
-      return{x:g.x,y:g.y,w:g.w,h:g.h,src:bodySrc(el),poly:g.maskPct.map(p=>`${(+p.x).toFixed(2)}% ${(+p.y).toFixed(2)}%`).join(',')};
-    },
+    // adds water to an open barrel (percent of the barrel); the water level is drawn inside the opening
     addWater(el,amount){
       const w=Math.min(100,num(el,'kacaWater')+amount);
       el.dataset.kacaWater=w.toFixed(2);refresh(el);showHud(el,1.5);return w;
