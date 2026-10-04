@@ -11,7 +11,7 @@
   // per-vegetable settings: shape, textures, the pictures of the inside, and (onion) the peeling step
   const VEG={
     paradajz:{shape:'tomato',label:'paradaja',skin:'assets/market_veg/paradajz_koza.webp',caps:['paradajz_presek_1','paradajz_presek_2','paradajz_presek_3'],calyx:true,fill:'#d9301c',capFill:'#c9281a',tile:2,rough:.45,clear:.3},
-    luk:{shape:'onion',label:'luka',skin:'assets/market_veg/luk_koza.webp',caps:['luk_presek_1','luk_presek_2'],calyx:false,fill:'#f3e3b4',capFill:'#f0e0b0',tile:2,rough:.5,clear:.2,mirror:true,peel:true,peelPile:'assets/market_veg/luk_kora.webp'}
+    luk:{shape:'onion',label:'luka',skin:'assets/market_veg/luk_koza.webp',caps:['luk_presek_1','luk_presek_2'],calyx:false,fill:'#f3e3b4',capFill:'#f0e0b0',tile:2,rough:.5,clear:.2,mirror:true,peel:true,peelPile:['luk_kora_1','luk_kora_2','luk_kora_3']}
   };
 
   function webglOK(){
@@ -157,7 +157,9 @@
     const cfg=VEG[el.dataset.vegKey]||VEG.paradajz;
     const elRect=el.getBoundingClientRect();
     const peelSrc=(el.querySelector('.body')||{}).src||def.src;
-    const pileImg=cfg.peelPile?await loadImg(cfg.peelPile).catch(()=>null):null;
+    // the peel that falls off: three pictures (ring round the onion / bunches left and right / a pile), one at random
+    const pileVariant=cfg.peelPile?Math.floor(Math.random()*cfg.peelPile.length):0;
+    const pileImg=cfg.peelPile?await loadImg('assets/market_veg/'+cfg.peelPile[pileVariant]+'.webp').catch(()=>null):null;
     const [capImgs,skinImg,boardImg]=await Promise.all([
       Promise.all(cfg.caps.map(n=>loadImg('assets/market_veg/'+n+'.webp').catch(()=>null))),
       loadImg(cfg.skin).catch(()=>null),
@@ -484,9 +486,14 @@
       try{cb.onPeelSound&&cb.onPeelSound();}catch(_){}
       if(peelImg){peelImg.remove();peelImg=null;}
       if(pileImg){   // the discarded peel lies on the board for about 5 seconds, then fades away
-        const lo=layout(),w=lo.Wf*.2,h=w*pileImg.height/pileImg.width;
+        const lo=layout();
+        // where and how big: 0 ring round the onion, 1 bunches either side of it, 2 a pile beside it
+        let cx=lo.L+lo.Wf*.5,cy=lo.T+lo.Hf*.47,w=lo.Wf*.62;
+        if(pileVariant===1){w=lo.Wf*.78;cy=lo.T+lo.Hf*.5;}
+        else if(pileVariant===2){w=lo.Wf*.34;cx=lo.L+lo.Wf*(Math.random()<.5?.2:.8);cy=lo.T+lo.Hf*.58;}
+        const h=w*pileImg.height/pileImg.width;
         const pe=document.createElement('img');pe.src=pileImg.src;pe.draggable=false;
-        pe.style.cssText='position:absolute;pointer-events:none;user-select:none;opacity:0;transition:opacity .25s;filter:drop-shadow(0 5px 6px rgba(40,18,4,.35));left:'+(lo.L+lo.Wf*.72-w/2)+'px;top:'+(lo.T+lo.Hf*.62-h/2)+'px;width:'+w+'px;height:'+h+'px;transform:rotate(-8deg)';
+        pe.style.cssText='position:absolute;pointer-events:none;user-select:none;opacity:0;transition:opacity .25s;filter:drop-shadow(0 5px 6px rgba(40,18,4,.35));left:'+(cx-w/2)+'px;top:'+(cy-h/2)+'px;width:'+w+'px;height:'+h+'px';
         stage.insertBefore(pe,cv);
         requestAnimationFrame(()=>{pe.style.opacity='1';});
         setTimeout(()=>{pe.style.transition='opacity .8s';pe.style.opacity='0';setTimeout(()=>pe.remove(),900);},5000);

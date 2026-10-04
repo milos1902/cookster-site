@@ -2368,13 +2368,15 @@ const firewoodSoundTarget=makeSoundTarget('__firewood_insert','Cepanica — ubac
 const bookSoundTarget=makeSoundTarget('__recipe_book','Bakina knjiga — otvaranje/zatvaranje','');
 bookSoundTarget.dataset.soundActions='open,close,pageTurn';
 const faucetSoundTarget=makeSoundTarget('__faucet','Česma — voda','water');
+const peelSoundTarget=makeSoundTarget('__peel_button','Dugme „Očisti luk“ — čišćenje','peel');
+peelSoundTarget.dataset.soundActions='peel';
 // one virtual sound target per vegetable/fruit type: cutting and putting into a vessel share it
 const produceSoundTargets={};
 function produceSoundTarget(isFruit,key,label){
  const id=(isFruit?'fruit_':'veg_')+key;
  if(!produceSoundTargets[id]){
   const t=makeSoundTarget(id,`${isFruit?'Voće':'Povrće'} — ${label||key}`,'');
-  t.dataset.soundActions='cut,putIn,peel';t.dataset.soundGroup='produce';
+  t.dataset.soundActions='cut,putIn';t.dataset.soundGroup='produce';
   produceSoundTargets[id]=t;
  }
  return produceSoundTargets[id];
@@ -2675,7 +2677,7 @@ function ssSceneItems(){
   for(const [key,def] of Object.entries(VEGETABLES))produce.push(produceSoundTarget(false,key,def.label));
   for(const [key,def] of Object.entries(CooksterCatalog.FRUITS||{}))produce.push(produceSoundTarget(true,key,def.label));
  }catch(_){}
- return [buttonSoundTarget,firewoodSoundTarget,bookSoundTarget,faucetSoundTarget,...items,...catalogProps,...hotspots,...produce];
+ return [buttonSoundTarget,firewoodSoundTarget,bookSoundTarget,faucetSoundTarget,peelSoundTarget,...items,...catalogProps,...hotspots,...produce];
 }
 const ssCatalogTargets={};
 
@@ -13840,7 +13842,7 @@ function beginCutAction(){
  if(window.CooksterTomatoCut?.supports(target)){
    const def=VEGETABLES[target.dataset.vegKey]||{};
    if(def.src&&def.slicedSrc){
-     const cutCallbacks={board,onCutSound(){playImpactSound(vegSoundTarget(target),'cut');},onPeelSound(){playImpactSound(vegSoundTarget(target),'peel');},onDone(src,atlas){
+     const cutCallbacks={board,onCutSound(){playImpactSound(vegSoundTarget(target),'cut');},onPeelSound(){playImpactSound(peelSoundTarget,'peel');},onDone(src,atlas){
        showToast(setVegetableDiced(target));
        if(atlas)target.dataset.pieceAtlas=atlas;
        const body=target.querySelector('.body');if(body)body.src=src;
