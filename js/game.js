@@ -134,7 +134,10 @@ const LATEST_CONTACT_SHADOW_CALIBRATION={
  'produce_paprika_pecena_oljustena':{itemId:'produce_paprika_pecena_oljustena',label:'Pečena paprika — cela oljuštena',shadow:{shadowX:0,shadowY:0,width:.86,height:.86,blur:1.5,opacity:.7,angle:.6}},
  'noz':{itemId:'noz',label:'nož',shadow:{shadowX:0,shadowY:0,width:.95,height:.805,blur:5.2,opacity:.79,angle:.6}},
  'so':{itemId:'so',label:'So',shadow:{shadowX:0,shadowY:-3,width:.935,height:.265,blur:3.6,opacity:.93,angle:.6}},
- 'veg_paprika_1790124308385':{itemId:'veg_paprika_1790124308385',label:'Paprika',shadow:{shadowX:0,shadowY:0,width:.86,height:.9,blur:1.4,opacity:.52,angle:.6}}
+ 'veg_paprika_1790124308385':{itemId:'veg_paprika_1790124308385',label:'Paprika',shadow:{shadowX:0,shadowY:0,width:.86,height:.9,blur:1.4,opacity:.52,angle:.6}},
+ // sauerkraut barrel: the calibration of the empty one is used for the closed one too
+ 'kaca_prazna':{itemId:'kaca_prazna',label:'Bačva za kiseljenje — prazna',shadow:{shadowX:26,shadowY:3,width:.785,height:.635,blur:7.6,opacity:.91,angle:-5.7}},
+ 'kaca_sa_poklopcem':{itemId:'kaca_sa_poklopcem',label:'Bačva za kiseljenje — sa poklopcem',shadow:{shadowX:26,shadowY:3,width:.785,height:.635,blur:7.6,opacity:.91,angle:-5.7}}
 };
 const RED_POINTED_PEPPER_STOVE_CONTACT_SHADOW={
  'produce_paprika_plotna_silja':{itemId:'produce_paprika_plotna_silja',label:'Crvena šilja — vodoravno na plotni',shadow:{shadowX:0,shadowY:-1,width:.94,height:.86,blur:1.2,opacity:.55,angle:0}}
@@ -166,13 +169,13 @@ try{
 }catch(_){}
 // Master 2 changed these profiles. Keep an older browser session from
 // re-applying the previous calibration over the newly supplied values.
-for(const key of ['produce_paprika','produce_paprika_plotna_silja','veg_paprika_1790124308385']){
+for(const key of ['produce_paprika','produce_paprika_plotna_silja','veg_paprika_1790124308385','kaca_prazna','kaca_sa_poklopcem']){
   const authoritative=LATEST_CONTACT_SHADOW_CALIBRATION[key]||RED_POINTED_PEPPER_STOVE_CONTACT_SHADOW[key];
   if(authoritative)contactShadowMaster.items[key]=JSON.parse(JSON.stringify(authoritative));
 }
 // Scene-specific profiles use the latest supplied indoor and outdoor exports.
 const WOOD_BASKET_INDOOR_SHADOW_DEFAULT={
- shadowX:6,shadowY:-23,width:.67,height:.17,blur:11.4,opacity:1,angle:0
+ shadowX:6,shadowY:-29,width:.58,height:.17,blur:17.9,opacity:1,angle:0
 };
 const WOOD_BASKET_OUTDOOR_SHADOW_DEFAULT={
  shadowX:4,shadowY:-66,width:.58,height:.255,blur:1,opacity:.62,angle:.1
@@ -180,7 +183,7 @@ const WOOD_BASKET_OUTDOOR_SHADOW_DEFAULT={
 const WOOD_BASKET_OUTDOOR_SHADOW_ID='korpa_drva_napolju';
 const WOOD_BASKET_SHADOW_SPLIT_KEY='cookster.basket-shadow-split.v2.89';
 const WOOD_BASKET_OUTDOOR_UPDATE_KEY='cookster.basket-outdoor-calibration.v2.90';
-const WOOD_BASKET_INDOOR_UPDATE_KEY='cookster.basket-indoor-calibration.v2.91';
+const WOOD_BASKET_INDOOR_UPDATE_KEY='cookster.basket-indoor-calibration.v2.92';
 let installBasketShadowSplit=true;
 try{installBasketShadowSplit=localStorage.getItem(WOOD_BASKET_SHADOW_SPLIT_KEY)!=='done';}catch(_){}
 for(const [id,label,shadow] of [
