@@ -115,12 +115,14 @@
     return small.concat(big.length?diceGrid(big):[]);
   }
 
+  // corners are only slightly rounded (a fifth of each edge), so cuts look nearly sharp
+  const CORNER=.2;
   function roundedPath(g,v){
-    const L=v.length;g.beginPath();
+    const L=v.length,lp=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});g.beginPath();
     for(let i=0;i<L;i++){
-      const a=v[i],b=v[(i+1)%L],m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
-      if(i===0){const z=v[L-1];g.moveTo((z.x+a.x)/2,(z.y+a.y)/2);}
-      g.quadraticCurveTo(a.x,a.y,m.x,m.y);
+      const z=v[(i+L-1)%L],a=v[i],b=v[(i+1)%L],p0=lp(z,a,1-CORNER),p1=lp(a,b,CORNER);
+      if(i===0)g.moveTo(p0.x,p0.y);else g.lineTo(p0.x,p0.y);
+      g.quadraticCurveTo(a.x,a.y,p1.x,p1.y);
     }
     g.closePath();
   }
@@ -268,7 +270,7 @@
     krastavac:{label:'krastavca',max:250,flesh:[.34,.3,.28,.46],color:'#cfe3a0',rim:'#1b3d14',hull:true},
     beli_luk:{label:'belog luka',max:170,flesh:[.42,.72,.2,.18],color:'#efe3c2',rim:'#7a6a4a',hull:true},
     zelena_salata:{label:'zelene salate',max:200,flesh:[.3,.35,.4,.35],color:'#8bbd3a',rim:'#2a4d0c',hull:true},
-    kupus:{label:'kupusa',max:200,flesh:[.2,.2,.6,.6],sections:[1,2,3,4].map(i=>'assets/market_veg/kupus_presek_'+i+'.webp'),color:'#a9cf6b',rim:'#4d6b1f',hull:true},
+    kupus:{label:'kupusa',max:200,flesh:[.06,.06,.88,.9],sections:[1,2,3,4].map(i=>'assets/market_veg/kupus_presek_'+i+'.webp'),color:'#a9cf6b',rim:'#4d6b1f',hull:true},
     patlidzan:{label:'patlidžana',max:250,flesh:[.3,.62,.3,.3],color:'#e6dca8',rim:'#2a0f33',hull:true},
     tikvice:{label:'tikvica',max:250,flesh:[.3,.05,.37,.3],color:'#cfe3a0',rim:'#1f3d12',hull:true},
     rotkvice:{label:'rotkvica',max:190,flesh:[.2,.08,.35,.3],color:'#f6e3ea',rim:'#8f1d3a',hull:true},
