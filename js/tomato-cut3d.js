@@ -105,18 +105,20 @@
     const id=capId++;
     // the rim of a cut face leans a little towards the skin's normal, so the edge reads as very slightly rounded
     const ROUND=.3;
-    const mk=(p,u,w,sg,rim)=>{
+    const mk=(p,uu,vv,sg,rim)=>{
       let nx=n[0]*sg,ny=n[1]*sg,nz=n[2]*sg;
       if(rim){nx=nx*(1-ROUND)+p[5]*ROUND;ny=ny*(1-ROUND)+p[6]*ROUND;nz=nz*(1-ROUND)+p[7]*ROUND;const l=Math.hypot(nx,ny,nz)||1;nx/=l;ny/=l;nz/=l;}
-      return [p[0],p[1],p[2],.5+(u*cr-w*sr)/2.1,.5+(u*sr+w*cr)/1.75,nx,ny,nz];
+      return [p[0],p[1],p[2],uu,vv,nx,ny,nz];
     };
     const centre=[cx,cy,cz];
     const posSide=[],negSide=[];
+    // the round cross-section picture is stretched radially so that its skin ring lies exactly on the outline of the cut
+    for(const q of ang){const t=q.a+rot;q.tu=.5+Math.cos(t)*.497;q.tv=.5+Math.sin(t)*.497;}
     for(let i=0;i<ang.length;i++){
       const a=ang[i],b=ang[(i+1)%ang.length];
       // neg piece: outward normal +n, counter clockwise seen from +n; pos piece: outward -n
-      negSide.push({v:[mk(centre,0,0,1,false),mk(a.p,a.u,a.w,1,true),mk(b.p,b.u,b.w,1,true)],cap:id});
-      posSide.push({v:[mk(centre,0,0,-1,false),mk(b.p,b.u,b.w,-1,true),mk(a.p,a.u,a.w,-1,true)],cap:id});
+      negSide.push({v:[mk(centre,.5,.5,1,false),mk(a.p,a.tu,a.tv,1,true),mk(b.p,b.tu,b.tv,1,true)],cap:id});
+      posSide.push({v:[mk(centre,.5,.5,-1,false),mk(b.p,b.tu,b.tv,-1,true),mk(a.p,a.tu,a.tv,-1,true)],cap:id});
     }
     return {posSide,negSide};
   }
