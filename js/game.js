@@ -4711,7 +4711,8 @@ function nextItemInstanceId(base='item'){
   return `${safe}__${Date.now().toString(36)}_${itemInstanceCounter.toString(36)}`;
 }
 
-let scale=1,fitScale=1,offsetX=0,offsetY=0,money=CooksterState.player.money,zCounter=80,toastTimer=null;
+const FREE_MODE=true;   // while the game is being built everything is free: money never goes down
+let scale=1,fitScale=1,offsetX=0,offsetY=0,money=Math.max(CooksterState.player.money,FREE_MODE?99999:0),zCounter=80,toastTimer=null;
 let quickWheelOpen=false,quickWheelPointerId=null,quickWheelActiveId=null,quickWheelCenter={x:0,y:0},quickWheelLastToolId='noz',quickWheelOpenTimeout=0;
 let mouse={x:innerWidth/2,y:innerHeight/2},items=[],holding=null,hoverItem=null,rotating=null,rotateStartX=0,rotateStartY=0,rotateStartAngle=0,rotateStartTilt=0,placementGhost=null,placementState=null,originGhost=null,originState=null,placing=false,picking=false;
 const BACKPACK_SLOT_COUNT=5;
@@ -5848,7 +5849,8 @@ function heldPreviewPoseFor(el){
 }
 function updateCursor(){cursor.style.left=mouse.x+'px';cursor.style.top=mouse.y+'px'}
 function showToast(t){return}
-function setMoney(v){money=v;CooksterState.player.money=v;moneyEl.textContent=`Novac: ${money} дин`;if(marketMoneyLive)marketMoneyLive.textContent=`${money} дин`;CooksterSave.schedule()}
+function setMoney(v){if(FREE_MODE&&v<money)v=money;money=v;CooksterState.player.money=v;moneyEl.textContent=FREE_MODE?'Sve je besplatno':`Novac: ${money} дин`;if(marketMoneyLive)marketMoneyLive.textContent=FREE_MODE?'besplatno':`${money} дин`;CooksterSave.schedule()}
+if(FREE_MODE)setMoney(money);
 function updateDayUI(){const el=document.getElementById('day');if(el)el.textContent=`Dan ${CooksterState.player.day||1}`}
 function activeRecipe(){
  const recipes=CooksterCatalog.RECIPES||{};
@@ -10189,6 +10191,7 @@ function makeItem(d){
  if(isContainerDef(d)&&!(d.id||'').startsWith('tiganj_')){ensureVesselContent(el);if(!['serpa_plava','vangla_mala'].includes(d.id))ensureVesselFrontMask(el,d.src);}
   const by=d.y+d.h;el.dataset.basePerspective=perspectiveAt(by);setPose(el,(d.x+d.w/2)+CENTER_OFFSET,by,1);scene.appendChild(el);items.push(el);
   if(isPaprikaSteamBag(el))renderPaprikaSteamBag(el);
+  if(d.id==='kaca_prazna'&&window.CooksterKaca)CooksterKaca.attach(el);
   return el;
 }
 
@@ -10203,7 +10206,7 @@ function kitchenEquipmentDef(id){
 function ownedKitchenEquipment(){
  if(OBJECT_CALIBRATION_MODE)return KITCHEN_EQUIPMENT.map(def=>def.id);
  const owned=CooksterState.progression.kitchenEquipment;
-  return Array.from(new Set([...(Array.isArray(owned)?owned:[]),'mlin_za_mesо',PAPRIKA_STEAM_BAG_ID]));
+  return Array.from(new Set([...(Array.isArray(owned)?owned:[]),'mlin_za_mesо',PAPRIKA_STEAM_BAG_ID,'kaca_prazna','kaca_poklopac']));
 }
 function equipmentCountInKitchen(id){
  return items.filter(el=>el.dataset.itemId===id).length+
@@ -10291,7 +10294,7 @@ function kitchenEquipmentCard(def,mode){
    info.textContent=owned?'Kupljeno':'Dodaj trajno u Moju kuhinju';
    const price=document.createElement('div');
    price.className='ke-price';
-   price.textContent=owned?'KUPLJENO':`${def.price||0} дин`;
+   price.textContent=owned?'KUPLJENO':(FREE_MODE?'BESPLATNO':`${def.price||0} дин`);
    text.append(info,price);
    if(owned)button.disabled=true;
    button.addEventListener('click',()=>{
@@ -10362,7 +10365,7 @@ function openKitchenElements(){
 
 function serializeWorldItem(el){
  const body=el.querySelector('.body');
-  const keep=['pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
+  const keep=['kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
  const data={};
  for(const k of keep)if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
  for(const k of ['ajvarMl','ajvarBatchMl'])if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
@@ -10408,6 +10411,7 @@ function restoreWorldItem(saved){
  if(saved.calibrationCopy)el.dataset.calibrationCopy='1';
  if(saved.calibrationTemplate)el.dataset.calibrationTemplate=String(saved.calibrationTemplate);
  Object.entries(saved.data||{}).forEach(([k,v])=>el.dataset[k]=String(v));
+  if(el.dataset.itemId==='kaca_prazna'&&window.CooksterKaca)CooksterKaca.refresh(el);
   if(isAjvarJar(el))renderAjvarJar(el);
   if(isAjvarLadle(el))renderAjvarLadle(el);
   if(isWoodBasket(el)){
@@ -14309,6 +14313,8 @@ function dropBounce(el){
 function dropHolding(){
  if(!holding||placing||picking||pouring||oilPouring)return;
 
+ // The sauerkraut barrel takes whole cabbages and its own lid.
+ if(window.CooksterKaca&&CooksterKaca.tryDrop(holding))return;
  // One authoritative ingredient -> vessel path.
  if(isIngredientItem(holding)&&commitHeldIngredientToVessel(holding,mouse.x,mouse.y))return;
 
