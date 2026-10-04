@@ -13839,7 +13839,7 @@ function beginCutAction(){
  if(window.CooksterTomatoCut?.supports(target)){
    const def=VEGETABLES[target.dataset.vegKey]||{};
    if(def.src&&def.slicedSrc){
-     const cutCallbacks={onCutSound(){playImpactSound(vegSoundTarget(target),'cut');},onDone(src,atlas){
+     const cutCallbacks={board,onCutSound(){playImpactSound(vegSoundTarget(target),'cut');},onDone(src,atlas){
        showToast(setVegetableDiced(target));
        if(atlas)target.dataset.pieceAtlas=atlas;
        const body=target.querySelector('.body');if(body)body.src=src;

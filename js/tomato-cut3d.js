@@ -132,24 +132,20 @@
     if(!webglOK())return false;
     try{await loadThree();}catch(_){return false;}
     const THREE=T;
-    const [capImg,skinSrc]=await Promise.all([loadImg(def.slicedSrc).catch(()=>null),null]);
+    const [capImg,boardImg]=await Promise.all([loadImg('assets/market_veg/paradajz_presek_3d.webp').catch(()=>null),loadImg('assets/new_props/daska.png').catch(()=>null)]);
 
     // ---------- DOM ----------
     const root=document.createElement('div');
     root.id='tomatoCut3dOverlay';
-    root.style.cssText='position:fixed;inset:0;z-index:30000;background:radial-gradient(ellipse at 50% 40%,#5a3a1c,#1b0f07);opacity:0;transition:opacity .25s;touch-action:none';
-    const cv=document.createElement('canvas');cv.style.cssText='position:absolute;inset:0;width:100%;height:100%;cursor:crosshair';
+    root.style.cssText='position:fixed;inset:0;z-index:30000;background:rgba(18,9,3,0);backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px);transition:background .2s ease-out,backdrop-filter .2s ease-out,-webkit-backdrop-filter .2s ease-out;touch-action:none';
+    const cv=document.createElement('canvas');cv.style.cssText='position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;transform-origin:50% 50%;will-change:transform';
     const trail=document.createElement('canvas');trail.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none';
-    const bar=document.createElement('div');
-    bar.style.cssText='position:fixed;left:50%;top:14px;transform:translateX(-50%);display:flex;gap:8px;z-index:1;font:15px system-ui,sans-serif';
     const hint=document.createElement('div');
     hint.style.cssText='position:fixed;left:50%;bottom:14px;transform:translateX(-50%);color:#fff3d6;font:15px system-ui,sans-serif;text-shadow:0 1px 3px #000;text-align:center;max-width:90vw';
-    hint.textContent='Levi klik i povuci = seci paradajz · desni klik i povuci = okreni · točkić = zumiraj. Kad završiš, klikni „Gotovo“.';
-    const mkBtn=(t,fn)=>{const b=document.createElement('button');b.textContent=t;b.style.cssText='font:inherit;padding:8px 14px;border-radius:10px;border:2px solid #4a2a12;background:#f1d9a6;color:#3b1d0a;cursor:pointer';b.onclick=fn;bar.appendChild(b);return b;};
+    hint.textContent='Levi klik i povuci nož preko paradajza · desni klik i povuci = okreni · točkić = zumiraj · E = gotovo, daska se vraća na sto';
     for(const ev of ['pointerdown','pointerup','pointermove','mousedown','mouseup','mousemove','click','dblclick','touchstart','touchmove','touchend','contextmenu','wheel'])
       root.addEventListener(ev,e=>{e.stopPropagation();if(ev==='contextmenu')e.preventDefault();});
-    root.append(cv,trail,bar,hint);document.body.appendChild(root);
-    requestAnimationFrame(()=>{root.style.opacity='1';});
+    root.append(cv,trail,hint);document.body.appendChild(root);
 
     // ---------- renderer, scene ----------
     let renderer;
@@ -157,12 +153,13 @@
     catch(_){root.remove();return false;}
     renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
     renderer.outputColorSpace=THREE.SRGBColorSpace;
+    renderer.setClearColor(0x000000,0);
     renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
     const scene=new THREE.Scene();
     const camera=new THREE.PerspectiveCamera(36,1,.1,60);
-    const FLOOR=-.76;
-    let az=.0,el2=.62,dist=6.2;
-    const placeCam=()=>{camera.position.set(Math.sin(az)*Math.cos(el2)*dist,FLOOR+.9+Math.sin(el2)*dist,Math.cos(az)*Math.cos(el2)*dist);camera.lookAt(0,FLOOR+.3,0);camera.updateMatrixWorld();};
+    const FLOOR=-.76,HX=3.1,HZ=1.89;           // the board's top surface: 6.2 x 3.78 units
+    let az=.0,el2=1.42,dist=9;
+    const placeCam=()=>{camera.position.set(Math.sin(az)*Math.cos(el2)*dist,FLOOR+Math.sin(el2)*dist,Math.cos(az)*Math.cos(el2)*dist);camera.lookAt(0,FLOOR,0);camera.updateMatrixWorld();};
     scene.add(new THREE.HemisphereLight(0xfff0dc,0x6a3a20,.8));
     const key=new THREE.DirectionalLight(0xfff2dd,2.1);key.position.set(-3,6,3.5);key.castShadow=true;
     key.shadow.mapSize.set(1024,1024);Object.assign(key.shadow.camera,{left:-4,right:4,top:4,bottom:-4,near:1,far:16});key.shadow.bias=-.0008;key.shadow.radius=3;
@@ -170,23 +167,28 @@
     const rim=new THREE.DirectionalLight(0xffb48a,.7);rim.position.set(3,2,-3);scene.add(rim);
 
     // environment (soft studio boxes) for the glossy skin
-    {
+    const makeEnv=rend=>{
       const c=document.createElement('canvas');c.width=512;c.height=256;const g=c.getContext('2d');
       const lg=g.createLinearGradient(0,0,0,256);lg.addColorStop(0,'#fff');lg.addColorStop(.4,'#8a7d74');lg.addColorStop(1,'#2a201a');g.fillStyle=lg;g.fillRect(0,0,512,256);
       g.fillStyle='#fff';g.fillRect(70,60,90,50);g.fillRect(300,50,70,60);
       const t=new THREE.CanvasTexture(c);t.mapping=THREE.EquirectangularReflectionMapping;t.colorSpace=THREE.SRGBColorSpace;
-      const pm=new THREE.PMREMGenerator(renderer);scene.environment=pm.fromEquirectangular(t).texture;scene.environmentIntensity=.55;
-    }
+      return new THREE.PMREMGenerator(rend).fromEquirectangular(t).texture;
+    };
+    scene.environment=makeEnv(renderer);scene.environmentIntensity=.55;
 
-    // wooden board
+    // the board: the same picture as in the game, lying flat (top surface, with a darker copy under it for thickness)
     {
-      const c=document.createElement('canvas');c.width=1024;c.height=640;const g=c.getContext('2d');
-      g.fillStyle='#c98a4a';g.fillRect(0,0,1024,640);
-      for(let i=0;i<7;i++){g.fillStyle=`rgba(${i%2?90:140},${i%2?50:80},20,.18)`;g.fillRect(0,i*92,1024,4);}
-      for(let i=0;i<260;i++){g.strokeStyle=`rgba(80,40,10,${.05+Math.random()*.08})`;g.lineWidth=1+Math.random()*2;g.beginPath();const y=Math.random()*640;g.moveTo(0,y);g.bezierCurveTo(300,y+Math.random()*12-6,700,y+Math.random()*12-6,1024,y+Math.random()*8-4);g.stroke();}
-      const tx=new THREE.CanvasTexture(c);tx.colorSpace=THREE.SRGBColorSpace;
-      const board=new THREE.Mesh(new THREE.BoxGeometry(6.4,.3,4.2),new THREE.MeshStandardMaterial({map:tx,roughness:.75}));
-      board.position.y=FLOOR-.15;board.receiveShadow=true;scene.add(board);
+      const IW=boardImg?boardImg.width:426,IH=boardImg?boardImg.height:285,k=IW/426;
+      const cx=20*k,cy=12*k,cw=390*k,ch=238*k;
+      const c=document.createElement('canvas');c.width=Math.round(cw*2);c.height=Math.round(ch*2);const g=c.getContext('2d');
+      if(boardImg)g.drawImage(boardImg,cx,cy,cw,ch,0,0,c.width,c.height);else{g.fillStyle='#c98a4a';g.fillRect(0,0,c.width,c.height);}
+      const tx=new THREE.CanvasTexture(c);tx.colorSpace=THREE.SRGBColorSpace;tx.anisotropy=8;
+      const top=new THREE.Mesh(new THREE.PlaneGeometry(HX*2,HZ*2),new THREE.MeshBasicMaterial({map:tx,transparent:true,alphaTest:.5}));
+      top.rotation.x=-Math.PI/2;top.position.y=FLOOR;scene.add(top);
+      const under=new THREE.Mesh(new THREE.PlaneGeometry(HX*2*1.012,HZ*2*1.012),new THREE.MeshBasicMaterial({map:tx,transparent:true,alphaTest:.5,color:0x4a2a10}));
+      under.rotation.x=-Math.PI/2;under.position.set(0,FLOOR-.2,.1);scene.add(under);
+      const sh=new THREE.Mesh(new THREE.PlaneGeometry(HX*2,HZ*2),new THREE.ShadowMaterial({opacity:.38}));
+      sh.rotation.x=-Math.PI/2;sh.position.y=FLOOR+.004;sh.receiveShadow=true;scene.add(sh);
     }
 
     // ---------- materials ----------
@@ -198,8 +200,9 @@
     const skinMat=new THREE.MeshPhysicalMaterial({map:skinTex,roughness:.28,clearcoat:1,clearcoatRoughness:.12});
     // inside of the tomato: the flesh part of the game's cross-section picture
     const capTex=(()=>{const c=document.createElement('canvas');c.width=c.height=512;const g=c.getContext('2d');
-      g.fillStyle='#d8412c';g.fillRect(0,0,512,512);
-      if(capImg){const fl=[.215,.375,.59,.486];g.drawImage(capImg,fl[0]*capImg.width,fl[1]*capImg.height,fl[2]*capImg.width,fl[3]*capImg.height,0,0,512,512);}
+      g.fillStyle='#f0a28f';g.fillRect(0,0,512,512);
+      // the cut face of the picture (without the skin around it), stretched over the whole cap texture
+      if(capImg){const k=capImg.width/1250;g.drawImage(capImg,150*k,128*k,1055*k,870*k,0,0,512,512);}
       const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t;})();
     const capMat=new THREE.MeshPhysicalMaterial({map:capTex,roughness:.42,clearcoat:.35,clearcoatRoughness:.3});
     const leafMat=new THREE.MeshStandardMaterial({color:0x5f7d2b,roughness:.55,side:THREE.DoubleSide,vertexColors:true});
@@ -279,9 +282,10 @@
     // ---------- cutting ----------
     let cuts=0;
     const V3=THREE.Vector3,Q=THREE.Quaternion;
-    function cutWith(n,d){      // world plane n.x = d
+    function cutWith(n,d,only,strokeId){      // world plane n.x = d; only(p) says which pieces may be cut
       const made=[];
       for(const p of [...pieces]){
+        if(only&&!only(p))continue;
         const dp=n.dot(p.pos)-d;
         if(Math.abs(dp)>p.radius)continue;
         // plane in the piece's local frame (local points are relative to the centre of mass)
@@ -306,12 +310,12 @@
           const rel=new V3(pr.com[0]-p.com[0],pr.com[1]-p.com[1],pr.com[2]-p.com[2]).applyQuaternion(p.quat);
           const wp=p.pos.clone().add(rel);
           // velocity: parent's motion plus a push away from the cut plane, plus a little spin and some upward flick
-          const push=n.clone().multiplyScalar(sign*(.55+Math.random()*.35));
+          const push=n.clone().multiplyScalar(sign*(.16+Math.random()*.08));
           const side=push.clone();side.y=0;
-          const v=p.v.clone().add(p.w.clone().cross(rel)).add(side).add(new V3(0,.9+Math.random()*.6,0));
-          const w=p.w.clone().add(new V3((Math.random()-.5)*2,(Math.random()-.5)*1.2,(Math.random()-.5)*2)).add(new V3(0,0,0).add(n.clone().cross(new V3(0,1,0)).multiplyScalar(sign*(1.4+Math.random()))));
+          const v=p.v.clone().add(p.w.clone().cross(rel)).add(side).add(new V3(0,.05,0));
+          const w=p.w.clone().add(new V3((Math.random()-.5)*.3,(Math.random()-.5)*.2,(Math.random()-.5)*.3)).add(n.clone().cross(new V3(0,1,0)).multiplyScalar(sign*(.5+Math.random()*.4)));
           const b=addPiece(tris,wp,p.quat,v,w,cl);
-          if(b){b.asleep=false;made.push(b);}
+          if(b){b.asleep=false;b.stroke=strokeId;made.push(b);}
         };
         mk(A,cA,1);mk(B,cB,-1);
       }
@@ -362,77 +366,147 @@
         }
         b.v.multiplyScalar(touching?.992:.999);b.w.multiplyScalar(touching?.965:.998);
         // edge of the board
-        if(Math.abs(b.pos.x)>3.0){b.pos.x=Math.sign(b.pos.x)*3.0;b.v.x*=-.3;}
-        if(Math.abs(b.pos.z)>1.9){b.pos.z=Math.sign(b.pos.z)*1.9;b.v.z*=-.3;}
+        if(Math.abs(b.pos.x)>HX-.2-Math.min(.9,b.radius*.7)){b.pos.x=Math.sign(b.pos.x)*(HX-.2-Math.min(.9,b.radius*.7));b.v.x*=-.2;}
+        if(Math.abs(b.pos.z)>HZ-.2-Math.min(.9,b.radius*.7)){b.pos.z=Math.sign(b.pos.z)*(HZ-.2-Math.min(.9,b.radius*.7));b.v.z*=-.2;}
         if(touching&&b.v.lengthSq()<.012&&b.w.lengthSq()<.06){b.still+=dt;if(b.still>.35){b.asleep=true;b.v.set(0,0,0);b.w.set(0,0,0);}}
         else b.still=0;
       }
       // pieces push each other apart on the board (simple spheres), so they never sit inside each other
       for(let i=0;i<pieces.length;i++)for(let j=i+1;j<pieces.length;j++){
         const a=pieces[i],c=pieces[j];
-        const dx=c.pos.x-a.pos.x,dz=c.pos.z-a.pos.z,d=Math.hypot(dx,dz)||.001,m=(a.radius+c.radius)*.62;
+        const dx=c.pos.x-a.pos.x,dz=c.pos.z-a.pos.z,d=Math.hypot(dx,dz)||.001,m=(a.radius+c.radius)*.5;
         if(d<m&&Math.abs(a.pos.y-c.pos.y)<m){
-          const k=(m-d)/d*.5;
-          if(!a.asleep||c.asleep){a.pos.x-=dx*k;a.pos.z-=dz*k;}
-          if(!c.asleep||a.asleep){c.pos.x+=dx*k;c.pos.z+=dz*k;}
-          if(a.asleep&&!c.asleep){}
+          // pieces are heavy: they ease apart slowly instead of jumping
+          const step=Math.min((m-d)*.5,.0035)/d;
+          if(!a.asleep||c.asleep){a.pos.x-=dx*step;a.pos.z-=dz*step;}
+          if(!c.asleep||a.asleep){c.pos.x+=dx*step;c.pos.z+=dz*step;}
         }
       }
     }
 
-    // ---------- input ----------
-    const resize=()=>{const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();trail.width=w;trail.height=h;};
-    addEventListener('resize',resize);resize();placeCam();
+    // ---------- board approaches / goes back (0.2 s), the game behind it blurs ----------
+    const ANIM_MS=200;
+    let ready=false;
+    function layout(){
+      const W=innerWidth,H=innerHeight;
+      const Wf=Math.min(W*.82,H*.8*426/285),Hf=Wf*285/426;
+      return {W,H,Wf,Hf,L:(W-Wf)/2,T:(H-Hf)/2+6};
+    }
+    // camera: the board's top surface must land exactly on the board picture shown at the middle of the screen
+    function fitCamera(){
+      const lo=layout(),tw=lo.Wf*.9155,tx=lo.L+lo.Wf*.0469+tw/2,ty=lo.T+lo.Hf*.0421+lo.Hf*.835/2;
+      camera.clearViewOffset();
+      for(let i=0;i<10;i++){
+        placeCam();
+        const pr=(x,z)=>{const v=new V3(x,FLOOR,z).project(camera);return {x:(v.x+1)/2*lo.W,y:(1-v.y)/2*lo.H};};
+        const a=pr(-HX,HZ),b=pr(HX,HZ),c=pr(-HX,-HZ),d=pr(HX,-HZ);
+        const mw=((b.x-a.x)+(d.x-c.x))/2;
+        dist=Math.max(4,Math.min(30,dist*mw/tw));
+      }
+      placeCam();
+      const o=new V3(0,FLOOR,0).project(camera);
+      const ox=(o.x+1)/2*lo.W,oy=(1-o.y)/2*lo.H;
+      camera.setViewOffset(lo.W,lo.H,ox-tx,oy-ty,lo.W,lo.H);
+    }
+    function boardTransform(){
+      const lo=layout(),r=(cb.board||el).getBoundingClientRect();
+      const sc=Math.max(.05,r.width/lo.Wf),cx=lo.W/2,cy=lo.H/2,px=lo.L+lo.Wf/2,py=lo.T+lo.Hf/2;
+      const dx=(r.left+r.width/2)-cx-sc*(px-cx),dy=(r.top+r.height/2)-cy-sc*(py-cy);
+      return `translate(${dx}px,${dy}px) scale(${sc})`;
+    }
+    const resize=()=>{const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();trail.width=w;trail.height=h;fitCamera();};
+    addEventListener('resize',resize);resize();
+    // start: the canvas sits exactly over the board in the game, then grows to full size while the background blurs
+    cv.style.transform=boardTransform();
+    el.style.visibility='hidden';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      cv.style.transition='transform '+ANIM_MS+'ms cubic-bezier(.2,.8,.3,1)';cv.style.transform='none';
+      root.style.background='rgba(18,9,3,.4)';root.style.backdropFilter=root.style.webkitBackdropFilter='blur(9px)';
+      setTimeout(()=>{ready=true;},ANIM_MS);
+    }));
+
+    // ---------- input: a straight knife stroke from where the drag started to the pointer, glowing ribbon like the 2D version ----------
     const tg=trail.getContext('2d');
-    let stroke=null,orbit=null,fade=[];
+    const TRAIL_MS=650;
+    let stroke=null,orbit=null,trailPts=[],strokeId=0;
     const pt=e=>({x:e.clientX,y:e.clientY});
     function drawTrail(){
       tg.clearRect(0,0,trail.width,trail.height);
-      const lines=[];
-      if(stroke)lines.push({a:stroke.a,b:stroke.b,al:1});
-      for(const f of fade)lines.push(f);
-      for(const l of lines){
-        tg.save();tg.lineCap='round';
-        tg.shadowColor='rgba(255,240,200,'+l.al+')';tg.shadowBlur=16;
-        tg.strokeStyle='rgba(255,250,235,'+(.9*l.al)+')';tg.lineWidth=4.5;
-        tg.beginPath();tg.moveTo(l.a.x,l.a.y);tg.lineTo(l.b.x,l.b.y);tg.stroke();tg.restore();
-      }
+      const now=performance.now();
+      trailPts=trailPts.filter(q=>now-q.t<TRAIL_MS);
+      const n=trailPts.length;if(n<2)return;
+      const g=tg,tr=trailPts;
+      const w=tr.map((q,i)=>{const life=1-(now-q.t)/TRAIL_MS;return 10*(.12+.88*i/(n-1))*Math.pow(Math.max(0,life),.55);});
+      const ribbon=scale=>{
+        const L=[],R=[];
+        for(let i=0;i<n;i++){
+          const a=tr[Math.max(0,i-1)],b=tr[Math.min(n-1,i+1)];
+          let dx=b.x-a.x,dy=b.y-a.y;const d=Math.hypot(dx,dy)||1;dx/=d;dy/=d;
+          const h=w[i]*scale/2;
+          L.push({x:tr[i].x-dy*h,y:tr[i].y+dx*h});R.push({x:tr[i].x+dy*h,y:tr[i].y-dx*h});
+        }
+        g.beginPath();g.moveTo(L[0].x,L[0].y);
+        for(let i=1;i<n;i++)g.lineTo(L[i].x,L[i].y);
+        for(let i=n-1;i>=0;i--)g.lineTo(R[i].x,R[i].y);
+        g.closePath();
+      };
+      const t0=tr[0],t1=tr[n-1];
+      const gr=g.createLinearGradient(t0.x,t0.y,t1.x,t1.y);
+      gr.addColorStop(0,'rgba(255,179,71,0)');gr.addColorStop(.35,'rgba(255,95,162,.75)');
+      gr.addColorStop(.7,'rgba(165,107,255,.95)');gr.addColorStop(1,'rgba(76,141,255,1)');
+      g.save();
+      g.fillStyle=gr;g.shadowColor='rgba(150,110,255,.9)';g.shadowBlur=22;ribbon(2.6);g.globalAlpha=.35;g.fill();
+      g.globalAlpha=1;g.shadowBlur=10;ribbon(1);g.fill();
+      g.shadowBlur=0;g.fillStyle='rgba(255,255,255,.95)';ribbon(.32);g.fill();
+      g.restore();
     }
+    // does the knife line (screen space) pass right through this piece, from one side to the other?
+    const toScreen=v=>{const q=v.clone().project(camera);return {x:(q.x+1)/2*innerWidth,y:(1-q.y)/2*innerHeight};};
+    function crosses(p,a,b){
+      const c=toScreen(p.pos),right=new V3().setFromMatrixColumn(camera.matrixWorld,0).multiplyScalar(p.radius*.9).add(p.pos),rs=Math.hypot(toScreen(right).x-c.x,toScreen(right).y-c.y);
+      const dx=b.x-a.x,dy=b.y-a.y,l2=dx*dx+dy*dy||1;
+      const t=Math.max(0,Math.min(1,((c.x-a.x)*dx+(c.y-a.y)*dy)/l2)),qx=a.x+dx*t,qy=a.y+dy*t;
+      const dm=Math.hypot(c.x-qx,c.y-qy),da=Math.hypot(c.x-a.x,c.y-a.y),db=Math.hypot(c.x-b.x,c.y-b.y);
+      return dm<rs*.85&&da>rs*.95&&db>rs*.95;
+    }
+    const toRay=p=>{const nd=new V3((p.x/innerWidth)*2-1,-(p.y/innerHeight)*2+1,.5).unproject(camera);return nd.sub(camera.position).normalize();};
     cv.addEventListener('contextmenu',e=>e.preventDefault());
     cv.addEventListener('pointerdown',e=>{
+      if(!ready)return;
       cv.setPointerCapture(e.pointerId);
       if(e.button===2){orbit={x:e.clientX,y:e.clientY};return;}
-      if(e.button===0)stroke={a:pt(e),b:pt(e)};
+      if(e.button===0){stroke={id:++strokeId,start:pt(e),cut:false};trailPts.push({x:e.clientX,y:e.clientY,t:performance.now()});}
     });
+    let lastChop=0;
     cv.addEventListener('pointermove',e=>{
-      if(orbit){az-=(e.clientX-orbit.x)*.008;el2=Math.max(.15,Math.min(1.35,el2+(e.clientY-orbit.y)*.006));orbit={x:e.clientX,y:e.clientY};placeCam();}
-      else if(stroke)stroke.b=pt(e);
-    });
-    cv.addEventListener('pointerup',e=>{
-      if(orbit&&e.button===2){orbit=null;return;}
+      if(orbit){az-=(e.clientX-orbit.x)*.008;el2=Math.max(.3,Math.min(1.45,el2+(e.clientY-orbit.y)*.006));orbit={x:e.clientX,y:e.clientY};placeCam();return;}
       if(!stroke)return;
-      const s=stroke;stroke=null;
-      if(Math.hypot(s.b.x-s.a.x,s.b.y-s.a.y)<24)return;
-      fade.push({a:s.a,b:s.b,al:1});
-      // plane through the camera and the stroke
-      const toRay=p=>{const nd=new V3((p.x/innerWidth)*2-1,-(p.y/innerHeight)*2+1,.5).unproject(camera);return nd.sub(camera.position).normalize();};
-      const d1=toRay(s.a),d2=toRay(s.b),n=d1.clone().cross(d2).normalize();
-      const dd=n.dot(camera.position);
-      const k=cutWith(n,dd);
-      if(k){cuts++;try{cb.onCutSound&&cb.onCutSound();}catch(_){}}
+      const p=pt(e),s0=stroke.start,dd0=Math.hypot(p.x-s0.x,p.y-s0.y);
+      if(dd0<14)return;
+      const steps=Math.max(2,Math.ceil(dd0/6)),now0=performance.now();
+      trailPts=[];for(let i=0;i<=steps;i++)trailPts.push({x:s0.x+(p.x-s0.x)*i/steps,y:s0.y+(p.y-s0.y)*i/steps,t:now0});
+      // cut every piece the line has gone right through (pieces cut by this stroke are left alone)
+      const id=stroke.id;
+      const d1=toRay(s0),d2=toRay(p),n=d1.clone().cross(d2).normalize(),dd=n.dot(camera.position);
+      const k=cutWith(n,dd,q=>q.stroke!==id&&crosses(q,s0,p),id);
+      if(k){
+        if(!stroke.cut){stroke.cut=true;cuts++;}
+        const now=performance.now();
+        if(now-lastChop>140){lastChop=now;try{cb.onCutSound&&cb.onCutSound();}catch(_){}}
+      }
     });
-    cv.addEventListener('wheel',e=>{e.preventDefault();dist=Math.max(3,Math.min(9,dist*(e.deltaY>0?1.07:.93)));placeCam();},{passive:false});
+    const endStroke=e=>{if(orbit&&e&&e.button===2){orbit=null;return;}stroke=null;};
+    cv.addEventListener('pointerup',endStroke);cv.addEventListener('pointercancel',endStroke);
+    cv.addEventListener('wheel',e=>{e.preventDefault();dist=Math.max(4,Math.min(30,dist*(e.deltaY>0?1.07:.93)));placeCam();},{passive:false});
 
     // ---------- loop ----------
     let raf=0,last=performance.now(),closed=false;
     function loop(now){
-      if(closed)return;
+      if(closed){return;}
       raf=requestAnimationFrame(loop);
       const dt=Math.min(.033,(now-last)/1000);last=now;
       for(let i=0;i<4;i++)stepPhysics(dt/4);
       for(const b of pieces){b.mesh.position.copy(b.pos);b.mesh.quaternion.copy(b.quat);}
-      for(const f of fade)f.al-=dt*2.4;
-      fade=fade.filter(f=>f.al>0);
       drawTrail();
       renderer.render(scene,camera);
     }
@@ -441,14 +515,15 @@
     // ---------- bake into the 2D atlas ----------
     function bake(){
       const SZ=256,PU=110;   // pixels per world unit while baking
+      const br=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+      br.setPixelRatio(1);br.setSize(SZ,SZ,false);br.outputColorSpace=THREE.SRGBColorSpace;br.setClearColor(0x000000,0);
+      const bcv=br.domElement;
       const bs=new THREE.Scene();
       bs.add(new THREE.HemisphereLight(0xfff0dc,0x6a3a20,.9));
       const kl=new THREE.DirectionalLight(0xfff2dd,2.0);kl.position.set(-2,6,2.5);bs.add(kl);
-      bs.environment=scene.environment;bs.environmentIntensity=.55;
+      bs.environment=makeEnv(br);bs.environmentIntensity=.55;
       const oc=new THREE.OrthographicCamera(-SZ/2/PU,SZ/2/PU,SZ/2/PU,-SZ/2/PU,.1,20);
       oc.position.set(0,8,0);oc.up.set(0,0,-1);oc.lookAt(0,0,0);
-      renderer.shadowMap.enabled=false;
-      renderer.setPixelRatio(1);renderer.setSize(SZ,SZ,false);renderer.setClearColor(0x000000,0);
       const sprites=[];
       const cc=document.createElement('canvas');cc.width=cc.height=SZ;const cg=cc.getContext('2d',{willReadFrequently:true});
       for(const b of pieces){
@@ -465,9 +540,9 @@
         const m=new THREE.Mesh(b.mesh.geometry,[skinMat,capMat]);m.quaternion.copy(q);bs.add(m);
         // centre the piece's bounding box under the camera so the sprite fits
         m.position.set(0,0,0);
-        renderer.clear();renderer.render(bs,oc);
+        br.clear();br.render(bs,oc);
         bs.remove(m);
-        cg.clearRect(0,0,SZ,SZ);cg.drawImage(cv,0,0,SZ,SZ);
+        cg.clearRect(0,0,SZ,SZ);cg.drawImage(bcv,0,0,SZ,SZ);
         const id=cg.getImageData(0,0,SZ,SZ).data;
         let x0=SZ,y0=SZ,x1=-1,y1=-1;
         for(let y=0;y<SZ;y++)for(let x=0;x<SZ;x++)if(id[(y*SZ+x)*4+3]>20){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
@@ -476,7 +551,7 @@
         sc.getContext('2d').drawImage(cc,x0,y0,w,h,0,0,w,h);
         sprites.push({img:sc,w,h,ax:SZ/2-x0,ay:SZ/2-y0,x:b.pos.x*PU,y:b.pos.z*PU,r:Math.max(w,h)/2,rot:0});
       }
-      if(!sprites.length)return null;
+      if(!sprites.length){try{br.dispose();}catch(_){}return null;}
       // toss them together into a heap (like the 2D version): pull towards the middle, then push overlapping ones apart
       for(const s of sprites){s.x*=.55;s.y*=.55;}
       for(let it=0;it<80;it++){
@@ -506,27 +581,34 @@
       const r1=v=>Math.round(v*10)/10;
       const meta={W:r1(bw*s),H:r1(bh*s),p:cells.map(c=>[c.sx,c.sy,c.w,c.h,r1(PAD+c.sp.ax*s),r1(PAD+c.sp.ay*s),
         r1((c.sp.x-mx)*s),r1((c.sp.y-my)*s),Math.round(c.sp.rot*1000)/1000])};
-      return {heap,atlas:ac.toDataURL('image/webp',.82)+'#'+JSON.stringify(meta)};
+      const out={heap,atlas:ac.toDataURL('image/webp',.82)+'#'+JSON.stringify(meta)};
+      try{br.dispose();br.forceContextLoss();}catch(_){}
+      return out;
     }
 
+    // leaving: the board goes back to its place on the table (0.2 s) and the background sharpens again
     function close(){
-      if(closed)return;closed=true;cancelAnimationFrame(raf);
+      if(closed)return;closed=true;cancelAnimationFrame(raf);ready=false;
       removeEventListener('resize',resize);document.removeEventListener('keydown',onKey,true);
-      root.style.opacity='0';
-      setTimeout(()=>{try{renderer.dispose();}catch(_){}root.remove();},260);
+      cv.style.transition='transform '+ANIM_MS+'ms cubic-bezier(.5,0,.8,.3)';cv.style.transform=boardTransform();
+      root.style.background='rgba(18,9,3,0)';root.style.backdropFilter=root.style.webkitBackdropFilter='blur(0px)';
+      setTimeout(()=>{try{renderer.dispose();}catch(_){}root.remove();el.style.visibility='';},ANIM_MS+30);
       active=null;
     }
+    // the loop keeps drawing during the going-back animation
     function finish(){
-      if(closed)return;
-      if(!cuts){hint.textContent='Prvo iseckaj nožem.';return;}
+      if(closed||!ready)return;
+      if(!cuts){cancel();return;}
       const baked=bake();
-      close();
       if(baked)cb.onDone(baked.heap,baked.atlas);
+      close();
     }
     function cancel(){close();cb.onCancel&&cb.onCancel();}
-    function onKey(e){if(e.key==='Escape'){e.stopPropagation();cancel();}}
+    function onKey(e){
+      if(e.key==='Escape'){e.stopPropagation();e.preventDefault();cancel();return;}
+      if((e.key==='e'||e.key==='E')&&!e.repeat){e.stopImmediatePropagation();e.preventDefault();finish();}
+    }
     document.addEventListener('keydown',onKey,true);
-    mkBtn('Gotovo',finish);mkBtn('Odustani',cancel);
     active={root,close};
     window.__cut3d={pieces,cutWith,camera,get cuts(){return cuts;},finish};
     return true;
