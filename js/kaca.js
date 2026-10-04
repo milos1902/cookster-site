@@ -48,20 +48,29 @@
   function bodyEl(el){return el.querySelector(':scope>.body');}
 
   // ---------- layers ----------
+  // The lid frame is the picture of the closed barrel (C). Layers, bottom to top:
+  //   shaft (the screw between the beam and the disc, as long as the disc is deep), disc (moves down), the front of the barrel
+  //   as a mask, and the top (beam, screw head, turning arms) which stays where it is, its ends sitting in the slots of the posts.
+  const C_W=560,C_H=558,SHAFT_TOP=118,SHAFT_BASE=148;   // shaft: from under the beam down to where the disc's screw base starts
   function build(el){
     if(el._kaca)return el._kaca;
     const mk=(tag,cls,css)=>{const e=document.createElement(tag);e.className=cls;if(css)e.style.cssText=css;return e;};
     const img=(src,cls)=>{const i=document.createElement('img');i.src=src;i.className=cls;i.alt='';i.draggable=false;i.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;user-select:none;-webkit-user-drag:none';return i;};
-    const lid=mk('div','kaca-lid',`position:absolute;left:${LID_LEFT}%;top:${LID_TOP}%;width:${LID_W}%;height:${LID_H}%;z-index:3;display:none;transition:top .1s linear;pointer-events:none`);
-    const lidBody=img(DIR+'kaca_lid_body.webp','kaca-lid-body');
-    const armL=img(DIR+'kaca_lid_armL.webp','kaca-arm');armL.style.transformOrigin='52.14% 50%';
-    const armR=img(DIR+'kaca_lid_armR.webp','kaca-arm');armR.style.transformOrigin='52.14% 50%';
-    const hit=mk('div','kaca-lid-hit','position:absolute;left:17.9%;top:0;width:67.9%;height:44%;pointer-events:auto;cursor:grab');
-    lid.append(lidBody,armL,armR,hit);
+    const frame=z=>`position:absolute;left:${LID_LEFT}%;top:${LID_TOP}%;width:${LID_W}%;height:${LID_H}%;z-index:${z};display:none;pointer-events:none`;
+    const shaftWrap=mk('div','kaca-shaft-wrap',frame(2));
+    const shaft=mk('div','kaca-shaft',`position:absolute;left:${(274/C_W*100).toFixed(3)}%;top:${(SHAFT_TOP/C_H*100).toFixed(3)}%;width:${(30/C_W*100).toFixed(3)}%;height:20%;background:url(${DIR}kaca_shaft_tile.webp) 0 0/100% auto repeat-y`);
+    shaftWrap.appendChild(shaft);
+    const disc=mk('div','kaca-disc',frame(3));disc.appendChild(img(DIR+'kaca_lid_disc.webp','kaca-disc-img'));
     const front=img(DIR+'kaca_prazna.webp','kaca-front');
     front.style.zIndex='4';front.style.display='none';front.style.clipPath=`polygon(${FRONT_POLY})`;front.style.webkitClipPath=`polygon(${FRONT_POLY})`;
-    el.append(lid,front);
-    el._kaca={lid,armL,armR,hit,front,turn:0};
+    const top=mk('div','kaca-top',frame(5));
+    const topImg=img(DIR+'kaca_lid_top.webp','kaca-top-img');
+    const armL=img(DIR+'kaca_lid_armL.webp','kaca-arm');armL.style.transformOrigin='52.14% 50%';
+    const armR=img(DIR+'kaca_lid_armR.webp','kaca-arm');armR.style.transformOrigin='52.14% 50%';
+    const hit=mk('div','kaca-lid-hit','position:absolute;left:17.9%;top:0;width:67.9%;height:23%;pointer-events:auto;cursor:grab');
+    top.append(topImg,armL,armR,hit);
+    el.append(shaftWrap,disc,front,top);
+    el._kaca={lid:disc,shaftWrap,shaft,disc,top,armL,armR,hit,front,turn:0,all:[shaftWrap,disc,front,top]};
     return el._kaca;
   }
 
@@ -72,10 +81,13 @@
     if(b&&b.getAttribute('src')!==src)b.src=src;
     const cs=el._contactShadow?.querySelector('img');if(cs&&cs.getAttribute('src')!==src)cs.src=src;
     if(L.front.getAttribute('src')!==src)L.front.src=src;
-    L.lid.style.display=L.front.style.display=closed?'block':'none';
+    for(const x of L.all)x.style.display=closed?'block':'none';
     if(closed){
       const p=num(el,'kacaP');
-      L.lid.style.top=(LID_TOP+depthRest(n)+pressTravel(p))+'%';
+      const dPct=depthRest(n)+pressTravel(p);                 // how far the disc is down, percent of the barrel's height
+      const dC=dPct/LID_H*C_H;                                // the same in pixels of the closed-barrel picture
+      L.disc.style.top=(LID_TOP+dPct)+'%';
+      L.shaft.style.height=((SHAFT_BASE-SHAFT_TOP+dC)/C_H*100)+'%';
       const c=Math.max(.2,Math.abs(Math.cos((L.turn||0)*Math.PI/180)));
       L.armL.style.transform=L.armR.style.transform=`scaleX(${c.toFixed(3)})`;
     }
@@ -181,7 +193,7 @@
   // ---------- circular drag on the screw handle ----------
   let drag=null;
   function pivotOf(el){
-    const L=el._kaca,r=L.lid.getBoundingClientRect();
+    const L=el._kaca,r=L.top.getBoundingClientRect();
     return {x:r.left+r.width*(292/560),y:r.top+r.height*(48/558)};
   }
   function onDown(e){
