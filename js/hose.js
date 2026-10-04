@@ -12,8 +12,8 @@
   const TAP_FIT=50;                                 // an end let go within this distance snaps to the tap
   const COIL={x:960,y:194};                         // centre of the coil on the floor
   const SQ=.34;                                      // the coil is squashed because of the camera angle
-  const RES=1.5,G=1700,DAMP=.987,STEP=1/90;
-  const FILL_PER_SEC=9;                             // percent of the barrel per second
+  const RES=1.5,G=2600,DAMP=.945,STEP=1/90;
+  const FILL_PER_SEC=5;                             // percent of the barrel per second
   let scene=null,cv=null,cx=null;
   let P=[];                                         // {x,y,px,py,asleep}
   const ends=[{mode:'floor',floor:0},{mode:'floor',floor:0}];   // per end: 'floor' | 'tap' | 'held'
@@ -92,7 +92,7 @@
     // hand and tap act as fixed points
     for(let e=0;e<2;e++){
       const p=P[idxOf(e)],m=ends[e];
-      if(m.mode==='held'){wake(p);p.x=p.px=hand.x;p.y=p.py=hand.y;}
+      if(m.mode==='held'){wake(p);const k=.2;p.x+=(hand.x-p.x)*k;p.y+=(hand.y-p.y)*k;p.px=p.x;p.py=p.y;}   // the heavy hose lags a little behind the hand
       else if(m.mode==='tap'){p.x=p.px=TAP.x;p.y=p.py=TAP.y;p.asleep=false;}
     }
     const fixed=(p,i)=>{

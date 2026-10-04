@@ -25,6 +25,8 @@
   const depthRest=n=>((MAX-n)/MAX)*150/560*100;      // how deep the lid sits on n cabbages (percent of the barrel's height)
   const pressTravel=p=>p/100*38/560*100;             // and how much it goes down while pressing
 
+  // the barrel is deep and seen from the side: the first half of the water is not visible yet, then the surface rises into view
+  const visWater=el=>Math.max(0,Math.min(100,(num(el,'kacaWater')-50)*2));
   const num=(el,k)=>+el.dataset[k]||0;
   const day=()=>{try{return CooksterState.player.day||1;}catch(_){return 1;}};
   const isKaca=el=>!!el&&el.dataset?.itemId===ID;
@@ -88,7 +90,7 @@
     const cs=el._contactShadow?.querySelector('img');if(cs&&cs.getAttribute('src')!==src)cs.src=src;
     if(L.front.getAttribute('src')!==src)L.front.src=src;
     for(const x of L.all)x.style.display=closed?'block':'none';
-    const w=Math.max(0,Math.min(100,num(el,'kacaWater')));
+    const w=visWater(el);
     L.water.style.display=(w>0&&!closed&&n<VISIBLE_FROM)?'block':'none';
     L.waterSurf.style.transform=`translateY(${((1-w/100)*WATER_RY*2*1.04).toFixed(2)}%)`;
     if(closed){
@@ -124,7 +126,7 @@
     if(!el||!el.isConnected||performance.now()>hudT){hud.style.display='none';return;}
     const r=el.getBoundingClientRect(),n=num(el,'kacaN'),closed=el.dataset.kacaLid==='1',p=num(el,'kacaP');
     let t=n+'/'+MAX+' kupusa';
-    const wl=Math.round(num(el,'kacaWater'));if(wl>0)t+=' · voda '+wl+'%';
+    const wl=Math.round(num(el,'kacaWater'));if(wl>0)t+=wl>=100?' · puno vode':' · voda se sliva…';
     if(el.dataset.kacaRuined==='1')t='Pokvaren kupus — klikni da baciš';
     else if(closed){
       const left=daysLeft(el);
@@ -284,7 +286,7 @@
       for(const el of (window.items||items)){
         if(!isKaca(el)||el===holding)continue;
         const r=el.getBoundingClientRect();
-        const w=Math.max(0,Math.min(100,num(el,'kacaWater')))/100,sy=r.top+r.height*(.25+(1-w)*.05);   // water surface inside the opening
+        const w=visWater(el)/100,sy=r.top+r.height*(.25+(1-w)*.05);   // water surface inside the opening
         if(sp.x<r.left+r.width*.2||sp.x>r.right-r.width*.2||sp.y>sy)continue;
         const surf=screenToScene(sp.x,sy);
         return{el,y:surf.y,closed:el.dataset.kacaLid==='1',full:num(el,'kacaWater')>=100};
