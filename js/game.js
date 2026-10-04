@@ -10885,7 +10885,7 @@ window.CooksterWorld={
     });
    }
    syncBackpackUi();
-   const board=getBoardEl();if(board)syncBoardAttachments(board);
+   const board=getBoardEl();if(board){syncBoardAttachments(board);if(!isCutting)ensureKnifeAlwaysOnBoard(board);}   // the knife always lies on the board, also right after loading a save
    return true;
  },
  exportHeldCrateToGarden(){
@@ -14990,6 +14990,8 @@ if(__board){
  }
 }
 
+// once everything has loaded (a restored save may have put the knife on the floor) the knife goes onto the board
+for(const ms of [0,400,1500])setTimeout(()=>{const bd=getBoardEl(),kn=getKnifeEl();if(bd&&kn&&!isCutting&&holding!==kn&&kn.dataset.heldByHand!=='1'&&!(kn.parentNode===bd&&kn.style.left.endsWith('%')))ensureKnifeAlwaysOnBoard(bd);},ms);
 applyCookstoveState();
 if(stoveState.fireOn&&stoveState.fireLevel>0) scheduleFireBurn(false);
 else updateFireTimerBar();
