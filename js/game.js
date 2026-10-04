@@ -13839,13 +13839,19 @@ function beginCutAction(){
  if(window.CooksterTomatoCut?.supports(target)){
    const def=VEGETABLES[target.dataset.vegKey]||{};
    if(def.src&&def.slicedSrc){
-     CooksterTomatoCut.start(target,def,{onCutSound(){playImpactSound(vegSoundTarget(target),'cut');},onDone(src,atlas){
+     const cutCallbacks={onCutSound(){playImpactSound(vegSoundTarget(target),'cut');},onDone(src,atlas){
        showToast(setVegetableDiced(target));
        if(atlas)target.dataset.pieceAtlas=atlas;
        const body=target.querySelector('.body');if(body)body.src=src;
        const shadowImg=target._contactShadow?.querySelector('img');if(shadowImg)shadowImg.src=src;
        CooksterSave.schedule();updateHover();
-     }});
+     }};
+     // the tomato is cut as a real 3D solid; if WebGL is not available the flat 2D cutting is used instead
+     if(window.CooksterTomatoCut3D?.supports(target)){
+       CooksterTomatoCut3D.start(target,def,cutCallbacks).then(ok=>{if(ok===false)CooksterTomatoCut.start(target,def,cutCallbacks);}).catch(()=>CooksterTomatoCut.start(target,def,cutCallbacks));
+       return;
+     }
+     CooksterTomatoCut.start(target,def,cutCallbacks);
      return;
    }
  }
