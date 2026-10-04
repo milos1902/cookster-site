@@ -162,11 +162,12 @@
               x:0,y:0,
               k0:k,r:Math.max(4,(Math.max(sw,sh)-PAD*2)/2*k)};
             piece.r0=piece.r;
-            this.pieces.set(id,piece);created.push(piece);
+            piece.n=this.counter=(this.counter||0)+1;
+            this.pieces.set(id,piece);created.push(piece);this.list=null;
           });
         }
       }
-      for(const id of [...this.pieces.keys()])if(!want.has(id))this.pieces.delete(id);
+      for(const id of [...this.pieces.keys()])if(!want.has(id)){this.pieces.delete(id);this.list=null;}
       this.fit();
       this.applyLevel();
       for(const p of created)this.scatter(p);
@@ -222,20 +223,24 @@
       p.x=bx+dx/dl*inset;p.y=by+dy/dl*inset;p.vx*=.5;p.vy*=.5;
     }
     collide(ps,push,range){
-      // spatial hash so ~150 pieces stay cheap
-      const cell=12,grid=new Map();
+      // spatial hash (numeric keys, buckets reused between calls) so ~150 pieces stay cheap and nothing is allocated per frame
+      const cell=12,grid=this._grid||(this._grid=new Map());
+      for(const bk of grid.values())bk.length=0;
       for(const p of ps){
-        const key=Math.floor(p.x/cell)+','+Math.floor(p.y/cell);
-        (grid.get(key)||grid.set(key,[]).get(key)).push(p);
+        const key=(Math.floor(p.x/cell)+64)*512+Math.floor(p.y/cell)+64;
+        let bk=grid.get(key);if(!bk){bk=[];grid.set(key,bk);}bk.push(p);
       }
       for(const a of ps){
-        const gx=Math.floor(a.x/cell),gy=Math.floor(a.y/cell);
+        const gx=Math.floor(a.x/cell)+64,gy=Math.floor(a.y/cell)+64;
         for(let ix=gx-1;ix<=gx+1;ix++)for(let iy=gy-1;iy<=gy+1;iy++){
-          const bucket=grid.get(ix+','+iy);if(!bucket)continue;
-          for(const b of bucket){
-            if(b.id<=a.id||b.layer!==a.layer)continue;
-            const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||.01,m=(a.r+b.r)*range;
-            if(d<m){const f=(m-d)/d*push;a.x-=dx*f;a.y-=dy*f;b.x+=dx*f;b.y+=dy*f;}
+          const bucket=grid.get(ix*512+iy);if(!bucket||!bucket.length)continue;
+          for(let j=0;j<bucket.length;j++){
+            const b=bucket[j];
+            if(b.n<=a.n||b.layer!==a.layer)continue;
+            const dx=b.x-a.x,dy=b.y-a.y,m=(a.r+b.r)*range;
+            if(dx>m||dx<-m||dy>m||dy<-m)continue;
+            const d2=dx*dx+dy*dy;
+            if(d2<m*m){const d=Math.sqrt(d2)||.01,f=(m-d)/d*push;a.x-=dx*f;a.y-=dy*f;b.x+=dx*f;b.y+=dy*f;}
           }
         }
       }
@@ -277,7 +282,7 @@
     // many pieces (several ingredients) must not move faster than a few: scale the weight with how crowded the vessel is
     crowd(){return 1+Math.max(0,this.pieces.size-20)/45;}
     step(now){
-      const ps=[...this.pieces.values()];
+      const ps=this.list||(this.list=[...this.pieces.values()]);
       const crowd=this.crowd();
       const settling=now<this.activeUntil+1400;   // the evening-out only acts while and shortly after stirring
       let energy=0;
@@ -293,17 +298,30 @@
         if(Math.abs(p.vx)<.001)p.vx=0;
         if(Math.abs(p.vy)<.001)p.vy=0;
       }
-      if(energy>0){this.collide(ps,.24,.8);this.collide(ps,.14,.8);for(const p of ps)this.wall(p);}
+      if(energy>0){this.collide(ps,.3,.8);for(const p of ps)this.wall(p);}
       // while and just after stirring the food evens itself out over the whole area (soft pressure between neighbours),
       // so it never ends up bunched in the middle with the floor showing at the sides
-      if(settling){this.collide(ps,.045,1.9);for(const p of ps)this.wall(p);this.dirty=true;}
+      if(settling&&(energy>0||(this.tickN=(this.tickN||0)+1)%2===0)){this.collide(ps,.045,1.9);for(const p of ps)this.wall(p);if(energy>0)this.dirty=true;}
       return energy;
     }
     // Static "bed": the stock art of the cooked vegetable covers the bottom of the vessel, so stirring never uncovers it.
     // It follows the same stages as the loose pieces (raw -> fried -> well done -> burnt).
     drawBed(g,w,h,sc,stage){
-      const ps=[...this.pieces.values()].filter(p=>p.entry.ready);
+      const ps=(this.list||(this.list=[...this.pieces.values()])).filter(p=>p.entry.ready);
       if(!ps.length)return;
+      // the bed never moves, so it is drawn once into its own canvas and only copied afterwards
+      let cooked=0;for(const p of ps){if(p.entry.cooked?.fried)cooked|=1;if(p.entry.cooked?.well)cooked|=2;}
+      const key=w+'x'+h+'|'+stage+'|'+ps.length+'|'+cooked+'|'+this.area.toFixed(1);
+      const bc=this._bedCache||(this._bedCache=document.createElement('canvas'));
+      if(this._bedKey!==key){
+        this._bedKey=key;
+        bc.width=g.canvas.width;bc.height=g.canvas.height;
+        const bg=bc.getContext('2d');bg.setTransform(g.getTransform());bg.clearRect(0,0,w,h);
+        this.drawBedNow(bg,w,h,sc,stage,ps);
+      }
+      g.save();g.setTransform(1,0,0,1,0,0);g.drawImage(bc,0,0);g.restore();
+    }
+    drawBedNow(g,w,h,sc,stage,ps){
       const bl=BLEND[Math.max(1,Math.min(7,stage))-1];
       // under the loose pieces lies a settled layer made of the same cut pieces (they do not move), so stirring never
       // uncovers the floor: it covers exactly the area the food has risen to
@@ -333,11 +351,11 @@
       g.restore();
     }
     draw(){
-      const ps=[...this.pieces.values()].sort((a,b)=>a.layer-b.layer||a.y-b.y);
+      const ps=(this.list||(this.list=[...this.pieces.values()])).slice().sort((a,b)=>a.layer-b.layer||a.y-b.y);
       for(const c of this.liveCanvases()){
         const el=c.el,w=el.clientWidth,h=el.clientHeight;
         if(!w||!h)continue;
-        const dpr=Math.min(2,window.devicePixelRatio||1);
+        const dpr=Math.min(1.5,window.devicePixelRatio||1);
         if(el.width!==Math.round(w*dpr)||el.height!==Math.round(h*dpr)){el.width=Math.round(w*dpr);el.height=Math.round(h*dpr);}
         const g=el.getContext('2d'),sc=w/SIM_W;
         g.setTransform(dpr,0,0,dpr,0,0);
@@ -349,8 +367,9 @@
           // each layer sits higher; the heap is a little domed in the middle
           const rho=Math.min(1,Math.hypot((p.x-this.cx)/46,(p.y-this.cy)/(this.H*.44)));
           const lift=p.layer*1.7+(1-rho*rho)*1.6*(this.layers-1)/4;
-          if(p.layer>0){g.shadowColor='rgba(20,8,0,.45)';g.shadowBlur=3*sc/1.2;g.shadowOffsetY=1.2*sc/1.2;}
           g.translate(p.x*sc,(p.y-lift)*sc);g.rotate(p.rot);
+          // a cheap soft shadow under pieces lying on others (a blurred shadow per piece is far too slow)
+          if(p.layer>0){g.fillStyle='rgba(20,8,0,.2)';g.beginPath();g.ellipse(0,1.2*sc,p.r*.8*sc,p.r*.6*sc,0,0,6.2832);g.fill();}
           const dx=-p.ax*p.k*sc,dy=-p.ay*p.k*sc,dw=p.sw*p.k*sc,dh=p.sh*p.k*sc;
           const bl=BLEND[Math.max(1,Math.min(7,c.stage))-1];
           if(e.part)ensureCooked(e,e.part);
@@ -367,15 +386,21 @@
     }
   }
 
+  let frame=0;
   function tick(){
     let busy=false;
     const now=performance.now();
-    for(const sim of [...live]){
-      if(!sim.liveCanvases().size){live.delete(sim);continue;}
+    frame++;
+    const sims=[...live];
+    // several vessels being stirred at once: each one is redrawn every other frame, so the game keeps its frame rate
+    const crowded=sims.filter(s=>s.dirty||now<s.activeUntil+1400).length>=3;
+    sims.forEach((sim,i)=>{
+      if(!sim.liveCanvases().size){live.delete(sim);return;}
       const energy=sim.step(now);
       if(energy>.012||now<sim.activeUntil+1500)busy=true;
-      if(energy>0||sim.dirty)sim.draw();
-    }
+      if((energy>0||sim.dirty)&&(!crowded||(frame+i)%2===0))sim.draw();
+      else if(energy>0||sim.dirty)busy=true;
+    });
     if(busy&&live.size)requestAnimationFrame(tick);else running=false;
   }
   function kick(){if(!running){running=true;requestAnimationFrame(tick);}}
@@ -402,6 +427,7 @@
     debugClear:v=>{const s=sims.get(v);if(s){s.pieces.clear();s.dirty=true;kick();}},
     debugBed:v=>{const s=sims.get(v);return s?{parts:(s.parts||[]).map(p=>({k:p.storageKey,c:p.count,d:p.def&&p.def.dicedSrc,f:p.def&&p.def.friedDicedSrc})),img:[...imgCache.entries()].map(([k,e])=>[k.slice(-30),e.ready])}:null;},
     debugSim:v=>{const s=sims.get(v);return s?{fill:s.fill,H:s.H,cx:s.cx,cy:s.cy,area:s.area,layers:s.layers,ymin:Math.min(...s.poly.map(q=>q.y)),ymax:Math.max(...s.poly.map(q=>q.y)),xmin:Math.min(...s.poly.map(q=>q.x)),xmax:Math.max(...s.poly.map(q=>q.x))}:null;},
+    debugBench(vessel,n){const s=sims.get(vessel);if(!s)return null;const now=performance.now();s.activeUntil=now+1e6;let t0=performance.now();for(let i=0;i<n;i++)s.step(now+i*16);const st=(performance.now()-t0)/n;t0=performance.now();for(let i=0;i<n;i++){s.dirty=true;s.draw();}return {step:st,draw:(performance.now()-t0)/n};},
     debugPieces(vessel){return [...(sims.get(vessel)?.pieces.values()||[])].map(p=>({id:p.id,x:p.x,y:p.y}));}
   };
 })();
