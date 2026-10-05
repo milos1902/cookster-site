@@ -2,12 +2,12 @@
    to the left, like it turns to the right for the pantry).
    Guests come in through the door, walk to a free chair, sit, and after a while get up and leave. They are pictures
    (assets/tavern/guests/gNN_<pose>.webp, 10 characters x 5 poses) drawn on a canvas over the picture of the hall.
-   Walking is "faked" with a bob and a sway, and the left-right step is made by flipping the picture. */
+   Guests only walk toward or away from the camera (three pictures of a step each); going sideways they lean a little. */
 (function(){
 'use strict';
 var ROOM='assets/tavern/kafana.webp',GUESTS='assets/tavern/guests/';
 var W=1672,H=941;                                   // the picture of the hall
-var DUR=700,CHARS=10,POSES=['dole','dole2','gore','gore2','bok','sedi_lice','sedi_ledja','sedi_ledja_l'];
+var DUR=700,CHARS=10,POSES=['dole','dole2','gore','gore2','sedi_lice','sedi_ledja','sedi_ledja_l'];
 var viewport=document.getElementById('viewport'),scene=document.getElementById('scene');
 if(!viewport||!scene||window.CooksterTavern)return;
 
@@ -133,11 +133,18 @@ function readCal(){
   });
   return cal;
 }
-var CAL=null,MASKS=[],WALKMASKS=[];
+var CAL=null,MASKS=[],WALKMASKS=[],TABLEMASKY={};
 function applyCal(cal){
   CAL=cal||readCal();
   MASKS=CAL.tableMask.filter(function(p){return p.length>=3}).map(function(p){
-    var by=-1e9;p.forEach(function(q){by=Math.max(by,q[1])});return{poly:p,y:by-4};
+    var by=-1e9,cx=0,cy=0;p.forEach(function(q){by=Math.max(by,q[1]);cx+=q[0];cy+=q[1]});return{poly:p,y:by-4,cx:cx/p.length,cy:cy/p.length};
+  });
+  // which mask belongs to which table (the nearest one): whoever sits at a table is drawn above that table's mask
+  TABLEMASKY={};
+  TABLES.forEach(function(t,ti){
+    var best=null;
+    MASKS.forEach(function(m){var d=Math.hypot(m.cx-t.x,m.cy-t.y);if(!best||d<best.d)best={d:d,y:m.y}});
+    if(best&&best.d<200)TABLEMASKY[ti]=best.y;
   });
   WALKMASKS=[];
   Object.keys(CAL.chairWalk||{}).forEach(function(k){
@@ -241,9 +248,9 @@ function step(dt){
         var dx=tgt.x-g.x,dy=tgt.y-g.y,d=Math.hypot(dx,dy),sp=g.speed*scaleAt(g.y)/.34*dt;
         if(d<=sp){g.x=tgt.x;g.y=tgt.y;g.pi++}
         else{g.x+=dx/d*sp;g.y+=dy/d*sp;
-          var vert=Math.abs(dy)>Math.abs(dx)*(g.face==='bok'?1.5:.7);
-          g.face=vert?(dy>0?'dole':'gore'):'bok';
-          if(g.face==='bok')g.flip=dx<0;
+          // guests only walk forward or backward; going sideways they keep their face and lean a little to that side
+          if(Math.abs(dy)>.25)g.face=dy>0?'dole':'gore';
+          g.lean=Math.max(-1,Math.min(1,dx/(Math.abs(dy)+Math.abs(dx)+1e-6)));
         }
         g.phase+=sp/(40*scaleAt(g.y)/.34);
       }
@@ -274,7 +281,13 @@ function drawSprite(ctx,key,x,y,sc,flip,rot,alpha){
 function drawShadow(ctx,x,y,sc){
   ctx.save();ctx.fillStyle='rgba(20,8,2,.32)';ctx.beginPath();ctx.ellipse(x,y+2,34*sc/.3,9*sc/.3,0,0,Math.PI*2);ctx.fill();ctx.restore();
 }
-function guestSortY(g){return(g.mode==='seated'||g.mode==='sitting'||g.mode==='rising')?seatPos(g).y:g.y}
+function guestSortY(g){
+  if(g.mode!=='seated'&&g.mode!=='sitting'&&g.mode!=='rising')return g.y;
+  var y=seatPos(g).y,my=TABLEMASKY[g.seat.table];
+  // a guest at the far side of the table sits above the cloth: his arms lie on the table, the table must not cover him
+  if(g.seat.k==='back'&&my!==undefined)y=Math.max(y,my+1);
+  return y;
+}
 function drawGuest(ctx,g){
   drawGuestBody(ctx,g);
   if(g.mode==='seated'||g.mode==='sitting'||g.mode==='rising'){
@@ -288,22 +301,21 @@ function drawGuestBody(ctx,g){
     var sc=scaleAt(g.y),ph=Math.abs(Math.sin(g.phase*Math.PI)),bob=ph*3.2*sc/.3;
     drawShadow(ctx,g.x,g.y,sc);
     // the two pictures of a step: the left leg and the right arm forward, then the right leg and the left arm forward
-    var pose=g.face;
-    var rot=Math.sin(g.phase*Math.PI)*(g.face==='bok'?.03:.012);
-    if(g.face==='dole'||g.face==='gore'){
+    var rot=Math.sin(g.phase*Math.PI)*.012+(g.lean||0)*.09;
+    {
       var wk=g.face==='dole'?'walkd':'walku';
       // the next picture of the step fades in over the current one, so the legs flow instead of jumping
       var q=g.phase*2,qi=Math.floor(q),fr=q-qi,SEQ=[1,2,3,2];
       var fade=Math.max(0,Math.min(1,(fr-.25)/.65));fade=fade*fade*(3-2*fade);
       drawSprite(ctx,chKey(g,wk+SEQ[qi%4]),g.x,g.y-bob,sc,false,rot,1);
       if(fade>0)drawSprite(ctx,chKey(g,wk+SEQ[(qi+1)%4]),g.x,g.y-bob,sc,false,rot,fade);
-    }else drawSprite(ctx,chKey(g,pose),g.x,g.y-bob,sc,g.face==='bok'&&g.flip,rot,1);
+    }
   }else{
     var sp=seatPos(g),ssc=scaleAt(sp.y)*SIT_K;
     if(g.mode==='sitting'||g.mode==='rising'){
       var t=g.mode==='sitting'?g.fade:1-g.fade,e=t*t*(3-2*t);
       var fx=g.seat.ax+(sp.x-g.seat.ax)*e,fy=g.seat.ay+(sp.y-g.seat.ay)*e;
-      drawSprite(ctx,chKey(g,g.from?g.from.face:'dole'),fx,fy,scaleAt(fy),g.from&&g.from.face==='bok'&&g.flip,0,1-e);
+      drawSprite(ctx,chKey(g,g.from?g.from.face:'dole'),fx,fy,scaleAt(fy),false,0,1-e);
       drawSprite(ctx,chKey(g,sitPose(g)),fx,fy,ssc,false,0,e);
     }else{
       // seated: a slow breath, now and then a nod
