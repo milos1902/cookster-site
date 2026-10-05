@@ -7,7 +7,7 @@
 'use strict';
 var ROOM='assets/tavern/kafana.webp',GUESTS='assets/tavern/guests/';
 var W=1672,H=941;                                   // the picture of the hall
-var DUR=700,CHARS=10,POSES=['dole','dole2','gore','gore2','sedi_lice','sedi_ledja','sedi_ledja_l'];
+var IMGV=4,DUR=700,CHARS=10,POSES=['dole','dole2','gore','gore2','sedi_lice','sedi_ledja','sedi_ledja_l'];
 var viewport=document.getElementById('viewport'),scene=document.getElementById('scene');
 if(!viewport||!scene||window.CooksterTavern)return;
 
@@ -59,12 +59,12 @@ function preload(){
   var jobs=[];
   for(var c=1;c<=CHARS;c++)POSES.forEach(function(p){
     var key='g'+(c<10?'0':'')+c+'_'+p;
-    jobs.push(loadImg(GUESTS+key+'.webp').then(function(im){imgs[key]=im}));
+    jobs.push(loadImg(GUESTS+key+'.webp?v='+IMGV).then(function(im){imgs[key]=im}));
   });
   // walking toward the camera: right leg forward, legs together, left leg forward (then together again)
   // (the same three pictures seen from behind, 'walku', when walking away from the camera)
   for(var c2=1;c2<=CHARS;c2++)for(var f=1;f<=3;f++)['walkd','walku'].forEach(function(w){(function(key){
-    jobs.push(loadImg(GUESTS+key+'.webp').then(function(im){imgs[key]=im}));
+    jobs.push(loadImg(GUESTS+key+'.webp?v='+IMGV).then(function(im){imgs[key]=im}));
   })('g'+(c2<10?'0':'')+c2+'_'+w+f)});
   var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
   loading=Promise.all([roomJob].concat(jobs)).then(function(r){loaded=!!r[0];loading=null;return loaded});
