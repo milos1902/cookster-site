@@ -61,6 +61,10 @@ function preload(){
     var key='g'+(c<10?'0':'')+c+'_'+p;
     jobs.push(loadImg(GUESTS+key+'.webp').then(function(im){imgs[key]=im}));
   });
+  // walking toward the camera: right leg forward, legs together, left leg forward (then together again)
+  for(var c2=1;c2<=CHARS;c2++)for(var f=1;f<=3;f++)(function(key){
+    jobs.push(loadImg(GUESTS+key+'.webp').then(function(im){imgs[key]=im}));
+  })('g'+(c2<10?'0':'')+c2+'_walkd'+f);
   var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
   loading=Promise.all([roomJob].concat(jobs)).then(function(r){loaded=!!r[0];loading=null;return loaded});
   return loading;
@@ -273,7 +277,8 @@ function drawGuestBody(ctx,g){
     drawShadow(ctx,g.x,g.y,sc);
     // the two pictures of a step: the left leg and the right arm forward, then the right leg and the left arm forward
     var pose=g.face;
-    if(g.face==='dole'||g.face==='gore')pose=(Math.floor(g.phase)%2===0)?g.face:g.face+'2';
+    if(g.face==='gore')pose='gore'+(Math.floor(g.phase)%2===0?'':'2');
+    else if(g.face==='dole')pose='walkd'+[1,2,3,2][Math.floor(g.phase*2)%4];
     drawSprite(ctx,chKey(g,pose),g.x,g.y-bob,sc,g.face==='bok'&&g.flip,Math.sin(g.phase*Math.PI)*(g.face==='bok'?.03:.012),1);
   }else{
     var sp=seatPos(g),ssc=scaleAt(sp.y)*SIT_K;
