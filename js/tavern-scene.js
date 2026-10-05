@@ -5,9 +5,9 @@
    Guests only walk toward or away from the camera (three pictures of a step each); going sideways they lean a little. */
 (function(){
 'use strict';
-var ROOM='assets/tavern/kafana.webp',GUESTS='assets/tavern/guests/';
+var ROOM='assets/tavern/kafana_cista.webp',GUESTS='assets/tavern/guests/';
 var W=1672,H=941;                                   // the picture of the hall
-var IMGV=4,DUR=700,CHARS=10,POSES=['dole','dole2','gore','gore2','sedi_lice','sedi_ledja','sedi_ledja_l'];
+var GUESTS_ON=false,IMGV=4,DUR=700,CHARS=10,POSES=['dole','dole2','gore','gore2','sedi_lice','sedi_ledja','sedi_ledja_l'];
 var viewport=document.getElementById('viewport'),scene=document.getElementById('scene');
 if(!viewport||!scene||window.CooksterTavern)return;
 
@@ -111,7 +111,7 @@ var CELL=22,GW=Math.ceil(W/CELL),GH=Math.ceil(H/CELL),GRID=null;
 //   tableMask  polygons: parts of the tables that cover a guest walking behind them
 //   chairMask  {"seatId": [polygons]}: the part of a chair that covers the guest sitting on it
 //   chairWalk  {"seatId": [polygons]}: the part of a chair that covers a guest walking behind it (only while nobody sits on it)
-var CAL_KEY='cookster.tavern-calibration.v1',CAL_FILE='assets/tavern/calibration.json';
+var CAL_KEY='cookster.tavern-calibration.v2',CAL_FILE='assets/tavern/calibration_cista.json';
 function clonePoly(p){return p.map(function(q){return[q[0],q[1]]})}
 function defaultCal(){
   var cal={version:1,floor:[clonePoly(FLOOR)],blocked:[],tableMask:[],chairMask:{},chairWalk:{}};
@@ -236,7 +236,7 @@ function spawn(){
 function chKey(g,pose){return 'g'+(g.ch<10?'0':'')+g.ch+'_'+pose}
 function step(dt){
   clock+=dt;
-  if(clock>=nextArrival){nextArrival=clock+7+Math.random()*9;if(guests.length<14)spawn()}
+  if(GUESTS_ON&&clock>=nextArrival){nextArrival=clock+7+Math.random()*9;if(guests.length<14)spawn()}
   for(var i=guests.length-1;i>=0;i--){
     var g=guests[i];
     if(g.mode==='in'||g.mode==='out'){
@@ -334,6 +334,7 @@ function drawPolyFromPicture(ctx,poly){
 function draw(){
   var ctx=cv.getContext('2d'),k=cv.width/W;
   ctx.setTransform(k,0,0,k,0,0);ctx.clearRect(0,0,W,H);
+  if(!GUESTS_ON)return;          // the cleaning room: no guests, and the table masks must not paint the clean picture over the dirt
   var list=guests.map(function(g){return{y:guestSortY(g),g:g}});
   MASKS.forEach(function(m){list.push({y:m.y,m:m})});
   // a chair covers whoever walks behind it, but only while nobody sits on it
