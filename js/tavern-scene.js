@@ -7,7 +7,7 @@
 'use strict';
 var ROOM='assets/tavern/kafana.webp',GUESTS='assets/tavern/guests/';
 var W=1672,H=941;                                   // the picture of the hall
-var DUR=700,CHARS=10,POSES=['dole','dole2','gore','gore2','bok','sedi_lice','sedi_ledja','sedi_ledja_l'];
+var WALKF=7,WALKK=2,DUR=700,CHARS=10,POSES=['dole','dole2','gore','gore2','bok','sedi_lice','sedi_ledja','sedi_ledja_l'];
 var viewport=document.getElementById('viewport'),scene=document.getElementById('scene');
 if(!viewport||!scene||window.CooksterTavern)return;
 
@@ -63,6 +63,12 @@ function preload(){
   });
   ['w_dole','w_dole2','w_gore','w_gore2','w_bok1','w_bok2','w_bok3','w_bokl1','w_bokl2','w_bokl3','w_pisi1','w_pisi2','w_pisi3','w_pisi4'].forEach(function(k){
     jobs.push(loadImg(GUESTS+k+'.webp').then(function(im){imgs[k]=im}));
+  });
+  // the walking toward and away from the camera: seven pictures of one stride (kept at half size)
+  for(var c2=1;c2<=CHARS;c2++)['walkd','walku'].forEach(function(w){
+    for(var f=1;f<=((c2===4&&w==='walkd')?5:WALKF);f++)(function(key){   // one picture set has only five
+      jobs.push(loadImg(GUESTS+key+'.webp').then(function(im){imgs[key]=im}));
+    })('g'+(c2<10?'0':'')+c2+'_'+w+f);
   });
   var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
   loading=Promise.all([roomJob].concat(jobs)).then(function(r){loaded=!!r[0];loading=null;return loaded});
@@ -339,9 +345,14 @@ function drawGuestBody(ctx,g){
     var sc=scaleAt(g.y),ph=Math.abs(Math.sin(g.phase*Math.PI)),bob=ph*3.2*sc/.3;
     drawShadow(ctx,g.x,g.y,sc);
     // the two pictures of a step: the left leg and the right arm forward, then the right leg and the left arm forward
-    var pose=g.face;
-    if(g.face==='dole'||g.face==='gore')pose=(Math.floor(g.phase)%2===0)?g.face:g.face+'2';
-    drawSprite(ctx,chKey(g,pose),g.x,g.y-bob,sc,g.face==='bok'&&g.flip,Math.sin(g.phase*Math.PI)*(g.face==='bok'?.03:.012),1);
+    var pose=g.face,k=sc,key;
+    if(g.face==='dole'||g.face==='gore'){
+      var pre=chKey(g,g.face==='dole'?'walkd':'walku'),n=0;
+      while(n<WALKF&&imgs[pre+(n+1)])n++;
+      if(n){key=pre+(Math.floor(g.phase*WALKF/2)%n+1);k=sc*WALKK}
+      else pose=(Math.floor(g.phase)%2===0)?g.face:g.face+'2';
+    }
+    drawSprite(ctx,key||chKey(g,pose),g.x,g.y-bob,k,g.face==='bok'&&g.flip,Math.sin(g.phase*Math.PI)*(g.face==='bok'?.03:.012),1);
   }else{
     var sp=seatPos(g),ssc=scaleAt(sp.y)*SIT_K;
     if(g.mode==='sitting'||g.mode==='rising'){
