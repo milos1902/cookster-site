@@ -1,16 +1,18 @@
 /* Cookster - cleaning the tavern.
    The tavern shows the DIRTY picture on top of the CLEAN one. The dirt is a canvas: whatever is rubbed off it shows the clean picture below.
-     - the sponge (hold the left mouse button and rub) cleans the FLOOR only, slowly: a few passes are needed
+     - the sponge (hold the left mouse button and rub) cleans everything except the tables, slowly: a few passes are needed.
+       It lies flat on the floor and the bar top, and is held upright against the walls and the front of the bar.
      - the tables are not cleaned with the sponge: right click on a table, then "Očisti sto"
-   Where the floor is, and where the tables are, is taken from the tool "Kalibracija kafane":
-     Pod (floor) minus Zabrana (blocked)   - what the sponge cleans
-     Maska stola (table mask)               - one shape per table, the table that is cleaned with the menu */
+   What the sponge cleans, and how it sits there, is taken from the tool "Kalibracija kafane":
+     Sunđer: površine   - the surfaces (floor, walls, bar...) with the way the sponge sits on them
+     Sunđer NE čisti    - the tables with their chairs
+     Maska stola        - one shape per table, the table that is cleaned with the menu */
 (function(){
 'use strict';
 var T=window.CooksterTavern,room=document.getElementById('tavernScene');
 if(!T||!room||window.CooksterTavernClean)return;
 var W=T.size.w,H=T.size.h,DIRTY='assets/tavern/kafana_prljava.webp?v=1';
-var SP_W=112,SP_H=Math.round(112*212/440),SP_AX=56,SP_AY=Math.round(112*212/440*.66);   // the sponge picture: size, and the point where it touches the floor
+var IMG=T.spongeImg;                                  // the pictures of the sponge (size and the point where it touches the surface)
 var RADIUS=46,SPACING=9,STRENGTH=.06;               // sponge: size, distance between two touches, how much one touch removes
 var cv=room.querySelector('.ts-guests');
 if(!cv)return;
@@ -21,9 +23,9 @@ css.textContent=
 '#tavernScene{cursor:none}#tavernScene button,#tavernScene .tc-menu{cursor:pointer}'+
 '#tavernScene .ts-add{display:none!important}'+
 '#tavernScene .tc-dirt,#tavernScene .tc-fx{position:absolute;pointer-events:none}'+
-'#tavernScene .tc-sponge{position:fixed;left:0;top:0;width:'+SP_W+'px;height:'+SP_H+'px;transform-origin:'+SP_AX+'px '+SP_AY+'px;pointer-events:none;z-index:60;display:none;will-change:transform}'+
+'#tavernScene .tc-sponge{position:fixed;left:0;top:0;pointer-events:none;z-index:60;display:none;will-change:transform}'+
 '#tavernScene .tc-sponge img{position:absolute;left:0;top:0;width:100%;height:100%;display:block;-webkit-user-drag:none}'+
-'#tavernScene .tc-sponge .tc-shadow{position:absolute;left:'+(SP_AX-SP_W*.6)+'px;top:'+(SP_AY-SP_W*.17)+'px;width:'+SP_W*1.2+'px;height:'+SP_W*.34+'px;border-radius:50%;background:radial-gradient(ellipse at center,rgba(0,0,0,.6),rgba(0,0,0,0) 70%)}'+
+'#tavernScene .tc-sponge .tc-shadow{position:absolute;border-radius:50%;background:radial-gradient(ellipse at center,rgba(0,0,0,.6),rgba(0,0,0,0) 70%)}'+
 '#tavernScene .tc-info{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:70;padding:6px 14px;border-radius:9px;background:rgba(32,20,9,.82);border:1px solid #7a5428;color:#f3e3c2;font:600 14px/1.2 system-ui,sans-serif;pointer-events:none;white-space:nowrap}'+
 '#tavernScene .tc-hint{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);z-index:70;padding:5px 12px;border-radius:8px;background:rgba(32,20,9,.7);color:#d9c69c;font:12px/1.2 system-ui,sans-serif;pointer-events:none;white-space:nowrap;transition:opacity .6s}'+
 '#tavernScene .tc-reset{position:absolute;right:14px;top:12px;z-index:70;border:2px solid #351b0d;border-radius:9px;background:#e8c27a;color:#351b0d;font:700 13px/1 system-ui,sans-serif;padding:7px 12px;opacity:.85}'+
@@ -63,14 +65,14 @@ function prepare(){
   calRef=cal;
   floorMask=mk('canvas');floorMask.width=W;floorMask.height=H;
   var f=floorMask.getContext('2d');
-  f.fillStyle='#fff';cal.floor.forEach(function(p){if(p.length>=3){polyPath(f,p);f.fill()}});
+  f.fillStyle='#fff';(cal.surfaces||[]).forEach(function(sf){sf.polys.forEach(function(p){if(p.length>=3){polyPath(f,p);f.fill()}})});
   f.globalCompositeOperation='destination-out';
-  cal.blocked.forEach(function(p){if(p.length>=3){polyPath(f,p);f.fill()}});
+  (cal.cleanExclude||[]).forEach(function(p){if(p.length>=3){polyPath(f,p);f.fill()}});
   zones=cal.tableMask.filter(function(p){return p.length>=3});
   // "Očisti sto" also cleans what is under and around the table: every blocked shape (table with its chairs) that holds the table
   areas=zones.map(function(z){
     var c=center(z),list=[z];
-    cal.blocked.forEach(function(b){if(b.length>=3&&pip(b,c[0],c[1]))list.push(b)});
+    (cal.cleanExclude||[]).forEach(function(b){if(b.length>=3&&pip(b,c[0],c[1]))list.push(b)});
     return list;
   });
   while(cleaned.length<zones.length)cleaned.push(false);
@@ -80,13 +82,15 @@ function prepare(){
 
 // ---------- the sponge ----------
 var scratch=mk('canvas');
-// the sponge lies flat on the floor: seen from above at an angle its footprint is a flattened ellipse, and it is smaller farther away
-var FLAT=.58;
-function depthK(y){return .75+.45*Math.max(0,Math.min(1,(y-300)/640))}
+// the sponge lies flat on the floor: seen from above at an angle its footprint is a flattened ellipse, and it is smaller farther away.
+// Held against a wall it touches in a round patch.
+function flatOf(q){return IMG[q.img].flat*q.flat}
+function sp(x,y){return T.spongeAt(Math.max(0,Math.min(W,x)),Math.max(0,Math.min(H,y)))}      // size, flatness ... at that place (from the tool)
+function depthK(x,y){return sp(x,y).scale}
 function stamp(x,y){
-  var k=depthK(y),rx=Math.round(RADIUS*k),ry=Math.max(2,Math.round(rx*FLAT)),sc=scratch.getContext('2d');
+  var q=sp(x,y),k=q.scale,rx=Math.round(RADIUS*k),ry=Math.max(2,Math.round(rx*flatOf(q))),sc=scratch.getContext('2d');
   scratch.width=rx*2;scratch.height=ry*2;
-  sc.setTransform(1,0,0,FLAT,rx,ry);
+  sc.setTransform(1,0,0,ry/rx,rx,ry);
   var g=sc.createRadialGradient(0,0,0,0,0,rx);
   g.addColorStop(0,'rgba(0,0,0,'+STRENGTH+')');g.addColorStop(.6,'rgba(0,0,0,'+STRENGTH*.7+')');g.addColorStop(1,'rgba(0,0,0,0)');
   sc.fillStyle=g;sc.fillRect(-rx,-rx,rx*2,rx*2);
@@ -100,12 +104,12 @@ function stamp(x,y){
 function rubTo(x,y){
   prepare();
   if(!last){last={x:x,y:y};stamp(x,y);return}
-  var sp=SPACING*depthK(y),dx=x-last.x,dy=y-last.y,d=Math.hypot(dx,dy),n=Math.floor(d/sp);
+  var step=SPACING*depthK(x,y),dx=x-last.x,dy=y-last.y,d=Math.hypot(dx,dy),n=Math.floor(d/step);
   if(n>0){
-    rubbed+=n*sp;
+    rubbed+=n*step;
     var ux=dx/d,uy=dy/d;
-    for(var i=1;i<=n;i++)stamp(last.x+ux*sp*i,last.y+uy*sp*i);
-    last={x:last.x+ux*sp*n,y:last.y+uy*sp*n};
+    for(var i=1;i<=n;i++)stamp(last.x+ux*step*i,last.y+uy*step*i);
+    last={x:last.x+ux*step*n,y:last.y+uy*step*n};
   }
   if(now()-lastBubble>45&&d>2){lastBubble=now();bubble(x,y,1)}
 }
@@ -152,16 +156,20 @@ function center(p){var x=0,y=0;p.forEach(function(q){x+=q[0];y+=q[1]});return[x/
 // ---------- the numbers ----------
 var info=mk('div','tc-info'),hint=mk('div','tc-hint'),reset=mk('button','tc-reset'),sponge=mk('div','tc-sponge'),menu=mk('div','tc-menu');
 reset.type='button';reset.textContent='↺ zaprljaj opet';
-hint.textContent='Drži levi klik i trljaj pod · Desni klik na sto → „Očisti sto“ (čisti i pod ispod stola)';
-// three pictures of the sponge: dry, soapy while it is pressed on the floor, dirty after a lot of cleaning
-var SPONGE={suv:'assets/tavern/sundjer_suv.webp?v=1',sapun:'assets/tavern/sundjer_sapun.webp?v=1',prljav:'assets/tavern/sundjer_prljav.webp?v=1'};
-sponge.innerHTML='<div class="tc-shadow"></div><img alt="" draggable="false" src="'+SPONGE.suv+'">';
-var spImg=sponge.querySelector('img'),spShadow=sponge.querySelector('.tc-shadow'),spState='suv';
-Object.keys(SPONGE).forEach(function(k){var i=new Image();i.src=SPONGE[k]});
+hint.textContent='Drži levi klik i trljaj (pod, zidove, šank...) · Desni klik na sto → „Očisti sto“ (čisti i pod ispod stola)';
+// the sponge: lying (three pictures: dry, soapy while it is pressed, dirty after a lot of cleaning) or upright (one picture, tinted when it is dirty)
+sponge.innerHTML='<div class="tc-shadow"></div><img alt="" draggable="false" src="'+IMG.lezeci.states.suv+'">';
+var spImg=sponge.querySelector('img'),spShadow=sponge.querySelector('.tc-shadow'),spKey='lezeci',spState='suv';
+Object.keys(IMG).forEach(function(k){var c=IMG[k];[c.src].concat(c.states?Object.keys(c.states).map(function(n){return c.states[n]}):[]).forEach(function(u){var i=new Image();i.src=u})});
 var rubbed=0,DIRTY_AFTER=3500;                         // how far the sponge has been rubbed (scene pixels); after that it is dirty
-function spongeLook(){
-  var st=down?'sapun':(rubbed>DIRTY_AFTER?'prljav':'suv');
-  if(st!==spState){spState=st;spImg.src=SPONGE[st]}
+var TINT={suv:'none',sapun:'brightness(1.08) saturate(.9)',prljav:'brightness(.78) sepia(.55) saturate(.85)'};
+function spongeLook(key){
+  var st=down?'sapun':(rubbed>DIRTY_AFTER?'prljav':'suv'),c=IMG[key],src=c.states?c.states[st]:c.src;
+  if(key!==spKey||st!==spState){
+    spKey=key;spState=st;
+    if(spImg.getAttribute('src')!==src)spImg.src=src;
+    spImg.style.filter=c.states?'none':TINT[st];
+  }
 }
 menu.innerHTML='<b></b><button type="button"></button>';
 room.appendChild(info);room.appendChild(hint);room.appendChild(reset);room.appendChild(sponge);room.appendChild(menu);
@@ -182,7 +190,7 @@ function floorPercent(){
 function refreshInfo(){
   prepare();
   var n=cleaned.filter(Boolean).length;
-  info.textContent='Pod: '+floorPercent()+'% čist  ·  Stolovi: '+n+' / '+zones.length+' čisti';
+  info.textContent='Kafana: '+floorPercent()+'% čista  ·  Stolovi: '+n+' / '+zones.length+' čisti';
 }
 setInterval(function(){if(T.isOpen)refreshInfo()},500);
 
@@ -194,14 +202,19 @@ function moveSponge(e){
   var over=overUi(e);
   sponge.style.display=over||!T.isOpen?'none':'block';
   room.style.cursor=over?'pointer':'none';
-  var p=toScene(e),r=cv.getBoundingClientRect(),k=depthK(Math.max(0,Math.min(H,p.y)))*(r.width/W);
+  var p=toScene(e),q=sp(p.x,p.y),c=IMG[q.img],r=cv.getBoundingClientRect(),ss=r.width/W;
+  var w=c.w,h=Math.round(c.w*c.ratio),ax=Math.round(c.ax*w),ay=Math.round(c.ay*h),lying=q.kind==='h';
   var vx=lastPos?e.clientX-lastPos.x:0;lastPos={x:e.clientX,y:e.clientY};
-  // it slides on the floor: it leans a little in the direction it is pushed, and it is lifted when it does not touch the floor
-  var sk=down?Math.max(-12,Math.min(12,vx*.5)):0,lift=down?2:15;
-  sponge.style.left=(e.clientX-SP_AX)+'px';sponge.style.top=(e.clientY-SP_AY)+'px';
-  sponge.style.transform='scale('+k+') skewX('+(-sk)+'deg)';
-  spImg.style.transform='translateY('+(-lift)+'px)';spShadow.style.opacity=down?1:.55;
-  spongeLook();
+  // it slides: it leans a little in the direction it is pushed; a lying sponge is lifted when it does not touch the surface
+  var sk=down?Math.max(-12,Math.min(12,vx*.5)):0,lift=lying?(down?2:q.lift):0;
+  sponge.style.width=w+'px';sponge.style.height=h+'px';sponge.style.transformOrigin=ax+'px '+ay+'px';
+  sponge.style.left=(e.clientX-ax)+'px';sponge.style.top=(e.clientY-ay)+'px';
+  sponge.style.transform='scale('+(q.scale*ss)+','+(q.scale*ss*q.flat)+') rotate('+q.angle+'deg) skewX('+(q.skew-sk)+'deg)';
+  spImg.style.transform='translateY('+(-lift)+'px)';
+  spShadow.style.display=lying?'block':'none';
+  spShadow.style.left=(ax-w*.6)+'px';spShadow.style.top=(ay-w*.17)+'px';spShadow.style.width=(w*1.2)+'px';spShadow.style.height=(w*.34)+'px';
+  spShadow.style.opacity=down?Math.min(1,q.shadow*1.8):q.shadow;
+  spongeLook(q.img);
 }
 function hideMenu(){menu.style.display='none'}
 room.addEventListener('pointerdown',function(e){
