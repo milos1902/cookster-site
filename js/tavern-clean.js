@@ -10,6 +10,7 @@
 var T=window.CooksterTavern,room=document.getElementById('tavernScene');
 if(!T||!room||window.CooksterTavernClean)return;
 var W=T.size.w,H=T.size.h,DIRTY='assets/tavern/kafana_prljava.webp?v=1';
+var SP_W=112,SP_H=Math.round(112*212/440),SP_AX=56,SP_AY=Math.round(112*212/440*.66);   // the sponge picture: size, and the point where it touches the floor
 var RADIUS=46,SPACING=9,STRENGTH=.06;               // sponge: size, distance between two touches, how much one touch removes
 var cv=room.querySelector('.ts-guests');
 if(!cv)return;
@@ -20,7 +21,9 @@ css.textContent=
 '#tavernScene{cursor:none}#tavernScene button,#tavernScene .tc-menu{cursor:pointer}'+
 '#tavernScene .ts-add{display:none!important}'+
 '#tavernScene .tc-dirt,#tavernScene .tc-fx{position:absolute;pointer-events:none}'+
-'#tavernScene .tc-sponge{position:fixed;left:0;top:0;width:120px;height:84px;transform-origin:60px 62px;pointer-events:none;z-index:60;display:none;will-change:transform}'+
+'#tavernScene .tc-sponge{position:fixed;left:0;top:0;width:'+SP_W+'px;height:'+SP_H+'px;transform-origin:'+SP_AX+'px '+SP_AY+'px;pointer-events:none;z-index:60;display:none;will-change:transform}'+
+'#tavernScene .tc-sponge img{position:absolute;left:0;top:0;width:100%;height:100%;display:block;-webkit-user-drag:none}'+
+'#tavernScene .tc-sponge .tc-shadow{position:absolute;left:'+(SP_AX-SP_W*.6)+'px;top:'+(SP_AY-SP_W*.17)+'px;width:'+SP_W*1.2+'px;height:'+SP_W*.34+'px;border-radius:50%;background:radial-gradient(ellipse at center,rgba(0,0,0,.6),rgba(0,0,0,0) 70%)}'+
 '#tavernScene .tc-info{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:70;padding:6px 14px;border-radius:9px;background:rgba(32,20,9,.82);border:1px solid #7a5428;color:#f3e3c2;font:600 14px/1.2 system-ui,sans-serif;pointer-events:none;white-space:nowrap}'+
 '#tavernScene .tc-hint{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);z-index:70;padding:5px 12px;border-radius:8px;background:rgba(32,20,9,.7);color:#d9c69c;font:12px/1.2 system-ui,sans-serif;pointer-events:none;white-space:nowrap;transition:opacity .6s}'+
 '#tavernScene .tc-reset{position:absolute;right:14px;top:12px;z-index:70;border:2px solid #351b0d;border-radius:9px;background:#e8c27a;color:#351b0d;font:700 13px/1 system-ui,sans-serif;padding:7px 12px;opacity:.85}'+
@@ -99,6 +102,7 @@ function rubTo(x,y){
   if(!last){last={x:x,y:y};stamp(x,y);return}
   var sp=SPACING*depthK(y),dx=x-last.x,dy=y-last.y,d=Math.hypot(dx,dy),n=Math.floor(d/sp);
   if(n>0){
+    rubbed+=n*sp;
     var ux=dx/d,uy=dy/d;
     for(var i=1;i<=n;i++)stamp(last.x+ux*sp*i,last.y+uy*sp*i);
     last={x:last.x+ux*sp*n,y:last.y+uy*sp*n};
@@ -149,17 +153,16 @@ function center(p){var x=0,y=0;p.forEach(function(q){x+=q[0];y+=q[1]});return[x/
 var info=mk('div','tc-info'),hint=mk('div','tc-hint'),reset=mk('button','tc-reset'),sponge=mk('div','tc-sponge'),menu=mk('div','tc-menu');
 reset.type='button';reset.textContent='↺ zaprljaj opet';
 hint.textContent='Drži levi klik i trljaj pod · Desni klik na sto → „Očisti sto“ (čisti i pod ispod stola)';
-sponge.innerHTML='<svg viewBox="0 0 120 84" width="120" height="84"><defs>'+
-  '<radialGradient id="tcSh" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#000" stop-opacity=".55"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>'+
-  '<linearGradient id="tcTop" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe66d"/><stop offset="1" stop-color="#e9c13a"/></linearGradient></defs>'+
-  '<ellipse cx="60" cy="63" rx="56" ry="19" fill="url(#tcSh)"/>'+
-  '<g id="tcBody">'+
-  '<rect x="14" y="38" width="92" height="30" rx="13" fill="#c9a02a" stroke="#8d6d12" stroke-width="1.5"/>'+
-  '<rect x="14" y="56" width="92" height="14" rx="7" fill="#3fa05a" stroke="#256b38" stroke-width="1.5"/>'+
-  '<rect x="14" y="20" width="92" height="38" rx="14" fill="url(#tcTop)" stroke="#9c7a14" stroke-width="1.5"/>'+
-  '<g fill="#b8921c" opacity=".7"><ellipse cx="32" cy="34" rx="5" ry="3"/><ellipse cx="52" cy="28" rx="4" ry="2.4"/><ellipse cx="74" cy="36" rx="6" ry="3.2"/><ellipse cx="44" cy="45" rx="4" ry="2.4"/><ellipse cx="90" cy="31" rx="3.5" ry="2.2"/><ellipse cx="66" cy="47" rx="5" ry="2.8"/></g>'+
-  '<ellipse cx="38" cy="26" rx="14" ry="3" fill="#fff" opacity=".35"/></g></svg>';
-var spBody=sponge.querySelector('#tcBody');
+// three pictures of the sponge: dry, soapy while it is pressed on the floor, dirty after a lot of cleaning
+var SPONGE={suv:'assets/tavern/sundjer_suv.webp?v=1',sapun:'assets/tavern/sundjer_sapun.webp?v=1',prljav:'assets/tavern/sundjer_prljav.webp?v=1'};
+sponge.innerHTML='<div class="tc-shadow"></div><img alt="" draggable="false" src="'+SPONGE.suv+'">';
+var spImg=sponge.querySelector('img'),spShadow=sponge.querySelector('.tc-shadow'),spState='suv';
+Object.keys(SPONGE).forEach(function(k){var i=new Image();i.src=SPONGE[k]});
+var rubbed=0,DIRTY_AFTER=3500;                         // how far the sponge has been rubbed (scene pixels); after that it is dirty
+function spongeLook(){
+  var st=down?'sapun':(rubbed>DIRTY_AFTER?'prljav':'suv');
+  if(st!==spState){spState=st;spImg.src=SPONGE[st]}
+}
 menu.innerHTML='<b></b><button type="button"></button>';
 room.appendChild(info);room.appendChild(hint);room.appendChild(reset);room.appendChild(sponge);room.appendChild(menu);
 
@@ -195,9 +198,10 @@ function moveSponge(e){
   var vx=lastPos?e.clientX-lastPos.x:0;lastPos={x:e.clientX,y:e.clientY};
   // it slides on the floor: it leans a little in the direction it is pushed, and it is lifted when it does not touch the floor
   var sk=down?Math.max(-12,Math.min(12,vx*.5)):0,lift=down?2:15;
-  sponge.style.left=(e.clientX-60)+'px';sponge.style.top=(e.clientY-62)+'px';
+  sponge.style.left=(e.clientX-SP_AX)+'px';sponge.style.top=(e.clientY-SP_AY)+'px';
   sponge.style.transform='scale('+k+') skewX('+(-sk)+'deg)';
-  if(spBody)spBody.setAttribute('transform','translate(0,'+(-lift)+')');
+  spImg.style.transform='translateY('+(-lift)+'px)';spShadow.style.opacity=down?1:.55;
+  spongeLook();
 }
 function hideMenu(){menu.style.display='none'}
 room.addEventListener('pointerdown',function(e){
@@ -233,7 +237,7 @@ room.addEventListener('contextmenu',function(e){
   sponge.style.display='none';
 });
 reset.addEventListener('click',function(e){
-  e.stopPropagation();paintDirt();cleaned=zones.map(function(){return false});cleaning={};hideMenu();refreshInfo();
+  e.stopPropagation();rubbed=0;paintDirt();cleaned=zones.map(function(){return false});cleaning={};hideMenu();refreshInfo();
 });
 // the hint fades once the player has started cleaning
 var hinted=false;
