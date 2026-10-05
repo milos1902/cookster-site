@@ -7,7 +7,7 @@
 'use strict';
 var ROOM='assets/tavern/kafana.webp',GUESTS='assets/tavern/guests/';
 var W=1672,H=941;                                   // the picture of the hall
-var DUR=700,CHARS=10,POSES=['dole','gore','bok','sedi_lice','sedi_ledja'];
+var DUR=700,CHARS=10,POSES=['dole','dole2','gore','gore2','bok','sedi_lice','sedi_ledja','sedi_ledja_l'];
 var viewport=document.getElementById('viewport'),scene=document.getElementById('scene');
 if(!viewport||!scene||window.CooksterTavern)return;
 
@@ -229,7 +229,7 @@ function step(dt){
           g.face=vert?(dy>0?'dole':'gore'):'bok';
           if(g.face==='bok')g.flip=dx<0;
         }
-        g.phase+=sp/(30*scaleAt(g.y)/.34);
+        g.phase+=sp/(40*scaleAt(g.y)/.34);
       }
     }else if(g.mode==='sitting'){
       // he steps from the place beside the table onto the chair
@@ -245,7 +245,8 @@ function step(dt){
   }
 }
 function seatPos(g){return{x:g.seat.x,y:g.seat.y+(g.seat.k==='back'?32:14)}}
-function sitPose(g){return g.seat.k==='back'?'sedi_lice':'sedi_ledja'}
+// the chairs on the right side of a table: the guest looks to the left, towards the others
+function sitPose(g){return g.seat.k==='back'?'sedi_lice':(g.seat.id%4===3?'sedi_ledja_l':'sedi_ledja')}
 function drawSprite(ctx,key,x,y,sc,flip,rot,alpha){
   var im=imgs[key];if(!im)return;
   var w=im.naturalWidth*sc,h=im.naturalHeight*sc;
@@ -270,8 +271,10 @@ function drawGuestBody(ctx,g){
   if(walk){
     var sc=scaleAt(g.y),ph=Math.abs(Math.sin(g.phase*Math.PI)),bob=ph*3.2*sc/.3;
     drawShadow(ctx,g.x,g.y,sc);
-    var stepFlip=g.face==='bok'?g.flip:(Math.floor(g.phase)%2===1);
-    drawSprite(ctx,chKey(g,g.face),g.x,g.y-bob,sc,stepFlip,Math.sin(g.phase*Math.PI)*.022,1);
+    // the two pictures of a step: the left leg and the right arm forward, then the right leg and the left arm forward
+    var pose=g.face;
+    if(g.face==='dole'||g.face==='gore')pose=(Math.floor(g.phase)%2===0)?g.face:g.face+'2';
+    drawSprite(ctx,chKey(g,pose),g.x,g.y-bob,sc,g.face==='bok'&&g.flip,Math.sin(g.phase*Math.PI)*(g.face==='bok'?.03:.012),1);
   }else{
     var sp=seatPos(g),ssc=scaleAt(sp.y)*SIT_K;
     if(g.mode==='sitting'||g.mode==='rising'){
