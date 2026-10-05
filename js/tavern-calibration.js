@@ -4,6 +4,7 @@
      2. Zabrana   - tables and edges that guests may not cross
      3. Maska stola   - the parts of the tables that cover a guest who walks behind the table
      4. Maska stolice - for every chair: the part of the chair that covers the guest who sits on it
+     5. Maska stolice (hod) - for every chair: the part that covers a guest who walks behind it (removed when somebody sits)
    The mouse wheel zooms (around the pointer), dragging the empty picture moves it. Everything is saved in the browser at once
    and is used by the guests at once. "Izvezi JSON" gives a file that can be built into the game. */
 (function(){
@@ -15,19 +16,21 @@ var LAYERS=[
   {id:'floor',label:'Pod: gde gost sme da hoda',color:'#3ddc84',help:'Obeleži celu površinu poda po kojoj gost sme da se kreće. Može više oblika.'},
   {id:'blocked',label:'Zabrana: stolovi i ivice',color:'#ff4d4d',help:'Obeleži stolove (i stolice oko njih) i sve ivice preko kojih gost NE sme da pređe. Gosti ih zaobilaze.'},
   {id:'tableMask',label:'Maska stola',color:'#4da3ff',help:'Obeleži delove stolova koji treba da prekriju gosta koji hoda iza stola. Jedan oblik po stolu.'},
-  {id:'chairMask',label:'Maska stolice',color:'#ffb347',help:'Izaberi sto i stolicu (ili klikni broj stolice na slici), pa nacrtaj deo stolice koji prekriva gosta kad sedne.'}
+  {id:'chairMask',label:'Maska stolice',color:'#ffb347',help:'Izaberi sto i stolicu (ili klikni broj stolice na slici), pa nacrtaj deo stolice koji prekriva gosta kad sedne.'},
+  {id:'chairWalk',label:'Maska stolice: dok gost hoda iza nje',color:'#c77dff',help:'Izaberi sto i stolicu, pa nacrtaj deo stolice koji prekriva gosta koji prolazi IZA stolice. Kad neko sedne na tu stolicu, ova maska nestaje, a gost prekriva stolicu.'}
 ];
-var cal=null,layer='floor',active={},seatSel=0,vis={floor:true,blocked:true,tableMask:true,chairMask:true};
+function seatLayer(l){return l==='chairMask'||l==='chairWalk'}
+var cal=null,layer='floor',active={},seatSel=0,vis={floor:true,blocked:true,tableMask:true,chairMask:true,chairWalk:true};
 var view={x:0,y:0,w:W,h:H},ui={},svg,gMain,drag=null,pan=null;
 
 function clone(o){return JSON.parse(JSON.stringify(o))}
 function polys(l,seat){
-  if(l==='chairMask'){var k=seat===undefined?seatSel:seat;if(!cal.chairMask[k])cal.chairMask[k]=[];return cal.chairMask[k]}
+  if(seatLayer(l)){var k=seat===undefined?seatSel:seat;if(!cal[l])cal[l]={};if(!cal[l][k])cal[l][k]=[];return cal[l][k]}
   return cal[l];
 }
 function curPolys(){return polys(layer)}
-function actIdx(){var a=curPolys();var key=layer==='chairMask'?'chairMask:'+seatSel:layer;var i=active[key];if(i===undefined||i>=a.length)i=a.length-1;return i}
-function setAct(i){active[layer==='chairMask'?'chairMask:'+seatSel:layer]=i}
+function actIdx(){var a=curPolys();var key=seatLayer(layer)?layer+':'+seatSel:layer;var i=active[key];if(i===undefined||i>=a.length)i=a.length-1;return i}
+function setAct(i){active[seatLayer(layer)?layer+':'+seatSel:layer]=i}
 function save(){
   try{localStorage.setItem(T.calKey,JSON.stringify(cal))}catch(_){}
   T.applyCalibration(clone(cal));
@@ -148,9 +151,9 @@ function draw(){
   LAYERS.forEach(function(L){
     if(!vis[L.id])return;
     var lists=[];
-    if(L.id==='chairMask'){
-      if(layer==='chairMask')lists=[{a:polys('chairMask',seatSel),seat:seatSel,on:true}];
-      Object.keys(cal.chairMask).forEach(function(k){if(layer==='chairMask'&&+k===seatSel)return;lists.push({a:cal.chairMask[k],seat:+k,on:false})});
+    if(seatLayer(L.id)){
+      if(layer===L.id)lists=[{a:polys(L.id,seatSel),seat:seatSel,on:true}];
+      Object.keys(cal[L.id]||{}).forEach(function(k){if(layer===L.id&&+k===seatSel)return;lists.push({a:cal[L.id][k],seat:+k,on:false})});
     }else lists=[{a:cal[L.id],on:layer===L.id}];
     lists.forEach(function(ls){
       ls.a.forEach(function(poly,pi){
@@ -166,7 +169,7 @@ function draw(){
       });
     });
   });
-  if(layer==='chairMask'){                           // numbers of the chairs, to click them
+  if(seatLayer(layer)){                           // numbers of the chairs, to click them
     T.seats.forEach(function(st){
       var on=st.id===seatSel,g=el('g',{style:'cursor:pointer'},gMain);
       var c=el('circle',{cx:st.x,cy:st.y,r:(on?9:7)*s*1.6,fill:on?'#ffb347':'rgba(20,10,4,.7)',stroke:'#ffb347','stroke-width':1,'vector-effect':'non-scaling-stroke'},g);
@@ -175,12 +178,12 @@ function draw(){
       c.dataset.seat=st.id;
     });
   }
-  ui.info.textContent=LAYERS.filter(function(L){return L.id===layer})[0].label+' · oblika: '+curPolys().length+(layer==='chairMask'?' · sto '+(Math.floor(seatSel/4)+1)+', stolica '+((seatSel%4)+1):'')+' · zumiranje '+(W/view.w).toFixed(1)+'x';
+  ui.info.textContent=LAYERS.filter(function(L){return L.id===layer})[0].label+' · oblika: '+curPolys().length+(seatLayer(layer)?' · sto '+(Math.floor(seatSel/4)+1)+', stolica '+((seatSel%4)+1):'')+' · zumiranje '+(W/view.w).toFixed(1)+'x';
 }
 function refreshUi(){
   ui.root.querySelectorAll('.tc-layer').forEach(function(b){b.classList.toggle('on',b.dataset.layer===layer)});
   ui.root.querySelector('#tcHelp').textContent=LAYERS.filter(function(L){return L.id===layer})[0].help;
-  ui.root.querySelector('#tcChairBox').style.display=layer==='chairMask'?'block':'none';
+  ui.root.querySelector('#tcChairBox').style.display=seatLayer(layer)?'block':'none';
   ui.root.querySelector('#tcTable').value=Math.floor(seatSel/4);
   ui.root.querySelectorAll('#tcChairs button').forEach(function(b){b.classList.toggle('on',+b.dataset.k===seatSel%4)});
 }
@@ -271,7 +274,7 @@ function act(a){
   else if(a==='reset'){
     if(!confirm('Vratiti ovaj sloj na početno stanje?'))return;
     var d=T.defaults();
-    if(layer==='chairMask')cal.chairMask[seatSel]=(d.chairMask[seatSel]||[]).slice();else cal[layer]=d[layer];
+    if(seatLayer(layer)){if(!cal[layer])cal[layer]={};cal[layer][seatSel]=((d[layer]||{})[seatSel]||[]).slice()}else cal[layer]=d[layer];
     save();draw();
   }
   else if(a==='fit'){fitView();draw()}
@@ -280,7 +283,7 @@ function act(a){
   else if(a==='doimport'){
     try{
       var o=JSON.parse(ui.root.querySelector('#tcImportText').value);
-      cal={version:1,floor:o.floor||[],blocked:o.blocked||[],tableMask:o.tableMask||[],chairMask:o.chairMask||{}};
+      cal={version:1,floor:o.floor||[],blocked:o.blocked||[],tableMask:o.tableMask||[],chairMask:o.chairMask||{},chairWalk:o.chairWalk||{}};
       save();draw();ui.root.querySelector('#tcImportBox').style.display='none';
     }catch(err){alert('JSON nije ispravan.')}
   }
