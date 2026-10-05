@@ -1,0 +1,12 @@
+#tavernScene{position:fixed;inset:0;z-index:2147483000;display:none;overflow:hidden;background:#1a0c04;cursor:auto;will-change:transform,opacity;transform-origin:50% 50%}
+#tavernScene.is-active{display:block}
+#tavernScene .ps-backdrop{position:absolute;inset:-40px;background:center/cover no-repeat;filter:blur(22px) saturate(.75) brightness(.5);transform:scale(1.08)}
+#tavernScene .ps-backdrop::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 38%,rgba(20,10,4,.45) 100%)}
+#tavernScene .ps-art{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;display:block;user-select:none;-webkit-user-drag:none}
+#tavernScene .pantry-nav{left:max(14px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));font-size:17px;opacity:.85}
+#tavernScene .pantry-nav{left:auto;right:max(14px,env(safe-area-inset-right))}
+#tavernScene .ts-guests{position:absolute;pointer-events:none}
+#tavernScene .ts-add{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:70;border:2px solid #351b0d;border-radius:9px;background:#e8c27a;color:#351b0d;font:700 14px/1 system-ui,sans-serif;padding:7px 14px;cursor:pointer;opacity:.85}
+#tavernScene .ts-add:hover{opacity:1}
+#tavernOpenBtn{z-index:60}
+#tavernOpenBtn{color:#fff0c8;text-shadow:0 1px 3px #000,0 0 7px rgba(0,0,0,.7);opacity:.95}
