@@ -71,7 +71,7 @@ function build(){
     '<div class="tc-row"><button class="tc-b" data-a="delpoly">Obriši oblik</button><button class="tc-b" data-a="dellayer">Obriši sloj</button><button class="tc-b" data-a="reset">Vrati početno (sloj)</button></div>'+
     '<div class="tc-row"><button class="tc-b" data-a="fit">Ceo prikaz</button><button class="tc-b" data-a="export">Izvezi JSON</button><button class="tc-b" data-a="import">Uvezi JSON</button></div>'+
     '<div id="tcImportBox" style="display:none"><textarea id="tcImportText" placeholder="Nalepi JSON ovde"></textarea><div class="tc-row"><button class="tc-b" data-a="doimport">Primeni</button></div></div>'+
-    '<div class="tc-help"><b>Kako se crta:</b><br>• Klik na sliku dodaje tačku, tačke se povezuju tankim linijama (oblik se zatvara sam).<br>• Prevuci tačku da je pomeriš. Dupli klik ili desni klik na tačku je briše.<br>• Shift + klik blizu ivice ubacuje tačku između dve.<br>• Točak miša približava i udaljava (oko pokazivača). Prevlačenje prazne slike pomera prikaz.<br>• "Novi oblik" počinje novi oblik u istom sloju; ◀ ▶ prelaze među oblicima.<br>• Sve se čuva odmah i gosti ga odmah koriste.</div>'+
+    '<div class="tc-help"><b>Kako se crta:</b><br>• Klik na sliku dodaje tačku, tačke se povezuju tankim linijama (oblik se zatvara sam).<br>• Prevuci tačku da je pomeriš. Dupli klik ili desni klik na tačku je briše.<br>• Klik na liniju ubacuje novu tačku tačno na toj liniji, između dve tačke. Klik van linija dodaje tačku na kraj oblika.<br>• Točak miša približava i udaljava (oko pokazivača). Prevlačenje prazne slike pomera prikaz.<br>• "Novi oblik" počinje novi oblik u istom sloju; ◀ ▶ prelaze među oblicima.<br>• Sve se čuva odmah i gosti ga odmah koriste.</div>'+
     '<h2 style="margin-top:12px">Prikaz slojeva</h2><div id="tcVis"></div>'+
     '<div class="tc-row" style="margin-top:12px"><button class="tc-b" data-a="close" style="width:100%">Zatvori alat</button></div></div>'+
     '<div class="tc-stage"><div class="tc-info" id="tcInfo"></div></div>';
@@ -195,6 +195,19 @@ function nearEdge(poly,p,tol){
   }
   return best;
 }
+function nearestEdgeAll(polys,p,tol){
+  var best=null;
+  polys.forEach(function(poly,pi){
+    var n=poly.length;if(n<2)return;
+    var edges=n===2?1:n;                               // two points are one line, from three on the shape is closed
+    for(var i=0;i<edges;i++){
+      var a=poly[i],b=poly[(i+1)%n],vx=b[0]-a[0],vy=b[1]-a[1],l2=vx*vx+vy*vy;if(!l2)continue;
+      var t=Math.max(0,Math.min(1,((p.x-a[0])*vx+(p.y-a[1])*vy)/l2)),qx=a[0]+vx*t,qy=a[1]+vy*t,d=Math.hypot(qx-p.x,qy-p.y);
+      if(d<tol&&(!best||d<best.d))best={d:d,pi:pi,i:i,x:Math.round(qx*10)/10,y:Math.round(qy*10)/10};
+    }
+  });
+  return best;
+}
 function onDown(e){
   var t=e.target;
   if(e.button===2){                                  // right click on a point deletes it
@@ -232,10 +245,9 @@ function onUp(e){
     if(wasClick){
       var p=toImg(e),a=curPolys(),i=actIdx();
       p.x=Math.round(p.x*10)/10;p.y=Math.round(p.y*10)/10;
-      if(shift&&i>=0&&a[i]&&a[i].length>=2){
-        var ne=nearEdge(a[i],p,10*pxScale());
-        if(ne){a[i].splice(ne.i+1,0,[p.x,p.y]);save();draw();return}
-      }
+      // a click on a line puts the new point right there, on that line (in whichever shape the line belongs to)
+      var hit=nearestEdgeAll(a,p,9*pxScale());
+      if(hit){a[hit.pi].splice(hit.i+1,0,[hit.x,hit.y]);setAct(hit.pi);save();draw();return}
       if(i<0){a.push([]);i=a.length-1;setAct(i)}
       a[i].push([p.x,p.y]);save();draw();
     }
