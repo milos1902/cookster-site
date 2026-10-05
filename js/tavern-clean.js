@@ -53,7 +53,7 @@ new MutationObserver(sync).observe(cv,{attributes:true,attributeFilter:['style']
 addEventListener('resize',sync);sync();
 
 // ---------- what may be cleaned ----------
-var calRef=null,floorMask=null,zones=[],cleaned=[];
+var calRef=null,floorMask=null,zones=[],areas=[],cleaned=[];
 function polyPath(c,p){c.beginPath();p.forEach(function(q,i){if(i)c.lineTo(q[0],q[1]);else c.moveTo(q[0],q[1])});c.closePath()}
 function pip(p,x,y){var ins=false;for(var i=0,j=p.length-1;i<p.length;j=i++){var a=p[i],b=p[j];if(((a[1]>y)!==(b[1]>y))&&(x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0]))ins=!ins}return ins}
 function prepare(){
@@ -65,6 +65,12 @@ function prepare(){
   f.globalCompositeOperation='destination-out';
   cal.blocked.forEach(function(p){if(p.length>=3){polyPath(f,p);f.fill()}});
   zones=cal.tableMask.filter(function(p){return p.length>=3});
+  // "Očisti sto" also cleans what is under and around the table: every blocked shape (table with its chairs) that holds the table
+  areas=zones.map(function(z){
+    var c=center(z),list=[z];
+    cal.blocked.forEach(function(b){if(b.length>=3&&pip(b,c[0],c[1]))list.push(b)});
+    return list;
+  });
   while(cleaned.length<zones.length)cleaned.push(false);
   cleaned.length=zones.length;
   small=null;
@@ -125,7 +131,9 @@ function cleanZone(i){
   var N=16,k=0;
   (function step(){
     var a=1/(N-k);                                      // the last step takes whatever is left
-    D.globalCompositeOperation='destination-out';D.fillStyle='rgba(0,0,0,'+a+')';polyPath(D,poly);D.fill();D.globalCompositeOperation='source-over';
+    D.globalCompositeOperation='destination-out';D.fillStyle='rgba(0,0,0,'+a+')';
+    (areas[i]||[poly]).forEach(function(ar){polyPath(D,ar);D.fill()});
+    D.globalCompositeOperation='source-over';
     if(k%3===0){var q=poly[Math.floor(Math.random()*poly.length)],c=center(poly);bubble(c[0]+(q[0]-c[0])*Math.random()*.8,c[1]+(q[1]-c[1])*Math.random()*.8,2)}
     if(++k<N)setTimeout(step,45);else{cleaned[i]=true;cleaning[i]=false;refreshInfo()}
   })();
@@ -136,7 +144,7 @@ function center(p){var x=0,y=0;p.forEach(function(q){x+=q[0];y+=q[1]});return[x/
 // ---------- the numbers ----------
 var info=mk('div','tc-info'),hint=mk('div','tc-hint'),reset=mk('button','tc-reset'),sponge=mk('div','tc-sponge'),menu=mk('div','tc-menu');
 reset.type='button';reset.textContent='↺ zaprljaj opet';
-hint.textContent='Drži levi klik i trljaj pod · Desni klik na sto → „Očisti sto“';
+hint.textContent='Drži levi klik i trljaj pod · Desni klik na sto → „Očisti sto“ (čisti i pod ispod stola)';
 sponge.innerHTML='<svg viewBox="0 0 96 64" width="96" height="64"><defs><linearGradient id="tcSp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7dc5b"/><stop offset="1" stop-color="#e0b72f"/></linearGradient></defs>'+
   '<rect x="6" y="8" width="84" height="40" rx="12" fill="url(#tcSp)" stroke="#9c7a14" stroke-width="2"/>'+
   '<rect x="6" y="40" width="84" height="16" rx="8" fill="#3fa05a" stroke="#256b38" stroke-width="2"/>'+
@@ -204,7 +212,7 @@ room.addEventListener('contextmenu',function(e){
   if(zi<0){hideMenu();return}
   var btn=menu.querySelector('button');
   menu.querySelector('b').textContent='Sto '+(zi+1);
-  btn.textContent=cleaned[zi]?'✓ Sto je čist':'Očisti sto';btn.disabled=!!cleaned[zi];
+  btn.textContent=cleaned[zi]?'✓ Sto je čist':'Očisti sto (i pod ispod)';btn.disabled=!!cleaned[zi];
   btn.onclick=function(ev){ev.stopPropagation();hideMenu();cleanZone(zi)};
   menu.style.left=Math.min(e.clientX,innerWidth-170)+'px';menu.style.top=Math.min(e.clientY,innerHeight-90)+'px';menu.style.display='block';
   sponge.style.display='none';
