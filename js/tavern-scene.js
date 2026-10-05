@@ -111,28 +111,59 @@ var CELL=22,GW=Math.ceil(W/CELL),GH=Math.ceil(H/CELL),GRID=null;
 //   tableMask  polygons: parts of the tables that cover a guest walking behind them
 //   chairMask  {"seatId": [polygons]}: the part of a chair that covers the guest sitting on it
 //   chairWalk  {"seatId": [polygons]}: the part of a chair that covers a guest walking behind it (only while nobody sits on it)
+//   cleanFloor / cleanExclude  polygons: where the cleaning sponge works / what it never touches (tables with their chairs, the bar...)
+//   spongeCal  [{x,y,scale,flat,angle,lift,shadow}]: how the sponge sits on the floor at some places (it is blended between them)
 var CAL_KEY='cookster.tavern-calibration.v2',CAL_FILE='assets/tavern/calibration_cista.json';
+var SPONGE={W:112,H:Math.round(112*212/440),AX:56,AY:Math.round(112*212/440*.66),RADIUS:46,FLAT:.58,SRC:'assets/tavern/sundjer_suv.webp?v=1'};
+function defaultSponge(){
+  return[{x:250,y:420,scale:.78,flat:1,angle:0,lift:15,shadow:.55},{x:1500,y:420,scale:.78,flat:1,angle:0,lift:15,shadow:.55},
+         {x:300,y:900,scale:1.25,flat:1,angle:0,lift:15,shadow:.55},{x:1500,y:900,scale:1.25,flat:1,angle:0,lift:15,shadow:.55}];
+}
+function okSponge(a){return Array.isArray(a)&&a.length>0&&a.every(function(q){return q&&['x','y','scale','flat','angle','lift','shadow'].every(function(k){return isFinite(q[k])})})}
+function spongeAt(x,y){
+  var pts=(CAL&&okSponge(CAL.spongeCal))?CAL.spongeCal:defaultSponge(),sw=0,r={scale:0,flat:0,angle:0,lift:0,shadow:0};
+  for(var i=0;i<pts.length;i++){
+    var q=pts[i],d2=(q.x-x)*(q.x-x)+(q.y-y)*(q.y-y);
+    if(d2<1)return{scale:q.scale,flat:q.flat,angle:q.angle,lift:q.lift,shadow:q.shadow};
+    var w=1/d2;sw+=w;for(var k in r)r[k]+=q[k]*w;
+  }
+  for(var k2 in r)r[k2]/=sw;
+  return r;
+}
 function clonePoly(p){return p.map(function(q){return[q[0],q[1]]})}
 function defaultCal(){
-  var cal={version:1,floor:[clonePoly(FLOOR)],blocked:[],tableMask:[],chairMask:{},chairWalk:{}};
+  var cal={version:1,floor:[clonePoly(FLOOR)],blocked:[],tableMask:[],chairMask:{},chairWalk:{},cleanFloor:[],cleanExclude:[],spongeCal:defaultSponge()};
   BLOCKS.forEach(function(b){cal.blocked.push([[b.x0,b.y0],[b.x1,b.y0],[b.x1,b.y1],[b.x0,b.y1]])});
   TABLES.forEach(function(t){cal.blocked.push(clonePoly(t.block));cal.tableMask.push(clonePoly(t.poly))});
+  cal.cleanFloor=cal.floor;cal.cleanExclude=cal.blocked;
   return cal;
 }
 function okPolys(a){return Array.isArray(a)&&a.every(function(p){return Array.isArray(p)&&p.every(function(q){return Array.isArray(q)&&isFinite(q[0])&&isFinite(q[1])})})}
-function readCal(){
-  var found=null;
-  try{var raw=localStorage.getItem(CAL_KEY);if(raw)found=JSON.parse(raw)}catch(_){}
-  if(!found){try{var x=new XMLHttpRequest();x.open('GET',CAL_FILE,false);x.send(null);if(x.status>=200&&x.status<300)found=JSON.parse(x.responseText)}catch(_){}}
+function normCal(found){
   var d=defaultCal();
   if(!found||typeof found!=='object')return d;
   var cal={version:1,floor:okPolys(found.floor)?found.floor:d.floor,blocked:okPolys(found.blocked)?found.blocked:d.blocked,
     tableMask:okPolys(found.tableMask)?found.tableMask:d.tableMask,chairMask:{},chairWalk:{}};
+  // what the sponge cleans: older saved states do not have it yet, so it starts as the floor and the blocked shapes
+  cal.cleanFloor=okPolys(found.cleanFloor)?found.cleanFloor:cal.floor;
+  cal.cleanExclude=okPolys(found.cleanExclude)?found.cleanExclude:cal.blocked;
+  cal.spongeCal=okSponge(found.spongeCal)?found.spongeCal:defaultSponge();
   ['chairMask','chairWalk'].forEach(function(n){
     if(found[n]&&typeof found[n]==='object')Object.keys(found[n]).forEach(function(k){if(okPolys(found[n][k]))cal[n][k]=found[n][k]});
   });
   return cal;
 }
+function fileJson(){
+  try{var x=new XMLHttpRequest();x.open('GET',CAL_FILE,false);x.send(null);if(x.status>=200&&x.status<300)return JSON.parse(x.responseText)}catch(_){}
+  return null;
+}
+function readCal(){
+  var found=null;
+  try{var raw=localStorage.getItem(CAL_KEY);if(raw)found=JSON.parse(raw)}catch(_){}
+  if(!found)found=fileJson();
+  return normCal(found);
+}
+function fileCal(){return normCal(fileJson())}          // what the tool restores with "Vrati početno"
 var CAL=null,MASKS=[],WALKMASKS=[],TABLEMASKY={};
 function applyCal(cal){
   CAL=cal||readCal();
@@ -448,7 +479,7 @@ window.CooksterTavern={
   get isOpen(){return state==='tavern'},get busy(){return busy},
   debug:function(){return{guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},
-  defaults:defaultCal,calibration:function(){return CAL},applyCalibration:function(c){applyCal(c)},calKey:CAL_KEY,
+  defaults:fileCal,spongeAt:spongeAt,sponge:SPONGE,calibration:function(){return CAL},applyCalibration:function(c){applyCal(c)},calKey:CAL_KEY,
   fit:function(){fit();draw()},isOpenScene:function(){return state!=='kitchen'}
 };
 })();

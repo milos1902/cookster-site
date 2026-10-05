@@ -63,14 +63,14 @@ function prepare(){
   calRef=cal;
   floorMask=mk('canvas');floorMask.width=W;floorMask.height=H;
   var f=floorMask.getContext('2d');
-  f.fillStyle='#fff';cal.floor.forEach(function(p){if(p.length>=3){polyPath(f,p);f.fill()}});
+  f.fillStyle='#fff';(cal.cleanFloor||cal.floor).forEach(function(p){if(p.length>=3){polyPath(f,p);f.fill()}});
   f.globalCompositeOperation='destination-out';
-  cal.blocked.forEach(function(p){if(p.length>=3){polyPath(f,p);f.fill()}});
+  (cal.cleanExclude||cal.blocked).forEach(function(p){if(p.length>=3){polyPath(f,p);f.fill()}});
   zones=cal.tableMask.filter(function(p){return p.length>=3});
   // "Očisti sto" also cleans what is under and around the table: every blocked shape (table with its chairs) that holds the table
   areas=zones.map(function(z){
     var c=center(z),list=[z];
-    cal.blocked.forEach(function(b){if(b.length>=3&&pip(b,c[0],c[1]))list.push(b)});
+    (cal.cleanExclude||cal.blocked).forEach(function(b){if(b.length>=3&&pip(b,c[0],c[1]))list.push(b)});
     return list;
   });
   while(cleaned.length<zones.length)cleaned.push(false);
@@ -82,11 +82,12 @@ function prepare(){
 var scratch=mk('canvas');
 // the sponge lies flat on the floor: seen from above at an angle its footprint is a flattened ellipse, and it is smaller farther away
 var FLAT=.58;
-function depthK(y){return .75+.45*Math.max(0,Math.min(1,(y-300)/640))}
+function sp(x,y){return T.spongeAt(Math.max(0,Math.min(W,x)),Math.max(0,Math.min(H,y)))}      // size, flatness ... at that place (from the tool)
+function depthK(x,y){return sp(x,y).scale}
 function stamp(x,y){
-  var k=depthK(y),rx=Math.round(RADIUS*k),ry=Math.max(2,Math.round(rx*FLAT)),sc=scratch.getContext('2d');
+  var q=sp(x,y),k=q.scale,rx=Math.round(RADIUS*k),ry=Math.max(2,Math.round(rx*FLAT*q.flat)),sc=scratch.getContext('2d');
   scratch.width=rx*2;scratch.height=ry*2;
-  sc.setTransform(1,0,0,FLAT,rx,ry);
+  sc.setTransform(1,0,0,ry/rx,rx,ry);
   var g=sc.createRadialGradient(0,0,0,0,0,rx);
   g.addColorStop(0,'rgba(0,0,0,'+STRENGTH+')');g.addColorStop(.6,'rgba(0,0,0,'+STRENGTH*.7+')');g.addColorStop(1,'rgba(0,0,0,0)');
   sc.fillStyle=g;sc.fillRect(-rx,-rx,rx*2,rx*2);
@@ -100,12 +101,12 @@ function stamp(x,y){
 function rubTo(x,y){
   prepare();
   if(!last){last={x:x,y:y};stamp(x,y);return}
-  var sp=SPACING*depthK(y),dx=x-last.x,dy=y-last.y,d=Math.hypot(dx,dy),n=Math.floor(d/sp);
+  var step=SPACING*depthK(x,y),dx=x-last.x,dy=y-last.y,d=Math.hypot(dx,dy),n=Math.floor(d/step);
   if(n>0){
-    rubbed+=n*sp;
+    rubbed+=n*step;
     var ux=dx/d,uy=dy/d;
-    for(var i=1;i<=n;i++)stamp(last.x+ux*sp*i,last.y+uy*sp*i);
-    last={x:last.x+ux*sp*n,y:last.y+uy*sp*n};
+    for(var i=1;i<=n;i++)stamp(last.x+ux*step*i,last.y+uy*step*i);
+    last={x:last.x+ux*step*n,y:last.y+uy*step*n};
   }
   if(now()-lastBubble>45&&d>2){lastBubble=now();bubble(x,y,1)}
 }
@@ -194,13 +195,13 @@ function moveSponge(e){
   var over=overUi(e);
   sponge.style.display=over||!T.isOpen?'none':'block';
   room.style.cursor=over?'pointer':'none';
-  var p=toScene(e),r=cv.getBoundingClientRect(),k=depthK(Math.max(0,Math.min(H,p.y)))*(r.width/W);
+  var p=toScene(e),q=sp(p.x,p.y),r=cv.getBoundingClientRect(),ss=r.width/W;
   var vx=lastPos?e.clientX-lastPos.x:0;lastPos={x:e.clientX,y:e.clientY};
   // it slides on the floor: it leans a little in the direction it is pushed, and it is lifted when it does not touch the floor
-  var sk=down?Math.max(-12,Math.min(12,vx*.5)):0,lift=down?2:15;
+  var sk=down?Math.max(-12,Math.min(12,vx*.5)):0,lift=down?2:q.lift;
   sponge.style.left=(e.clientX-SP_AX)+'px';sponge.style.top=(e.clientY-SP_AY)+'px';
-  sponge.style.transform='scale('+k+') skewX('+(-sk)+'deg)';
-  spImg.style.transform='translateY('+(-lift)+'px)';spShadow.style.opacity=down?1:.55;
+  sponge.style.transform='scale('+(q.scale*ss)+','+(q.scale*ss*q.flat)+') rotate('+q.angle+'deg) skewX('+(-sk)+'deg)';
+  spImg.style.transform='translateY('+(-lift)+'px)';spShadow.style.opacity=down?Math.min(1,q.shadow*1.8):q.shadow;
   spongeLook();
 }
 function hideMenu(){menu.style.display='none'}
