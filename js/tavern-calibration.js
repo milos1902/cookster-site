@@ -1,0 +1,295 @@
+/* Cookster - tool "Kalibracija kafane".
+   Draw, on the picture of the tavern, with points joined by very thin lines:
+     1. Pod       - where guests may walk
+     2. Zabrana   - tables and edges that guests may not cross
+     3. Maska stola   - the parts of the tables that cover a guest who walks behind the table
+     4. Maska stolice - for every chair: the part of the chair that covers the guest who sits on it
+   The mouse wheel zooms (around the pointer), dragging the empty picture moves it. Everything is saved in the browser at once
+   and is used by the guests at once. "Izvezi JSON" gives a file that can be built into the game. */
+(function(){
+'use strict';
+var T=window.CooksterTavern,room=document.getElementById('tavernScene');
+if(!T||!room||window.CooksterTavernCal)return;
+var W=T.size.w,H=T.size.h,NS='http://www.w3.org/2000/svg';
+var LAYERS=[
+  {id:'floor',label:'Pod: gde gost sme da hoda',color:'#3ddc84',help:'Obeleži celu površinu poda po kojoj gost sme da se kreće. Može više oblika.'},
+  {id:'blocked',label:'Zabrana: stolovi i ivice',color:'#ff4d4d',help:'Obeleži stolove (i stolice oko njih) i sve ivice preko kojih gost NE sme da pređe. Gosti ih zaobilaze.'},
+  {id:'tableMask',label:'Maska stola',color:'#4da3ff',help:'Obeleži delove stolova koji treba da prekriju gosta koji hoda iza stola. Jedan oblik po stolu.'},
+  {id:'chairMask',label:'Maska stolice',color:'#ffb347',help:'Izaberi sto i stolicu (ili klikni broj stolice na slici), pa nacrtaj deo stolice koji prekriva gosta kad sedne.'}
+];
+var cal=null,layer='floor',active={},seatSel=0,vis={floor:true,blocked:true,tableMask:true,chairMask:true};
+var view={x:0,y:0,w:W,h:H},ui={},svg,gMain,drag=null,pan=null;
+
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function polys(l,seat){
+  if(l==='chairMask'){var k=seat===undefined?seatSel:seat;if(!cal.chairMask[k])cal.chairMask[k]=[];return cal.chairMask[k]}
+  return cal[l];
+}
+function curPolys(){return polys(layer)}
+function actIdx(){var a=curPolys();var key=layer==='chairMask'?'chairMask:'+seatSel:layer;var i=active[key];if(i===undefined||i>=a.length)i=a.length-1;return i}
+function setAct(i){active[layer==='chairMask'?'chairMask:'+seatSel:layer]=i}
+function save(){
+  try{localStorage.setItem(T.calKey,JSON.stringify(cal))}catch(_){}
+  T.applyCalibration(clone(cal));
+}
+function el(tag,attrs,parent){var e=document.createElementNS(NS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
+
+// ---------- building the tool ----------
+function build(){
+  var css=document.createElement('style');
+  css.textContent='#tavernCal{position:fixed;inset:0;z-index:2147483200;display:none;background:#140d08;color:#f3e3c2;font:13px/1.35 system-ui,sans-serif}'+
+  '#tavernCal.open{display:flex}'+
+  '#tavernCal .tc-side{width:310px;flex:none;overflow:auto;padding:44px 14px 12px;background:#201409;border-right:1px solid #5b3d1e}'+
+  '#tavernCal h2{margin:0 0 8px;font-size:16px}'+
+  '#tavernCal .tc-layer{display:flex;align-items:center;gap:8px;width:100%;margin:3px 0;padding:7px 8px;border:1px solid #5b3d1e;border-radius:7px;background:#2c1b0c;color:#f3e3c2;cursor:pointer;text-align:left;font:inherit}'+
+  '#tavernCal .tc-layer.on{background:#4a2f14;border-color:#e8c27a}'+
+  '#tavernCal .tc-dot{width:12px;height:12px;border-radius:50%;flex:none}'+
+  '#tavernCal .tc-help{margin:8px 0;padding:8px;border-radius:7px;background:#2c1b0c;color:#d9c69c}'+
+  '#tavernCal .tc-row{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}'+
+  '#tavernCal button.tc-b{padding:6px 9px;border:1px solid #7a5428;border-radius:6px;background:#3a2410;color:#f3e3c2;cursor:pointer;font:inherit}'+
+  '#tavernCal button.tc-b:hover{background:#5a3a1a}'+
+  '#tavernCal select{padding:5px;background:#2c1b0c;color:#f3e3c2;border:1px solid #7a5428;border-radius:6px;font:inherit}'+
+  '#tavernCal .tc-chairs button{min-width:34px}'+
+  '#tavernCal .tc-chairs button.on{background:#e8a53a;color:#201409}'+
+  '#tavernCal textarea{width:100%;height:110px;background:#140d08;color:#f3e3c2;border:1px solid #7a5428;border-radius:6px;font:11px monospace}'+
+  '#tavernCal .tc-stage{flex:1;position:relative;overflow:hidden;background:#000}'+
+  '#tavernCal svg{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair;user-select:none}'+
+  '#tavernCal .tc-info{position:absolute;left:10px;bottom:8px;padding:4px 8px;background:rgba(0,0,0,.6);border-radius:6px;font-size:12px;pointer-events:none}'+
+  '#tavernCal label.tc-chk{display:flex;align-items:center;gap:6px;margin:2px 0}'+
+  '#tavernCalOpen{position:absolute;left:14px;bottom:14px;z-index:70;border:2px solid #351b0d;border-radius:9px;background:#e8c27a;color:#351b0d;font:700 14px/1 system-ui,sans-serif;padding:7px 14px;cursor:pointer;opacity:.85}'+
+  '#tavernCalOpen:hover{opacity:1}';
+  document.head.appendChild(css);
+  var openBtn=document.createElement('button');openBtn.id='tavernCalOpen';openBtn.type='button';openBtn.textContent='✎ kalibracija';
+  room.appendChild(openBtn);
+  ui.root=document.createElement('div');ui.root.id='tavernCal';
+  ui.root.innerHTML='<div class="tc-side"><h2>Kalibracija kafane</h2>'+
+    '<div id="tcLayers"></div><div class="tc-help" id="tcHelp"></div>'+
+    '<div id="tcChairBox" style="display:none"><div class="tc-row"><label>Sto <select id="tcTable"></select></label></div>'+
+      '<div class="tc-row tc-chairs" id="tcChairs"></div></div>'+
+    '<div class="tc-row"><button class="tc-b" data-a="new">Novi oblik</button><button class="tc-b" data-a="prev">◀</button><button class="tc-b" data-a="next">▶</button>'+
+      '<button class="tc-b" data-a="undo">Poništi tačku</button></div>'+
+    '<div class="tc-row"><button class="tc-b" data-a="delpoly">Obriši oblik</button><button class="tc-b" data-a="dellayer">Obriši sloj</button><button class="tc-b" data-a="reset">Vrati početno (sloj)</button></div>'+
+    '<div class="tc-row"><button class="tc-b" data-a="fit">Ceo prikaz</button><button class="tc-b" data-a="export">Izvezi JSON</button><button class="tc-b" data-a="import">Uvezi JSON</button></div>'+
+    '<div id="tcImportBox" style="display:none"><textarea id="tcImportText" placeholder="Nalepi JSON ovde"></textarea><div class="tc-row"><button class="tc-b" data-a="doimport">Primeni</button></div></div>'+
+    '<div class="tc-help"><b>Kako se crta:</b><br>• Klik na sliku dodaje tačku, tačke se povezuju tankim linijama (oblik se zatvara sam).<br>• Prevuci tačku da je pomeriš. Dupli klik ili desni klik na tačku je briše.<br>• Shift + klik blizu ivice ubacuje tačku između dve.<br>• Točak miša približava i udaljava (oko pokazivača). Prevlačenje prazne slike pomera prikaz.<br>• "Novi oblik" počinje novi oblik u istom sloju; ◀ ▶ prelaze među oblicima.<br>• Sve se čuva odmah i gosti ga odmah koriste.</div>'+
+    '<h2 style="margin-top:12px">Prikaz slojeva</h2><div id="tcVis"></div>'+
+    '<div class="tc-row" style="margin-top:12px"><button class="tc-b" data-a="close" style="width:100%">Zatvori alat</button></div></div>'+
+    '<div class="tc-stage"><div class="tc-info" id="tcInfo"></div></div>';
+  document.body.appendChild(ui.root);
+  var stage=ui.root.querySelector('.tc-stage');
+  svg=document.createElementNS(NS,'svg');svg.setAttribute('preserveAspectRatio','xMidYMid meet');stage.insertBefore(svg,stage.firstChild);
+  el('image',{href:T.roomSrc,x:0,y:0,width:W,height:H},svg);
+  gMain=el('g',{},svg);
+  ui.info=ui.root.querySelector('#tcInfo');
+
+  var lbox=ui.root.querySelector('#tcLayers'),vbox=ui.root.querySelector('#tcVis');
+  LAYERS.forEach(function(L){
+    var b=document.createElement('button');b.type='button';b.className='tc-layer';b.dataset.layer=L.id;
+    b.innerHTML='<span class="tc-dot" style="background:'+L.color+'"></span><span>'+L.label+'</span>';
+    b.addEventListener('click',function(){layer=L.id;refreshUi();draw()});
+    lbox.appendChild(b);
+    var c=document.createElement('label');c.className='tc-chk';
+    c.innerHTML='<input type="checkbox" checked><span class="tc-dot" style="background:'+L.color+'"></span>'+L.label;
+    c.querySelector('input').addEventListener('change',function(e){vis[L.id]=e.target.checked;draw()});
+    vbox.appendChild(c);
+  });
+  var tsel=ui.root.querySelector('#tcTable');
+  for(var i=0;i<T.tables.length;i++){var o=document.createElement('option');o.value=i;o.textContent=(i+1);tsel.appendChild(o)}
+  tsel.addEventListener('change',function(){seatSel=(+tsel.value)*4+(seatSel%4);refreshUi();draw()});
+  var cbox=ui.root.querySelector('#tcChairs');
+  for(var k=0;k<4;k++)(function(k){
+    var b=document.createElement('button');b.type='button';b.className='tc-b';b.textContent='Stolica '+(k+1);b.dataset.k=k;
+    b.addEventListener('click',function(){seatSel=Math.floor(seatSel/4)*4+k;refreshUi();draw()});cbox.appendChild(b);
+  })(k);
+  ui.root.querySelectorAll('[data-a]').forEach(function(b){b.addEventListener('click',function(){act(b.dataset.a)})});
+  ['wheel'].forEach(function(n){svg.addEventListener(n,onWheel,{passive:false})});
+  svg.addEventListener('pointerdown',onDown);svg.addEventListener('pointermove',onMove);
+  svg.addEventListener('pointerup',onUp);svg.addEventListener('pointercancel',onUp);
+  svg.addEventListener('contextmenu',function(e){e.preventDefault()});
+  svg.addEventListener('dblclick',function(e){var t=e.target;if(t&&t.dataset&&t.dataset.p!==undefined){delPoint(+t.dataset.p,+t.dataset.i);e.preventDefault()}});
+  openBtn.addEventListener('click',function(e){e.stopPropagation();open()});
+  addEventListener('resize',function(){if(ui.root.classList.contains('open'))draw()});
+  ['keydown','keyup','keypress'].forEach(function(n){ui.root.addEventListener(n,function(e){e.stopPropagation()})});
+  ['pointerdown','pointerup','mousedown','mouseup','click','wheel','contextmenu'].forEach(function(n){ui.root.addEventListener(n,function(e){e.stopPropagation()},n==='wheel'?{passive:false}:undefined)});
+}
+
+// ---------- view: zoom and pan ----------
+function setView(x,y,w,h){
+  var minW=W/14;if(w<minW){var f=minW/w;w=minW;h*=f}
+  if(w>W){h=h*W/w;w=W}
+  var r=ui.root.querySelector('.tc-stage').getBoundingClientRect(),asp=(r.width||1)/(r.height||1);
+  h=w/asp;if(h>H*1.0){h=H;w=h*asp}
+  x=Math.max(-40,Math.min(W-w+40,x));y=Math.max(-40,Math.min(H-h+40,y));
+  view={x:x,y:y,w:w,h:h};svg.setAttribute('viewBox',x+' '+y+' '+w+' '+h);
+}
+function fitView(){
+  var r=ui.root.querySelector('.tc-stage').getBoundingClientRect(),asp=(r.width||1)/(r.height||1);
+  var w=W,h=W/asp;if(h<H){h=H;w=H*asp}
+  view={x:(W-w)/2,y:(H-h)/2,w:w,h:h};svg.setAttribute('viewBox',view.x+' '+view.y+' '+view.w+' '+view.h);
+}
+function toImg(e){
+  var pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;
+  var m=svg.getScreenCTM();if(!m)return{x:0,y:0};var p=pt.matrixTransform(m.inverse());return{x:p.x,y:p.y};
+}
+function pxScale(){var r=svg.getBoundingClientRect();return view.w/Math.max(1,r.width)>view.h/Math.max(1,r.height)?view.w/Math.max(1,r.width):view.h/Math.max(1,r.height)}
+function onWheel(e){
+  e.preventDefault();
+  var p=toImg(e),f=e.deltaY<0?1/1.18:1.18;
+  var nw=view.w*f,nh=view.h*f;
+  if(nw>W*1.02&&f>1){fitView();draw();return}
+  var nx=p.x-(p.x-view.x)*f,ny=p.y-(p.y-view.y)*f;
+  setView(nx,ny,nw,nh);draw();
+}
+
+// ---------- drawing the polygons ----------
+function draw(){
+  while(gMain.firstChild)gMain.removeChild(gMain.firstChild);
+  var s=pxScale(),R=3.1*s,ai=actIdx();
+  LAYERS.forEach(function(L){
+    if(!vis[L.id])return;
+    var lists=[];
+    if(L.id==='chairMask'){
+      if(layer==='chairMask')lists=[{a:polys('chairMask',seatSel),seat:seatSel,on:true}];
+      Object.keys(cal.chairMask).forEach(function(k){if(layer==='chairMask'&&+k===seatSel)return;lists.push({a:cal.chairMask[k],seat:+k,on:false})});
+    }else lists=[{a:cal[L.id],on:layer===L.id}];
+    lists.forEach(function(ls){
+      ls.a.forEach(function(poly,pi){
+        var isAct=ls.on&&layer===L.id&&pi===ai;
+        if(poly.length>=2){
+          var pts=poly.map(function(q){return q[0]+','+q[1]}).join(' ');
+          el(poly.length>=3?'polygon':'polyline',{points:pts,fill:poly.length>=3?L.color:'none','fill-opacity':isAct?.16:.07,stroke:L.color,'stroke-width':1,'vector-effect':'non-scaling-stroke','stroke-opacity':ls.on?1:.55,'pointer-events':'none'},gMain);
+        }
+        if(ls.on&&layer===L.id)poly.forEach(function(q,i){
+          var c=el('circle',{cx:q[0],cy:q[1],r:isAct?R:R*.8,fill:isAct?'#fff':L.color,stroke:L.color,'stroke-width':1,'vector-effect':'non-scaling-stroke',style:'cursor:move'},gMain);
+          c.dataset.p=pi;c.dataset.i=i;
+        });
+      });
+    });
+  });
+  if(layer==='chairMask'){                           // numbers of the chairs, to click them
+    T.seats.forEach(function(st){
+      var on=st.id===seatSel,g=el('g',{style:'cursor:pointer'},gMain);
+      var c=el('circle',{cx:st.x,cy:st.y,r:(on?9:7)*s*1.6,fill:on?'#ffb347':'rgba(20,10,4,.7)',stroke:'#ffb347','stroke-width':1,'vector-effect':'non-scaling-stroke'},g);
+      var t=el('text',{x:st.x,y:st.y+3.4*s*1.6,'text-anchor':'middle','font-size':8.5*s*1.6,fill:on?'#201409':'#ffd9a0','font-family':'system-ui,sans-serif','pointer-events':'none'},g);
+      t.textContent=(st.table+1)+'.'+((st.id%4)+1);
+      c.dataset.seat=st.id;
+    });
+  }
+  ui.info.textContent=LAYERS.filter(function(L){return L.id===layer})[0].label+' · oblika: '+curPolys().length+(layer==='chairMask'?' · sto '+(Math.floor(seatSel/4)+1)+', stolica '+((seatSel%4)+1):'')+' · zumiranje '+(W/view.w).toFixed(1)+'x';
+}
+function refreshUi(){
+  ui.root.querySelectorAll('.tc-layer').forEach(function(b){b.classList.toggle('on',b.dataset.layer===layer)});
+  ui.root.querySelector('#tcHelp').textContent=LAYERS.filter(function(L){return L.id===layer})[0].help;
+  ui.root.querySelector('#tcChairBox').style.display=layer==='chairMask'?'block':'none';
+  ui.root.querySelector('#tcTable').value=Math.floor(seatSel/4);
+  ui.root.querySelectorAll('#tcChairs button').forEach(function(b){b.classList.toggle('on',+b.dataset.k===seatSel%4)});
+}
+
+// ---------- mouse ----------
+function nearEdge(poly,p,tol){
+  var best=null;
+  for(var i=0;i<poly.length;i++){
+    var a=poly[i],b=poly[(i+1)%poly.length],vx=b[0]-a[0],vy=b[1]-a[1],l2=vx*vx+vy*vy||1;
+    var t=Math.max(0,Math.min(1,((p.x-a[0])*vx+(p.y-a[1])*vy)/l2)),qx=a[0]+vx*t,qy=a[1]+vy*t,d=Math.hypot(qx-p.x,qy-p.y);
+    if(d<tol&&(!best||d<best.d))best={d:d,i:i};
+  }
+  return best;
+}
+function onDown(e){
+  var t=e.target;
+  if(e.button===2){                                  // right click on a point deletes it
+    if(t&&t.dataset&&t.dataset.p!==undefined)delPoint(+t.dataset.p,+t.dataset.i);
+    return;
+  }
+  if(e.button===1){pan={sx:e.clientX,sy:e.clientY,vx:view.x,vy:view.y,moved:true};svg.setPointerCapture(e.pointerId);e.preventDefault();return}
+  if(e.button!==0)return;
+  if(t&&t.dataset&&t.dataset.seat!==undefined){seatSel=+t.dataset.seat;refreshUi();draw();return}
+  if(t&&t.dataset&&t.dataset.p!==undefined){
+    setAct(+t.dataset.p);drag={p:+t.dataset.p,i:+t.dataset.i};svg.setPointerCapture(e.pointerId);draw();e.preventDefault();return;
+  }
+  pan={sx:e.clientX,sy:e.clientY,vx:view.x,vy:view.y,moved:false,shift:e.shiftKey,ev:{clientX:e.clientX,clientY:e.clientY}};
+  svg.setPointerCapture(e.pointerId);
+}
+function onMove(e){
+  if(drag){
+    var p=toImg(e),poly=curPolys()[drag.p];
+    if(poly&&poly[drag.i]){poly[drag.i][0]=Math.round(p.x*10)/10;poly[drag.i][1]=Math.round(p.y*10)/10;draw()}
+    return;
+  }
+  if(pan){
+    var dx=e.clientX-pan.sx,dy=e.clientY-pan.sy;
+    if(!pan.moved&&Math.hypot(dx,dy)>5)pan.moved=true;
+    if(pan.moved){
+      var r=svg.getBoundingClientRect(),sc=Math.max(view.w/r.width,view.h/r.height);
+      setView(pan.vx-dx*sc,pan.vy-dy*sc,view.w,view.h);draw();
+    }
+  }
+}
+function onUp(e){
+  if(drag){drag=null;save();draw();try{svg.releasePointerCapture(e.pointerId)}catch(_){}return}
+  if(pan){
+    var wasClick=!pan.moved&&pan.ev,shift=pan.shift;pan=null;try{svg.releasePointerCapture(e.pointerId)}catch(_){}
+    if(wasClick){
+      var p=toImg(e),a=curPolys(),i=actIdx();
+      p.x=Math.round(p.x*10)/10;p.y=Math.round(p.y*10)/10;
+      if(shift&&i>=0&&a[i]&&a[i].length>=2){
+        var ne=nearEdge(a[i],p,10*pxScale());
+        if(ne){a[i].splice(ne.i+1,0,[p.x,p.y]);save();draw();return}
+      }
+      if(i<0){a.push([]);i=a.length-1;setAct(i)}
+      a[i].push([p.x,p.y]);save();draw();
+    }
+  }
+}
+function delPoint(pi,i){
+  var a=curPolys();if(!a[pi])return;
+  a[pi].splice(i,1);if(!a[pi].length&&a.length>0)a.splice(pi,1);
+  save();draw();
+}
+
+// ---------- the buttons ----------
+function act(a){
+  var A=curPolys(),i=actIdx();
+  if(a==='new'){if(!A.length||A[A.length-1].length)A.push([]);setAct(A.length-1);draw()}
+  else if(a==='prev'){if(A.length){setAct((i-1+A.length)%A.length);draw()}}
+  else if(a==='next'){if(A.length){setAct((i+1)%A.length);draw()}}
+  else if(a==='undo'){if(A[i]&&A[i].length){A[i].pop();if(!A[i].length&&A.length>1)A.splice(i,1);save();draw()}}
+  else if(a==='delpoly'){if(A[i]){A.splice(i,1);save();draw()}}
+  else if(a==='dellayer'){if(confirm('Obrisati sve oblike u ovom sloju?')){A.length=0;save();draw()}}
+  else if(a==='reset'){
+    if(!confirm('Vratiti ovaj sloj na početno stanje?'))return;
+    var d=T.defaults();
+    if(layer==='chairMask')cal.chairMask[seatSel]=(d.chairMask[seatSel]||[]).slice();else cal[layer]=d[layer];
+    save();draw();
+  }
+  else if(a==='fit'){fitView();draw()}
+  else if(a==='export'){exportJson()}
+  else if(a==='import'){var b=ui.root.querySelector('#tcImportBox');b.style.display=b.style.display==='none'?'block':'none'}
+  else if(a==='doimport'){
+    try{
+      var o=JSON.parse(ui.root.querySelector('#tcImportText').value);
+      cal={version:1,floor:o.floor||[],blocked:o.blocked||[],tableMask:o.tableMask||[],chairMask:o.chairMask||{}};
+      save();draw();ui.root.querySelector('#tcImportBox').style.display='none';
+    }catch(err){alert('JSON nije ispravan.')}
+  }
+  else if(a==='close'){close()}
+}
+function exportJson(){
+  var data=JSON.stringify(Object.assign({format:'cookster-tavern-calibration',exportedAt:new Date().toISOString()},cal),null,1);
+  var blob=new Blob([data],{type:'application/json'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download='cookster_kafana_kalibracija.json';document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(data).then(function(){ui.info.textContent='JSON je preuzet i kopiran u clipboard.'},function(){});
+}
+function open(){
+  cal=clone(T.calibration());
+  window.__tavernEditor=true;
+  ui.root.classList.add('open');
+  refreshUi();
+  requestAnimationFrame(function(){fitView();draw()});
+}
+function close(){ui.root.classList.remove('open');window.__tavernEditor=false;T.applyCalibration(clone(cal));T.fit()}
+
+build();
+window.CooksterTavernCal={open:open,close:close};
+})();

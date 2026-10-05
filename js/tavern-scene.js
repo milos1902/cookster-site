@@ -100,10 +100,44 @@ var BLOCKS=[{x0:185,y0:180,x1:460,y1:300},{x0:150,y0:250,x1:260,y1:400}];   // t
 function pip(poly,x,y){var ins=false;for(var i=0,j=poly.length-1;i<poly.length;j=i++){var a=poly[i],b=poly[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])ins=!ins}return ins}
 // walkable grid for the paths
 var CELL=22,GW=Math.ceil(W/CELL),GH=Math.ceil(H/CELL),GRID=null;
+// ---------- calibration: what the user drew in the tool "Kalibracija kafane" (or the defaults made from the picture) ----------
+//   floor      polygons: where guests may walk
+//   blocked    polygons: tables and edges that guests may not cross
+//   tableMask  polygons: parts of the tables that cover a guest walking behind them
+//   chairMask  {"seatId": [polygons]}: the part of a chair that covers the guest sitting on it
+var CAL_KEY='cookster.tavern-calibration.v1',CAL_FILE='assets/tavern/calibration.json';
+function clonePoly(p){return p.map(function(q){return[q[0],q[1]]})}
+function defaultCal(){
+  var cal={version:1,floor:[clonePoly(FLOOR)],blocked:[],tableMask:[],chairMask:{}};
+  BLOCKS.forEach(function(b){cal.blocked.push([[b.x0,b.y0],[b.x1,b.y0],[b.x1,b.y1],[b.x0,b.y1]])});
+  TABLES.forEach(function(t){cal.blocked.push(clonePoly(t.block));cal.tableMask.push(clonePoly(t.poly))});
+  return cal;
+}
+function okPolys(a){return Array.isArray(a)&&a.every(function(p){return Array.isArray(p)&&p.every(function(q){return Array.isArray(q)&&isFinite(q[0])&&isFinite(q[1])})})}
+function readCal(){
+  var found=null;
+  try{var raw=localStorage.getItem(CAL_KEY);if(raw)found=JSON.parse(raw)}catch(_){}
+  if(!found){try{var x=new XMLHttpRequest();x.open('GET',CAL_FILE,false);x.send(null);if(x.status>=200&&x.status<300)found=JSON.parse(x.responseText)}catch(_){}}
+  var d=defaultCal();
+  if(!found||typeof found!=='object')return d;
+  var cal={version:1,floor:okPolys(found.floor)?found.floor:d.floor,blocked:okPolys(found.blocked)?found.blocked:d.blocked,
+    tableMask:okPolys(found.tableMask)?found.tableMask:d.tableMask,chairMask:{}};
+  if(found.chairMask&&typeof found.chairMask==='object')Object.keys(found.chairMask).forEach(function(k){if(okPolys(found.chairMask[k]))cal.chairMask[k]=found.chairMask[k]});
+  return cal;
+}
+var CAL=null,MASKS=[];
+function applyCal(cal){
+  CAL=cal||readCal();
+  MASKS=CAL.tableMask.filter(function(p){return p.length>=3}).map(function(p){
+    var by=-1e9;p.forEach(function(q){by=Math.max(by,q[1])});return{poly:p,y:by-4};
+  });
+  GRID=null;
+}
 function walkable(x,y){
-  if(!pip(FLOOR,x,y))return false;
-  for(var i=0;i<BLOCKS.length;i++){var b=BLOCKS[i];if(x>b.x0&&x<b.x1&&y>b.y0&&y<b.y1)return false}
-  for(var t=0;t<TABLES.length;t++)if(pip(TABLES[t].block,x,y))return false;
+  var ok=false,i;
+  for(i=0;i<CAL.floor.length;i++)if(CAL.floor[i].length>=3&&pip(CAL.floor[i],x,y)){ok=true;break}
+  if(!ok)return false;
+  for(i=0;i<CAL.blocked.length;i++)if(CAL.blocked[i].length>=3&&pip(CAL.blocked[i],x,y))return false;
   return true;
 }
 function buildGrid(){GRID=new Uint8Array(GW*GH);for(var j=0;j<GH;j++)for(var i=0;i<GW;i++)GRID[j*GW+i]=walkable(i*CELL+CELL/2,j*CELL+CELL/2)?1:0}
@@ -151,6 +185,7 @@ function findPath(from,to){                          // A* on the grid, then str
   return out;
 }
 
+applyCal();
 // ---------- guests ----------
 var guests=[],nextArrival=2,clock=0,UID=0;
 var SCALE0=.31,SCALE_K=.00012,SIT_K=.78;                      // size of a picture at height y of the hall
@@ -224,6 +259,13 @@ function drawShadow(ctx,x,y,sc){
 }
 function guestSortY(g){return(g.mode==='seated'||g.mode==='sitting'||g.mode==='rising')?seatPos(g).y:g.y}
 function drawGuest(ctx,g){
+  drawGuestBody(ctx,g);
+  if(g.mode==='seated'||g.mode==='sitting'||g.mode==='rising'){
+    var cm=CAL.chairMask[g.seat.id];
+    if(cm)cm.forEach(function(p){drawPolyFromPicture(ctx,p)});
+  }
+}
+function drawGuestBody(ctx,g){
   var walk=(g.mode==='in'||g.mode==='out');
   if(walk){
     var sc=scaleAt(g.y),ph=Math.abs(Math.sin(g.phase*Math.PI)),bob=ph*3.2*sc/.3;
@@ -244,20 +286,20 @@ function drawGuest(ctx,g){
     }
   }
 }
-// the table is drawn again from the picture of the hall, on top of whoever is behind it
-function drawTableMask(ctx,t){
-  if(!art.complete||!art.naturalWidth)return;
-  ctx.save();ctx.beginPath();ctx.moveTo(t.poly[0][0],t.poly[0][1]);
-  for(var i=1;i<t.poly.length;i++)ctx.lineTo(t.poly[i][0],t.poly[i][1]);
+// a part of the picture of the hall (a table, a chair) is drawn again on top of whoever is behind it
+function drawPolyFromPicture(ctx,poly){
+  if(!art.complete||!art.naturalWidth||poly.length<3)return;
+  ctx.save();ctx.beginPath();ctx.moveTo(poly[0][0],poly[0][1]);
+  for(var i=1;i<poly.length;i++)ctx.lineTo(poly[i][0],poly[i][1]);
   ctx.closePath();ctx.clip();ctx.drawImage(art,0,0,W,H);ctx.restore();
 }
 function draw(){
   var ctx=cv.getContext('2d'),k=cv.width/W;
   ctx.setTransform(k,0,0,k,0,0);ctx.clearRect(0,0,W,H);
   var list=guests.map(function(g){return{y:guestSortY(g),g:g}});
-  TABLES.forEach(function(t){list.push({y:t.y+58,t:t})});
+  MASKS.forEach(function(m){list.push({y:m.y,m:m})});
   list.sort(function(a,b){return a.y-b.y});
-  list.forEach(function(o){if(o.g)drawGuest(ctx,o.g);else drawTableMask(ctx,o.t)});
+  list.forEach(function(o){if(o.g)drawGuest(ctx,o.g);else drawPolyFromPicture(ctx,o.m.poly)});
 }
 
 // ---------- the canvas follows the picture ----------
@@ -348,7 +390,7 @@ function close(){
 openBtn.addEventListener('click',function(e){e.stopPropagation();open()});
 backBtn.addEventListener('click',function(e){e.stopPropagation();close()});
 function onKey(e){
-  if(state==='kitchen')return;
+  if(state==='kitchen'||window.__tavernEditor)return;
   if(e.type==='keydown'){
     if(e.key==='Escape'){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();close();return}
     if(e.key==='Tab'){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();if(state==='tavern')backBtn.focus({preventScroll:true});return}
@@ -361,6 +403,8 @@ window.CooksterTavern={
   open:open,close:close,spawn:spawn,
   get isOpen(){return state==='tavern'},get busy(){return busy},
   debug:function(){return{guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
-  seats:SEATS,tables:TABLES,door:DOOR
+  seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},
+  defaults:defaultCal,calibration:function(){return CAL},applyCalibration:function(c){applyCal(c)},calKey:CAL_KEY,
+  fit:function(){fit();draw()},isOpenScene:function(){return state!=='kitchen'}
 };
 })();
