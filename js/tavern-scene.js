@@ -61,7 +61,7 @@ function preload(){
     var key='g'+(c<10?'0':'')+c+'_'+p;
     jobs.push(loadImg(GUESTS+key+'.webp').then(function(im){imgs[key]=im}));
   });
-  ['w_dole','w_dole2','w_gore','w_gore2','w_bok1','w_bok2','w_bok3','w_bokl1','w_bokl2','w_bokl3'].forEach(function(k){
+  ['w_dole','w_dole2','w_gore','w_gore2','w_bok1','w_bok2','w_bok3','w_bokl1','w_bokl2','w_bokl3','w_pisi1','w_pisi2','w_pisi3','w_pisi4'].forEach(function(k){
     jobs.push(loadImg(GUESTS+k+'.webp').then(function(im){imgs[k]=im}));
   });
   var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
@@ -214,32 +214,54 @@ function spawn(){
   guests.push(g);return g;
 }
 // the waiter: walks about the hall from table to table (later he will carry what was ordered)
-var waiter=null;
+var waiter=null,orderQueue=[];
 function waiterGoal(){
   var s=SEATS[Math.floor(Math.random()*SEATS.length)];
   return{x:s.ax+(Math.random()*30-15),y:s.ay+(Math.random()*20-10)};
 }
 function waiterNew(){
-  waiter={x:DOOR.x+10,y:DOOR.y+30,path:null,pi:1,wait:0,phase:0,face:'dole',dir:1,speed:92};
+  waiter={x:DOOR.x+10,y:DOOR.y+30,path:null,pi:1,wait:0,phase:0,face:'dole',dir:1,speed:92,serve:null,writing:0,wv:0};
   waiter.path=findPath(waiter,waiterGoal());
+}
+// the guest who sat down first is served first, then the one who sat second, and so on
+function waiterNext(){
+  var w=waiter;
+  while(orderQueue.length&&(guests.indexOf(orderQueue[0])<0||orderQueue[0].ordered))orderQueue.shift();
+  if(!orderQueue.length)return false;
+  w.serve=orderQueue.shift();
+  w.path=findPath({x:w.x,y:w.y},{x:w.serve.seat.ax,y:w.serve.seat.ay});w.pi=1;w.wait=0;
+  return true;
 }
 function waiterStep(dt){
   var w=waiter;if(!w)return;
-  if(w.wait>0){w.wait-=dt;return}
+  if(w.writing>0){
+    w.writing-=dt;
+    if(w.writing<=0){if(guests.indexOf(w.serve)>=0){w.serve.ordered=true;w.serve.sitT=0}w.serve=null;w.wait=.4}
+    return;
+  }
+  if(w.wait>0){w.wait-=dt;if(w.wait>0)return}
+  if(!w.serve&&orderQueue.length&&waiterNext()){}
   var tgt=w.path&&w.path[w.pi];
   if(!tgt){
+    if(w.serve){
+      // he stands beside the chair and looks at the guest
+      var dx=w.serve.seat.x-w.x;
+      w.dir=dx<0?-1:1;w.writing=3.2+Math.random()*1.5;w.wv=(w.face==='dole')?0:1+Math.floor(Math.random()*3);
+      return;
+    }
     w.wait=1+Math.random()*3;w.path=findPath({x:w.x,y:w.y},waiterGoal());w.pi=1;return;
   }
-  var dx=tgt.x-w.x,dy=tgt.y-w.y,d=Math.hypot(dx,dy),sp=w.speed*scaleAt(w.y)/.34*dt;
+  var dx2=tgt.x-w.x,dy2=tgt.y-w.y,d=Math.hypot(dx2,dy2),sp=w.speed*(w.serve?1.15:1)*scaleAt(w.y)/.34*dt;
   if(d<=sp){w.x=tgt.x;w.y=tgt.y;w.pi++}
-  else{w.x+=dx/d*sp;w.y+=dy/d*sp;
-    var vert=Math.abs(dy)>Math.abs(dx)*(w.face==='bok'?1.5:.7);
-    w.face=vert?(dy>0?'dole':'gore'):'bok';
-    if(w.face==='bok')w.dir=dx<0?-1:1;
+  else{w.x+=dx2/d*sp;w.y+=dy2/d*sp;
+    var vert=Math.abs(dy2)>Math.abs(dx2)*(w.face==='bok'?1.5:.7);
+    w.face=vert?(dy2>0?'dole':'gore'):'bok';
+    if(w.face==='bok')w.dir=dx2<0?-1:1;
   }
   w.phase+=sp/(46*scaleAt(w.y)/.34);
 }
 function waiterKey(w){
+  if(w.writing>0)return 'w_pisi'+(w.wv+1);
   if(w.wait>0)return w.face==='bok'?(w.dir<0?'w_bokl2':'w_bok2'):(w.face==='gore'?'w_gore':'w_dole');
   var n=Math.floor(w.phase);
   if(w.face==='bok')return (w.dir<0?'w_bokl':'w_bok')+(n%3+1);
@@ -250,7 +272,8 @@ function drawWaiter(ctx){
   var sc=scaleAt(w.y),moving=w.wait<=0;
   drawShadow(ctx,w.x,w.y,sc);
   var bob=moving?Math.abs(Math.sin(w.phase*Math.PI))*2.4*sc/.3:0;
-  drawSprite(ctx,waiterKey(w),w.x,w.y-bob,sc,false,0,1);
+  // the writing pictures look to the right; when the guest is on his left the picture is mirrored
+  drawSprite(ctx,waiterKey(w),w.x,w.y-bob,sc,w.writing>0&&w.wv>0&&w.dir<0,0,1);
 }
 function chKey(g,pose){return 'g'+(g.ch<10?'0':'')+g.ch+'_'+pose}
 function step(dt){
@@ -278,9 +301,9 @@ function step(dt){
     }else if(g.mode==='sitting'){
       // he steps from the place beside the table onto the chair
       g.fade=Math.min(1,g.fade+dt/.55);
-      if(g.fade>=1){g.mode='seated';g.sitT=0}
+      if(g.fade>=1){g.mode='seated';g.sitT=0;g.ordered=false;orderQueue.push(g)}
     }else if(g.mode==='seated'){
-      g.sitT+=dt;
+      if(g.ordered)g.sitT+=dt;      // he stays until the waiter has written down his order
       if(g.sitT>g.sitFor){g.mode='rising';g.fade=0}
     }else if(g.mode==='rising'){
       g.fade=Math.min(1,g.fade+dt/.55);
@@ -450,7 +473,7 @@ window.addEventListener('keydown',onKey,true);window.addEventListener('keyup',on
 window.CooksterTavern={
   open:open,close:close,spawn:spawn,
   get isOpen(){return state==='tavern'},get busy(){return busy},
-  debug:function(){return{guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
+  debug:function(){return{waiter:waiter&&{x:Math.round(waiter.x),y:Math.round(waiter.y),writing:waiter.writing>0,serve:waiter.serve&&waiter.serve.id},guests:guests.map(function(g){return{id:g.id,ordered:g.ordered,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},
   defaults:defaultCal,calibration:function(){return CAL},applyCalibration:function(c){applyCal(c)},calKey:CAL_KEY,
   fit:function(){fit();draw()},isOpenScene:function(){return state!=='kitchen'}
