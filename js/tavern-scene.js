@@ -278,8 +278,14 @@ function drawGuestBody(ctx,g){
     // the two pictures of a step: the left leg and the right arm forward, then the right leg and the left arm forward
     var pose=g.face;
     if(g.face==='gore')pose='gore'+(Math.floor(g.phase)%2===0?'':'2');
-    else if(g.face==='dole')pose='walkd'+[1,2,3,2][Math.floor(g.phase*2)%4];
-    drawSprite(ctx,chKey(g,pose),g.x,g.y-bob,sc,g.face==='bok'&&g.flip,Math.sin(g.phase*Math.PI)*(g.face==='bok'?.03:.012),1);
+    var rot=Math.sin(g.phase*Math.PI)*(g.face==='bok'?.03:.012);
+    if(g.face==='dole'){
+      // the next picture of the step fades in over the current one, so the legs flow instead of jumping
+      var q=g.phase*2,qi=Math.floor(q),fr=q-qi,SEQ=[1,2,3,2];
+      var fade=Math.max(0,Math.min(1,(fr-.25)/.65));fade=fade*fade*(3-2*fade);
+      drawSprite(ctx,chKey(g,'walkd'+SEQ[qi%4]),g.x,g.y-bob,sc,false,rot,1);
+      if(fade>0)drawSprite(ctx,chKey(g,'walkd'+SEQ[(qi+1)%4]),g.x,g.y-bob,sc,false,rot,fade);
+    }else drawSprite(ctx,chKey(g,pose),g.x,g.y-bob,sc,g.face==='bok'&&g.flip,rot,1);
   }else{
     var sp=seatPos(g),ssc=scaleAt(sp.y)*SIT_K;
     if(g.mode==='sitting'||g.mode==='rising'){
