@@ -61,6 +61,9 @@ function preload(){
     var key='g'+(c<10?'0':'')+c+'_'+p;
     jobs.push(loadImg(GUESTS+key+'.webp').then(function(im){imgs[key]=im}));
   });
+  ['w_dole','w_dole2','w_gore','w_gore2','w_bok1','w_bok2','w_bok3','w_bokl1','w_bokl2','w_bokl3'].forEach(function(k){
+    jobs.push(loadImg(GUESTS+k+'.webp').then(function(im){imgs[k]=im}));
+  });
   var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
   loading=Promise.all([roomJob].concat(jobs)).then(function(r){loaded=!!r[0];loading=null;return loaded});
   return loading;
@@ -210,9 +213,50 @@ function spawn(){
     sitT:0,sitFor:30+Math.random()*40,fade:0,from:null,speed:78+Math.random()*16,mood:'ok'};
   guests.push(g);return g;
 }
+// the waiter: walks about the hall from table to table (later he will carry what was ordered)
+var waiter=null;
+function waiterGoal(){
+  var s=SEATS[Math.floor(Math.random()*SEATS.length)];
+  return{x:s.ax+(Math.random()*30-15),y:s.ay+(Math.random()*20-10)};
+}
+function waiterNew(){
+  waiter={x:DOOR.x+10,y:DOOR.y+30,path:null,pi:1,wait:0,phase:0,face:'dole',dir:1,speed:92};
+  waiter.path=findPath(waiter,waiterGoal());
+}
+function waiterStep(dt){
+  var w=waiter;if(!w)return;
+  if(w.wait>0){w.wait-=dt;return}
+  var tgt=w.path&&w.path[w.pi];
+  if(!tgt){
+    w.wait=1+Math.random()*3;w.path=findPath({x:w.x,y:w.y},waiterGoal());w.pi=1;return;
+  }
+  var dx=tgt.x-w.x,dy=tgt.y-w.y,d=Math.hypot(dx,dy),sp=w.speed*scaleAt(w.y)/.34*dt;
+  if(d<=sp){w.x=tgt.x;w.y=tgt.y;w.pi++}
+  else{w.x+=dx/d*sp;w.y+=dy/d*sp;
+    var vert=Math.abs(dy)>Math.abs(dx)*(w.face==='bok'?1.5:.7);
+    w.face=vert?(dy>0?'dole':'gore'):'bok';
+    if(w.face==='bok')w.dir=dx<0?-1:1;
+  }
+  w.phase+=sp/(46*scaleAt(w.y)/.34);
+}
+function waiterKey(w){
+  if(w.wait>0)return w.face==='bok'?(w.dir<0?'w_bokl2':'w_bok2'):(w.face==='gore'?'w_gore':'w_dole');
+  var n=Math.floor(w.phase);
+  if(w.face==='bok')return (w.dir<0?'w_bokl':'w_bok')+(n%3+1);
+  return 'w_'+w.face+(n%2?'2':'');
+}
+function drawWaiter(ctx){
+  var w=waiter;if(!w)return;
+  var sc=scaleAt(w.y),moving=w.wait<=0;
+  drawShadow(ctx,w.x,w.y,sc);
+  var bob=moving?Math.abs(Math.sin(w.phase*Math.PI))*2.4*sc/.3:0;
+  drawSprite(ctx,waiterKey(w),w.x,w.y-bob,sc,false,0,1);
+}
 function chKey(g,pose){return 'g'+(g.ch<10?'0':'')+g.ch+'_'+pose}
 function step(dt){
   clock+=dt;
+  if(!waiter)waiterNew();
+  waiterStep(dt);
   if(clock>=nextArrival){nextArrival=clock+7+Math.random()*9;if(guests.length<14)spawn()}
   for(var i=guests.length-1;i>=0;i--){
     var g=guests[i];
@@ -300,9 +344,10 @@ function draw(){
   var ctx=cv.getContext('2d'),k=cv.width/W;
   ctx.setTransform(k,0,0,k,0,0);ctx.clearRect(0,0,W,H);
   var list=guests.map(function(g){return{y:guestSortY(g),g:g}});
+  if(waiter)list.push({y:waiter.y,w:1});
   MASKS.forEach(function(m){list.push({y:m.y,m:m})});
   list.sort(function(a,b){return a.y-b.y});
-  list.forEach(function(o){if(o.g)drawGuest(ctx,o.g);else drawPolyFromPicture(ctx,o.m.poly)});
+  list.forEach(function(o){if(o.w)drawWaiter(ctx);else if(o.g)drawGuest(ctx,o.g);else drawPolyFromPicture(ctx,o.m.poly)});
 }
 
 // ---------- the canvas follows the picture ----------
