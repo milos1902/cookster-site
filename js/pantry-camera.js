@@ -95,6 +95,7 @@
   function turn(options){
     var kitchen=options.kitchen,pantry=options.pantry;
     var duration=options.duration||700;
+    var side=options.side===-1?-1:1;      // -1: the camera turns to the left (the tavern), 1: to the right (the pantry)
     var originalWidth=innerWidth,originalHeight=innerHeight;
     var templates=[snapshot(kitchen),snapshot(pantry)];
     templates.forEach(function(template){
@@ -135,7 +136,7 @@
 
     function render(progress){
       var eased=motionProgress(progress,duration);
-      var yaw=TURN*(options.direction===1?eased:1-eased);
+      var yaw=side*TURN*(options.direction===1?eased:1-eased);
       var fraction=yaw/TURN;
       var mix=smoothstep(.38,.62,fraction);
       var blur=14*(1-smoothstep(0,.22,Math.abs(fraction-.5)));
@@ -144,7 +145,7 @@
       views[0].style.opacity='1';
       views[1].style.opacity=String(mix);
       views.forEach(function(view,index){
-        var local=yaw-index*TURN;
+        var local=yaw-index*TURN*side;
         templates[index].style.transform=yawProjection(local,focal);
         // Feather source-photo boundaries into an ambient edge fill. This
         // covers unavailable off-photo rays without hard trapezoid borders.
