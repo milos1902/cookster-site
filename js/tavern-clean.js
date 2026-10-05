@@ -20,8 +20,7 @@ css.textContent=
 '#tavernScene{cursor:none}#tavernScene button,#tavernScene .tc-menu{cursor:pointer}'+
 '#tavernScene .ts-add{display:none!important}'+
 '#tavernScene .tc-dirt,#tavernScene .tc-fx{position:absolute;pointer-events:none}'+
-'#tavernScene .tc-sponge{position:fixed;left:0;top:0;width:96px;height:64px;margin:-40px 0 0 -48px;pointer-events:none;z-index:60;display:none;transition:transform .08s}'+
-'#tavernScene .tc-sponge.down{transition:none}'+
+'#tavernScene .tc-sponge{position:fixed;left:0;top:0;width:120px;height:84px;transform-origin:60px 62px;pointer-events:none;z-index:60;display:none;will-change:transform}'+
 '#tavernScene .tc-info{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:70;padding:6px 14px;border-radius:9px;background:rgba(32,20,9,.82);border:1px solid #7a5428;color:#f3e3c2;font:600 14px/1.2 system-ui,sans-serif;pointer-events:none;white-space:nowrap}'+
 '#tavernScene .tc-hint{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);z-index:70;padding:5px 12px;border-radius:8px;background:rgba(32,20,9,.7);color:#d9c69c;font:12px/1.2 system-ui,sans-serif;pointer-events:none;white-space:nowrap;transition:opacity .6s}'+
 '#tavernScene .tc-reset{position:absolute;right:14px;top:12px;z-index:70;border:2px solid #351b0d;border-radius:9px;background:#e8c27a;color:#351b0d;font:700 13px/1 system-ui,sans-serif;padding:7px 12px;opacity:.85}'+
@@ -78,26 +77,31 @@ function prepare(){
 
 // ---------- the sponge ----------
 var scratch=mk('canvas');
+// the sponge lies flat on the floor: seen from above at an angle its footprint is a flattened ellipse, and it is smaller farther away
+var FLAT=.58;
+function depthK(y){return .75+.45*Math.max(0,Math.min(1,(y-300)/640))}
 function stamp(x,y){
-  var r=RADIUS,sc=scratch.getContext('2d');
-  scratch.width=scratch.height=r*2;
-  var g=sc.createRadialGradient(r,r,0,r,r,r);
+  var k=depthK(y),rx=Math.round(RADIUS*k),ry=Math.max(2,Math.round(rx*FLAT)),sc=scratch.getContext('2d');
+  scratch.width=rx*2;scratch.height=ry*2;
+  sc.setTransform(1,0,0,FLAT,rx,ry);
+  var g=sc.createRadialGradient(0,0,0,0,0,rx);
   g.addColorStop(0,'rgba(0,0,0,'+STRENGTH+')');g.addColorStop(.6,'rgba(0,0,0,'+STRENGTH*.7+')');g.addColorStop(1,'rgba(0,0,0,0)');
-  sc.fillStyle=g;sc.fillRect(0,0,r*2,r*2);
+  sc.fillStyle=g;sc.fillRect(-rx,-rx,rx*2,rx*2);
+  sc.setTransform(1,0,0,1,0,0);
   sc.globalCompositeOperation='destination-in';           // only where the floor is
-  sc.drawImage(floorMask,-(x-r),-(y-r));
+  sc.drawImage(floorMask,-(x-rx),-(y-ry));
   D.globalCompositeOperation='destination-out';
-  D.drawImage(scratch,x-r,y-r);
+  D.drawImage(scratch,x-rx,y-ry);
   D.globalCompositeOperation='source-over';
 }
 function rubTo(x,y){
   prepare();
   if(!last){last={x:x,y:y};stamp(x,y);return}
-  var dx=x-last.x,dy=y-last.y,d=Math.hypot(dx,dy),n=Math.floor(d/SPACING);
+  var sp=SPACING*depthK(y),dx=x-last.x,dy=y-last.y,d=Math.hypot(dx,dy),n=Math.floor(d/sp);
   if(n>0){
     var ux=dx/d,uy=dy/d;
-    for(var i=1;i<=n;i++)stamp(last.x+ux*SPACING*i,last.y+uy*SPACING*i);
-    last={x:last.x+ux*SPACING*n,y:last.y+uy*SPACING*n};
+    for(var i=1;i<=n;i++)stamp(last.x+ux*sp*i,last.y+uy*sp*i);
+    last={x:last.x+ux*sp*n,y:last.y+uy*sp*n};
   }
   if(now()-lastBubble>45&&d>2){lastBubble=now();bubble(x,y,1)}
 }
@@ -145,10 +149,17 @@ function center(p){var x=0,y=0;p.forEach(function(q){x+=q[0];y+=q[1]});return[x/
 var info=mk('div','tc-info'),hint=mk('div','tc-hint'),reset=mk('button','tc-reset'),sponge=mk('div','tc-sponge'),menu=mk('div','tc-menu');
 reset.type='button';reset.textContent='↺ zaprljaj opet';
 hint.textContent='Drži levi klik i trljaj pod · Desni klik na sto → „Očisti sto“ (čisti i pod ispod stola)';
-sponge.innerHTML='<svg viewBox="0 0 96 64" width="96" height="64"><defs><linearGradient id="tcSp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7dc5b"/><stop offset="1" stop-color="#e0b72f"/></linearGradient></defs>'+
-  '<rect x="6" y="8" width="84" height="40" rx="12" fill="url(#tcSp)" stroke="#9c7a14" stroke-width="2"/>'+
-  '<rect x="6" y="40" width="84" height="16" rx="8" fill="#3fa05a" stroke="#256b38" stroke-width="2"/>'+
-  '<g fill="#b8921c" opacity=".75"><ellipse cx="24" cy="22" rx="5" ry="4"/><ellipse cx="46" cy="17" rx="4" ry="3"/><ellipse cx="66" cy="24" rx="6" ry="4"/><ellipse cx="36" cy="33" rx="4" ry="3"/><ellipse cx="78" cy="35" rx="3.5" ry="3"/><ellipse cx="55" cy="33" rx="5" ry="3.5"/></g></svg>';
+sponge.innerHTML='<svg viewBox="0 0 120 84" width="120" height="84"><defs>'+
+  '<radialGradient id="tcSh" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#000" stop-opacity=".55"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>'+
+  '<linearGradient id="tcTop" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe66d"/><stop offset="1" stop-color="#e9c13a"/></linearGradient></defs>'+
+  '<ellipse cx="60" cy="63" rx="56" ry="19" fill="url(#tcSh)"/>'+
+  '<g id="tcBody">'+
+  '<rect x="14" y="38" width="92" height="30" rx="13" fill="#c9a02a" stroke="#8d6d12" stroke-width="1.5"/>'+
+  '<rect x="14" y="56" width="92" height="14" rx="7" fill="#3fa05a" stroke="#256b38" stroke-width="1.5"/>'+
+  '<rect x="14" y="20" width="92" height="38" rx="14" fill="url(#tcTop)" stroke="#9c7a14" stroke-width="1.5"/>'+
+  '<g fill="#b8921c" opacity=".7"><ellipse cx="32" cy="34" rx="5" ry="3"/><ellipse cx="52" cy="28" rx="4" ry="2.4"/><ellipse cx="74" cy="36" rx="6" ry="3.2"/><ellipse cx="44" cy="45" rx="4" ry="2.4"/><ellipse cx="90" cy="31" rx="3.5" ry="2.2"/><ellipse cx="66" cy="47" rx="5" ry="2.8"/></g>'+
+  '<ellipse cx="38" cy="26" rx="14" ry="3" fill="#fff" opacity=".35"/></g></svg>';
+var spBody=sponge.querySelector('#tcBody');
 menu.innerHTML='<b></b><button type="button"></button>';
 room.appendChild(info);room.appendChild(hint);room.appendChild(reset);room.appendChild(sponge);room.appendChild(menu);
 
@@ -180,9 +191,13 @@ function moveSponge(e){
   var over=overUi(e);
   sponge.style.display=over||!T.isOpen?'none':'block';
   room.style.cursor=over?'pointer':'none';
-  sponge.style.left=e.clientX+'px';sponge.style.top=e.clientY+'px';
+  var p=toScene(e),r=cv.getBoundingClientRect(),k=depthK(Math.max(0,Math.min(H,p.y)))*(r.width/W);
   var vx=lastPos?e.clientX-lastPos.x:0;lastPos={x:e.clientX,y:e.clientY};
-  sponge.style.transform='rotate('+(down?Math.max(-14,Math.min(14,vx*.9)):-6)+'deg) scale('+(down?.9:1)+')';
+  // it slides on the floor: it leans a little in the direction it is pushed, and it is lifted when it does not touch the floor
+  var sk=down?Math.max(-12,Math.min(12,vx*.5)):0,lift=down?2:15;
+  sponge.style.left=(e.clientX-60)+'px';sponge.style.top=(e.clientY-62)+'px';
+  sponge.style.transform='scale('+k+') skewX('+(-sk)+'deg)';
+  if(spBody)spBody.setAttribute('transform','translate(0,'+(-lift)+')');
 }
 function hideMenu(){menu.style.display='none'}
 room.addEventListener('pointerdown',function(e){
