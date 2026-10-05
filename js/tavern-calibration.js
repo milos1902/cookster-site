@@ -199,7 +199,9 @@ function draw(){
         var isAct=ls.on&&layer===L.id&&pi===ai;
         if(poly.length>=2){
           var pts=poly.map(function(q){return q[0]+','+q[1]}).join(' ');
-          el(poly.length>=3?'polygon':'polyline',{points:pts,fill:poly.length>=3?L.color:'none','fill-opacity':isAct?.16:.07,stroke:L.color,'stroke-width':1,'vector-effect':'non-scaling-stroke','stroke-opacity':ls.on?1:.55,'pointer-events':'none'},gMain);
+          var pe=el(poly.length>=3?'polygon':'polyline',{points:pts,fill:poly.length>=3?L.color:'none','fill-opacity':isAct?.16:.07,stroke:L.color,'stroke-width':1,'vector-effect':'non-scaling-stroke','stroke-opacity':ls.on?1:.55,'pointer-events':'none'},gMain);
+          // a shape of another chair: a click on it selects that chair, so it can be edited or deleted
+          if(!ls.on&&ls.seat!==undefined&&seatLayer(L.id)&&layer===L.id){pe.setAttribute('pointer-events','all');pe.dataset.seatpoly=ls.seat;pe.style.cursor='pointer'}
         }
         if(ls.on&&layer===L.id)poly.forEach(function(q,i){
           var c=el('circle',{cx:q[0],cy:q[1],r:isAct?R:R*.8,fill:isAct?'#fff':L.color,stroke:L.color,'stroke-width':1,'vector-effect':'non-scaling-stroke',style:'cursor:move'},gMain);
@@ -336,6 +338,7 @@ function onDown(e){
   if(e.button===1){pan={sx:e.clientX,sy:e.clientY,vx:view.x,vy:view.y,moved:true};svg.setPointerCapture(e.pointerId);e.preventDefault();return}
   if(e.button!==0)return;
   if(t&&t.dataset&&t.dataset.seat!==undefined){seatSel=+t.dataset.seat;refreshUi();draw();return}
+  if(t&&t.dataset&&t.dataset.seatpoly!==undefined){seatSel=+t.dataset.seatpoly;refreshUi();draw();return}
   if(t&&t.dataset&&t.dataset.st!==undefined){
     seatSel=+t.dataset.st;drag={st:seatSel,part:t.dataset.part};svg.setPointerCapture(e.pointerId);refreshUi();draw();e.preventDefault();return;
   }
@@ -438,7 +441,10 @@ function act(a){
   else if(a==='next'){if(A.length){setAct((i+1)%A.length);draw()}}
   else if(a==='undo'){if(A[i]&&A[i].length){A[i].pop();if(!A[i].length&&A.length>1)A.splice(i,1);save();draw()}}
   else if(a==='delpoly'){if(A[i]){A.splice(i,1);save();draw()}}
-  else if(a==='dellayer'){if(confirm('Obrisati sve oblike u ovom sloju?')){A.length=0;save();draw()}}
+  else if(a==='dellayer'){
+    if(seatLayer(layer)){if(confirm('Obrisati maske SVIH stolica u ovom sloju?')){cal[layer]={};save();draw()}}
+    else if(confirm('Obrisati sve oblike u ovom sloju?')){A.length=0;save();draw()}
+  }
   else if(a==='reset'){
     if(!confirm('Vratiti ovaj sloj na početno stanje?'))return;
     var d=T.defaults();
