@@ -109,10 +109,11 @@ var CELL=22,GW=Math.ceil(W/CELL),GH=Math.ceil(H/CELL),GRID=null;
 //   blocked    polygons: tables and edges that guests may not cross
 //   tableMask  polygons: parts of the tables that cover a guest walking behind them
 //   chairMask  {"seatId": [polygons]}: the part of a chair that covers the guest sitting on it
+//   chairWalk  {"seatId": [polygons]}: the part of a chair that covers a guest walking behind it (only while nobody sits on it)
 var CAL_KEY='cookster.tavern-calibration.v1',CAL_FILE='assets/tavern/calibration.json';
 function clonePoly(p){return p.map(function(q){return[q[0],q[1]]})}
 function defaultCal(){
-  var cal={version:1,floor:[clonePoly(FLOOR)],blocked:[],tableMask:[],chairMask:{}};
+  var cal={version:1,floor:[clonePoly(FLOOR)],blocked:[],tableMask:[],chairMask:{},chairWalk:{}};
   BLOCKS.forEach(function(b){cal.blocked.push([[b.x0,b.y0],[b.x1,b.y0],[b.x1,b.y1],[b.x0,b.y1]])});
   TABLES.forEach(function(t){cal.blocked.push(clonePoly(t.block));cal.tableMask.push(clonePoly(t.poly))});
   return cal;
@@ -125,15 +126,25 @@ function readCal(){
   var d=defaultCal();
   if(!found||typeof found!=='object')return d;
   var cal={version:1,floor:okPolys(found.floor)?found.floor:d.floor,blocked:okPolys(found.blocked)?found.blocked:d.blocked,
-    tableMask:okPolys(found.tableMask)?found.tableMask:d.tableMask,chairMask:{}};
-  if(found.chairMask&&typeof found.chairMask==='object')Object.keys(found.chairMask).forEach(function(k){if(okPolys(found.chairMask[k]))cal.chairMask[k]=found.chairMask[k]});
+    tableMask:okPolys(found.tableMask)?found.tableMask:d.tableMask,chairMask:{},chairWalk:{}};
+  ['chairMask','chairWalk'].forEach(function(n){
+    if(found[n]&&typeof found[n]==='object')Object.keys(found[n]).forEach(function(k){if(okPolys(found[n][k]))cal[n][k]=found[n][k]});
+  });
   return cal;
 }
-var CAL=null,MASKS=[];
+var CAL=null,MASKS=[],WALKMASKS=[];
 function applyCal(cal){
   CAL=cal||readCal();
   MASKS=CAL.tableMask.filter(function(p){return p.length>=3}).map(function(p){
     var by=-1e9;p.forEach(function(q){by=Math.max(by,q[1])});return{poly:p,y:by-4};
+  });
+  WALKMASKS=[];
+  Object.keys(CAL.chairWalk||{}).forEach(function(k){
+    CAL.chairWalk[k].forEach(function(p){
+      if(p.length<3)return;
+      var by=-1e9;p.forEach(function(q){by=Math.max(by,q[1])});
+      WALKMASKS.push({poly:p,y:by-4,seat:+k});
+    });
   });
   GRID=null;
 }
@@ -312,6 +323,11 @@ function draw(){
   ctx.setTransform(k,0,0,k,0,0);ctx.clearRect(0,0,W,H);
   var list=guests.map(function(g){return{y:guestSortY(g),g:g}});
   MASKS.forEach(function(m){list.push({y:m.y,m:m})});
+  // a chair covers whoever walks behind it, but only while nobody sits on it
+  WALKMASKS.forEach(function(m){
+    var busy=guests.some(function(g){return g.seat.id===m.seat&&(g.mode==='sitting'||g.mode==='seated'||g.mode==='rising')});
+    if(!busy)list.push({y:m.y,m:m});
+  });
   list.sort(function(a,b){return a.y-b.y});
   list.forEach(function(o){if(o.g)drawGuest(ctx,o.g);else drawPolyFromPicture(ctx,o.m.poly)});
 }
