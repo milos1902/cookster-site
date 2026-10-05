@@ -133,11 +133,18 @@ function readCal(){
   });
   return cal;
 }
-var CAL=null,MASKS=[],WALKMASKS=[];
+var CAL=null,MASKS=[],WALKMASKS=[],TABLEMASKY={};
 function applyCal(cal){
   CAL=cal||readCal();
   MASKS=CAL.tableMask.filter(function(p){return p.length>=3}).map(function(p){
-    var by=-1e9;p.forEach(function(q){by=Math.max(by,q[1])});return{poly:p,y:by-4};
+    var by=-1e9,cx=0,cy=0;p.forEach(function(q){by=Math.max(by,q[1]);cx+=q[0];cy+=q[1]});return{poly:p,y:by-4,cx:cx/p.length,cy:cy/p.length};
+  });
+  // which mask belongs to which table (the nearest one): whoever sits at a table is drawn above that table's mask
+  TABLEMASKY={};
+  TABLES.forEach(function(t,ti){
+    var best=null;
+    MASKS.forEach(function(m){var d=Math.hypot(m.cx-t.x,m.cy-t.y);if(!best||d<best.d)best={d:d,y:m.y}});
+    if(best&&best.d<200)TABLEMASKY[ti]=best.y;
   });
   WALKMASKS=[];
   Object.keys(CAL.chairWalk||{}).forEach(function(k){
@@ -274,7 +281,13 @@ function drawSprite(ctx,key,x,y,sc,flip,rot,alpha){
 function drawShadow(ctx,x,y,sc){
   ctx.save();ctx.fillStyle='rgba(20,8,2,.32)';ctx.beginPath();ctx.ellipse(x,y+2,34*sc/.3,9*sc/.3,0,0,Math.PI*2);ctx.fill();ctx.restore();
 }
-function guestSortY(g){return(g.mode==='seated'||g.mode==='sitting'||g.mode==='rising')?seatPos(g).y:g.y}
+function guestSortY(g){
+  if(g.mode!=='seated'&&g.mode!=='sitting'&&g.mode!=='rising')return g.y;
+  var y=seatPos(g).y,my=TABLEMASKY[g.seat.table];
+  // a guest at the far side of the table sits above the cloth: his arms lie on the table, the table must not cover him
+  if(g.seat.k==='back'&&my!==undefined)y=Math.max(y,my+1);
+  return y;
+}
 function drawGuest(ctx,g){
   drawGuestBody(ctx,g);
   if(g.mode==='seated'||g.mode==='sitting'||g.mode==='rising'){
