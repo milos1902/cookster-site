@@ -3394,7 +3394,7 @@ for(const [id,data] of Object.entries(effectiveMasterItems)){
 }
 
 
-function perspectiveCorrectionFor(el,zone){
+function perspectiveCorrectionRaw(el,zone){
  const z=zone==='board'?'table':zone;
  const id=el?.dataset?.itemId||'';
  const cfg={...PERSPECTIVE_CORR_DEFAULT,...(perspectiveCorrections[id]||{})};
@@ -3402,15 +3402,36 @@ function perspectiveCorrectionFor(el,zone){
  const base={scale:+cfg[prefix+'Scale']||1,angle:+cfg[prefix+'Angle']||0,tilt:+cfg[prefix+'Tilt']||0};
  const pts=Array.isArray(cfg.points?.[prefix])?cfg.points[prefix]:[];
  if(!pts.length)return base;
+ // The calibrated points give a SMOOTH tilt of the surface (a plane fitted through them), not a pull towards each point:
+ // an item that is carried over the scene changes size and angle gradually, with no jumps near the points.
+ const f=perspectivePlane(pts);
  const x=+el?.dataset?.cx||0,y=+el?.dataset?.by||0;
- let sw=0,ss=0,sa=0,st=0;
- for(const p of pts){
-   const dx=(x-(+p.x||0))/520,dy=(y-(+p.y||0))/360,d2=dx*dx+dy*dy;
-   if(d2<1e-8)return {scale:+p.scale||1,angle:+p.angle||0,tilt:+p.tilt||0};
-   const w=1/Math.pow(d2+.012,1.35);
-   sw+=w;ss+=(+p.scale||1)*w;sa+=(+p.angle||0)*w;st+=(+p.tilt||0)*w;
+ return {scale:f.scale(x,y),angle:f.angle(x,y),tilt:f.tilt(x,y)};
+}
+const perspectivePlaneCache=new WeakMap();
+function perspectivePlane(pts){
+ const cached=perspectivePlaneCache.get(pts);
+ if(cached&&cached.n===pts.length)return cached;
+ const def={scale:1,angle:0,tilt:0},n=pts.length,keys=['scale','angle','tilt'],fit={n};
+ for(const k of keys){
+  const vs=pts.map(p=>{const v=+p[k];return Number.isFinite(v)&&(k!=='scale'||v>0)?v:def[k];});
+  const mean=vs.reduce((a,b)=>a+b,0)/n,lo=Math.min(...vs),hi=Math.max(...vs),span=hi-lo;
+  // least squares plane v = mean + b*(u-mu) + c*(w-mw), u,w = position / (520, 360); slopes are pulled slightly towards 0
+  let sU=0,sW=0,sUU=0,sUW=0,sWW=0,sUV=0,sWV=0;
+  for(let i=0;i<n;i++){
+   const u=(+pts[i].x||0)/520,w=(+pts[i].y||0)/360,v=vs[i];
+   sU+=u;sW+=w;sUU+=u*u;sUW+=u*w;sWW+=w*w;sUV+=u*v;sWV+=w*v;
+  }
+  const mu=sU/n,mw=sW/n,ridge=.08*n;
+  const cUU=sUU-n*mu*mu+ridge,cUW=sUW-n*mu*mw,cWW=sWW-n*mw*mw+ridge,cUV=sUV-n*mu*mean,cWV=sWV-n*mw*mean;
+  const det=cUU*cWW-cUW*cUW;
+  let b=0,c=0;
+  if(n>=3&&Math.abs(det)>1e-9){b=(cUV*cWW-cUW*cWV)/det;c=(cUU*cWV-cUW*cUV)/det;}
+  const min=lo-span*.12,max=hi+span*.12;
+  fit[k]=(x,y)=>Math.max(min,Math.min(max,mean+b*(x/520-mu)+c*(y/360-mw)));
  }
- return {scale:ss/sw,angle:sa/sw,tilt:st/sw};
+ perspectivePlaneCache.set(pts,fit);
+ return fit;
 }
 
 lightPanel.style.display='none';
@@ -5675,9 +5696,7 @@ function surfaceFlattenFor(el,zone,by){
 
  // The sink has two invisible planes: the rim and the recessed basin.
  // Cookware is intentionally flatter and smaller in the basin.
- if(zone==='sink-basin')return pr?lerp(pr.flattenTop,pr.flattenBottom,.18):.94;
- if(zone==='sink-rim')return pr?lerp(pr.flattenTop,pr.flattenBottom,.08):.98;
- if(zone==='back')return .96;
+ if(zone==='sink-basin'||zone==='sink-rim'||zone==='back')return pr?profiledFlattenAt(el,by):1;   // same as the table: no jump at the border
 
  // FLOOR: keep the floor perspective, but much less compressed than v165.
  if(zone==='floor'){
@@ -5692,9 +5711,14 @@ function surfaceFlattenFor(el,zone,by){
    const cookware=isContainerItem(el)||isPanItem(el)||subtype==='pot'||subtype==='bowl';
 
    // Back of floor = a bit flatter, front = a bit more upright.
-   if(el?.dataset?.crate==='1')return lerp(.84,.91,t);
-   if(cookware)return lerp(.86,.93,t);
-   return lerp(.87,.94,t);
+   let floorFlat;
+   if(el?.dataset?.crate==='1')floorFlat=lerp(.84,.91,t);
+   else if(cookware)floorFlat=lerp(.86,.93,t);
+   else floorFlat=lerp(.87,.94,t);
+   // Far from the front of the room (behind the table, beside the stove) the floor blends smoothly into the same flattening
+   // as everywhere else, so a carried item does not change its height at the border of the floor polygon.
+   const tableLike=pr?profiledFlattenAt(el,by):1,k=Math.max(0,Math.min(1,(by-560)/160)),sm=k*k*(3-2*k);
+   return lerp(tableLike,floorFlat,sm);
  }
 
  return pr?profiledFlattenAt(el,by):1;
@@ -5748,7 +5772,7 @@ const GP_VANISH_Y=-1820.801007640928;
 function gpProjectedDepthFactor(y,refY){
  return Math.max(.45,Math.min(1.55,(y-GP_VANISH_Y)/(refY-GP_VANISH_Y)));
 }
-function geometryPerspectiveScale(el,zone,by){
+function geometryPerspectiveScaleRaw(el,zone,by){
  const y=Number.isFinite(+by)?+by:GP_TABLE_REF_Y;
  const z=zone==='board'?'table':(zone||'table');
  const pr=snapProfileFor(el);
@@ -5769,12 +5793,30 @@ function geometryPerspectiveScale(el,zone,by){
  if(z==='floor'){
    return base*gpProjectedDepthFactor(y,GP_TABLE_REF_Y);
  }
- if(z==='sink-basin')return base*.78;
- if(z==='sink-rim'||z==='sink')return base*.86;
- if(z==='back')return base*.72;
+ // sink and the area behind the table continue the table's perspective, so a carried item does not jump in size at their borders
+ if(z==='sink-basin'||z==='sink-rim'||z==='sink'||z==='back'){
+   return base*(gpQuadWidthAtY(COOKSTER_SCENE_GEOMETRY_PERSPECTIVE.table,y)/GP_TABLE_REF_W);
+ }
  return base*gpProjectedDepthFactor(y,GP_TABLE_REF_Y);
 }
 /* ================= END GEOMETRY PERSPECTIVE ENGINE ================= */
+// Behind the table / beside the stove the 'floor' surface blends smoothly into the table's perspective (full floor values only
+// near the front of the room), so a carried item never changes size, tilt or angle at the odd border of the floor polygon.
+function floorBlendAt(by){const k=Math.max(0,Math.min(1,((+by||0)-560)/160));return k*k*(3-2*k);}
+function perspectiveCorrectionFor(el,zone){
+ if(zone!=='floor')return perspectiveCorrectionRaw(el,zone);
+ const sm=floorBlendAt(+el?.dataset?.by);
+ const f=perspectiveCorrectionRaw(el,'floor');
+ if(sm>=1||(hasPerspectiveCalibrationPoints(el,'floor')&&!hasPerspectiveCalibrationPoints(el,'table')))return f;   // floor-only items keep their floor values
+ const t=perspectiveCorrectionRaw(el,'table');
+ return {...f,scale:lerp(t.scale,f.scale,sm),angle:lerp(t.angle,f.angle,sm),tilt:lerp(t.tilt,f.tilt,sm)};
+}
+function geometryPerspectiveScale(el,zone,by){
+ if(zone!=='floor')return geometryPerspectiveScaleRaw(el,zone,by);
+ const sm=floorBlendAt(by),f=geometryPerspectiveScaleRaw(el,'floor',by);
+ return sm>=1?f:lerp(geometryPerspectiveScaleRaw(el,'table',by),f,sm);
+}
+
 
 function hasPerspectiveCalibrationPoints(el,zone){
  const id=el?.dataset?.itemId||'';
@@ -6841,13 +6883,16 @@ function keepTableUntilVisibleFrontEdge(el,cand,p){
 }
 
 function continuousPointerCandidate(el,cand){
- if(!cand||cand.inSurface===false)return cand;
- if(cand.boardSnap)return cand;
+ if(!cand)return cand;
+ // Outside every surface the ghost is placed exactly like on a surface (the item's centre follows the pointer), so it
+ // does not jump by half of its height when the pointer crosses the border of a surface.
+ const outside=cand.inSurface===false;
+ if(!outside&&cand.boardSnap)return cand;
 
  const p=screenToScene(mouse.x,mouse.y);
  if(!Number.isFinite(p.x)||!Number.isFinite(p.y))return cand;
 
- cand=keepTableUntilVisibleFrontEdge(el,cand,p);
+ if(!outside)cand=keepTableUntilVisibleFrontEdge(el,cand,p);
 
  let vis=+cand.vis||1;
  if(isProduceItem(el))vis=smoothProduceDepthScale(p.y);
@@ -7393,7 +7438,7 @@ function placementCandidate(el){
  // Geometry-driven engine is now the single scale authority.
  // Legacy per-item PerspectiveCalibration must not mutate candidate scale/pose here.
  if(cand){
-   const z=cand.zone||el.dataset.surfaceZone||'table';
+   const z=cand.inSurface===false?'back':(cand.zone||el.dataset.surfaceZone||'table');   // outside: the table's perspective continues
    const bw=Math.max(1,+el.dataset.baseW||el.offsetWidth||60);
    const bh=Math.max(1,+el.dataset.baseH||el.offsetHeight||60);
 
@@ -7682,7 +7727,10 @@ function updatePlacementGhost(){
       left:p.x-w/2,top:p.y-h,right:p.x+w/2,bottom:p.y,
       angle:holding.dataset.sinkPouring==='1'?(+holding.dataset.angle||0):(+holding.dataset.angle||0)+58,tilt:0};
   }else cand=placementCandidate(holding);
- if(!cand||cand.inSurface===false||!Number.isFinite(cand.cx)||!Number.isFinite(cand.by)){
+ if(cand&&cand.inSurface===false&&Number.isFinite(cand.cx)&&Number.isFinite(cand.by)){
+   placementState={candidate:cand,blocked:true};
+   cand={...cand,zone:'outside'};
+ }else if(!cand||cand.inSurface===false||!Number.isFinite(cand.cx)||!Number.isFinite(cand.by)){
    placementState=cand?{candidate:cand,blocked:true}:null;
    const p=screenToScene(mouse.x,mouse.y);
    const vis=surfaceScaleFor(holding,'floor',p.y);
