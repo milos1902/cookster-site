@@ -42,6 +42,7 @@ var dirt=mk('canvas','tc-dirt'),fx=mk('canvas','tc-fx');
 dirt.width=W;dirt.height=H;fx.width=W;fx.height=H;
 cv.parentNode.insertBefore(dirt,cv);cv.parentNode.insertBefore(fx,cv.nextSibling);
 var D=dirt.getContext('2d'),X=fx.getContext('2d');
+T.dirtCanvas=dirt;                                    // the scene redraws parts of the picture over the guests, with the dirt that is still on it
 var dirtyImg=new Image(),dirtyOk=false;
 function paintDirt(){
   D.globalCompositeOperation='source-over';D.clearRect(0,0,W,H);

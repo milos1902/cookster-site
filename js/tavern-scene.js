@@ -7,7 +7,7 @@
 'use strict';
 var ROOM='assets/tavern/kafana_cista.webp',GUESTS='assets/tavern/guests/';
 var W=1672,H=941;                                   // the picture of the hall
-var GUESTS_ON=false,IMGV=4,DUR=700,CHARS=10,POSES=['dole','dole2','gore','gore2','sedi_lice','sedi_ledja','sedi_ledja_l'];
+var GUESTS_ON=true,IMGV=4,DUR=700,CHARS=10,POSES=['dole','dole2','gore','gore2','sedi_lice','sedi_ledja','sedi_ledja_l'];
 var viewport=document.getElementById('viewport'),scene=document.getElementById('scene');
 if(!viewport||!scene||window.CooksterTavern)return;
 
@@ -74,21 +74,22 @@ function preload(){
 // ---------- the hall: tables, chairs, floor ----------
 // every table: the centre, and the outline of its cloth (with the bottle and candles). The outline is the MASK of the table:
 // guests behind the table are hidden by it, and nobody walks over it.
-var TABLES=[{"x":530,"y":275,"poly":[[437,267],[440,263],[441,262],[508,197],[552,197],[619,259],[623,268],[535,337],[529,341],[524,339],[518,336],[439,273],[437,270]]},{"x":840,"y":280,"poly":[[744,271],[748,263],[750,260],[818,194],[862,194],[925,261],[927,264],[928,266],[844,343],[834,341],[831,339],[745,273]]},{"x":1145,"y":280,"poly":[[1051,267],[1057,259],[1123,202],[1167,202],[1230,260],[1232,262],[1232,267],[1151,340],[1141,342],[1051,269]]},{"x":385,"y":470,"poly":[[288,466],[292,458],[363,387],[407,387],[481,453],[484,459],[485,463],[392,558],[390,559],[381,558],[377,556],[289,471]]},{"x":700,"y":470,"poly":[[606,468],[608,462],[612,457],[678,389],[722,389],[793,453],[799,465],[799,466],[709,561],[699,560],[608,470]]},{"x":1000,"y":470,"poly":[[902,470],[908,457],[911,454],[978,392],[1022,392],[1089,457],[1091,459],[1099,471],[1006,560],[996,559],[992,556]]},{"x":1305,"y":465,"poly":[[1206,471],[1210,459],[1283,390],[1327,390],[1389,449],[1395,455],[1409,473],[1315,561],[1305,559],[1301,556]]},{"x":525,"y":700,"poly":[[423,676],[503,599],[547,599],[624,668],[628,674],[628,678],[530,766],[518,766],[424,685],[423,683]]},{"x":865,"y":700,"poly":[[759,679],[765,671],[843,598],[887,598],[966,659],[968,672],[968,674],[874,766],[862,768],[759,682]]},{"x":1195,"y":690,"poly":[[1090,680],[1093,674],[1173,599],[1217,599],[1298,670],[1299,671],[1302,676],[1207,781],[1195,780]]}];
-var SEAT_OFF=[{dx:-57,dy:-60,k:'back'},{dx:60,dy:-58,k:'back'},{dx:-62,dy:60,k:'front'},{dx:60,dy:60,k:'front'}];
+// the three tables of the new hall (the centre of each one; the shapes come from the tool "Kalibracija kafane")
+var TABLES=[{x:419,y:416,poly:[],block:[]},{x:829,y:622,poly:[],block:[]},{x:1424,y:456,poly:[],block:[]}];
+// the chairs: where the guest sits (x,y: the chair), where he stands before he sits (ax,ay: on the floor beside the chair),
+// k: back (behind the table, he faces us) or front (he sits with his back to us), pose: which picture of a seated guest
+var SEAT_DEF=[
+  [{x:340,y:372,ax:335,ay:332,k:'back',pose:'lice'},{x:565,y:388,ax:632,ay:395,k:'back',pose:'lice'},
+   {x:268,y:540,ax:205,ay:548,k:'front',pose:'ledja'},{x:500,y:620,ax:520,ay:728,k:'front',pose:'ledja_l'}],
+  [{x:752,y:556,ax:715,ay:522,k:'back',pose:'lice'},{x:955,y:548,ax:962,ay:496,k:'back',pose:'lice'},
+   {x:690,y:790,ax:560,ay:800,k:'front',pose:'ledja'},{x:975,y:800,ax:1115,ay:800,k:'front',pose:'ledja_l'}],
+  [{x:1262,y:410,ax:1160,ay:520,k:'back',pose:'lice'},{x:1505,y:398,ax:1650,ay:540,k:'back',pose:'lice'},
+   {x:1300,y:660,ax:1200,ay:705,k:'front',pose:'ledja'},{x:1520,y:652,ax:1640,ay:705,k:'front',pose:'ledja_l'}]
+];
 var SEATS=[];
-function grow(poly,cx,cy,f){return poly.map(function(p){return[cx+(p[0]-cx)*f,cy+(p[1]-cy)*f]})}
 TABLES.forEach(function(t,ti){
-  // where nobody may walk: the cloth and the chairs around it, with a margin
-  var pts=t.poly.slice();
-  SEAT_OFF.forEach(function(o){pts.push([t.x+o.dx*1.45,t.y+o.dy*1.2],[t.x+o.dx*1.45+26,t.y+o.dy*1.2],[t.x+o.dx*1.45-26,t.y+o.dy*1.2])});
-  t.block=hullPts(pts);
-  SEAT_OFF.forEach(function(o,oi){
-    var s={id:ti*4+oi,table:ti,k:o.k,x:t.x+o.dx,y:t.y+o.dy,taken:false};
-    // the place right beside the chair where the guest stands before he sits
-    var l=Math.hypot(o.dx,o.dy)||1;
-    s.ax=s.x+o.dx/l*58;s.ay=s.y+o.dy/l*50;
-    SEATS.push(s);
+  SEAT_DEF[ti].forEach(function(d,oi){
+    SEATS.push({id:ti*4+oi,table:ti,k:d.k,pose:d.pose,x:d.x,y:d.y,ax:d.ax,ay:d.ay,taken:false});
   });
 });
 function hullPts(p){
@@ -99,7 +100,7 @@ function hullPts(p){
   for(i=p.length-1;i>=0;i--){while(up.length>=2&&cr(up[up.length-2],up[up.length-1],p[i])<=0)up.pop();up.push(p[i])}
   lo.pop();up.pop();return lo.concat(up);
 }
-var DOOR={x:808,y:222};
+var DOOR={x:262,y:352};
 var FLOOR=[[215,215],[1325,215],[1305,455],[1480,560],[1585,600],[1590,830],[430,838],[110,720],[150,560],[185,330]];
 var BLOCKS=[{x0:185,y0:180,x1:460,y1:300},{x0:150,y0:250,x1:260,y1:400}];   // the stove and the bench
 function pip(poly,x,y){var ins=false;for(var i=0,j=poly.length-1;i<poly.length;j=i++){var a=poly[i],b=poly[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])ins=!ins}return ins}
@@ -282,7 +283,9 @@ var GUEST_K=1.7;                                              // the new hall ha
 var SCALE0=.31*GUEST_K,SCALE_K=.00012*GUEST_K,SIT_K=.78;      // size of a picture at height y of the hall
 function scaleAt(y){return SCALE0+SCALE_K*y}
 function pickSeat(){
-  var free=SEATS.filter(function(s){return !s.taken});
+  // a guest sits only at a table that has been cleaned
+  var cl=window.CooksterTavernClean&&window.CooksterTavernClean.cleaned?window.CooksterTavernClean.cleaned():null;
+  var free=SEATS.filter(function(s){return !s.taken&&(!cl||cl[s.table])});
   if(!free.length)return null;
   // fill the tables that already have guests first, as real guests do
   var busy=free.filter(function(s){return SEATS.some(function(o){return o.taken&&o.table===s.table})});
@@ -335,9 +338,9 @@ function step(dt){
     }
   }
 }
-function seatPos(g){return{x:g.seat.x,y:g.seat.y+(g.seat.k==='back'?32:14)}}
+function seatPos(g){return{x:g.seat.x,y:g.seat.y+(g.seat.k==='back'?32:14)*GUEST_K}}
 // the chairs on the right side of a table: the guest looks to the left, towards the others
-function sitPose(g){return g.seat.k==='back'?'sedi_lice':(g.seat.id%4===3?'sedi_ledja_l':'sedi_ledja')}
+function sitPose(g){return 'sedi_'+(g.seat.pose||'lice')}
 function drawSprite(ctx,key,x,y,sc,flip,rot,alpha){
   var im=imgs[key];if(!im)return;
   var w=im.naturalWidth*sc,h=im.naturalHeight*sc;
@@ -397,7 +400,8 @@ function drawPolyFromPicture(ctx,poly){
   if(!art.complete||!art.naturalWidth||poly.length<3)return;
   ctx.save();ctx.beginPath();ctx.moveTo(poly[0][0],poly[0][1]);
   for(var i=1;i<poly.length;i++)ctx.lineTo(poly[i][0],poly[i][1]);
-  ctx.closePath();ctx.clip();ctx.drawImage(art,0,0,W,H);ctx.restore();
+  // what is redrawn is what the player sees: the clean picture with the dirt that is still on it
+  ctx.closePath();ctx.clip();ctx.drawImage(art,0,0,W,H);var dc=window.CooksterTavern&&window.CooksterTavern.dirtCanvas;if(dc)ctx.drawImage(dc,0,0,W,H);ctx.restore();
 }
 function draw(){
   var ctx=cv.getContext('2d'),k=cv.width/W;
