@@ -278,7 +278,8 @@ function findPath(from,to){                          // A* on the grid, then str
 applyCal();
 // ---------- guests ----------
 var guests=[],nextArrival=2,clock=0,UID=0;
-var SCALE0=.31,SCALE_K=.00012,SIT_K=.78;                      // size of a picture at height y of the hall
+var GUEST_K=1.7;                                              // the new hall has bigger tables and chairs, so the guests are bigger than in the old one
+var SCALE0=.31*GUEST_K,SCALE_K=.00012*GUEST_K,SIT_K=.78;      // size of a picture at height y of the hall
 function scaleAt(y){return SCALE0+SCALE_K*y}
 function pickSeat(){
   var free=SEATS.filter(function(s){return !s.taken});
