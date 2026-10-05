@@ -86,6 +86,7 @@ var SEAT_DEF=[
   [{x:1262,y:410,ax:1160,ay:520,k:'back',pose:'lice'},{x:1505,y:398,ax:1650,ay:540,k:'back',pose:'lice'},
    {x:1300,y:660,ax:1200,ay:705,k:'front',pose:'ledja'},{x:1520,y:652,ax:1640,ay:705,k:'front',pose:'ledja_l'}]
 ];
+var GUEST_K=1.7;                                              // the new hall has bigger tables and chairs, so the guests are bigger than in the old one
 var SEATS=[];
 TABLES.forEach(function(t,ti){
   SEAT_DEF[ti].forEach(function(d,oi){
@@ -100,7 +101,7 @@ function hullPts(p){
   for(i=p.length-1;i>=0;i--){while(up.length>=2&&cr(up[up.length-2],up[up.length-1],p[i])<=0)up.pop();up.push(p[i])}
   lo.pop();up.pop();return lo.concat(up);
 }
-var DOOR={x:262,y:352};
+var DOOR0={x:262,y:352},DOOR={x:262,y:352};
 var FLOOR=[[215,215],[1325,215],[1305,455],[1480,560],[1585,600],[1590,830],[430,838],[110,720],[150,560],[185,330]];
 var BLOCKS=[{x0:185,y0:180,x1:460,y1:300},{x0:150,y0:250,x1:260,y1:400}];   // the stove and the bench
 function pip(poly,x,y){var ins=false;for(var i=0,j=poly.length-1;i<poly.length;j=i++){var a=poly[i],b=poly[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])ins=!ins}return ins}
@@ -112,6 +113,8 @@ var CELL=22,GW=Math.ceil(W/CELL),GH=Math.ceil(H/CELL),GRID=null;
 //   tableMask  polygons: parts of the tables that cover a guest walking behind them
 //   chairMask  {"seatId": [polygons]}: the part of a chair that covers the guest sitting on it
 //   chairWalk  {"seatId": [polygons]}: the part of a chair that covers a guest walking behind it (only while nobody sits on it)
+//   seats  [{id,x,y,ax,ay,dir}]: for every chair: where the guest sits (x,y: the bottom of his picture), where he stands before he sits (ax,ay),
+//          and the direction he looks, in degrees (0 right, 90 down = toward us, 180 left): it decides which picture of a seated guest is used
 //   cleanExclude  polygons: what the cleaning sponge never touches (the tables with their chairs)
 //   surfaces  [{id,name,kind:'h'|'v',img,polys,points}]: what the sponge cleans (floor, walls, the bar...). kind: horizontal (the sponge lies)
 //             or vertical (the sponge is held upright); img: which picture of the sponge; points: how the sponge sits at some places,
@@ -157,9 +160,22 @@ function spongeAt(x,y){
   r.img=f.img;r.kind=f.kind;r.surface=f.id;r.name=f.name;
   return r;
 }
+function poseFromDir(deg){
+  var t=((deg%360)+540)%360-180;                       // -180..180
+  if(t>35&&t<145)return 'lice';                        // looks down, toward us
+  return Math.cos(t*Math.PI/180)>=0?'ledja':'ledja_l'; // back to us, looking to the right / to the left
+}
+function defaultSeats(){
+  var out=[],DIR={lice:90,ledja:-20,ledja_l:-160};
+  SEAT_DEF.forEach(function(row,ti){row.forEach(function(d,oi){
+    out.push({id:ti*4+oi,x:d.x,y:Math.round(d.y+(d.k==='back'?32:14)*GUEST_K),ax:d.ax,ay:d.ay,dir:DIR[d.pose]});
+  })});
+  return out;
+}
+function okSeats(a){return Array.isArray(a)&&a.length>0&&a.every(function(q){return q&&['id','x','y','ax','ay','dir'].every(function(k){return isFinite(q[k])})})}
 function clonePoly(p){return p.map(function(q){return[q[0],q[1]]})}
 function defaultCal(){
-  var cal={version:1,floor:[clonePoly(FLOOR)],blocked:[],tableMask:[],chairMask:{},chairWalk:{},cleanExclude:[],surfaces:defaultSurfaces()};
+  var cal={version:1,floor:[clonePoly(FLOOR)],blocked:[],tableMask:[],chairMask:{},chairWalk:{},cleanExclude:[],surfaces:defaultSurfaces(),seats:defaultSeats()};
   BLOCKS.forEach(function(b){cal.blocked.push([[b.x0,b.y0],[b.x1,b.y0],[b.x1,b.y1],[b.x0,b.y1]])});
   TABLES.forEach(function(t){cal.blocked.push(clonePoly(t.block));cal.tableMask.push(clonePoly(t.poly))});
   cal.cleanExclude=[];cal.surfaces=defaultSurfaces();cal.surfaces[0].polys=cal.floor;
@@ -171,6 +187,7 @@ function normCal(found){
   if(!found||typeof found!=='object')return d;
   var cal={version:1,floor:okPolys(found.floor)?found.floor:d.floor,blocked:okPolys(found.blocked)?found.blocked:d.blocked,
     tableMask:okPolys(found.tableMask)?found.tableMask:d.tableMask,chairMask:{},chairWalk:{}};
+  cal.seats=okSeats(found.seats)?found.seats:defaultSeats();
   // what the sponge cleans: older saved states keep their floor and their sponge points, the rest comes from the file
   if(okSurfaces(found.surfaces)){
     cal.surfaces=found.surfaces;
@@ -202,6 +219,39 @@ function readCal(){
 }
 function fileCal(){return normCal(fileJson())}          // what the tool restores with "Vrati početno"
 var CAL=null,MASKS=[],WALKMASKS=[],TABLEMASKY={};
+// the nearest place where a guest may stand (the drawn floor and the blocked shapes can change at any time)
+function nearestWalk(x,y){
+  if(walkable(x,y))return{x:x,y:y};
+  for(var r=8;r<=420;r+=8)for(var a=0;a<360;a+=15){
+    var px=x+Math.cos(a*Math.PI/180)*r,py=y+Math.sin(a*Math.PI/180)*r;
+    if(walkable(px,py))return{x:Math.round(px),y:Math.round(py)};
+  }
+  return{x:x,y:y};
+}
+var REACH=null;                                        // which grid cells can be reached from the door
+function seatCfg(id){var l=(CAL&&okSeats(CAL.seats))?CAL.seats:defaultSeats();for(var i=0;i<l.length;i++)if(l[i].id===id)return l[i];return null}
+function fixPlaces(){
+  var q=nearestWalk(DOOR0.x,DOOR0.y);DOOR.x=q.x;DOOR.y=q.y;
+  SEATS.forEach(function(s){
+    var d=seatCfg(s.id)||defaultSeats()[s.id],p=nearestWalk(d.ax,d.ay);
+    s.x=d.x;s.y=d.y;s.dir=d.dir;s.pose=poseFromDir(d.dir);s.k=s.pose==='lice'?'back':'front';
+    s.ax=p.x;s.ay=p.y;
+  });
+  // which chairs a guest can walk to from the door (the shapes in "Zabrana" may close a passage)
+  if(!GRID)buildGrid();
+  REACH=new Uint8Array(GW*GH);
+  var st=nearestFree(DOOR.x,DOOR.y),queue=[st],qi=0;REACH[st[1]*GW+st[0]]=1;
+  while(qi<queue.length){
+    var c=queue[qi++];
+    for(var dj=-1;dj<=1;dj++)for(var di=-1;di<=1;di++){
+      if(!di&&!dj)continue;var ni=c[0]+di,nj=c[1]+dj;
+      if(ni<0||nj<0||ni>=GW||nj>=GH||!GRID[nj*GW+ni]||REACH[nj*GW+ni])continue;
+      if(di&&dj&&(!GRID[c[1]*GW+ni]||!GRID[nj*GW+c[0]]))continue;
+      REACH[nj*GW+ni]=1;queue.push([ni,nj]);
+    }
+  }
+}
+function seatReachable(s){if(!REACH)return true;var c=nearestFree(s.ax,s.ay);return !!REACH[c[1]*GW+c[0]]}
 function applyCal(cal){
   CAL=cal||readCal();
   MASKS=CAL.tableMask.filter(function(p){return p.length>=3}).map(function(p){
@@ -223,6 +273,7 @@ function applyCal(cal){
     });
   });
   GRID=null;
+  fixPlaces();
 }
 function walkable(x,y){
   var ok=false,i;
@@ -279,13 +330,12 @@ function findPath(from,to){                          // A* on the grid, then str
 applyCal();
 // ---------- guests ----------
 var guests=[],nextArrival=2,clock=0,UID=0;
-var GUEST_K=1.7;                                              // the new hall has bigger tables and chairs, so the guests are bigger than in the old one
 var SCALE0=.31*GUEST_K,SCALE_K=.00012*GUEST_K,SIT_K=.78;      // size of a picture at height y of the hall
 function scaleAt(y){return SCALE0+SCALE_K*y}
 function pickSeat(){
   // a guest sits only at a table that has been cleaned
   var cl=window.CooksterTavernClean&&window.CooksterTavernClean.cleaned?window.CooksterTavernClean.cleaned():null;
-  var free=SEATS.filter(function(s){return !s.taken&&(!cl||cl[s.table])});
+  var free=SEATS.filter(function(s){return !s.taken&&(!cl||cl[s.table])&&seatReachable(s)});
   if(!free.length)return null;
   // fill the tables that already have guests first, as real guests do
   var busy=free.filter(function(s){return SEATS.some(function(o){return o.taken&&o.table===s.table})});
@@ -338,7 +388,7 @@ function step(dt){
     }
   }
 }
-function seatPos(g){return{x:g.seat.x,y:g.seat.y+(g.seat.k==='back'?32:14)*GUEST_K}}
+function seatPos(g){return{x:g.seat.x,y:g.seat.y}}
 // the chairs on the right side of a table: the guest looks to the left, towards the others
 function sitPose(g){return 'sedi_'+(g.seat.pose||'lice')}
 function drawSprite(ctx,key,x,y,sc,flip,rot,alpha){
@@ -520,6 +570,8 @@ window.CooksterTavern={
   get isOpen(){return state==='tavern'},get busy(){return busy},
   debug:function(){return{guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},
+  seatReach:function(){return SEATS.map(seatReachable)},poseFromDir:poseFromDir,seatScale:function(y){return scaleAt(y)*SIT_K},
+  poseInfo:function(pose){var im=imgs['g01_sedi_'+pose];return im?{src:im.src,w:im.naturalWidth,h:im.naturalHeight}:null},
   defaults:fileCal,spongeAt:spongeAt,idw:idw,spongeImg:SPONGE_IMG,spongeRadius:SPONGE_RADIUS,calibration:function(){return CAL},applyCalibration:function(c){applyCal(c)},calKey:CAL_KEY,
   fit:function(){fit();draw()},isOpenScene:function(){return state!=='kitchen'}
 };

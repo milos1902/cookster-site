@@ -4,6 +4,7 @@
      2. Zabrana   - tables and edges that guests may not cross
      3. Maska stola   - the parts of the tables that cover a guest who walks behind the table
      4. Maska stolice - for every chair: the part of the chair that covers the guest who sits on it
+     7. Mesta sedenja: gde gost sedi na svakoj stolici, gde stoji pre sedanja i kuda gleda (strelica)
      6. Sunđer: gde čisti, šta ne dira, i kako leži na podu (veličina, spljoštenost, rotacija...) na raznim mestima
      5. Maska stolice (hod) - for every chair: the part that covers a guest who walks behind it (removed when somebody sits)
    The mouse wheel zooms (around the pointer), dragging the empty picture moves it. Everything is saved in the browser at once
@@ -20,15 +21,17 @@ var LAYERS=[
   {id:'chairMask',label:'Maska stolice',color:'#ffb347',help:'Izaberi sto i stolicu (ili klikni broj stolice na slici), pa nacrtaj deo stolice koji prekriva gosta kad sedne.'},
   {id:'chairWalk',label:'Maska stolice: dok gost hoda iza nje',color:'#c77dff',help:'Izaberi sto i stolicu, pa nacrtaj deo stolice koji prekriva gosta koji prolazi IZA stolice. Kad neko sedne na tu stolicu, ova maska nestaje, a gost prekriva stolicu.'},
   {id:'cleanExclude',label:'Sunđer NE čisti: stolovi (izuzeci)',color:'#ff7ad9',help:'Obeleži sto sa stolicama koje sunđer nikad ne dira (sto se čisti desnim klikom i dugmetom „Očisti sto“). Isti oblik određuje šta dugme čisti: sto i sve unutar oblika koji ga obuhvata (pod ispod stola).'},
+  {id:'seats',label:'Mesta sedenja (gost na stolici)',color:'#ffe066',help:'Za svaku stolicu: žuta tačka je mesto gde gost sedi (donja sredina njegove slike), kvadrat je mesto gde stoji pre nego što sedne, a strelica pokazuje kuda gleda. Prevuci tačku, kvadrat ili vrh strelice. Pogled nadole = gleda prema nama; levo ili desno = leđima prema nama. Crveno = gost ne može da dođe do te stolice (zabrana zatvara prolaz).'},
   {id:'surfaces',label:'Sunđer: površine i kako leži',color:'#7fe3ff',help:'Sunđer čisti sve što je u nekoj površini (pod, zidovi, šank...), osim stolova. Izaberi površinu, nacrtaj joj OBLIK, pa u TAČKAMA SUNĐERA podesi kako sunđer tu stoji. Kasnija površina u listi je iznad ranije (pod je prvi).'}
 ];
 function seatLayer(l){return l==='chairMask'||l==='chairWalk'}
-var spSel=0,surfSel=0,spMode='shape',cal=null,layer='floor',active={},seatSel=0,vis={floor:true,blocked:true,tableMask:true,chairMask:true,chairWalk:true,cleanExclude:true,surfaces:true};
+var spSel=0,surfSel=0,spMode='shape',cal=null,layer='floor',active={},seatSel=0,vis={floor:true,blocked:true,tableMask:true,chairMask:true,chairWalk:true,cleanExclude:true,surfaces:true,seats:true};
 var view={x:0,y:0,w:W,h:H},ui={},svg,gMain,drag=null,pan=null;
 
 function clone(o){return JSON.parse(JSON.stringify(o))}
 function polys(l,seat){
   if(seatLayer(l)){var k=seat===undefined?seatSel:seat;if(!cal[l])cal[l]={};if(!cal[l][k])cal[l][k]=[];return cal[l][k]}
+  if(l==='seats')return [];
   if(l==='surfaces'){var sf=cal.surfaces&&cal.surfaces[surfSel];return(spMode==='shape'&&sf)?sf.polys:[]}
   if(!cal[l])cal[l]=[];
   return cal[l];
@@ -183,7 +186,7 @@ function draw(){
   while(gMain.firstChild)gMain.removeChild(gMain.firstChild);
   var s=pxScale(),R=3.1*s,ai=actIdx();
   LAYERS.forEach(function(L){
-    if(!vis[L.id])return;
+    if(!vis[L.id]||L.id==='seats')return;
     var lists=[];
     if(seatLayer(L.id)){
       if(layer===L.id)lists=[{a:polys(L.id,seatSel),seat:seatSel,on:true}];
@@ -206,7 +209,8 @@ function draw(){
     });
   });
   if(pointsMode()&&vis.surfaces)drawSponge(s,R);
-  if(seatLayer(layer)){                           // numbers of the chairs, to click them
+  if(layer==='seats'&&vis.seats)drawSeats(s,R);
+  if(seatLayer(layer)&&layer!=='seats'){                           // numbers of the chairs, to click them
     T.seats.forEach(function(st){
       var on=st.id===seatSel,g=el('g',{style:'cursor:pointer'},gMain);
       var c=el('circle',{cx:st.x,cy:st.y,r:(on?9:7)*s*1.6,fill:on?'#ffb347':'rgba(20,10,4,.7)',stroke:'#ffb347','stroke-width':1,'vector-effect':'non-scaling-stroke'},g);
@@ -216,6 +220,24 @@ function draw(){
     });
   }
   ui.info.textContent=LAYERS.filter(function(L){return L.id===layer})[0].label+(layer==='surfaces'?' · '+((curSurf()||{}).name||'')+(spMode==='points'?' · tačaka: '+curPts().length:' · oblika: '+curPolys().length):' · oblika: '+curPolys().length)+(seatLayer(layer)?' · sto '+(Math.floor(seatSel/4)+1)+', stolica '+((seatSel%4)+1):'')+' · zumiranje '+(W/view.w).toFixed(1)+'x';
+}
+// the seats: where the guest sits (with his picture), where he stands before he sits, and where he looks
+function drawSeats(s,R){
+  var reach=T.seatReach?T.seatReach():[],list=cal.seats||[];
+  list.forEach(function(q){
+    var on=q.id===seatSel,ok=reach[q.id]!==false,col=ok?'#ffe066':'#ff4d4d',pose=T.poseFromDir(q.dir),info=T.poseInfo(pose),k=T.seatScale(q.y);
+    if(info)el('image',{href:info.src,x:q.x-info.w*k/2,y:q.y-info.h*k,width:info.w*k,height:info.h*k,opacity:on?.9:.6,'pointer-events':'none'},gMain);
+    var L=70+30*(q.y/H),ex=q.x+Math.cos(q.dir*Math.PI/180)*L,ey=q.y+Math.sin(q.dir*Math.PI/180)*L*.6+0;
+    el('line',{x1:q.ax,y1:q.ay,x2:q.x,y2:q.y,stroke:col,'stroke-width':1,'stroke-dasharray':'3 3','vector-effect':'non-scaling-stroke','pointer-events':'none'},gMain);
+    var ar=el('line',{x1:q.x,y1:q.y,x2:ex,y2:ey,stroke:col,'stroke-width':2.2,'vector-effect':'non-scaling-stroke','pointer-events':'none'},gMain);
+    var ang=Math.atan2(ey-q.y,ex-q.x),hs=R*3.2;
+    el('polygon',{points:ex+','+ey+' '+(ex-Math.cos(ang-.45)*hs)+','+(ey-Math.sin(ang-.45)*hs)+' '+(ex-Math.cos(ang+.45)*hs)+','+(ey-Math.sin(ang+.45)*hs),fill:col,'pointer-events':'none'},gMain);
+    var h=el('circle',{cx:ex,cy:ey,r:R*1.3,fill:'rgba(0,0,0,.25)',stroke:col,'stroke-width':1,'vector-effect':'non-scaling-stroke',style:'cursor:crosshair'},gMain);h.dataset.st=q.id;h.dataset.part='d';
+    var a=el('rect',{x:q.ax-R*1.2,y:q.ay-R*1.2,width:R*2.4,height:R*2.4,fill:on?'#fff':col,stroke:'#201409','stroke-width':1,'vector-effect':'non-scaling-stroke',style:'cursor:move'},gMain);a.dataset.st=q.id;a.dataset.part='a';
+    var c=el('circle',{cx:q.x,cy:q.y,r:on?R*1.5:R*1.15,fill:on?'#fff':col,stroke:'#201409','stroke-width':1,'vector-effect':'non-scaling-stroke',style:'cursor:move'},gMain);c.dataset.st=q.id;c.dataset.part='p';
+    var t=el('text',{x:q.x+R*1.8,y:q.y+R*0.6,'font-size':R*3.2,fill:'#fff','font-family':'system-ui,sans-serif','pointer-events':'none','paint-order':'stroke',stroke:'#201409','stroke-width':3},gMain);
+    t.textContent=(Math.floor(q.id/4)+1)+'.'+((q.id%4)+1)+(ok?'':' nedostupno');
+  });
 }
 // the sponge as it sits at every calibration point of the chosen surface: its picture, the patch it cleans, the shadow
 function drawSponge(s,R){
@@ -274,7 +296,7 @@ function surfAct(a){
 function refreshUi(){
   ui.root.querySelectorAll('.tc-layer').forEach(function(b){b.classList.toggle('on',b.dataset.layer===layer)});
   ui.root.querySelector('#tcHelp').textContent=LAYERS.filter(function(L){return L.id===layer})[0].help;
-  ui.root.querySelector('#tcChairBox').style.display=seatLayer(layer)?'block':'none';
+  ui.root.querySelector('#tcChairBox').style.display=(seatLayer(layer)||layer==='seats')?'block':'none';
   ui.root.querySelector('#tcSurfBox').style.display=layer==='surfaces'?'block':'none';
   if(layer==='surfaces')refreshSurf();
   ui.root.querySelector('#tcTable').value=Math.floor(seatSel/4);
@@ -314,6 +336,9 @@ function onDown(e){
   if(e.button===1){pan={sx:e.clientX,sy:e.clientY,vx:view.x,vy:view.y,moved:true};svg.setPointerCapture(e.pointerId);e.preventDefault();return}
   if(e.button!==0)return;
   if(t&&t.dataset&&t.dataset.seat!==undefined){seatSel=+t.dataset.seat;refreshUi();draw();return}
+  if(t&&t.dataset&&t.dataset.st!==undefined){
+    seatSel=+t.dataset.st;drag={st:seatSel,part:t.dataset.part};svg.setPointerCapture(e.pointerId);refreshUi();draw();e.preventDefault();return;
+  }
   if(t&&t.dataset&&t.dataset.sp!==undefined){
     spSel=+t.dataset.sp;drag={sp:spSel};svg.setPointerCapture(e.pointerId);refreshSponge();draw();e.preventDefault();return;
   }
@@ -324,6 +349,16 @@ function onDown(e){
   svg.setPointerCapture(e.pointerId);
 }
 function onMove(e){
+  if(drag&&drag.st!==undefined){
+    var sp0=toImg(e),sq0=(cal.seats||[]).filter(function(z){return z.id===drag.st})[0];
+    if(sq0){
+      if(drag.part==='p'){var dx=sp0.x-sq0.x,dy=sp0.y-sq0.y;sq0.x=Math.round(sp0.x);sq0.y=Math.round(sp0.y);sq0.ax+=Math.round(dx);sq0.ay+=Math.round(dy)}   // the place to stand moves along
+      else if(drag.part==='a'){sq0.ax=Math.round(sp0.x);sq0.ay=Math.round(sp0.y)}
+      else{sq0.dir=Math.round(Math.atan2((sp0.y-sq0.y)/.6,sp0.x-sq0.x)*180/Math.PI)}
+      draw();
+    }
+    return;
+  }
   if(drag&&drag.sp!==undefined){
     var q0=toImg(e),sq=curPts()[drag.sp];
     if(sq){sq.x=Math.round(q0.x);sq.y=Math.round(q0.y);draw()}
@@ -349,6 +384,7 @@ function onUp(e){
     var wasClick=!pan.moved&&pan.ev,shift=pan.shift;pan=null;try{svg.releasePointerCapture(e.pointerId)}catch(_){}
     if(wasClick){
       var p=toImg(e);
+      if(layer==='seats')return;
       if(pointsMode()){addSponge(Math.round(p.x),Math.round(p.y));return}
       var a=curPolys(),i=actIdx();
       p.x=Math.round(p.x*10)/10;p.y=Math.round(p.y*10)/10;
@@ -386,6 +422,11 @@ function actSponge(a){
   else if(a==='dellayer'){alert('Mora da ostane bar jedna tačka. Obriši tačke pojedinačno.')}
 }
 function act(a){
+  if(layer==='seats'&&a==='reset'){
+    if(confirm('Vratiti mesta sedenja na početna?')){cal.seats=JSON.parse(JSON.stringify(T.defaults().seats));save();draw()}
+    return;
+  }
+  if(layer==='seats'){return}
   if(layer==='surfaces'&&a==='reset'){
     if(confirm('Vratiti sve površine sunđera na početno stanje?')){cal.surfaces=JSON.parse(JSON.stringify(T.defaults().surfaces));surfSel=0;spSel=0;save();refreshUi();draw()}
     return;
@@ -410,7 +451,7 @@ function act(a){
   else if(a==='doimport'){
     try{
       var o=JSON.parse(ui.root.querySelector('#tcImportText').value);
-      cal={version:1,floor:o.floor||[],blocked:o.blocked||[],tableMask:o.tableMask||[],chairMask:o.chairMask||{},chairWalk:o.chairWalk||{},cleanExclude:o.cleanExclude||[],surfaces:(o.surfaces&&o.surfaces.length)?o.surfaces:T.defaults().surfaces};
+      cal={version:1,floor:o.floor||[],blocked:o.blocked||[],tableMask:o.tableMask||[],chairMask:o.chairMask||{},chairWalk:o.chairWalk||{},seats:(o.seats&&o.seats.length)?o.seats:T.defaults().seats,cleanExclude:o.cleanExclude||[],surfaces:(o.surfaces&&o.surfaces.length)?o.surfaces:T.defaults().surfaces};
       save();draw();ui.root.querySelector('#tcImportBox').style.display='none';
     }catch(err){alert('JSON nije ispravan.')}
   }
