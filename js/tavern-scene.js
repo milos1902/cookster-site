@@ -67,18 +67,33 @@ function preload(){
 }
 
 // ---------- the hall: tables, chairs, floor ----------
-var TABLES=[{x:530,y:275},{x:840,y:280},{x:1145,y:280},
-            {x:385,y:470},{x:700,y:470},{x:1000,y:470},{x:1305,y:465},
-            {x:525,y:700},{x:865,y:700},{x:1195,y:690}];
+// every table: the centre, and the outline of its cloth (with the bottle and candles). The outline is the MASK of the table:
+// guests behind the table are hidden by it, and nobody walks over it.
+var TABLES=[{"x":530,"y":275,"poly":[[437,267],[440,263],[441,262],[508,197],[552,197],[619,259],[623,268],[535,337],[529,341],[524,339],[518,336],[439,273],[437,270]]},{"x":840,"y":280,"poly":[[744,271],[748,263],[750,260],[818,194],[862,194],[925,261],[927,264],[928,266],[844,343],[834,341],[831,339],[745,273]]},{"x":1145,"y":280,"poly":[[1051,267],[1057,259],[1123,202],[1167,202],[1230,260],[1232,262],[1232,267],[1151,340],[1141,342],[1051,269]]},{"x":385,"y":470,"poly":[[288,466],[292,458],[363,387],[407,387],[481,453],[484,459],[485,463],[392,558],[390,559],[381,558],[377,556],[289,471]]},{"x":700,"y":470,"poly":[[606,468],[608,462],[612,457],[678,389],[722,389],[793,453],[799,465],[799,466],[709,561],[699,560],[608,470]]},{"x":1000,"y":470,"poly":[[902,470],[908,457],[911,454],[978,392],[1022,392],[1089,457],[1091,459],[1099,471],[1006,560],[996,559],[992,556]]},{"x":1305,"y":465,"poly":[[1206,471],[1210,459],[1283,390],[1327,390],[1389,449],[1395,455],[1409,473],[1315,561],[1305,559],[1301,556]]},{"x":525,"y":700,"poly":[[423,676],[503,599],[547,599],[624,668],[628,674],[628,678],[530,766],[518,766],[424,685],[423,683]]},{"x":865,"y":700,"poly":[[759,679],[765,671],[843,598],[887,598],[966,659],[968,672],[968,674],[874,766],[862,768],[759,682]]},{"x":1195,"y":690,"poly":[[1090,680],[1093,674],[1173,599],[1217,599],[1298,670],[1299,671],[1302,676],[1207,781],[1195,780]]}];
 var SEAT_OFF=[{dx:-57,dy:-60,k:'back'},{dx:60,dy:-58,k:'back'},{dx:-62,dy:60,k:'front'},{dx:60,dy:60,k:'front'}];
 var SEATS=[];
-TABLES.forEach(function(t,ti){SEAT_OFF.forEach(function(o,oi){
-  var s={id:ti*4+oi,table:ti,k:o.k,x:t.x+o.dx,y:t.y+o.dy,taken:false};
-  // where the guest stands before he sits: out of the way of the table, on the side of the chair
-  var dx=o.dx,dy=o.dy,l=Math.hypot(dx,dy)||1;
-  s.ax=t.x+dx/l*158;s.ay=t.y+dy/l*138;
-  SEATS.push(s);
-})});
+function grow(poly,cx,cy,f){return poly.map(function(p){return[cx+(p[0]-cx)*f,cy+(p[1]-cy)*f]})}
+TABLES.forEach(function(t,ti){
+  // where nobody may walk: the cloth and the chairs around it, with a margin
+  var pts=t.poly.slice();
+  SEAT_OFF.forEach(function(o){pts.push([t.x+o.dx*1.45,t.y+o.dy*1.2],[t.x+o.dx*1.45+26,t.y+o.dy*1.2],[t.x+o.dx*1.45-26,t.y+o.dy*1.2])});
+  t.block=hullPts(pts);
+  SEAT_OFF.forEach(function(o,oi){
+    var s={id:ti*4+oi,table:ti,k:o.k,x:t.x+o.dx,y:t.y+o.dy,taken:false};
+    // the place right beside the chair where the guest stands before he sits
+    var l=Math.hypot(o.dx,o.dy)||1;
+    s.ax=s.x+o.dx/l*58;s.ay=s.y+o.dy/l*50;
+    SEATS.push(s);
+  });
+});
+function hullPts(p){
+  p=p.slice().sort(function(a,b){return a[0]-b[0]||a[1]-b[1]});
+  function cr(o,a,b){return(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0])}
+  var lo=[],up=[],i;
+  for(i=0;i<p.length;i++){while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],p[i])<=0)lo.pop();lo.push(p[i])}
+  for(i=p.length-1;i>=0;i--){while(up.length>=2&&cr(up[up.length-2],up[up.length-1],p[i])<=0)up.pop();up.push(p[i])}
+  lo.pop();up.pop();return lo.concat(up);
+}
 var DOOR={x:808,y:222};
 var FLOOR=[[215,215],[1325,215],[1305,455],[1480,560],[1585,600],[1590,830],[430,838],[110,720],[150,560],[185,330]];
 var BLOCKS=[{x0:185,y0:180,x1:460,y1:300},{x0:150,y0:250,x1:260,y1:400}];   // the stove and the bench
@@ -88,7 +103,7 @@ var CELL=22,GW=Math.ceil(W/CELL),GH=Math.ceil(H/CELL),GRID=null;
 function walkable(x,y){
   if(!pip(FLOOR,x,y))return false;
   for(var i=0;i<BLOCKS.length;i++){var b=BLOCKS[i];if(x>b.x0&&x<b.x1&&y>b.y0&&y<b.y1)return false}
-  for(var t=0;t<TABLES.length;t++){var dx=(x-TABLES[t].x)/128,dy=(y-TABLES[t].y)/112;if(dx*dx+dy*dy<1)return false}
+  for(var t=0;t<TABLES.length;t++)if(pip(TABLES[t].block,x,y))return false;
   return true;
 }
 function buildGrid(){GRID=new Uint8Array(GW*GH);for(var j=0;j<GH;j++)for(var i=0;i<GW;i++)GRID[j*GW+i]=walkable(i*CELL+CELL/2,j*CELL+CELL/2)?1:0}
@@ -138,7 +153,7 @@ function findPath(from,to){                          // A* on the grid, then str
 
 // ---------- guests ----------
 var guests=[],nextArrival=2,clock=0,UID=0;
-var SCALE0=.2,SCALE_K=.0001;                      // size of a picture at height y of the hall
+var SCALE0=.31,SCALE_K=.00012,SIT_K=.78;                      // size of a picture at height y of the hall
 function scaleAt(y){return SCALE0+SCALE_K*y}
 function pickSeat(){
   var free=SEATS.filter(function(s){return !s.taken});
@@ -207,35 +222,42 @@ function drawSprite(ctx,key,x,y,sc,flip,rot,alpha){
 function drawShadow(ctx,x,y,sc){
   ctx.save();ctx.fillStyle='rgba(20,8,2,.32)';ctx.beginPath();ctx.ellipse(x,y+2,34*sc/.3,9*sc/.3,0,0,Math.PI*2);ctx.fill();ctx.restore();
 }
+function guestSortY(g){return(g.mode==='seated'||g.mode==='sitting'||g.mode==='rising')?seatPos(g).y:g.y}
+function drawGuest(ctx,g){
+  var walk=(g.mode==='in'||g.mode==='out');
+  if(walk){
+    var sc=scaleAt(g.y),ph=Math.abs(Math.sin(g.phase*Math.PI)),bob=ph*3.2*sc/.3;
+    drawShadow(ctx,g.x,g.y,sc);
+    var stepFlip=g.face==='bok'?g.flip:(Math.floor(g.phase)%2===1);
+    drawSprite(ctx,chKey(g,g.face),g.x,g.y-bob,sc,stepFlip,Math.sin(g.phase*Math.PI)*.022,1);
+  }else{
+    var sp=seatPos(g),ssc=scaleAt(sp.y)*SIT_K;
+    if(g.mode==='sitting'||g.mode==='rising'){
+      var t=g.mode==='sitting'?g.fade:1-g.fade,e=t*t*(3-2*t);
+      var fx=g.seat.ax+(sp.x-g.seat.ax)*e,fy=g.seat.ay+(sp.y-g.seat.ay)*e;
+      drawSprite(ctx,chKey(g,g.from?g.from.face:'dole'),fx,fy,scaleAt(fy),g.from&&g.from.face==='bok'&&g.flip,0,1-e);
+      drawSprite(ctx,chKey(g,sitPose(g)),fx,fy,ssc,false,0,e);
+    }else{
+      // seated: a slow breath, now and then a nod
+      var br=Math.sin((clock+g.id*1.7)*1.6)*.6;
+      drawSprite(ctx,chKey(g,sitPose(g)),sp.x,sp.y+br,ssc,false,Math.sin((clock+g.id)*.5)*.006,1);
+    }
+  }
+}
+// the table is drawn again from the picture of the hall, on top of whoever is behind it
+function drawTableMask(ctx,t){
+  if(!art.complete||!art.naturalWidth)return;
+  ctx.save();ctx.beginPath();ctx.moveTo(t.poly[0][0],t.poly[0][1]);
+  for(var i=1;i<t.poly.length;i++)ctx.lineTo(t.poly[i][0],t.poly[i][1]);
+  ctx.closePath();ctx.clip();ctx.drawImage(art,0,0,W,H);ctx.restore();
+}
 function draw(){
   var ctx=cv.getContext('2d'),k=cv.width/W;
   ctx.setTransform(k,0,0,k,0,0);ctx.clearRect(0,0,W,H);
-  var order=guests.slice().sort(function(a,b){
-    var ay=(a.mode==='seated'||a.mode==='sitting'||a.mode==='rising')?seatPos(a).y:a.y;
-    var by=(b.mode==='seated'||b.mode==='sitting'||b.mode==='rising')?seatPos(b).y:b.y;
-    return ay-by;
-  });
-  order.forEach(function(g){
-    var walk=(g.mode==='in'||g.mode==='out');
-    if(walk){
-      var sc=scaleAt(g.y),ph=Math.abs(Math.sin(g.phase*Math.PI)),bob=ph*3.2*sc/.3;
-      drawShadow(ctx,g.x,g.y,sc);
-      var stepFlip=g.face==='bok'?g.flip:(Math.floor(g.phase)%2===1);
-      drawSprite(ctx,chKey(g,g.face),g.x,g.y-bob,sc,stepFlip,Math.sin(g.phase*Math.PI)*.022,1);
-    }else{
-      var sp=seatPos(g),ssc=scaleAt(sp.y);
-      if(g.mode==='sitting'||g.mode==='rising'){
-        var t=g.mode==='sitting'?g.fade:1-g.fade,e=t*t*(3-2*t);
-        var fx=g.seat.ax+(sp.x-g.seat.ax)*e,fy=g.seat.ay+(sp.y-g.seat.ay)*e;
-        drawSprite(ctx,chKey(g,g.from?g.from.face:'dole'),fx,fy,scaleAt(fy),g.from&&g.from.face==='bok'&&g.flip,0,1-e);
-        drawSprite(ctx,chKey(g,sitPose(g)),fx,fy,ssc,false,0,e);
-      }else{
-        // seated: a slow breath, now and then a nod
-        var br=Math.sin((clock+g.id*1.7)*1.6)*.6;
-        drawSprite(ctx,chKey(g,sitPose(g)),sp.x,sp.y+br,ssc,false,Math.sin((clock+g.id)*.5)*.006,1);
-      }
-    }
-  });
+  var list=guests.map(function(g){return{y:guestSortY(g),g:g}});
+  TABLES.forEach(function(t){list.push({y:t.y+58,t:t})});
+  list.sort(function(a,b){return a.y-b.y});
+  list.forEach(function(o){if(o.g)drawGuest(ctx,o.g);else drawTableMask(ctx,o.t)});
 }
 
 // ---------- the canvas follows the picture ----------
