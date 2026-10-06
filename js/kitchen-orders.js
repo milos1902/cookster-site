@@ -51,6 +51,7 @@ document.head.appendChild(css);
 var cv=mk('canvas');cv.id='kitchenWaiter';cv.width=W;cv.height=H;scene.appendChild(cv);
 var X=cv.getContext('2d');
 for(var i=1;i<=3;i++){var im=new Image();im.src=WAITER+i+'.webp?v=4';imgs[i]=im}
+var foodImg=new Image();foodImg.src='assets/tavern/waiter/waiter_foods2.webp';
 
 // stop the clicks on a paper from reaching the game
 ['pointerdown','pointerup','mousedown','mouseup','click','dblclick','contextmenu','touchstart','wheel'].forEach(function(n){
@@ -208,14 +209,26 @@ function spotFor(i){return{x:Math.round(700+(i%4)*118+Math.random()*16),y:Math.r
 
 // ---------- the waiter walks in ----------
 function kitchenVisible(){return !document.body.classList.contains('pantry-open')}
-function drawWaiter(x,y,frame,flip,lean){
-  var im=imgs[frame];if(!im||!im.complete||!im.naturalWidth)return;
+function drawWaiter(x,y,frame,flip,lean,food){
+  var im=food?foodImg:imgs[frame];if(!im||!im.complete||!im.naturalWidth)return;
   var w=im.naturalWidth,h=im.naturalHeight;
   X.save();
   X.fillStyle='rgba(20,8,2,.3)';X.beginPath();X.ellipse(x,y+3,95,18,0,0,Math.PI*2);X.fill();
   X.translate(x,y);if(lean)X.rotate(lean);if(flip)X.scale(-1,1);
   X.drawImage(im,-w/2,-h,w,h);
   X.restore();
+}
+// a finished bowl of sour cabbage (the picture of the bowl has turned into the dish) is taken to the table of the oldest note
+function takeDish(){
+  var list=window.items||[],bowl=null;
+  for(var i=0;i<list.length;i++){var b=list[i];if(b.dataset&&b.dataset.itemId==='posuda_za_kupus'&&b.classList.contains('bowl-photo-look')){bowl=b;break}}
+  if(!bowl)return null;
+  var table=notes.length?notes[0].table:1,sp={};
+  try{sp=JSON.parse(bowl.dataset.spices||'{}')}catch(e){}
+  var kind=(sp.tucana>0||sp.paprika>0)?'paprika':'plain';
+  if(notes.length){var n0=notes.shift();var el=scene.querySelector('.ko-note[data-id="'+n0.id+'"]');if(el)el.remove();save()}
+  try{removeItem(bowl)}catch(e){}
+  return{table:table,kind:kind};
 }
 function start(){
   var o=pending[0];if(!o)return;
@@ -251,6 +264,7 @@ function tick(now){
     alpha=Math.min(1,anim.t/.2);
     if(anim.t>=.2){anim.phase=anim.call?'listen':'wait';anim.t=0}
   }else if(anim.phase==='listen'){
+    if(!anim.checked&&anim.t>1.2){anim.checked=true;var dish=takeDish();if(dish)anim.carry=dish}
     if(anim.t>2.4){anim.phase='out';anim.t=0}
   }else if(anim.phase==='wait'){
     if(anim.t>.35){anim.phase='put';anim.t=0}
@@ -265,12 +279,14 @@ function tick(now){
   }else if(anim.phase==='out'){
     alpha=Math.max(0,1-anim.t/.2);
     if(anim.t>=.2){
-      if(!anim.call){pending.shift();save()}anim=null;X.clearRect(0,0,W,H);return;
+      if(!anim.call){pending.shift();save()}
+      if(anim.carry&&window.CooksterTavern&&window.CooksterTavern.deliver)window.CooksterTavern.deliver(anim.carry.table-1,anim.carry.kind);
+      anim=null;X.clearRect(0,0,W,H);return;
     }
   }
   X.globalAlpha=alpha;
-  drawWaiter(anim.x,FLOOR_Y,frame,flip,lean);X.globalAlpha=1;
-  if(anim.phase==='listen'&&anim.t>.3)speech('Izvolite?',anim.x,FLOOR_Y-440);
+  drawWaiter(anim.x,FLOOR_Y,frame,flip,lean,!!anim.carry);X.globalAlpha=1;
+  if(anim.phase==='listen'&&anim.t>.3)speech(anim.carry?'Odnosim kupus!':'Izvolite?',anim.x,FLOOR_Y-440);
   requestAnimationFrame(tick);
 }
 setInterval(function(){

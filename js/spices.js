@@ -20,7 +20,7 @@
     if(!el||el.dataset?.itemId!==BOWL_ID)return;
     const body=el.querySelector('.body');if(!body)return;
     if(!el._origBodySrc)el._origBodySrc=body.getAttribute('src');
-    const keys=Object.entries(readItems(el)).filter(([,e])=>(+e.count||0)>0).map(([k])=>k);
+    const keys=Object.entries(readItems(el)).filter(([k,e])=>(+e.count||0)>0&&k!=='ulje').map(([k])=>k);
     let spices={};try{spices=JSON.parse(el.dataset.spices||'{}');}catch(_){}
     if(!keys.length&&el.dataset.spices){delete el.dataset.spices;spices={};}
     const only=keys.length===1&&keys[0]===CABBAGE_KEY;
