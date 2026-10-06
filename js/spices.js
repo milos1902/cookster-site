@@ -10,8 +10,8 @@
   const COLORS={paprika:['#b3200f','#d4301a'],tucana:['#c4290f','#e8a010'],biber:['#2b1d14','#4a3426'],so:['#ffffff','#e8ecf2'],secer:['#fffdf5','#f1ead8'],lovor:['#5e7d3a','#8a9a52']};
   const SPICE_IDS=['paprika','tucana','biber','so','secer','lovor'];
   const TEST_PAPRIKA=new Set(['paprika','tucana']);
-  const SHAKES_PER_DOSE=3;                                 // direction changes of the mouse needed for one dose
-  const MAX_DOSES=6;
+  const SHAKES_PER_DOSE=1;                                 // one swing of the mouse (a change of direction) = one dose
+  const MAX_DOSES=12;
   const spiceOf=el=>{const m=/^zacin_(.+)$/.exec(el?.dataset?.itemId||'');return m&&COLORS[m[1]]?m[1]:null;};
 
   // ---------- picture of the bowl ----------
@@ -63,7 +63,16 @@
     if((sp[kind]||0)>=MAX_DOSES)return;
     sp[kind]=(sp[kind]||0)+1;target.dataset.spices=JSON.stringify(sp);
     try{renderVesselContents(target);}catch(_){applyLook(target);}
+    counter(target,kind,sp[kind]);
     try{CooksterSave.schedule();}catch(_){}
+  }
+  const NAMES={paprika:'mlevena paprika',tucana:'tucana paprika',biber:'biber',so:'so',secer:'šećer',lovor:'lovor'};
+  let tag=null,tagTimer=0;
+  function counter(target,kind,n){
+    if(!tag){tag=document.createElement('div');tag.style.cssText='position:fixed;z-index:20001;pointer-events:none;transform:translate(-50%,-100%);padding:3px 9px;border-radius:8px;background:rgba(40,22,8,.85);color:#fff3d6;font:700 13px system-ui,sans-serif;white-space:nowrap';document.body.appendChild(tag);}
+    const r=target.getBoundingClientRect();
+    tag.textContent=(NAMES[kind]||kind)+' ×'+n;tag.style.left=(r.left+r.width/2)+'px';tag.style.top=(r.top-4)+'px';tag.style.display='block';
+    clearTimeout(tagTimer);tagTimer=setTimeout(()=>{tag.style.display='none';},1400);
   }
   function tick(){
     requestAnimationFrame(tick);

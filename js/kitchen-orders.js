@@ -226,9 +226,10 @@ function takeDish(){
   var table=notes.length?notes[0].table:1,sp={};
   try{sp=JSON.parse(bowl.dataset.spices||'{}')}catch(e){}
   var kind=(sp.tucana>0||sp.paprika>0)?'paprika':'plain';
+  var ev=window.CooksterQuality?window.CooksterQuality.evaluate(bowl,'kiseli_kupus'):null;
   if(notes.length){var n0=notes.shift();var el=scene.querySelector('.ko-note[data-id="'+n0.id+'"]');if(el)el.remove();save()}
   try{removeItem(bowl)}catch(e){}
-  return{table:table,kind:kind};
+  return{table:table,kind:kind,ev:ev};
 }
 function start(){
   var o=pending[0];if(!o)return;
@@ -280,7 +281,7 @@ function tick(now){
     alpha=Math.max(0,1-anim.t/.2);
     if(anim.t>=.2){
       if(!anim.call){pending.shift();save()}
-      if(anim.carry&&window.CooksterTavern&&window.CooksterTavern.deliver)window.CooksterTavern.deliver(anim.carry.table-1,anim.carry.kind);
+      if(anim.carry&&window.CooksterTavern&&window.CooksterTavern.deliver)window.CooksterTavern.deliver(anim.carry.table-1,anim.carry.kind,anim.carry.ev);
       anim=null;X.clearRect(0,0,W,H);return;
     }
   }
