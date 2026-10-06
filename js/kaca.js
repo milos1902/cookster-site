@@ -342,6 +342,12 @@
   }
   setInterval(()=>{for(const el of (window.items||items))if(isKaca(el)){testRefill(el);refresh(el);}},2000);
   if(TEST_ALWAYS_SOUR)setTimeout(()=>{
-    try{if(!(window.items||items).some(isKaca))spawnKitchenEquipment(ID);}catch(_){}
+    try{
+      if((window.items||items).some(isKaca))return;
+      const def=kitchenEquipmentDef(ID);if(!def)return;
+      const el=makeItem({...def,instanceId:nextItemInstanceId(ID),x:200-def.w/2,y:660-def.h,z:++zCounter});
+      if(!el)return;
+      el.dataset.surfaceZone='floor';setPose(el,200,660,1);CooksterSave.schedule();
+    }catch(_){}
   },4000);
 })();
