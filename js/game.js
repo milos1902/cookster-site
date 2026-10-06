@@ -10413,7 +10413,7 @@ function openKitchenElements(){
 
 function serializeWorldItem(el){
  const body=el.querySelector('.body');
-  const keep=['kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
+  const keep=['plateFill','kacaT0','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
  const data={};
  for(const k of keep)if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
  for(const k of ['ajvarMl','ajvarBatchMl'])if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
@@ -13782,9 +13782,10 @@ function setVegetableSliced(el){
   const legacyH=key==='paradajz'?83:(key==='paprika'?66:(key==='krastavac'?(def.slicedH||60):76));
   const legacyMsg=key==='paprika'?'Paprika je isečena na kolutove.':key==='luk'?'Luk je isečen.':key==='krastavac'?'Krastavac je isečen na kolutove.':'Paradajz je isečen na kolutove.';
 
+  const sourCut=key==='kupus'&&el.dataset.fermentPhase==='3'&&!!def.slicedSrcSour;       // a sour cabbage cut up is pale, not green
   const cfg={
-    label:def.slicedLabel||(legacy?legacyLabel:`isečen ${def.label||key}`),
-    src:def.slicedSrc||def.src||el.querySelector('.body')?.getAttribute('src')||'',
+    label:sourCut?'isečen kiseli kupus':def.slicedLabel||(legacy?legacyLabel:`isečen ${def.label||key}`),
+    src:sourCut?def.slicedSrcSour:def.slicedSrc||def.src||el.querySelector('.body')?.getAttribute('src')||'',
     w:def.slicedW||(legacy?legacyW:(def.w||+el.dataset.baseW||70)),
     h:def.slicedH||(legacy?legacyH:(def.h||+el.dataset.baseH||70)),
     msg:def.sliceMessage||(legacy?legacyMsg:`${def.label||key} je isečen.`)
@@ -13825,7 +13826,7 @@ function setVegetableDiced(el){
       :PAPRIKA_ROAST_CHOPPED_ASSETS.unpeeled)
     :roastedUnpeeledEggplant
       ?def.roastedUnpeeledDicedSrc
-      :def.dicedSrc;
+      :(key==='kupus'&&el.dataset.fermentPhase==='3'&&def.dicedSrcSour?def.dicedSrcSour:def.dicedSrc);
 
   el.dataset.cutState='diced';
   el.dataset.choppedRoastedPepper=roastedPepper?'1':'0';
@@ -13837,7 +13838,7 @@ function setVegetableDiced(el){
       :'Seckana pečena neljuštena paprika')
     :roastedUnpeeledEggplant
       ?'Seckan pečen neoljušten patlidžan'
-      :(def.dicedLabel||`sitno seckan ${def.label||key}`);
+      :(key==='kupus'&&el.dataset.fermentPhase==='3'?'sitno seckan kiseli kupus':def.dicedLabel||`sitno seckan ${def.label||key}`);
   const img=el.querySelector('.body');if(img)img.src=choppedPepperSrc;
   const shadowImg=el._contactShadow?.querySelector('img');if(shadowImg)shadowImg.src=choppedPepperSrc;
 
