@@ -174,8 +174,17 @@ function defaultSeats(){
 }
 function okSeats(a){return Array.isArray(a)&&a.length>0&&a.every(function(q){return q&&['id','x','y','ax','ay','dir'].every(function(k){return isFinite(q[k])})})}
 function clonePoly(p){return p.map(function(q){return[q[0],q[1]]})}
+// the waiter: where he may walk (a copy of the floor to start with), where he stands at every table to take an order (and where he looks),
+// and the route he follows (open lines; empty = he finds his own way on the floor)
+function defaultWaiterSpots(){
+  var out=[{id:'home',x:DOOR0.x,y:DOOR0.y,dir:90}];
+  SEAT_DEF.forEach(function(row,ti){out.push({id:ti,x:row[0].ax,y:row[0].ay,dir:90})});
+  return out;
+}
+function okWaiterSpots(a){return Array.isArray(a)&&a.length>0&&a.every(function(q){return q&&(q.id==='home'||isFinite(q.id))&&['x','y','dir'].every(function(k){return isFinite(q[k])})})}
 function defaultCal(){
-  var cal={version:1,floor:[clonePoly(FLOOR)],blocked:[],tableMask:[],chairMask:{},chairWalk:{},cleanExclude:[],surfaces:defaultSurfaces(),seats:defaultSeats()};
+  var cal={version:1,floor:[clonePoly(FLOOR)],blocked:[],tableMask:[],chairMask:{},chairWalk:{},cleanExclude:[],surfaces:defaultSurfaces(),seats:defaultSeats(),
+    waiterFloor:[clonePoly(FLOOR)],waiterRoute:[],waiterSpots:defaultWaiterSpots()};
   BLOCKS.forEach(function(b){cal.blocked.push([[b.x0,b.y0],[b.x1,b.y0],[b.x1,b.y1],[b.x0,b.y1]])});
   TABLES.forEach(function(t){cal.blocked.push(clonePoly(t.block));cal.tableMask.push(clonePoly(t.poly))});
   cal.cleanExclude=[];cal.surfaces=defaultSurfaces();cal.surfaces[0].polys=cal.floor;
@@ -205,6 +214,9 @@ function normCal(found){
   ['chairMask','chairWalk'].forEach(function(n){
     if(found[n]&&typeof found[n]==='object')Object.keys(found[n]).forEach(function(k){if(okPolys(found[n][k]))cal[n][k]=found[n][k]});
   });
+  cal.waiterFloor=okPolys(found.waiterFloor)?found.waiterFloor:cal.floor.map(clonePoly);
+  cal.waiterRoute=okPolys(found.waiterRoute)?found.waiterRoute:[];
+  cal.waiterSpots=okWaiterSpots(found.waiterSpots)?found.waiterSpots:defaultWaiterSpots();
   return cal;
 }
 function fileJson(){
@@ -272,7 +284,7 @@ function applyCal(cal){
       WALKMASKS.push({poly:p,y:by-4,seat:+k});
     });
   });
-  GRID=null;
+  GRID=null;WGRID=null;WGRAPH=null;
   fixPlaces();
 }
 function walkable(x,y){
@@ -283,23 +295,25 @@ function walkable(x,y){
   return true;
 }
 function buildGrid(){GRID=new Uint8Array(GW*GH);for(var j=0;j<GH;j++)for(var i=0;i<GW;i++)GRID[j*GW+i]=walkable(i*CELL+CELL/2,j*CELL+CELL/2)?1:0}
-function nearestFree(x,y){
+function nearestFree(x,y,G){
+  G=G||GRID;
   var ci=Math.max(0,Math.min(GW-1,Math.floor(x/CELL))),cj=Math.max(0,Math.min(GH-1,Math.floor(y/CELL)));
-  if(GRID[cj*GW+ci])return[ci,cj];
+  if(G[cj*GW+ci])return[ci,cj];
   for(var r=1;r<20;r++)for(var dj=-r;dj<=r;dj++)for(var di=-r;di<=r;di++){
     if(Math.max(Math.abs(di),Math.abs(dj))!==r)continue;
-    var i=ci+di,j=cj+dj;if(i>=0&&j>=0&&i<GW&&j<GH&&GRID[j*GW+i])return[i,j];
+    var i=ci+di,j=cj+dj;if(i>=0&&j>=0&&i<GW&&j<GH&&G[j*GW+i])return[i,j];
   }
   return[ci,cj];
 }
-function lineFree(a,b){
+function lineFree(a,b,walk){
+  walk=walk||walkable;
   var n=Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)/10);
-  for(var i=0;i<=n;i++){var x=a.x+(b.x-a.x)*i/n,y=a.y+(b.y-a.y)*i/n;if(!walkable(x,y))return false}
+  for(var i=0;i<=n;i++){var x=a.x+(b.x-a.x)*i/n,y=a.y+(b.y-a.y)*i/n;if(!walk(x,y))return false}
   return true;
 }
-function findPath(from,to){                          // A* on the grid, then straightened
-  if(!GRID)buildGrid();
-  var s=nearestFree(from.x,from.y),g=nearestFree(to.x,to.y);
+function findPath(from,to,G,walk){                   // A* on the grid, then straightened (G, walk: another grid, e.g. the waiter's)
+  if(!G){if(!GRID)buildGrid();G=GRID}
+  var s=nearestFree(from.x,from.y,G),g=nearestFree(to.x,to.y,G);
   var open=[[s[0],s[1]]],came={},cost={},key=function(i,j){return j*GW+i};
   cost[key(s[0],s[1])]=0;var closed={};
   var h=function(i,j){return Math.hypot(i-g[0],j-g[1])};
@@ -313,8 +327,8 @@ function findPath(from,to){                          // A* on the grid, then str
     for(var dj=-1;dj<=1;dj++)for(var di=-1;di<=1;di++){
       if(!di&&!dj)continue;
       var ni=cur[0]+di,nj=cur[1]+dj;
-      if(ni<0||nj<0||ni>=GW||nj>=GH||!GRID[nj*GW+ni])continue;
-      if(di&&dj&&(!GRID[cur[1]*GW+ni]||!GRID[nj*GW+cur[0]]))continue;
+      if(ni<0||nj<0||ni>=GW||nj>=GH||!G[nj*GW+ni])continue;
+      if(di&&dj&&(!G[cur[1]*GW+ni]||!G[nj*GW+cur[0]]))continue;
       var nk=key(ni,nj),nc=cost[ck]+(di&&dj?1.414:1);
       if(cost[nk]===undefined||nc<cost[nk]){cost[nk]=nc;came[nk]=ck;open.push([ni,nj])}
     }
@@ -323,8 +337,87 @@ function findPath(from,to){                          // A* on the grid, then str
   if(found){var k2=key(g[0],g[1]);while(k2!==undefined){pts.push({x:(k2%GW)*CELL+CELL/2,y:Math.floor(k2/GW)*CELL+CELL/2});k2=came[k2]}pts.reverse()}
   pts.unshift({x:from.x,y:from.y});pts.push({x:to.x,y:to.y});
   var out=[pts[0]],i=0;                              // skip the points that can be passed by in a straight line
-  while(i<pts.length-1){var j=pts.length-1;while(j>i+1&&!lineFree(pts[i],pts[j]))j--;out.push(pts[j]);i=j}
+  while(i<pts.length-1){var j=pts.length-1;while(j>i+1&&!lineFree(pts[i],pts[j],walk))j--;out.push(pts[j]);i=j}
   return out;
+}
+
+// ---------- the waiter: where he may walk and the route he follows ----------
+// he walks on the "waiterFloor" shapes minus the blocked shapes (tables); if he has a route (open lines), he follows it
+var WGRID=null,WGRAPH=null;
+function waiterWalkable(x,y){
+  var i,ok=false,fl=(CAL.waiterFloor&&CAL.waiterFloor.some(function(p){return p.length>=3}))?CAL.waiterFloor:CAL.floor;
+  for(i=0;i<fl.length;i++)if(fl[i].length>=3&&pip(fl[i],x,y)){ok=true;break}
+  if(!ok)return false;
+  for(i=0;i<CAL.blocked.length;i++)if(CAL.blocked[i].length>=3&&pip(CAL.blocked[i],x,y))return false;
+  return true;
+}
+function buildWGrid(){WGRID=new Uint8Array(GW*GH);for(var j=0;j<GH;j++)for(var i=0;i<GW;i++)WGRID[j*GW+i]=waiterWalkable(i*CELL+CELL/2,j*CELL+CELL/2)?1:0}
+// the nodes of the route: the points of the lines; points closer than 10 px are one node, so lines that meet are joined
+function buildWGraph(){
+  var nodes=[],adj=[];
+  function node(p){
+    for(var i=0;i<nodes.length;i++)if(Math.hypot(nodes[i].x-p[0],nodes[i].y-p[1])<10)return i;
+    nodes.push({x:p[0],y:p[1]});adj.push([]);return nodes.length-1;
+  }
+  (CAL.waiterRoute||[]).forEach(function(line){
+    var prev=-1;
+    line.forEach(function(p){
+      var n=node(p);
+      if(prev>=0&&prev!==n){
+        var d=Math.hypot(nodes[n].x-nodes[prev].x,nodes[n].y-nodes[prev].y);
+        adj[prev].push([n,d]);adj[n].push([prev,d]);
+      }
+      prev=n;
+    });
+  });
+  WGRAPH={nodes:nodes,adj:adj};
+}
+// the path of the waiter from one place to another: along the route if there is one, else straight over the floor (A*)
+function waiterPath(from,to){
+  if(!WGRID)buildWGrid();
+  if(!WGRAPH)buildWGraph();
+  var N=WGRAPH.nodes,adj=WGRAPH.adj;
+  if(N.length){
+    var total=N.length,S=total,E=total+1,dist=[],prev=[],done=[],i;
+    var links=[];                                           // virtual links from the start and to the end to the nodes seen from them
+    function seen(p){var l=[];N.forEach(function(n,k){var d=Math.hypot(n.x-p.x,n.y-p.y);if(lineFree(p,n,waiterWalkable))l.push([k,d])});l.sort(function(a,b){return a[1]-b[1]});return l.slice(0,6)}
+    var ls=seen(from),le=seen(to);
+    if(ls.length&&le.length){
+      for(i=0;i<total+2;i++){dist[i]=1e9;prev[i]=-1;done[i]=false}
+      dist[S]=0;
+      var endCost={};le.forEach(function(e){endCost[e[0]]=e[1]});
+      for(var guard=0;guard<total+3;guard++){
+        var u=-1,best=1e9;for(i=0;i<total+2;i++)if(!done[i]&&dist[i]<best){best=dist[i];u=i}
+        if(u<0)break;done[u]=true;if(u===E)break;
+        var edges=u===S?ls:(adj[u].concat(endCost[u]!==undefined?[[E,endCost[u]]]:[]));
+        edges.forEach(function(e){var nd=dist[u]+e[1];if(nd<dist[e[0]]){dist[e[0]]=nd;prev[e[0]]=u}});
+      }
+      if(dist[E]<1e9){
+        var out=[{x:to.x,y:to.y}],c=prev[E];
+        while(c>=0&&c!==S){out.push({x:N[c].x,y:N[c].y});c=prev[c]}
+        out.push({x:from.x,y:from.y});out.reverse();return out;
+      }
+    }
+  }
+  return findPath(from,to,WGRID,waiterWalkable);
+}
+function waiterSpot(id){
+  var l=(CAL&&okWaiterSpots(CAL.waiterSpots))?CAL.waiterSpots:defaultWaiterSpots();
+  for(var i=0;i<l.length;i++)if(l[i].id===id)return l[i];
+  return null;
+}
+// the route made by itself: from the home place to every table spot, over the floor of the waiter
+function waiterAutoRoute(){
+  if(!WGRID)buildWGrid();
+  var home=waiterSpot('home'),lines=[];
+  if(!home)return lines;
+  TABLES.forEach(function(t,ti){
+    var sp=waiterSpot(ti);if(!sp)return;
+    var a=nearestFree(home.x,home.y,WGRID),b=nearestFree(sp.x,sp.y,WGRID);
+    var p=findPath({x:a[0]*CELL+CELL/2,y:a[1]*CELL+CELL/2},{x:b[0]*CELL+CELL/2,y:b[1]*CELL+CELL/2},WGRID,waiterWalkable);
+    lines.push(p.map(function(q){return[Math.round(q.x),Math.round(q.y)]}));
+  });
+  return lines;
 }
 
 applyCal();
@@ -572,7 +665,7 @@ window.CooksterTavern={
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},
   seatReach:function(){return SEATS.map(seatReachable)},poseFromDir:poseFromDir,seatScale:function(y){return scaleAt(y)*SIT_K},
   poseInfo:function(pose){var im=imgs['g01_sedi_'+pose];return im?{src:im.src,w:im.naturalWidth,h:im.naturalHeight}:null},
-  defaults:fileCal,spongeAt:spongeAt,idw:idw,spongeImg:SPONGE_IMG,spongeRadius:SPONGE_RADIUS,calibration:function(){return CAL},applyCalibration:function(c){applyCal(c)},calKey:CAL_KEY,
+  defaults:fileCal,spongeAt:spongeAt,idw:idw,spongeImg:SPONGE_IMG,spongeRadius:SPONGE_RADIUS,calibration:function(){return CAL},applyCalibration:function(c){applyCal(c)},calKey:CAL_KEY,waiterPath:waiterPath,waiterAutoRoute:waiterAutoRoute,waiterSpot:waiterSpot,waiterWalkable:waiterWalkable,
   fit:function(){fit();draw()},isOpenScene:function(){return state!=='kitchen'}
 };
 })();
