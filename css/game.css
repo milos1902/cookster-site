@@ -3756,3 +3756,6 @@ body.quick-tool-wheel-open #label{display:none!important}
 
 /* the cooking progress bar above pans and pots is not used any more */
 .pan-status,.pan-status.visible{display:none!important}
+
+/* posuda za kupus sa celom slikom (kupus/paprika): hrana iz sloja se ne crta preko slike */
+.item.bowl-photo-look .vessel-content{display:none!important}

@@ -70,7 +70,12 @@
     const jar=(typeof holding!=='undefined'&&holding&&spiceOf(holding))?holding:null;
     if(lastJar&&lastJar!==jar){lastJar.style.rotate='';tilt=0;}
     lastJar=jar;
-    if(!jar){lastX=0;return;}
+    if(!jar){
+      lastX=0;
+      // a jar's placement ghost must never stay behind in a bowl once the jar is let go
+      document.querySelectorAll('.ghost-item-copy').forEach(g=>{if(g.querySelector('img[src*="calibration_props/zacini/"]'))g.remove();});
+      return;
+    }
     const kind=spiceOf(jar),target=vesselUnder(jar);
     const goal=target?38:0;
     tilt+=(goal-tilt)*.18;
