@@ -18,7 +18,8 @@
   // TEST: the cabbage ferments in real seconds instead of game days: phase 2 after SOUR_SECS[1], sour after SOUR_SECS[2].
   // Set to null to go back to days (SOUR_DAYS).
   const SOUR_SECS=[0,10,20];
-  const PLATE_ID='kal_02_duboki_tanjir',PLATE_FULL_SRC='assets/calibration_props/kitchen_set_18/02_duboki_tanjir_kupus.png';
+  // what the sour cabbage can be put in (the picture of the full one)
+  const DISHES={posuda_za_kupus:'assets/calibration_props/posuda_za_kupus/posuda_kupus.webp',kal_02_duboki_tanjir:'assets/calibration_props/kitchen_set_18/02_duboki_tanjir_kupus.png'};
   // closed-barrel picture (C) -> frame of the empty barrel picture (P): P = 1.08*C - (34,50)
   const toPx=cx=>(1.08*cx-34)/527*100,toPy=cy=>(1.08*cy-50)/560*100;
   const FRONT_POLY=[[0,558],[0,30],[126,30],[126,176],[150,210],[200,222],[250,229],[300,231],[350,229],[400,222],[440,210],[449,190],[449,30],[560,30],[560,558]]
@@ -172,16 +173,17 @@
   }
   function plateAt(x,y){
     for(const el of (window.items||items)){
-      if(el.dataset?.itemId!==PLATE_ID||el===holding||el.dataset.plateFill)continue;
+      if(!DISHES[el.dataset?.itemId]||el===holding||el.dataset.plateFill)continue;
       const r=el.getBoundingClientRect();
       if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom)return el;
     }
     return null;
   }
   function fillPlate(plate,item){
-    plate.dataset.plateFill='kiseli_kupus';plate.dataset.label='Duboki tanjir — seckani kiseli kupus';
-    const img=plate.querySelector('.body');if(img)img.src=PLATE_FULL_SRC;
-    const sh=plate._contactShadow?.querySelector('img');if(sh)sh.src=PLATE_FULL_SRC;
+    const full=DISHES[plate.dataset.itemId];
+    plate.dataset.plateFill='kiseli_kupus';plate.dataset.label=(plate.dataset.itemId==='posuda_za_kupus'?'Posuda':'Duboki tanjir')+' — seckani kiseli kupus';
+    const img=plate.querySelector('.body');if(img)img.src=full;
+    const sh=plate._contactShadow?.querySelector('img');if(sh)sh.src=full;
     removeItem(item);holding=null;hidePlacementGhost();hideOriginGhost();updateHover();
     try{playImpactSound(plate,'putIn');}catch(_){}
     CooksterSave.schedule();return true;
