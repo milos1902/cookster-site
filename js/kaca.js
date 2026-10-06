@@ -171,6 +171,14 @@
   }
   function addCabbage(el,veg){
     const n=num(el,'kacaN');
+    if(veg.dataset.kupusHalf==='1'){          // half a head: a half takes a slot of its own and comes out as a half again
+      if(el.dataset.kacaLid==='1')return 'closed';
+      if(n>=MAX)return 'full';
+      el.dataset.kacaHalf=String(num(el,'kacaHalf')+1);el.dataset.kacaN=String(n+1);   // a half takes one slot
+      removeItem(veg);holding=null;hidePlacementGhost();hideOriginGhost();updateHover();
+      refresh(el);showHud(el,2);try{playImpactSound(el,'putIn');}catch(_){}
+      CooksterSave.schedule();return 'ok';
+    }
     if(el.dataset.kacaLid==='1'){return 'closed';}
     if(n>=MAX)return 'full';
     el.dataset.kacaN=String(n+1);
@@ -203,15 +211,19 @@
     const n=num(el,'kacaN');
     if(n<=0||el.dataset.kacaLid==='1')return false;
     if(el.dataset.kacaRuined==='1'){          // spoiled: throw it all away
-      el.dataset.kacaN='0';el.dataset.kacaRuined='';el.dataset.kacaDay0='';el.dataset.kacaP='0';el.dataset.kacaWater='0';el.dataset.kacaPh='';
+      el.dataset.kacaN='0';el.dataset.kacaHalf='0';el.dataset.kacaRuined='';el.dataset.kacaDay0='';el.dataset.kacaP='0';el.dataset.kacaWater='0';el.dataset.kacaPh='';
       refresh(el);showHud(el,2);CooksterSave.schedule();return true;
     }
     const ph=phase(el),veg=VEGETABLES.kupus;if(!veg)return false;
     el.dataset.kacaN=String(n-1);
-    if(n-1<=0){el.dataset.kacaDay0='';el.dataset.kacaP='0';el.dataset.kacaPh='';}
+    if(n-1<=0){el.dataset.kacaHalf='0';el.dataset.kacaDay0='';el.dataset.kacaP='0';el.dataset.kacaPh='';}
     const r=el.getBoundingClientRect(),p=screenToScene(r.left+r.width/2,r.top+r.height*.35);
     const src=ph>=2&&n>=1?DIR.replace('calibration_props/kaca_za_kupus/','market_veg/')+'kupus_faza_'+ph+'.webp':veg.src;
-    const loose=makeItem({id:'veg_kupus_'+Date.now(),label:ph>=3?'Kiseli kupus':veg.label,src,x:p.x-veg.w/2,y:p.y-veg.h,w:veg.w,h:veg.h,z:++zCounter,snapProfile:'produce'});
+    const half=num(el,'kacaHalf')>0;
+    if(half)el.dataset.kacaHalf=String(num(el,'kacaHalf')-1);
+    const hw=half?Math.round(veg.w*.8):veg.w,hh=half?Math.round(veg.h*.7):veg.h;
+    const loose=makeItem({id:'veg_kupus_'+Date.now(),label:ph>=3?(half?'Pola kiselog kupusa':'Kiseli kupus'):veg.label,src:half?DIR.replace('calibration_props/kaca_za_kupus/','market_veg/')+'kupus_pola_kiseli.webp':src,x:p.x-hw/2,y:p.y-hh,w:hw,h:hh,z:++zCounter,snapProfile:'produce'});
+    if(half)loose.dataset.kupusHalf='1';
     loose.dataset.vegetable='1';loose.dataset.collisionProfile='vegetable';loose.dataset.vegKey='kupus';loose.dataset.cutState='whole';
     if(ph>=2)loose.dataset.fermentPhase=String(ph);
     setPose(loose,p.x,p.y,+el.dataset.vis||1);
@@ -310,7 +322,7 @@
         const el=barrelAt(x,y,'any');
         return el?snapLid(el,item):false;
       }
-      if(item.dataset?.vegetable==='1'&&item.dataset.vegKey==='kupus'&&(item.dataset.cutState||'whole')==='whole'){
+      if(item.dataset?.vegetable==='1'&&item.dataset.vegKey==='kupus'&&(item.dataset.cutState||'whole')==='whole'&&(item.dataset.kupusHalf!=='1'||item.dataset.fermentPhase==='3')){
         const el=barrelAt(x,y,'open');
         if(!el)return false;
         const r=addCabbage(el,item);
