@@ -81,7 +81,7 @@ function preload(){
     jobs.push(loadImg(GUESTS+key+'.webp?v='+IMGV).then(function(im){store(key,im)}));
   })('g'+(c2<10?'0':'')+c2+'_'+w+f)});
   // the waiter: three pictures of a step toward the camera (walkd), away from it (walku) and from the side (walks, looking right)
-  ['walkd','walku','walks','writes'].forEach(function(w){for(var f2=1;f2<=3;f2++)(function(key){
+  ['walkd','walku','walks','writes','foods'].forEach(function(w){for(var f2=1;f2<=3;f2++)(function(key){
     jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=4').then(function(im){store('w_'+key,im)}));
   })(w+f2)});
   var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
@@ -505,6 +505,8 @@ function step(dt){
 // he waits at his home place, walks (along his route) to a table where a guest sits who has not ordered yet, stands at the spot drawn for that table,
 // takes the order, and walks home. The pictures: toward the camera (walkd), away from it (walku), from the side (walks, looking right; flipped for left).
 var waiter=null,WSPEED=92;
+var deliveries=[],dishes=[],DISH_SRC={plain:'assets/calibration_props/posuda_za_kupus/posuda_kupus.webp',paprika:'assets/calibration_props/posuda_za_kupus/posuda_kupus_paprika.webp'},DISH_SECS=25;
+var dishImgs={};['plain','paprika'].forEach(function(k){var im=new Image();im.src=DISH_SRC[k];dishImgs[k]=im});
 function waiterFace(dx,dy){                           // which set of pictures for this direction of walking
   if(Math.abs(dx)>1.2*Math.abs(dy))return 'walks';
   return dy>0?'walkd':'walku';
@@ -539,22 +541,30 @@ function stepWaiter(dt){
   if(w.hidden){w.hidden=false;w.x=home.x;w.y=home.y}
   if(w.mode==='idle'){
     var tb=waitingTable();
-    if(tb>=0&&waiterSpot(tb)){w.table=tb;w.mode='go';waiterGo(waiterSpot(tb))}
+    if(deliveries.length&&waiterSpot(deliveries[0].table)){var dl=deliveries.shift();w.carry=dl;w.table=dl.table;w.mode='go';w.set='foods';waiterGo(waiterSpot(dl.table))}
+    else if(tb>=0&&waiterSpot(tb)){w.table=tb;w.mode='go';waiterGo(waiterSpot(tb))}
     else{var f0=dirFace(home.dir);w.set=f0.set;w.flip=f0.flip}
   }else if(w.mode==='go'||w.mode==='back'){
     var tgt=w.path&&w.path[w.pi];
     if(!tgt){
-      if(w.mode==='go'){w.mode='serve';w.t=0;var sp=waiterSpot(w.table),fs=dirFace(sp?sp.dir:90);w.set=fs.set;w.flip=fs.flip}
+      if(w.mode==='go'&&w.carry){w.mode='give';w.t=0;var sg=waiterSpot(w.table),fg=dirFace(sg?sg.dir:90);w.flip=fg.flip;w.set='foods'}
+      else if(w.mode==='go'){w.mode='serve';w.t=0;var sp=waiterSpot(w.table),fs=dirFace(sp?sp.dir:90);w.set=fs.set;w.flip=fs.flip}
       else{w.mode='idle'}
     }else{
       var dx=tgt.x-w.x,dy=tgt.y-w.y,d=Math.hypot(dx,dy),spd=WSPEED*scaleAt(w.y)/.34*dt;
       if(d<=spd){w.x=tgt.x;w.y=tgt.y;w.pi++}
       else{
         w.x+=dx/d*spd;w.y+=dy/d*spd;
-        var s2=waiterFace(dx,dy);if(s2!==w.set){w.set=s2}
-        w.flip=s2==='walks'&&dx<0;
+        var s2=w.carry?'foods':waiterFace(dx,dy);if(s2!==w.set){w.set=s2}
+        if(s2==='walks'||s2==='foods'){if(Math.abs(dx)>.3)w.flip=dx<0}else w.flip=false;
         w.phase+=spd/(40*scaleAt(w.y)/.34);
       }
+    }
+  }else if(w.mode==='give'){
+    w.t+=dt;
+    if(w.t>1.1){
+      dishes.push({table:w.table,kind:w.carry.kind||'plain',t:0});
+      w.carry=null;w.mode='back';waiterGo(home);
     }
   }else if(w.mode==='serve'){
     w.t+=dt;
@@ -576,6 +586,15 @@ function drawBubble(ctx,x,y,l1,l2){
   ctx.font='700 17px system-ui,sans-serif';ctx.fillText(l1,x,by+(l2?21:21));
   if(l2){ctx.font='600 13px system-ui,sans-serif';ctx.fillText(l2,x,by+40)}
   ctx.restore();
+}
+function drawDishes(ctx,dt){
+  for(var i=dishes.length-1;i>=0;i--){
+    var d=dishes[i],tb=TABLES[d.table];d.t+=dt;
+    if(!tb||d.t>DISH_SECS){dishes.splice(i,1);continue}
+    var im=dishImgs[d.kind]||dishImgs.plain;if(!im||!im.naturalWidth)continue;
+    var sc=scaleAt(tb.y)*.2,w=im.naturalWidth*sc,h=im.naturalHeight*sc,a=Math.min(1,d.t/.3)*Math.min(1,(DISH_SECS-d.t)/1.5);
+    ctx.save();ctx.globalAlpha=a;ctx.drawImage(im,tb.x-w/2,tb.y+8-h,w,h);ctx.restore();
+  }
 }
 function drawOrderBubble(ctx){
   var w=waiter;if(!w||w.mode!=='serve'||w.t<.8)return;
@@ -604,7 +623,7 @@ function drawWaiter(ctx){
   // walking. From the front and from behind the two pictures with a leg forward (1 and 3) are enough, one after the other. From the side
   // they look almost the same (a leg forward), so there the step has the middle picture (legs together, 2) too: 1, 2, 3, 2.
   // From the front and from behind the next picture fades in over the end of the step.
-  var side=w.set==='walks',SEQ=side?[1,2,3,2]:[1,3],NS=SEQ.length;
+  var side=w.set==='walks'||w.set==='foods',SEQ=side?[1,2,3,2]:[1,3],NS=SEQ.length;
   var q=side?w.phase*2:w.phase,qi=Math.floor(q),fr=q-qi,f0=.3,f1=.9;
   // from the side the pictures differ in height (legs apart, legs together), so a blend would show two heads: there they just follow each other
   var fade=side?0:Math.max(0,Math.min(1,(fr-f0)/(f1-f0)));fade=fade*fade*(3-2*fade);
@@ -690,7 +709,7 @@ function draw(){
   });
   list.sort(function(a,b){return a.y-b.y});
   list.forEach(function(o){if(o.g)drawGuest(ctx,o.g);else if(o.w)drawWaiter(ctx);else drawPolyFromPicture(ctx,o.m.poly)});
-  drawOrderBubble(ctx);
+  drawDishes(ctx,.016);drawOrderBubble(ctx);
 }
 
 // ---------- the canvas follows the picture ----------
@@ -792,6 +811,7 @@ window.addEventListener('keydown',onKey,true);window.addEventListener('keyup',on
 
 window.CooksterTavern={
   open:open,close:close,spawn:spawn,
+  deliver:function(table,kind){deliveries.push({table:table,kind:kind||'plain'})},
   get isOpen(){return state==='tavern'},get busy(){return busy},
   debug:function(){return{waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},
