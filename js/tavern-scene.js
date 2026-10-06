@@ -137,7 +137,7 @@ var CELL=22,GW=Math.ceil(W/CELL),GH=Math.ceil(H/CELL),GRID=null;
 //   surfaces  [{id,name,kind:'h'|'v',img,polys,points}]: what the sponge cleans (floor, walls, the bar...). kind: horizontal (the sponge lies)
 //             or vertical (the sponge is held upright); img: which picture of the sponge; points: how the sponge sits at some places,
 //             [{x,y,scale,flat,angle,skew,lift,shadow}], blended between them. A later surface lies on top of an earlier one.
-var CAL_KEY='cookster.tavern-calibration.v3',CAL_FILE='assets/tavern/calibration_cista.json?v=2';
+var CAL_KEY='cookster.tavern-calibration.v3',CAL_FILE='assets/tavern/calibration_cista.json?v=3';
 // the pictures of the sponge: lezeci lies on a horizontal surface (dry, soapy, dirty), uspravni1/2 are held against a wall
 var SPONGE_IMG={
   lezeci:{src:'assets/tavern/sundjer_suv.webp?v=1',w:112,ratio:212/440,ax:.5,ay:.66,flat:.58,
