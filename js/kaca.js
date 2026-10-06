@@ -41,18 +41,28 @@
     if(n<VISIBLE_FROM||el.dataset.kacaLid==='1')return DIR+'kaca_prazna.webp';
     return DIR+'kaca_faza_'+phase(el)+'.webp';
   }
+  // The phase the cabbage has reached is kept (kacaPh): to take the lid off the handle is turned back to zero and that stops the clock,
+  // but a cabbage that has soured stays sour.
+  function settle(el){
+    const ph=phaseNow(el),kept=+el.dataset.kacaPh||1;
+    if(ph>kept)el.dataset.kacaPh=String(ph);
+  }
   function phase(el){
+    if(el.dataset.kacaRuined==='1')return 3;
+    return Math.max(+el.dataset.kacaPh||1,phaseNow(el));
+  }
+  function phaseNow(el){
     if(el.dataset.kacaRuined==='1')return 3;
     const d0=el.dataset.kacaDay0;
     if(d0===undefined||d0==='')return 1;
-    if(SOUR_SECS){const t0=+el.dataset.kacaT0;if(t0){const s=(Date.now()-t0)/1000;return s>=SOUR_SECS[2]?3:s>=SOUR_SECS[1]?2:1}}
+    if(SOUR_SECS){if(!+el.dataset.kacaT0)el.dataset.kacaT0=String(Date.now());const t0=+el.dataset.kacaT0;const s=(Date.now()-t0)/1000;return s>=SOUR_SECS[2]?3:s>=SOUR_SECS[1]?2:1}
     const days=day()-(+d0);
     return days>=SOUR_DAYS[2]?3:days>=SOUR_DAYS[1]?2:1;
   }
   function daysLeft(el){
     const d0=el.dataset.kacaDay0;
     if(d0===undefined||d0==='')return null;
-    if(SOUR_SECS){const t0=+el.dataset.kacaT0;if(t0)return Math.max(0,Math.ceil(SOUR_SECS[2]-(Date.now()-t0)/1000))}
+    if(SOUR_SECS){if(!+el.dataset.kacaT0)el.dataset.kacaT0=String(Date.now());return Math.max(0,Math.ceil(SOUR_SECS[2]-(Date.now()-(+el.dataset.kacaT0))/1000))}
     return Math.max(0,SOUR_DAYS[2]-(day()-(+d0)));
   }
   function bodyEl(el){return el.querySelector(':scope>.body');}
@@ -89,6 +99,7 @@
   }
 
   function refresh(el){
+    settle(el);
     if(!isKaca(el))return;
     const L=build(el),b=bodyEl(el),n=num(el,'kacaN'),closed=el.dataset.kacaLid==='1';
     const src=bodySrc(el);
@@ -136,7 +147,7 @@
     if(el.dataset.kacaRuined==='1')t='Pokvaren kupus — klikni da baciš';
     else if(closed){
       const left=daysLeft(el);
-      t+=left===null?' · stegni poklopac (zeleno)':left>0?` · kiseli se, još ${left} ${SOUR_SECS?'s':'d'}`:' · ukiseljen!';
+      if(phase(el)>=3)t+=' · ukiseljen!';else t+=left===null?' · stegni poklopac (zeleno)':left>0?` · kiseli se, još ${left} ${SOUR_SECS?'s':'d'}`:' · ukiseljen!';
     }
     hud.querySelector('.t').textContent=t;
     const bar=hud.querySelector('.bar');bar.style.display=closed?'block':'none';
@@ -194,7 +205,7 @@
   }
   function removeLid(el){
     if(el.dataset.kacaLid!=='1'||num(el,'kacaP')>0)return false;
-    el.dataset.kacaLid='';el.dataset.kacaDay0='';
+    settle(el);el.dataset.kacaLid='';el.dataset.kacaDay0='';
     refresh(el);
     const def=kitchenEquipmentDef?.(LID_ID);
     if(def){
@@ -209,12 +220,12 @@
     const n=num(el,'kacaN');
     if(n<=0||el.dataset.kacaLid==='1')return false;
     if(el.dataset.kacaRuined==='1'){          // spoiled: throw it all away
-      el.dataset.kacaN='0';el.dataset.kacaRuined='';el.dataset.kacaDay0='';el.dataset.kacaP='0';el.dataset.kacaWater='0';
+      el.dataset.kacaN='0';el.dataset.kacaRuined='';el.dataset.kacaDay0='';el.dataset.kacaP='0';el.dataset.kacaWater='0';el.dataset.kacaPh='';
       refresh(el);showHud(el,2);CooksterSave.schedule();return true;
     }
     const ph=phase(el),veg=VEGETABLES.kupus;if(!veg)return false;
     el.dataset.kacaN=String(n-1);
-    if(n-1<=0){el.dataset.kacaDay0='';el.dataset.kacaP='0';}
+    if(n-1<=0){el.dataset.kacaDay0='';el.dataset.kacaP='0';el.dataset.kacaPh='';}
     const r=el.getBoundingClientRect(),p=screenToScene(r.left+r.width/2,r.top+r.height*.35);
     const src=ph>=2&&n>=1?DIR.replace('calibration_props/kaca_za_kupus/','market_veg/')+'kupus_faza_'+ph+'.webp':veg.src;
     const loose=makeItem({id:'veg_kupus_'+Date.now(),label:ph>=3?'Kiseli kupus':veg.label,src,x:p.x-veg.w/2,y:p.y-veg.h,w:veg.w,h:veg.h,z:++zCounter,snapProfile:'produce'});
@@ -271,6 +282,7 @@
     let p=num(d.el,'kacaP')+delta/360*10;
     p=Math.max(0,Math.min(100,p));
     d.el.dataset.kacaP=p.toFixed(2);
+    if(p>=P_GOOD&&p<=P_RED&&(d.el.dataset.kacaDay0===''||d.el.dataset.kacaDay0===undefined)){d.el.dataset.kacaDay0=String(day());d.el.dataset.kacaT0=String(Date.now())}   // the bar is green: it starts to sour
     d.acc+=Math.abs(delta);
     if(d.acc>150){d.acc=0;try{playSfxVariant('woodDrop',.12);}catch(_){}}
     refresh(d.el);showHud(d.el,60);
@@ -285,7 +297,7 @@
       try{playImpactSound(el,'hit');}catch(_){}
     }else if(p>=P_GOOD){
       if(el.dataset.kacaDay0===''||el.dataset.kacaDay0===undefined){el.dataset.kacaDay0=String(day());el.dataset.kacaT0=String(Date.now())}
-    }else el.dataset.kacaDay0='';
+    }else{settle(el);el.dataset.kacaDay0=''}
     refresh(el);showHud(el,3);CooksterSave.schedule();
   }
   window.addEventListener('pointerdown',onDown,{capture:true});
