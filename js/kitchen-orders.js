@@ -10,7 +10,7 @@ if(!scene||window.CooksterOrders)return;
 var W=1672,H=941,KEY='cookster.kitchen-orders.v1',WAITER='assets/tavern/waiter/waiter_walks',NOTE_IMG='assets/ui/order_note.webp?v=2';
 var ITEM={name:'Kiseli kupus',extra:'ulje, tucana paprika',cyr:'Кисели купус',cyrExtra:'уље, туцана паприка'};           // the only dish for now
 var TRIP_MS=3500;                                                      // how long the waiter needs from the tavern to the kitchen
-var FLOOR_Y=705,STOP_X=560,SPEED=250,STAGE=120;                         // where he walks in the kitchen (scene pixels), how fast, the length of a step
+var FLOOR_Y=585,STOP_X=281,SPEED=250,STAGE=120;                         // where he walks in the kitchen (scene pixels), how fast, the length of a step
 var pending=[],notes=[],anim=null,uid=0,imgs=[];
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify({pending:pending,notes:notes,uid:uid}))}catch(_){}}
@@ -219,15 +219,16 @@ function drawWaiter(x,y,frame,flip,lean){
 }
 function start(){
   var o=pending[0];if(!o)return;
-  anim={o:o,t:0,x:-190,phase:'in',dropped:false,last:performance.now()};
+  anim={o:o,t:0,x:STOP_X,phase:'in',dropped:false,last:performance.now()};
   requestAnimationFrame(tick);
 }
 // the bell: the waiter comes into the kitchen and waits for a moment (what he takes away comes later)
 var called=false;
-function callWaiter(){called=true}
+var calledAt=0;
+function callWaiter(){called=true;calledAt=Date.now()+3000+Math.random()*2000}   // he comes 3-5 seconds after the bell
 function startCall(){
   called=false;
-  anim={o:null,call:true,t:0,x:-190,phase:'in',last:performance.now()};
+  anim={o:null,call:true,t:0,x:STOP_X,phase:'in',last:performance.now()};
   requestAnimationFrame(tick);
 }
 function speech(text,x,y){
@@ -244,9 +245,11 @@ function tick(now){
   var dt=Math.min(.05,(now-anim.last)/1000);anim.last=now;anim.t+=dt;
   X.clearRect(0,0,W,H);
   var frame=2,flip=false,lean=0,SEQ=[1,2,3,2];
+  var alpha=1;
   if(anim.phase==='in'){
-    anim.x+=SPEED*dt;frame=SEQ[Math.floor((anim.x+190)/STAGE)%4];
-    if(anim.x>=STOP_X){anim.x=STOP_X;anim.phase=anim.call?'listen':'wait';anim.t=0}
+    // he just appears on the orange spot on the floor, with a quick fade (0.2 s)
+    alpha=Math.min(1,anim.t/.2);
+    if(anim.t>=.2){anim.phase=anim.call?'listen':'wait';anim.t=0}
   }else if(anim.phase==='listen'){
     if(anim.t>2.4){anim.phase='out';anim.t=0}
   }else if(anim.phase==='wait'){
@@ -260,18 +263,19 @@ function tick(now){
     }
     if(anim.t>.9){anim.phase='out';anim.t=0}
   }else if(anim.phase==='out'){
-    flip=true;anim.x-=SPEED*dt;frame=SEQ[Math.floor((STOP_X-anim.x)/STAGE)%4];
-    if(anim.x<-200){
+    alpha=Math.max(0,1-anim.t/.2);
+    if(anim.t>=.2){
       if(!anim.call){pending.shift();save()}anim=null;X.clearRect(0,0,W,H);return;
     }
   }
-  drawWaiter(anim.x,FLOOR_Y,frame,flip,lean);
+  X.globalAlpha=alpha;
+  drawWaiter(anim.x,FLOOR_Y,frame,flip,lean);X.globalAlpha=1;
   if(anim.phase==='listen'&&anim.t>.3)speech('Izvolite?',anim.x,FLOOR_Y-440);
   requestAnimationFrame(tick);
 }
 setInterval(function(){
   if(!anim&&kitchenVisible()){
-    if(called)startCall();
+    if(called){if(Date.now()>=calledAt)startCall();}
     else if(pending.length&&Date.now()>=pending[0].readyAt)start();
   }
 },300);
