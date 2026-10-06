@@ -11,6 +11,25 @@
     delete window.__COOKSTER_IMPORTED_CALIBRATION__;
   }catch(_){}
   const points=s=>s.split(';').map(p=>p.split(',').map(Number));
+  // Rough starting profiles (a guess from the picture) for the vessels that have not been calibrated yet, so that the food stays inside the opening.
+  // They are made from the ellipse of the opening (centre, radii, percent of the picture) and the top of the heap.
+  // Replace any of them by calibrating the vessel in the tool "Maska posude" and putting the exported profile into PROFILES.
+  const ellipse=(cx,cy,rx,ry,n,from=0,to=Math.PI*2)=>{const o=[];for(let i=0;i<=n;i++){const a=from+(to-from)*i/n;o.push([+(cx+rx*Math.cos(a)).toFixed(2),+(cy+ry*Math.sin(a)).toFixed(2)])}return o};
+  function guessProfile(cx,cy,rx,ry,top,wallBottom=100){
+    // food: the upper half of the opening reaches up to the top of the heap, the lower half is the opening itself
+    const upper=[[cx-rx*.92,cy],[cx-rx*.8,top+(cy-top)*.45],[cx-rx*.5,top+(cy-top)*.12],[cx,top],[cx+rx*.5,top+(cy-top)*.12],[cx+rx*.8,top+(cy-top)*.45],[cx+rx*.92,cy]];
+    const lower=ellipse(cx,cy,rx*.92,ry*.92,10,0,Math.PI).map(p=>p);
+    // the front wall hides what is below the front rim
+    const rim=ellipse(cx,cy,rx,ry,10,Math.PI,0);          // from the right side ... see below
+    const front=ellipse(cx,cy,rx,ry,10,0,Math.PI);          // right -> bottom -> left (the front rim line)
+    const mask=front.concat([[Math.max(0,cx-rx*1.02),Math.min(wallBottom,cy+ry+(wallBottom-cy-ry)*.5)],[Math.max(0,cx-rx*.7),wallBottom],[Math.min(100,cx+rx*.7),wallBottom],[Math.min(100,cx+rx*1.02),Math.min(wallBottom,cy+ry+(wallBottom-cy-ry)*.5)]]);
+    return {
+      mask:mask.map(p=>[+p[0].toFixed(2),+p[1].toFixed(2)]),
+      foodVisible:upper.concat(lower.slice().reverse().map(p=>[p[0],p[1]])).map(p=>[+p[0].toFixed(2),+p[1].toFixed(2)]),
+      bottom:ellipse(cx,cy+ry*.15,rx*.6,ry*.5,12),
+      depth:{bottom:[cx,+(cy+ry*.2).toFixed(2)],foodTop:[cx,+(top+(cy-top)*.2).toFixed(2)]}
+    };
+  }
   const PROFILES={
     serpa_velika:{
       mask:[
@@ -78,6 +97,17 @@
       foodVisible:points('15.395,56.928;12.763,46.505;15.395,39.818;21.447,34.115;28.684,30.378;38.421,26.642;49.342,25.462;59.079,25.265;69.342,27.625;76.184,31.165;83.026,35.098;87.763,40.801;89.868,47.685;87.368,54.174;81.579,58.304;72.368,63.614;59.079,66.171;44.605,66.564;35.789,65.778;25.263,62.041;18.553,59.091'),
       bottom:points('22.5,60.664;25.789,53.388;31.711,49.455;38.026,46.111;45.789,44.931;53.684,44.341;61.053,45.718;68.553,48.078;74.211,51.618;77.237,54.371;79.605,58.894;69.605,64.204;55.658,66.368;40.658,66.171;27.632,62.828'),
       depth:{bottom:points('51.842,62.631')[0],foodTop:points('51.316,15.235')[0]}
+    },
+    kal_02_cinija_mala:guessProfile(50.2,20.4,42.4,12.1,0,100),
+    kal_02_cinija_velika:guessProfile(50.3,19.8,43.3,15.6,0,100),
+    kal_02_tanjir_ravni:guessProfile(48.6,42.8,29.2,22.8,18,100),
+    kal_02_duboki_tanjir:guessProfile(53,52,29,24,22,100),
+    kal_01_okrugli_pleh:guessProfile(49.3,42.8,46,38,8,100),
+    kal_01_pravougaoni_pleh:{
+      mask:[[19.4,76],[95.8,33.8],[97,46],[96,70],[70,96],[19,96],[16,80]],
+      foodVisible:[[12.5,35],[40,12],[91.7,8],[95.8,33.8],[19.4,76]],
+      bottom:[[22,38],[44,22],[86,16],[90,32],[26,64]],
+      depth:{bottom:[54,38],foodTop:[54,14]}
     },
     posuda_za_kupus:{
       // Miloš's export (vessel-image-local-percent): the bowl for the sour cabbage

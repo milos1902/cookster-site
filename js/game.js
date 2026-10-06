@@ -8071,13 +8071,13 @@ function vesselSubtypeFor(elOrDef){
 }
 function isContainerDef(d){
  const def=kitchenDefForId(d?.id)||d;
- return !!def&&(def.type==='cookware'||def.type==='container'||['pan','pot','bowl'].includes(def.subtype));
+ return !!def&&(def.type==='cookware'||def.type==='container'||def.vessel===true||['pan','pot','bowl'].includes(def.subtype));
 }
 function isContainerItem(el){
  if(!el)return false;
  if(el.dataset.container==='1')return true;
  const def=kitchenDefForId(el.dataset.itemId||'');
- return !!def&&(def.type==='cookware'||def.type==='container'||['pan','pot','bowl'].includes(def.subtype));
+ return !!def&&(def.type==='cookware'||def.type==='container'||def.vessel===true||['pan','pot','bowl'].includes(def.subtype));
 }
 function cookingDefFor(elOrDef){
  const id=elOrDef?.dataset?.itemId||elOrDef?.id||'';
@@ -8152,25 +8152,27 @@ function ingredientVisualMeta(item){
       };
     }
 
+    // a sour cabbage is a different ingredient from a fresh one (its own key and its own pale picture), so the two do not blend into one pile
+    const sourCabbage=!isFruit&&key==='kupus'&&item.dataset.fermentPhase==='3';
     if(cutState==='diced'){
       const roastedChopped=key==='paprika'&&item.dataset.choppedRoastedPepper==='1';
       const roastedUnpeeledEggplant=key==='patlidzan'&&item.dataset.choppedRoastedUnpeeledEggplant==='1';
       const roastedKey=roastedChopped
         ?roastedChoppedPepperKey(item.dataset.peeled==='1')
-        :roastedUnpeeledEggplant?ROASTED_UNPEELED_EGGPLANT_KEY:`${key}_diced`;
+        :roastedUnpeeledEggplant?ROASTED_UNPEELED_EGGPLANT_KEY:(sourCabbage?'kupus_diced_kiseli':`${key}_diced`);
       const visualLabel=roastedChopped
         ?(item.dataset.peeled==='1'
           ?'Seckana pečena oljuštena paprika'
           :'Seckana pečena neljuštena paprika')
         :roastedUnpeeledEggplant
           ?'Seckan pečen neoljušten patlidžan'
-          :(def.dicedLabel||item.dataset.label||key);
+          :(sourCabbage?'Sitno seckan kiseli kupus':(def.dicedLabel||item.dataset.label||key));
       const bodySrc=item.querySelector('.body')?.getAttribute('src')||'';
       const visualSrc=roastedChopped
         ?roastedChoppedPepperSrc(roastedKey)
         :roastedUnpeeledEggplant
           ?(def.roastedUnpeeledDicedSrc||def.dicedSrc||'')
-          :(item.dataset.pieceAtlas&&CooksterPiles.is(item.dataset.pieceAtlas)?item.dataset.pieceAtlas:CooksterPiles.is(bodySrc)?bodySrc:(def.dicedSrc||def.slicedSrc||bodySrc||def.src||''));
+          :(sourCabbage&&def.dicedSrcSour?def.dicedSrcSour:item.dataset.pieceAtlas&&CooksterPiles.is(item.dataset.pieceAtlas)?item.dataset.pieceAtlas:CooksterPiles.is(bodySrc)?bodySrc:(def.dicedSrc||def.slicedSrc||bodySrc||def.src||''));
       return {
         key:roastedKey,
         baseKey:key,
@@ -8184,13 +8186,13 @@ function ingredientVisualMeta(item){
 
     if(cutState==='sliced'){
       return {
-        key,
+        key:sourCabbage?'kupus_kiseli':key,
         baseKey:key,
         type:isFruit?'fruit':'vegetable',
         form:'sliced',
         cutState:'sliced',
-        label:def.slicedLabel||def.label||item.dataset.label||key,
-        src:def.slicedSrc||item.querySelector('.body')?.getAttribute('src')||def.src||''
+        label:sourCabbage?'Isečen kiseli kupus':(def.slicedLabel||def.label||item.dataset.label||key),
+        src:(sourCabbage&&def.slicedSrcSour)||def.slicedSrc||item.querySelector('.body')?.getAttribute('src')||def.src||''
       };
     }
 
