@@ -235,6 +235,7 @@ function normCal(found){
   cal.waiterFloor=okPolys(found.waiterFloor)?found.waiterFloor:cal.floor.map(clonePoly);
   cal.waiterRoute=okPolys(found.waiterRoute)?found.waiterRoute:[];
   cal.waiterSpots=okWaiterSpots(found.waiterSpots)?found.waiterSpots:defaultWaiterSpots();
+  cal.serve=(found.serve&&typeof found.serve==='object')?{seat:found.serve.seat||{},table:found.serve.table||{}}:{seat:{},table:{}};
   return cal;
 }
 function fileJson(){
@@ -563,7 +564,8 @@ function stepWaiter(dt){
   }else if(w.mode==='give'){
     w.t+=dt;
     if(w.t>1.1){
-      dishes.push({table:w.table,kind:w.carry.kind||'plain',t:0});
+      var sv=serveSpot(w.table,'jelo');
+      dishes.push({table:w.table,kind:w.carry.kind||'plain',t:0,x:sv?sv.x:null,y:sv?sv.y:null});
       var ev=w.carry.ev||null,rep=ev&&window.CooksterQuality?window.CooksterQuality.addReputation(ev.score):null;
       reactions.push({table:w.table,t:0,ev:ev,rep:rep,delta:ev?ev.score:0});
       w.carry=null;w.mode='back';waiterGo(home);
@@ -589,13 +591,24 @@ function drawBubble(ctx,x,y,l1,l2){
   if(l2){ctx.font='600 13px system-ui,sans-serif';ctx.fillText(l2,x,by+40)}
   ctx.restore();
 }
+// where a dish / drink goes (marked in the tool "Kalibracija kafane", layer "Posluženje"): the spot of the guest who sits there, or the table's common spot
+function serveSpot(table,kind){
+  var sv=(CAL&&CAL.serve)||{seat:{},table:{}};
+  if(kind==='sto')return sv.table[table]||null;
+  var best=null;
+  guests.forEach(function(g){if(g.seat.table===table&&g.mode==='seated'&&(!best||g.seat.id<best.seat.id))best=g});
+  var order=best?[best.seat.id]:[];SEATS.forEach(function(st){if(st.table===table&&order.indexOf(st.id)<0)order.push(st.id)});
+  for(var i=0;i<order.length;i++){var d=sv.seat[order[i]];if(d&&d[kind])return d[kind]}
+  return sv.table[table]||null;
+}
 function drawDishes(ctx,dt){
   for(var i=dishes.length-1;i>=0;i--){
     var d=dishes[i],tb=TABLES[d.table];d.t+=dt;
     if(!tb||d.t>DISH_SECS){dishes.splice(i,1);continue}
     var im=dishImgs[d.kind]||dishImgs.plain;if(!im||!im.naturalWidth)continue;
-    var sc=scaleAt(tb.y)*.2,w=im.naturalWidth*sc,h=im.naturalHeight*sc,a=Math.min(1,d.t/.3)*Math.min(1,(DISH_SECS-d.t)/1.5);
-    ctx.save();ctx.globalAlpha=a;ctx.drawImage(im,tb.x-w/2,tb.y+8-h,w,h);ctx.restore();
+    var dx=d.x!=null?d.x:tb.x,dy=d.y!=null?d.y:tb.y+8;
+    var sc=scaleAt(dy)*.2,w=im.naturalWidth*sc,h=im.naturalHeight*sc,a=Math.min(1,d.t/.3)*Math.min(1,(DISH_SECS-d.t)/1.5);
+    ctx.save();ctx.globalAlpha=a;ctx.drawImage(im,dx-w/2,dy-h,w,h);ctx.restore();
   }
 }
 // the guest tells what he thinks of the dish: too little / too much / something that should not be there (see js/quality.js)
@@ -827,7 +840,7 @@ window.addEventListener('keydown',onKey,true);window.addEventListener('keyup',on
 window.CooksterTavern={
   open:open,close:close,spawn:spawn,
   deliver:function(table,kind,ev){deliveries.push({table:table,kind:kind||'plain',ev:ev||null})},
-  reactions:function(){return reactions.slice()},
+  reactions:function(){return reactions.slice()},serveSpot:serveSpot,
   get isOpen(){return state==='tavern'},get busy(){return busy},
   debug:function(){return{waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},

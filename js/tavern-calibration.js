@@ -26,17 +26,19 @@ var LAYERS=[
   {id:'waiterFloor',label:'Konobar: gde sme da hoda',color:'#00d1c1',help:'Obeleži površinu poda po kojoj konobar sme da ide (stolovi iz „Zabrana“ se i dalje zaobilaze). Može više oblika. Na početku je kopija poda za goste.'},
   {id:'waiterRoute',label:'Konobar: putanja kojom ide',color:'#ff9f1c',open:true,help:'Nacrtaj OTVORENE linije kojima konobar ide (klik dodaje tačku, linija se ne zatvara). Linije koje se dodiruju (tačke bliže od 10 px) su spojene. Dugme „Napravi putanju automatski“ crta put od početnog mesta do svakog stola, pa ga možeš menjati. Ako nema putanje, konobar sam traži put po podu.'},
   {id:'waiterSpots',label:'Konobar: mesta kod stolova',color:'#e0aaff',help:'Za svaki sto: tačka je mesto gde konobar stoji dok prima narudžbinu, a strelica pokazuje kuda gleda. Prevuci tačku ili vrh strelice. „Početno mesto“ je gde konobar čeka (šank). Zelena tačka znači da je mesto na podu konobara, crvena da nije.'},
+  {id:'serve',label:'Posluženje: hrana i piće po gostu',color:'#ffb86b',help:'Izaberi sto i gosta (stolicu), pa izaberi šta crtaš: „Jelo gosta“ (tanjir/posuda ispred njega), „Piće gosta“, ili „Zajedničko jelo stola“ (oval, pečenje... za ceo sto). Klik na sliku postavlja tačku (tačka je donja sredina jela). Prevuci tačku da je pomeriš, desni klik je briše. Tačke važe i kad dođe jedan, tri ili četiri gosta: koristi se tačka gosta koji sedi.'},
   {id:'surfaces',label:'Sunđer: površine i kako leži',color:'#7fe3ff',help:'Sunđer čisti sve što je u nekoj površini (pod, zidovi, šank...), osim stolova. Izaberi površinu, nacrtaj joj OBLIK, pa u TAČKAMA SUNĐERA podesi kako sunđer tu stoji. Kasnija površina u listi je iznad ranije (pod je prvi).'}
 ];
 function seatLayer(l){return l==='chairMask'||l==='chairWalk'}
-var spSel=0,surfSel=0,spMode='shape',cal=null,layer='floor',active={},seatSel=0,vis={floor:true,blocked:true,tableMask:true,chairMask:true,chairWalk:true,cleanExclude:true,surfaces:true,seats:true,waiterFloor:true,waiterRoute:true,waiterSpots:true};
+var spSel=0,surfSel=0,spMode='shape',cal=null,layer='floor',active={},seatSel=0,vis={floor:true,blocked:true,tableMask:true,chairMask:true,chairWalk:true,cleanExclude:true,surfaces:true,seats:true,waiterFloor:true,waiterRoute:true,waiterSpots:true,serve:true};
+var serveKind='jelo';
 var showPath=false;
 var view={x:0,y:0,w:W,h:H},ui={},svg,gMain,drag=null,pan=null;
 
 function clone(o){return JSON.parse(JSON.stringify(o))}
 function polys(l,seat){
   if(seatLayer(l)){var k=seat===undefined?seatSel:seat;if(!cal[l])cal[l]={};if(!cal[l][k])cal[l][k]=[];return cal[l][k]}
-  if(l==='seats'||l==='waiterSpots')return [];
+  if(l==='seats'||l==='waiterSpots'||l==='serve')return [];
   if(l==='surfaces'){var sf=cal.surfaces&&cal.surfaces[surfSel];return(spMode==='shape'&&sf)?sf.polys:[]}
   if(!cal[l])cal[l]=[];
   return cal[l];
@@ -70,7 +72,7 @@ function build(){
   '#tavernCal select{padding:5px;background:#2c1b0c;color:#f3e3c2;border:1px solid #7a5428;border-radius:6px;font:inherit}'+
   '#tavernCal .tc-chairs button{min-width:34px}'+
   '#tavernCal label.tc-sl{display:block;margin:7px 0 2px;color:#d9c69c}#tavernCal label.tc-sl b{float:right;color:#f3e3c2}#tavernCal label.tc-sl input{width:100%}'+
-  '#tavernCal .tc-chairs button.on{background:#e8a53a;color:#201409}'+
+  '#tavernCal .tc-chairs button.on,#tavernCal button.tc-b.on{background:#e8a53a;color:#201409}'+
   '#tavernCal textarea{width:100%;height:110px;background:#140d08;color:#f3e3c2;border:1px solid #7a5428;border-radius:6px;font:11px monospace}'+
   '#tavernCal .tc-stage{flex:1;position:relative;overflow:hidden;background:#000}'+
   '#tavernCal svg{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair;user-select:none}'+
@@ -86,6 +88,7 @@ function build(){
     '<div id="tcLayers"></div><div class="tc-help" id="tcHelp"></div>'+
     '<div id="tcChairBox" style="display:none"><div class="tc-row"><label>Sto <select id="tcTable"></select></label></div>'+
       '<div class="tc-row tc-chairs" id="tcChairs"></div></div>'+
+    '<div id="tcServeBox" style="display:none"><div class="tc-row"><button class="tc-b" data-k="jelo">Jelo gosta</button><button class="tc-b" data-k="pice">Piće gosta</button><button class="tc-b" data-k="sto">Zajedničko jelo stola</button></div></div>'+
     '<div id="tcSurfBox" style="display:none">'+
       '<div class="tc-row"><select id="tcSurf" style="width:100%"></select></div>'+
       '<div class="tc-row"><button class="tc-b" data-s="new">+ Površina</button><button class="tc-b" data-s="up">↑ ispod</button><button class="tc-b" data-s="down">↓ iznad</button><button class="tc-b" data-s="del">Obriši</button></div>'+
@@ -147,6 +150,7 @@ function build(){
   ui.root.querySelector('#tcSurfImg').addEventListener('change',function(e){var f=curSurf();if(!f)return;f.img=e.target.value;save();draw()});
   ui.root.querySelector('#tcModeShape').addEventListener('click',function(){spMode='shape';refreshUi();draw()});
   ui.root.querySelector('#tcModePts').addEventListener('click',function(){spMode='points';refreshUi();draw()});
+  ui.root.querySelectorAll('#tcServeBox [data-k]').forEach(function(b){b.addEventListener('click',function(){serveKind=b.dataset.k;refreshUi();draw()})});
   ui.root.querySelectorAll('[data-s]').forEach(function(b){b.addEventListener('click',function(){surfAct(b.dataset.s)})});
   ui.root.querySelectorAll('[data-a]').forEach(function(b){b.addEventListener('click',function(){act(b.dataset.a)})});
   ['wheel'].forEach(function(n){svg.addEventListener(n,onWheel,{passive:false})});
@@ -193,7 +197,7 @@ function draw(){
   while(gMain.firstChild)gMain.removeChild(gMain.firstChild);
   var s=pxScale(),R=3.1*s,ai=actIdx();
   LAYERS.forEach(function(L){
-    if(!vis[L.id]||L.id==='seats'||L.id==='waiterSpots')return;
+    if(!vis[L.id]||L.id==='seats'||L.id==='waiterSpots'||L.id==='serve')return;
     var lists=[];
     if(seatLayer(L.id)){
       if(layer===L.id)lists=[{a:polys(L.id,seatSel),seat:seatSel,on:true}];
@@ -220,6 +224,7 @@ function draw(){
   });
   if(pointsMode()&&vis.surfaces)drawSponge(s,R);
   if(layer==='seats'&&vis.seats)drawSeats(s,R);
+  if(layer==='serve'&&vis.serve)drawServe(s,R);
   if(showPath&&(layer==='waiterRoute'||layer==='waiterSpots'))drawTrial(s,R);
   if((layer==='waiterSpots'||layer==='waiterRoute')&&vis.waiterSpots)drawSpots(s,R);
   if(seatLayer(layer)&&layer!=='seats'){                           // numbers of the chairs, to click them
@@ -231,7 +236,30 @@ function draw(){
       c.dataset.seat=st.id;
     });
   }
-  ui.info.textContent=LAYERS.filter(function(L){return L.id===layer})[0].label+(layer==='surfaces'?' · '+((curSurf()||{}).name||'')+(spMode==='points'?' · tačaka: '+curPts().length:' · oblika: '+curPolys().length):' · oblika: '+curPolys().length)+(seatLayer(layer)?' · sto '+(Math.floor(seatSel/4)+1)+', stolica '+((seatSel%4)+1):'')+' · zumiranje '+(W/view.w).toFixed(1)+'x';
+  ui.info.textContent=LAYERS.filter(function(L){return L.id===layer})[0].label+(layer==='surfaces'?' · '+((curSurf()||{}).name||'')+(spMode==='points'?' · tačaka: '+curPts().length:' · oblika: '+curPolys().length):' · oblika: '+curPolys().length)+((seatLayer(layer)||layer==='serve')?' · sto '+(Math.floor(seatSel/4)+1)+', stolica '+((seatSel%4)+1):'')+' · zumiranje '+(W/view.w).toFixed(1)+'x';
+}
+// serving: for every guest the place of his dish and of his drink, and for every table the place of the dish for everyone
+function serveData(){if(!cal.serve)cal.serve={seat:{},table:{}};if(!cal.serve.seat)cal.serve.seat={};if(!cal.serve.table)cal.serve.table={};return cal.serve}
+var SERVE_COL={jelo:'#ff9f43',pice:'#4dd2ff',sto:'#d68bff'},SERVE_TXT={jelo:'J',pice:'P',sto:'S'};
+function drawServe(s,R){
+  var D=serveData();
+  function pt(x,y,kind,label,on,key){
+    var col=SERVE_COL[kind],g=el('g',{style:'cursor:move'},gMain);
+    if(kind==='sto')el('rect',{x:x-R*1.9,y:y-R*1.9,width:R*3.8,height:R*3.8,transform:'rotate(45 '+x+' '+y+')',fill:on?'#fff':col,stroke:'#201409','stroke-width':1.5,'vector-effect':'non-scaling-stroke'},g).dataset.sv=key;
+    else el('circle',{cx:x,cy:y,r:R*(on?1.9:1.5),fill:on?'#fff':col,stroke:'#201409','stroke-width':1.5,'vector-effect':'non-scaling-stroke'},g).dataset.sv=key;
+    var t=el('text',{x:x+R*2.4,y:y+R*0.9,'font-size':R*3.2,fill:'#fff','font-family':'system-ui,sans-serif','pointer-events':'none','paint-order':'stroke',stroke:'#201409','stroke-width':3},g);
+    t.textContent=SERVE_TXT[kind]+' '+label;
+  }
+  T.seats.forEach(function(st){
+    var on=st.id===seatSel,g=el('g',{style:'cursor:pointer'},gMain);
+    var c=el('circle',{cx:st.x,cy:st.y,r:(on?9:7)*s*1.6,fill:on?'#ffe066':'rgba(20,10,4,.7)',stroke:'#ffe066','stroke-width':1,'vector-effect':'non-scaling-stroke'},g);
+    var t=el('text',{x:st.x,y:st.y+3.4*s*1.6,'text-anchor':'middle','font-size':8.5*s*1.6,fill:on?'#201409':'#ffe9a0','font-family':'system-ui,sans-serif','pointer-events':'none'},g);
+    t.textContent=(st.table+1)+'.'+((st.id%4)+1);c.dataset.seat=st.id;
+    var d=D.seat[st.id]||{},lab=(st.table+1)+'.'+((st.id%4)+1);
+    if(d.jelo){pt(d.jelo.x,d.jelo.y,'jelo',lab,on&&serveKind==='jelo','seat|'+st.id+'|jelo');el('line',{x1:st.x,y1:st.y,x2:d.jelo.x,y2:d.jelo.y,stroke:SERVE_COL.jelo,'stroke-width':1,'stroke-dasharray':'3 3','vector-effect':'non-scaling-stroke','pointer-events':'none'},gMain)}
+    if(d.pice){pt(d.pice.x,d.pice.y,'pice',lab,on&&serveKind==='pice','seat|'+st.id+'|pice');el('line',{x1:st.x,y1:st.y,x2:d.pice.x,y2:d.pice.y,stroke:SERVE_COL.pice,'stroke-width':1,'stroke-dasharray':'3 3','vector-effect':'non-scaling-stroke','pointer-events':'none'},gMain)}
+  });
+  T.tables.forEach(function(tb,ti){var q=D.table[ti];if(q)pt(q.x,q.y,'sto','Sto '+(ti+1),Math.floor(seatSel/4)===ti&&serveKind==='sto','table|'+ti)});
 }
 // the seats: where the guest sits (with his picture), where he stands before he sits, and where he looks
 function drawSeats(s,R){
@@ -334,7 +362,9 @@ function surfAct(a){
 function refreshUi(){
   ui.root.querySelectorAll('.tc-layer').forEach(function(b){b.classList.toggle('on',b.dataset.layer===layer)});
   ui.root.querySelector('#tcHelp').textContent=LAYERS.filter(function(L){return L.id===layer})[0].help;
-  ui.root.querySelector('#tcChairBox').style.display=(seatLayer(layer)||layer==='seats')?'block':'none';
+  ui.root.querySelector('#tcChairBox').style.display=(seatLayer(layer)||layer==='seats'||layer==='serve')?'block':'none';
+  ui.root.querySelector('#tcServeBox').style.display=layer==='serve'?'block':'none';
+  ui.root.querySelectorAll('#tcServeBox [data-k]').forEach(function(b){b.classList.toggle('on',b.dataset.k===serveKind)});
   ui.root.querySelector('#tcSurfBox').style.display=layer==='surfaces'?'block':'none';
   ui.root.querySelector('#tcWaiterBox').style.display=(layer==='waiterRoute'||layer==='waiterSpots')?'block':'none';
   if(layer==='surfaces')refreshSurf();
@@ -368,6 +398,7 @@ function nearestEdgeAll(polys,p,tol,open){
 function onDown(e){
   var t=e.target;
   if(e.button===2){                                  // right click on a point deletes it
+    if(t&&t.dataset&&t.dataset.sv!==undefined){delServe(t.dataset.sv);return}
     if(t&&t.dataset&&t.dataset.p!==undefined)delPoint(+t.dataset.p,+t.dataset.i);
     if(t&&t.dataset&&t.dataset.sp!==undefined)delSponge(+t.dataset.sp);
     return;
@@ -376,6 +407,7 @@ function onDown(e){
   if(e.button!==0)return;
   if(t&&t.dataset&&t.dataset.seat!==undefined){seatSel=+t.dataset.seat;refreshUi();draw();return}
   if(t&&t.dataset&&t.dataset.seatpoly!==undefined){seatSel=+t.dataset.seatpoly;refreshUi();draw();return}
+  if(t&&t.dataset&&t.dataset.sv!==undefined){drag={sv:t.dataset.sv};svg.setPointerCapture(e.pointerId);e.preventDefault();return}
   if(t&&t.dataset&&t.dataset.ws!==undefined){drag={ws:+t.dataset.ws,part:t.dataset.part};svg.setPointerCapture(e.pointerId);e.preventDefault();return}
   if(t&&t.dataset&&t.dataset.st!==undefined){
     seatSel=+t.dataset.st;drag={st:seatSel,part:t.dataset.part};svg.setPointerCapture(e.pointerId);refreshUi();draw();e.preventDefault();return;
@@ -390,6 +422,7 @@ function onDown(e){
   svg.setPointerCapture(e.pointerId);
 }
 function onMove(e){
+  if(drag&&drag.sv!==undefined){var sq=serveRef(drag.sv),sp=toImg(e);if(sq){sq.x=Math.round(sp.x);sq.y=Math.round(sp.y);draw()}return}
   if(drag&&drag.ws!==undefined){
     var wp=toImg(e),wq=(cal.waiterSpots||[])[drag.ws];
     if(wq){if(drag.part==='p'){wq.x=Math.round(wp.x);wq.y=Math.round(wp.y)}else{wq.dir=Math.round(Math.atan2((wp.y-wq.y)/.6,wp.x-wq.x)*180/Math.PI)}draw()}
@@ -431,6 +464,7 @@ function onUp(e){
     if(wasClick){
       var p=toImg(e);
       if(layer==='seats'||layer==='waiterSpots')return;
+      if(layer==='serve'){placeServe(Math.round(p.x),Math.round(p.y));return}
       if(pointsMode()){addSponge(Math.round(p.x),Math.round(p.y));return}
       var a=curPolys(),i=actIdx();
       p.x=Math.round(p.x*10)/10;p.y=Math.round(p.y*10)/10;
@@ -441,6 +475,14 @@ function onUp(e){
       a[i].push([p.x,p.y]);save();draw();
     }
   }
+}
+function serveRef(key){var a=key.split('|'),D=serveData();return a[0]==='seat'?(D.seat[a[1]]||{})[a[2]]:D.table[a[1]]}
+function delServe(key){var a=key.split('|'),D=serveData();if(a[0]==='seat'){if(D.seat[a[1]])delete D.seat[a[1]][a[2]]}else delete D.table[a[1]];save();draw()}
+function placeServe(x,y){
+  var D=serveData();
+  if(serveKind==='sto')D.table[Math.floor(seatSel/4)]={x:x,y:y};
+  else{if(!D.seat[seatSel])D.seat[seatSel]={};D.seat[seatSel][serveKind]={x:x,y:y}}
+  save();draw();
 }
 function addSponge(x,y){
   var f=curSurf();if(!f)return;
@@ -500,6 +542,7 @@ function act(a){
   else if(a==='reset'){
     if(!confirm('Vratiti ovaj sloj na početno stanje?'))return;
     var d=T.defaults();
+    if(layer==='serve'){cal.serve={seat:{},table:{}};save();draw();return}
     if(seatLayer(layer)){if(!cal[layer])cal[layer]={};cal[layer][seatSel]=((d[layer]||{})[seatSel]||[]).slice()}else cal[layer]=d[layer];
     save();draw();
   }
@@ -511,7 +554,7 @@ function act(a){
   else if(a==='doimport'){
     try{
       var o=JSON.parse(ui.root.querySelector('#tcImportText').value);
-      cal={version:1,floor:o.floor||[],blocked:o.blocked||[],tableMask:o.tableMask||[],chairMask:o.chairMask||{},chairWalk:o.chairWalk||{},seats:(o.seats&&o.seats.length)?o.seats:T.defaults().seats,cleanExclude:o.cleanExclude||[],waiterFloor:o.waiterFloor||JSON.parse(JSON.stringify(o.floor||[])),waiterRoute:o.waiterRoute||[],waiterSpots:(o.waiterSpots&&o.waiterSpots.length)?o.waiterSpots:T.defaults().waiterSpots,surfaces:(o.surfaces&&o.surfaces.length)?o.surfaces:T.defaults().surfaces};
+      cal={version:1,floor:o.floor||[],blocked:o.blocked||[],tableMask:o.tableMask||[],chairMask:o.chairMask||{},chairWalk:o.chairWalk||{},seats:(o.seats&&o.seats.length)?o.seats:T.defaults().seats,cleanExclude:o.cleanExclude||[],serve:o.serve||{seat:{},table:{}},waiterFloor:o.waiterFloor||JSON.parse(JSON.stringify(o.floor||[])),waiterRoute:o.waiterRoute||[],waiterSpots:(o.waiterSpots&&o.waiterSpots.length)?o.waiterSpots:T.defaults().waiterSpots,surfaces:(o.surfaces&&o.surfaces.length)?o.surfaces:T.defaults().surfaces};
       save();draw();ui.root.querySelector('#tcImportBox').style.display='none';
     }catch(err){alert('JSON nije ispravan.')}
   }
