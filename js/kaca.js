@@ -18,6 +18,8 @@
   // TEST: the cabbage ferments in real seconds instead of game days: phase 2 after SOUR_SECS[1], sour after SOUR_SECS[2].
   // Set to null to go back to days (SOUR_DAYS).
   const SOUR_SECS=[0,10,20];
+  // TEST: a barrel full of sour cabbage is always in the kitchen (it refills itself). Set to false to go back to normal play.
+  const TEST_ALWAYS_SOUR=true;
   // closed-barrel picture (C) -> frame of the empty barrel picture (P): P = 1.08*C - (34,50)
   const toPx=cx=>(1.08*cx-34)/527*100,toPy=cy=>(1.08*cy-50)/560*100;
   const FRONT_POLY=[[0,558],[0,30],[126,30],[126,176],[150,210],[200,222],[250,229],[300,231],[350,229],[400,222],[440,210],[449,190],[449,30],[560,30],[560,558]]
@@ -333,5 +335,13 @@
     }
   };
   // days pass when dishes are served: keep the picture of every barrel up to date
-  setInterval(()=>{for(const el of (window.items||items))if(isKaca(el))refresh(el);},2000);
+  function testRefill(el){
+    if(!TEST_ALWAYS_SOUR||el.dataset.kacaLid==='1'||num(el,'kacaN')>=MAX)return;
+    el.dataset.kacaN=String(MAX);el.dataset.kacaRuined='';el.dataset.kacaPh='3';el.dataset.kacaP='0';
+    el.dataset.kacaDay0=String(day());el.dataset.kacaT0=String(Date.now()-SOUR_SECS[2]*1000-1000);
+  }
+  setInterval(()=>{for(const el of (window.items||items))if(isKaca(el)){testRefill(el);refresh(el);}},2000);
+  if(TEST_ALWAYS_SOUR)setTimeout(()=>{
+    try{if(!(window.items||items).some(isKaca))spawnKitchenEquipment(ID);}catch(_){}
+  },4000);
 })();
