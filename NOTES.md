@@ -62,3 +62,7 @@ Posude koje primaju hranu: `posuda_za_kupus` (Miloševa kalibracija), `kal_02_du
 
 ## Moguće sledeće ideje
 Dalje štelovanje maski i mesta, porudžbine povezane sa kuhinjom, reakcije gostiju, sistem proširenja ili renoviranja kafane, pomerljivi stolovi.
+
+Količine i ugled (`js/quality.js`, `CooksterQuality`): svako jelo (`RECIPES`) ima idealnu količinu svakog dodatka (`lo..hi`), a dodatak koji nije nabrojan NE SME u jelo; svaki dodatak (`INGREDIENTS`) ima rečenice za premalo/previše/ne sme. Jedan zamah miša sa teglom = 1 doza (`SHAKES_PER_DOSE` u `spices.js`); kiseli kupus: paprika tačno 2, ulje 1,4–2,6 mera. Kad konobar spusti jelo, gost kaže šta mu smeta (ili da je odlično) i ugled se menja (`cookster.reputation.v1`, `CooksterQuality.reputation()`). Pravilo za SVE što dodajemo: količina + šta sme/ne sme + reakcija gosta + ugled. Još nema: gost ne jede/ne plaća, ugled se nigde ne prikazuje osim u mehuriću gosta.
+
+Tegle sa začinima (fizika): tegla u ruci se nagne iznad posude; dok je nagnuta, svaki levi klik = jedna mera (doza), a tegla ostaje u ruci. Kad je iznad posude nema (uspravna), klik je spušta. Tegle se pri učitavanju dovode na istu veličinu koju igra koristi za njihovo mesto (`surfaceScaleFor`), inače bi „skočile" pri prvom podizanju. Ceo sistem količina će kasnije ići kroz recepte (`RECIPES` u `js/quality.js`).

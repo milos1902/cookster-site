@@ -10,8 +10,8 @@
   const COLORS={paprika:['#b3200f','#d4301a'],tucana:['#c4290f','#e8a010'],biber:['#2b1d14','#4a3426'],so:['#ffffff','#e8ecf2'],secer:['#fffdf5','#f1ead8'],lovor:['#5e7d3a','#8a9a52']};
   const SPICE_IDS=['paprika','tucana','biber','so','secer','lovor'];
   const TEST_PAPRIKA=new Set(['paprika','tucana']);
-  const SHAKES_PER_DOSE=3;                                 // direction changes of the mouse needed for one dose
-  const MAX_DOSES=6;
+  const SHAKES_PER_DOSE=1;                                 // one swing of the mouse (a change of direction) = one dose
+  const MAX_DOSES=12;
   const spiceOf=el=>{const m=/^zacin_(.+)$/.exec(el?.dataset?.itemId||'');return m&&COLORS[m[1]]?m[1]:null;};
 
   // ---------- picture of the bowl ----------
@@ -63,7 +63,16 @@
     if((sp[kind]||0)>=MAX_DOSES)return;
     sp[kind]=(sp[kind]||0)+1;target.dataset.spices=JSON.stringify(sp);
     try{renderVesselContents(target);}catch(_){applyLook(target);}
+    counter(target,kind,sp[kind]);
     try{CooksterSave.schedule();}catch(_){}
+  }
+  const NAMES={paprika:'mlevena paprika',tucana:'tucana paprika',biber:'biber',so:'so',secer:'šećer',lovor:'lovor'};
+  let tag=null,tagTimer=0;
+  function counter(target,kind,n){
+    if(!tag){tag=document.createElement('div');tag.style.cssText='position:fixed;z-index:20001;pointer-events:none;transform:translate(-50%,-100%);padding:3px 9px;border-radius:8px;background:rgba(40,22,8,.85);color:#fff3d6;font:700 13px system-ui,sans-serif;white-space:nowrap';document.body.appendChild(tag);}
+    const r=target.getBoundingClientRect();
+    tag.textContent=(NAMES[kind]||kind)+' ×'+n;tag.style.left=(r.left+r.width/2)+'px';tag.style.top=(r.top-4)+'px';tag.style.display='block';
+    clearTimeout(tagTimer);tagTimer=setTimeout(()=>{tag.style.display='none';},1400);
   }
   function tick(){
     requestAnimationFrame(tick);
@@ -76,22 +85,25 @@
       document.querySelectorAll('.ghost-item-copy').forEach(g=>{if(g.querySelector('img[src*="calibration_props/zacini/"]'))g.remove();});
       return;
     }
-    const kind=spiceOf(jar),target=vesselUnder(jar);
+    const target=vesselUnder(jar);
     const goal=target?38:0;
     tilt+=(goal-tilt)*.18;
     jar.style.rotate=tilt.toFixed(1)+'deg';
-    const dx=mouse.x-lastX;lastX=mouse.x;
-    if(!target){lastDir=0;travel=0;shakes=0;return;}
-    if(Math.abs(dx)>2.5){
-      const dir=dx>0?1:-1;
-      if(lastDir&&dir!==lastDir){
-        shakes++;emit(jar,kind,target);
-        if(shakes>=SHAKES_PER_DOSE){shakes=0;dose(target,kind);}
-      }
-      lastDir=dir;
-    }
+    document.querySelectorAll('.ghost-item-copy').forEach(g=>{if(g.querySelector('img[src*="calibration_props/zacini/"]'))g.style.rotate=tilt.toFixed(1)+'deg';});
   }
   requestAnimationFrame(tick);
+
+  // While the jar is tilted over a vessel every left click is one measure; the jar is put down only when it is upright (not over a vessel).
+  window.addEventListener('pointerdown',e=>{
+    if(e.button!==0)return;
+    const jar=(typeof holding!=='undefined'&&holding&&spiceOf(holding))?holding:null;
+    if(!jar)return;
+    const target=vesselUnder(jar);
+    if(!target||tilt<12)return;
+    e.preventDefault();e.stopImmediatePropagation();
+    const kind=spiceOf(jar);
+    emit(jar,kind,target);dose(target,kind);
+  },true);
 
   // ---------- jars stand on the back edge of the table ----------
   const SPOTS={paprika:[470,262],tucana:[540,262],biber:[610,262],so:[680,262],secer:[750,262],lovor:[820,262]};
@@ -104,7 +116,13 @@
         const el=makeItem({...def,instanceId:nextItemInstanceId(id),x:SPOTS[k][0]-def.w/2,y:SPOTS[k][1]-def.h,z:++zCounter});
         if(!el)continue;
         el.dataset.surfaceZone='table';
-        setPose(el,SPOTS[k][0],SPOTS[k][1],1);
+        setPose(el,SPOTS[k][0],SPOTS[k][1],surfaceScaleFor(el,'table',SPOTS[k][1]));
+      }
+      // jars saved with another scale are brought to the scale the game itself uses for their place
+      for(const el of (window.items||items)){
+        if(!spiceOf(el)||!+el.dataset.cx)continue;
+        const v=surfaceScaleFor(el,el.dataset.surfaceZone||'table',+el.dataset.by);
+        if(Math.abs((+el.dataset.vis||1)-v)>.01)setPose(el,+el.dataset.cx,+el.dataset.by,v);
       }
       CooksterSave.schedule();
     }catch(_){}

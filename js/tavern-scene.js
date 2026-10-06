@@ -505,7 +505,7 @@ function step(dt){
 // he waits at his home place, walks (along his route) to a table where a guest sits who has not ordered yet, stands at the spot drawn for that table,
 // takes the order, and walks home. The pictures: toward the camera (walkd), away from it (walku), from the side (walks, looking right; flipped for left).
 var waiter=null,WSPEED=92;
-var deliveries=[],dishes=[],DISH_SRC={plain:'assets/calibration_props/posuda_za_kupus/posuda_kupus.webp',paprika:'assets/calibration_props/posuda_za_kupus/posuda_kupus_paprika.webp'},DISH_SECS=25;
+var deliveries=[],reactions=[],dishes=[],DISH_SRC={plain:'assets/calibration_props/posuda_za_kupus/posuda_kupus.webp',paprika:'assets/calibration_props/posuda_za_kupus/posuda_kupus_paprika.webp'},DISH_SECS=25;
 var dishImgs={};['plain','paprika'].forEach(function(k){var im=new Image();im.src=DISH_SRC[k];dishImgs[k]=im});
 function waiterFace(dx,dy){                           // which set of pictures for this direction of walking
   if(Math.abs(dx)>1.2*Math.abs(dy))return 'walks';
@@ -564,6 +564,8 @@ function stepWaiter(dt){
     w.t+=dt;
     if(w.t>1.1){
       dishes.push({table:w.table,kind:w.carry.kind||'plain',t:0});
+      var ev=w.carry.ev||null,rep=ev&&window.CooksterQuality?window.CooksterQuality.addReputation(ev.score):null;
+      reactions.push({table:w.table,t:0,ev:ev,rep:rep,delta:ev?ev.score:0});
       w.carry=null;w.mode='back';waiterGo(home);
     }
   }else if(w.mode==='serve'){
@@ -594,6 +596,19 @@ function drawDishes(ctx,dt){
     var im=dishImgs[d.kind]||dishImgs.plain;if(!im||!im.naturalWidth)continue;
     var sc=scaleAt(tb.y)*.2,w=im.naturalWidth*sc,h=im.naturalHeight*sc,a=Math.min(1,d.t/.3)*Math.min(1,(DISH_SECS-d.t)/1.5);
     ctx.save();ctx.globalAlpha=a;ctx.drawImage(im,tb.x-w/2,tb.y+8-h,w,h);ctx.restore();
+  }
+}
+// the guest tells what he thinks of the dish: too little / too much / something that should not be there (see js/quality.js)
+function drawReactions(ctx,dt){
+  for(var i=reactions.length-1;i>=0;i--){
+    var r=reactions[i];r.t+=dt;
+    if(r.t>7){reactions.splice(i,1);continue}
+    if(r.t<1.4)continue;
+    var g=null;guests.forEach(function(o){if(!g&&o.seat.table===r.table&&(o.mode==='seated'||o.ordered))g=o});
+    if(!g)continue;
+    var sp=seatPos(g),im=imgs[chKey(g,sitPose(g))],hh=im?im.naturalHeight*scaleAt(sp.y)*SIT_K:300;
+    var iss=r.ev?r.ev.issues:[],l1=iss.length?iss[0]:'Odlično! Baš kako treba.',l2=iss.length>1?iss[1]:(r.delta>0?'Ugled kafane +'+r.delta:(r.delta<0?'Ugled kafane '+r.delta:''));
+    drawBubble(ctx,sp.x,sp.y-hh,l1,l2);
   }
 }
 function drawOrderBubble(ctx){
@@ -709,7 +724,7 @@ function draw(){
   });
   list.sort(function(a,b){return a.y-b.y});
   list.forEach(function(o){if(o.g)drawGuest(ctx,o.g);else if(o.w)drawWaiter(ctx);else drawPolyFromPicture(ctx,o.m.poly)});
-  drawDishes(ctx,.016);drawOrderBubble(ctx);
+  drawDishes(ctx,.016);drawReactions(ctx,.016);drawOrderBubble(ctx);
 }
 
 // ---------- the canvas follows the picture ----------
@@ -811,7 +826,8 @@ window.addEventListener('keydown',onKey,true);window.addEventListener('keyup',on
 
 window.CooksterTavern={
   open:open,close:close,spawn:spawn,
-  deliver:function(table,kind){deliveries.push({table:table,kind:kind||'plain'})},
+  deliver:function(table,kind,ev){deliveries.push({table:table,kind:kind||'plain',ev:ev||null})},
+  reactions:function(){return reactions.slice()},
   get isOpen(){return state==='tavern'},get busy(){return busy},
   debug:function(){return{waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},
