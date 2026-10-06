@@ -139,26 +139,45 @@ function frame(t){
 }
 
 // ---------- the table ----------
-// what sticks up above a table (the tops of the bottles, the jug...) is outside its shape, so it is found by comparing the two pictures:
-// inside a band above the table, whatever differs between the dirty and the clean picture is cleaned together with the table
-var RISE=170;
+// what sticks up above a table (the tops of the bottles, the jug...) is outside its shape, so it is found by comparing the two pictures.
+// Only what is joined to the table counts: inside a narrow band above it, the differing pixels that touch the table (flood fill).
+// The floor the sponge cleans (floorMask) is never taken, so floor and walls stay for the sponge.
+var RISE=110,GAP=3;
 function riseMask(poly){
-  if(!cleanImg.complete||!cleanImg.naturalWidth||!dirtyOk)return null;
+  if(!cleanImg.complete||!cleanImg.naturalWidth||!dirtyOk||!floorMask)return null;
   var band=mk('canvas');band.width=W;band.height=H;var b=band.getContext('2d');
   b.fillStyle='#fff';
   for(var dy=0;dy<=RISE;dy+=5){b.save();b.translate(0,-dy);polyPath(b,poly);b.fill();b.restore()}
+  var seed=mk('canvas');seed.width=W;seed.height=H;var sd=seed.getContext('2d');sd.fillStyle='#fff';polyPath(sd,poly);sd.fill();
   var ca=mk('canvas');ca.width=W;ca.height=H;var cc=ca.getContext('2d',{willReadFrequently:true});cc.drawImage(cleanImg,0,0,W,H);
   var da=mk('canvas');da.width=W;da.height=H;var dc=da.getContext('2d',{willReadFrequently:true});dc.drawImage(dirtyImg,0,0,W,H);
-  var A=cc.getImageData(0,0,W,H).data,B=dc.getImageData(0,0,W,H).data,M=b.getImageData(0,0,W,H),m=M.data;
-  for(var i=0;i<m.length;i+=4){
-    if(m[i+3]<128){m[i+3]=0;continue}
-    var d=Math.abs(A[i]-B[i])+Math.abs(A[i+1]-B[i+1])+Math.abs(A[i+2]-B[i+2]);
-    m[i]=m[i+1]=m[i+2]=0;m[i+3]=d>70?255:0;
+  var A=cc.getImageData(0,0,W,H).data,B=dc.getImageData(0,0,W,H).data,M=b.getImageData(0,0,W,H).data;
+  var S=sd.getImageData(0,0,W,H).data,F=floorMask.getContext('2d').getImageData(0,0,W,H).data,N=W*H;
+  // diff = differs between the pictures, inside the band, and not on the floor of the sponge
+  var diff=new Uint8Array(N);
+  for(var p=0;p<N;p++){
+    var i=p*4;if(M[i+3]<128||F[i+3]>128)continue;
+    if(Math.abs(A[i]-B[i])+Math.abs(A[i+1]-B[i+1])+Math.abs(A[i+2]-B[i+2])>70)diff[p]=1;
   }
-  b.putImageData(M,0,0);
-  // grow it a little, so the edges of the bottles are cleaned too
-  var out=mk('canvas');out.width=W;out.height=H;var o=out.getContext('2d');
-  for(var ox=-3;ox<=3;ox+=3)for(var oy=-3;oy<=3;oy+=3)o.drawImage(band,ox,oy);
+  // close small gaps (glass, thin lines) so a bottle is one piece
+  var dd=new Uint8Array(N),x,y,k;
+  for(y=0;y<H;y++)for(x=0;x<W;x++)if(diff[y*W+x]){
+    for(var oy=Math.max(0,y-GAP);oy<=Math.min(H-1,y+GAP);oy++)for(var ox=Math.max(0,x-GAP);ox<=Math.min(W-1,x+GAP);ox++)dd[oy*W+ox]=1;
+  }
+  for(p=0;p<N;p++)if(M[p*4+3]<128||F[p*4+3]>128)dd[p]=0;
+  // flood fill from the table
+  var keep=new Uint8Array(N),stack=[];
+  for(p=0;p<N;p++)if(dd[p]&&S[p*4+3]>128){keep[p]=1;stack.push(p)}
+  while(stack.length){
+    p=stack.pop();x=p%W;y=(p-x)/W;
+    for(var ny=y-1;ny<=y+1;ny++)for(var nx=x-1;nx<=x+1;nx++){
+      if(nx<0||ny<0||nx>=W||ny>=H)continue;
+      k=ny*W+nx;if(dd[k]&&!keep[k]){keep[k]=1;stack.push(k)}
+    }
+  }
+  var out=mk('canvas');out.width=W;out.height=H;var o=out.getContext('2d'),O=o.createImageData(W,H),od=O.data;
+  for(p=0;p<N;p++)if(keep[p]&&(diff[p]||dd[p])){od[p*4+3]=255}
+  o.putImageData(O,0,0);
   return out;
 }
 function cleanZone(i){
