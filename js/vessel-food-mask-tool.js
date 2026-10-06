@@ -3,7 +3,7 @@
   'use strict';
 
   const STORAGE_KEY='cookster.vessel-food-mask-calibration.v1';
-  const VESSELS=[
+  const BASE_VESSELS=[
     {id:'serpa_plava',label:'Plava šerpa',src:'assets/new_props/serpa_plava.png'},
     {id:'serpa_velika',label:'Velika šerpa',src:'assets/new_props/serpa_velika.png'},
     {id:'tiganj_veliki',label:'Veliki liveni tiganj',src:'assets/new_props/tiganj_veliki.png'},
@@ -13,6 +13,21 @@
     {id:'vangla_velika',label:'Velika vangla',src:'assets/new_props/vangla_velika.png'},
     {id:'lavor_emajl_veliki',label:'Veliki emajlirani lavor',src:'assets/new_props/lavor_emajl_veliki.png'}
   ];
+  // Every container that is added to the game later (KITCHEN_EQUIPMENT with vessel:true, or with capacityMl / fillStates) is listed here by itself.
+  let VESSELS=BASE_VESSELS.slice();
+  function syncVessels(){
+    const list=BASE_VESSELS.slice();
+    const pools=[];
+    try{if(window.CooksterCatalog&&Array.isArray(window.CooksterCatalog.KITCHEN_EQUIPMENT))pools.push(window.CooksterCatalog.KITCHEN_EQUIPMENT);}catch(_){}
+    try{if(typeof KITCHEN_EQUIPMENT!=='undefined'&&Array.isArray(KITCHEN_EQUIPMENT))pools.push(KITCHEN_EQUIPMENT);}catch(_){}
+    for(const pool of pools)for(const d of pool){
+      if(!d||!d.id||!d.src||list.some(v=>v.id===d.id))continue;
+      if(d.vessel===true||(+d.capacityMl>0)||d.fillStates)list.push({id:d.id,label:d.label||d.id,src:d.src});
+    }
+    VESSELS=list;
+    if(data&&data.vessels)VESSELS.forEach(v=>{if(!data.vessels[v.id])data.vessels[v.id]=emptyShape();});
+    if(!VESSELS.some(v=>v.id===currentId))currentId=VESSELS[0].id;
+  }
   const MODE_LABELS={
     mask:'Maska koja prekriva hranu',
     foodVisible:'Deo gde se hrana vidi',
@@ -36,6 +51,7 @@
     };
   }
   function load(){
+    syncVessels();
     try{data=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')||{};}catch(_){data={};}
     if(!data.vessels||typeof data.vessels!=='object')data.vessels={};
     VESSELS.forEach(v=>{
@@ -247,7 +263,7 @@
     document.body.appendChild(root);
     stage=root.querySelector('#vesselFoodMaskStage');img=root.querySelector('#vesselFoodMaskImage');svg=root.querySelector('#vesselFoodMaskSvg');select=root.querySelector('#vesselFoodMaskVessel');statusEl=root.querySelector('#vesselFoodMaskStatus');
     VESSELS.forEach(v=>{const o=document.createElement('option');o.value=v.id;o.textContent=v.label;select.appendChild(o);});
-    button.addEventListener('click',()=>{root.classList.add('open');button.classList.add('active');renderVessel();});
+    button.addEventListener('click',()=>{syncVessels();load();select.innerHTML='';VESSELS.forEach(v=>{const o=document.createElement('option');o.value=v.id;o.textContent=v.label;select.appendChild(o);});root.classList.add('open');button.classList.add('active');renderVessel();});
     root.querySelector('#vesselFoodMaskClose').addEventListener('click',()=>{root.classList.remove('open');button.classList.remove('active');});
     select.addEventListener('change',e=>{currentId=e.target.value;renderVessel();});
     root.querySelectorAll('.vfmm-mode').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
