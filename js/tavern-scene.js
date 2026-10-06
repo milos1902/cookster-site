@@ -52,6 +52,20 @@ function say(msg){openBtn.title=msg||'';status.textContent=msg||'';if(msg)openBt
 
 // ---------- pictures ----------
 var imgs={};                                        // 'g01_dole' -> Image
+// the people are painted in a neutral light, the tavern in the warm light of the lamps and the stove: every picture of a guest and of the waiter is
+// tinted once, when it is loaded (a multiply with a warm colour and a little orange on top), so they belong to the room. timgs holds the tinted ones.
+var timgs={},TINT_MUL='rgb(236,204,166)',TINT_GLOW='rgba(255,138,48,.10)';
+function tint(im){
+  try{
+    var c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;
+    var x=c.getContext('2d');x.drawImage(im,0,0);
+    x.globalCompositeOperation='multiply';x.fillStyle=TINT_MUL;x.fillRect(0,0,c.width,c.height);
+    x.globalCompositeOperation='source-atop';x.fillStyle=TINT_GLOW;x.fillRect(0,0,c.width,c.height);
+    x.globalCompositeOperation='destination-in';x.drawImage(im,0,0);
+    return c;
+  }catch(_){return null}
+}
+function store(key,im){imgs[key]=im;if(im)timgs[key]=tint(im)}
 function loadImg(src){return new Promise(function(res){var im=new Image();im.onload=function(){res(im)};im.onerror=function(){res(null)};im.src=src})}
 function preload(){
   if(loaded)return Promise.resolve(true);
@@ -59,16 +73,16 @@ function preload(){
   var jobs=[];
   for(var c=1;c<=CHARS;c++)POSES.forEach(function(p){
     var key='g'+(c<10?'0':'')+c+'_'+p;
-    jobs.push(loadImg(GUESTS+key+'.webp?v='+IMGV).then(function(im){imgs[key]=im}));
+    jobs.push(loadImg(GUESTS+key+'.webp?v='+IMGV).then(function(im){store(key,im)}));
   });
   // walking toward the camera: right leg forward, legs together, left leg forward (then together again)
   // (the same three pictures seen from behind, 'walku', when walking away from the camera)
   for(var c2=1;c2<=CHARS;c2++)for(var f=1;f<=3;f++)['walkd','walku'].forEach(function(w){(function(key){
-    jobs.push(loadImg(GUESTS+key+'.webp?v='+IMGV).then(function(im){imgs[key]=im}));
+    jobs.push(loadImg(GUESTS+key+'.webp?v='+IMGV).then(function(im){store(key,im)}));
   })('g'+(c2<10?'0':'')+c2+'_'+w+f)});
   // the waiter: three pictures of a step toward the camera (walkd), away from it (walku) and from the side (walks, looking right)
   ['walkd','walku','walks','writes'].forEach(function(w){for(var f2=1;f2<=3;f2++)(function(key){
-    jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=4').then(function(im){imgs['w_'+key]=im}));
+    jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=4').then(function(im){store('w_'+key,im)}));
   })(w+f2)});
   var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
   loading=Promise.all([roomJob].concat(jobs)).then(function(r){loaded=!!r[0];loading=null;return loaded});
@@ -579,8 +593,8 @@ function seatPos(g){return{x:g.seat.x,y:g.seat.y}}
 // the chairs on the right side of a table: the guest looks to the left, towards the others
 function sitPose(g){return 'sedi_'+(g.seat.pose||'lice')}
 function drawSprite(ctx,key,x,y,sc,flip,rot,alpha){
-  var im=imgs[key];if(!im)return;
-  var w=im.naturalWidth*sc,h=im.naturalHeight*sc;
+  var im=timgs[key]||imgs[key];if(!im)return;
+  var w=(im.naturalWidth||im.width)*sc,h=(im.naturalHeight||im.height)*sc;
   ctx.save();ctx.globalAlpha=alpha;
   ctx.translate(x,y);if(rot)ctx.rotate(rot);if(flip)ctx.scale(-1,1);
   ctx.drawImage(im,-w/2,-h,w,h);
