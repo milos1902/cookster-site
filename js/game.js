@@ -3584,6 +3584,20 @@ function createPerspectiveLabV2(){
       });
     }
 
+    // Any other object that is in the scene (a new thing that is not in the catalog yet) is listed too, so every new item can be calibrated.
+    // Vegetables and fruit have a new id every time, they are calibrated through their catalog entries instead.
+    if(typeof items!=='undefined'&&Array.isArray(items)){
+      for(const el of items){
+        const id=el?.dataset?.itemId;
+        if(!id||list.some(d=>d?.id===id))continue;
+        if(el.dataset.vegetable==='1'||el.dataset.fruit==='1'||el.dataset.calibrationCopy==='1'||/^(veg|fruit|produce)_/.test(id))continue;
+        const body=el.querySelector?.('img.body,img');
+        list.push({id,label:el.dataset.label||id,src:body?.getAttribute?.('src')||body?.src||'',
+          w:+el.dataset.baseW||el.offsetWidth||120,h:+el.dataset.baseH||el.offsetHeight||100,
+          snapProfile:el.dataset.snapProfile||'flat',shadowProfile:el.dataset.shadowProfile||''});
+      }
+    }
+
     return list.filter(d=>d&&d.id&&d.src&&Number.isFinite(+d.w)&&Number.isFinite(+d.h))
       .slice().sort((a,b)=>String(a.label||a.id).localeCompare(String(b.label||b.id),'sr'));
   }

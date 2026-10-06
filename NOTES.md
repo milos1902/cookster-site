@@ -52,5 +52,12 @@ Repo: `milos1902/cookster-site`. Objavljuje se preko GitHub Pages iz grane `main
 
 **Korisne komande:** `python3 -m http.server 8765` pa Playwright (Chromium je već instaliran, ne instaliraj ga ponovo). Traži funkciju sa `grep -n "ime" js/game.js`, pa čitaj samo taj deo (`Read` sa offset i limit).
 
+## Pravilo za svaki novi predmet i svaku novu posudu (Milošev zahtev)
+Svaki novi predmet mora odmah da može da se kalibriše u tri alata, bez ručnog dodavanja u spiskove:
+1. **Novi predmet:** dodaj ga u `KITCHEN_EQUIPMENT` u `js/data/catalog.js` (`{id,type:'prop',subtype:'calibration_prop',label,src,w,h,snapProfile,shadowProfile,placement,price:0,starter:true}`). Tada je automatski u alatu **предмети** (položaj, veličina, orijentacija po površini) i u alatu **senke** (kontaktna senka). Oba alata dodatno sama listaju svaki predmet koji se nađe u sceni, čak i ako nije u katalogu.
+2. **Nova posuda** (ono u šta ide hrana): dodaj u isti unos `vessel:true` (ili `capacityMl`/`fillStates`). Tada je automatski i u alatu **Maska posude** (maska koja prekriva hranu, deo gde se hrana vidi, dno, vrh hrane); spisak se pravi u `syncVessels()` u `js/vessel-food-mask-tool.js`, ne dodaje se ručno.
+3. Uvek povećaj `?v=` brojeve izmenjenih skripti u `index.html` (`catalog.js`, `game.js`, `vessel-food-mask-tool.js`).
+Posuda za kupus (`posuda_za_kupus`) i duboki tanjir su već tako podešeni.
+
 ## Moguće sledeće ideje
 Dalje štelovanje maski i mesta, porudžbine povezane sa kuhinjom, reakcije gostiju, sistem proširenja ili renoviranja kafane, pomerljivi stolovi.
