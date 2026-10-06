@@ -11,7 +11,7 @@ Repo: `milos1902/cookster-site`. Objavljuje se preko GitHub Pages iz grane `main
 2. Izmena, commit, push.
 3. Svaki put napravi **novi PR**. Miloš ga sam spaja.
 4. Posle toga mu reci da sačeka zelenu kvačicu na https://github.com/milos1902/cookster-site/actions i pritisne Ctrl+F5 na igrici.
-5. Kad menjaš JS, povećaj `?v=` broj u `index.html` (keš). Trenutno: `tavern-scene.js?v=28`, `tavern-clean.js?v=11`, `tavern-calibration.js?v=9`.
+5. Kad menjaš JS, povećaj `?v=` broj u `index.html` (keš). Trenutno: `tavern-scene.js?v=28`, `tavern-clean.js?v=11`, `tavern-calibration.js?v=10`.
 6. Commit poruke završi sa:
    `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` i `Claude-Session: <link sesije>`.
    PR opis završi sa `🤖 Generated with [Claude Code](https://claude.com/claude-code)` i linkom sesije. Ne upisuj ime modela nigde drugde.
