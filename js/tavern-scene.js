@@ -68,7 +68,7 @@ function preload(){
   })('g'+(c2<10?'0':'')+c2+'_'+w+f)});
   // the waiter: three pictures of a step toward the camera (walkd), away from it (walku) and from the side (walks, looking right)
   ['walkd','walku','walks'].forEach(function(w){for(var f2=1;f2<=3;f2++)(function(key){
-    jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=3').then(function(im){imgs['w_'+key]=im}));
+    jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=4').then(function(im){imgs['w_'+key]=im}));
   })(w+f2)});
   var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
   loading=Promise.all([roomJob].concat(jobs)).then(function(r){loaded=!!r[0];loading=null;return loaded});
@@ -557,9 +557,8 @@ function drawWaiter(ctx){
   // walking: only the two pictures with a leg forward (1 and 3), one after the other; the picture with the legs together (2) is only for standing.
   // The next picture fades in over the current one
   var q=w.phase,qi=Math.floor(q),fr=q-qi,SEQ=[1,3];
-  // from behind the two pictures are alike, so they blend over most of the step; from the front and the side they differ more (the lean of the body,
-  // the swing of the arms), a long blend would show two bodies at once, so the change is short
-  var f0=w.set==='walku'?.25:.62,f1=w.set==='walku'?.9:.95;
+  // the two pictures of a step are alike (the same figure), so the next one fades in over the end of the step
+  var f0=.3,f1=.9;
   var fade=Math.max(0,Math.min(1,(fr-f0)/(f1-f0)));fade=fade*fade*(3-2*fade);
   drawSprite(ctx,'w_'+w.set+SEQ[qi%2],w.x,w.y-bob,sc,w.flip,0,1);
   if(fade>0)drawSprite(ctx,'w_'+w.set+SEQ[(qi+1)%2],w.x,w.y-bob,sc,w.flip,0,fade);
