@@ -7,8 +7,8 @@
 'use strict';
 var scene=document.getElementById('scene');
 if(!scene||window.CooksterOrders)return;
-var W=1672,H=941,KEY='cookster.kitchen-orders.v1',WAITER='assets/tavern/waiter/waiter_walks',NOTE_IMG='assets/ui/order_note.webp?v=1';
-var ITEM={name:'Kiseli kupus',extra:'ulje, tucana paprika'};           // the only dish for now
+var W=1672,H=941,KEY='cookster.kitchen-orders.v1',WAITER='assets/tavern/waiter/waiter_walks',NOTE_IMG='assets/ui/order_note.webp?v=2';
+var ITEM={name:'Kiseli kupus',extra:'ulje, tucana paprika',cyr:'Кисели купус',cyrExtra:'уље, туцана паприка'};           // the only dish for now
 var TRIP_MS=3500;                                                      // how long the waiter needs from the tavern to the kitchen
 var FLOOR_Y=705,STOP_X=560,SPEED=250,STAGE=120;                         // where he walks in the kitchen (scene pixels), how fast, the length of a step
 var pending=[],notes=[],anim=null,uid=0,imgs=[];
@@ -30,18 +30,20 @@ function mk(tag,cls){var e=document.createElement(tag);if(cls)e.className=cls;re
 var css=document.createElement('style');
 css.textContent=
 '#kitchenWaiter{position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;pointer-events:none;z-index:46}'+
-'.ko-note{position:absolute;width:150px;height:190px;z-index:44;cursor:pointer;color:#3a2410;font:700 15px/1.2 "Segoe Print","Bradley Hand","Comic Sans MS",cursive;text-align:center;'+
-  'background:url('+NOTE_IMG+') center/100% 100% no-repeat,linear-gradient(160deg,#f6e7c4,#e8cf9b);border-radius:3px;box-shadow:0 5px 9px rgba(40,20,5,.45);transition:transform .15s}'+
-'.ko-note:hover{transform:scale(1.06) rotate(var(--r,0deg))}'+
-'.ko-note .ko-t{position:absolute;left:14px;right:14px;top:34px}'+
-'.ko-note b{display:block;font-size:20px;margin-bottom:8px}'+
-'.ko-note small{display:block;font-size:12.5px;font-weight:600;margin-top:6px;opacity:.85}'+
+'.ko-note{position:absolute;height:var(--h,200px);aspect-ratio:820/1478;z-index:44;cursor:pointer;color:#17275c;font:700 calc(var(--h,200px)*.03)/1 "Segoe Print","Bradley Hand","Comic Sans MS",cursive;'+
+  'background:url('+NOTE_IMG+') center/100% 100% no-repeat,linear-gradient(160deg,#f6e7c4,#e8cf9b);filter:drop-shadow(0 5px 7px rgba(40,20,5,.5));transition:transform .15s}'+
+'.ko-note:hover{transform:scale(1.07) rotate(var(--r,0deg))}'+
+// the handwriting goes into the rows of the table printed on the paper (row 1 and 2: the number of the table, the dish, the amount)
+'.ko-c{position:absolute;white-space:nowrap;transform:translateY(-50%)}'+
+'.ko-c.c1{left:5.1%;width:13.3%;text-align:center;top:39.6%;font-size:.86em}'+
+'.ko-c.c2{left:20%;width:56%;text-align:left;top:39.6%}'+
+'.ko-c.c3{left:77.7%;width:17%;text-align:center;top:39.6%}'+
+'.ko-c.r2{top:44.1%;font-size:.82em;font-weight:600}'+
 '.ko-drop{animation:koDrop .45s cubic-bezier(.3,.7,.3,1) both}'+
 '@keyframes koDrop{from{opacity:0;translate:0 -70px}to{opacity:1;translate:0 0}}'+
 '.ko-modal{position:fixed;inset:0;z-index:2147483000;background:rgba(10,5,2,.62);display:flex;align-items:center;justify-content:center;cursor:pointer}'+
-'.ko-modal .ko-note{position:relative;width:min(78vw,360px);height:min(98vw,456px);font-size:clamp(20px,5vw,30px);cursor:default;transition:none;transform:rotate(-1.5deg);--r:-1.5deg}'+
+'.ko-modal .ko-note{position:relative;--h:min(82vh,760px);--r:-1.5deg;cursor:default;transition:none;transform:rotate(-1.5deg)}'+
 '.ko-modal .ko-note:hover{transform:rotate(-1.5deg)}'+
-'.ko-modal .ko-t{left:11%;right:11%;top:19%}.ko-modal .ko-note b{font-size:1.5em;margin-bottom:.4em}.ko-modal .ko-note small{font-size:.72em;margin-top:.5em}'+
 '.ko-done{position:absolute;left:50%;bottom:-54px;transform:translateX(-50%);padding:9px 18px;border:2px solid #351b0d;border-radius:9px;background:#e8c27a;color:#351b0d;font:700 15px system-ui,sans-serif;cursor:pointer;white-space:nowrap}';
 document.head.appendChild(css);
 var cv=mk('canvas');cv.id='kitchenWaiter';cv.width=W;cv.height=H;scene.appendChild(cv);
@@ -55,7 +57,8 @@ for(var i=1;i<=3;i++){var im=new Image();im.src=WAITER+i+'.webp?v=4';imgs[i]=im}
 
 function noteEl(n,big){
   var d=mk('div','ko-note');d.dataset.id=n.id;
-  d.innerHTML='<div class="ko-t"><b>Sto '+n.table+'</b>'+n.name+'<small>('+n.extra+')</small></div>';
+  d.innerHTML='<span class="ko-c c1">Сто '+n.table+'</span><span class="ko-c c2">'+ITEM.cyr+'</span><span class="ko-c c3">1</span><span class="ko-c c2 r2">'+ITEM.cyrExtra+'</span>';
+  d.style.setProperty('--h',big?'':'200px');
   if(!big){d.style.left=n.x+'px';d.style.top=n.y+'px';d.style.transform='rotate('+n.rot+'deg)';d.style.setProperty('--r',n.rot+'deg')}
   return d;
 }

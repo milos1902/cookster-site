@@ -318,15 +318,19 @@
   async function start(el,def,cb){
     if(active)return;
     const key=el.dataset.vegKey||'paradajz',V=VEGS[key]||VEGS.paradajz;
+    // a sour cabbage is pale and has its own cut face
+    const sour=key==='kupus'&&el.dataset.fermentPhase==='3';
     let [tomImg,sliceImg,boardImg]=await Promise.all([
-      load(def.src),load(def.slicedSrc),load('assets/new_props/daska.png')]);
+      load(sour?'assets/market_veg/kupus_faza_3.webp':def.src),load(def.slicedSrc),load('assets/new_props/daska.png')]);
     // some vegetables have real cross-section pictures: one of them is the texture of the cut faces
-    if(V.sections&&V.sections.length)sliceImg=await load(V.sections[Math.floor(Math.random()*V.sections.length)]);
+    if(sour)sliceImg=await load('assets/market_veg/kupus_presek_kiseli.webp');
+    else if(V.sections&&V.sections.length)sliceImg=await load(V.sections[Math.floor(Math.random()*V.sections.length)]);
+    const flesh=sour?[.456,.225,.41,.605]:V.flesh;        // the part of the picture of the halves that is the cut face
     {
       const k=V.max*K/Math.max(tomImg.width,tomImg.height);
       ART={w:tomImg.width*k,h:tomImg.height*k,offY:V.hull?0:-4*K,
-        fx:V.flesh[0]*sliceImg.width,fy:V.flesh[1]*sliceImg.height,fw:V.flesh[2]*sliceImg.width,fh:V.flesh[3]*sliceImg.height,
-        color:V.color,rim:V.rim};
+        fx:flesh[0]*sliceImg.width,fy:flesh[1]*sliceImg.height,fw:flesh[2]*sliceImg.width,fh:flesh[3]*sliceImg.height,
+        color:sour?'#eadf9c':V.color,rim:sour?'#8a7a34':V.rim};
     }
     const root=document.createElement('div');
     root.id='tomatoCutOverlay';
