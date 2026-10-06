@@ -50,6 +50,7 @@ function paintDirt(){
 }
 dirtyImg.onload=function(){dirtyOk=true;paintDirt();refreshInfo()};
 dirtyImg.src=DIRTY;
+var cleanImg=new Image();cleanImg.src=T.roomSrc;           // the clean picture: the difference to the dirty one is what lies on the tables
 // the dirt and the effects lie exactly over the picture, wherever the scene puts it
 function sync(){
   ['left','top','width','height'].forEach(function(k){dirt.style[k]=cv.style[k];fx.style[k]=cv.style[k]});
@@ -138,14 +139,37 @@ function frame(t){
 }
 
 // ---------- the table ----------
+// what sticks up above a table (the tops of the bottles, the jug...) is outside its shape, so it is found by comparing the two pictures:
+// inside a band above the table, whatever differs between the dirty and the clean picture is cleaned together with the table
+var RISE=170;
+function riseMask(poly){
+  if(!cleanImg.complete||!cleanImg.naturalWidth||!dirtyOk)return null;
+  var band=mk('canvas');band.width=W;band.height=H;var b=band.getContext('2d');
+  b.fillStyle='#fff';
+  for(var dy=0;dy<=RISE;dy+=5){b.save();b.translate(0,-dy);polyPath(b,poly);b.fill();b.restore()}
+  var ca=mk('canvas');ca.width=W;ca.height=H;var cc=ca.getContext('2d',{willReadFrequently:true});cc.drawImage(cleanImg,0,0,W,H);
+  var da=mk('canvas');da.width=W;da.height=H;var dc=da.getContext('2d',{willReadFrequently:true});dc.drawImage(dirtyImg,0,0,W,H);
+  var A=cc.getImageData(0,0,W,H).data,B=dc.getImageData(0,0,W,H).data,M=b.getImageData(0,0,W,H),m=M.data;
+  for(var i=0;i<m.length;i+=4){
+    if(m[i+3]<128){m[i+3]=0;continue}
+    var d=Math.abs(A[i]-B[i])+Math.abs(A[i+1]-B[i+1])+Math.abs(A[i+2]-B[i+2]);
+    m[i]=m[i+1]=m[i+2]=0;m[i+3]=d>70?255:0;
+  }
+  b.putImageData(M,0,0);
+  // grow it a little, so the edges of the bottles are cleaned too
+  var out=mk('canvas');out.width=W;out.height=H;var o=out.getContext('2d');
+  for(var ox=-3;ox<=3;ox+=3)for(var oy=-3;oy<=3;oy+=3)o.drawImage(band,ox,oy);
+  return out;
+}
 function cleanZone(i){
   var poly=zones[i];if(!poly||cleaned[i]||cleaning[i])return;
   cleaning[i]=true;
-  var N=16,k=0;
+  var N=16,k=0,rise=riseMask(poly);
   (function step(){
     var a=1/(N-k);                                      // the last step takes whatever is left
     D.globalCompositeOperation='destination-out';D.fillStyle='rgba(0,0,0,'+a+')';
     (areas[i]||[poly]).forEach(function(ar){polyPath(D,ar);D.fill()});
+    if(rise){D.globalAlpha=a;D.drawImage(rise,0,0);D.globalAlpha=1}
     D.globalCompositeOperation='source-over';
     if(k%3===0){var q=poly[Math.floor(Math.random()*poly.length)],c=center(poly);bubble(c[0]+(q[0]-c[0])*Math.random()*.8,c[1]+(q[1]-c[1])*Math.random()*.8,2)}
     if(++k<N)setTimeout(step,45);else{cleaned[i]=true;cleaning[i]=false;refreshInfo()}
