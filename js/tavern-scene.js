@@ -5,7 +5,7 @@
    Guests only walk toward or away from the camera (three pictures of a step each); going sideways they lean a little. */
 (function(){
 'use strict';
-var ROOM='assets/tavern/kafana_cista.webp',GUESTS='assets/tavern/guests/';
+var ROOM='assets/tavern/kafana_cista.webp',GUESTS='assets/tavern/guests/',WAITER='assets/tavern/waiter/';
 var W=1672,H=941;                                   // the picture of the hall
 var GUESTS_ON=true,IMGV=4,DUR=700,CHARS=10,POSES=['dole','dole2','gore','gore2','sedi_lice','sedi_ledja','sedi_ledja_l'];
 var viewport=document.getElementById('viewport'),scene=document.getElementById('scene');
@@ -66,6 +66,10 @@ function preload(){
   for(var c2=1;c2<=CHARS;c2++)for(var f=1;f<=3;f++)['walkd','walku'].forEach(function(w){(function(key){
     jobs.push(loadImg(GUESTS+key+'.webp?v='+IMGV).then(function(im){imgs[key]=im}));
   })('g'+(c2<10?'0':'')+c2+'_'+w+f)});
+  // the waiter: three pictures of a step toward the camera (walkd), away from it (walku) and from the side (walks, looking right)
+  ['walkd','walku','walks'].forEach(function(w){for(var f2=1;f2<=3;f2++)(function(key){
+    jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=1').then(function(im){imgs['w_'+key]=im}));
+  })(w+f2)});
   var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
   loading=Promise.all([roomJob].concat(jobs)).then(function(r){loaded=!!r[0];loading=null;return loaded});
   return loading;
@@ -285,6 +289,7 @@ function applyCal(cal){
     });
   });
   GRID=null;WGRID=null;WGRAPH=null;
+  if(typeof waiter!=='undefined'&&waiter)waiter.replan=true;
   fixPlaces();
 }
 function walkable(x,y){
@@ -451,6 +456,7 @@ function chKey(g,pose){return 'g'+(g.ch<10?'0':'')+g.ch+'_'+pose}
 function step(dt){
   clock+=dt;
   if(GUESTS_ON&&clock>=nextArrival){nextArrival=clock+7+Math.random()*9;if(guests.length<14)spawn()}
+  if(GUESTS_ON)stepWaiter(dt);
   for(var i=guests.length-1;i>=0;i--){
     var g=guests[i];
     if(g.mode==='in'||g.mode==='out'){
@@ -480,6 +486,79 @@ function step(dt){
       if(g.fade>=1){g.x=g.seat.ax;g.y=g.seat.ay;g.mode='out';g.path=findPath({x:g.x,y:g.y},DOOR);g.pi=1}
     }
   }
+}
+// ---------- the waiter ----------
+// he waits at his home place, walks (along his route) to a table where a guest sits who has not ordered yet, stands at the spot drawn for that table,
+// takes the order, and walks home. The pictures: toward the camera (walkd), away from it (walku), from the side (walks, looking right; flipped for left).
+var waiter=null,WSPEED=92;
+function waiterFace(dx,dy){                           // which set of pictures for this direction of walking
+  if(Math.abs(dx)>1.2*Math.abs(dy))return 'walks';
+  return dy>0?'walkd':'walku';
+}
+function dirFace(deg){                                 // the same for the direction he looks when he stands (0 right, 90 down = toward us)
+  var t=((deg%360)+540)%360-180;
+  if(t>35&&t<145)return{set:'walkd',flip:false};
+  if(t<-35&&t>-145)return{set:'walku',flip:false};
+  return{set:'walks',flip:Math.cos(t*Math.PI/180)<0};
+}
+function ensureWaiter(){
+  if(waiter)return waiter;
+  var h=waiterSpot('home')||{x:DOOR.x,y:DOOR.y,dir:90};
+  waiter={x:h.x,y:h.y,mode:'idle',path:null,pi:1,phase:0,set:dirFace(h.dir).set,flip:dirFace(h.dir).flip,table:-1,t:0,face:h.dir};
+  return waiter;
+}
+function waitingTable(){                              // the table with the guest that has waited longest and has not ordered yet
+  var best=-1,bt=-1;
+  guests.forEach(function(g){
+    if(g.mode==='seated'&&!g.ordered&&g.sitT>bt){bt=g.sitT;best=g.seat.table}
+  });
+  return best;
+}
+function waiterGo(to){
+  var w=ensureWaiter();
+  w.path=waiterPath({x:w.x,y:w.y},{x:to.x,y:to.y});w.pi=1;
+}
+function stepWaiter(dt){
+  var w=ensureWaiter(),home=waiterSpot('home')||{x:DOOR.x,y:DOOR.y,dir:90};
+  if(w.replan){w.replan=false;if(w.mode==='go'||w.mode==='back')waiterGo(w.mode==='go'?waiterSpot(w.table)||home:home);else if(w.mode==='idle'){w.x=home.x;w.y=home.y}}
+  if(w.mode==='idle'){
+    var tb=waitingTable();
+    if(tb>=0&&waiterSpot(tb)){w.table=tb;w.mode='go';waiterGo(waiterSpot(tb))}
+    else{var f0=dirFace(home.dir);w.set=f0.set;w.flip=f0.flip}
+  }else if(w.mode==='go'||w.mode==='back'){
+    var tgt=w.path&&w.path[w.pi];
+    if(!tgt){
+      if(w.mode==='go'){w.mode='serve';w.t=0;var sp=waiterSpot(w.table),fs=dirFace(sp?sp.dir:90);w.set=fs.set;w.flip=fs.flip}
+      else{w.mode='idle'}
+    }else{
+      var dx=tgt.x-w.x,dy=tgt.y-w.y,d=Math.hypot(dx,dy),spd=WSPEED*scaleAt(w.y)/.34*dt;
+      if(d<=spd){w.x=tgt.x;w.y=tgt.y;w.pi++}
+      else{
+        w.x+=dx/d*spd;w.y+=dy/d*spd;
+        var s2=waiterFace(dx,dy);if(s2!==w.set){w.set=s2}
+        w.flip=s2==='walks'&&dx<0;
+        w.phase+=spd/(40*scaleAt(w.y)/.34);
+      }
+    }
+  }else if(w.mode==='serve'){
+    w.t+=dt;
+    if(w.t>3.2){
+      guests.forEach(function(g){if(g.seat.table===w.table&&g.mode==='seated')g.ordered=true});
+      w.mode='back';waiterGo(home);
+    }
+  }
+}
+function drawWaiter(ctx){
+  var w=waiter;if(!w)return;
+  var sc=scaleAt(w.y),moving=(w.mode==='go'||w.mode==='back')&&w.path&&w.path[w.pi];
+  drawShadow(ctx,w.x,w.y,sc);
+  if(!moving){drawSprite(ctx,'w_'+w.set+'2',w.x,w.y,sc,w.flip,0,1);return}
+  var ph=Math.abs(Math.sin(w.phase*Math.PI)),bob=ph*3.2*sc/.3;
+  // the same step as the guests: left leg forward, together, right leg forward, together; the next picture fades in over the current one
+  var q=w.phase*2,qi=Math.floor(q),fr=q-qi,SEQ=[1,2,3,2];
+  var fade=Math.max(0,Math.min(1,(fr-.25)/.65));fade=fade*fade*(3-2*fade);
+  drawSprite(ctx,'w_'+w.set+SEQ[qi%4],w.x,w.y-bob,sc,w.flip,0,1);
+  if(fade>0)drawSprite(ctx,'w_'+w.set+SEQ[(qi+1)%4],w.x,w.y-bob,sc,w.flip,0,fade);
 }
 function seatPos(g){return{x:g.seat.x,y:g.seat.y}}
 // the chairs on the right side of a table: the guest looks to the left, towards the others
@@ -552,13 +631,14 @@ function draw(){
   if(!GUESTS_ON)return;          // the cleaning room: no guests, and the table masks must not paint the clean picture over the dirt
   var list=guests.map(function(g){return{y:guestSortY(g),g:g}});
   MASKS.forEach(function(m){list.push({y:m.y,m:m})});
+  if(waiter)list.push({y:waiter.y,w:true});
   // a chair covers whoever walks behind it, but only while nobody sits on it
   WALKMASKS.forEach(function(m){
     var busy=guests.some(function(g){return g.seat.id===m.seat&&(g.mode==='sitting'||g.mode==='seated'||g.mode==='rising')});
     if(!busy)list.push({y:m.y,m:m});
   });
   list.sort(function(a,b){return a.y-b.y});
-  list.forEach(function(o){if(o.g)drawGuest(ctx,o.g);else drawPolyFromPicture(ctx,o.m.poly)});
+  list.forEach(function(o){if(o.g)drawGuest(ctx,o.g);else if(o.w)drawWaiter(ctx);else drawPolyFromPicture(ctx,o.m.poly)});
 }
 
 // ---------- the canvas follows the picture ----------
@@ -661,7 +741,7 @@ window.addEventListener('keydown',onKey,true);window.addEventListener('keyup',on
 window.CooksterTavern={
   open:open,close:close,spawn:spawn,
   get isOpen(){return state==='tavern'},get busy(){return busy},
-  debug:function(){return{guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
+  debug:function(){return{waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},
   seatReach:function(){return SEATS.map(seatReachable)},poseFromDir:poseFromDir,seatScale:function(y){return scaleAt(y)*SIT_K},
   poseInfo:function(pose){var im=imgs['g01_sedi_'+pose];return im?{src:im.src,w:im.naturalWidth,h:im.naturalHeight}:null},
