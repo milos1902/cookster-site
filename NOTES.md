@@ -11,7 +11,7 @@ Repo: `milos1902/cookster-site`. Objavljuje se preko GitHub Pages iz grane `main
 2. Izmena, commit, push.
 3. Svaki put napravi **novi PR**. Miloš ga sam spaja.
 4. Posle toga mu reci da sačeka zelenu kvačicu na https://github.com/milos1902/cookster-site/actions i pritisne Ctrl+F5 na igrici.
-5. Kad menjaš JS, povećaj `?v=` broj u `index.html` (keš). Trenutno: `tavern-scene.js?v=28`, `tavern-clean.js?v=11`, `tavern-calibration.js?v=10`.
+5. Kad menjaš JS, povećaj `?v=` broj u `index.html` (keš). Trenutno: `tavern-scene.js?v=29`, `tavern-clean.js?v=11`, `tavern-calibration.js?v=10`.
 6. Commit poruke završi sa:
    `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` i `Claude-Session: <link sesije>`.
    PR opis završi sa `🤖 Generated with [Claude Code](https://claude.com/claude-code)` i linkom sesije. Ne upisuj ime modela nigde drugde.
@@ -23,7 +23,7 @@ Repo: `milos1902/cookster-site`. Objavljuje se preko GitHub Pages iz grane `main
 - Čišćenje: prljava slika na canvasu iznad čiste; sunđer briše (destination-out) unutar površina minus `cleanExclude`. Desni klik na sto = "Očisti sto": čisti samo poligon stola iz `tableMask` (Miloš ga je namerno nacrtao tako da obuhvata i vrhove flaša koji vire). Pod ispod stola čisti sunđer, ne dugme.
 - Gosti: veličina 1.7x, hodaju A* putanjom (mreža 22 px), sede samo za očišćene stolove i dostupne stolice, 3 frejma hoda sa crossfade [1,2,3,2]. Gosti sa druge strane stola crtaju se iznad maske stola.
 - Kalibracija: alat "Kalibracija kafane". Slojevi: pod, blokirano, maska stola, maska stolice, hod iza stolice, cleanExclude, mesta sedenja (tačka, kvadrat, strelica; crveno = nedostupno), površine za sunđer. Čuva se u localStorage `cookster.tavern-calibration.v3`, a rezervna je `assets/tavern/calibration_cista.json`.
-- Konobar: slike `assets/tavern/waiter/waiter_walk{d,u,s}{1,2,3}.webp` (d = ka kameri, u = od kamere, s = bočno, gleda udesno, za levo se okreće u ogledalu; svi frejmovi su 480×450, dno-sredina). Hod [1,2,3,2] sa crossfade kao kod gostiju. Ponašanje (`stepWaiter` u `tavern-scene.js`): čeka na početnom mestu, ide do stola gde sedi gost koji nije naručio, stoji 3,2 s na mestu iz kalibracije (`waiterSpots`), pa se vraća. Kalibracija: slojevi `waiterFloor` (gde sme), `waiterRoute` (otvorene linije; bez njih A* po podu), `waiterSpots` (mesto kod svakog stola + pogled, plus `home`). `CooksterTavern.waiterPath(from,to)`, `waiterAutoRoute()`.
+- Konobar: slike `assets/tavern/waiter/waiter_walk{d,u,s}{1,2,3}.webp` (d = ka kameri, u = od kamere, s = bočno, gleda udesno, za levo se okreće u ogledalu; svi frejmovi su 640×470, dno, a x poravnat po glavi (jedna razmera po listu, ne po frejmu, da se ne trese)). Hod [1,2,3,2] sa crossfade kao kod gostiju. Ponašanje (`stepWaiter` u `tavern-scene.js`): čeka na početnom mestu, ide do stola gde sedi gost koji nije naručio, stoji 3,2 s na mestu iz kalibracije (`waiterSpots`), pa se vraća. Kalibracija: slojevi `waiterFloor` (gde sme), `waiterRoute` (otvorene linije; bez njih A* po podu), `waiterSpots` (mesto kod svakog stola + pogled, plus `home`). `CooksterTavern.waiterPath(from,to)`, `waiterAutoRoute()`.
 - Glavni fajlovi: `js/tavern-scene.js`, `js/tavern-clean.js`, `js/tavern-calibration.js`. API: `CooksterTavern`.
 - `.nojekyll` je u korenu. Ako deploy ostane "queued", proveri githubstatus (Actions je znao da bude degraded).
 
