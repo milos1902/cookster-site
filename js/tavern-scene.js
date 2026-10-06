@@ -67,7 +67,7 @@ function preload(){
     jobs.push(loadImg(GUESTS+key+'.webp?v='+IMGV).then(function(im){imgs[key]=im}));
   })('g'+(c2<10?'0':'')+c2+'_'+w+f)});
   // the waiter: three pictures of a step toward the camera (walkd), away from it (walku) and from the side (walks, looking right)
-  ['walkd','walku','walks'].forEach(function(w){for(var f2=1;f2<=3;f2++)(function(key){
+  ['walkd','walku','walks','writes'].forEach(function(w){for(var f2=1;f2<=3;f2++)(function(key){
     jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=4').then(function(im){imgs['w_'+key]=im}));
   })(w+f2)});
   var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
@@ -542,7 +542,7 @@ function stepWaiter(dt){
     }
   }else if(w.mode==='serve'){
     w.t+=dt;
-    if(w.t>3.2){
+    if(w.t>4.4){
       guests.forEach(function(g){if(g.seat.table===w.table&&g.mode==='seated')g.ordered=true});
       w.mode='back';waiterGo(home);
     }
@@ -552,16 +552,28 @@ function drawWaiter(ctx){
   var w=waiter;if(!w)return;
   var sc=scaleAt(w.y),moving=(w.mode==='go'||w.mode==='back')&&w.path&&w.path[w.pi];
   drawShadow(ctx,w.x,w.y,sc);
-  if(!moving){drawSprite(ctx,'w_'+w.set+'2',w.x,w.y,sc,w.flip,0,1);return}
+  if(!moving){
+    // taking the order (seen from the side): writes, now and then looks up at the guest; the other views only stand until their pictures exist
+    if(w.mode==='serve'&&w.set==='walks'){
+      var SEQW=[[1,.5],[2,.6],[3,.5],[2,.6]],tt=w.t%2.2,acc=0,wi=0;
+      for(;wi<SEQW.length-1&&tt>=acc+SEQW[wi][1];wi++)acc+=SEQW[wi][1];
+      var fw=(tt-acc)/SEQW[wi][1],nx=SEQW[(wi+1)%SEQW.length][0],fa=Math.max(0,Math.min(1,(fw-.7)/.3));
+      drawSprite(ctx,'w_writes'+SEQW[wi][0],w.x,w.y,sc,w.flip,0,1);
+      if(fa>0)drawSprite(ctx,'w_writes'+nx,w.x,w.y,sc,w.flip,0,fa);
+      return;
+    }
+    drawSprite(ctx,'w_'+w.set+'2',w.x,w.y,sc,w.flip,0,1);return;
+  }
   var ph=Math.abs(Math.sin(w.phase*Math.PI)),bob=ph*3.2*sc/.3;
-  // walking: only the two pictures with a leg forward (1 and 3), one after the other; the picture with the legs together (2) is only for standing.
-  // The next picture fades in over the current one
-  var q=w.phase,qi=Math.floor(q),fr=q-qi,SEQ=[1,3];
-  // the two pictures of a step are alike (the same figure), so the next one fades in over the end of the step
-  var f0=.3,f1=.9;
-  var fade=Math.max(0,Math.min(1,(fr-f0)/(f1-f0)));fade=fade*fade*(3-2*fade);
-  drawSprite(ctx,'w_'+w.set+SEQ[qi%2],w.x,w.y-bob,sc,w.flip,0,1);
-  if(fade>0)drawSprite(ctx,'w_'+w.set+SEQ[(qi+1)%2],w.x,w.y-bob,sc,w.flip,0,fade);
+  // walking. From the front and from behind the two pictures with a leg forward (1 and 3) are enough, one after the other. From the side
+  // they look almost the same (a leg forward), so there the step has the middle picture (legs together, 2) too: 1, 2, 3, 2.
+  // From the front and from behind the next picture fades in over the end of the step.
+  var side=w.set==='walks',SEQ=side?[1,2,3,2]:[1,3],NS=SEQ.length;
+  var q=side?w.phase*2:w.phase,qi=Math.floor(q),fr=q-qi,f0=.3,f1=.9;
+  // from the side the pictures differ in height (legs apart, legs together), so a blend would show two heads: there they just follow each other
+  var fade=side?0:Math.max(0,Math.min(1,(fr-f0)/(f1-f0)));fade=fade*fade*(3-2*fade);
+  drawSprite(ctx,'w_'+w.set+SEQ[qi%NS],w.x,w.y-bob,sc,w.flip,0,1);
+  if(fade>0)drawSprite(ctx,'w_'+w.set+SEQ[(qi+1)%NS],w.x,w.y-bob,sc,w.flip,0,fade);
 }
 function seatPos(g){return{x:g.seat.x,y:g.seat.y}}
 // the chairs on the right side of a table: the guest looks to the left, towards the others
