@@ -10429,7 +10429,7 @@ function openKitchenElements(){
 
 function serializeWorldItem(el){
  const body=el.querySelector('.body');
-  const keep=['spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
+  const keep=['kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
  const data={};
  for(const k of keep)if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
  for(const k of ['ajvarMl','ajvarBatchMl'])if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
@@ -12892,6 +12892,7 @@ function renderGroundPepperScatter(host,amount,vessel=null,def=null){
 }
 
 
+const SOUR_PILE_WIDTH=120;
 function buildFoodStageLayer(counts,stage,metaItems={},batches=[],heat=0,mixLevel=0,fillState=null,vessel=null){
   const roastedByPhase={
     2:+counts.paprika_pecena_2||0,
@@ -12948,11 +12949,14 @@ function buildFoodStageLayer(counts,stage,metaItems={},batches=[],heat=0,mixLeve
       img.className='whole-produce-piece generic-vessel-ingredient';
       img.src=meta.src;img.alt='';img.draggable=false;
       const ring=i%4, row=Math.floor(i/4);
-      const x=50+[-18,18,-8,10][ring]*(row?0.72:1);
-      const y=50+[-10,-8,12,13][ring]-row*11;
+      let x=50+[-18,18,-8,10][ring]*(row?0.72:1);
+      let y=50+[-10,-8,12,13][ring]-row*11;
+      let wd=n===1?58:Math.max(28,48-n*2);
+      // chopped sour cabbage is half a head: one big heap filling the calibrated food zone up to the brim
+      if(key==='kupus_diced_kiseli'){x=50;y=50;wd=SOUR_PILE_WIDTH;}
       img.style.left=x+'%';
       img.style.top=y+'%';
-      img.style.width=(n===1?58:Math.max(28,48-n*2))+'%';
+      img.style.width=wd+'%';
       img.style.transform=`translate(-50%,-50%) rotate(${[-7,8,4,-5][ring]}deg)`;
       img.style.zIndex=String(20+i);
       layer.appendChild(img);
@@ -13905,6 +13909,19 @@ function updateCutProgress(progress,cx,cy){
  cutProgressEl.style.left=cx+'px';cutProgressEl.style.top=cy+'px';
  cutProgressEl.querySelector('.ring').style.setProperty('--p',String(Math.max(0,Math.min(100,progress*100))));
 }
+// cutting a whole sour head: one half stays whole (back into the barrel), the other half is chopped
+function spawnSourHalf(target){
+ const d=target?.dataset;
+ if(!d||d.vegKey!=='kupus'||d.fermentPhase!=='3'||d.kupusHalf==='1')return;
+ const veg=VEGETABLES.kupus;
+ const w=Math.round(veg.w*.8),h=Math.round(veg.h*.7);
+ const x=(+d.cx||0)+veg.w*.75,y=(+d.by||0)-h;
+ const half=makeItem({id:'veg_kupus_pola_'+Date.now(),label:'Pola kiselog kupusa',src:'assets/market_veg/kupus_pola_kiseli.webp',x,y,w,h,z:++zCounter,snapProfile:'produce'});
+ if(!half)return;
+ half.dataset.vegetable='1';half.dataset.collisionProfile='vegetable';half.dataset.vegKey='kupus';half.dataset.cutState='whole';
+ half.dataset.fermentPhase='3';half.dataset.kupusHalf='1';
+ setPose(half,x+w/2,(+d.by||0),+d.vis||1);
+}
 function beginCutAction(){
  if(isCutting)return;
  const board=getBoardEl();
@@ -13915,6 +13932,7 @@ function beginCutAction(){
    const def=VEGETABLES[target.dataset.vegKey]||{};
    if(def.src&&def.slicedSrc){
      const cutCallbacks={board,onCutSound(){playImpactSound(vegSoundTarget(target),'cut');},onPeelSound(){playImpactSound(peelSoundTarget,'peel');},onDone(src,atlas){
+       spawnSourHalf(target);
        showToast(setVegetableDiced(target));
        if(atlas)target.dataset.pieceAtlas=atlas;
        const body=target.querySelector('.body');if(body)body.src=src;
