@@ -85,22 +85,25 @@
       document.querySelectorAll('.ghost-item-copy').forEach(g=>{if(g.querySelector('img[src*="calibration_props/zacini/"]'))g.remove();});
       return;
     }
-    const kind=spiceOf(jar),target=vesselUnder(jar);
+    const target=vesselUnder(jar);
     const goal=target?38:0;
     tilt+=(goal-tilt)*.18;
     jar.style.rotate=tilt.toFixed(1)+'deg';
-    const dx=mouse.x-lastX;lastX=mouse.x;
-    if(!target){lastDir=0;travel=0;shakes=0;return;}
-    if(Math.abs(dx)>2.5){
-      const dir=dx>0?1:-1;
-      if(lastDir&&dir!==lastDir){
-        shakes++;emit(jar,kind,target);
-        if(shakes>=SHAKES_PER_DOSE){shakes=0;dose(target,kind);}
-      }
-      lastDir=dir;
-    }
+    document.querySelectorAll('.ghost-item-copy').forEach(g=>{if(g.querySelector('img[src*="calibration_props/zacini/"]'))g.style.rotate=tilt.toFixed(1)+'deg';});
   }
   requestAnimationFrame(tick);
+
+  // While the jar is tilted over a vessel every left click is one measure; the jar is put down only when it is upright (not over a vessel).
+  window.addEventListener('pointerdown',e=>{
+    if(e.button!==0)return;
+    const jar=(typeof holding!=='undefined'&&holding&&spiceOf(holding))?holding:null;
+    if(!jar)return;
+    const target=vesselUnder(jar);
+    if(!target||tilt<12)return;
+    e.preventDefault();e.stopImmediatePropagation();
+    const kind=spiceOf(jar);
+    emit(jar,kind,target);dose(target,kind);
+  },true);
 
   // ---------- jars stand on the back edge of the table ----------
   const SPOTS={paprika:[470,262],tucana:[540,262],biber:[610,262],so:[680,262],secer:[750,262],lovor:[820,262]};
@@ -113,7 +116,13 @@
         const el=makeItem({...def,instanceId:nextItemInstanceId(id),x:SPOTS[k][0]-def.w/2,y:SPOTS[k][1]-def.h,z:++zCounter});
         if(!el)continue;
         el.dataset.surfaceZone='table';
-        setPose(el,SPOTS[k][0],SPOTS[k][1],1);
+        setPose(el,SPOTS[k][0],SPOTS[k][1],surfaceScaleFor(el,'table',SPOTS[k][1]));
+      }
+      // jars saved with another scale are brought to the scale the game itself uses for their place
+      for(const el of (window.items||items)){
+        if(!spiceOf(el)||!+el.dataset.cx)continue;
+        const v=surfaceScaleFor(el,el.dataset.surfaceZone||'table',+el.dataset.by);
+        if(Math.abs((+el.dataset.vis||1)-v)>.01)setPose(el,+el.dataset.cx,+el.dataset.by,v);
       }
       CooksterSave.schedule();
     }catch(_){}
