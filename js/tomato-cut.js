@@ -323,11 +323,18 @@
     let [tomImg,sliceImg,boardImg]=await Promise.all([
       load(sour?'assets/market_veg/kupus_faza_3.webp':def.src),load(def.slicedSrc),load('assets/new_props/daska.png')]);
     // some vegetables have real cross-section pictures: one of them is the texture of the cut faces
+    // a sour head splits into two halves with the first cut: one half stays on the board, the other is chopped
+    const HALF_SRC='assets/market_veg/kupus_pola_kiseli.webp';
+    const halfImg=sour?await load(HALF_SRC):null;
+    const isHalf=sour&&el.dataset.kupusHalf==='1';
+    const splitHead=sour&&!isHalf;
+    const headImg=tomImg;
+    if(isHalf)tomImg=halfImg;
     if(sour)sliceImg=await load('assets/market_veg/kupus_presek_kiseli.webp');
     else if(V.sections&&V.sections.length)sliceImg=await load(V.sections[Math.floor(Math.random()*V.sections.length)]);
     const flesh=sour?[.456,.225,.41,.605]:V.flesh;        // the part of the picture of the halves that is the cut face
     {
-      const k=V.max*K/Math.max(tomImg.width,tomImg.height);
+      const k=V.max*K/Math.max(headImg.width,headImg.height);
       ART={w:tomImg.width*k,h:tomImg.height*k,offY:V.hull?0:-4*K,
         fx:flesh[0]*sliceImg.width,fy:flesh[1]*sliceImg.height,fw:flesh[2]*sliceImg.width,fh:flesh[3]*sliceImg.height,
         color:sour?'#eadf9c':V.color,rim:sour?'#8a7a34':V.rim};
@@ -352,10 +359,11 @@
 
     // tomato = ellipse polygon whose rim edges are flagged as "skin"
     let verts=[],skin=[];
-    if(V.hull){verts=silhouette(tomImg,ART.w,ART.h).map(p=>({x:p.x,y:p.y+ART.offY}));skin=verts.map(()=>true);}
+    if(V.hull||isHalf){verts=silhouette(tomImg,ART.w,ART.h).map(p=>({x:p.x,y:p.y+ART.offY}));skin=verts.map(()=>true);}
     else{const n=22,rx=88*K,ry=80*K;for(let i=0;i<n;i++){const a=i/n*Math.PI*2;verts.push({x:Math.cos(a)*rx,y:Math.sin(a)*ry});skin.push(true);}}
     const bx=W/2-BOARD.w/2,by=H/2-BOARD.h/2+10;
     let frags=[mk(verts,skin,W/2,H/2+10)];frags[0].whole=true;
+    let staticHalf=null;
     const TRAIL_MS=650;let trail=[],strokeId=0,raf=0,closed=false,cuts=0;const MAX_CUTS=5;
 
     function frame(){
@@ -383,6 +391,7 @@
       g.clearRect(0,0,W,H);
       g.save();g.shadowColor='rgba(0,0,0,.5)';g.shadowBlur=30;g.shadowOffsetY=14;
       g.drawImage(boardImg,bx,by,BOARD.w,BOARD.h);g.restore();
+      if(staticHalf)g.drawImage(halfImg,staticHalf.x-ART.w/2,staticHalf.y-ART.h/2+ART.offY,ART.w,ART.h);
       for(const f of [...frags].sort((a,b)=>a.y-b.y)){
         if(f.whole){g.save();g.shadowColor='rgba(0,0,0,.35)';g.shadowBlur=16;g.shadowOffsetY=8;
           g.drawImage(tomImg,f.x-ART.w/2,f.y-ART.h/2+ART.offY,ART.w,ART.h);g.restore();}
@@ -448,6 +457,17 @@
       if(!cutAny)return;
       const now=performance.now();
       if(now-lastChop>140){lastChop=now;try{if(cb.onCutSound)cb.onCutSound();else if(typeof playChop==='function')playChop();}catch(_){}}
+      if(splitHead&&!staticHalf){
+        // first cut of a whole sour head: it falls apart into two halves; the left one stays whole on the board
+        stroke.cut=true;tomImg=halfImg;
+        {const k=V.max*K/Math.max(headImg.width,headImg.height);ART.w=halfImg.width*k;ART.h=halfImg.height*k;
+         ART.fx=flesh[0]*sliceImg.width;ART.fy=flesh[1]*sliceImg.height;}
+        verts=silhouette(halfImg,ART.w,ART.h).map(q=>({x:q.x,y:q.y+ART.offY}));skin=verts.map(()=>true);
+        frags=[mk(verts,skin,W/2+ART.w*.42,H/2+10)];frags[0].whole=true;
+        staticHalf={x:W/2-ART.w*.42,y:H/2+10};cuts=0;
+        hint.textContent='Glavica je prepolovljena. Iseckaj jednu polovinu (druga ostaje cela), pa klikni „Gotovo“.';
+        return;
+      }
       if(!stroke.cut){
         stroke.cut=true;cuts++;
         if(cuts===MAX_CUTS){
