@@ -22,7 +22,7 @@ Repo: `milos1902/cookster-site`. Objavljuje se preko GitHub Pages iz grane `main
 - Slike: `assets/tavern/kafana_cista.webp`, `kafana_prljava.webp` (1672×941). Sunđer: `sundjer_*.webp`. Gosti: `assets/tavern/guests/` (`gNN_walkd1..3`, `gNN_walku1..3` + poze sedenja).
 - Čišćenje: prljava slika na canvasu iznad čiste; sunđer briše (destination-out) unutar površina minus `cleanExclude`. Desni klik na sto = "Očisti sto" (čisti i vrhove flaša, poređenjem prljave i čiste slike).
 - Gosti: veličina 1.7x, hodaju A* putanjom (mreža 22 px), sede samo za očišćene stolove i dostupne stolice, 3 frejma hoda sa crossfade [1,2,3,2]. Gosti sa druge strane stola crtaju se iznad maske stola.
-- Kalibracija: alat "Kalibracija kafane". Slojevi: pod, blokirano, maska stola, maska stolice, hod iza stolice, cleanExclude, mesta sedenja (tačka, kvadrat, strelica; crveno = nedostupno), površine za sunđer. Čuva se u localStorage `cookster.tavern-calibration.v2`, a rezervna je `assets/tavern/calibration_cista.json`.
+- Kalibracija: alat "Kalibracija kafane". Slojevi: pod, blokirano, maska stola, maska stolice, hod iza stolice, cleanExclude, mesta sedenja (tačka, kvadrat, strelica; crveno = nedostupno), površine za sunđer. Čuva se u localStorage `cookster.tavern-calibration.v3`, a rezervna je `assets/tavern/calibration_cista.json`.
 - Glavni fajlovi: `js/tavern-scene.js`, `js/tavern-clean.js`, `js/tavern-calibration.js`. API: `CooksterTavern`.
 - `.nojekyll` je u korenu. Ako deploy ostane "queued", proveri githubstatus (Actions je znao da bude degraded).
 

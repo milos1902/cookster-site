@@ -59,7 +59,7 @@ new MutationObserver(sync).observe(cv,{attributes:true,attributeFilter:['style']
 addEventListener('resize',sync);sync();
 
 // ---------- what may be cleaned ----------
-var calRef=null,floorMask=null,zones=[],areas=[],cleaned=[];
+var calRef=null,floorMask=null,zones=[],cleaned=[];
 function polyPath(c,p){c.beginPath();p.forEach(function(q,i){if(i)c.lineTo(q[0],q[1]);else c.moveTo(q[0],q[1])});c.closePath()}
 function pip(p,x,y){var ins=false;for(var i=0,j=p.length-1;i<p.length;j=i++){var a=p[i],b=p[j];if(((a[1]>y)!==(b[1]>y))&&(x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0]))ins=!ins}return ins}
 function prepare(){
@@ -71,12 +71,6 @@ function prepare(){
   f.globalCompositeOperation='destination-out';
   (cal.cleanExclude||[]).forEach(function(p){if(p.length>=3){polyPath(f,p);f.fill()}});
   zones=cal.tableMask.filter(function(p){return p.length>=3});
-  // "Očisti sto" also cleans what is under and around the table: every blocked shape (table with its chairs) that holds the table
-  areas=zones.map(function(z){
-    var c=center(z),list=[z];
-    (cal.cleanExclude||[]).forEach(function(b){if(b.length>=3&&pip(b,c[0],c[1]))list.push(b)});
-    return list;
-  });
   while(cleaned.length<zones.length)cleaned.push(false);
   cleaned.length=zones.length;
   small=null;
@@ -139,56 +133,15 @@ function frame(t){
 }
 
 // ---------- the table ----------
-// what sticks up above a table (the tops of the bottles, the jug...) is outside its shape, so it is found by comparing the two pictures.
-// Only what is joined to the table counts: inside a narrow band above it, the differing pixels that touch the table (flood fill).
-// The floor the sponge cleans (floorMask) is never taken, so floor and walls stay for the sponge.
-var RISE=110,GAP=3;
-function riseMask(poly){
-  if(!cleanImg.complete||!cleanImg.naturalWidth||!dirtyOk||!floorMask)return null;
-  var band=mk('canvas');band.width=W;band.height=H;var b=band.getContext('2d');
-  b.fillStyle='#fff';
-  for(var dy=0;dy<=RISE;dy+=5){b.save();b.translate(0,-dy);polyPath(b,poly);b.fill();b.restore()}
-  var seed=mk('canvas');seed.width=W;seed.height=H;var sd=seed.getContext('2d');sd.fillStyle='#fff';polyPath(sd,poly);sd.fill();
-  var ca=mk('canvas');ca.width=W;ca.height=H;var cc=ca.getContext('2d',{willReadFrequently:true});cc.drawImage(cleanImg,0,0,W,H);
-  var da=mk('canvas');da.width=W;da.height=H;var dc=da.getContext('2d',{willReadFrequently:true});dc.drawImage(dirtyImg,0,0,W,H);
-  var A=cc.getImageData(0,0,W,H).data,B=dc.getImageData(0,0,W,H).data,M=b.getImageData(0,0,W,H).data;
-  var S=sd.getImageData(0,0,W,H).data,F=floorMask.getContext('2d').getImageData(0,0,W,H).data,N=W*H;
-  // diff = differs between the pictures, inside the band, and not on the floor of the sponge
-  var diff=new Uint8Array(N);
-  for(var p=0;p<N;p++){
-    var i=p*4;if(M[i+3]<128||F[i+3]>128)continue;
-    if(Math.abs(A[i]-B[i])+Math.abs(A[i+1]-B[i+1])+Math.abs(A[i+2]-B[i+2])>70)diff[p]=1;
-  }
-  // close small gaps (glass, thin lines) so a bottle is one piece
-  var dd=new Uint8Array(N),x,y,k;
-  for(y=0;y<H;y++)for(x=0;x<W;x++)if(diff[y*W+x]){
-    for(var oy=Math.max(0,y-GAP);oy<=Math.min(H-1,y+GAP);oy++)for(var ox=Math.max(0,x-GAP);ox<=Math.min(W-1,x+GAP);ox++)dd[oy*W+ox]=1;
-  }
-  for(p=0;p<N;p++)if(M[p*4+3]<128||F[p*4+3]>128)dd[p]=0;
-  // flood fill from the table
-  var keep=new Uint8Array(N),stack=[];
-  for(p=0;p<N;p++)if(dd[p]&&S[p*4+3]>128){keep[p]=1;stack.push(p)}
-  while(stack.length){
-    p=stack.pop();x=p%W;y=(p-x)/W;
-    for(var ny=y-1;ny<=y+1;ny++)for(var nx=x-1;nx<=x+1;nx++){
-      if(nx<0||ny<0||nx>=W||ny>=H)continue;
-      k=ny*W+nx;if(dd[k]&&!keep[k]){keep[k]=1;stack.push(k)}
-    }
-  }
-  var out=mk('canvas');out.width=W;out.height=H;var o=out.getContext('2d'),O=o.createImageData(W,H),od=O.data;
-  for(p=0;p<N;p++)if(keep[p]&&(diff[p]||dd[p])){od[p*4+3]=255}
-  o.putImageData(O,0,0);
-  return out;
-}
+// "Očisti sto" cleans only the drawn table mask (tableMask); the bottles are left out of it on purpose, and the floor under the table is cleaned by the sponge
 function cleanZone(i){
   var poly=zones[i];if(!poly||cleaned[i]||cleaning[i])return;
   cleaning[i]=true;
-  var N=16,k=0,rise=riseMask(poly);
+  var N=16,k=0;
   (function step(){
     var a=1/(N-k);                                      // the last step takes whatever is left
     D.globalCompositeOperation='destination-out';D.fillStyle='rgba(0,0,0,'+a+')';
-    (areas[i]||[poly]).forEach(function(ar){polyPath(D,ar);D.fill()});
-    if(rise){D.globalAlpha=a;D.drawImage(rise,0,0);D.globalAlpha=1}
+    polyPath(D,poly);D.fill();
     D.globalCompositeOperation='source-over';
     if(k%3===0){var q=poly[Math.floor(Math.random()*poly.length)],c=center(poly);bubble(c[0]+(q[0]-c[0])*Math.random()*.8,c[1]+(q[1]-c[1])*Math.random()*.8,2)}
     if(++k<N)setTimeout(step,45);else{cleaned[i]=true;cleaning[i]=false;refreshInfo()}
@@ -200,7 +153,7 @@ function center(p){var x=0,y=0;p.forEach(function(q){x+=q[0];y+=q[1]});return[x/
 // ---------- the numbers ----------
 var info=mk('div','tc-info'),hint=mk('div','tc-hint'),reset=mk('button','tc-reset'),sponge=mk('div','tc-sponge'),menu=mk('div','tc-menu');
 reset.type='button';reset.textContent='↺ zaprljaj opet';
-hint.textContent='Drži levi klik i trljaj (pod, zidove, šank...) · Desni klik na sto → „Očisti sto“ (čisti i pod ispod stola)';
+hint.textContent='Drži levi klik i trljaj (pod, zidove, šank...) · Desni klik na sto → „Očisti sto“ (samo ploča stola; pod čistiš sunđerom)';
 // the sponge: lying (three pictures: dry, soapy while it is pressed, dirty after a lot of cleaning) or upright (one picture, tinted when it is dirty)
 sponge.innerHTML='<div class="tc-shadow"></div><img alt="" draggable="false" src="'+IMG.lezeci.states.suv+'">';
 var spImg=sponge.querySelector('img'),spShadow=sponge.querySelector('.tc-shadow'),spKey='lezeci',spState='suv';
@@ -288,7 +241,7 @@ room.addEventListener('contextmenu',function(e){
   if(zi<0){hideMenu();return}
   var btn=menu.querySelector('button');
   menu.querySelector('b').textContent='Sto '+(zi+1);
-  btn.textContent=cleaned[zi]?'✓ Sto je čist':'Očisti sto (i pod ispod)';btn.disabled=!!cleaned[zi];
+  btn.textContent=cleaned[zi]?'✓ Sto je čist':'Očisti sto';btn.disabled=!!cleaned[zi];
   btn.onclick=function(ev){ev.stopPropagation();hideMenu();cleanZone(zi)};
   menu.style.left=Math.min(e.clientX,innerWidth-170)+'px';menu.style.top=Math.min(e.clientY,innerHeight-90)+'px';menu.style.display='block';
   sponge.style.display='none';
