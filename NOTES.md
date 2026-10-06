@@ -7,7 +7,7 @@ Igrica "Cookster", 2D/3D igra kuvanja. Statični HTML/JS, bez build-a.
 Repo: `milos1902/cookster-site`. Objavljuje se preko GitHub Pages iz grane `main` (Actions deploy).
 
 ## Tok rada
-1. Radi na grani `claude/beautiful-mccarthy-qeaqeg`. Ako je prethodni PR spojen, prvo resetuj granu sa svežeg `origin/main` (isto ime grane).
+1. Radi na grani koja ti je dodeljena u sesiji (ime se menja od sesije do sesije, pa ga uzmi iz uputstva sesije). Ako je prethodni PR sa te grane spojen, prvo resetuj granu sa svežeg `origin/main` (isto ime grane).
 2. Izmena, commit, push.
 3. Svaki put napravi **novi PR**. Miloš ga sam spaja.
 4. Posle toga mu reci da sačeka zelenu kvačicu na https://github.com/milos1902/cookster-site/actions i pritisne Ctrl+F5 na igrici.
