@@ -15,6 +15,10 @@
   const MAX=10,VISIBLE_FROM=8;
   const P_GOOD=35,P_RED=85,TURN_DEG=36;             // 360 degrees of turning = 10 points of pressure
   const SOUR_DAYS=[0,2,4];                         // days of fermentation for phase 1, 2, 3
+  // TEST: the cabbage ferments in real seconds instead of game days: phase 2 after SOUR_SECS[1], sour after SOUR_SECS[2].
+  // Set to null to go back to days (SOUR_DAYS).
+  const SOUR_SECS=[0,10,20];
+  const PLATE_ID='kal_02_duboki_tanjir',PLATE_FULL_SRC='assets/calibration_props/kitchen_set_18/02_duboki_tanjir_kupus.png';
   // closed-barrel picture (C) -> frame of the empty barrel picture (P): P = 1.08*C - (34,50)
   const toPx=cx=>(1.08*cx-34)/527*100,toPy=cy=>(1.08*cy-50)/560*100;
   const FRONT_POLY=[[0,558],[0,30],[126,30],[126,176],[150,210],[200,222],[250,229],[300,231],[350,229],[400,222],[440,210],[449,190],[449,30],[560,30],[560,558]]
@@ -41,12 +45,14 @@
     if(el.dataset.kacaRuined==='1')return 3;
     const d0=el.dataset.kacaDay0;
     if(d0===undefined||d0==='')return 1;
+    if(SOUR_SECS){const t0=+el.dataset.kacaT0;if(t0){const s=(Date.now()-t0)/1000;return s>=SOUR_SECS[2]?3:s>=SOUR_SECS[1]?2:1}}
     const days=day()-(+d0);
     return days>=SOUR_DAYS[2]?3:days>=SOUR_DAYS[1]?2:1;
   }
   function daysLeft(el){
     const d0=el.dataset.kacaDay0;
     if(d0===undefined||d0==='')return null;
+    if(SOUR_SECS){const t0=+el.dataset.kacaT0;if(t0)return Math.max(0,Math.ceil(SOUR_SECS[2]-(Date.now()-t0)/1000))}
     return Math.max(0,SOUR_DAYS[2]-(day()-(+d0)));
   }
   function bodyEl(el){return el.querySelector(':scope>.body');}
@@ -130,7 +136,7 @@
     if(el.dataset.kacaRuined==='1')t='Pokvaren kupus — klikni da baciš';
     else if(closed){
       const left=daysLeft(el);
-      t+=left===null?' · stegni poklopac (zeleno)':left>0?` · kiseli se, još ${left} d`:' · ukiseljen!';
+      t+=left===null?' · stegni poklopac (zeleno)':left>0?` · kiseli se, još ${left} ${SOUR_SECS?'s':'d'}`:' · ukiseljen!';
     }
     hud.querySelector('.t').textContent=t;
     const bar=hud.querySelector('.bar');bar.style.display=closed?'block':'none';
@@ -152,6 +158,22 @@
       if(isKaca(el)&&el!==holding&&over(el,x,y,part))return el;
     }
     return null;
+  }
+  function plateAt(x,y){
+    for(const el of (window.items||items)){
+      if(el.dataset?.itemId!==PLATE_ID||el===holding||el.dataset.plateFill)continue;
+      const r=el.getBoundingClientRect();
+      if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom)return el;
+    }
+    return null;
+  }
+  function fillPlate(plate,item){
+    plate.dataset.plateFill='kiseli_kupus';plate.dataset.label='Duboki tanjir — seckani kiseli kupus';
+    const img=plate.querySelector('.body');if(img)img.src=PLATE_FULL_SRC;
+    const sh=plate._contactShadow?.querySelector('img');if(sh)sh.src=PLATE_FULL_SRC;
+    removeItem(item);holding=null;hidePlacementGhost();hideOriginGhost();updateHover();
+    try{playImpactSound(plate,'putIn');}catch(_){}
+    CooksterSave.schedule();return true;
   }
   function addCabbage(el,veg){
     const n=num(el,'kacaN');
@@ -262,7 +284,7 @@
       el.dataset.kacaRuined='1';el.dataset.kacaDay0='';
       try{playImpactSound(el,'hit');}catch(_){}
     }else if(p>=P_GOOD){
-      if(el.dataset.kacaDay0===''||el.dataset.kacaDay0===undefined)el.dataset.kacaDay0=String(day());
+      if(el.dataset.kacaDay0===''||el.dataset.kacaDay0===undefined){el.dataset.kacaDay0=String(day());el.dataset.kacaT0=String(Date.now())}
     }else el.dataset.kacaDay0='';
     refresh(el);showHud(el,3);CooksterSave.schedule();
   }
@@ -299,6 +321,11 @@
         const r=addCabbage(el,item);
         if(r==='ok')return true;
         showHud(el,2);return true;
+      }
+      // sliced or chopped sour cabbage goes into a deep plate
+      if(item.dataset?.vegetable==='1'&&item.dataset.vegKey==='kupus'&&item.dataset.fermentPhase==='3'&&['sliced','diced'].includes(item.dataset.cutState)){
+        const plate=plateAt(x,y);
+        if(plate)return fillPlate(plate,item);
       }
       return false;
     }

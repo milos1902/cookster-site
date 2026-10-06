@@ -171,6 +171,8 @@ window.CooksterCatalog = Object.freeze({
       src: 'assets/market_veg/kupus.png',
       slicedSrc: 'assets/market_veg/kupus_secen.png',
       dicedSrc: 'assets/diced_veg/kupus_diced.png',
+      slicedSrcSour: 'assets/market_veg/kupus_secen_kiseli.png',
+      dicedSrcSour: 'assets/diced_veg/kupus_diced_kiseli.png',
       friedDicedSrc: 'assets/diced_veg_fried/kupus_diced_fried.png',
       wellDoneDicedSrc: 'assets/diced_veg_welldone/kupus_diced_welldone.png',
       dicedLabel: 'sitno seckan kupus',
