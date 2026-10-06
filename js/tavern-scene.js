@@ -554,11 +554,12 @@ function drawWaiter(ctx){
   drawShadow(ctx,w.x,w.y,sc);
   if(!moving){drawSprite(ctx,'w_'+w.set+'2',w.x,w.y,sc,w.flip,0,1);return}
   var ph=Math.abs(Math.sin(w.phase*Math.PI)),bob=ph*3.2*sc/.3;
-  // the same step as the guests: left leg forward, together, right leg forward, together; the next picture fades in over the current one
-  var q=w.phase*2,qi=Math.floor(q),fr=q-qi,SEQ=[1,2,3,2];
+  // walking: only the two pictures with a leg forward (1 and 3), one after the other; the picture with the legs together (2) is only for standing.
+  // The next picture fades in over the current one
+  var q=w.phase,qi=Math.floor(q),fr=q-qi,SEQ=[1,3];
   var fade=Math.max(0,Math.min(1,(fr-.25)/.65));fade=fade*fade*(3-2*fade);
-  drawSprite(ctx,'w_'+w.set+SEQ[qi%4],w.x,w.y-bob,sc,w.flip,0,1);
-  if(fade>0)drawSprite(ctx,'w_'+w.set+SEQ[(qi+1)%4],w.x,w.y-bob,sc,w.flip,0,fade);
+  drawSprite(ctx,'w_'+w.set+SEQ[qi%2],w.x,w.y-bob,sc,w.flip,0,1);
+  if(fade>0)drawSprite(ctx,'w_'+w.set+SEQ[(qi+1)%2],w.x,w.y-bob,sc,w.flip,0,fade);
 }
 function seatPos(g){return{x:g.seat.x,y:g.seat.y}}
 // the chairs on the right side of a table: the guest looks to the left, towards the others
