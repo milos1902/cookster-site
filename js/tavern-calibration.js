@@ -105,6 +105,7 @@ function build(){
       '<button class="tc-b" data-a="undo">Poništi tačku</button></div>'+
     '<div class="tc-row"><button class="tc-b" data-a="delpoly">Obriši oblik</button><button class="tc-b" data-a="dellayer">Obriši sloj</button><button class="tc-b" data-a="reset">Vrati početno (sloj)</button></div>'+
     '<div class="tc-row"><button class="tc-b" data-a="fit">Ceo prikaz</button><button class="tc-b" data-a="export">Izvezi JSON</button><button class="tc-b" data-a="import">Uvezi JSON</button></div>'+
+    '<div id="tcExportBox" style="display:none"><div class="tc-help">Ako se fajl nije preuzeo: klikni u polje, pritisni Ctrl+A pa Ctrl+C i nalepi tekst u chat (ili dugme „Kopiraj“).</div><textarea id="tcExportText" readonly></textarea><div class="tc-row"><button class="tc-b" data-a="copyexport">Kopiraj</button><button class="tc-b" data-a="closeexport">Zatvori</button></div></div>'+
     '<div id="tcImportBox" style="display:none"><textarea id="tcImportText" placeholder="Nalepi JSON ovde"></textarea><div class="tc-row"><button class="tc-b" data-a="doimport">Primeni</button></div></div>'+
     '<div class="tc-help"><b>Kako se crta:</b><br>• Klik na sliku dodaje tačku, tačke se povezuju tankim linijama (oblik se zatvara sam).<br>• Prevuci tačku da je pomeriš. Dupli klik ili desni klik na tačku je briše.<br>• Klik na liniju ubacuje novu tačku tačno na toj liniji, između dve tačke. Klik van linija dodaje tačku na kraj oblika.<br>• Točak miša približava i udaljava (oko pokazivača). Prevlačenje prazne slike pomera prikaz.<br>• "Novi oblik" počinje novi oblik u istom sloju; ◀ ▶ prelaze među oblicima.<br>• Sve se čuva odmah i gosti ga odmah koriste.</div>'+
     '<h2 style="margin-top:12px">Prikaz slojeva</h2><div id="tcVis"></div>'+
@@ -504,6 +505,8 @@ function act(a){
   }
   else if(a==='fit'){fitView();draw()}
   else if(a==='export'){exportJson()}
+  else if(a==='copyexport'){var ta2=ui.root.querySelector('#tcExportText');ta2.focus();ta2.select();try{document.execCommand('copy');ui.info.textContent='Tekst je kopiran.'}catch(_){}}
+  else if(a==='closeexport'){ui.root.querySelector('#tcExportBox').style.display='none'}
   else if(a==='import'){var b=ui.root.querySelector('#tcImportBox');b.style.display=b.style.display==='none'?'block':'none'}
   else if(a==='doimport'){
     try{
@@ -516,9 +519,14 @@ function act(a){
 }
 function exportJson(){
   var data=JSON.stringify(Object.assign({format:'cookster-tavern-calibration',exportedAt:new Date().toISOString()},cal),null,1);
-  var blob=new Blob([data],{type:'application/json'}),a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);a.download='cookster_kafana_kalibracija.json';document.body.appendChild(a);a.click();
-  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);
+  // a copy of the text in a field, in case the browser does not let the file download
+  var box=ui.root.querySelector('#tcExportBox'),ta=ui.root.querySelector('#tcExportText');
+  ta.value=data;box.style.display='block';ta.focus();ta.select();
+  try{
+    var blob=new Blob([data],{type:'application/json'}),a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);a.download='cookster_kafana_kalibracija.json';document.body.appendChild(a);a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);
+  }catch(_){ui.info.textContent='Preuzimanje nije uspelo, kopiraj tekst iz polja.'}
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(data).then(function(){ui.info.textContent='JSON je preuzet i kopiran u clipboard.'},function(){});
 }
 function open(){

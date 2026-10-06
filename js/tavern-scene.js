@@ -68,7 +68,7 @@ function preload(){
   })('g'+(c2<10?'0':'')+c2+'_'+w+f)});
   // the waiter: three pictures of a step toward the camera (walkd), away from it (walku) and from the side (walks, looking right)
   ['walkd','walku','walks'].forEach(function(w){for(var f2=1;f2<=3;f2++)(function(key){
-    jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=1').then(function(im){imgs['w_'+key]=im}));
+    jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=2').then(function(im){imgs['w_'+key]=im}));
   })(w+f2)});
   var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
   loading=Promise.all([roomJob].concat(jobs)).then(function(r){loaded=!!r[0];loading=null;return loaded});
