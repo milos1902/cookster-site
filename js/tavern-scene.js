@@ -535,6 +535,8 @@ function waiterGo(to){
 function stepWaiter(dt){
   var w=ensureWaiter(),home=waiterSpot('home')||{x:DOOR.x,y:DOOR.y,dir:90};
   if(w.replan){w.replan=false;if(w.mode==='go'||w.mode==='back')waiterGo(w.mode==='go'?waiterSpot(w.table)||home:home);else if(w.mode==='idle'){w.x=home.x;w.y=home.y}}
+  if(w.mode==='idle'&&window.CooksterOrders&&window.CooksterOrders.busy()){w.hidden=true;return}    // he is in the kitchen with an order
+  if(w.hidden){w.hidden=false;w.x=home.x;w.y=home.y}
   if(w.mode==='idle'){
     var tb=waitingTable();
     if(tb>=0&&waiterSpot(tb)){w.table=tb;w.mode='go';waiterGo(waiterSpot(tb))}
@@ -558,12 +560,32 @@ function stepWaiter(dt){
     w.t+=dt;
     if(w.t>4.4){
       guests.forEach(function(g){if(g.seat.table===w.table&&g.mode==='seated')g.ordered=true});
+      if(window.CooksterOrders)window.CooksterOrders.add(w.table+1);          // the order goes to the kitchen
       w.mode='back';waiterGo(home);
     }
   }
 }
+// what the guest says to the waiter: the dish he orders
+function drawBubble(ctx,x,y,l1,l2){
+  ctx.save();ctx.font='700 17px system-ui,sans-serif';
+  var w=Math.max(ctx.measureText(l1).width,(ctx.font='600 13px system-ui,sans-serif',ctx.measureText(l2).width))+26,h=l2?50:32,bx=x-w/2,by=y-h-12;
+  ctx.fillStyle='rgba(250,238,206,.96)';ctx.strokeStyle='#5b3d1e';ctx.lineWidth=2;
+  ctx.beginPath();ctx.roundRect?ctx.roundRect(bx,by,w,h,10):ctx.rect(bx,by,w,h);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x-8,by+h);ctx.lineTo(x,by+h+12);ctx.lineTo(x+8,by+h);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#3a2410';ctx.textAlign='center';
+  ctx.font='700 17px system-ui,sans-serif';ctx.fillText(l1,x,by+(l2?21:21));
+  if(l2){ctx.font='600 13px system-ui,sans-serif';ctx.fillText(l2,x,by+40)}
+  ctx.restore();
+}
+function drawOrderBubble(ctx){
+  var w=waiter;if(!w||w.mode!=='serve'||w.t<.8)return;
+  var g=null;guests.forEach(function(o){if(!g&&o.seat.table===w.table&&(o.mode==='seated'||o.ordered))g=o});
+  if(!g)return;
+  var sp=seatPos(g),im=imgs[chKey(g,sitPose(g))],hh=im?im.naturalHeight*scaleAt(sp.y)*SIT_K:300;
+  drawBubble(ctx,sp.x,sp.y-hh,'Kiseli kupus','ulje i tucana paprika');
+}
 function drawWaiter(ctx){
-  var w=waiter;if(!w)return;
+  var w=waiter;if(!w||w.hidden)return;
   var sc=scaleAt(w.y),moving=(w.mode==='go'||w.mode==='back')&&w.path&&w.path[w.pi];
   drawShadow(ctx,w.x,w.y,sc);
   if(!moving){
@@ -668,6 +690,7 @@ function draw(){
   });
   list.sort(function(a,b){return a.y-b.y});
   list.forEach(function(o){if(o.g)drawGuest(ctx,o.g);else if(o.w)drawWaiter(ctx);else drawPolyFromPicture(ctx,o.m.poly)});
+  drawOrderBubble(ctx);
 }
 
 // ---------- the canvas follows the picture ----------
