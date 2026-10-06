@@ -8196,13 +8196,15 @@ function ingredientVisualMeta(item){
       };
     }
 
+    // a sour head (or half a head) is another ingredient than a fresh one: it keeps its own key and picture, and comes out of the vessel as what it was
+    const halfSour=sourCabbage&&item.dataset.kupusHalf==='1';
     return {
-      key:`${key}_celo`,
+      key:halfSour?'kupus_pola_kiseli':sourCabbage?'kupus_celo_kiseli':`${key}_celo`,
       baseKey:key,
       type:isFruit?'fruit':'vegetable',
       form:'whole',
       cutState:'whole',
-      label:def.label||item.dataset.label||key,
+      label:halfSour?'Pola kiselog kupusa':sourCabbage?'Kiseli kupus':(def.label||item.dataset.label||key),
       src:item.querySelector('.body')?.getAttribute('src')||def.src||''
     };
   }
@@ -11751,6 +11753,7 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null){
     if(!src)continue;
     const img=document.createElement('img');
     img.className='whole-produce-piece';
+    img.dataset.entryKey=entry.key;
     img.dataset.stackLevel=String(stackLevel);
     img.src=src;img.alt='';img.draggable=false;
     img.style.left=x.toFixed(2)+'%';
@@ -12938,7 +12941,7 @@ function buildFoodStageLayer(counts,stage,metaItems={},batches=[],heat=0,mixLeve
   for(const [key,val] of Object.entries(counts||{})){
     const count=Math.max(0,+val||0);
     if(count<=0)continue;
-    if(GROUND_VEGETABLE_BY_KEY[key]||key.endsWith('_celo')||key.endsWith('_diced')
+    if(GROUND_VEGETABLE_BY_KEY[key]||key.endsWith('_celo')||key.endsWith('_diced')||metaItems?.[key]?.form==='whole'
       ||key.startsWith('paprika_pecena')||isRoastedUnpeeledEggplantKey(key))continue;
     if(allMix.some(p=>p.storageKey===key))continue;
     const meta=metaItems?.[key];
