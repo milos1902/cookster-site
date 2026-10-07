@@ -462,7 +462,7 @@ function makeGuest(seat,grp,wait){
   var ch=pool.length?pool[Math.floor(Math.random()*pool.length)]:1+Math.floor(Math.random()*CHARS);
   var g={id:++UID,ch:ch,seat:seat,x:DOOR.x+(Math.random()*30-15),y:DOOR.y,
     mode:'in',path:findPath(DOOR,{x:seat.ax,y:seat.ay}),pi:1,phase:Math.random()*2,face:'dole',flip:false,
-    sitT:0,sitFor:grp?grp.sitFor:30+Math.random()*40,fade:0,from:null,speed:78+Math.random()*16,mood:'ok',grp:grp||null,wait:wait||0,rounds:0};
+    sitT:0,sitFor:grp?grp.sitFor:90+Math.random()*70,orderDelay:14+Math.random()*14,fade:0,from:null,speed:78+Math.random()*16,mood:'ok',grp:grp||null,wait:wait||0,rounds:0};
   guests.push(g);return g;
 }
 // one guest (a free seat at a table that is clean)
@@ -485,14 +485,14 @@ function spawnGroup(){
   var seats=tables[Math.floor(Math.random()*tables.length)].slice();
   seats.sort(function(){return Math.random()-.5});seats=seats.slice(0,size);
   var long=size>=3&&Math.random()<.55;
-  var grp={id:++UID,size:size,long:long,sitFor:long?170+Math.random()*110:35+Math.random()*45};
+  var grp={id:++UID,size:size,long:long,sitFor:long?260+Math.random()*180:120+Math.random()*80};
   seats.forEach(function(st,i){makeGuest(st,grp,i*.9+Math.random()*.4)});
   return true;
 }
 function chKey(g,pose){return 'g'+(g.ch<10?'0':'')+g.ch+'_'+pose}
 function step(dt){
   clock+=dt;
-  if(GUESTS_ON&&clock>=nextArrival){nextArrival=clock+7+Math.random()*9;if(guests.length<14)spawnGroup()}
+  if(GUESTS_ON&&clock>=nextArrival){nextArrival=clock+28+Math.random()*32;if(guests.length>=14||!spawnGroup())nextArrival=clock+4}      // no free clean table: look again in a moment
   if(GUESTS_ON)stepWaiter(dt);
   tickDishes(dt);tickMess(dt);
   for(var i=guests.length-1;i>=0;i--){
@@ -520,7 +520,8 @@ function step(dt){
     }else if(g.mode==='seated'){
       g.sitT+=dt;
       if(g.reorderAt&&g.sitT>g.reorderAt){g.reorderAt=0;g.ordered=false;g.orders=null}      // a long company orders again
-      if(g.sitT>g.sitFor){g.mode='rising';g.fade=0}
+      if(g.grp){if(!g.grp.until)g.grp.until=clock+g.grp.sitFor;if(clock>g.grp.until){g.mode='rising';g.fade=0}}
+      else if(g.sitT>g.sitFor){g.mode='rising';g.fade=0}
     }else if(g.mode==='rising'){
       g.fade=Math.min(1,g.fade+dt/.55);
       if(g.fade>=1){g.x=g.seat.ax;g.y=g.seat.ay;g.mode='out';g.path=findPath({x:g.x,y:g.y},DOOR);g.pi=1}
@@ -604,18 +605,17 @@ function guestOrders(g){
 }
 function orderText(g){var o=guestOrders(g);return{l1:o.map(function(x){return x.name}).join(' + '),l2:o.map(function(x){return x.extra}).filter(Boolean).join(' · ')}}
 function seatedCount(t){var n=0;guests.forEach(function(g){if(g.seat.table===t&&g.mode==='seated'&&!g.ordered)n++});return n}
-function waitingGuest(){                              // the guest that has waited longest and has not ordered yet
+function guestReady(g){                              // he has sat long enough to know what he wants, and his company is all there
+  if(g.mode!=='seated'||g.ordered||g.sitT<g.orderDelay)return false;
+  if(g.grp&&guests.some(function(o){return o.grp===g.grp&&(o.mode==='in'||o.mode==='sitting')}))return false;
+  return true;
+}
+function waitingGuest(){                              // the ready guest that has waited longest
   var best=null;
-  guests.forEach(function(g){if(g.mode==='seated'&&!g.ordered&&(!best||g.sitT>best.sitT))best=g});
+  guests.forEach(function(g){if(guestReady(g)&&(!best||g.sitT>best.sitT))best=g});
   return best;
 }
-function waitingTable(){                              // the table with the guest that has waited longest and has not ordered yet
-  var best=-1,bt=-1;
-  guests.forEach(function(g){
-    if(g.mode==='seated'&&!g.ordered&&g.sitT>bt){bt=g.sitT;best=g.seat.table}
-  });
-  return best;
-}
+function waitingTable(){var g=waitingGuest();return g?g.seat.table:-1}
 function carrySet(w){return(w.carry&&w.carry.kind==='drink'&&imgs['w_drinks2'])?'drinks':'foods'}           // the waiter with drinks, if the pictures exist, else with the tray of food
 function waiterGo(to){
   var w=ensureWaiter();
@@ -654,9 +654,9 @@ function stepWaiter(dt){
       var isDrink=w.carry.kind==='drink',sv=serveSpot(w.table,isDrink?'pice':'jelo',w.carry.seatId);
       var eatSeat=w.carry.seatId!=null&&w.carry.seatId>=0?w.carry.seatId:-1,secs=isDrink?DRINK_SECS:EAT_SECS;
       if(eatSeat<0)guests.forEach(function(g){if(g.seat.table===w.table&&g.mode==='seated'&&(eatSeat<0||g.seat.id<eatSeat))eatSeat=g.seat.id});
-      guests.forEach(function(g){if(g.seat.id===eatSeat)g.sitFor=Math.max(g.sitFor,g.sitT+EAT_DELAY+secs+8)});
+      guests.forEach(function(g){if(g.seat.id===eatSeat){g.sitFor=Math.max(g.sitFor,g.sitT+EAT_DELAY+secs+8);if(g.grp)g.grp.until=Math.max(g.grp.until||0,clock+EAT_DELAY+secs+10)}});
       addDirt(w.table,isDrink?1:2);
-      guests.forEach(function(g){if(g.seat.id===eatSeat){g.rounds=(g.rounds||0)+1;if(g.grp&&g.grp.long&&g.rounds<6)g.reorderAt=g.sitT+secs+4+Math.random()*10}});
+      guests.forEach(function(g){if(g.seat.id===eatSeat){g.rounds=(g.rounds||0)+1;if(g.grp&&g.grp.long&&g.rounds<4)g.reorderAt=g.sitT+secs+30+Math.random()*30}});
       dishes.push({table:w.table,kind:w.carry.kind||'plain',items:w.carry.items||null,secs:secs,t:0,eatT:0,bite:0,phase:'eating',seatId:eatSeat,x:sv?sv.x:null,y:sv?sv.y:null});
       var ev=w.carry.ev||null,rep=ev&&window.CooksterQuality?window.CooksterQuality.addReputation(ev.score):null;
       reactions.push({table:w.table,t:0,ev:ev,rep:rep,delta:ev?ev.score:0});
@@ -726,7 +726,7 @@ function drinkLayout(d){
   var dx=d.x!=null?d.x:tb.x,dy=d.y!=null?d.y:tb.y+8,sc=scaleAt(dy)*.19,out=[],tw=0,i;
   for(i=0;i<d.items.length;i++){var im=drinkImg(d.items[i]);if(!im||!im.naturalWidth)return null;var w=im.naturalWidth*sc,h=im.naturalHeight*sc;out.push({im:im,w:w,h:h});tw+=w}
   var x=dx-tw/2-(out.length-1)*3;
-  out.forEach(function(o,i){o.x=x;o.y=dy-o.h+(o.h>o.w*1.6?0:2.5*sc);x+=o.w+6})
+  out.forEach(function(o,i){o.x=x;o.y=dy-o.h/2;x+=o.w+6})                 // the spot is the MIDDLE of the group (and of every piece)
   return out;
 }
 function dishRect(d){
@@ -738,7 +738,7 @@ function dishRect(d){
   }
   var im=dishImgs.dirty;if(!im||!im.naturalWidth)return null;
   var dx=d.x!=null?d.x:tb.x,dy=d.y!=null?d.y:tb.y+8,sc=scaleAt(dy)*.2,w=im.naturalWidth*sc,h=im.naturalHeight*sc;
-  return{x:dx-w/2,y:dy-h,w:w,h:h};
+  return{x:dx-w/2,y:dy-h/2,w:w,h:h};                              // the spot is the middle of the dish
 }
 function drawDish(ctx,d){
   if(d.items&&d.items.length){
