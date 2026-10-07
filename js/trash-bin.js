@@ -99,7 +99,11 @@
     label.style.cssText=`position:fixed;left:${r.left+r.width/2}px;top:${r.bottom+6}px;transform:translateX(-50%);z-index:20002;padding:7px 14px;border:2px solid #351b0d;border-radius:9px;background:#e8c27a;color:#351b0d;font:700 14px system-ui,sans-serif;cursor:${n>=MAX_THROWS?'pointer':'default'};white-space:nowrap`;
     ['pointerdown','mousedown','click','contextmenu'].forEach(ev=>label.addEventListener(ev,e=>e.stopPropagation()));
     label.addEventListener('click',()=>{
-      if(num(b,'trashN')>=MAX_THROWS){b.dataset.trashN='0';snd(b,'empty');smoke(b);try{CooksterSave.schedule();}catch(_){}}
+      if(num(b,'trashN')>=MAX_THROWS){
+        b.dataset.trashN='0';b._keepOpen=true;setOpen(b,true);snd(b,'empty');smoke(b);       // the bin is open for two seconds while it is emptied
+        setTimeout(()=>{b._keepOpen=false;setOpen(b,false);},2000);
+        try{CooksterSave.schedule();}catch(_){}
+      }
       hideLabel();
     });
     document.body.appendChild(label);
