@@ -7,7 +7,7 @@
 var T=window.CooksterTavern,room=document.getElementById('tavernScene');
 if(!T||!room||window.CooksterTableItemsTool||!T.tableItems)return;
 var ITEMS=[['dish','Činija sa kupusom'],['pice_vino_crno_flasa','Flaša crnog vina'],['pice_vino_belo_flasa','Flaša belog vina'],['pice_soda_sifon','Soda voda (sifon)'],['pice_casa_spricer','Čaša za špricer'],['pice_casa_belo_vino','Čaša belog vina'],['pice_casa_crno_vino','Čaša crnog vina']];
-var key='dish',table=0,seat=0,scope='seat',ui={},cv,g,img=null,imgKey=null,room_img=new Image(),drag=false;
+var imgs={},key='dish',table=0,seat=0,scope='seat',ui={},cv,g,img=null,imgKey=null,room_img=new Image(),drag=false;
 room_img.src=T.roomSrc;
 var CROP={w:760,h:428},view={z:1,cx:null,cy:null};                                 // part of the hall that is shown (scene pixels), around the table
 function data(){return T.tableItems.get()}
@@ -44,14 +44,27 @@ function draw(){
     g.save();g.fillStyle=i===seat?'#ffe066':'rgba(20,10,4,.6)';g.strokeStyle='#ffe066';g.lineWidth=1.2/k;g.beginPath();g.arc(s.x,s.y,7,0,6.3);g.fill();g.stroke();
     g.fillStyle=i===seat?'#201409':'#ffe9a0';g.font='9px system-ui';g.textAlign='center';g.fillText(String(i+1),s.x,s.y+3);g.restore();
   });
-  var c=cur(),src=T.tableItems.src(key);
-  if(src!==imgKey){imgKey=src;img=new Image();img.onload=draw;img.src=src}
-  if(img&&img.complete&&img.naturalWidth){
-    var sc=T.tableItems.base(key,c.y)*c.s,w=img.naturalWidth*sc,h=img.naturalHeight*sc;
+  // everything that was already placed at the chairs of this table stays where it is (so nothing gets lost when another chair is chosen)
+  function pic(k){var src=T.tableItems.src(k);if(!src)return null;if(!imgs[k]){imgs[k]=new Image();imgs[k].onload=draw;imgs[k].src=src}return imgs[k]}
+  function paint(k,c){
+    var im=pic(k);if(!im||!im.complete||!im.naturalWidth)return;
+    var sc=T.tableItems.base(k,c.y)*c.s,w=im.naturalWidth*sc,h=im.naturalHeight*sc;
     T.tableItems.shadow(g,c.x,c.y+h/2,w,c);
-    g.save();g.filter=T.tableItems.filter(c);T.tableItems.pose(g,c.x,c.y,c);T.tableItems.draw(g,T.tableItems.img(img,c.hl),-w/2,-h/2,w,h,c);g.restore();
-    g.save();g.strokeStyle='#4dd2ff';g.lineWidth=1.2/k;g.beginPath();g.moveTo(c.x-6,c.y);g.lineTo(c.x+6,c.y);g.moveTo(c.x,c.y-6);g.lineTo(c.x,c.y+6);g.stroke();g.restore();
+    g.save();T.tableItems.pose(g,c.x,c.y,c);T.tableItems.draw(g,T.tableItems.img(im,c),-w/2,-h/2,w,h,c);g.restore();
   }
+  var d0=data().items||{},selId=seatId();
+  ITEMS.forEach(function(itm){
+    var k=itm[0],it=d0[k];if(!it||!it.seat)return;
+    seatsOf(table).forEach(function(s2){
+      if(k===key&&s2.id===selId)return;
+      var o=it.seat[s2.id];if(!o||o.x==null)return;
+      var c2={s:1,rot:0,sk:0,tilt:0,hl:0,h:0,sat:1,b:1,c:1};for(var q in (it.def||{}))c2[q]=it.def[q];for(var q2 in o)c2[q2]=o[q2];
+      paint(k,c2);
+    });
+  });
+  var c=cur();
+  paint(key,c);
+  g.save();g.strokeStyle='#4dd2ff';g.lineWidth=1.2/k;g.beginPath();g.moveTo(c.x-6,c.y);g.lineTo(c.x+6,c.y);g.moveTo(c.x,c.y-6);g.lineTo(c.x,c.y+6);g.stroke();g.restore();
 }
 function refreshUi(){
   var c=cur();
@@ -83,6 +96,11 @@ function build(){
     '<div class="row"><button class="b" data-scope="seat">Za ovu stolicu</button><button class="b" data-scope="all">Za sve stolice</button></div>'+
     sl('s','Veličina',0.3,3,0.01)+sl('tilt','Nagib ka stolu (spusti / podigni)',-70,70,1)+sl('rot','Rotacija levo-desno',-45,45,1)+sl('sk','Zakošenost',-45,45,1)+sl('hl','Svetli tonovi',-0.8,0.8,0.01)+
     sl('h','Nijansa',-180,180,1)+sl('sat','Zasićenost',0,2.5,0.01)+sl('b','Osvetljenost',0.2,2,0.01)+sl('c','Kontrast',0.4,2,0.01)+'<h2 style="margin-top:12px">Senka</h2>'+sl('sho','Jačina senke',0,1,0.01)+sl('shx','Pomak senke levo-desno',-1,1,0.01)+sl('shy','Pomak senke gore-dole',-0.4,0.6,0.01)+sl('shw','Širina senke',0.1,2,0.01)+sl('shh','Visina senke',0.03,0.9,0.01)+sl('shb','Zamućenost senke',0,20,0.5)+
+    '<h2 style="margin-top:12px">Kopiranje</h2><div class="row"><button class="b" id="tiCopy">Kopiraj ovu stolicu</button><button class="b" id="tiPaste">Nalepi ovde</button></div>'+
+    '<div class="row"><button class="b" id="tiPasteAll">Nalepi na sve stolice</button></div>'+
+    '<div class="row"><label><input type="checkbox" id="tiWithPos"> i položaj (inače ostaje svoj)</label></div>'+
+    '<div class="row"><select id="tiToItem" style="width:100%">'+ITEMS.map(function(i){return '<option value="'+i[0]+'">'+i[1]+'</option>'}).join('')+'</select><button class="b" id="tiToItemBtn">Primeni isto na izabrani predmet (sve stolice)</button></div>'+
+    '<div class="help" id="tiClipInfo">Ništa nije kopirano.</div>'+
     '<div class="row"><button class="b" id="tiResetSeat">Vrati ovu stolicu</button><button class="b" id="tiResetItem">Vrati ceo predmet</button></div>'+
     '<div class="row"><button class="b" id="tiExport">Izvezi JSON</button><button class="b" id="tiImport">Uvezi JSON</button></div>'+
     '<div id="tiBox" style="display:none"><textarea id="tiText"></textarea><div class="row"><button class="b" id="tiDoImport">Primeni</button></div></div>'+
@@ -95,6 +113,16 @@ function build(){
   ui.root.querySelectorAll('[data-seat]').forEach(function(b){b.addEventListener('click',function(){seat=+b.dataset.seat;refreshUi();draw()})});
   ui.root.querySelectorAll('[data-scope]').forEach(function(b){b.addEventListener('click',function(){scope=b.dataset.scope;refreshUi()})});
   ['s','tilt','rot','sk','hl','h','sat','b','c','sho','shx','shy','shw','shh','shb'].forEach(function(k){ui.root.querySelector('#tiS_'+k).addEventListener('input',function(e){setVal(k,+e.target.value)})});
+  var clip=null,STYLE=['s','tilt','rot','sk','hl','h','sat','b','c','sho','shx','shy','shw','shh','shb'];
+  function styleOf(c,withPos){var o={};STYLE.forEach(function(k){o[k]=c[k]});if(withPos){o.x=c.x;o.y=c.y}return o}
+  ui.root.querySelector('#tiCopy').addEventListener('click',function(){clip=cur();ui.root.querySelector('#tiClipInfo').textContent='Kopirano: '+ITEMS.filter(function(i){return i[0]===key})[0][1]+', sto '+(table+1)+', stolica '+(seat+1)+'.'});
+  function pasteTo(id,withPos){var it=entry(true);it.seat[id]=Object.assign(it.seat[id]||{},styleOf(clip,withPos))}
+  ui.root.querySelector('#tiPaste').addEventListener('click',function(){if(!clip)return;pasteTo(seatId(),ui.root.querySelector('#tiWithPos').checked);save();refreshUi();draw()});
+  ui.root.querySelector('#tiPasteAll').addEventListener('click',function(){if(!clip)return;var wp=ui.root.querySelector('#tiWithPos').checked;T.seats.forEach(function(s){pasteTo(s.id,wp)});save();refreshUi();draw()});
+  ui.root.querySelector('#tiToItemBtn').addEventListener('click',function(){
+    if(!clip)return;var tk=ui.root.querySelector('#tiToItem').value,d=data();if(!d.items)d.items={};
+    var it=d.items[tk]||(d.items[tk]={def:{},seat:{}});it.def=Object.assign(it.def||{},styleOf(clip,false));if(!it.seat)it.seat={};save();refreshUi();draw();
+  });
   ui.root.querySelector('#tiResetSeat').addEventListener('click',function(){var it=entry(false);if(it){delete it.seat[seatId()];save();refreshUi();draw()}});
   ui.root.querySelector('#tiResetItem').addEventListener('click',function(){if(confirm('Vratiti ceo predmet na početno?')){delete data().items[key];save();refreshUi();draw()}});
   ui.root.querySelector('#tiExport').addEventListener('click',function(){

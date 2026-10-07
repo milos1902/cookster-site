@@ -736,17 +736,22 @@ function tiFilter(c){
   return 'hue-rotate('+h+'deg) saturate('+sat+') brightness('+b+') contrast('+ct+')';
 }
 // "svetli tonovi": the light parts of the picture are made lighter (hl>0) or darker (hl<0)
-var tiCache={};
-function tiImg(im,hl){
-  if(!im||!hl||!im.naturalWidth)return im;
-  var k=im.src+'|'+(Math.round(hl*20)/20);if(tiCache[k])return tiCache[k];
-  var c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;var x=c.getContext('2d');x.drawImage(im,0,0);
-  try{
-    var d=x.getImageData(0,0,c.width,c.height),a=d.data;
-    for(var i=0;i<a.length;i+=4){var l=(a[i]*.3+a[i+1]*.59+a[i+2]*.11)/255;if(l>.45){var t=Math.min(1,(l-.45)/.55),f=1+hl*t;a[i]=Math.max(0,Math.min(255,a[i]*f));a[i+1]=Math.max(0,Math.min(255,a[i+1]*f));a[i+2]=Math.max(0,Math.min(255,a[i+2]*f))}}
-    x.putImageData(d,0,0);
-  }catch(e){return im}
-  tiCache[k]=c;return c;
+var tiCache={},tiCount=0;
+function tiImg(im,c){
+  if(!im||!im.naturalWidth||!c)return im;
+  var f=tiFilter(c),hl=c.hl?Math.round(c.hl*20)/20:0;if(f==='none'&&!hl)return im;
+  var k=im.src+'|'+f+'|'+hl;if(tiCache[k])return tiCache[k];
+  if(tiCount>120){tiCache={};tiCount=0}
+  var cv2=document.createElement('canvas');cv2.width=im.naturalWidth;cv2.height=im.naturalHeight;var x=cv2.getContext('2d');
+  x.filter=f;x.drawImage(im,0,0);x.filter='none';
+  if(hl){
+    try{
+      var d=x.getImageData(0,0,cv2.width,cv2.height),a=d.data;
+      for(var i=0;i<a.length;i+=4){var l=(a[i]*.3+a[i+1]*.59+a[i+2]*.11)/255;if(l>.45){var t=Math.min(1,(l-.45)/.55),ff=1+hl*t;a[i]=Math.max(0,Math.min(255,a[i]*ff));a[i+1]=Math.max(0,Math.min(255,a[i+1]*ff));a[i+2]=Math.max(0,Math.min(255,a[i+2]*ff))}}
+      x.putImageData(d,0,0);
+    }catch(e){}
+  }
+  tiCache[k]=cv2;tiCount++;return cv2;
 }
 // the lean (rotation) and the skew of a thing on the table
 function tiPose(ctx,cx,cy,c){
@@ -771,8 +776,9 @@ var TI_SH={sho:.38,shx:0,shy:.01,shw:1,shh:.28,shb:5};
 function tiShadow(ctx,cx,bottom,w,c){
   var o=c&&c.sho!=null?+c.sho:TI_SH.sho;if(o<=0.01)return;
   var sx=c&&c.shx!=null?+c.shx:TI_SH.shx,sy=c&&c.shy!=null?+c.shy:TI_SH.shy,sw=c&&c.shw!=null?+c.shw:TI_SH.shw,sh=c&&c.shh!=null?+c.shh:TI_SH.shh,b=c&&c.shb!=null?+c.shb:TI_SH.shb;
-  ctx.save();ctx.filter=b>0?'blur('+b*Math.max(.3,w/60)+'px)':'none';ctx.fillStyle='rgba(8,4,0,'+Math.min(1,o)+')';
-  ctx.beginPath();ctx.ellipse(cx+sx*w,bottom+sy*w,Math.max(1,w*sw/2),Math.max(1,w*sh/2),0,0,Math.PI*2);ctx.fill();ctx.restore();
+  var rx=Math.max(1,w*sw/2),ry=Math.max(1,w*sh/2),soft=Math.min(.95,b/20+.15),g=ctx.createRadialGradient(0,0,0,0,0,1);     // soft edge without a blur filter (the filter was slow)
+  g.addColorStop(0,'rgba(8,4,0,'+Math.min(1,o)+')');g.addColorStop(Math.max(0,1-soft),'rgba(8,4,0,'+Math.min(1,o)*.8+')');g.addColorStop(1,'rgba(8,4,0,0)');
+  ctx.save();ctx.translate(cx+sx*w,bottom+sy*w);ctx.scale(rx,ry);ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,1,0,Math.PI*2);ctx.fill();ctx.restore();
 }
 function tiBase(key,y){return scaleAt(y)*(key==='dish'?.2:.19)}
 function tiSrc(key){if(key==='dish')return dishImgs.plain&&dishImgs.plain.src;var im=drinkImg(key);return im&&im.src}
@@ -810,15 +816,15 @@ function drawDish(ctx,d){
     var L=drinkLayout(d);if(!L)return;
     ctx.save();ctx.globalAlpha=d.phase==='eating'?Math.min(1,d.t/.3):1;
     L.forEach(function(o){tiShadow(ctx,o.x+o.w/2,o.y+o.h,o.w,o.cal)});
-    L.forEach(function(o){ctx.save();ctx.filter=tiFilter(o.cal);tiPose(ctx,o.x+o.w/2,o.y+o.h/2,o.cal);tiDraw(ctx,tiImg(o.im,o.cal&&o.cal.hl),-o.w/2,-o.h/2,o.w,o.h,o.cal);ctx.restore()});
+    L.forEach(function(o){ctx.save();tiPose(ctx,o.x+o.w/2,o.y+o.h/2,o.cal);tiDraw(ctx,tiImg(o.im,o.cal),-o.w/2,-o.h/2,o.w,o.h,o.cal);ctx.restore()});
     ctx.restore();return;
   }
   var r=dishRect(d);if(!r)return;
   var full=dishImgs[d.kind]||dishImgs.plain,dirty=dishImgs.dirty;
   var a=d.phase==='eating'?Math.min(1,d.t/.3):1;
-  ctx.save();ctx.globalAlpha=a;tiShadow(ctx,r.x+r.w/2,r.y+r.h,r.w,r.cal);ctx.filter=tiFilter(r.cal);
+  ctx.save();ctx.globalAlpha=a;tiShadow(ctx,r.x+r.w/2,r.y+r.h,r.w,r.cal);
   if(r.cal&&(r.cal.rot||r.cal.sk)){tiPose(ctx,r.x+r.w/2,r.y+r.h/2,r.cal);ctx.translate(-(r.x+r.w/2),-(r.y+r.h/2))}
-  if(r.cal&&r.cal.hl){full=tiImg(full,r.cal.hl);dirty=tiImg(dirty,r.cal.hl)}
+  if(r.cal){full=tiImg(full,r.cal);dirty=tiImg(dirty,r.cal)}
   if(r.cal&&r.cal.tilt){var tb2=r.y+r.h,tcx=r.x+r.w/2;ctx.translate(tcx,tb2);ctx.scale(1,Math.max(.25,Math.cos(r.cal.tilt*Math.PI/180)));ctx.translate(-tcx,-tb2)}
   if(d.phase==='eating'){
     ctx.drawImage(dirty,r.x,r.y,r.w,r.h);                                  // the bowl underneath (it gets dirty while the food goes)

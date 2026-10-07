@@ -109,3 +109,5 @@ Alat „Predmeti na stolu": točkić miša zumira sliku ka pokazivaču; dodato �
 Alat „Predmeti na stolu": „Nagib ka stolu" (`tilt`, `tiDraw` u `tavern-scene.js`) spušta (+) ili podiže (−) gornji, dalji deo predmeta ka stolu, kao nagib u alatu za predmete; „Rotacija levo-desno" je posebna.
 
 Senke u alatu „Predmeti na stolu" (`tiShadow` u `tavern-scene.js`, polja `sho, shx, shy, shw, shh, shb`): meka eliptična senka ispod predmeta; jačina, pomak levo-desno i gore-dole, širina, visina i zamućenost se podešavaju po predmetu i stolici (ili „za sve stolice"). Početno: jačina 0,38.
+
+Alat „Predmeti na stolu": dugmad Kopiranje (Kopiraj ovu stolicu, Nalepi ovde, Nalepi na sve stolice, „i položaj", „Primeni isto na izabrani predmet"); u pregledu ostaju vidljivi svi predmeti koji su već postavljeni na stolicama izabranog stola. Zaglavljivanje: pregled je crtao u beskonačnoj petlji (slike su se pravile iznova na svako crtanje); ispravljeno. Senke i boje se crtaju bez canvas filtera po kadru (boje se unapred „ispeku" u keširanu sliku, senka je radijalni gradijent), jer su filteri usporavali kafanu.
