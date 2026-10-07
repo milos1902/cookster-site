@@ -720,13 +720,39 @@ function drinkImg(id){
   var im=null;if(def&&def.src){im=new Image();im.src=def.src}
   drinkImgs[id]=im;return im;
 }
-// the drinks of one guest stand side by side on his "piće" spot (bottom middle of the group is the spot)
+// ---------- the things on the tables, calibrated in the tool "Predmeti na stolu" (js/table-items-tool.js) ----------
+// TI.items[key]={def:{s,rot,h,sat,b,c},seat:{<seatId>:{x,y,s,rot,h,sat,b,c}}}; key: 'dish' (the bowl) or the id of a drink (pice_*)
+var TI_KEY='cookster.table-items.v1',TI={items:{}};
+try{var tiRaw=JSON.parse(localStorage.getItem(TI_KEY));if(tiRaw&&tiRaw.items)TI=tiRaw}catch(e){}
+function tiCal(key,seatId){
+  var it=TI.items[key];if(!it)return null;
+  var d=it.def||{},o=(it.seat&&it.seat[seatId])||null;if(!o&&!it.def)return null;
+  var r={},k;for(k in d)r[k]=d[k];if(o)for(k in o)r[k]=o[k];return r;
+}
+function tiFilter(c){
+  if(!c)return 'none';
+  var h=+c.h||0,sat=c.sat==null?1:+c.sat,b=c.b==null?1:+c.b,ct=c.c==null?1:+c.c;
+  if(!h&&sat===1&&b===1&&ct===1)return 'none';
+  return 'hue-rotate('+h+'deg) saturate('+sat+') brightness('+b+') contrast('+ct+')';
+}
+function tiBase(key,y){return scaleAt(y)*(key==='dish'?.2:.19)}
+function tiSrc(key){if(key==='dish')return dishImgs.plain&&dishImgs.plain.src;var im=drinkImg(key);return im&&im.src}
+function tiApply(data){TI=data&&data.items?data:{items:{}}}
+// the drinks of one guest stand side by side on his "piće" spot (the spot is the middle of the group); a drink that was calibrated stands where it was put
 function drinkLayout(d){
   var tb=TABLES[d.table];if(!tb)return null;
-  var dx=d.x!=null?d.x:tb.x,dy=d.y!=null?d.y:tb.y+8,sc=scaleAt(dy)*.19,out=[],tw=0,i;
-  for(i=0;i<d.items.length;i++){var im=drinkImg(d.items[i]);if(!im||!im.naturalWidth)return null;var w=im.naturalWidth*sc,h=im.naturalHeight*sc;out.push({im:im,w:w,h:h});tw+=w}
+  var dx=d.x!=null?d.x:tb.x,dy=d.y!=null?d.y:tb.y+8,out=[],tw=0,i;
+  for(i=0;i<d.items.length;i++){
+    var im=drinkImg(d.items[i]);if(!im||!im.naturalWidth)return null;
+    var c=tiCal(d.items[i],d.seatId),sc=tiBase(d.items[i],dy)*((c&&c.s)||1),w=im.naturalWidth*sc,h=im.naturalHeight*sc;
+    out.push({im:im,w:w,h:h,cal:c});tw+=w;
+  }
   var x=dx-tw/2-(out.length-1)*3;
-  out.forEach(function(o,i){o.x=x;o.y=dy-o.h/2;x+=o.w+6})                 // the spot is the MIDDLE of the group (and of every piece)
+  out.forEach(function(o,i){
+    if(o.cal&&o.cal.x!=null){o.x=o.cal.x-o.w/2;o.y=o.cal.y-o.h/2}
+    else{o.x=x;o.y=dy-o.h/2}
+    x+=o.w+6;
+  });
   return out;
 }
 function dishRect(d){
@@ -737,20 +763,21 @@ function dishRect(d){
     return{x:x0,y:y0,w:x1-x0,h:y1-y0};
   }
   var im=dishImgs.dirty;if(!im||!im.naturalWidth)return null;
-  var dx=d.x!=null?d.x:tb.x,dy=d.y!=null?d.y:tb.y+8,sc=scaleAt(dy)*.2,w=im.naturalWidth*sc,h=im.naturalHeight*sc;
-  return{x:dx-w/2,y:dy-h/2,w:w,h:h};                              // the spot is the middle of the dish
+  var c=tiCal('dish',d.seatId),dx=(c&&c.x!=null)?c.x:(d.x!=null?d.x:tb.x),dy=(c&&c.y!=null)?c.y:(d.y!=null?d.y:tb.y+8),sc=tiBase('dish',dy)*((c&&c.s)||1),w=im.naturalWidth*sc,h=im.naturalHeight*sc;
+  return{x:dx-w/2,y:dy-h/2,w:w,h:h,cal:c};                          // the spot is the middle of the dish
 }
 function drawDish(ctx,d){
   if(d.items&&d.items.length){
     var L=drinkLayout(d);if(!L)return;
     ctx.save();ctx.globalAlpha=d.phase==='eating'?Math.min(1,d.t/.3):1;
-    L.forEach(function(o){ctx.drawImage(o.im,o.x,o.y,o.w,o.h)});
+    L.forEach(function(o){ctx.filter=tiFilter(o.cal);ctx.drawImage(o.im,o.x,o.y,o.w,o.h)});
     ctx.restore();return;
   }
   var r=dishRect(d);if(!r)return;
   var full=dishImgs[d.kind]||dishImgs.plain,dirty=dishImgs.dirty;
   var a=d.phase==='eating'?Math.min(1,d.t/.3):1;
-  ctx.save();ctx.globalAlpha=a;
+  ctx.save();ctx.globalAlpha=a;ctx.filter=tiFilter(r.cal);
+  if(r.cal&&r.cal.rot){ctx.translate(r.x+r.w/2,r.y+r.h/2);ctx.rotate(r.cal.rot*Math.PI/180);ctx.translate(-(r.x+r.w/2),-(r.y+r.h/2))}
   if(d.phase==='eating'){
     ctx.drawImage(dirty,r.x,r.y,r.w,r.h);                                  // the bowl underneath (it gets dirty while the food goes)
     var frac=Math.max(0,1-d.eatT/EAT_SECS),cut=r.h*.72*(1-frac);               // the food goes down from the top
@@ -1024,6 +1051,7 @@ window.CooksterTavern={
   open:open,close:close,spawn:spawn,
   deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,
+  tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter},
   get isOpen(){return state==='tavern'},get busy(){return busy},
   debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},

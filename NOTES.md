@@ -101,3 +101,5 @@ Tempo kafane: nova društva dolaze na ~30-60 s; gost mora da sedi 14-28 s pre ne
 Tačke posluženja u alatu „Kalibracija kafane" su SREDINA jela/pića (ne dno): za grupu pića sredina cele grupe. Stare tačke treba malo pomeriti.
 
 Osvežavanje igre počinje novi dan: papirići i narudžbine (`cookster.kitchen-orders.v1`) se NE vraćaju posle refresha (gosti se ni inače ne vraćaju), a šiljak se isprazni, tako da se papiri ne gomilaju na stolu.
+
+Alat „Predmeti na stolu" (`js/table-items-tool.js`, posebno dugme „🍷 predmeti na stolu" u kafani, odvojeno od „✎ kalibracija"): za činiju sa kupusom i svih 6 pića, po sto (1-3) i po stolici (1-4): položaj (sredina predmeta, klik/prevlačenje), veličina, rotacija (činija), nijansa, zasićenost, osvetljenost, kontrast; „Za sve stolice" postavlja osnovne vrednosti. Čuva se u `localStorage cookster.table-items.v1` (`TI` u `tavern-scene.js`; scena crta sa `tiCal`, `tiFilter`), Izvezi/Uvezi JSON. Kad Miloš pošalje izvoz, treba ga ugraditi kao podrazumevani (npr. `assets/tavern/table_items.json`) jer je sada samo u njegovom pregledaču.
