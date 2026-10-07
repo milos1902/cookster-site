@@ -37,8 +37,8 @@ function load(){
   try{
     var o=JSON.parse(localStorage.getItem(KEY)||'null');
     if(o&&Array.isArray(o.pending)&&Array.isArray(o.notes)){
-      pending=o.pending.filter(function(p){return p&&isFinite(p.id)&&isFinite(p.table)});
-      notes=o.notes.filter(function(n){return n&&isFinite(n.id)&&isFinite(n.table)&&isFinite(n.x)&&isFinite(n.y)});
+      // after a refresh the game starts a new day: old orders are not brought back (the guests are not either), so no pile of papers is left on the table
+      pending=[];notes=[];
       uid=isFinite(o.uid)?o.uid:Math.max(0,pending.concat(notes).reduce(function(m,n){return Math.max(m,n.id)},0));
     }
   }catch(_){}
@@ -190,6 +190,14 @@ function hangOnSpike(el,n){
   }
   if(count>=1){setSpikeSrc(el,'pada');fallPaper(el,hang)}else hang();
 }
+// a spike that was restored from a save is emptied (its orders belong to the day that is over)
+var spikesCleared=0;
+setInterval(function(){
+  if(spikesCleared>=8)return;
+  var any=false;
+  (window.items||[]).forEach(function(el){if(el&&el.dataset&&el.dataset.itemId===SPIKE_ID){any=true;if(!el._ko_cleared){el._ko_cleared=1;el.dataset.spikeN='0';el.dataset.spikeHang='';try{setSpikeSrc(el,'prazan')}catch(e){}spikeLabel(el)}}});
+  if(any)spikesCleared++;
+},700);
 setInterval(function(){                               // a spike that was restored from a save gets its name back
   (window.items||[]).forEach(function(el){if(el&&el.dataset&&el.dataset.itemId===SPIKE_ID&&!el.dataset.label.match(/Šiljak/))spikeLabel(el)});
 },1000);

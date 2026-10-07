@@ -99,3 +99,5 @@ Prljanje stola po komadima (`tavern-clean.js`: `piecesOf`, `revealPiece`, `dirty
 
 Tempo kafane: nova društva dolaze na ~30-60 s; gost mora da sedi 14-28 s pre nego što konobar dođe po narudžbinu, a društvo mora da bude celo za stolom; društvo sedi i odlazi ZAJEDNO (zajednički tajmer `grp.until`): kratko 2-3 min, dugo 4-7 min; jedan gost sam sedi 1,5-2,5 min i odlazi sam. Naručivanje ponovo (dugo društvo) tek 30-60 s posle posluženja, najviše 4 puta.
 Tačke posluženja u alatu „Kalibracija kafane" su SREDINA jela/pića (ne dno): za grupu pića sredina cele grupe. Stare tačke treba malo pomeriti.
+
+Osvežavanje igre počinje novi dan: papirići i narudžbine (`cookster.kitchen-orders.v1`) se NE vraćaju posle refresha (gosti se ni inače ne vraćaju), a šiljak se isprazni, tako da se papiri ne gomilaju na stolu.
