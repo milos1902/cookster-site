@@ -27,7 +27,8 @@
   -webkit-tap-highlight-color:transparent;
 }
 
-#cooksterBottomButtonLayer .cookster-inventory-icon{
+#cooksterBottomButtonLayer .cookster-inventory-icon,
+#cooksterBottomButtonLayer .cookster-recent-icon{
   position:absolute;
   z-index:2;
   left:50%;
