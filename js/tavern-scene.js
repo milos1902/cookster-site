@@ -492,7 +492,7 @@ function spawnGroup(){
 function chKey(g,pose){return 'g'+(g.ch<10?'0':'')+g.ch+'_'+pose}
 function step(dt){
   clock+=dt;
-  if(GUESTS_ON&&clock>=nextArrival){nextArrival=clock+28+Math.random()*32;if(guests.length<14)spawnGroup()}
+  if(GUESTS_ON&&clock>=nextArrival){nextArrival=clock+28+Math.random()*32;if(guests.length>=14||!spawnGroup())nextArrival=clock+4}      // no free clean table: look again in a moment
   if(GUESTS_ON)stepWaiter(dt);
   tickDishes(dt);tickMess(dt);
   for(var i=guests.length-1;i>=0;i--){
