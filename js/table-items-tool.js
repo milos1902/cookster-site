@@ -20,7 +20,7 @@ function defaultPos(){
   var tb=T.tables[table];return sp?{x:sp.x,y:sp.y}:{x:tb.x,y:tb.y+8};
 }
 function cur(){                                          // what is valid for this chair now
-  var it=entry(false),p=defaultPos(),o=(it&&it.seat[seatId()])||null,d=(it&&it.def)||{},r={x:p.x,y:p.y,s:1,rot:0,sk:0,hl:0,h:0,sat:1,b:1,c:1},k;
+  var it=entry(false),p=defaultPos(),o=(it&&it.seat[seatId()])||null,d=(it&&it.def)||{},r={x:p.x,y:p.y,s:1,rot:0,sk:0,tilt:0,hl:0,h:0,sat:1,b:1,c:1},k;
   for(k in d)r[k]=d[k];if(o)for(k in o)r[k]=o[k];return r;
 }
 function setVal(k,v){
@@ -48,13 +48,13 @@ function draw(){
   if(src!==imgKey){imgKey=src;img=new Image();img.onload=draw;img.src=src}
   if(img&&img.complete&&img.naturalWidth){
     var sc=T.tableItems.base(key,c.y)*c.s,w=img.naturalWidth*sc,h=img.naturalHeight*sc;
-    g.save();g.filter=T.tableItems.filter(c);T.tableItems.pose(g,c.x,c.y,c);g.drawImage(T.tableItems.img(img,c.hl),-w/2,-h/2,w,h);g.restore();
+    g.save();g.filter=T.tableItems.filter(c);T.tableItems.pose(g,c.x,c.y,c);T.tableItems.draw(g,T.tableItems.img(img,c.hl),-w/2,-h/2,w,h,c);g.restore();
     g.save();g.strokeStyle='#4dd2ff';g.lineWidth=1.2/k;g.beginPath();g.moveTo(c.x-6,c.y);g.lineTo(c.x+6,c.y);g.moveTo(c.x,c.y-6);g.lineTo(c.x,c.y+6);g.stroke();g.restore();
   }
 }
 function refreshUi(){
   var c=cur();
-  ['s','rot','sk','hl','h','sat','b','c'].forEach(function(k){var i=ui.root.querySelector('#tiS_'+k);i.value=c[k];ui.root.querySelector('#tiV_'+k).textContent=(+c[k]).toFixed(k==='h'||k==='rot'||k==='sk'?0:2)});
+  ['s','tilt','rot','sk','hl','h','sat','b','c'].forEach(function(k){var i=ui.root.querySelector('#tiS_'+k);i.value=c[k];ui.root.querySelector('#tiV_'+k).textContent=(+c[k]).toFixed(k==='h'||k==='rot'||k==='sk'||k==='tilt'?0:2)});
   ui.root.querySelectorAll('[data-seat]').forEach(function(b){b.classList.toggle('on',+b.dataset.seat===seat)});
   ui.root.querySelectorAll('[data-scope]').forEach(function(b){b.classList.toggle('on',b.dataset.scope===scope)});
   ui.root.querySelector('#tiInfo').textContent=ITEMS.filter(function(i){return i[0]===key})[0][1]+' · sto '+(table+1)+', stolica '+(seat+1)+' · x '+Math.round(c.x)+', y '+Math.round(c.y);
@@ -80,7 +80,7 @@ function build(){
     '<div class="row"><select id="tiTable" style="width:auto"><option value="0">Sto 1</option><option value="1">Sto 2</option><option value="2">Sto 3</option></select></div>'+
     '<div class="row" id="tiSeats"><button class="b" data-seat="0">Stolica 1</button><button class="b" data-seat="1">Stolica 2</button><button class="b" data-seat="2">Stolica 3</button><button class="b" data-seat="3">Stolica 4</button></div>'+
     '<div class="row"><button class="b" data-scope="seat">Za ovu stolicu</button><button class="b" data-scope="all">Za sve stolice</button></div>'+
-    sl('s','Veličina',0.3,3,0.01)+sl('rot','Nagib (rotacija)',-45,45,1)+sl('sk','Zakošenost',-45,45,1)+sl('hl','Svetli tonovi',-0.8,0.8,0.01)+
+    sl('s','Veličina',0.3,3,0.01)+sl('tilt','Nagib ka stolu (spusti / podigni)',-70,70,1)+sl('rot','Rotacija levo-desno',-45,45,1)+sl('sk','Zakošenost',-45,45,1)+sl('hl','Svetli tonovi',-0.8,0.8,0.01)+
     sl('h','Nijansa',-180,180,1)+sl('sat','Zasićenost',0,2.5,0.01)+sl('b','Osvetljenost',0.2,2,0.01)+sl('c','Kontrast',0.4,2,0.01)+
     '<div class="row"><button class="b" id="tiResetSeat">Vrati ovu stolicu</button><button class="b" id="tiResetItem">Vrati ceo predmet</button></div>'+
     '<div class="row"><button class="b" id="tiExport">Izvezi JSON</button><button class="b" id="tiImport">Uvezi JSON</button></div>'+
@@ -93,7 +93,7 @@ function build(){
   ui.root.querySelector('#tiTable').addEventListener('change',function(e){table=+e.target.value;seat=0;view={z:1,cx:null,cy:null};refreshUi();draw()});
   ui.root.querySelectorAll('[data-seat]').forEach(function(b){b.addEventListener('click',function(){seat=+b.dataset.seat;refreshUi();draw()})});
   ui.root.querySelectorAll('[data-scope]').forEach(function(b){b.addEventListener('click',function(){scope=b.dataset.scope;refreshUi()})});
-  ['s','rot','sk','hl','h','sat','b','c'].forEach(function(k){ui.root.querySelector('#tiS_'+k).addEventListener('input',function(e){setVal(k,+e.target.value)})});
+  ['s','tilt','rot','sk','hl','h','sat','b','c'].forEach(function(k){ui.root.querySelector('#tiS_'+k).addEventListener('input',function(e){setVal(k,+e.target.value)})});
   ui.root.querySelector('#tiResetSeat').addEventListener('click',function(){var it=entry(false);if(it){delete it.seat[seatId()];save();refreshUi();draw()}});
   ui.root.querySelector('#tiResetItem').addEventListener('click',function(){if(confirm('Vratiti ceo predmet na početno?')){delete data().items[key];save();refreshUi();draw()}});
   ui.root.querySelector('#tiExport').addEventListener('click',function(){

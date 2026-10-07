@@ -754,6 +754,18 @@ function tiPose(ctx,cx,cy,c){
   if(c&&c.rot)ctx.rotate(c.rot*Math.PI/180);
   if(c&&c.sk)ctx.transform(1,0,Math.tan(c.sk*Math.PI/180),1,0,0);
 }
+// "nagib ka stolu": the thing is laid back towards the table (or stands up): the top gets farther away, so it looks shorter and a little narrower (drawn in thin strips)
+function tiDraw(ctx,im,x,y,w,h,c){
+  var t=(c&&c.tilt)?c.tilt*Math.PI/180:0;
+  if(!t){ctx.drawImage(im,x,y,w,h);return}
+  var N=28,cs=Math.cos(t),sn=Math.sin(t),D=h*5,sw=im.naturalWidth||im.width,sh=im.naturalHeight||im.height,cx=x+w/2,bottom=y+h;
+  for(var i=N-1;i>=0;i--){
+    var up0=(N-1-i)/N*h,up1=(N-i)/N*h;                       // distance of this strip above the bottom edge
+    function pj(u){var z=u*sn,k=D/(D+z);return{y:bottom-u*cs*k,k:k}}
+    var a=pj(up0),b=pj(up1),dh=a.y-b.y;if(dh<=0)continue;
+    ctx.drawImage(im,0,i*sh/N,sw,sh/N+1,cx-w/2*b.k,b.y,w*b.k,dh+.6);
+  }
+}
 function tiBase(key,y){return scaleAt(y)*(key==='dish'?.2:.19)}
 function tiSrc(key){if(key==='dish')return dishImgs.plain&&dishImgs.plain.src;var im=drinkImg(key);return im&&im.src}
 function tiApply(data){TI=data&&data.items?data:{items:{}}}
@@ -789,7 +801,7 @@ function drawDish(ctx,d){
   if(d.items&&d.items.length){
     var L=drinkLayout(d);if(!L)return;
     ctx.save();ctx.globalAlpha=d.phase==='eating'?Math.min(1,d.t/.3):1;
-    L.forEach(function(o){ctx.save();ctx.filter=tiFilter(o.cal);tiPose(ctx,o.x+o.w/2,o.y+o.h/2,o.cal);ctx.drawImage(tiImg(o.im,o.cal&&o.cal.hl),-o.w/2,-o.h/2,o.w,o.h);ctx.restore()});
+    L.forEach(function(o){ctx.save();ctx.filter=tiFilter(o.cal);tiPose(ctx,o.x+o.w/2,o.y+o.h/2,o.cal);tiDraw(ctx,tiImg(o.im,o.cal&&o.cal.hl),-o.w/2,-o.h/2,o.w,o.h,o.cal);ctx.restore()});
     ctx.restore();return;
   }
   var r=dishRect(d);if(!r)return;
@@ -798,6 +810,7 @@ function drawDish(ctx,d){
   ctx.save();ctx.globalAlpha=a;ctx.filter=tiFilter(r.cal);
   if(r.cal&&(r.cal.rot||r.cal.sk)){tiPose(ctx,r.x+r.w/2,r.y+r.h/2,r.cal);ctx.translate(-(r.x+r.w/2),-(r.y+r.h/2))}
   if(r.cal&&r.cal.hl){full=tiImg(full,r.cal.hl);dirty=tiImg(dirty,r.cal.hl)}
+  if(r.cal&&r.cal.tilt){var tb2=r.y+r.h,tcx=r.x+r.w/2;ctx.translate(tcx,tb2);ctx.scale(1,Math.max(.25,Math.cos(r.cal.tilt*Math.PI/180)));ctx.translate(-tcx,-tb2)}
   if(d.phase==='eating'){
     ctx.drawImage(dirty,r.x,r.y,r.w,r.h);                                  // the bowl underneath (it gets dirty while the food goes)
     var frac=Math.max(0,1-d.eatT/EAT_SECS),cut=r.h*.72*(1-frac);               // the food goes down from the top
@@ -1071,7 +1084,7 @@ window.CooksterTavern={
   open:open,close:close,spawn:spawn,
   deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,
-  tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose},
+  tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose,draw:tiDraw},
   get isOpen(){return state==='tavern'},get busy(){return busy},
   debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},
