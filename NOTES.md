@@ -105,3 +105,5 @@ Osvežavanje igre počinje novi dan: papirići i narudžbine (`cookster.kitchen-
 Alat „Predmeti na stolu" (`js/table-items-tool.js`, posebno dugme „🍷 predmeti na stolu" u kafani, odvojeno od „✎ kalibracija"): za činiju sa kupusom i svih 6 pića, po sto (1-3) i po stolici (1-4): položaj (sredina predmeta, klik/prevlačenje), veličina, rotacija (činija), nijansa, zasićenost, osvetljenost, kontrast; „Za sve stolice" postavlja osnovne vrednosti. Čuva se u `localStorage cookster.table-items.v1` (`TI` u `tavern-scene.js`; scena crta sa `tiCal`, `tiFilter`), Izvezi/Uvezi JSON. Kad Miloš pošalje izvoz, treba ga ugraditi kao podrazumevani (npr. `assets/tavern/table_items.json`) jer je sada samo u njegovom pregledaču.
 
 Alat „Predmeti na stolu": točkić miša zumira sliku ka pokazivaču; dodato „Nagib (rotacija)" i „Zakošenost" za svaki predmet i „Svetli tonovi" (osvetljava ili zatamnjuje samo svetle delove slike, `tiImg` u `tavern-scene.js`).
+
+Alat „Predmeti na stolu": „Nagib ka stolu" (`tilt`, `tiDraw` u `tavern-scene.js`) spušta (+) ili podiže (−) gornji, dalji deo predmeta ka stolu, kao nagib u alatu za predmete; „Rotacija levo-desno" je posebna.
