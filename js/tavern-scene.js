@@ -564,6 +564,7 @@ function stepWaiter(dt){
   }else if(w.mode==='give'){
     w.t+=dt;
     if(w.t>1.1){
+      try{if(window.CooksterSound)window.CooksterSound.play('waiter','serve')}catch(e){}
       var sv=serveSpot(w.table,'jelo');
       dishes.push({table:w.table,kind:w.carry.kind||'plain',t:0,x:sv?sv.x:null,y:sv?sv.y:null});
       var ev=w.carry.ev||null,rep=ev&&window.CooksterQuality?window.CooksterQuality.addReputation(ev.score):null;
@@ -762,6 +763,14 @@ function loop(t){
   draw();
   raf=requestAnimationFrame(loop);
 }
+// the hall goes on also while the player is in the kitchen (guests come to the cleaned tables, the waiter takes the orders and walks to the kitchen):
+// the picture is not drawn then, only the guests and the waiter are moved
+var bgT=performance.now();
+setInterval(function(){
+  var now=performance.now(),el=Math.min(.5,(now-bgT)/1000);bgT=now;
+  if(state!=='kitchen'||!GUESTS_ON)return;
+  while(el>0){var d=Math.min(.05,el);step(d);el-=d}
+},50);
 function startLoop(){if(!raf){lastT=performance.now();raf=requestAnimationFrame(loop)}}
 addEventListener('resize',function(){if(state!=='kitchen'){fit();draw()}});
 addBtn.addEventListener('click',function(e){e.stopPropagation();spawn()});

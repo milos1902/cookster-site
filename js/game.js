@@ -2373,6 +2373,17 @@ bookSoundTarget.dataset.soundActions='open,close,pageTurn';
 const faucetSoundTarget=makeSoundTarget('__faucet','Česma — voda','water');
 const peelSoundTarget=makeSoundTarget('__peel_button','Dugme „Očisti luk“ — čišćenje','peel');
 peelSoundTarget.dataset.soundActions='peel';
+// the waiter and the orders: every sound can be chosen in the tool "Zvuk" (a chosen sound replaces the built-in one)
+const orderNoteSoundTarget=makeSoundTarget('__order_note','Papirić narudžbine — uzimanje, spuštanje, kačenje','pickup');
+orderNoteSoundTarget.dataset.soundActions='pickup,drop,open,hang,fall';
+const waiterBellSoundTarget=makeSoundTarget('__waiter_bell','Zvonce za konobara — zvonjenje','ring');
+waiterBellSoundTarget.dataset.soundActions='ring';
+const spiceShakeSoundTarget=makeSoundTarget('__spice_shake','Začini — sipanje iz tegle','sprinkle');
+spiceShakeSoundTarget.dataset.soundActions='sprinkle';
+const waiterServeSoundTarget=makeSoundTarget('__waiter_serve','Konobar — pojavljivanje i spuštanje jela','serve');
+waiterServeSoundTarget.dataset.soundActions='appear,serve';
+window.CooksterSound={targets:{note:orderNoteSoundTarget,bell:waiterBellSoundTarget,spice:spiceShakeSoundTarget,waiter:waiterServeSoundTarget},
+  play:(name,action)=>{const t=window.CooksterSound.targets[name];return t?playImpactSound(t,action):false;}};
 // one virtual sound target per vegetable/fruit type: cutting and putting into a vessel share it
 const produceSoundTargets={};
 function produceSoundTarget(isFruit,key,label){
@@ -2545,7 +2556,7 @@ ssStyle.textContent=`
 document.head.appendChild(ssStyle);
 
 /* --- state --- */
-const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta']];
+const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje na šiljak'],['fall','Pad papirića'],['ring','Zvonjenje'],['sprinkle','Sipanje začina'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara']];
 const ssState={open:false,tab:'objekti',action:'drop',query:'',libQuery:'',libOpen:false};
 
 /* --- helpers (reuse ls* from light-studio) --- */
@@ -2680,7 +2691,7 @@ function ssSceneItems(){
   for(const [key,def] of Object.entries(VEGETABLES))produce.push(produceSoundTarget(false,key,def.label));
   for(const [key,def] of Object.entries(CooksterCatalog.FRUITS||{}))produce.push(produceSoundTarget(true,key,def.label));
  }catch(_){}
- return [buttonSoundTarget,firewoodSoundTarget,bookSoundTarget,faucetSoundTarget,peelSoundTarget,...items,...catalogProps,...hotspots,...produce];
+ return [buttonSoundTarget,firewoodSoundTarget,bookSoundTarget,faucetSoundTarget,peelSoundTarget,orderNoteSoundTarget,waiterBellSoundTarget,spiceShakeSoundTarget,waiterServeSoundTarget,...items,...catalogProps,...hotspots,...produce];
 }
 const ssCatalogTargets={};
 

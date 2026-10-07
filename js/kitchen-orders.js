@@ -65,6 +65,8 @@ function noteEl(n,big){
   if(!big){d.style.left=n.x+'px';d.style.top=n.y+'px';d.style.transform='rotate('+n.rot+'deg)';d.style.setProperty('--r',n.rot+'deg')}
   return d;
 }
+// a sound chosen in the tool "Zvuk" replaces the built-in one
+function snd(name,action,fallback){var ok=false;try{ok=!!(window.CooksterSound&&window.CooksterSound.play(name,action))}catch(e){}if(!ok&&fallback){try{fallback()}catch(e){}}return ok}
 function placeNote(n,drop){
   var d=noteEl(n,false);if(drop)d.classList.add('ko-drop');
   d.addEventListener('animationend',function(){d.classList.remove('ko-drop')});
@@ -82,6 +84,7 @@ function spikeAt(x,y){
   return null;
 }
 function startNoteDrag(e,n,d){
+  snd('note','pickup');
   e.preventDefault();e.stopPropagation();
   var sx=e.clientX,sy=e.clientY,moved=false,ghost=null,r0=d.getBoundingClientRect(),ox=sx-r0.left,oy=sy-r0.top;
   function over(ev){
@@ -108,7 +111,7 @@ function startNoteDrag(e,n,d){
     try{
       var p=screenToScene(ev.clientX-ox+r0.width/2,ev.clientY-oy+r0.height/2);   // where the middle of the paper is now, in the scene
       n.x=Math.round(Math.max(0,Math.min(W-80,p.x-36)));n.y=Math.round(Math.max(0,Math.min(H-130,p.y-65)));
-      d.style.left=n.x+'px';d.style.top=n.y+'px';save();
+      d.style.left=n.x+'px';d.style.top=n.y+'px';save();snd('note','drop');
     }catch(_){}
   }
   addEventListener('pointermove',mv,true);addEventListener('pointerup',up,true);addEventListener('pointercancel',up,true);
@@ -129,6 +132,7 @@ function spikeLabel(el){
 }
 // the paper that hung there falls onto the base
 function fallPaper(el,done){
+  snd('note','fall');
   var b=el.querySelector('.body');if(!b||typeof b.animate!=='function'){done();return}
   var r=b.getBoundingClientRect(),img=new Image();
   img.src=PROP_DIR+'siljak_papir.webp?v=1';img.alt='';
@@ -153,7 +157,7 @@ function hangOnSpike(el,n){
     var b=el.querySelector('.body');
     try{if(b)b.animate([{translate:'0 -8px',opacity:.4},{translate:'0 0',opacity:1}],{duration:260,easing:'ease-out'})}catch(_){}
     try{if(window.CooksterSave)CooksterSave.schedule()}catch(_){}
-    try{playTone(660,.35,.12)}catch(_){}
+    snd('note','hang',function(){playTone(660,.35,.12)});
   }
   if(count>=1){setSpikeSrc(el,'pada');fallPaper(el,hang)}else hang();
 }
@@ -172,7 +176,7 @@ function playTone(freq,vol,secs){
     var og=actx.createGain();og.gain.value=[1,.5,.22][i];o.connect(og);og.connect(g);o.start(t);o.stop(t+secs+.05)});
 }
 function ringBell(el){
-  try{playTone(1320,.5,1.5)}catch(_){}
+  snd('bell','ring',function(){playTone(1320,.5,1.5)});
   try{el.animate([{rotate:'0deg'},{rotate:'-7deg'},{rotate:'6deg'},{rotate:'-4deg'},{rotate:'2deg'},{rotate:'0deg'}],{duration:520,easing:'ease-out'})}catch(_){}
   callWaiter();
 }
@@ -193,6 +197,7 @@ window.addEventListener('pointerdown',function(e){
   ringBell(it);
 },true);
 function openNote(n){
+  snd('note','open');
   var m=mk('div','ko-modal'),d=noteEl(n,true),b=mk('button','ko-done');
   b.type='button';b.textContent='✓ Gotovo (ukloni papirić)';
   d.appendChild(b);m.appendChild(d);document.body.appendChild(m);
@@ -233,7 +238,7 @@ function takeDish(){
 }
 function start(){
   var o=pending[0];if(!o)return;
-  anim={o:o,t:0,x:STOP_X,phase:'in',dropped:false,last:performance.now()};
+  anim={o:o,t:0,x:STOP_X,phase:'in',dropped:false,last:performance.now()};snd('waiter','appear');
   requestAnimationFrame(tick);
 }
 // the bell: the waiter comes into the kitchen and waits for a moment (what he takes away comes later)
@@ -242,7 +247,7 @@ var calledAt=0;
 function callWaiter(){called=true;calledAt=Date.now()+3000+Math.random()*2000}   // he comes 3-5 seconds after the bell
 function startCall(){
   called=false;
-  anim={o:null,call:true,t:0,x:STOP_X,phase:'in',last:performance.now()};
+  anim={o:null,call:true,t:0,x:STOP_X,phase:'in',last:performance.now()};snd('waiter','appear');
   requestAnimationFrame(tick);
 }
 function speech(text,x,y){
