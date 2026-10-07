@@ -2373,6 +2373,13 @@ bookSoundTarget.dataset.soundActions='open,close,pageTurn';
 const faucetSoundTarget=makeSoundTarget('__faucet','Česma — voda','water');
 const peelSoundTarget=makeSoundTarget('__peel_button','Dugme „Očisti luk“ — čišćenje','peel');
 peelSoundTarget.dataset.soundActions='peel';
+// the waiter and the orders: every sound can be chosen in the tool "Zvuk" (a chosen sound replaces the built-in one)
+const orderNoteSoundTarget=makeSoundTarget('__order_note','Papirić narudžbine — uzimanje, spuštanje, kačenje','pickup');
+orderNoteSoundTarget.dataset.soundActions='pickup,drop,open';
+const waiterServeSoundTarget=makeSoundTarget('__waiter_serve','Konobar — pojavljivanje i spuštanje jela','serve');
+waiterServeSoundTarget.dataset.soundActions='appear,serve,eat';
+window.CooksterSound={targets:{note:orderNoteSoundTarget,waiter:waiterServeSoundTarget},
+  play:(name,action)=>{const t=window.CooksterSound.targets[name];return t?playImpactSound(t,action):false;}};
 // one virtual sound target per vegetable/fruit type: cutting and putting into a vessel share it
 const produceSoundTargets={};
 function produceSoundTarget(isFruit,key,label){
@@ -2545,7 +2552,7 @@ ssStyle.textContent=`
 document.head.appendChild(ssStyle);
 
 /* --- state --- */
-const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta']];
+const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje papirića na šiljak'],['fall','Pad papirića sa šiljka'],['ring','Zvoni (kad ga dodirneš)'],['sprinkle','Sipaj (začin)'],['pour','Sipaj (ulje)'],['pourOut','Presipaj u drugu posudu'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara'],['eat','Gost jede (svaki zalogaj)']];
 const ssState={open:false,tab:'objekti',action:'drop',query:'',libQuery:'',libOpen:false};
 
 /* --- helpers (reuse ls* from light-studio) --- */
@@ -2680,7 +2687,7 @@ function ssSceneItems(){
   for(const [key,def] of Object.entries(VEGETABLES))produce.push(produceSoundTarget(false,key,def.label));
   for(const [key,def] of Object.entries(CooksterCatalog.FRUITS||{}))produce.push(produceSoundTarget(true,key,def.label));
  }catch(_){}
- return [buttonSoundTarget,firewoodSoundTarget,bookSoundTarget,faucetSoundTarget,peelSoundTarget,...items,...catalogProps,...hotspots,...produce];
+ return [buttonSoundTarget,firewoodSoundTarget,bookSoundTarget,faucetSoundTarget,peelSoundTarget,orderNoteSoundTarget,waiterServeSoundTarget,...items,...catalogProps,...hotspots,...produce];
 }
 const ssCatalogTargets={};
 
@@ -2726,6 +2733,16 @@ function ssRenderObjCard(){
 
 /* action tabs */
 const ssActionBar=ssEl('div',{class:'ss-action-tabs',role:'group'});
+// actions that exist only for some objects: the bell rings, a spice jar sprinkles, the oil pours, the spike takes a paper, every vessel can pour out
+const ssId=el=>soundKey(el)||'';
+const SS_SPECIAL_ACTIONS={
+ ring:el=>ssId(el)==='zvonce_konobar',
+ sprinkle:el=>ssId(el).startsWith('zacin_'),
+ pour:el=>ssId(el)==='kal_01_flasa_ulja',
+ hang:el=>ssId(el)==='siljak_narudzbine',
+ pourOut:el=>{const id=ssId(el);try{const d=kitchenEquipmentDef(id);return !!(d&&isContainerDef(d))||(!!el.dataset?.container&&el.dataset.container!=='0');}catch(_){return false;}}
+};
+SS_SPECIAL_ACTIONS.fall=SS_SPECIAL_ACTIONS.hang;
 const ssActionBtns=SS_ACTIONS.map(([value,label])=>{
  const b=ssEl('button',{type:'button'},ssEl('span',{class:'ss-dot'}),' '+label);
  b.onclick=()=>{ssState.action=value;ssSync();ssRenderVariants();};
@@ -2736,7 +2753,7 @@ ssControls.push(()=>{
  const el=ssSel(),acts=el?ssObjActions(el):[];
  for(const [v,b] of ssActionBtns){
   const supported=el?.dataset?.soundActions?.split(',');
-  b.hidden=supported?!supported.includes(v):el?.dataset?.soundAction?v!==el.dataset.soundAction:(['click','insert','cut','peel','putIn','pageTurn','water','hover'].includes(v));
+  b.hidden=supported?!supported.includes(v):el?.dataset?.soundAction?v!==el.dataset.soundAction:(['click','insert','cut','peel','putIn','pageTurn','water','hover','eat','appear','serve'].includes(v)||(SS_SPECIAL_ACTIONS[v]&&!SS_SPECIAL_ACTIONS[v](el)));
   b.setAttribute('aria-pressed',v===ssState.action?'true':'false');
   b.dataset.has=acts.includes(v)?'true':'false';
  }
@@ -8797,6 +8814,7 @@ function beginOilPour(bottle,vessel,pointerId=null){
   if(oilBottleRemaining(bottle)<=0){showToast('Флаша је празна.');return true;}
   if(vesselOilAmount(vessel)>=OIL_VESSEL_MAX){showToast('У посуди већ има довољно уља.');return true;}
 
+  try{playImpactSound(bottle,'pour');}catch(_){}
   oilPouring=true;
   oilPourBottle=bottle;
   oilPourPointerId=pointerId;
@@ -8842,8 +8860,8 @@ function beginOilPour(bottle,vessel,pointerId=null){
       const accepted=addOilAmountToVessel(oilPourTarget,requested);
       if(accepted>0){
         setOilBottleRemaining(bottle,remaining-accepted);
-        if(now-oilPourImpactAt>270){
-          oilPourImpactAt=now;
+        if(now-oilPourImpactAt>900){
+          oilPourImpactAt=now;try{playImpactSound(bottle,'pour');}catch(_){}
         }
         if(now-oilPourSaveAt>420){
           CooksterSave.schedule();
@@ -9458,6 +9476,7 @@ function beginPourTransfer(source,target){
   }
 
   const payload=verdict.payload;
+  try{playImpactSound(source,'pourOut');}catch(_){}
   pouring=true;
   clearPourTarget();
   hidePlacementGhost();hideOriginGhost();

@@ -472,6 +472,7 @@ function step(dt){
   clock+=dt;
   if(GUESTS_ON&&clock>=nextArrival){nextArrival=clock+7+Math.random()*9;if(guests.length<14)spawn()}
   if(GUESTS_ON)stepWaiter(dt);
+  tickDishes(dt);
   for(var i=guests.length-1;i>=0;i--){
     var g=guests[i];
     if(g.mode==='in'||g.mode==='out'){
@@ -507,7 +508,8 @@ function step(dt){
 // takes the order, and walks home. The pictures: toward the camera (walkd), away from it (walku), from the side (walks, looking right; flipped for left).
 var waiter=null,WSPEED=92;
 var deliveries=[],reactions=[],dishes=[],DISH_SRC={plain:'assets/calibration_props/posuda_za_kupus/posuda_kupus.webp',paprika:'assets/calibration_props/posuda_za_kupus/posuda_kupus_paprika.webp'},DISH_SECS=25;
-var dishImgs={};['plain','paprika'].forEach(function(k){var im=new Image();im.src=DISH_SRC[k];dishImgs[k]=im});
+DISH_SRC.dirty='assets/calibration_props/posuda_za_kupus/posuda_prljava.webp';
+var dishImgs={},EAT_SECS=18,EAT_DELAY=1.5;['plain','paprika','dirty'].forEach(function(k){var im=new Image();im.src=DISH_SRC[k];dishImgs[k]=im});
 function waiterFace(dx,dy){                           // which set of pictures for this direction of walking
   if(Math.abs(dx)>1.2*Math.abs(dy))return 'walks';
   return dy>0?'walkd':'walku';
@@ -564,8 +566,10 @@ function stepWaiter(dt){
   }else if(w.mode==='give'){
     w.t+=dt;
     if(w.t>1.1){
+      try{if(window.CooksterSound)window.CooksterSound.play('waiter','serve')}catch(e){}
       var sv=serveSpot(w.table,'jelo');
-      dishes.push({table:w.table,kind:w.carry.kind||'plain',t:0,x:sv?sv.x:null,y:sv?sv.y:null});
+      var eatSeat=-1;guests.forEach(function(g){if(g.seat.table===w.table&&g.mode==='seated'){if(eatSeat<0||g.seat.id<eatSeat)eatSeat=g.seat.id;g.sitFor=Math.max(g.sitFor,g.sitT+EAT_DELAY+EAT_SECS+8)}});
+      dishes.push({table:w.table,kind:w.carry.kind||'plain',t:0,eatT:0,bite:0,phase:'eating',seatId:eatSeat,x:sv?sv.x:null,y:sv?sv.y:null});
       var ev=w.carry.ev||null,rep=ev&&window.CooksterQuality?window.CooksterQuality.addReputation(ev.score):null;
       reactions.push({table:w.table,t:0,ev:ev,rep:rep,delta:ev?ev.score:0});
       w.carry=null;w.mode='back';waiterGo(home);
@@ -602,14 +606,52 @@ function serveSpot(table,kind){
   return sv.table[table]||null;
 }
 function tickDishes(dt){
-  for(var i=dishes.length-1;i>=0;i--){dishes[i].t+=dt;if(dishes[i].t>DISH_SECS||!TABLES[dishes[i].table])dishes.splice(i,1)}
+  for(var i=dishes.length-1;i>=0;i--){
+    var d=dishes[i];d.t+=dt;
+    if(d.phase==='eating'){
+      if(d.t>EAT_DELAY){
+        d.eatT+=dt;d.bite+=dt;
+        if(d.bite>1.15){d.bite=0;try{if(window.CooksterSound)window.CooksterSound.play('waiter','eat')}catch(e){}}
+        if(d.eatT>=EAT_SECS){d.phase='dirty';d.dirtyT=0}
+      }
+    }else d.dirtyT=(d.dirtyT||0)+dt;
+    if(!TABLES[d.table]||(d.phase==='dirty'&&d.dirtyT>240))dishes.splice(i,1);
+  }
+}
+function dishRect(d){
+  var tb=TABLES[d.table];if(!tb)return null;
+  var im=dishImgs.dirty;if(!im||!im.naturalWidth)return null;
+  var dx=d.x!=null?d.x:tb.x,dy=d.y!=null?d.y:tb.y+8,sc=scaleAt(dy)*.2,w=im.naturalWidth*sc,h=im.naturalHeight*sc;
+  return{x:dx-w/2,y:dy-h,w:w,h:h};
 }
 function drawDish(ctx,d){
-  var tb=TABLES[d.table];if(!tb)return;
-  var im=dishImgs[d.kind]||dishImgs.plain;if(!im||!im.naturalWidth)return;
-  var dx=d.x!=null?d.x:tb.x,dy=d.y!=null?d.y:tb.y+8;
-  var sc=scaleAt(dy)*.2,w=im.naturalWidth*sc,h=im.naturalHeight*sc,a=Math.min(1,d.t/.3)*Math.min(1,(DISH_SECS-d.t)/1.5);
-  ctx.save();ctx.globalAlpha=a;ctx.drawImage(im,dx-w/2,dy-h,w,h);ctx.restore();
+  var r=dishRect(d);if(!r)return;
+  var full=dishImgs[d.kind]||dishImgs.plain,dirty=dishImgs.dirty;
+  var a=d.phase==='eating'?Math.min(1,d.t/.3):1;
+  ctx.save();ctx.globalAlpha=a;
+  if(d.phase==='eating'){
+    ctx.drawImage(dirty,r.x,r.y,r.w,r.h);                                  // the bowl underneath (it gets dirty while the food goes)
+    var frac=Math.max(0,1-d.eatT/EAT_SECS),cut=r.h*.72*(1-frac);               // the food goes down from the top
+    if(full&&full.naturalWidth){ctx.beginPath();ctx.rect(r.x-2,r.y+cut,r.w+4,r.h-cut+2);ctx.clip();ctx.drawImage(full,r.x,r.y,r.w,r.h)}
+  }else ctx.drawImage(dirty,r.x,r.y,r.w,r.h);
+  ctx.restore();
+}
+// the empty dirty bowl is cleared away with a click on it
+function clearDirtyDishAt(sx,sy){
+  for(var i=dishes.length-1;i>=0;i--){
+    var d=dishes[i];if(d.phase!=='dirty')continue;
+    var r=dishRect(d);if(r&&sx>=r.x&&sx<=r.x+r.w&&sy>=r.y&&sy<=r.y+r.h){dishes.splice(i,1);return true}
+  }
+  return false;
+}
+room.addEventListener('pointerdown',function(e){
+  if(state!=='tavern'||e.button!==0)return;
+  var rc=cv.getBoundingClientRect();if(!rc.width)return;
+  if(clearDirtyDishAt((e.clientX-rc.left)/rc.width*W,(e.clientY-rc.top)/rc.height*H)){e.preventDefault();e.stopImmediatePropagation()}
+},true);
+function eatingGuest(g){
+  for(var i=0;i<dishes.length;i++){var d=dishes[i];if(d.phase==='eating'&&d.t>EAT_DELAY&&d.seatId===g.seat.id)return d}
+  return null;
 }
 // the guest tells what he thinks of the dish: too little / too much / something that should not be there (see js/quality.js)
 function drawReactions(ctx,dt){
@@ -711,7 +753,9 @@ function drawGuestBody(ctx,g){
     }else{
       // seated: a slow breath, now and then a nod
       var br=Math.sin((clock+g.id*1.7)*1.6)*.6;
-      drawSprite(ctx,chKey(g,sitPose(g)),sp.x,sp.y+br,ssc,false,Math.sin((clock+g.id)*.5)*.006,1);
+      var ed=eatingGuest(g),dip=0,tilt=0;
+      if(ed){var ph=Math.max(0,Math.sin(ed.eatT*Math.PI/1.15*1)),dr=dishRect(ed);dip=ph*5*ssc/.3;tilt=ph*.035*((dr&&dr.x+dr.w/2<sp.x)?-1:1)}      // leans toward the bowl at every bite
+      drawSprite(ctx,chKey(g,sitPose(g)),sp.x,sp.y+br+dip,ssc,false,Math.sin((clock+g.id)*.5)*.006+tilt,1);
     }
   }
 }
@@ -731,7 +775,6 @@ function draw(){
   MASKS.forEach(function(m){list.push({y:m.y,m:m})});
   if(waiter)list.push({y:waiter.y,w:true});
   // a dish lies on the table: right above the cloth (and above the guests behind the table), but a guest who sits in front of the table covers it
-  tickDishes(.016);
   dishes.forEach(function(d){
     var tb=TABLES[d.table],dx=d.x!=null?d.x:(tb?tb.x:0),dy=d.y!=null?d.y:(tb?tb.y:0),my=-1e9;
     MASKS.forEach(function(m){if(pip(m.poly,dx,dy-4))my=Math.max(my,m.y)});            // the cloth (mask) of the table the dish stands on
@@ -762,6 +805,14 @@ function loop(t){
   draw();
   raf=requestAnimationFrame(loop);
 }
+// the hall goes on also while the player is in the kitchen (guests come to the cleaned tables, the waiter takes the orders and walks to the kitchen):
+// the picture is not drawn then, only the guests and the waiter are moved
+var bgT=performance.now();
+setInterval(function(){
+  var now=performance.now(),el=Math.min(.5,(now-bgT)/1000);bgT=now;
+  if(state!=='kitchen'||!GUESTS_ON)return;
+  while(el>0){var d=Math.min(.05,el);step(d);el-=d}
+},50);
 function startLoop(){if(!raf){lastT=performance.now();raf=requestAnimationFrame(loop)}}
 addEventListener('resize',function(){if(state!=='kitchen'){fit();draw()}});
 addBtn.addEventListener('click',function(e){e.stopPropagation();spawn()});
@@ -850,7 +901,7 @@ window.CooksterTavern={
   deliver:function(table,kind,ev){deliveries.push({table:table,kind:kind||'plain',ev:ev||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,
   get isOpen(){return state==='tavern'},get busy(){return busy},
-  debug:function(){return{waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
+  debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},
   seatReach:function(){return SEATS.map(seatReachable)},poseFromDir:poseFromDir,seatScale:function(y){return scaleAt(y)*SIT_K},
   poseInfo:function(pose){var im=imgs['g01_sedi_'+pose];return im?{src:im.src,w:im.naturalWidth,h:im.naturalHeight}:null},

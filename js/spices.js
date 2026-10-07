@@ -45,6 +45,7 @@
     try{return containerAt(mouse.x,mouse.y);}catch(_){return null;}
   }
   function emit(jar,kind,target){
+    try{playImpactSound(jar,'sprinkle');}catch(_){}
     const r=jar.getBoundingClientRect(),t=target.getBoundingClientRect();
     const sx=r.left+r.width*(.5+.30*Math.sin(tilt*Math.PI/180)),sy=r.top+r.height*.12;
     const col=COLORS[kind];
