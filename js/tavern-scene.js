@@ -666,12 +666,14 @@ function stepWaiter(dt){
     w.t+=dt;
     if(w.t>3.4+.7*seatedCount(w.table)){
       var table=w.table;
+      var all=[];
       guests.forEach(function(og){
         if(og.seat.table!==table||og.mode!=='seated'||og.ordered)return;
         og.ordered=true;
-        guestOrders(og).forEach(function(od){if(window.CooksterOrders)window.CooksterOrders.add(table+1,od,og.seat.id)});     // every order goes to the kitchen
+        guestOrders(og).forEach(function(od){all.push({ord:od,seatId:og.seat.id})});
         og.orders=null;
       });
+      if(all.length&&window.CooksterOrders)window.CooksterOrders.add(table+1,all);          // ONE paper with the whole order of the table goes to the kitchen
       w.mode='back';waiterGo(home);
     }
   }
