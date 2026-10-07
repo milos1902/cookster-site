@@ -132,7 +132,7 @@ function spikeLabel(el){
 }
 // the paper that hung there falls onto the base
 function fallPaper(el,done){
-  snd('note','fall');
+  try{playImpactSound(el,'fall')}catch(e){}
   var b=el.querySelector('.body');if(!b||typeof b.animate!=='function'){done();return}
   var r=b.getBoundingClientRect(),img=new Image();
   img.src=PROP_DIR+'siljak_papir.webp?v=1';img.alt='';
@@ -157,7 +157,7 @@ function hangOnSpike(el,n){
     var b=el.querySelector('.body');
     try{if(b)b.animate([{translate:'0 -8px',opacity:.4},{translate:'0 0',opacity:1}],{duration:260,easing:'ease-out'})}catch(_){}
     try{if(window.CooksterSave)CooksterSave.schedule()}catch(_){}
-    snd('note','hang',function(){playTone(660,.35,.12)});
+    try{playImpactSound(el,'hang')}catch(e){}
   }
   if(count>=1){setSpikeSrc(el,'pada');fallPaper(el,hang)}else hang();
 }
@@ -167,16 +167,8 @@ setInterval(function(){                               // a spike that was restor
 
 // ---------- the bell ----------
 var actx=null;
-function playTone(freq,vol,secs){
-  var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
-  actx=actx||new AC();if(actx.state==='suspended')actx.resume();
-  var t=actx.currentTime,g=actx.createGain();g.connect(actx.destination);
-  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0008,t+secs);
-  [1,2.4,3.9].forEach(function(m,i){var o=actx.createOscillator();o.type='sine';o.frequency.value=freq*m;
-    var og=actx.createGain();og.gain.value=[1,.5,.22][i];o.connect(og);og.connect(g);o.start(t);o.stop(t+secs+.05)});
-}
 function ringBell(el){
-  snd('bell','ring',function(){playTone(1320,.5,1.5)});
+  try{playImpactSound(el,'ring')}catch(e){}
   try{el.animate([{rotate:'0deg'},{rotate:'-7deg'},{rotate:'6deg'},{rotate:'-4deg'},{rotate:'2deg'},{rotate:'0deg'}],{duration:520,easing:'ease-out'})}catch(_){}
   callWaiter();
 }
