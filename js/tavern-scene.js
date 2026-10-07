@@ -137,7 +137,7 @@ var CELL=22,GW=Math.ceil(W/CELL),GH=Math.ceil(H/CELL),GRID=null;
 //   surfaces  [{id,name,kind:'h'|'v',img,polys,points}]: what the sponge cleans (floor, walls, the bar...). kind: horizontal (the sponge lies)
 //             or vertical (the sponge is held upright); img: which picture of the sponge; points: how the sponge sits at some places,
 //             [{x,y,scale,flat,angle,skew,lift,shadow}], blended between them. A later surface lies on top of an earlier one.
-var CAL_KEY='cookster.tavern-calibration.v3',CAL_FILE='assets/tavern/calibration_cista.json?v=4';
+var CAL_KEY='cookster.tavern-calibration.v3',CAL_FILE='assets/tavern/calibration_cista.json?v=5';
 // the pictures of the sponge: lezeci lies on a horizontal surface (dry, soapy, dirty), uspravni1/2 are held against a wall
 var SPONGE_IMG={
   lezeci:{src:'assets/tavern/sundjer_suv.webp?v=1',w:112,ratio:212/440,ax:.5,ay:.66,flat:.58,
@@ -653,7 +653,8 @@ function stepWaiter(dt){
       try{if(window.CooksterSound)window.CooksterSound.play('waiter','serve')}catch(e){}
       var isDrink=w.carry.kind==='drink',sv=serveSpot(w.table,isDrink?'pice':'jelo',w.carry.seatId);
       var eatSeat=w.carry.seatId!=null&&w.carry.seatId>=0?w.carry.seatId:-1,secs=isDrink?DRINK_SECS:EAT_SECS;
-      guests.forEach(function(g){if(g.seat.table===w.table&&g.mode==='seated'){if(eatSeat<0||g.seat.id<eatSeat)eatSeat=g.seat.id;if(g.seat.id===eatSeat)g.sitFor=Math.max(g.sitFor,g.sitT+EAT_DELAY+secs+8)}});
+      if(eatSeat<0)guests.forEach(function(g){if(g.seat.table===w.table&&g.mode==='seated'&&(eatSeat<0||g.seat.id<eatSeat))eatSeat=g.seat.id});
+      guests.forEach(function(g){if(g.seat.id===eatSeat)g.sitFor=Math.max(g.sitFor,g.sitT+EAT_DELAY+secs+8)});
       addDirt(w.table,isDrink?1:2);
       guests.forEach(function(g){if(g.seat.id===eatSeat){g.rounds=(g.rounds||0)+1;if(g.grp&&g.grp.long&&g.rounds<6)g.reorderAt=g.sitT+secs+4+Math.random()*10}});
       dishes.push({table:w.table,kind:w.carry.kind||'plain',items:w.carry.items||null,secs:secs,t:0,eatT:0,bite:0,phase:'eating',seatId:eatSeat,x:sv?sv.x:null,y:sv?sv.y:null});
@@ -720,10 +721,10 @@ function drinkImg(id){
 // the drinks of one guest stand side by side on his "piće" spot (bottom middle of the group is the spot)
 function drinkLayout(d){
   var tb=TABLES[d.table];if(!tb)return null;
-  var dx=d.x!=null?d.x:tb.x,dy=d.y!=null?d.y:tb.y+8,sc=scaleAt(dy)*.21,out=[],tw=0,i;
+  var dx=d.x!=null?d.x:tb.x,dy=d.y!=null?d.y:tb.y+8,sc=scaleAt(dy)*.19,out=[],tw=0,i;
   for(i=0;i<d.items.length;i++){var im=drinkImg(d.items[i]);if(!im||!im.naturalWidth)return null;var w=im.naturalWidth*sc,h=im.naturalHeight*sc;out.push({im:im,w:w,h:h});tw+=w}
-  var x=dx-tw/2;
-  out.forEach(function(o){o.x=x;o.y=dy-o.h;x+=o.w});
+  var x=dx-tw/2-(out.length-1)*3;
+  out.forEach(function(o,i){o.x=x;o.y=dy-o.h+(o.h>o.w*1.6?0:2.5*sc);x+=o.w+6})
   return out;
 }
 function dishRect(d){
