@@ -253,5 +253,25 @@ reset.addEventListener('click',function(e){
 var hinted=false;
 room.addEventListener('pointerdown',function(){if(!hinted){hinted=true;setTimeout(function(){hint.style.opacity='0'},4000)}},true);
 
-window.CooksterTavernClean={reset:function(){reset.click()},floorPercent:floorPercent,zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
+// the hall gets dirty again while it works: a table gets (a little more) dirty with every dish and drink, the floor with every guest
+function dirtyZone(i,amount){
+  prepare();var poly=zones[i];if(!poly||!dirtyOk)return;
+  var sc=mk('canvas');sc.width=W;sc.height=H;var c=sc.getContext('2d');
+  polyPath(c,poly);c.save();c.clip();c.globalAlpha=Math.max(.05,Math.min(1,amount));c.drawImage(dirtyImg,0,0,W,H);c.restore();
+  D.globalCompositeOperation='source-over';D.drawImage(sc,0,0);
+}
+function markDirty(i){prepare();if(i>=0&&i<cleaned.length&&!cleaning[i]){cleaned[i]=false;refreshInfo()}}
+function floorDirt(n){
+  prepare();if(!floorMask||!dirtyOk)return;
+  var sc=mk('canvas');sc.width=W;sc.height=H;var c=sc.getContext('2d');
+  for(var k=0;k<Math.max(1,n);k++){
+    var x=Math.random()*W,y=H*.35+Math.random()*H*.62,r=40+Math.random()*60;
+    var g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,'rgba(0,0,0,.55)');g.addColorStop(1,'rgba(0,0,0,0)');
+    c.globalCompositeOperation='source-over';c.fillStyle=g;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();
+  }
+  c.globalCompositeOperation='source-in';c.drawImage(dirtyImg,0,0,W,H);
+  c.globalCompositeOperation='destination-in';c.drawImage(floorMask,0,0);
+  D.globalCompositeOperation='source-over';D.drawImage(sc,0,0);
+}
+window.CooksterTavernClean={dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
 })();

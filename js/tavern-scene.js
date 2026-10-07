@@ -455,26 +455,49 @@ function pickSeat(){
   var from=(busy.length&&Math.random()<.6)?busy:free;
   return from[Math.floor(Math.random()*from.length)];
 }
-function spawn(){
-  var seat=pickSeat();if(!seat)return null;
+function makeGuest(seat,grp,wait){
   seat.taken=true;
-  // a character that is not in the hall yet, if there is one
   var used={};guests.forEach(function(o){used[o.ch]=1});
   var pool=[];for(var c=1;c<=CHARS;c++)if(!used[c])pool.push(c);
   var ch=pool.length?pool[Math.floor(Math.random()*pool.length)]:1+Math.floor(Math.random()*CHARS);
   var g={id:++UID,ch:ch,seat:seat,x:DOOR.x+(Math.random()*30-15),y:DOOR.y,
     mode:'in',path:findPath(DOOR,{x:seat.ax,y:seat.ay}),pi:1,phase:Math.random()*2,face:'dole',flip:false,
-    sitT:0,sitFor:30+Math.random()*40,fade:0,from:null,speed:78+Math.random()*16,mood:'ok'};
+    sitT:0,sitFor:grp?grp.sitFor:30+Math.random()*40,fade:0,from:null,speed:78+Math.random()*16,mood:'ok',grp:grp||null,wait:wait||0,rounds:0};
   guests.push(g);return g;
+}
+// one guest (a free seat at a table that is clean)
+function spawn(){
+  var seat=pickSeat();if(!seat)return null;
+  return makeGuest(seat,null,0);
+}
+// a company: 1-4 guests come together to an empty clean table; a big one sometimes stays long and keeps ordering
+function cleanTables(){var cl=window.CooksterTavernClean&&window.CooksterTavernClean.cleaned?window.CooksterTavernClean.cleaned():null;return cl}
+function spawnGroup(){
+  var r=Math.random(),size=r<.38?1:r<.62?2:r<.84?3:4;
+  if(size===1)return spawn();
+  var cl=cleanTables(),tables=[];
+  for(var t=0;t<TABLES.length;t++){
+    if(cl&&!cl[t])continue;
+    var seats=SEATS.filter(function(s){return s.table===t&&seatReachable(s)});
+    if(seats.length>=size&&!SEATS.some(function(s){return s.table===t&&s.taken}))tables.push(seats);
+  }
+  if(!tables.length)return spawn();
+  var seats=tables[Math.floor(Math.random()*tables.length)].slice();
+  seats.sort(function(){return Math.random()-.5});seats=seats.slice(0,size);
+  var long=size>=3&&Math.random()<.55;
+  var grp={id:++UID,size:size,long:long,sitFor:long?170+Math.random()*110:35+Math.random()*45};
+  seats.forEach(function(st,i){makeGuest(st,grp,i*.9+Math.random()*.4)});
+  return true;
 }
 function chKey(g,pose){return 'g'+(g.ch<10?'0':'')+g.ch+'_'+pose}
 function step(dt){
   clock+=dt;
-  if(GUESTS_ON&&clock>=nextArrival){nextArrival=clock+7+Math.random()*9;if(guests.length<14)spawn()}
+  if(GUESTS_ON&&clock>=nextArrival){nextArrival=clock+7+Math.random()*9;if(guests.length<14)spawnGroup()}
   if(GUESTS_ON)stepWaiter(dt);
-  tickDishes(dt);
+  tickDishes(dt);tickMess(dt);
   for(var i=guests.length-1;i>=0;i--){
     var g=guests[i];
+    if(g.mode==='in'&&g.wait>0){g.wait-=dt;continue}
     if(g.mode==='in'||g.mode==='out'){
       var tgt=g.path[g.pi];
       if(!tgt){
@@ -496,12 +519,54 @@ function step(dt){
       if(g.fade>=1){g.mode='seated';g.sitT=0}
     }else if(g.mode==='seated'){
       g.sitT+=dt;
+      if(g.reorderAt&&g.sitT>g.reorderAt){g.reorderAt=0;g.ordered=false;g.orders=null}      // a long company orders again
       if(g.sitT>g.sitFor){g.mode='rising';g.fade=0}
     }else if(g.mode==='rising'){
       g.fade=Math.min(1,g.fade+dt/.55);
       if(g.fade>=1){g.x=g.seat.ax;g.y=g.seat.ay;g.mode='out';g.path=findPath({x:g.x,y:g.y},DOOR);g.pi=1}
     }
   }
+}
+// ---------- the mess ----------
+// the longer and the more they drink and smoke, the dirtier: the ashtray fills, the table gets dirty again, the floor too; a table that was used must be cleaned
+var ash=[0,0,0],ASH=[{x:437,y:447},{x:886,y:660},{x:1377,y:503}],tableUsed=[0,0,0],floorT=0,idleT=0;
+function addDirt(table,units){
+  tableUsed[table]=(tableUsed[table]||0)+units;
+  try{if(window.CooksterTavernClean)window.CooksterTavernClean.dirty(table,.1*units)}catch(e){}
+}
+function tickMess(dt){
+  var seatedAt=[0,0,0],cl=cleanTables();
+  guests.forEach(function(g){if(g.mode==='seated')seatedAt[g.seat.table]=(seatedAt[g.seat.table]||0)+1});
+  // also without guests the hall slowly gets dirty again, one thing at a time: now a table, now a piece of the floor
+  idleT+=dt;
+  if(idleT>75){idleT=0;
+    if(Math.random()<.5){var rt=Math.floor(Math.random()*TABLES.length);if(!guests.some(function(g){return g.seat.table===rt})){try{window.CooksterTavernClean.dirty(rt,.25);window.CooksterTavernClean.markDirty(rt)}catch(e){}}}
+    else{try{window.CooksterTavernClean.floorDirt(1)}catch(e){}}
+  }
+  floorT+=dt*Math.max(0,guests.length);
+  if(floorT>40){floorT=0;try{window.CooksterTavernClean.floorDirt(1+Math.floor(guests.length/4))}catch(e){}}
+  for(var t=0;t<TABLES.length;t++){
+    ash[t]=Math.min(1,(ash[t]||0)+(seatedAt[t]||0)*dt/260);                     // 4 guests fill the ashtray in about a minute
+    var present=guests.some(function(g){return g.seat.table===t});
+    if(!present&&tableUsed[t]>0){
+      tableUsed[t]=0;try{window.CooksterTavernClean.markDirty(t)}catch(e){}                // the company left: the table has to be cleaned
+    }
+    if(cl&&cl[t]&&!present){ash[t]=0;for(var i=dishes.length-1;i>=0;i--)if(dishes[i].table===t)dishes.splice(i,1)}   // cleaned: ashtray emptied, glasses taken away
+  }
+}
+function drawAsh(ctx,t){
+  var l=ash[t]||0,a=ASH[t];if(!a||l<.04)return;
+  var sc=scaleAt(a.y)/.34,n=Math.round(l*14);
+  ctx.save();ctx.translate(a.x,a.y);
+  ctx.fillStyle='rgba(120,116,110,.9)';ctx.beginPath();ctx.ellipse(0,0,15*sc*l*.8+4*sc,6*sc*l*.8+2*sc,0,0,Math.PI*2);ctx.fill();
+  for(var i=0;i<n;i++){
+    var ang=i*2.399,rr=(4+(i%5)*2.4)*sc,x=Math.cos(ang)*rr,y=Math.sin(ang)*rr*.45-1.5*sc;
+    ctx.save();ctx.translate(x,y);ctx.rotate(ang);
+    ctx.fillStyle=i%3?'#e8e2d4':'#c8b79a';ctx.fillRect(-2.8*sc,-.8*sc,5.6*sc,1.7*sc);
+    ctx.fillStyle='#b5692c';ctx.fillRect(1.9*sc,-.8*sc,1.9*sc,1.7*sc);
+    ctx.restore();
+  }
+  ctx.restore();
 }
 // ---------- the waiter ----------
 // he waits at his home place, walks (along his route) to a table where a guest sits who has not ordered yet, stands at the spot drawn for that table,
@@ -527,11 +592,18 @@ function ensureWaiter(){
   return waiter;
 }
 var WOMEN={2:1,5:1,8:1,10:1};                        // which of the ten characters are women (they order wine by the glass, men "kilo na kilo")
-function pickOrderKey(g){
-  var r=Math.random();
-  if(WOMEN[g.ch])return r<.3?'kupus':(r<.65?'crno_casa':'belo_casa');
-  return r<.25?'kupus':(r<.7?'kilo':(r<.85?'belo_flasa':'crno_flasa'));
+function pickOrderKeys(g){                            // what one guest orders: one thing, or a dish together with a drink (every combination can happen)
+  var r=Math.random(),w=!!WOMEN[g.ch],drink=w?(Math.random()<.5?'crno_casa':'belo_casa'):(Math.random()<.6?'kilo':(Math.random()<.5?'belo_flasa':'crno_flasa'));
+  if(r<.3)return ['kupus'];
+  if(r<.62)return [drink];
+  return ['kupus',drink];
 }
+function guestOrders(g){
+  if(!g.orders){var O=window.CooksterOrders;g.orders=O&&O.make?pickOrderKeys(g).map(function(k){return O.make(k,!!WOMEN[g.ch])}):[]}
+  return g.orders;
+}
+function orderText(g){var o=guestOrders(g);return{l1:o.map(function(x){return x.name}).join(' + '),l2:o.map(function(x){return x.extra}).filter(Boolean).join(' · ')}}
+function seatedCount(t){var n=0;guests.forEach(function(g){if(g.seat.table===t&&g.mode==='seated'&&!g.ordered)n++});return n}
 function waitingGuest(){                              // the guest that has waited longest and has not ordered yet
   var best=null;
   guests.forEach(function(g){if(g.mode==='seated'&&!g.ordered&&(!best||g.sitT>best.sitT))best=g});
@@ -582,6 +654,8 @@ function stepWaiter(dt){
       var isDrink=w.carry.kind==='drink',sv=serveSpot(w.table,isDrink?'pice':'jelo',w.carry.seatId);
       var eatSeat=w.carry.seatId!=null&&w.carry.seatId>=0?w.carry.seatId:-1,secs=isDrink?DRINK_SECS:EAT_SECS;
       guests.forEach(function(g){if(g.seat.table===w.table&&g.mode==='seated'){if(eatSeat<0||g.seat.id<eatSeat)eatSeat=g.seat.id;if(g.seat.id===eatSeat)g.sitFor=Math.max(g.sitFor,g.sitT+EAT_DELAY+secs+8)}});
+      addDirt(w.table,isDrink?1:2);
+      guests.forEach(function(g){if(g.seat.id===eatSeat){g.rounds=(g.rounds||0)+1;if(g.grp&&g.grp.long&&g.rounds<6)g.reorderAt=g.sitT+secs+4+Math.random()*10}});
       dishes.push({table:w.table,kind:w.carry.kind||'plain',items:w.carry.items||null,secs:secs,t:0,eatT:0,bite:0,phase:'eating',seatId:eatSeat,x:sv?sv.x:null,y:sv?sv.y:null});
       var ev=w.carry.ev||null,rep=ev&&window.CooksterQuality?window.CooksterQuality.addReputation(ev.score):null;
       reactions.push({table:w.table,t:0,ev:ev,rep:rep,delta:ev?ev.score:0});
@@ -589,10 +663,14 @@ function stepWaiter(dt){
     }
   }else if(w.mode==='serve'){
     w.t+=dt;
-    if(w.t>4.4){
-      var og=w.guest||null;if(!og)guests.forEach(function(g){if(!og&&g.seat.table===w.table&&g.mode==='seated'&&!g.ordered)og=g});
-      if(og){og.ordered=true;og.order=og.order||(window.CooksterOrders&&window.CooksterOrders.make?window.CooksterOrders.make(pickOrderKey(og),!!WOMEN[og.ch]):null)}
-      if(window.CooksterOrders)window.CooksterOrders.add(w.table+1,og?og.order:null,og?og.seat.id:-1);          // the order goes to the kitchen
+    if(w.t>3.4+.7*seatedCount(w.table)){
+      var table=w.table;
+      guests.forEach(function(og){
+        if(og.seat.table!==table||og.mode!=='seated'||og.ordered)return;
+        og.ordered=true;
+        guestOrders(og).forEach(function(od){if(window.CooksterOrders)window.CooksterOrders.add(table+1,od,og.seat.id)});     // every order goes to the kitchen
+        og.orders=null;
+      });
       w.mode='back';waiterGo(home);
     }
   }
@@ -629,7 +707,7 @@ function tickDishes(dt){
         if(d.eatT>=(d.secs||EAT_SECS)){d.phase='dirty';d.dirtyT=0}
       }
     }else d.dirtyT=(d.dirtyT||0)+dt;
-    if(!TABLES[d.table]||(d.phase==='dirty'&&d.dirtyT>240))dishes.splice(i,1);
+    if(!TABLES[d.table]||false)dishes.splice(i,1);
   }
 }
 var drinkImgs={};
@@ -709,11 +787,11 @@ function drawReactions(ctx,dt){
 }
 function drawOrderBubble(ctx){
   var w=waiter;if(!w||w.mode!=='serve'||w.t<.8)return;
-  var g=w.guest||null;if(!g)guests.forEach(function(o){if(!g&&o.seat.table===w.table&&(o.mode==='seated'||o.ordered))g=o});
-  if(!g)return;
-  var od=g.order||(window.CooksterOrders&&window.CooksterOrders.make?(g.order=window.CooksterOrders.make(pickOrderKey(g),!!WOMEN[g.ch])):null);
-  var sp=seatPos(g),im=imgs[chKey(g,sitPose(g))],hh=im?im.naturalHeight*scaleAt(sp.y)*SIT_K:300;
-  drawBubble(ctx,sp.x,sp.y-hh,od?od.name:'Kiseli kupus',od?od.extra:'ulje i tucana paprika');
+  guests.forEach(function(g){
+    if(g.seat.table!==w.table||g.mode!=='seated'||g.ordered)return;
+    var t=orderText(g),sp=seatPos(g),im=imgs[chKey(g,sitPose(g))],hh=im?im.naturalHeight*scaleAt(sp.y)*SIT_K:300;
+    drawBubble(ctx,sp.x,sp.y-hh,t.l1,t.l2);
+  });
 }
 function drawWaiter(ctx){
   var w=waiter;if(!w||w.hidden)return;
@@ -813,7 +891,8 @@ function draw(){
   var ctx=cv.getContext('2d'),k=cv.width/W;
   ctx.setTransform(k,0,0,k,0,0);ctx.clearRect(0,0,W,H);
   if(!GUESTS_ON)return;          // the cleaning room: no guests, and the table masks must not paint the clean picture over the dirt
-  var list=guests.map(function(g){return{y:guestSortY(g),g:g}});
+  var list=guests.filter(function(g){return !(g.mode==='in'&&g.wait>0)}).map(function(g){return{y:guestSortY(g),g:g}});
+  for(var at=0;at<TABLES.length;at++)(function(t){var my=TABLEMASKY[t];list.push({y:(my!=null?my:TABLES[t].y)+.02,ash:t})})(at);
   MASKS.forEach(function(m){list.push({y:m.y,m:m})});
   if(waiter)list.push({y:waiter.y,w:true});
   // a dish lies on the table: right above the cloth (and above the guests behind the table), but a guest who sits in front of the table covers it
@@ -829,7 +908,7 @@ function draw(){
     if(!busy)list.push({y:m.y,m:m});
   });
   list.sort(function(a,b){return a.y-b.y});
-  list.forEach(function(o){if(o.g)drawGuest(ctx,o.g);else if(o.w)drawWaiter(ctx);else if(o.dish)drawDish(ctx,o.dish);else drawPolyFromPicture(ctx,o.m.poly)});
+  list.forEach(function(o){if(o.g)drawGuest(ctx,o.g);else if(o.w)drawWaiter(ctx);else if(o.dish)drawDish(ctx,o.dish);else if(o.ash!==undefined)drawAsh(ctx,o.ash);else drawPolyFromPicture(ctx,o.m.poly)});
   drawReactions(ctx,.016);drawOrderBubble(ctx);
 }
 
