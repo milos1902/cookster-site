@@ -44,14 +44,23 @@
   function vesselUnder(jar){
     try{return containerAt(mouse.x,mouse.y);}catch(_){return null;}
   }
+  // where the lid (the open mouth) of the tilted jar is on the screen: the visible jar is the placement ghost, turned by `tilt` around its pivot
+  function lidPoint(jar){
+    const g=[...document.querySelectorAll('.ghost-item-copy')].find(x=>x.querySelector('img[src*="calibration_props/zacini/"]'));
+    if(!g){const r=jar.getBoundingClientRect();return{x:r.left+r.width*.7,y:r.top+r.height*.2};}
+    const rot=g.style.rotate;g.style.rotate='';
+    const r=g.getBoundingClientRect(),w=r.width,h=r.height;
+    g.style.rotate=rot;
+    const ox=w*.5,oy=h*.9,a=tilt*Math.PI/180,vx=w*.5-ox,vy=0-oy;
+    return{x:r.left+ox+vx*Math.cos(a)-vy*Math.sin(a),y:r.top+oy+vx*Math.sin(a)+vy*Math.cos(a)};
+  }
   function emit(jar,kind,target){
     try{playImpactSound(jar,'sprinkle');}catch(_){}
-    const r=jar.getBoundingClientRect(),t=target.getBoundingClientRect();
-    const sx=r.left+r.width*(.5+.30*Math.sin(tilt*Math.PI/180)),sy=r.top+r.height*.12;
+    const t=target.getBoundingClientRect(),lp=lidPoint(jar),sx=lp.x,sy=lp.y;
     const col=COLORS[kind];
-    for(let i=0;i<7;i++){
+    for(let i=0;i<10;i++){
       const d=document.createElement('div');
-      const s=2+Math.random()*3;
+      const s=2.5+Math.random()*3;
       d.style.cssText=`position:fixed;left:${sx}px;top:${sy}px;width:${s}px;height:${s}px;border-radius:50%;background:${col[i%2]};z-index:20000;pointer-events:none;transition:transform .55s cubic-bezier(.3,.1,.6,1),opacity .55s`;
       document.body.appendChild(d);
       const tx=t.left+t.width*(.3+Math.random()*.4)-sx,ty=t.top+t.height*(.35+Math.random()*.25)-sy;
