@@ -43,12 +43,25 @@ dirt.width=W;dirt.height=H;fx.width=W;fx.height=H;
 cv.parentNode.insertBefore(dirt,cv);cv.parentNode.insertBefore(fx,cv.nextSibling);
 var D=dirt.getContext('2d'),X=fx.getContext('2d');
 T.dirtCanvas=dirt;                                    // the scene redraws parts of the picture over the guests, with the dirt that is still on it
+// the dirt on the tables comes in 5 levels (assets/tavern/dirt/lvl1..5.webp: only the tables, the rest is transparent); a table gets dirtier level by level
+var LV=[],LVN=5,STEP=3,TRECT=[[215,330,650,540],[590,500,1105,800],[1180,360,1625,590]];   // the 3 tables: x1,y1,x2,y2
+var tlevel=[],tscore=[];
+for(var li=1;li<=LVN;li++){(function(n){var im=new Image();im.onload=function(){initTables()};im.src='assets/tavern/dirt/lvl'+n+'.webp?v=1';LV[n]=im})(li)}
+function lvReady(){for(var n=1;n<=LVN;n++)if(!LV[n]||!LV[n].naturalWidth)return false;return true}
+function lvDraw(i,n,alpha,op){var r=TRECT[i],im=LV[n];if(!r||!im||!im.naturalWidth)return;D.globalCompositeOperation=op;D.globalAlpha=alpha;D.drawImage(im,r[0],r[1],r[2]-r[0],r[3]-r[1],r[0],r[1],r[2]-r[0],r[3]-r[1]);D.globalAlpha=1;D.globalCompositeOperation='source-over'}
+var tinit=false;
+function initTables(){              // the tables start at level 2; whatever the old dirty picture had on them is replaced by the levels
+  if(!dirtyOk||!lvReady())return;
+  if(tinit&&!initTables.force)return;tinit=true;initTables.force=false;
+  TRECT.forEach(function(r,i){D.globalCompositeOperation='destination-out';D.fillStyle='#000';D.fillRect(r[0],r[1],r[2]-r[0],r[3]-r[1]);D.globalCompositeOperation='source-over';tlevel[i]=2;tscore[i]=STEP;lvDraw(i,2,1,'source-over')});
+}
 var dirtyImg=new Image(),dirtyOk=false;
 function paintDirt(){
   D.globalCompositeOperation='source-over';D.clearRect(0,0,W,H);
   if(dirtyOk)D.drawImage(dirtyImg,0,0,W,H);
+  initTables();
 }
-dirtyImg.onload=function(){dirtyOk=true;paintDirt();refreshInfo()};
+dirtyImg.onload=function(){dirtyOk=true;tinit=false;paintDirt();refreshInfo()};
 dirtyImg.src=DIRTY;
 var cleanImg=new Image();cleanImg.src=T.roomSrc;           // the clean picture: the difference to the dirty one is what lies on the tables
 // the dirt and the effects lie exactly over the picture, wherever the scene puts it
@@ -137,14 +150,12 @@ function frame(t){
 function cleanZone(i){
   var poly=zones[i];if(!poly||cleaned[i]||cleaning[i])return;
   cleaning[i]=true;
-  var N=16,k=0;
+  var N=16,k=0,L=tlevel[i]||0;
   (function step(){
     var a=1/(N-k);                                      // the last step takes whatever is left
-    D.globalCompositeOperation='destination-out';D.fillStyle='rgba(0,0,0,'+a+')';
-    polyPath(D,poly);D.fill();
-    D.globalCompositeOperation='source-over';
-    if(k%3===0){var q=poly[Math.floor(Math.random()*poly.length)],c=center(poly);bubble(c[0]+(q[0]-c[0])*Math.random()*.8,c[1]+(q[1]-c[1])*Math.random()*.8,2)}
-    if(++k<N)setTimeout(step,45);else{cleaned[i]=true;cleaning[i]=false;shown[i]=0;refreshInfo()}
+    if(L)lvDraw(i,L,a,'destination-out');
+    if(k%3===0){var r=TRECT[i];if(r)bubble(r[0]+(r[2]-r[0])*(.2+.6*Math.random()),r[1]+(r[3]-r[1])*(.3+.5*Math.random()),2)}
+    if(++k<N)setTimeout(step,45);else{cleaned[i]=true;cleaning[i]=false;tlevel[i]=0;tscore[i]=0;refreshInfo()}
   })();
 }
 var cleaning={};
@@ -247,50 +258,24 @@ room.addEventListener('contextmenu',function(e){
   sponge.style.display='none';
 });
 reset.addEventListener('click',function(e){
-  e.stopPropagation();rubbed=0;paintDirt();shown={};cleaned=zones.map(function(){return false});cleaning={};hideMenu();refreshInfo();
+  e.stopPropagation();rubbed=0;initTables.force=true;paintDirt();cleaned=zones.map(function(){return false});cleaning={};hideMenu();refreshInfo();
 });
 // the hint fades once the player has started cleaning
 var hinted=false;
 room.addEventListener('pointerdown',function(){if(!hinted){hinted=true;setTimeout(function(){hint.style.opacity='0'},4000)}},true);
 
 // the hall gets dirty again while it works: a table gets (a little more) dirty with every dish and drink, the floor with every guest
-// what lies on a table in the dirty picture (bottles, plates, crumbs, stains) is split into separate pieces; the table gets dirty again one piece at a time
-var pieces={},shown={},PS=4;
-function piecesOf(i){
-  if(pieces[i])return pieces[i];
-  var poly=zones[i],list=[];pieces[i]=list;shown[i]=0;
-  if(!poly||!dirtyOk||!cleanImg.naturalWidth)return list;
-  var w=Math.ceil(W/PS),h=Math.ceil(H/PS);
-  function grab(img,clipPoly){var c=mk('canvas');c.width=w;c.height=h;var x=c.getContext('2d');if(clipPoly){x.beginPath();clipPoly.forEach(function(q,k){if(k)x.lineTo(q[0]/PS,q[1]/PS);else x.moveTo(q[0]/PS,q[1]/PS)});x.closePath();x.clip()}x.drawImage(img,0,0,w,h);return x.getImageData(0,0,w,h).data}
-  var A=grab(cleanImg,poly),B=grab(dirtyImg,poly),M=new Uint8Array(w*h);
-  for(var k=0;k<w*h;k++){var d=Math.abs(A[k*4]-B[k*4])+Math.abs(A[k*4+1]-B[k*4+1])+Math.abs(A[k*4+2]-B[k*4+2]);M[k]=(B[k*4+3]>0&&d>54)?1:0}
-  // join near pixels (closing), then label the connected pieces
-  var D2=new Uint8Array(w*h);
-  for(var y=1;y<h-1;y++)for(var x2=1;x2<w-1;x2++){var o=y*w+x2;if(M[o]||M[o-1]||M[o+1]||M[o-w]||M[o+w]||M[o-w-1]||M[o+w+1])D2[o]=1}
-  var seen=new Uint8Array(w*h);
-  for(var st=0;st<w*h;st++){
-    if(!D2[st]||seen[st])continue;
-    var q=[st],pts=[];seen[st]=1;
-    while(q.length){var cur=q.pop();pts.push(cur);var cx=cur%w,cy=(cur/w)|0;
-      [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(dd){var nx=cx+dd[0],ny=cy+dd[1];if(nx<0||ny<0||nx>=w||ny>=h)return;var no=ny*w+nx;if(D2[no]&&!seen[no]){seen[no]=1;q.push(no)}})}
-    if(pts.length>=5)list.push({pts:pts,w:w});
-  }
-  for(var m=list.length-1;m>0;m--){var r=Math.floor(Math.random()*(m+1)),t=list[m];list[m]=list[r];list[r]=t}
-  return list;
+// the table gets dirty again with every dish and drink: every STEP points it goes one level up (the picture of the next level fades in over the old one)
+function setLevel(i,n){
+  var o=tlevel[i]||0;if(n<=o||!lvReady())return;
+  tlevel[i]=n;var k=0,N=3;
+  if(o)lvDraw(i,o,1,'destination-out');
+  (function step(){lvDraw(i,n,1/(N-k),'source-over');if(++k<N)setTimeout(step,200)})();
 }
-function revealPiece(pc){
-  var sc=mk('canvas');sc.width=W;sc.height=H;var c=sc.getContext('2d');
-  c.filter='blur(2px)';c.fillStyle='#000';
-  pc.pts.forEach(function(o){c.fillRect((o%pc.w)*PS-2,((o/pc.w)|0)*PS-2,PS+4,PS+4)});
-  c.filter='none';c.globalCompositeOperation='source-in';c.drawImage(dirtyImg,0,0,W,H);
-  D.globalCompositeOperation='source-over';D.drawImage(sc,0,0);
-}
-// the pieces of every table are found in advance, one table at a time, so that the first time a table gets dirty nothing hangs
-(function warm(k){setTimeout(function(){try{prepare();if(zones.length&&dirtyOk&&cleanImg.naturalWidth){if(k<zones.length){piecesOf(k);warm(k+1)}}else warm(k)}catch(e){}},k?900:2500)})(0);
 function dirtyZone(i,count){
-  prepare();if(!zones[i]||!dirtyOk)return;
-  var list=piecesOf(i),n=Math.max(1,Math.round(count||1));
-  while(n-->0&&shown[i]<list.length)revealPiece(list[shown[i]++]);
+  prepare();if(!TRECT[i]||!dirtyOk||cleaning[i])return;
+  tscore[i]=(tscore[i]||0)+Math.max(1,count||1);
+  setLevel(i,Math.min(LVN,1+Math.floor(tscore[i]/STEP)));
 }
 function markDirty(i){prepare();if(i>=0&&i<cleaned.length&&!cleaning[i]){cleaned[i]=false;refreshInfo()}}
 function floorDirt(n){

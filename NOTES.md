@@ -111,3 +111,8 @@ Alat „Predmeti na stolu": „Nagib ka stolu" (`tilt`, `tiDraw` u `tavern-scene
 Senke u alatu „Predmeti na stolu" (`tiShadow` u `tavern-scene.js`, polja `sho, shx, shy, shw, shh, shb`): meka eliptična senka ispod predmeta; jačina, pomak levo-desno i gore-dole, širina, visina i zamućenost se podešavaju po predmetu i stolici (ili „za sve stolice"). Početno: jačina 0,38.
 
 Alat „Predmeti na stolu": dugmad Kopiranje (Kopiraj ovu stolicu, Nalepi ovde, Nalepi na sve stolice, „i položaj", „Primeni isto na izabrani predmet"); u pregledu ostaju vidljivi svi predmeti koji su već postavljeni na stolicama izabranog stola. Zaglavljivanje: pregled je crtao u beskonačnoj petlji (slike su se pravile iznova na svako crtanje); ispravljeno. Senke i boje se crtaju bez canvas filtera po kadru (boje se unapred „ispeku" u keširanu sliku, senka je radijalni gradijent), jer su filteri usporavali kafanu.
+
+## Nivoi prljavštine stolova (slike 23–27) + JSON "Predmeti na stolu"
+- `assets/tavern/dirt/lvl1..5.webp`: iz 5 ChatGPT slika (razlika prema `kafana_cista.webp`, samo gornja ploča stolova + predmeti; ostalo providno). Sve 3 stola su na istoj slici, pa `tavern-clean.js` seče po pravougaonicima `TRECT`.
+- Sto počinje na nivou 2; `dirtyZone(sto,poeni)` skuplja poene, svakih `STEP`=3 poena ide nivo više (novi nivo se pojavi preko starog za ~0,6 s). „Očisti sto“ briše sloj trenutnog nivoa; „zaprljaj opet“ vraća nivo 2. Staro komadanje po delovima (`piecesOf`) je izbačeno.
+- `assets/tavern/table_items.json` je podrazumevana kalibracija „Predmeta na stolu“ (ako u pregledaču nema svoje sačuvane u `cookster.table-items.v1`). Sedišta 8–11 (sto 3) još nisu kalibrisana.
