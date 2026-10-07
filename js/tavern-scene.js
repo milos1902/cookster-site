@@ -601,15 +601,15 @@ function serveSpot(table,kind){
   for(var i=0;i<order.length;i++){var d=sv.seat[order[i]];if(d&&d[kind])return d[kind]}
   return sv.table[table]||null;
 }
-function drawDishes(ctx,dt){
-  for(var i=dishes.length-1;i>=0;i--){
-    var d=dishes[i],tb=TABLES[d.table];d.t+=dt;
-    if(!tb||d.t>DISH_SECS){dishes.splice(i,1);continue}
-    var im=dishImgs[d.kind]||dishImgs.plain;if(!im||!im.naturalWidth)continue;
-    var dx=d.x!=null?d.x:tb.x,dy=d.y!=null?d.y:tb.y+8;
-    var sc=scaleAt(dy)*.2,w=im.naturalWidth*sc,h=im.naturalHeight*sc,a=Math.min(1,d.t/.3)*Math.min(1,(DISH_SECS-d.t)/1.5);
-    ctx.save();ctx.globalAlpha=a;ctx.drawImage(im,dx-w/2,dy-h,w,h);ctx.restore();
-  }
+function tickDishes(dt){
+  for(var i=dishes.length-1;i>=0;i--){dishes[i].t+=dt;if(dishes[i].t>DISH_SECS||!TABLES[dishes[i].table])dishes.splice(i,1)}
+}
+function drawDish(ctx,d){
+  var tb=TABLES[d.table];if(!tb)return;
+  var im=dishImgs[d.kind]||dishImgs.plain;if(!im||!im.naturalWidth)return;
+  var dx=d.x!=null?d.x:tb.x,dy=d.y!=null?d.y:tb.y+8;
+  var sc=scaleAt(dy)*.2,w=im.naturalWidth*sc,h=im.naturalHeight*sc,a=Math.min(1,d.t/.3)*Math.min(1,(DISH_SECS-d.t)/1.5);
+  ctx.save();ctx.globalAlpha=a;ctx.drawImage(im,dx-w/2,dy-h,w,h);ctx.restore();
 }
 // the guest tells what he thinks of the dish: too little / too much / something that should not be there (see js/quality.js)
 function drawReactions(ctx,dt){
@@ -730,14 +730,22 @@ function draw(){
   var list=guests.map(function(g){return{y:guestSortY(g),g:g}});
   MASKS.forEach(function(m){list.push({y:m.y,m:m})});
   if(waiter)list.push({y:waiter.y,w:true});
+  // a dish lies on the table: right above the cloth (and above the guests behind the table), but a guest who sits in front of the table covers it
+  tickDishes(.016);
+  dishes.forEach(function(d){
+    var tb=TABLES[d.table],dx=d.x!=null?d.x:(tb?tb.x:0),dy=d.y!=null?d.y:(tb?tb.y:0),my=-1e9;
+    MASKS.forEach(function(m){if(pip(m.poly,dx,dy-4))my=Math.max(my,m.y)});            // the cloth (mask) of the table the dish stands on
+    if(my<-1e8)my=TABLEMASKY[d.table]!=null?TABLEMASKY[d.table]:(tb?tb.y:0);
+    list.push({y:my+.01,dish:d});
+  });
   // a chair covers whoever walks behind it, but only while nobody sits on it
   WALKMASKS.forEach(function(m){
     var busy=guests.some(function(g){return g.seat.id===m.seat&&(g.mode==='sitting'||g.mode==='seated'||g.mode==='rising')});
     if(!busy)list.push({y:m.y,m:m});
   });
   list.sort(function(a,b){return a.y-b.y});
-  list.forEach(function(o){if(o.g)drawGuest(ctx,o.g);else if(o.w)drawWaiter(ctx);else drawPolyFromPicture(ctx,o.m.poly)});
-  drawDishes(ctx,.016);drawReactions(ctx,.016);drawOrderBubble(ctx);
+  list.forEach(function(o){if(o.g)drawGuest(ctx,o.g);else if(o.w)drawWaiter(ctx);else if(o.dish)drawDish(ctx,o.dish);else drawPolyFromPicture(ctx,o.m.poly)});
+  drawReactions(ctx,.016);drawOrderBubble(ctx);
 }
 
 // ---------- the canvas follows the picture ----------

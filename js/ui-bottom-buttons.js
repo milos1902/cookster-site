@@ -103,6 +103,8 @@
       window.CooksterBackpackController?.activateSlot?.(
         Number(button.dataset.slot)-1,button,event
       );
+    }else if(button.dataset.group==='center'){
+      window.CooksterRecentItems?.activate?.(Number(button.dataset.slot)-1,button,event);
     }
   };
 
