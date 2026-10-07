@@ -10293,7 +10293,7 @@ function kitchenEquipmentDef(id){
 function ownedKitchenEquipment(){
  if(OBJECT_CALIBRATION_MODE)return KITCHEN_EQUIPMENT.map(def=>def.id);
  const owned=CooksterState.progression.kitchenEquipment;
-  return Array.from(new Set([...(Array.isArray(owned)?owned:[]),'mlin_za_mesо',PAPRIKA_STEAM_BAG_ID,'kaca_prazna','kaca_poklopac']));
+  return Array.from(new Set([...(Array.isArray(owned)?owned:[]),'mlin_za_mesо',PAPRIKA_STEAM_BAG_ID,'kaca_prazna','kaca_poklopac',...KITCHEN_EQUIPMENT.filter(d=>d.category==='drink').map(d=>d.id)]));
 }
 function equipmentCountInKitchen(id){
  return items.filter(el=>el.dataset.itemId===id).length+
@@ -10397,6 +10397,7 @@ function kitchenEquipmentCard(def,mode){
  button.append(img,text);
  return button;
 }
+let kitchenPanelMode='equipment';
 function renderKitchenElements(){
  const ownedGrid=document.getElementById('kitchenOwnedGrid');
  const shopGrid=document.getElementById('kitchenShopGrid');
@@ -10405,10 +10406,12 @@ function renderKitchenElements(){
  ownedGrid.innerHTML='';shopGrid.innerHTML='';
 
  const ownedIds=ownedKitchenEquipment();
- const ownedDefs=KITCHEN_EQUIPMENT.filter(d=>ownedIds.includes(d.id));
+ const inPanel=d=>kitchenPanelMode==='drinks'?d.category==='drink':d.category!=='drink';
+ const titleEl=document.getElementById('kitchenElementsTitle');if(titleEl)titleEl.textContent=kitchenPanelMode==='drinks'?'🍷 Piće':'🍳 Kuhinjski elementi';
+ const ownedDefs=KITCHEN_EQUIPMENT.filter(d=>ownedIds.includes(d.id)&&inPanel(d));
  for(const def of ownedDefs)ownedGrid.appendChild(kitchenEquipmentCard(def,'owned'));
 
- const shopDefs=OBJECT_CALIBRATION_MODE?[]:KITCHEN_EQUIPMENT.filter(d=>!d.starter);
+ const shopDefs=OBJECT_CALIBRATION_MODE?[]:KITCHEN_EQUIPMENT.filter(d=>!d.starter&&inPanel(d));
  for(const def of shopDefs)shopGrid.appendChild(kitchenEquipmentCard(def,'shop'));
 
  if(!ownedDefs.length)ownedGrid.innerHTML='<div class="ke-empty">Nema kuhinjskih elemenata.</div>';
@@ -10439,7 +10442,8 @@ function ensureKitchenElementsScroll(){
    },{capture:true,passive:false});
  }
 }
-function openKitchenElements(){
+function openKitchenElements(mode){
+ kitchenPanelMode=mode==='drinks'?'drinks':'equipment';
  ensureKitchenElementsScroll();
  if(document.body.classList.contains('market-open'))return;
  const sceneEl=document.getElementById('kitchenElementsScene');
@@ -14986,7 +14990,8 @@ window.addEventListener('pointercancel',e=>{
 window.addEventListener('contextmenu',e=>e.preventDefault());
 window.addEventListener('auxclick',e=>{if(e.button===1)e.preventDefault()});
 document.getElementById('marketBtn').onclick=()=>{openMarket()};
-document.getElementById('kitchenElementsBtn')?.addEventListener('click',openKitchenElements);
+document.getElementById('kitchenElementsBtn')?.addEventListener('click',()=>openKitchenElements('equipment'));
+document.getElementById('drinksBtn')?.addEventListener('click',()=>openKitchenElements('drinks'));
 document.getElementById('kitchenElementsClose')?.addEventListener('click',closeKitchenElements);
 document.getElementById('kitchenElementsScene')?.addEventListener('pointerdown',e=>{if(e.target.id==='kitchenElementsScene')closeKitchenElements();});
 document.getElementById('serveBtn').onclick=serveDish;

@@ -226,7 +226,7 @@ body{
     linear-gradient(180deg, rgba(255,255,255,.52), rgba(255,255,255,0) 44%),
     linear-gradient(135deg, #eee1a9, var(--ui-harvest)) !important;
 }
-#kitchenElementsBtn{
+#kitchenElementsBtn,#drinksBtn{
   background:
     linear-gradient(180deg, rgba(255,255,255,.52), rgba(255,255,255,0) 44%),
     linear-gradient(135deg, #cbd6b0, var(--ui-sage)) !important;

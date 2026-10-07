@@ -6,8 +6,8 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Cookster 2D</title>
 <link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23B54A1A'/%3E%3Cpath d='M8 11h16l-2 13H10L8 11Zm3-5h10v3H11V6Z' fill='%23fff3d6'/%3E%3C/svg%3E" rel="icon" type="image/svg+xml"/>
-<link href="css/game.css?v=2.88" rel="stylesheet"/>
-<link href="css/ui-popart-overrides.css?v=2.86" rel="stylesheet"/>
+<link href="css/game.css?v=2.89" rel="stylesheet"/>
+<link href="css/ui-popart-overrides.css?v=2.87" rel="stylesheet"/>
 <link href="css/wood-refill-scene.css?v=2.92" rel="stylesheet"/>
 <link href="css/ui-bottom-buttons.css?v=2.84" rel="stylesheet"/>
 <link href="css/cutura-drink-animation.css?v=2.66" rel="stylesheet"/>
@@ -41,7 +41,7 @@
 <button aria-label="Levo" class="edge-arrow left" id="leftArrow">‹</button>
 <button aria-label="Desno" class="edge-arrow right" id="rightArrow">›</button>
 <div id="cursor"></div><div id="label"></div>
-<div id="hud"><div id="day">Dan 1</div><div id="money">Novac: 1000 дин</div><button id="marketBtn">🧺 Pijaca</button><button id="kitchenElementsBtn">🍳 Kuhinjski elementi</button><button id="serveBtn">🍽️ Oceni jelo</button><button id="saveBtn" title="Sačuvaj igru">💾 Sačuvaj</button><button id="loadBtn" title="Učitaj poslednji ručni save">📂 Učitaj</button></div><div aria-hidden="true" hidden="" id="quickToolWheel"><img alt="" class="quick-tool-wheel-art" src="assets/ui/radial_serbian_wheel.png"/><button aria-label="Ruka" class="quick-tool-hotspot kind-tool" data-wheel-tool="hand" style="--hx:50%;--hy:50%;--hw:24%;--hh:24%;" type="button"></button><button aria-label="Metla" class="quick-tool-hotspot kind-tool" data-wheel-tool="metla" style="--hx:25%;--hy:28%;--hw:28%;--hh:30%;" type="button"></button><button aria-label="Nož" class="quick-tool-hotspot kind-tool" data-wheel-tool="noz" style="--hx:76%;--hy:25%;--hw:28%;--hh:29%;" type="button"></button><button aria-label="Sunđer" class="quick-tool-hotspot kind-tool" data-wheel-tool="sundjer" style="--hx:82%;--hy:52%;--hw:28%;--hh:29%;" type="button"></button><button aria-label="Rakija" class="quick-tool-hotspot kind-future" data-wheel-tool="rakija" style="--hx:19%;--hy:66%;--hw:24%;--hh:27%;" type="button"></button><button aria-label="Opanci" class="quick-tool-hotspot kind-future" data-wheel-tool="opanci" style="--hx:44%;--hy:83%;--hw:28%;--hh:22%;" type="button"></button><button aria-label="Zaključano" class="quick-tool-hotspot kind-locked" data-wheel-tool="locked_top" style="--hx:50%;--hy:18%;--hw:22%;--hh:20%;" type="button"></button><button aria-label="Zaključano" class="quick-tool-hotspot kind-locked" data-wheel-tool="locked_bottom" style="--hx:74%;--hy:79%;--hw:23%;--hh:22%;" type="button"></button></div>
+<div id="hud"><div id="day">Dan 1</div><div id="money">Novac: 1000 дин</div><button id="marketBtn">🧺 Pijaca</button><button id="kitchenElementsBtn">🍳 Kuhinjski elementi</button><button id="drinksBtn">🍷 Piće</button><button id="serveBtn">🍽️ Oceni jelo</button><button id="saveBtn" title="Sačuvaj igru">💾 Sačuvaj</button><button id="loadBtn" title="Učitaj poslednji ručni save">📂 Učitaj</button></div><div aria-hidden="true" hidden="" id="quickToolWheel"><img alt="" class="quick-tool-wheel-art" src="assets/ui/radial_serbian_wheel.png"/><button aria-label="Ruka" class="quick-tool-hotspot kind-tool" data-wheel-tool="hand" style="--hx:50%;--hy:50%;--hw:24%;--hh:24%;" type="button"></button><button aria-label="Metla" class="quick-tool-hotspot kind-tool" data-wheel-tool="metla" style="--hx:25%;--hy:28%;--hw:28%;--hh:30%;" type="button"></button><button aria-label="Nož" class="quick-tool-hotspot kind-tool" data-wheel-tool="noz" style="--hx:76%;--hy:25%;--hw:28%;--hh:29%;" type="button"></button><button aria-label="Sunđer" class="quick-tool-hotspot kind-tool" data-wheel-tool="sundjer" style="--hx:82%;--hy:52%;--hw:28%;--hh:29%;" type="button"></button><button aria-label="Rakija" class="quick-tool-hotspot kind-future" data-wheel-tool="rakija" style="--hx:19%;--hy:66%;--hw:24%;--hh:27%;" type="button"></button><button aria-label="Opanci" class="quick-tool-hotspot kind-future" data-wheel-tool="opanci" style="--hx:44%;--hy:83%;--hw:28%;--hh:22%;" type="button"></button><button aria-label="Zaključano" class="quick-tool-hotspot kind-locked" data-wheel-tool="locked_top" style="--hx:50%;--hy:18%;--hw:22%;--hh:20%;" type="button"></button><button aria-label="Zaključano" class="quick-tool-hotspot kind-locked" data-wheel-tool="locked_bottom" style="--hx:74%;--hy:79%;--hw:23%;--hh:22%;" type="button"></button></div>
 <div id="toast"></div><div aria-hidden="true" id="dishReport"><div class="dish-card"><button aria-label="Zatvori" id="dishClose">×</button><div id="dishReportBody"></div></div></div>
 <div aria-hidden="true" id="kitchenElementsScene">
 <div aria-labelledby="kitchenElementsTitle" aria-modal="true" class="kitchen-elements-card" role="dialog">
@@ -208,7 +208,7 @@
 <script src="js/core/surface-cast.js"></script>
 <script src="js/core/tween.js"></script>
 <script src="js/core/placement.js"></script>
-<script src="js/data/catalog.js?v=3.12"></script>
+<script src="js/data/catalog.js?v=3.13"></script>
 <script src="js/core/pan.js?v=2"></script>
 <script src="js/core/food-state-machine.js"></script>
 <script src="js/core/transfer-thermal.js"></script>
@@ -223,11 +223,11 @@
 <script src="js/data/perspective-master.js?v=3.02"></script>
 <script src="js/pantry-camera.js?v=3.12"></script>
 <script src="js/pantry-scene.js?v=3.11"></script>
-<script src="js/tavern-scene.js?v=47"></script>
+<script src="js/tavern-scene.js?v=48"></script>
 <script src="js/tavern-clean.js?v=11"></script>
 <script src="js/kitchen-orders.js?v=9"></script>
 <script src="js/tavern-calibration.js?v=11"></script>
-<script src="js/game.js?v=3.47"></script>
+<script src="js/game.js?v=3.48"></script>
 <script src="js/kaca.js?v=17"></script>
 <script src="js/quality.js?v=1"></script>
 <script src="js/spices.js?v=13"></script>
