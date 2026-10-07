@@ -9,7 +9,7 @@ if(!T||!room||window.CooksterTableItemsTool||!T.tableItems)return;
 var ITEMS=[['dish','Činija sa kupusom'],['pice_vino_crno_flasa','Flaša crnog vina'],['pice_vino_belo_flasa','Flaša belog vina'],['pice_soda_sifon','Soda voda (sifon)'],['pice_casa_spricer','Čaša za špricer'],['pice_casa_belo_vino','Čaša belog vina'],['pice_casa_crno_vino','Čaša crnog vina']];
 var key='dish',table=0,seat=0,scope='seat',ui={},cv,g,img=null,imgKey=null,room_img=new Image(),drag=false;
 room_img.src=T.roomSrc;
-var CROP={w:760,h:428};                                 // part of the hall that is shown (scene pixels), around the table
+var CROP={w:760,h:428},view={z:1,cx:null,cy:null};                                 // part of the hall that is shown (scene pixels), around the table
 function data(){return T.tableItems.get()}
 function save(){T.tableItems.set(data())}
 function entry(create){var d=data();if(!d.items)d.items={};var it=d.items[key];if(!it&&create)it=d.items[key]={def:{},seat:{}};if(it){if(!it.def)it.def={};if(!it.seat)it.seat={}}return it}
@@ -20,7 +20,7 @@ function defaultPos(){
   var tb=T.tables[table];return sp?{x:sp.x,y:sp.y}:{x:tb.x,y:tb.y+8};
 }
 function cur(){                                          // what is valid for this chair now
-  var it=entry(false),p=defaultPos(),o=(it&&it.seat[seatId()])||null,d=(it&&it.def)||{},r={x:p.x,y:p.y,s:1,rot:0,h:0,sat:1,b:1,c:1},k;
+  var it=entry(false),p=defaultPos(),o=(it&&it.seat[seatId()])||null,d=(it&&it.def)||{},r={x:p.x,y:p.y,s:1,rot:0,sk:0,hl:0,h:0,sat:1,b:1,c:1},k;
   for(k in d)r[k]=d[k];if(o)for(k in o)r[k]=o[k];return r;
 }
 function setVal(k,v){
@@ -30,10 +30,14 @@ function setVal(k,v){
   save();refreshUi();draw();
 }
 function setPos(x,y){var it=entry(true),id=seatId();if(!it.seat[id])it.seat[id]={};it.seat[id].x=Math.round(x);it.seat[id].y=Math.round(y);save();draw()}
-function box(){var tb=T.tables[table];return{x:Math.max(0,Math.min(T.size.w-CROP.w,tb.x-CROP.w/2)),y:Math.max(0,Math.min(T.size.h-CROP.h,tb.y-CROP.h*.55))}}
-function toScene(e){var r=cv.getBoundingClientRect(),b=box();return{x:b.x+(e.clientX-r.left)/r.width*CROP.w,y:b.y+(e.clientY-r.top)/r.height*CROP.h}}
+function vw(){return CROP.w/view.z}function vh(){return CROP.h/view.z}
+function box(){
+  var tb=T.tables[table],cx=view.cx==null?tb.x:view.cx,cy=view.cy==null?tb.y-CROP.h*.05:view.cy;
+  return{x:Math.max(0,Math.min(T.size.w-vw(),cx-vw()/2)),y:Math.max(0,Math.min(T.size.h-vh(),cy-vh()/2))};
+}
+function toScene(e){var r=cv.getBoundingClientRect(),b=box();return{x:b.x+(e.clientX-r.left)/r.width*vw(),y:b.y+(e.clientY-r.top)/r.height*vh()}}
 function draw(){
-  var b=box(),k=cv.width/CROP.w;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cv.width,cv.height);g.setTransform(k,0,0,k,-b.x*k,-b.y*k);
+  var b=box(),k=cv.width/vw();g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cv.width,cv.height);g.setTransform(k,0,0,k,-b.x*k,-b.y*k);
   if(room_img.complete)g.drawImage(room_img,0,0,T.size.w,T.size.h);
   // the chairs of this table
   seatsOf(table).forEach(function(s,i){
@@ -44,14 +48,13 @@ function draw(){
   if(src!==imgKey){imgKey=src;img=new Image();img.onload=draw;img.src=src}
   if(img&&img.complete&&img.naturalWidth){
     var sc=T.tableItems.base(key,c.y)*c.s,w=img.naturalWidth*sc,h=img.naturalHeight*sc;
-    g.save();g.filter=T.tableItems.filter(c);g.translate(c.x,c.y);if(key==='dish'&&c.rot)g.rotate(c.rot*Math.PI/180);g.drawImage(img,-w/2,-h/2,w,h);g.restore();
+    g.save();g.filter=T.tableItems.filter(c);T.tableItems.pose(g,c.x,c.y,c);g.drawImage(T.tableItems.img(img,c.hl),-w/2,-h/2,w,h);g.restore();
     g.save();g.strokeStyle='#4dd2ff';g.lineWidth=1.2/k;g.beginPath();g.moveTo(c.x-6,c.y);g.lineTo(c.x+6,c.y);g.moveTo(c.x,c.y-6);g.lineTo(c.x,c.y+6);g.stroke();g.restore();
   }
 }
 function refreshUi(){
   var c=cur();
-  ['s','rot','h','sat','b','c'].forEach(function(k){var i=ui.root.querySelector('#tiS_'+k);i.value=c[k];ui.root.querySelector('#tiV_'+k).textContent=(+c[k]).toFixed(k==='h'||k==='rot'?0:2)});
-  ui.root.querySelector('#tiRotRow').style.display=key==='dish'?'block':'none';
+  ['s','rot','sk','hl','h','sat','b','c'].forEach(function(k){var i=ui.root.querySelector('#tiS_'+k);i.value=c[k];ui.root.querySelector('#tiV_'+k).textContent=(+c[k]).toFixed(k==='h'||k==='rot'||k==='sk'?0:2)});
   ui.root.querySelectorAll('[data-seat]').forEach(function(b){b.classList.toggle('on',+b.dataset.seat===seat)});
   ui.root.querySelectorAll('[data-scope]').forEach(function(b){b.classList.toggle('on',b.dataset.scope===scope)});
   ui.root.querySelector('#tiInfo').textContent=ITEMS.filter(function(i){return i[0]===key})[0][1]+' · sto '+(table+1)+', stolica '+(seat+1)+' · x '+Math.round(c.x)+', y '+Math.round(c.y);
@@ -72,12 +75,12 @@ function build(){
   ui.root=document.createElement('div');ui.root.id='tiTool';
   var sl=function(k,l,min,max,st){return '<label class="sl">'+l+' <b id="tiV_'+k+'"></b><input type="range" id="tiS_'+k+'" min="'+min+'" max="'+max+'" step="'+st+'"></label>'};
   ui.root.innerHTML='<div class="side"><h2>Predmeti na stolu</h2>'+
-    '<div class="help">Izaberi predmet, sto i stolicu (gosta). Klikni ili prevuci na slici gde predmet stoji (tačka je SREDINA predmeta). Ispod podesi veličinu i boje. „Za ovu stolicu“ važi samo tu, „Za sve stolice“ menja osnovne vrednosti za sve gde nije posebno podešeno.</div>'+
+    '<div class="help">Izaberi predmet, sto i stolicu (gosta). Točkić miša zumira sliku. Klikni ili prevuci na slici gde predmet stoji (tačka je SREDINA predmeta). Ispod podesi veličinu i boje. „Za ovu stolicu“ važi samo tu, „Za sve stolice“ menja osnovne vrednosti za sve gde nije posebno podešeno.</div>'+
     '<select id="tiItem">'+ITEMS.map(function(i){return '<option value="'+i[0]+'">'+i[1]+'</option>'}).join('')+'</select>'+
     '<div class="row"><select id="tiTable" style="width:auto"><option value="0">Sto 1</option><option value="1">Sto 2</option><option value="2">Sto 3</option></select></div>'+
     '<div class="row" id="tiSeats"><button class="b" data-seat="0">Stolica 1</button><button class="b" data-seat="1">Stolica 2</button><button class="b" data-seat="2">Stolica 3</button><button class="b" data-seat="3">Stolica 4</button></div>'+
     '<div class="row"><button class="b" data-scope="seat">Za ovu stolicu</button><button class="b" data-scope="all">Za sve stolice</button></div>'+
-    sl('s','Veličina',0.3,3,0.01)+'<div id="tiRotRow">'+sl('rot','Rotacija (činija)',-45,45,1)+'</div>'+
+    sl('s','Veličina',0.3,3,0.01)+sl('rot','Nagib (rotacija)',-45,45,1)+sl('sk','Zakošenost',-45,45,1)+sl('hl','Svetli tonovi',-0.8,0.8,0.01)+
     sl('h','Nijansa',-180,180,1)+sl('sat','Zasićenost',0,2.5,0.01)+sl('b','Osvetljenost',0.2,2,0.01)+sl('c','Kontrast',0.4,2,0.01)+
     '<div class="row"><button class="b" id="tiResetSeat">Vrati ovu stolicu</button><button class="b" id="tiResetItem">Vrati ceo predmet</button></div>'+
     '<div class="row"><button class="b" id="tiExport">Izvezi JSON</button><button class="b" id="tiImport">Uvezi JSON</button></div>'+
@@ -87,10 +90,10 @@ function build(){
   document.body.appendChild(ui.root);
   cv=ui.root.querySelector('#tiCv');g=cv.getContext('2d');
   ui.root.querySelector('#tiItem').addEventListener('change',function(e){key=e.target.value;refreshUi();draw()});
-  ui.root.querySelector('#tiTable').addEventListener('change',function(e){table=+e.target.value;seat=0;refreshUi();draw()});
+  ui.root.querySelector('#tiTable').addEventListener('change',function(e){table=+e.target.value;seat=0;view={z:1,cx:null,cy:null};refreshUi();draw()});
   ui.root.querySelectorAll('[data-seat]').forEach(function(b){b.addEventListener('click',function(){seat=+b.dataset.seat;refreshUi();draw()})});
   ui.root.querySelectorAll('[data-scope]').forEach(function(b){b.addEventListener('click',function(){scope=b.dataset.scope;refreshUi()})});
-  ['s','rot','h','sat','b','c'].forEach(function(k){ui.root.querySelector('#tiS_'+k).addEventListener('input',function(e){setVal(k,+e.target.value)})});
+  ['s','rot','sk','hl','h','sat','b','c'].forEach(function(k){ui.root.querySelector('#tiS_'+k).addEventListener('input',function(e){setVal(k,+e.target.value)})});
   ui.root.querySelector('#tiResetSeat').addEventListener('click',function(){var it=entry(false);if(it){delete it.seat[seatId()];save();refreshUi();draw()}});
   ui.root.querySelector('#tiResetItem').addEventListener('click',function(){if(confirm('Vratiti ceo predmet na početno?')){delete data().items[key];save();refreshUi();draw()}});
   ui.root.querySelector('#tiExport').addEventListener('click',function(){
@@ -104,6 +107,12 @@ function build(){
   cv.addEventListener('pointerdown',function(e){drag=true;cv.setPointerCapture(e.pointerId);var p=toScene(e);setPos(p.x,p.y);refreshUi()});
   cv.addEventListener('pointermove',function(e){if(drag){var p=toScene(e);setPos(p.x,p.y);refreshUi()}});
   cv.addEventListener('pointerup',function(){drag=false});
+  // the mouse wheel zooms the picture towards the pointer
+  cv.addEventListener('wheel',function(e){
+    e.preventDefault();var p=toScene(e),z0=view.z;view.z=Math.max(1,Math.min(6,view.z*(e.deltaY<0?1.2:1/1.2)));
+    var r=cv.getBoundingClientRect(),fx=(e.clientX-r.left)/r.width,fy=(e.clientY-r.top)/r.height;
+    view.cx=p.x-(fx-.5)*vw();view.cy=p.y-(fy-.5)*vh();draw();
+  },{passive:false});
   ['keydown','keyup','keypress'].forEach(function(n){ui.root.addEventListener(n,function(e){e.stopPropagation()})});
   ['pointerdown','pointerup','mousedown','mouseup','click','wheel','contextmenu'].forEach(function(n){ui.root.addEventListener(n,function(e){e.stopPropagation()})});
   btn.addEventListener('click',function(e){e.stopPropagation();open()});

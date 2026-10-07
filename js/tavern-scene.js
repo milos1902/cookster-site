@@ -735,6 +735,25 @@ function tiFilter(c){
   if(!h&&sat===1&&b===1&&ct===1)return 'none';
   return 'hue-rotate('+h+'deg) saturate('+sat+') brightness('+b+') contrast('+ct+')';
 }
+// "svetli tonovi": the light parts of the picture are made lighter (hl>0) or darker (hl<0)
+var tiCache={};
+function tiImg(im,hl){
+  if(!im||!hl||!im.naturalWidth)return im;
+  var k=im.src+'|'+(Math.round(hl*20)/20);if(tiCache[k])return tiCache[k];
+  var c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;var x=c.getContext('2d');x.drawImage(im,0,0);
+  try{
+    var d=x.getImageData(0,0,c.width,c.height),a=d.data;
+    for(var i=0;i<a.length;i+=4){var l=(a[i]*.3+a[i+1]*.59+a[i+2]*.11)/255;if(l>.45){var t=Math.min(1,(l-.45)/.55),f=1+hl*t;a[i]=Math.max(0,Math.min(255,a[i]*f));a[i+1]=Math.max(0,Math.min(255,a[i+1]*f));a[i+2]=Math.max(0,Math.min(255,a[i+2]*f))}}
+    x.putImageData(d,0,0);
+  }catch(e){return im}
+  tiCache[k]=c;return c;
+}
+// the lean (rotation) and the skew of a thing on the table
+function tiPose(ctx,cx,cy,c){
+  ctx.translate(cx,cy);
+  if(c&&c.rot)ctx.rotate(c.rot*Math.PI/180);
+  if(c&&c.sk)ctx.transform(1,0,Math.tan(c.sk*Math.PI/180),1,0,0);
+}
 function tiBase(key,y){return scaleAt(y)*(key==='dish'?.2:.19)}
 function tiSrc(key){if(key==='dish')return dishImgs.plain&&dishImgs.plain.src;var im=drinkImg(key);return im&&im.src}
 function tiApply(data){TI=data&&data.items?data:{items:{}}}
@@ -770,14 +789,15 @@ function drawDish(ctx,d){
   if(d.items&&d.items.length){
     var L=drinkLayout(d);if(!L)return;
     ctx.save();ctx.globalAlpha=d.phase==='eating'?Math.min(1,d.t/.3):1;
-    L.forEach(function(o){ctx.filter=tiFilter(o.cal);ctx.drawImage(o.im,o.x,o.y,o.w,o.h)});
+    L.forEach(function(o){ctx.save();ctx.filter=tiFilter(o.cal);tiPose(ctx,o.x+o.w/2,o.y+o.h/2,o.cal);ctx.drawImage(tiImg(o.im,o.cal&&o.cal.hl),-o.w/2,-o.h/2,o.w,o.h);ctx.restore()});
     ctx.restore();return;
   }
   var r=dishRect(d);if(!r)return;
   var full=dishImgs[d.kind]||dishImgs.plain,dirty=dishImgs.dirty;
   var a=d.phase==='eating'?Math.min(1,d.t/.3):1;
   ctx.save();ctx.globalAlpha=a;ctx.filter=tiFilter(r.cal);
-  if(r.cal&&r.cal.rot){ctx.translate(r.x+r.w/2,r.y+r.h/2);ctx.rotate(r.cal.rot*Math.PI/180);ctx.translate(-(r.x+r.w/2),-(r.y+r.h/2))}
+  if(r.cal&&(r.cal.rot||r.cal.sk)){tiPose(ctx,r.x+r.w/2,r.y+r.h/2,r.cal);ctx.translate(-(r.x+r.w/2),-(r.y+r.h/2))}
+  if(r.cal&&r.cal.hl){full=tiImg(full,r.cal.hl);dirty=tiImg(dirty,r.cal.hl)}
   if(d.phase==='eating'){
     ctx.drawImage(dirty,r.x,r.y,r.w,r.h);                                  // the bowl underneath (it gets dirty while the food goes)
     var frac=Math.max(0,1-d.eatT/EAT_SECS),cut=r.h*.72*(1-frac);               // the food goes down from the top
@@ -1051,7 +1071,7 @@ window.CooksterTavern={
   open:open,close:close,spawn:spawn,
   deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,
-  tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter},
+  tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose},
   get isOpen(){return state==='tavern'},get busy(){return busy},
   debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},
