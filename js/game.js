@@ -2740,8 +2740,8 @@ const SS_SPECIAL_ACTIONS={
  sprinkle:el=>ssId(el).startsWith('zacin_'),
  pour:el=>ssId(el)==='kal_01_flasa_ulja',
  hang:el=>ssId(el)==='siljak_narudzbine',
- throw:el=>ssId(el)==='kanta_za_otpatke',
- empty:el=>ssId(el)==='kanta_za_otpatke',
+ throw:el=>ssId(el)==='kanta_set_zatvorena',
+ empty:el=>ssId(el)==='kanta_set_zatvorena',
  pourOut:el=>{const id=ssId(el);try{const d=kitchenEquipmentDef(id);return !!(d&&isContainerDef(d))||(!!el.dataset?.container&&el.dataset.container!=='0');}catch(_){return false;}}
 };
 SS_SPECIAL_ACTIONS.fall=SS_SPECIAL_ACTIONS.hang;
