@@ -58,6 +58,7 @@ css.textContent=
 '.ko-c.c2{left:20%;width:56%;text-align:left;top:39.6%}'+
 '.ko-c.c3{left:77.7%;width:17%;text-align:center;top:39.6%}'+
 '.ko-c.r2{top:44.1%;font-size:.82em;font-weight:600}'+
+'.ko-c.rw{font-size:.84em}.ko-c.rw small{font-size:.8em;font-weight:600}'+
 '.ko-ghost{position:fixed!important;z-index:2147483000;pointer-events:none;transition:none!important;filter:drop-shadow(0 10px 12px rgba(30,15,5,.55))}'+
 '.ko-ghost.ko-ready{filter:drop-shadow(0 0 10px #ffd84d) drop-shadow(0 10px 12px rgba(30,15,5,.55))}'+
 '.ko-drop{animation:koDrop .45s cubic-bezier(.3,.7,.3,1) both}'+
@@ -78,9 +79,17 @@ var drinkImg=new Image(),drinkOk=false;drinkImg.onload=function(){drinkOk=true};
   scene.addEventListener(n,function(e){if(e.target&&e.target.closest&&e.target.closest('.ko-note'))e.stopPropagation()},false);
 });
 
+// one paper holds the whole order of the table: one row for every thing that was ordered (older single-line papers are wrapped)
+function noteLines(n){
+  if(n.lines&&n.lines.length)return n.lines;
+  return[{name:n.name,extra:n.extra,cyr:n.cyr,cyrExtra:n.cyrExtra,items:n.items||null,key:n.key,seatId:n.seatId}];
+}
 function noteEl(n,big){
   var d=mk('div','ko-note');d.dataset.id=n.id;
-  d.innerHTML='<span class="ko-c c1">Сто '+n.table+'</span><span class="ko-c c2">'+(n.cyr||ITEM.cyr)+'</span><span class="ko-c c3">1</span><span class="ko-c c2 r2">'+(n.cyr?(n.cyrExtra||''):ITEM.cyrExtra)+'</span>';
+  var L=noteLines(n),h='<span class="ko-c c1">Сто '+n.table+'</span>';
+  L.forEach(function(l,i){var top=(39.6+4.5*i).toFixed(1)+'%',ex=l.cyrExtra?' <small>'+l.cyrExtra+'</small>':'';
+    h+='<span class="ko-c c2 rw" style="top:'+top+'">'+(l.cyr||ITEM.cyr)+ex+'</span><span class="ko-c c3" style="top:'+top+'">1</span>'});
+  d.innerHTML=h;
   d.style.setProperty('--h',big?'':'130px');
   if(!big){d.style.left=n.x+'px';d.style.top=n.y+'px';d.style.transform='rotate('+n.rot+'deg)';d.style.setProperty('--r',n.rot+'deg')}
   return d;
@@ -237,38 +246,45 @@ function drawWaiter(x,y,frame,flip,lean,food){
 }
 // what the waiter takes to a table: a finished bowl of sour cabbage (the picture of the bowl has turned into the dish) or the drinks that were ordered
 // (the bottles and glasses from "Piće" that stand in the kitchen); the oldest paper that can be fulfilled goes first
+function haveCounts(){var have={};(window.items||[]).forEach(function(it){var id=it.dataset&&it.dataset.itemId;if(id)have[id]=(have[id]||0)+1});return have}
+function freeBowls(){return(window.items||[]).filter(function(b){return b.dataset&&b.dataset.itemId==='posuda_za_kupus'&&b.classList.contains('bowl-photo-look')})}
 function missingFor(n){
-  var list=window.items||[],have={},out=[];
-  list.forEach(function(it){var id=it.dataset&&it.dataset.itemId;if(id)have[id]=(have[id]||0)+1});
-  (n.items||[]).forEach(function(id){if(have[id]>0)have[id]--;else out.push(ITEM_NAMES[id]||id)});
+  var have=haveCounts(),bowls=freeBowls().length,out=[];
+  noteLines(n).forEach(function(l){
+    if(l.items&&l.items.length){l.items.forEach(function(id){if(have[id]>0)have[id]--;else out.push(ITEM_NAMES[id]||id)})}
+    else{if(bowls>0)bowls--;else out.push('kiseli kupus')}
+  });
   return out;
 }
+// the waiter takes from a paper everything that can be served now (the rest stays on the paper) and brings it to the table in one trip
 function takeDish(){
   var list=window.items||[];
   for(var k=0;k<notes.length;k++){
-    var n=notes[k];
-    if(n.items&&n.items.length){
-      if(missingFor(n).length)continue;
-      var used={};
-      n.items.forEach(function(id){
-        for(var i=0;i<list.length;i++){var it=list[i];if(it.dataset&&it.dataset.itemId===id&&!used[i]){used[i]=1;try{removeItem(it)}catch(e){}break}}
-      });
-      notes.splice(k,1);var el0=scene.querySelector('.ko-note[data-id="'+n.id+'"]');if(el0)el0.remove();save();
-      return{table:n.table,kind:'drink',items:n.items.slice(),seatId:n.seatId,ev:{score:2,issues:[],perfect:true,amounts:{}}};
-    }
+    var n=notes[k],have=haveCounts(),bowls=freeBowls(),lines=noteLines(n),left=[],all=[];
+    lines.forEach(function(l){
+      if(l.items&&l.items.length){
+        var ok=l.items.every(function(id){return have[id]>0});
+        if(!ok){left.push(l);return}
+        var used={};
+        l.items.forEach(function(id){have[id]--;for(var i=0;i<list.length;i++){var it=list[i];if(it.dataset&&it.dataset.itemId===id&&!used[i]&&!it._takenByWaiter){used[i]=1;it._takenByWaiter=1;try{removeItem(it)}catch(e){}break}}});
+        all.push({kind:'drink',items:l.items.slice(),seatId:l.seatId,ev:{score:2,issues:[],perfect:true,amounts:{}}});
+      }else{
+        var bowl=bowls.shift();if(!bowl){left.push(l);return}
+        var sp={};try{sp=JSON.parse(bowl.dataset.spices||'{}')}catch(e){}
+        var ev=window.CooksterQuality?window.CooksterQuality.evaluate(bowl,'kiseli_kupus'):null;
+        all.push({kind:(sp.tucana>0||sp.paprika>0)?'paprika':'plain',seatId:l.seatId,ev:ev});
+        try{removeItem(bowl)}catch(e){}
+      }
+    });
+    if(!all.length)continue;
+    var el=scene.querySelector('.ko-note[data-id="'+n.id+'"]');
+    if(left.length){n.lines=left;if(el){var nn=noteEl(n,false);nn.addEventListener('pointerdown',function(e){if(e.button===0)startNoteDrag(e,n,nn)});el.replaceWith(nn)}}
+    else{notes.splice(k,1);if(el)el.remove()}
+    save();
+    var head=all.filter(function(x){return x.kind==='drink'})[0]||all[0];
+    return{table:n.table,kind:head.kind,seatId:head.seatId,items:head.items||null,ev:head.ev,all:all};
   }
-  var bowl=null;
-  for(var i2=0;i2<list.length;i2++){var b=list[i2];if(b.dataset&&b.dataset.itemId==='posuda_za_kupus'&&b.classList.contains('bowl-photo-look')){bowl=b;break}}
-  if(!bowl)return null;
-  var ni=-1;for(var j=0;j<notes.length;j++){if(!notes[j].items||!notes[j].items.length){ni=j;break}}
-  if(ni<0)return null;
-  var nd=notes[ni],table=nd.table,sp={};
-  try{sp=JSON.parse(bowl.dataset.spices||'{}')}catch(e){}
-  var kind=(sp.tucana>0||sp.paprika>0)?'paprika':'plain';
-  var ev=window.CooksterQuality?window.CooksterQuality.evaluate(bowl,'kiseli_kupus'):null;
-  notes.splice(ni,1);var el=scene.querySelector('.ko-note[data-id="'+nd.id+'"]');if(el)el.remove();save();
-  try{removeItem(bowl)}catch(e){}
-  return{table:table,kind:kind,seatId:nd.seatId,ev:ev};
+  return null;
 }
 function start(){
   var o=pending[0];if(!o)return;
@@ -307,7 +323,7 @@ function tick(now){
     if(!anim.checked&&anim.t>1.2){
       anim.checked=true;var dish=takeDish();
       if(dish)anim.carry=dish;
-      else{var mn=null;for(var q=0;q<notes.length;q++)if(notes[q].items&&notes[q].items.length){mn=notes[q];break}
+      else{var mn=null;for(var q=0;q<notes.length;q++)if(missingFor(notes[q]).length){mn=notes[q];break}
         if(mn){var ms=missingFor(mn);if(ms.length)anim.say='Fali: '+ms.join(', ')}}
     }
     if(anim.t>2.4){anim.phase='out';anim.t=0}
@@ -317,7 +333,9 @@ function tick(now){
     lean=Math.sin(Math.min(1,anim.t/.7)*Math.PI)*.07;
     if(!anim.dropped&&anim.t>.3){
       anim.dropped=true;
-      var o=anim.o,sp=spotFor(notes.length),od=o.ord||{},n={id:o.id,table:o.table,name:od.name||ITEM.name,extra:od.extra!=null?od.extra:ITEM.extra,cyr:od.cyr,cyrExtra:od.cyrExtra,items:od.items||null,key:od.key||'kupus',seatId:o.seatId,x:sp.x,y:sp.y,rot:sp.rot};
+      var o=anim.o,sp=spotFor(notes.length),lst=(o.list&&o.list.length)?o.list:[{ord:o.ord||null,seatId:o.seatId}];
+      var lines=lst.map(function(e){var od=e.ord||{};return{name:od.name||ITEM.name,extra:od.extra!=null?od.extra:ITEM.extra,cyr:od.cyr||ITEM.cyr,cyrExtra:od.cyr?(od.cyrExtra||''):ITEM.cyrExtra,items:od.items||null,key:od.key||'kupus',seatId:e.seatId==null?-1:e.seatId}});
+      var n={id:o.id,table:o.table,name:lines[0].name+(lines.length>1?' +'+(lines.length-1):''),lines:lines,x:sp.x,y:sp.y,rot:sp.rot};
       notes.push(n);placeNote(n,true);save();
     }
     if(anim.t>.9){anim.phase='out';anim.t=0}
@@ -325,7 +343,7 @@ function tick(now){
     alpha=Math.max(0,1-anim.t/.2);
     if(anim.t>=.2){
       if(!anim.call){pending.shift();save()}
-      if(anim.carry&&window.CooksterTavern&&window.CooksterTavern.deliver)window.CooksterTavern.deliver(anim.carry.table-1,anim.carry.kind,anim.carry.ev,anim.carry.seatId,anim.carry.items);
+      if(anim.carry&&window.CooksterTavern&&window.CooksterTavern.deliver)(anim.carry.all||[anim.carry]).forEach(function(d){window.CooksterTavern.deliver(anim.carry.table-1,d.kind,d.ev,d.seatId,d.items||null)});
       anim=null;X.clearRect(0,0,W,H);return;
     }
   }
@@ -346,7 +364,9 @@ notes.forEach(function(n){placeNote(n,false)});
 
 window.CooksterOrders={
   // the waiter has taken an order at a table (1, 2, 3...): after a while he arrives in the kitchen
-  add:function(table,ord,seatId){pending.push({id:++uid,table:table,ord:ord||null,seatId:(seatId==null?-1:seatId),readyAt:Date.now()+TRIP_MS});save()},
+  add:function(table,list){
+    if(list&&!Array.isArray(list))list=[{ord:list,seatId:arguments[2]}];
+    pending.push({id:++uid,table:table,list:list||[],readyAt:Date.now()+TRIP_MS});save()},
   make:makeOrder,
   busy:function(){return pending.length>0||!!anim||called},          // the waiter is away from the tavern
   debug:function(){return{pending:pending.slice(),notes:notes.slice(),animating:!!anim,called:called}},
