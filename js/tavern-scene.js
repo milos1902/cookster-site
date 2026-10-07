@@ -532,7 +532,7 @@ function step(dt){
 var ash=[0,0,0],ASH=[{x:437,y:447},{x:886,y:660},{x:1377,y:503}],tableUsed=[0,0,0],floorT=0,idleT=0;
 function addDirt(table,units){
   tableUsed[table]=(tableUsed[table]||0)+units;
-  try{if(window.CooksterTavernClean)window.CooksterTavernClean.dirty(table,.1*units)}catch(e){}
+  try{if(window.CooksterTavernClean)window.CooksterTavernClean.dirty(table,Math.round(units*2))}catch(e){}
 }
 function tickMess(dt){
   var seatedAt=[0,0,0],cl=cleanTables();
@@ -540,7 +540,7 @@ function tickMess(dt){
   // also without guests the hall slowly gets dirty again, one thing at a time: now a table, now a piece of the floor
   idleT+=dt;
   if(idleT>75){idleT=0;
-    if(Math.random()<.5){var rt=Math.floor(Math.random()*TABLES.length);if(!guests.some(function(g){return g.seat.table===rt})){try{window.CooksterTavernClean.dirty(rt,.25);window.CooksterTavernClean.markDirty(rt)}catch(e){}}}
+    if(Math.random()<.5){var rt=Math.floor(Math.random()*TABLES.length);if(!guests.some(function(g){return g.seat.table===rt})){try{window.CooksterTavernClean.dirty(rt,2);window.CooksterTavernClean.markDirty(rt)}catch(e){}}}
     else{try{window.CooksterTavernClean.floorDirt(1)}catch(e){}}
   }
   floorT+=dt*Math.max(0,guests.length);

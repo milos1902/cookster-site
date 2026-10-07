@@ -144,7 +144,7 @@ function cleanZone(i){
     polyPath(D,poly);D.fill();
     D.globalCompositeOperation='source-over';
     if(k%3===0){var q=poly[Math.floor(Math.random()*poly.length)],c=center(poly);bubble(c[0]+(q[0]-c[0])*Math.random()*.8,c[1]+(q[1]-c[1])*Math.random()*.8,2)}
-    if(++k<N)setTimeout(step,45);else{cleaned[i]=true;cleaning[i]=false;refreshInfo()}
+    if(++k<N)setTimeout(step,45);else{cleaned[i]=true;cleaning[i]=false;shown[i]=0;refreshInfo()}
   })();
 }
 var cleaning={};
@@ -247,18 +247,50 @@ room.addEventListener('contextmenu',function(e){
   sponge.style.display='none';
 });
 reset.addEventListener('click',function(e){
-  e.stopPropagation();rubbed=0;paintDirt();cleaned=zones.map(function(){return false});cleaning={};hideMenu();refreshInfo();
+  e.stopPropagation();rubbed=0;paintDirt();shown={};cleaned=zones.map(function(){return false});cleaning={};hideMenu();refreshInfo();
 });
 // the hint fades once the player has started cleaning
 var hinted=false;
 room.addEventListener('pointerdown',function(){if(!hinted){hinted=true;setTimeout(function(){hint.style.opacity='0'},4000)}},true);
 
 // the hall gets dirty again while it works: a table gets (a little more) dirty with every dish and drink, the floor with every guest
-function dirtyZone(i,amount){
-  prepare();var poly=zones[i];if(!poly||!dirtyOk)return;
+// what lies on a table in the dirty picture (bottles, plates, crumbs, stains) is split into separate pieces; the table gets dirty again one piece at a time
+var pieces={},shown={},PS=4;
+function piecesOf(i){
+  if(pieces[i])return pieces[i];
+  var poly=zones[i],list=[];pieces[i]=list;shown[i]=0;
+  if(!poly||!dirtyOk||!cleanImg.naturalWidth)return list;
+  var w=Math.ceil(W/PS),h=Math.ceil(H/PS);
+  function grab(img,clipPoly){var c=mk('canvas');c.width=w;c.height=h;var x=c.getContext('2d');if(clipPoly){x.beginPath();clipPoly.forEach(function(q,k){if(k)x.lineTo(q[0]/PS,q[1]/PS);else x.moveTo(q[0]/PS,q[1]/PS)});x.closePath();x.clip()}x.drawImage(img,0,0,w,h);return x.getImageData(0,0,w,h).data}
+  var A=grab(cleanImg,poly),B=grab(dirtyImg,poly),M=new Uint8Array(w*h);
+  for(var k=0;k<w*h;k++){var d=Math.abs(A[k*4]-B[k*4])+Math.abs(A[k*4+1]-B[k*4+1])+Math.abs(A[k*4+2]-B[k*4+2]);M[k]=(B[k*4+3]>0&&d>54)?1:0}
+  // join near pixels (closing), then label the connected pieces
+  var D2=new Uint8Array(w*h);
+  for(var y=1;y<h-1;y++)for(var x2=1;x2<w-1;x2++){var o=y*w+x2;if(M[o]||M[o-1]||M[o+1]||M[o-w]||M[o+w]||M[o-w-1]||M[o+w+1])D2[o]=1}
+  var seen=new Uint8Array(w*h);
+  for(var st=0;st<w*h;st++){
+    if(!D2[st]||seen[st])continue;
+    var q=[st],pts=[];seen[st]=1;
+    while(q.length){var cur=q.pop();pts.push(cur);var cx=cur%w,cy=(cur/w)|0;
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(dd){var nx=cx+dd[0],ny=cy+dd[1];if(nx<0||ny<0||nx>=w||ny>=h)return;var no=ny*w+nx;if(D2[no]&&!seen[no]){seen[no]=1;q.push(no)}})}
+    if(pts.length>=5)list.push({pts:pts,w:w});
+  }
+  for(var m=list.length-1;m>0;m--){var r=Math.floor(Math.random()*(m+1)),t=list[m];list[m]=list[r];list[r]=t}
+  return list;
+}
+function revealPiece(pc){
   var sc=mk('canvas');sc.width=W;sc.height=H;var c=sc.getContext('2d');
-  polyPath(c,poly);c.save();c.clip();c.globalAlpha=Math.max(.05,Math.min(1,amount));c.drawImage(dirtyImg,0,0,W,H);c.restore();
+  c.filter='blur(2px)';c.fillStyle='#000';
+  pc.pts.forEach(function(o){c.fillRect((o%pc.w)*PS-2,((o/pc.w)|0)*PS-2,PS+4,PS+4)});
+  c.filter='none';c.globalCompositeOperation='source-in';c.drawImage(dirtyImg,0,0,W,H);
   D.globalCompositeOperation='source-over';D.drawImage(sc,0,0);
+}
+// the pieces of every table are found in advance, one table at a time, so that the first time a table gets dirty nothing hangs
+(function warm(k){setTimeout(function(){try{prepare();if(zones.length&&dirtyOk&&cleanImg.naturalWidth){if(k<zones.length){piecesOf(k);warm(k+1)}}else warm(k)}catch(e){}},k?900:2500)})(0);
+function dirtyZone(i,count){
+  prepare();if(!zones[i]||!dirtyOk)return;
+  var list=piecesOf(i),n=Math.max(1,Math.round(count||1));
+  while(n-->0&&shown[i]<list.length)revealPiece(list[shown[i]++]);
 }
 function markDirty(i){prepare();if(i>=0&&i<cleaned.length&&!cleaning[i]){cleaned[i]=false;refreshInfo()}}
 function floorDirt(n){
