@@ -1,9 +1,9 @@
-/* Kanta za otpatke (`kanta_set_zatvorena`): kad se bilo koji predmet prinese kanti, ona se otvori (slika `kanta_set_otvorena`).
+/* Kanta za otpatke (`kanta_za_otpatke`): kad se bilo koji predmet prinese kanti, ona se otvori (slika `otvorena`).
    Kad se pusti, predmet naglo upadne, iz kante izađe mali oblačić dima i kanta se naglo zatvori.
    Posle 10 bacanja je puna: desni klik na nju pokaže „Isprazni kantu". Zvuci (alat „Zvuk"): open, close, throw (bacanje), empty (pražnjenje). */
 (function(){
   'use strict';
-  const ID='kanta_set_zatvorena',OPEN_SRC='assets/calibration_props/kanta_set_otvorena.png',MAX_THROWS=10;
+  const ID='kanta_za_otpatke',OPEN_SRC='assets/calibration_props/kanta/otvorena.png',MAX_THROWS=10;
   const isBin=el=>!!el&&el.dataset&&el.dataset.itemId===ID;
   const bins=()=>(window.items||items).filter(isBin);
   const num=(el,k)=>+el.dataset[k]||0;
