@@ -1,9 +1,9 @@
-/* Kanta za otpatke (`kanta_set_zatvorena`): kad se bilo koji predmet prinese kanti, ona se otvori (slika `kanta_set_otvorena`).
+/* Kanta za otpatke (`kanta_za_otpatke`): kad se bilo koji predmet prinese kanti, ona se otvori (slika `otvorena`).
    Kad se pusti, predmet naglo upadne, iz kante izađe mali oblačić dima i kanta se naglo zatvori.
    Posle 10 bacanja je puna: desni klik na nju pokaže „Isprazni kantu". Zvuci (alat „Zvuk"): open, close, throw (bacanje), empty (pražnjenje). */
 (function(){
   'use strict';
-  const ID='kanta_set_zatvorena',OPEN_SRC='assets/calibration_props/kanta_set_otvorena.png',MAX_THROWS=10;
+  const ID='kanta_za_otpatke',OPEN_SRC='assets/calibration_props/kanta/otvorena.png',MAX_THROWS=10;
   const isBin=el=>!!el&&el.dataset&&el.dataset.itemId===ID;
   const bins=()=>(window.items||items).filter(isBin);
   const num=(el,k)=>+el.dataset[k]||0;
@@ -99,7 +99,11 @@
     label.style.cssText=`position:fixed;left:${r.left+r.width/2}px;top:${r.bottom+6}px;transform:translateX(-50%);z-index:20002;padding:7px 14px;border:2px solid #351b0d;border-radius:9px;background:#e8c27a;color:#351b0d;font:700 14px system-ui,sans-serif;cursor:${n>=MAX_THROWS?'pointer':'default'};white-space:nowrap`;
     ['pointerdown','mousedown','click','contextmenu'].forEach(ev=>label.addEventListener(ev,e=>e.stopPropagation()));
     label.addEventListener('click',()=>{
-      if(num(b,'trashN')>=MAX_THROWS){b.dataset.trashN='0';snd(b,'empty');smoke(b);try{CooksterSave.schedule();}catch(_){}}
+      if(num(b,'trashN')>=MAX_THROWS){
+        b.dataset.trashN='0';b._keepOpen=true;setOpen(b,true);snd(b,'empty');smoke(b);       // the bin is open for two seconds while it is emptied
+        setTimeout(()=>{b._keepOpen=false;setOpen(b,false);},2000);
+        try{CooksterSave.schedule();}catch(_){}
+      }
       hideLabel();
     });
     document.body.appendChild(label);
