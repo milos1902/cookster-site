@@ -766,6 +766,14 @@ function tiDraw(ctx,im,x,y,w,h,c){
     ctx.drawImage(im,0,i*sh/N,sw,sh/N+1,cx-w/2*b.k,b.y,w*b.k,dh+.6);
   }
 }
+// the soft shadow under a thing on the table (strength, shift, width, height, blur are calibrated in the tool)
+var TI_SH={sho:.38,shx:0,shy:.01,shw:1,shh:.28,shb:5};
+function tiShadow(ctx,cx,bottom,w,c){
+  var o=c&&c.sho!=null?+c.sho:TI_SH.sho;if(o<=0.01)return;
+  var sx=c&&c.shx!=null?+c.shx:TI_SH.shx,sy=c&&c.shy!=null?+c.shy:TI_SH.shy,sw=c&&c.shw!=null?+c.shw:TI_SH.shw,sh=c&&c.shh!=null?+c.shh:TI_SH.shh,b=c&&c.shb!=null?+c.shb:TI_SH.shb;
+  ctx.save();ctx.filter=b>0?'blur('+b*Math.max(.3,w/60)+'px)':'none';ctx.fillStyle='rgba(8,4,0,'+Math.min(1,o)+')';
+  ctx.beginPath();ctx.ellipse(cx+sx*w,bottom+sy*w,Math.max(1,w*sw/2),Math.max(1,w*sh/2),0,0,Math.PI*2);ctx.fill();ctx.restore();
+}
 function tiBase(key,y){return scaleAt(y)*(key==='dish'?.2:.19)}
 function tiSrc(key){if(key==='dish')return dishImgs.plain&&dishImgs.plain.src;var im=drinkImg(key);return im&&im.src}
 function tiApply(data){TI=data&&data.items?data:{items:{}}}
@@ -801,13 +809,14 @@ function drawDish(ctx,d){
   if(d.items&&d.items.length){
     var L=drinkLayout(d);if(!L)return;
     ctx.save();ctx.globalAlpha=d.phase==='eating'?Math.min(1,d.t/.3):1;
+    L.forEach(function(o){tiShadow(ctx,o.x+o.w/2,o.y+o.h,o.w,o.cal)});
     L.forEach(function(o){ctx.save();ctx.filter=tiFilter(o.cal);tiPose(ctx,o.x+o.w/2,o.y+o.h/2,o.cal);tiDraw(ctx,tiImg(o.im,o.cal&&o.cal.hl),-o.w/2,-o.h/2,o.w,o.h,o.cal);ctx.restore()});
     ctx.restore();return;
   }
   var r=dishRect(d);if(!r)return;
   var full=dishImgs[d.kind]||dishImgs.plain,dirty=dishImgs.dirty;
   var a=d.phase==='eating'?Math.min(1,d.t/.3):1;
-  ctx.save();ctx.globalAlpha=a;ctx.filter=tiFilter(r.cal);
+  ctx.save();ctx.globalAlpha=a;tiShadow(ctx,r.x+r.w/2,r.y+r.h,r.w,r.cal);ctx.filter=tiFilter(r.cal);
   if(r.cal&&(r.cal.rot||r.cal.sk)){tiPose(ctx,r.x+r.w/2,r.y+r.h/2,r.cal);ctx.translate(-(r.x+r.w/2),-(r.y+r.h/2))}
   if(r.cal&&r.cal.hl){full=tiImg(full,r.cal.hl);dirty=tiImg(dirty,r.cal.hl)}
   if(r.cal&&r.cal.tilt){var tb2=r.y+r.h,tcx=r.x+r.w/2;ctx.translate(tcx,tb2);ctx.scale(1,Math.max(.25,Math.cos(r.cal.tilt*Math.PI/180)));ctx.translate(-tcx,-tb2)}
@@ -1084,7 +1093,7 @@ window.CooksterTavern={
   open:open,close:close,spawn:spawn,
   deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,
-  tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose,draw:tiDraw},
+  tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose,draw:tiDraw,shadow:tiShadow,shDef:TI_SH},
   get isOpen(){return state==='tavern'},get busy(){return busy},
   debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},

@@ -107,3 +107,5 @@ Alat „Predmeti na stolu" (`js/table-items-tool.js`, posebno dugme „🍷 pred
 Alat „Predmeti na stolu": točkić miša zumira sliku ka pokazivaču; dodato „Nagib (rotacija)" i „Zakošenost" za svaki predmet i „Svetli tonovi" (osvetljava ili zatamnjuje samo svetle delove slike, `tiImg` u `tavern-scene.js`).
 
 Alat „Predmeti na stolu": „Nagib ka stolu" (`tilt`, `tiDraw` u `tavern-scene.js`) spušta (+) ili podiže (−) gornji, dalji deo predmeta ka stolu, kao nagib u alatu za predmete; „Rotacija levo-desno" je posebna.
+
+Senke u alatu „Predmeti na stolu" (`tiShadow` u `tavern-scene.js`, polja `sho, shx, shy, shw, shh, shb`): meka eliptična senka ispod predmeta; jačina, pomak levo-desno i gore-dole, širina, visina i zamućenost se podešavaju po predmetu i stolici (ili „za sve stolice"). Početno: jačina 0,38.
