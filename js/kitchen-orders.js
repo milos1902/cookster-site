@@ -8,7 +8,26 @@
 var scene=document.getElementById('scene');
 if(!scene||window.CooksterOrders)return;
 var W=1672,H=941,KEY='cookster.kitchen-orders.v1',WAITER='assets/tavern/waiter/waiter_walks',NOTE_IMG='assets/ui/order_note.webp?v=2';
-var ITEM={name:'Kiseli kupus',extra:'ulje, tucana paprika',cyr:'Кисели купус',cyrExtra:'уље, туцана паприка'};           // the only dish for now
+var ITEM={name:'Kiseli kupus',extra:'ulje, tucana paprika',cyr:'Кисели купус',cyrExtra:'уље, туцана паприка'};           // the default dish
+// everything a guest can order: a dish (the bowl), or drinks (the bottles and glasses from "Piće" that the player puts on the table)
+var ITEM_NAMES={pice_vino_crno_flasa:'flaša crnog vina',pice_vino_belo_flasa:'flaša belog vina',pice_soda_sifon:'soda',pice_casa_spricer:'čaša za špricer',pice_casa_belo_vino:'čaša belog vina',pice_casa_crno_vino:'čaša crnog vina'};
+var ORDERS={
+  kupus:{name:'Kiseli kupus',extra:'ulje, tucana paprika',cyr:'Кисели купус',cyrExtra:'уље, туцана паприка'},
+  kilo:{name:'Kilo na kilo',extra:'belo vino, soda, čaša',cyr:'Кило на кило',cyrExtra:'бело вино, сода, чаша',items:['pice_vino_belo_flasa','pice_soda_sifon','pice_casa_spricer']},
+  crno_casa:{name:'Čaša crnog vina',extra:'',cyr:'Чаша црног вина',cyrExtra:'',items:['pice_casa_crno_vino']},
+  belo_casa:{name:'Čaša belog vina',extra:'',cyr:'Чаша белог вина',cyrExtra:'',items:['pice_casa_belo_vino']},
+  crno_flasa:{name:'Flaša crnog vina',extra:'',cyr:'Флаша црног вина',cyrExtra:'',items:['pice_vino_crno_flasa']},
+  belo_flasa:{name:'Flaša belog vina',extra:'',cyr:'Флаша белог вина',cyrExtra:'',items:['pice_vino_belo_flasa']}
+};
+// a bottle of wine comes with a glass for a spritzer (men) or a wine glass (women)
+function makeOrder(key,woman){
+  var b=ORDERS[key]||ORDERS.kupus,o={key:key,name:b.name,extra:b.extra,cyr:b.cyr,cyrExtra:b.cyrExtra};
+  if(b.items){
+    o.items=b.items.slice();
+    if(key==='crno_flasa'||key==='belo_flasa'){o.items.push(woman?(key==='crno_flasa'?'pice_casa_crno_vino':'pice_casa_belo_vino'):'pice_casa_spricer');o.extra=woman?'čaša vina':'čaša za špricer';o.cyrExtra=woman?'чаша вина':'чаша за шприцер'}
+  }
+  return o;
+}
 var TRIP_MS=3500;                                                      // how long the waiter needs from the tavern to the kitchen
 var FLOOR_Y=585,STOP_X=281,SPEED=250,STAGE=120;                         // where he walks in the kitchen (scene pixels), how fast, the length of a step
 var pending=[],notes=[],anim=null,uid=0,imgs=[];
@@ -52,6 +71,7 @@ var cv=mk('canvas');cv.id='kitchenWaiter';cv.width=W;cv.height=H;scene.appendChi
 var X=cv.getContext('2d');
 for(var i=1;i<=3;i++){var im=new Image();im.src=WAITER+i+'.webp?v=4';imgs[i]=im}
 var foodImg=new Image();foodImg.src='assets/tavern/waiter/waiter_foods2.webp';
+var drinkImg=new Image(),drinkOk=false;drinkImg.onload=function(){drinkOk=true};drinkImg.src='assets/tavern/waiter/waiter_drinks2.webp';
 
 // stop the clicks on a paper from reaching the game
 ['pointerdown','pointerup','mousedown','mouseup','click','dblclick','contextmenu','touchstart','wheel'].forEach(function(n){
@@ -60,7 +80,7 @@ var foodImg=new Image();foodImg.src='assets/tavern/waiter/waiter_foods2.webp';
 
 function noteEl(n,big){
   var d=mk('div','ko-note');d.dataset.id=n.id;
-  d.innerHTML='<span class="ko-c c1">Сто '+n.table+'</span><span class="ko-c c2">'+ITEM.cyr+'</span><span class="ko-c c3">1</span><span class="ko-c c2 r2">'+ITEM.cyrExtra+'</span>';
+  d.innerHTML='<span class="ko-c c1">Сто '+n.table+'</span><span class="ko-c c2">'+(n.cyr||ITEM.cyr)+'</span><span class="ko-c c3">1</span><span class="ko-c c2 r2">'+(n.cyr?(n.cyrExtra||''):ITEM.cyrExtra)+'</span>';
   d.style.setProperty('--h',big?'':'130px');
   if(!big){d.style.left=n.x+'px';d.style.top=n.y+'px';d.style.transform='rotate('+n.rot+'deg)';d.style.setProperty('--r',n.rot+'deg')}
   return d;
@@ -128,7 +148,7 @@ function setSpikeSrc(el,key){
 function spikeLabel(el){
   var n=+el.dataset.spikeN||0,h=null;
   try{h=el.dataset.spikeHang?JSON.parse(el.dataset.spikeHang):null}catch(_){}
-  el.dataset.label=n&&h?'Šiljak za narudžbine · visi: Sto '+h.table+', '+ITEM.name+' (ukupno '+n+')':'Šiljak za narudžbine (prazan)';
+  el.dataset.label=n&&h?'Šiljak za narudžbine · visi: Sto '+h.table+', '+(h.name||ITEM.name)+' (ukupno '+n+')':'Šiljak za narudžbine (prazan)';
 }
 // the paper that hung there falls onto the base
 function fallPaper(el,done){
@@ -152,7 +172,7 @@ function hangOnSpike(el,n){
   notes=notes.filter(function(q){return q.id!==n.id});save();
   var node=scene.querySelector('.ko-note[data-id="'+n.id+'"]');if(node)node.remove();
   function hang(){
-    el.dataset.spikeN=String(count+1);el.dataset.spikeHang=JSON.stringify({id:n.id,table:n.table});
+    el.dataset.spikeN=String(count+1);el.dataset.spikeHang=JSON.stringify({id:n.id,table:n.table,name:n.name});
     setSpikeSrc(el,count===0?'visi':'visipada');spikeLabel(el);
     var b=el.querySelector('.body');
     try{if(b)b.animate([{translate:'0 -8px',opacity:.4},{translate:'0 0',opacity:1}],{duration:260,easing:'ease-out'})}catch(_){}
@@ -207,7 +227,7 @@ function spotFor(i){return{x:Math.round(700+(i%4)*118+Math.random()*16),y:Math.r
 // ---------- the waiter walks in ----------
 function kitchenVisible(){return !document.body.classList.contains('pantry-open')}
 function drawWaiter(x,y,frame,flip,lean,food){
-  var im=food?foodImg:imgs[frame];if(!im||!im.complete||!im.naturalWidth)return;
+  var im=food==='drink'&&drinkOk?drinkImg:food?foodImg:imgs[frame];if(!im||!im.complete||!im.naturalWidth)return;
   var w=im.naturalWidth,h=im.naturalHeight;
   X.save();
   X.fillStyle='rgba(20,8,2,.3)';X.beginPath();X.ellipse(x,y+3,95,18,0,0,Math.PI*2);X.fill();
@@ -215,18 +235,40 @@ function drawWaiter(x,y,frame,flip,lean,food){
   X.drawImage(im,-w/2,-h,w,h);
   X.restore();
 }
-// a finished bowl of sour cabbage (the picture of the bowl has turned into the dish) is taken to the table of the oldest note
+// what the waiter takes to a table: a finished bowl of sour cabbage (the picture of the bowl has turned into the dish) or the drinks that were ordered
+// (the bottles and glasses from "Piće" that stand in the kitchen); the oldest paper that can be fulfilled goes first
+function missingFor(n){
+  var list=window.items||[],have={},out=[];
+  list.forEach(function(it){var id=it.dataset&&it.dataset.itemId;if(id)have[id]=(have[id]||0)+1});
+  (n.items||[]).forEach(function(id){if(have[id]>0)have[id]--;else out.push(ITEM_NAMES[id]||id)});
+  return out;
+}
 function takeDish(){
-  var list=window.items||[],bowl=null;
-  for(var i=0;i<list.length;i++){var b=list[i];if(b.dataset&&b.dataset.itemId==='posuda_za_kupus'&&b.classList.contains('bowl-photo-look')){bowl=b;break}}
+  var list=window.items||[];
+  for(var k=0;k<notes.length;k++){
+    var n=notes[k];
+    if(n.items&&n.items.length){
+      if(missingFor(n).length)continue;
+      var used={};
+      n.items.forEach(function(id){
+        for(var i=0;i<list.length;i++){var it=list[i];if(it.dataset&&it.dataset.itemId===id&&!used[i]){used[i]=1;try{removeItem(it)}catch(e){}break}}
+      });
+      notes.splice(k,1);var el0=scene.querySelector('.ko-note[data-id="'+n.id+'"]');if(el0)el0.remove();save();
+      return{table:n.table,kind:'drink',items:n.items.slice(),seatId:n.seatId,ev:{score:2,issues:[],perfect:true,amounts:{}}};
+    }
+  }
+  var bowl=null;
+  for(var i2=0;i2<list.length;i2++){var b=list[i2];if(b.dataset&&b.dataset.itemId==='posuda_za_kupus'&&b.classList.contains('bowl-photo-look')){bowl=b;break}}
   if(!bowl)return null;
-  var table=notes.length?notes[0].table:1,sp={};
+  var ni=-1;for(var j=0;j<notes.length;j++){if(!notes[j].items||!notes[j].items.length){ni=j;break}}
+  if(ni<0)return null;
+  var nd=notes[ni],table=nd.table,sp={};
   try{sp=JSON.parse(bowl.dataset.spices||'{}')}catch(e){}
   var kind=(sp.tucana>0||sp.paprika>0)?'paprika':'plain';
   var ev=window.CooksterQuality?window.CooksterQuality.evaluate(bowl,'kiseli_kupus'):null;
-  if(notes.length){var n0=notes.shift();var el=scene.querySelector('.ko-note[data-id="'+n0.id+'"]');if(el)el.remove();save()}
+  notes.splice(ni,1);var el=scene.querySelector('.ko-note[data-id="'+nd.id+'"]');if(el)el.remove();save();
   try{removeItem(bowl)}catch(e){}
-  return{table:table,kind:kind,ev:ev};
+  return{table:table,kind:kind,seatId:nd.seatId,ev:ev};
 }
 function start(){
   var o=pending[0];if(!o)return;
@@ -262,7 +304,12 @@ function tick(now){
     alpha=Math.min(1,anim.t/.2);
     if(anim.t>=.2){anim.phase=anim.call?'listen':'wait';anim.t=0}
   }else if(anim.phase==='listen'){
-    if(!anim.checked&&anim.t>1.2){anim.checked=true;var dish=takeDish();if(dish)anim.carry=dish}
+    if(!anim.checked&&anim.t>1.2){
+      anim.checked=true;var dish=takeDish();
+      if(dish)anim.carry=dish;
+      else{var mn=null;for(var q=0;q<notes.length;q++)if(notes[q].items&&notes[q].items.length){mn=notes[q];break}
+        if(mn){var ms=missingFor(mn);if(ms.length)anim.say='Fali: '+ms.join(', ')}}
+    }
     if(anim.t>2.4){anim.phase='out';anim.t=0}
   }else if(anim.phase==='wait'){
     if(anim.t>.35){anim.phase='put';anim.t=0}
@@ -270,7 +317,7 @@ function tick(now){
     lean=Math.sin(Math.min(1,anim.t/.7)*Math.PI)*.07;
     if(!anim.dropped&&anim.t>.3){
       anim.dropped=true;
-      var o=anim.o,sp=spotFor(notes.length),n={id:o.id,table:o.table,name:ITEM.name,extra:ITEM.extra,x:sp.x,y:sp.y,rot:sp.rot};
+      var o=anim.o,sp=spotFor(notes.length),od=o.ord||{},n={id:o.id,table:o.table,name:od.name||ITEM.name,extra:od.extra!=null?od.extra:ITEM.extra,cyr:od.cyr,cyrExtra:od.cyrExtra,items:od.items||null,key:od.key||'kupus',seatId:o.seatId,x:sp.x,y:sp.y,rot:sp.rot};
       notes.push(n);placeNote(n,true);save();
     }
     if(anim.t>.9){anim.phase='out';anim.t=0}
@@ -278,13 +325,13 @@ function tick(now){
     alpha=Math.max(0,1-anim.t/.2);
     if(anim.t>=.2){
       if(!anim.call){pending.shift();save()}
-      if(anim.carry&&window.CooksterTavern&&window.CooksterTavern.deliver)window.CooksterTavern.deliver(anim.carry.table-1,anim.carry.kind,anim.carry.ev);
+      if(anim.carry&&window.CooksterTavern&&window.CooksterTavern.deliver)window.CooksterTavern.deliver(anim.carry.table-1,anim.carry.kind,anim.carry.ev,anim.carry.seatId,anim.carry.items);
       anim=null;X.clearRect(0,0,W,H);return;
     }
   }
   X.globalAlpha=alpha;
-  drawWaiter(anim.x,FLOOR_Y,frame,flip,lean,!!anim.carry);X.globalAlpha=1;
-  if(anim.phase==='listen'&&anim.t>.3)speech(anim.carry?'Odnosim kupus!':'Izvolite?',anim.x,FLOOR_Y-440);
+  drawWaiter(anim.x,FLOOR_Y,frame,flip,lean,anim.carry?(anim.carry.kind==='drink'?'drink':'food'):false);X.globalAlpha=1;
+  if(anim.phase==='listen'&&anim.t>.3)speech(anim.carry?(anim.carry.kind==='drink'?'Odnosim piće!':'Odnosim kupus!'):(anim.say||'Izvolite?'),anim.x,FLOOR_Y-440);
   requestAnimationFrame(tick);
 }
 setInterval(function(){
@@ -299,7 +346,8 @@ notes.forEach(function(n){placeNote(n,false)});
 
 window.CooksterOrders={
   // the waiter has taken an order at a table (1, 2, 3...): after a while he arrives in the kitchen
-  add:function(table){pending.push({id:++uid,table:table,readyAt:Date.now()+TRIP_MS});save()},
+  add:function(table,ord,seatId){pending.push({id:++uid,table:table,ord:ord||null,seatId:(seatId==null?-1:seatId),readyAt:Date.now()+TRIP_MS});save()},
+  make:makeOrder,
   busy:function(){return pending.length>0||!!anim||called},          // the waiter is away from the tavern
   debug:function(){return{pending:pending.slice(),notes:notes.slice(),animating:!!anim,called:called}},
   ringBell:callWaiter,

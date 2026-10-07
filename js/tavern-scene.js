@@ -81,7 +81,7 @@ function preload(){
     jobs.push(loadImg(GUESTS+key+'.webp?v='+IMGV).then(function(im){store(key,im)}));
   })('g'+(c2<10?'0':'')+c2+'_'+w+f)});
   // the waiter: three pictures of a step toward the camera (walkd), away from it (walku) and from the side (walks, looking right)
-  ['walkd','walku','walks','writes','foods'].forEach(function(w){for(var f2=1;f2<=3;f2++)(function(key){
+  ['walkd','walku','walks','writes','foods','drinks'].forEach(function(w){for(var f2=1;f2<=3;f2++)(function(key){
     jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=4').then(function(im){store('w_'+key,im)}));
   })(w+f2)});
   var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
@@ -509,7 +509,7 @@ function step(dt){
 var waiter=null,WSPEED=92;
 var deliveries=[],reactions=[],dishes=[],DISH_SRC={plain:'assets/calibration_props/posuda_za_kupus/posuda_kupus.webp',paprika:'assets/calibration_props/posuda_za_kupus/posuda_kupus_paprika.webp'},DISH_SECS=25;
 DISH_SRC.dirty='assets/calibration_props/posuda_za_kupus/posuda_prljava.webp';
-var dishImgs={},EAT_SECS=18,EAT_DELAY=1.5;['plain','paprika','dirty'].forEach(function(k){var im=new Image();im.src=DISH_SRC[k];dishImgs[k]=im});
+var dishImgs={},EAT_SECS=18,DRINK_SECS=14,EAT_DELAY=1.5;['plain','paprika','dirty'].forEach(function(k){var im=new Image();im.src=DISH_SRC[k];dishImgs[k]=im});
 function waiterFace(dx,dy){                           // which set of pictures for this direction of walking
   if(Math.abs(dx)>1.2*Math.abs(dy))return 'walks';
   return dy>0?'walkd':'walku';
@@ -526,6 +526,17 @@ function ensureWaiter(){
   waiter={x:h.x,y:h.y,mode:'idle',path:null,pi:1,phase:0,set:dirFace(h.dir).set,flip:dirFace(h.dir).flip,table:-1,t:0,face:h.dir};
   return waiter;
 }
+var WOMEN={2:1,5:1,8:1,10:1};                        // which of the ten characters are women (they order wine by the glass, men "kilo na kilo")
+function pickOrderKey(g){
+  var r=Math.random();
+  if(WOMEN[g.ch])return r<.3?'kupus':(r<.65?'crno_casa':'belo_casa');
+  return r<.25?'kupus':(r<.7?'kilo':(r<.85?'belo_flasa':'crno_flasa'));
+}
+function waitingGuest(){                              // the guest that has waited longest and has not ordered yet
+  var best=null;
+  guests.forEach(function(g){if(g.mode==='seated'&&!g.ordered&&(!best||g.sitT>best.sitT))best=g});
+  return best;
+}
 function waitingTable(){                              // the table with the guest that has waited longest and has not ordered yet
   var best=-1,bt=-1;
   guests.forEach(function(g){
@@ -533,6 +544,7 @@ function waitingTable(){                              // the table with the gues
   });
   return best;
 }
+function carrySet(w){return(w.carry&&w.carry.kind==='drink'&&imgs['w_drinks2'])?'drinks':'foods'}           // the waiter with drinks, if the pictures exist, else with the tray of food
 function waiterGo(to){
   var w=ensureWaiter();
   w.path=waiterPath({x:w.x,y:w.y},{x:to.x,y:to.y});w.pi=1;
@@ -544,13 +556,13 @@ function stepWaiter(dt){
   if(w.hidden){w.hidden=false;w.x=home.x;w.y=home.y}
   if(w.mode==='idle'){
     var tb=waitingTable();
-    if(deliveries.length&&waiterSpot(deliveries[0].table)){var dl=deliveries.shift();w.carry=dl;w.table=dl.table;w.mode='go';w.set='foods';waiterGo(waiterSpot(dl.table))}
-    else if(tb>=0&&waiterSpot(tb)){w.table=tb;w.mode='go';waiterGo(waiterSpot(tb))}
+    if(deliveries.length&&waiterSpot(deliveries[0].table)){var dl=deliveries.shift();w.carry=dl;w.table=dl.table;w.mode='go';w.set=carrySet(w);waiterGo(waiterSpot(dl.table))}
+    else if(tb>=0&&waiterSpot(tb)){w.table=tb;w.guest=waitingGuest();w.mode='go';waiterGo(waiterSpot(tb))}
     else{var f0=dirFace(home.dir);w.set=f0.set;w.flip=f0.flip}
   }else if(w.mode==='go'||w.mode==='back'){
     var tgt=w.path&&w.path[w.pi];
     if(!tgt){
-      if(w.mode==='go'&&w.carry){w.mode='give';w.t=0;var sg=waiterSpot(w.table),fg=dirFace(sg?sg.dir:90);w.flip=fg.flip;w.set='foods'}
+      if(w.mode==='go'&&w.carry){w.mode='give';w.t=0;var sg=waiterSpot(w.table),fg=dirFace(sg?sg.dir:90);w.flip=fg.flip;w.set=carrySet(w)}
       else if(w.mode==='go'){w.mode='serve';w.t=0;var sp=waiterSpot(w.table),fs=dirFace(sp?sp.dir:90);w.set=fs.set;w.flip=fs.flip}
       else{w.mode='idle'}
     }else{
@@ -558,8 +570,8 @@ function stepWaiter(dt){
       if(d<=spd){w.x=tgt.x;w.y=tgt.y;w.pi++}
       else{
         w.x+=dx/d*spd;w.y+=dy/d*spd;
-        var s2=w.carry?'foods':waiterFace(dx,dy);if(s2!==w.set){w.set=s2}
-        if(s2==='walks'||s2==='foods'){if(Math.abs(dx)>.3)w.flip=dx<0}else w.flip=false;
+        var s2=w.carry?carrySet(w):waiterFace(dx,dy);if(s2!==w.set){w.set=s2}
+        if(s2==='walks'||s2==='foods'||s2==='drinks'){if(Math.abs(dx)>.3)w.flip=dx<0}else w.flip=false;
         w.phase+=spd/(40*scaleAt(w.y)/.34);
       }
     }
@@ -567,9 +579,10 @@ function stepWaiter(dt){
     w.t+=dt;
     if(w.t>1.1){
       try{if(window.CooksterSound)window.CooksterSound.play('waiter','serve')}catch(e){}
-      var sv=serveSpot(w.table,'jelo');
-      var eatSeat=-1;guests.forEach(function(g){if(g.seat.table===w.table&&g.mode==='seated'){if(eatSeat<0||g.seat.id<eatSeat)eatSeat=g.seat.id;g.sitFor=Math.max(g.sitFor,g.sitT+EAT_DELAY+EAT_SECS+8)}});
-      dishes.push({table:w.table,kind:w.carry.kind||'plain',t:0,eatT:0,bite:0,phase:'eating',seatId:eatSeat,x:sv?sv.x:null,y:sv?sv.y:null});
+      var isDrink=w.carry.kind==='drink',sv=serveSpot(w.table,isDrink?'pice':'jelo',w.carry.seatId);
+      var eatSeat=w.carry.seatId!=null&&w.carry.seatId>=0?w.carry.seatId:-1,secs=isDrink?DRINK_SECS:EAT_SECS;
+      guests.forEach(function(g){if(g.seat.table===w.table&&g.mode==='seated'){if(eatSeat<0||g.seat.id<eatSeat)eatSeat=g.seat.id;if(g.seat.id===eatSeat)g.sitFor=Math.max(g.sitFor,g.sitT+EAT_DELAY+secs+8)}});
+      dishes.push({table:w.table,kind:w.carry.kind||'plain',items:w.carry.items||null,secs:secs,t:0,eatT:0,bite:0,phase:'eating',seatId:eatSeat,x:sv?sv.x:null,y:sv?sv.y:null});
       var ev=w.carry.ev||null,rep=ev&&window.CooksterQuality?window.CooksterQuality.addReputation(ev.score):null;
       reactions.push({table:w.table,t:0,ev:ev,rep:rep,delta:ev?ev.score:0});
       w.carry=null;w.mode='back';waiterGo(home);
@@ -577,8 +590,9 @@ function stepWaiter(dt){
   }else if(w.mode==='serve'){
     w.t+=dt;
     if(w.t>4.4){
-      guests.forEach(function(g){if(g.seat.table===w.table&&g.mode==='seated')g.ordered=true});
-      if(window.CooksterOrders)window.CooksterOrders.add(w.table+1);          // the order goes to the kitchen
+      var og=w.guest||null;if(!og)guests.forEach(function(g){if(!og&&g.seat.table===w.table&&g.mode==='seated'&&!g.ordered)og=g});
+      if(og){og.ordered=true;og.order=og.order||(window.CooksterOrders&&window.CooksterOrders.make?window.CooksterOrders.make(pickOrderKey(og),!!WOMEN[og.ch]):null)}
+      if(window.CooksterOrders)window.CooksterOrders.add(w.table+1,og?og.order:null,og?og.seat.id:-1);          // the order goes to the kitchen
       w.mode='back';waiterGo(home);
     }
   }
@@ -596,12 +610,12 @@ function drawBubble(ctx,x,y,l1,l2){
   ctx.restore();
 }
 // where a dish / drink goes (marked in the tool "Kalibracija kafane", layer "Posluženje"): the spot of the guest who sits there, or the table's common spot
-function serveSpot(table,kind){
+function serveSpot(table,kind,seatId){
   var sv=(CAL&&CAL.serve)||{seat:{},table:{}};
   if(kind==='sto')return sv.table[table]||null;
   var best=null;
   guests.forEach(function(g){if(g.seat.table===table&&g.mode==='seated'&&(!best||g.seat.id<best.seat.id))best=g});
-  var order=best?[best.seat.id]:[];SEATS.forEach(function(st){if(st.table===table&&order.indexOf(st.id)<0)order.push(st.id)});
+  var order=seatId!=null&&seatId>=0?[seatId]:[];if(best&&order.indexOf(best.seat.id)<0)order.push(best.seat.id);SEATS.forEach(function(st){if(st.table===table&&order.indexOf(st.id)<0)order.push(st.id)});
   for(var i=0;i<order.length;i++){var d=sv.seat[order[i]];if(d&&d[kind])return d[kind]}
   return sv.table[table]||null;
 }
@@ -612,19 +626,46 @@ function tickDishes(dt){
       if(d.t>EAT_DELAY){
         d.eatT+=dt;d.bite+=dt;
         if(d.bite>1.15){d.bite=0;try{if(window.CooksterSound)window.CooksterSound.play('waiter','eat')}catch(e){}}
-        if(d.eatT>=EAT_SECS){d.phase='dirty';d.dirtyT=0}
+        if(d.eatT>=(d.secs||EAT_SECS)){d.phase='dirty';d.dirtyT=0}
       }
     }else d.dirtyT=(d.dirtyT||0)+dt;
     if(!TABLES[d.table]||(d.phase==='dirty'&&d.dirtyT>240))dishes.splice(i,1);
   }
 }
+var drinkImgs={};
+function drinkImg(id){
+  if(drinkImgs[id]!==undefined)return drinkImgs[id];
+  var def=null;try{def=kitchenEquipmentDef(id)}catch(e){}
+  var im=null;if(def&&def.src){im=new Image();im.src=def.src}
+  drinkImgs[id]=im;return im;
+}
+// the drinks of one guest stand side by side on his "piće" spot (bottom middle of the group is the spot)
+function drinkLayout(d){
+  var tb=TABLES[d.table];if(!tb)return null;
+  var dx=d.x!=null?d.x:tb.x,dy=d.y!=null?d.y:tb.y+8,sc=scaleAt(dy)*.21,out=[],tw=0,i;
+  for(i=0;i<d.items.length;i++){var im=drinkImg(d.items[i]);if(!im||!im.naturalWidth)return null;var w=im.naturalWidth*sc,h=im.naturalHeight*sc;out.push({im:im,w:w,h:h});tw+=w}
+  var x=dx-tw/2;
+  out.forEach(function(o){o.x=x;o.y=dy-o.h;x+=o.w});
+  return out;
+}
 function dishRect(d){
   var tb=TABLES[d.table];if(!tb)return null;
+  if(d.items&&d.items.length){
+    var L=drinkLayout(d);if(!L||!L.length)return null;
+    var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;L.forEach(function(o){x0=Math.min(x0,o.x);y0=Math.min(y0,o.y);x1=Math.max(x1,o.x+o.w);y1=Math.max(y1,o.y+o.h)});
+    return{x:x0,y:y0,w:x1-x0,h:y1-y0};
+  }
   var im=dishImgs.dirty;if(!im||!im.naturalWidth)return null;
   var dx=d.x!=null?d.x:tb.x,dy=d.y!=null?d.y:tb.y+8,sc=scaleAt(dy)*.2,w=im.naturalWidth*sc,h=im.naturalHeight*sc;
   return{x:dx-w/2,y:dy-h,w:w,h:h};
 }
 function drawDish(ctx,d){
+  if(d.items&&d.items.length){
+    var L=drinkLayout(d);if(!L)return;
+    ctx.save();ctx.globalAlpha=d.phase==='eating'?Math.min(1,d.t/.3):1;
+    L.forEach(function(o){ctx.drawImage(o.im,o.x,o.y,o.w,o.h)});
+    ctx.restore();return;
+  }
   var r=dishRect(d);if(!r)return;
   var full=dishImgs[d.kind]||dishImgs.plain,dirty=dishImgs.dirty;
   var a=d.phase==='eating'?Math.min(1,d.t/.3):1;
@@ -668,10 +709,11 @@ function drawReactions(ctx,dt){
 }
 function drawOrderBubble(ctx){
   var w=waiter;if(!w||w.mode!=='serve'||w.t<.8)return;
-  var g=null;guests.forEach(function(o){if(!g&&o.seat.table===w.table&&(o.mode==='seated'||o.ordered))g=o});
+  var g=w.guest||null;if(!g)guests.forEach(function(o){if(!g&&o.seat.table===w.table&&(o.mode==='seated'||o.ordered))g=o});
   if(!g)return;
+  var od=g.order||(window.CooksterOrders&&window.CooksterOrders.make?(g.order=window.CooksterOrders.make(pickOrderKey(g),!!WOMEN[g.ch])):null);
   var sp=seatPos(g),im=imgs[chKey(g,sitPose(g))],hh=im?im.naturalHeight*scaleAt(sp.y)*SIT_K:300;
-  drawBubble(ctx,sp.x,sp.y-hh,'Kiseli kupus','ulje i tucana paprika');
+  drawBubble(ctx,sp.x,sp.y-hh,od?od.name:'Kiseli kupus',od?od.extra:'ulje i tucana paprika');
 }
 function drawWaiter(ctx){
   var w=waiter;if(!w||w.hidden)return;
@@ -693,7 +735,7 @@ function drawWaiter(ctx){
   // walking. From the front and from behind the two pictures with a leg forward (1 and 3) are enough, one after the other. From the side
   // they look almost the same (a leg forward), so there the step has the middle picture (legs together, 2) too: 1, 2, 3, 2.
   // From the front and from behind the next picture fades in over the end of the step.
-  var side=w.set==='walks'||w.set==='foods',SEQ=side?[1,2,3,2]:[1,3],NS=SEQ.length;
+  var side=w.set==='walks'||w.set==='foods'||w.set==='drinks',SEQ=side?[1,2,3,2]:[1,3],NS=SEQ.length;
   var q=side?w.phase*2:w.phase,qi=Math.floor(q),fr=q-qi,f0=.3,f1=.9;
   // from the side the pictures differ in height (legs apart, legs together), so a blend would show two heads: there they just follow each other
   var fade=side?0:Math.max(0,Math.min(1,(fr-f0)/(f1-f0)));fade=fade*fade*(3-2*fade);
@@ -898,7 +940,7 @@ window.addEventListener('keydown',onKey,true);window.addEventListener('keyup',on
 
 window.CooksterTavern={
   open:open,close:close,spawn:spawn,
-  deliver:function(table,kind,ev){deliveries.push({table:table,kind:kind||'plain',ev:ev||null})},
+  deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,
   get isOpen(){return state==='tavern'},get busy(){return busy},
   debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
