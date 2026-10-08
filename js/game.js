@@ -10608,7 +10608,7 @@ function hideBackpackHeldPreview(){
  }
 }
 function syncBackpackHeldPreview(source=placementGhost){
- if(!holding||!source||!source.isConnected||getComputedStyle(source).display==='none'){
+ if(!holding||!source||!source.isConnected||getComputedStyle(source).display==='none'||document.body.classList.contains('pantry-open')){      // not over the pantry / the tavern
   hideBackpackHeldPreview();
   return null;
  }
@@ -10959,6 +10959,7 @@ window.CooksterBackpackController={
 // the pantry (js/pantry-storage.js) takes a barrel or a jar from the hand and gives it back later
 window.CooksterPantryBridge={
  storable(el){const id=el?.dataset?.itemId||'';return !!id&&((id.startsWith('kaca_')&&id!=='kaca_poklopac')||id.includes('tegla'));},
+ hideGhosts(){hideBackpackHeldPreview();hidePlacementGhost();hideOriginGhost();},
  hovered(x,y){return hoverItem||(Number.isFinite(x)?itemAt(x,y):null)||null;},
  heldItem(){return holding||null;},
  pick(el){if(!el||holding||placing||picking)return false;startHolding(el);return !!holding;},
