@@ -44,6 +44,19 @@ var dirt=mk('canvas','tc-dirt'),fx=mk('canvas','tc-fx');
 dirt.width=W;dirt.height=H;fx.width=W;fx.height=H;
 cv.parentNode.insertBefore(dirt,cv);cv.parentNode.insertBefore(fx,cv.nextSibling);
 var D=dirt.getContext('2d'),X=fx.getContext('2d');
+// the stove: the picture of the room has the fire lit; "assets/tavern/dirt/stove_off.webp" is the same picture with the fire out (only where it differs, the rest is transparent).
+// Right click on the stove -> "Ugasi" / "Zapali": the picture of the stove without fire fades in over the room (and over the dirt)
+var stoveCv=mk('canvas','tc-dirt');stoveCv.width=W;stoveCv.height=H;cv.parentNode.insertBefore(stoveCv,cv);
+var SC=stoveCv.getContext('2d'),STOVE_KEY='cookster.tavern-stove.v1',STOVE_RECT=[1150,285,1385,475],stoveLit=true,stoveA=0,stoveOk=false,stoveImg=new Image();
+try{stoveLit=localStorage.getItem(STOVE_KEY)!=='off'}catch(e){}
+stoveImg.onload=function(){stoveOk=true;stoveA=stoveLit?0:1;drawStove()};stoveImg.src='assets/tavern/dirt/stove_off.webp?v=2';
+function drawStove(){SC.clearRect(0,0,W,H);if(stoveOk&&stoveA>0){SC.globalAlpha=stoveA;SC.drawImage(stoveImg,0,0,W,H);SC.globalAlpha=1}}
+function setStove(lit){
+  if(!stoveOk||lit===stoveLit)return;
+  stoveLit=lit;try{localStorage.setItem(STOVE_KEY,lit?'on':'off')}catch(e){}
+  var from=stoveA,to=lit?0:1,t0=performance.now();
+  (function f(now){var k=Math.min(1,(now-t0)/700);stoveA=from+(to-from)*k;drawStove();if(k<1)requestAnimationFrame(f)})(t0);
+}
 T.dirtCanvas=dirt;                                    // the scene redraws parts of the picture over the guests, with the dirt that is still on it
 // the dirt on the tables comes in 5 levels (assets/tavern/dirt/lvl1..5.webp: only the tables, the rest is transparent); a table gets dirtier level by level
 var LV=[],LVN=5,STEP=2,TH=[2,12,26,44,66],TRECT=[[215,330,650,540],[590,500,1105,800],[1180,360,1625,590]];   // the 3 tables: x1,y1,x2,y2
@@ -73,7 +86,7 @@ dirtyImg.src=DIRTY;
 var cleanImg=new Image();cleanImg.src=T.roomSrc;           // the clean picture: the difference to the dirty one is what lies on the tables
 // the dirt and the effects lie exactly over the picture, wherever the scene puts it
 function sync(){
-  ['left','top','width','height'].forEach(function(k){dirt.style[k]=cv.style[k];fx.style[k]=cv.style[k]});
+  ['left','top','width','height'].forEach(function(k){dirt.style[k]=cv.style[k];fx.style[k]=cv.style[k];stoveCv.style[k]=cv.style[k]});
 }
 new MutationObserver(sync).observe(cv,{attributes:true,attributeFilter:['style']});
 addEventListener('resize',sync);sync();
@@ -263,6 +276,7 @@ room.addEventListener('contextmenu',function(e){
   for(i=0;i<TQUAD.length;i++)if(pip(TQUAD[i],p.x,p.y)){zi=i;break}
   var dish=T.dirtyDishAt&&T.dirtyDishAt(p.x,p.y);
   var opts=[{ic:'🧽',t:'Sunđer',on:tool==='sponge',fn:function(){setTool('sponge')}},{ic:'✋',t:'Ruka',on:tool!=='sponge',fn:function(){setTool('ruka')}}];
+  if(stoveOk&&p.x>=STOVE_RECT[0]&&p.x<=STOVE_RECT[2]&&p.y>=STOVE_RECT[1]&&p.y<=STOVE_RECT[3])opts.push({ic:'🔥',t:stoveLit?'Ugasi vatru':'Zapali vatru',fn:function(){setStove(!stoveLit)}});
   if(zi>=0)opts.push({ic:'🫧',t:'Očisti sto',off:!tlevel[zi]||!!cleaning[zi],fn:function(){cleanZone(zi)}});
   if(dish)opts.push({ic:'🍽️',t:'Pranje',fn:function(){
     if(T.dirtyDishAt(p.x,p.y,true)){try{if(window.CooksterSinkDishes)window.CooksterSinkDishes.add()}catch(_){}}
