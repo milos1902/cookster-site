@@ -725,7 +725,7 @@ function drinkImg(id){
 var TI_KEY='cookster.table-items.v1',TI={items:{}};
 try{var tiRaw=JSON.parse(localStorage.getItem(TI_KEY));if(tiRaw&&tiRaw.items)TI=tiRaw}catch(e){}
 // the file assets/tavern/table_items.json is the default (what Milos calibrated); the browser's own saved settings win over it
-if(!TI.items||!Object.keys(TI.items).length){try{fetch('assets/tavern/table_items.json?v=1').then(function(r){return r.json()}).then(function(j){if(j&&j.items&&!Object.keys(TI.items).length)TI=j}).catch(function(){})}catch(e){}}
+if(!TI.items||!Object.keys(TI.items).length){try{fetch('assets/tavern/table_items.json?v=2').then(function(r){return r.json()}).then(function(j){if(j&&j.items&&!Object.keys(TI.items).length)TI=j}).catch(function(){})}catch(e){}}
 function tiCal(key,seatId){
   var it=TI.items[key];if(!it)return null;
   var d=it.def||{},o=(it.seat&&it.seat[seatId])||null;if(!o&&!it.def)return null;
