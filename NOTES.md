@@ -116,3 +116,6 @@ Alat „Predmeti na stolu": dugmad Kopiranje (Kopiraj ovu stolicu, Nalepi ovde, 
 - `assets/tavern/dirt/lvl1..5.webp`: iz 5 ChatGPT slika (razlika prema `kafana_cista.webp`, samo gornja ploča stolova + predmeti; ostalo providno). Sve 3 stola su na istoj slici, pa `tavern-clean.js` seče po pravougaonicima `TRECT`.
 - Sto počinje na nivou 2; `dirtyZone(sto,poeni)` skuplja poene, svakih `STEP`=3 poena ide nivo više (novi nivo se pojavi preko starog za ~0,6 s). „Očisti sto“ briše sloj trenutnog nivoa; „zaprljaj opet“ vraća nivo 2. Staro komadanje po delovima (`piecesOf`) je izbačeno.
 - `assets/tavern/table_items.json` je podrazumevana kalibracija „Predmeta na stolu“ (ako u pregledaču nema svoje sačuvane u `cookster.table-items.v1`). Sedišta 8–11 (sto 3) još nisu kalibrisana.
+
+- `table_items.json` zamenjen novijim izvozom (sedišta 8–11 sada kalibrisana za činiju, crno vino i špricer; sifon i belo vino samo delom). Ostali predmeti još bez kalibracije.
+- Sto 3 (sedišta 8–11) i sedišta 5, 7: gosti nisu mogli da dođu jer je „Zabrana“ ispod stola 2 (oblik 8) išla do samog dna slike pa je zatvorila prolaz u desni deo sale (dugme za proveru: `CooksterTavern.seatReach()` mora dati sve `true`). Donja ivica tog oblika podignuta na y≈890–896 (prolaz ~45 px). Ako je u „Kalibraciji kafane“ nešto sačuvano u pregledaču, ono ima prednost nad fajlom.
