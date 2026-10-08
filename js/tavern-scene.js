@@ -85,7 +85,7 @@ function preload(){
     jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=4').then(function(im){store('w_'+key,im)}));
   })(w+f2)});
   // walking toward the camera: 16 pictures of a whole walk (two steps), made from the three old ones with frame interpolation
-  for(var wf=1;wf<=WD_N;wf++)(function(n){jobs.push(loadImg(WAITER+'walkd24/f'+(n<10?'0':'')+n+'.webp?v=1').then(function(im){store('w_wd'+n,im)}))})(wf);
+  [['walkd','wd'],['walku','wu'],['walks','ws']].forEach(function(pr){for(var wf=1;wf<=WD_N;wf++)(function(n){jobs.push(loadImg(WAITER+pr[0]+'24/f'+(n<10?'0':'')+n+'.webp?v=1').then(function(im){store('w_'+pr[1]+n,im)}))})(wf)});
   var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
   loading=Promise.all([roomJob].concat(jobs)).then(function(r){loaded=!!r[0];loading=null;return loaded});
   return loading;
@@ -893,10 +893,11 @@ function drawWaiter(ctx){
     }
     drawSprite(ctx,'w_'+w.set+'2',w.x,w.y,sc,w.flip,0,1);return;
   }
-  // toward the camera: the 16 pictures of a whole walk (two steps = phase 0..2), they already move up and down by themselves
-  if(w.set==='walkd'&&!w.carry&&imgs['w_wd'+WD_N]){
+  // the 16 pictures of a whole walk (two steps = phase 0..2) toward the camera, away from it and from the side (they already move up and down by themselves)
+  var W24={walkd:'wd',walku:'wu',walks:'ws'}[w.set];
+  if(W24&&!w.carry&&imgs['w_'+W24+WD_N]){
     var wi2=Math.floor(((w.phase%2)/2)*WD_N)%WD_N;
-    drawSprite(ctx,'w_wd'+(wi2+1),w.x,w.y,sc,false,0,1);return;
+    drawSprite(ctx,'w_'+W24+(wi2+1),w.x,w.y,sc,w.set==='walks'?w.flip:false,0,1);return;
   }
   var ph=Math.abs(Math.sin(w.phase*Math.PI)),bob=ph*3.2*sc/.3;
   // walking. From the front and from behind the two pictures with a leg forward (1 and 3) are enough, one after the other. From the side
