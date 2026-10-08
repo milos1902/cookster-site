@@ -2378,7 +2378,12 @@ const orderNoteSoundTarget=makeSoundTarget('__order_note','Papirić narudžbine 
 orderNoteSoundTarget.dataset.soundActions='pickup,drop,open';
 const waiterServeSoundTarget=makeSoundTarget('__waiter_serve','Konobar — pojavljivanje i spuštanje jela','serve');
 waiterServeSoundTarget.dataset.soundActions='appear,serve,eat';
-window.CooksterSound={targets:{note:orderNoteSoundTarget,waiter:waiterServeSoundTarget},
+// the ambient sound of the tavern (by the number of guests) and of the kitchen (morning / day / evening): chosen in the tool "Zvuk"
+const tavernAmbientTarget=makeSoundTarget('__ambient_tavern','Ambijent kafane — prazna, 2, 5 gostiju, puna, ulazak gostiju','amb0');
+tavernAmbientTarget.dataset.soundActions='amb0,amb2,amb5,amb12,guestIn';
+const kitchenAmbientTarget=makeSoundTarget('__ambient_kitchen','Ambijent kuhinje — jutro, dan, veče','ambMorning');
+kitchenAmbientTarget.dataset.soundActions='ambMorning,ambDay,ambEvening';
+window.CooksterSound={targets:{note:orderNoteSoundTarget,waiter:waiterServeSoundTarget,ambTavern:tavernAmbientTarget,ambKitchen:kitchenAmbientTarget},
   play:(name,action)=>{const t=window.CooksterSound.targets[name];return t?playImpactSound(t,action):false;}};
 // one virtual sound target per vegetable/fruit type: cutting and putting into a vessel share it
 const produceSoundTargets={};
@@ -2485,6 +2490,43 @@ function playImpactSound(el,action='drop'){
  const play=()=>playSfx(sound,Math.max(0,Math.min(1,+cfg.volume||0)),true);
  if(wait) setTimeout(play,wait);else play();return true;
 }
+// ---- ambient engine: one looping sound at a time, with a 1 second fade when it changes (kitchen <-> tavern, or fewer / more guests) ----
+const AMB_FADE=1;                                                    // seconds
+const ambTracks=[];                                                  // {id,audio,vol(now),want}
+function ambDesired(){
+ try{
+  if(window.CooksterTavern&&window.CooksterTavern.isOpen){
+   const n=window.CooksterTavern.guestCount?window.CooksterTavern.guestCount():0;
+   return[tavernAmbientTarget,n<=0?'amb0':n<4?'amb2':n<9?'amb5':'amb12'];
+  }
+  const h=currentGameMinute()/60;
+  return[kitchenAmbientTarget,h>=5&&h<11?'ambMorning':h>=11&&h<17.5?'ambDay':'ambEvening'];
+ }catch(_){return null;}
+}
+let ambLast=performance.now();
+setInterval(()=>{
+ const now=performance.now(),dt=Math.min(.5,(now-ambLast)/1000);ambLast=now;
+ const d=ambDesired();let wantId='',cfg=null;
+ if(d){
+  cfg=resolvedImpactConfig(d[0],d[1]);
+  const list=(cfg.variants||[]).filter(Boolean);
+  if(list.length){
+   let t=ambTracks.find(x=>x.target===d[0].dataset.soundTarget&&x.action===d[1]&&list.includes(x.sound));
+   wantId=t?t.id:'';
+   if(!t){
+    const sound=list[Math.floor(Math.random()*list.length)],a=playSfx(sound,0,true);
+    if(a){a.loop=true;t={id:d[0].dataset.soundTarget+'|'+d[1]+'|'+Date.now(),target:d[0].dataset.soundTarget,action:d[1],sound,audio:a,vol:0};ambTracks.push(t);wantId=t.id;}
+   }
+  }
+ }
+ for(let i=ambTracks.length-1;i>=0;i--){
+  const t=ambTracks[i],on=t.id===wantId,goal=on?Math.max(0,Math.min(1,+cfg.volume||0)):0;
+  const step=dt/AMB_FADE*Math.max(.3,Math.min(1,+((cfg&&cfg.volume)||.58)));
+  t.vol=t.vol<goal?Math.min(goal,t.vol+step):Math.max(goal,t.vol-step);
+  try{t.audio.volume=t.vol;if(on&&t.audio.paused)t.audio.play().catch(()=>{});}catch(_){}
+  if(!on&&t.vol<=0){try{t.audio.pause();}catch(_){}ambTracks.splice(i,1);}
+ }
+},100);
 function scheduleEarlyImpactSound(el,contactMs,action='drop'){const cfg=resolvedImpactConfig(el,action),sound=pickActionSound(el,action,cfg);if(!sound||(+cfg.delay||0)>=0)return false;const now=performance.now(),key=soundKey(el)+'|'+action;if(soundLastPlayed[key]!==undefined&&now-soundLastPlayed[key]<Math.max(0,+cfg.cooldown||0)*1000)return true;soundLastPlayed[key]=now;setTimeout(()=>playSfx(sound,Math.max(0,Math.min(1,+cfg.volume||0)),true),Math.max(0,contactMs+(+cfg.delay||0)*1000));return true;}
 window.addEventListener('click',e=>{
  const button=e.target?.closest?.('button,[role="button"],input[type="button"],input[type="submit"]');
@@ -2552,7 +2594,7 @@ ssStyle.textContent=`
 document.head.appendChild(ssStyle);
 
 /* --- state --- */
-const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje papirića na šiljak'],['fall','Pad papirića sa šiljka'],['ring','Zvoni (kad ga dodirneš)'],['sprinkle','Sipaj (začin)'],['pour','Sipaj (ulje)'],['pourOut','Presipaj u drugu posudu'],['throw','Bacanje u kantu'],['empty','Pražnjenje kante'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara'],['eat','Gost jede (svaki zalogaj)']];
+const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje papirića na šiljak'],['fall','Pad papirića sa šiljka'],['ring','Zvoni (kad ga dodirneš)'],['sprinkle','Sipaj (začin)'],['pour','Sipaj (ulje)'],['pourOut','Presipaj u drugu posudu'],['throw','Bacanje u kantu'],['empty','Pražnjenje kante'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara'],['eat','Gost jede (svaki zalogaj)'],['amb0','Kafana prazna (petlja)'],['amb2','Kafana: do 3 gosta (petlja)'],['amb5','Kafana: 4–8 gostiju (petlja)'],['amb12','Kafana puna: 9+ gostiju (petlja)'],['guestIn','Ulazak gostiju u kafanu'],['ambMorning','Kuhinja: jutro (petlja)'],['ambDay','Kuhinja: dan (petlja)'],['ambEvening','Kuhinja: veče (petlja)']];
 const ssState={open:false,tab:'objekti',action:'drop',query:'',libQuery:'',libOpen:false};
 
 /* --- helpers (reuse ls* from light-studio) --- */
@@ -2687,7 +2729,7 @@ function ssSceneItems(){
   for(const [key,def] of Object.entries(VEGETABLES))produce.push(produceSoundTarget(false,key,def.label));
   for(const [key,def] of Object.entries(CooksterCatalog.FRUITS||{}))produce.push(produceSoundTarget(true,key,def.label));
  }catch(_){}
- return [buttonSoundTarget,firewoodSoundTarget,bookSoundTarget,faucetSoundTarget,peelSoundTarget,orderNoteSoundTarget,waiterServeSoundTarget,...items,...catalogProps,...hotspots,...produce];
+ return [buttonSoundTarget,firewoodSoundTarget,bookSoundTarget,faucetSoundTarget,peelSoundTarget,orderNoteSoundTarget,waiterServeSoundTarget,tavernAmbientTarget,kitchenAmbientTarget,...items,...catalogProps,...hotspots,...produce];
 }
 const ssCatalogTargets={};
 
@@ -2755,7 +2797,7 @@ ssControls.push(()=>{
  const el=ssSel(),acts=el?ssObjActions(el):[];
  for(const [v,b] of ssActionBtns){
   const supported=el?.dataset?.soundActions?.split(',');
-  b.hidden=supported?!supported.includes(v):el?.dataset?.soundAction?v!==el.dataset.soundAction:(['click','insert','cut','peel','putIn','pageTurn','water','hover','eat','appear','serve'].includes(v)||(SS_SPECIAL_ACTIONS[v]&&!SS_SPECIAL_ACTIONS[v](el)));
+  b.hidden=supported?!supported.includes(v):el?.dataset?.soundAction?v!==el.dataset.soundAction:(['click','insert','cut','peel','putIn','pageTurn','water','hover','eat','appear','serve','amb0','amb2','amb5','amb12','guestIn','ambMorning','ambDay','ambEvening'].includes(v)||(SS_SPECIAL_ACTIONS[v]&&!SS_SPECIAL_ACTIONS[v](el)));
   b.setAttribute('aria-pressed',v===ssState.action?'true':'false');
   b.dataset.has=acts.includes(v)?'true':'false';
  }
