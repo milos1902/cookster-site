@@ -1,0 +1,73 @@
+{
+ "size": [
+  1672,
+  941
+ ],
+ "shade": "shade.webp",
+ "lamps": [
+  {
+   "id": "visece",
+   "label": "Viseća lampa",
+   "x": 572,
+   "y": 170,
+   "weight": "w0.webp",
+   "core": {
+    "file": "core0.webp",
+    "x": 474,
+    "y": 59,
+    "w": 196,
+    "h": 222
+   }
+  },
+  {
+   "id": "zid_levo",
+   "label": "Lampa levo na zidu",
+   "x": 424,
+   "y": 52,
+   "weight": "w1.webp",
+   "core": {
+    "file": "core1.webp",
+    "x": 378,
+    "y": 0,
+    "w": 92,
+    "h": 124
+   }
+  },
+  {
+   "id": "sank",
+   "label": "Lampa na šanku",
+   "x": 910,
+   "y": 225,
+   "weight": "w2.webp",
+   "core": {
+    "file": "core2.webp",
+    "x": 852,
+    "y": 163,
+    "w": 116,
+    "h": 124
+   }
+  },
+  {
+   "id": "zid_desno",
+   "label": "Lampa desno na zidu",
+   "x": 1643,
+   "y": 140,
+   "weight": "w3.webp",
+   "core": {
+    "file": "core3.webp",
+    "x": 1591,
+    "y": 72,
+    "w": 104,
+    "h": 136
+   }
+  },
+  {
+   "id": "pec",
+   "label": "Vatra u peći",
+   "x": 1270,
+   "y": 380,
+   "weight": "w4.webp",
+   "stove": true
+  }
+ ]
+}
