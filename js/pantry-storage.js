@@ -44,6 +44,7 @@ function render(){
 }
 function heldSrc(){var el=B.heldItem(),body=el&&(el.querySelector('.body')||el.querySelector('img'));return body?body.getAttribute('src'):''}
 function moveGhost(e){
+  B.hideGhosts();                                                 // the game's own previews of the held thing (shadow) must not stay over the pantry
   var el=P.isOpen?B.heldItem():null,src=el?heldSrc():'';
   if(!el||!src){ghost.style.display='none';return}
   var b=box(),w=(+el.dataset.baseW||el.offsetWidth||80)*b.w/1672,h=w*(+el.dataset.baseH||el.offsetHeight||80)/(+el.dataset.baseW||el.offsetWidth||80);
@@ -75,7 +76,7 @@ addEventListener('contextmenu',function(e){
   e.preventDefault();e.stopPropagation();
   showMenu(e.clientX,e.clientY,'📦 U špajz',function(){
     B.pick(el);var n=0;                                           // picking up takes a moment: go when the thing is in the hand
-    (function wait(){if(B.heldItem())P.open(true);else if(++n<40)setTimeout(wait,50)})();
+    (function wait(){if(B.heldItem()){B.hideGhosts();P.open(true)}else if(++n<40)setTimeout(wait,50)})();
   });
 },true);
 addEventListener('pointerdown',function(e){if(!menu.contains(e.target))hideMenu()},true);
