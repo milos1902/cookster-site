@@ -46,24 +46,73 @@ cv.parentNode.insertBefore(dirt,cv);cv.parentNode.insertBefore(fx,cv.nextSibling
 var D=dirt.getContext('2d'),X=fx.getContext('2d');
 // the stove: the picture of the room has the fire lit; "assets/tavern/dirt/stove_off.webp" is the same picture with the fire out (only where it differs, the rest is transparent).
 // Right click on the stove -> "Ugasi" / "Zapali": the picture of the stove without fire fades in over the room (and over the dirt)
+T.overlayCanvases=[];                              // pictures that lie over the dirt (stove without fire, unlit lamps): redrawn over the guests too
 var stoveCv=mk('canvas','tc-dirt');stoveCv.width=W;stoveCv.height=H;cv.parentNode.insertBefore(stoveCv,cv);
 var SC=stoveCv.getContext('2d'),STOVE_KEY='cookster.tavern-stove.v1',STOVE_RECT=[1150,285,1385,475],stoveLit=true,stoveA=0,stoveOk=false,stoveImg=new Image();
-try{stoveLit=localStorage.getItem(STOVE_KEY)!=='off'}catch(e){}
-stoveImg.onload=function(){stoveOk=true;stoveA=stoveLit?0:1;drawStove()};stoveImg.src='assets/tavern/dirt/stove_off.webp?v=2';
-function drawStove(){SC.clearRect(0,0,W,H);if(stoveOk&&stoveA>0){SC.globalAlpha=stoveA;SC.drawImage(stoveImg,0,0,W,H);SC.globalAlpha=1}}
+try{stoveLit=localStorage.getItem(STOVE_KEY)==='on'}catch(e){}
+stoveImg.onload=function(){stoveOk=true;stoveA=stoveLit?0:1;drawStove()};stoveImg.src='assets/tavern/dirt/stove_off.webp?v=3';
+function drawStove(){SC.clearRect(0,0,W,H);if(stoveOk&&stoveA>0){SC.globalAlpha=stoveA;SC.drawImage(stoveImg,0,0,W,H);SC.globalAlpha=1}if(window.__drawLights)window.__drawLights()}
 function setStove(lit){
   if(!stoveOk||lit===stoveLit)return;
   stoveLit=lit;try{localStorage.setItem(STOVE_KEY,lit?'on':'off')}catch(e){}
   var from=stoveA,to=lit?0:1,t0=performance.now();
   (function f(now){var k=Math.min(1,(now-t0)/700);stoveA=from+(to-from)*k;drawStove();if(k<1)requestAnimationFrame(f)})(t0);
 }
+
+// the lamps: the tavern starts dark (all lights out). tools/make_lights.py builds assets/tavern/lights/ from one picture of the dark tavern:
+//   shade.webp  - how much darker the dark picture is (multiplied over everything, also over the guests)
+//   w<i>.webp   - the part of the light that belongs to lamp i (white, alpha); a lit lamp makes its part of the shade disappear
+//   core<i>.webp - the lamp itself (unlit) drawn over the lit picture while the lamp is out
+// Right click on a lamp -> "Upali svetlo" / "Ugasi svetlo". The stove (fire) is one of the lamps, its picture is stove_off.webp (above).
+var shadeCv=mk('canvas','tc-dirt'),coreCv=mk('canvas','tc-dirt'),SH=null,CR=coreCv.getContext('2d');
+shadeCv.style.mixBlendMode='multiply';coreCv.width=W;coreCv.height=H;
+cv.parentNode.insertBefore(coreCv,cv);T.overlayCanvases.push(stoveCv,coreCv);cv.parentNode.insertBefore(shadeCv,cv.nextSibling);
+var LIGHTS_KEY='cookster.tavern-lights.v1',lightsDef=null,lightState={},lightA={},shadeImg=null,lampImgs={};
+try{lightState=JSON.parse(localStorage.getItem(LIGHTS_KEY)||'{}')||{}}catch(e){lightState={}}
+function lampAmount(L){return L.stove?(1-stoveA):(lightA[L.id]||0)}
+function drawLights(){
+  if(!lightsDef||!shadeImg||!shadeImg.naturalWidth)return;
+  if(!SH){shadeCv.width=shadeImg.naturalWidth;shadeCv.height=shadeImg.naturalHeight;SH=shadeCv.getContext('2d')}
+  SH.globalAlpha=1;SH.clearRect(0,0,shadeCv.width,shadeCv.height);SH.drawImage(shadeImg,0,0);
+  CR.clearRect(0,0,W,H);
+  lightsDef.lamps.forEach(function(L){
+    var a=lampAmount(L),wi=lampImgs[L.weight];
+    if(a>0&&wi&&wi.naturalWidth){SH.globalAlpha=a;SH.drawImage(wi,0,0,shadeCv.width,shadeCv.height)}
+    if(L.core&&a<1){var ci=lampImgs[L.core.file];if(ci&&ci.naturalWidth){CR.globalAlpha=1-a;CR.drawImage(ci,L.core.x,L.core.y,L.core.w,L.core.h)}}
+  });
+  SH.globalAlpha=1;CR.globalAlpha=1;
+}
+function setLamp(L,on){
+  if(L.stove){setStove(on);return}
+  if(!!lightState[L.id]===on)return;
+  lightState[L.id]=on;try{localStorage.setItem(LIGHTS_KEY,JSON.stringify(lightState))}catch(e){}
+  var from=lightA[L.id]||0,to=on?1:0,t0=performance.now();
+  (function f(now){var k=Math.min(1,(now-t0)/600);lightA[L.id]=from+(to-from)*k;drawLights();if(k<1)requestAnimationFrame(f)})(t0);
+}
+window.__drawLights=drawLights;
+function lampLit(L){return L.stove?stoveLit:!!lightState[L.id]}
+function lampAt(x,y){
+  if(!lightsDef)return null;
+  for(var i=0;i<lightsDef.lamps.length;i++){var L=lightsDef.lamps[i];if(L.stove)continue;
+    if(Math.abs(x-L.x)<=(L.core?L.core.w/2:40)+8&&Math.abs(y-L.y)<=(L.core?L.core.h/2:50)+8)return L}
+  return null;
+}
+try{
+  fetch('assets/tavern/lights/lights.json?v=3').then(function(r){return r.json()}).then(function(d){
+    lightsDef=d;var left=1+d.lamps.length*2;
+    function done(){if(--left<=0){d.lamps.forEach(function(L){if(!L.stove)lightA[L.id]=lightState[L.id]?1:0});drawLights()}}
+    function load(file){var im=new Image();im.onload=done;im.onerror=done;im.src='assets/tavern/lights/'+file+'?v=3';return im}
+    shadeImg=load(d.shade);
+    d.lamps.forEach(function(L){lampImgs[L.weight]=load(L.weight);if(L.core)lampImgs[L.core.file]=load(L.core.file);else done()});
+  }).catch(function(){});
+}catch(e){}
 T.dirtCanvas=dirt;                                    // the scene redraws parts of the picture over the guests, with the dirt that is still on it
 // the dirt on the tables comes in 5 levels (assets/tavern/dirt/lvl1..5.webp: only the tables, the rest is transparent); a table gets dirtier level by level
 var LV=[],LVN=5,STEP=2,TH=[2,12,26,44,66],TRECT=[[215,330,650,540],[590,500,1105,800],[1180,360,1625,590]];   // the 3 tables: x1,y1,x2,y2
 var tlevel=[],tscore=[];
 var TQUAD=[[[236,428],[450,358],[600,432],[388,520]],[[612,632],[850,540],[1086,650],[827,786]],[[1201,476],[1400,400],[1600,474],[1416,568]]];   // the table tops (for the right click; can be cleaned at any moment)
 
-for(var li=1;li<=LVN;li++){(function(n){var im=new Image();im.onload=function(){initTables()};im.src='assets/tavern/dirt/lvl'+n+'.webp?v=2';LV[n]=im})(li)}
+for(var li=1;li<=LVN;li++){(function(n){var im=new Image();im.onload=function(){initTables()};im.src='assets/tavern/dirt/lvl'+n+'.webp?v=3';LV[n]=im})(li)}
 function lvReady(){for(var n=1;n<=LVN;n++)if(!LV[n]||!LV[n].naturalWidth)return false;return true}
 function lvDraw(i,n,alpha,op){var r=TRECT[i],im=LV[n];if(!r||!im||!im.naturalWidth)return;D.globalCompositeOperation=op;D.globalAlpha=alpha;D.drawImage(im,r[0],r[1],r[2]-r[0],r[3]-r[1],r[0],r[1],r[2]-r[0],r[3]-r[1]);D.globalAlpha=1;D.globalCompositeOperation='source-over'}
 var tinit=false;
@@ -86,7 +135,7 @@ dirtyImg.src=DIRTY;
 var cleanImg=new Image();cleanImg.src=T.roomSrc;           // the clean picture: the difference to the dirty one is what lies on the tables
 // the dirt and the effects lie exactly over the picture, wherever the scene puts it
 function sync(){
-  ['left','top','width','height'].forEach(function(k){dirt.style[k]=cv.style[k];fx.style[k]=cv.style[k];stoveCv.style[k]=cv.style[k]});
+  ['left','top','width','height'].forEach(function(k){dirt.style[k]=cv.style[k];fx.style[k]=cv.style[k];stoveCv.style[k]=cv.style[k];shadeCv.style[k]=cv.style[k];coreCv.style[k]=cv.style[k]});
 }
 new MutationObserver(sync).observe(cv,{attributes:true,attributeFilter:['style']});
 addEventListener('resize',sync);sync();
@@ -276,6 +325,8 @@ room.addEventListener('contextmenu',function(e){
   for(i=0;i<TQUAD.length;i++)if(pip(TQUAD[i],p.x,p.y)){zi=i;break}
   var dish=T.dirtyDishAt&&T.dirtyDishAt(p.x,p.y);
   var opts=[{ic:'🧽',t:'Sunđer',on:tool==='sponge',fn:function(){setTool('sponge')}},{ic:'✋',t:'Ruka',on:tool!=='sponge',fn:function(){setTool('ruka')}}];
+  var lamp=lampAt(p.x,p.y);
+  if(lamp)opts.push({ic:'💡',t:lampLit(lamp)?'Ugasi svetlo':'Upali svetlo',fn:function(){setLamp(lamp,!lampLit(lamp))}});
   if(stoveOk&&p.x>=STOVE_RECT[0]&&p.x<=STOVE_RECT[2]&&p.y>=STOVE_RECT[1]&&p.y<=STOVE_RECT[3])opts.push({ic:'🔥',t:stoveLit?'Ugasi vatru':'Zapali vatru',fn:function(){setStove(!stoveLit)}});
   if(zi>=0)opts.push({ic:'🫧',t:'Očisti sto',off:!tlevel[zi]||!!cleaning[zi],fn:function(){cleanZone(zi)}});
   if(dish)opts.push({ic:'🍽️',t:'Pranje',fn:function(){

@@ -967,7 +967,7 @@ function drawPolyFromPicture(ctx,poly){
   ctx.save();ctx.beginPath();ctx.moveTo(poly[0][0],poly[0][1]);
   for(var i=1;i<poly.length;i++)ctx.lineTo(poly[i][0],poly[i][1]);
   // what is redrawn is what the player sees: the clean picture with the dirt that is still on it
-  ctx.closePath();ctx.clip();ctx.drawImage(art,0,0,W,H);var dc=window.CooksterTavern&&window.CooksterTavern.dirtCanvas;if(dc)ctx.drawImage(dc,0,0,W,H);ctx.restore();
+  ctx.closePath();ctx.clip();ctx.drawImage(art,0,0,W,H);var T0=window.CooksterTavern,dc=T0&&T0.dirtCanvas;if(dc)ctx.drawImage(dc,0,0,W,H);if(T0&&T0.overlayCanvases)T0.overlayCanvases.forEach(function(c){ctx.drawImage(c,0,0,W,H)});ctx.restore();
 }
 function draw(){
   var ctx=cv.getContext('2d'),k=cv.width/W;
