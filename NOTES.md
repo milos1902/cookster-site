@@ -118,3 +118,4 @@ Alat „Predmeti na stolu": dugmad Kopiranje (Kopiraj ovu stolicu, Nalepi ovde, 
 - `assets/tavern/table_items.json` je podrazumevana kalibracija „Predmeta na stolu“ (ako u pregledaču nema svoje sačuvane u `cookster.table-items.v1`). Sedišta 8–11 (sto 3) još nisu kalibrisana.
 
 - `table_items.json` zamenjen novijim izvozom (sedišta 8–11 sada kalibrisana za činiju, crno vino i špricer; sifon i belo vino samo delom). Ostali predmeti još bez kalibracije.
+- Sto 3 (sedišta 8–11) i sedišta 5, 7: gosti nisu mogli da dođu jer je „Zabrana“ ispod stola 2 (oblik 8) išla do samog dna slike pa je zatvorila prolaz u desni deo sale (dugme za proveru: `CooksterTavern.seatReach()` mora dati sve `true`). Donja ivica tog oblika podignuta na y≈890–896 (prolaz ~45 px). Ako je u „Kalibraciji kafane“ nešto sačuvano u pregledaču, ono ima prednost nad fajlom.

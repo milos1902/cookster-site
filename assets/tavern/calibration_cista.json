@@ -368,15 +368,15 @@
    ],
    [
     1049.9,
-    921.7
+    890
    ],
    [
     860,
-    941
+    896
    ],
    [
     608.6,
-    923.8
+    896
    ],
    [
     605.5,
@@ -2381,7 +2381,7 @@
   },
   {
    "id": "zid_desno",
-   "name": "Zid desno (peć)",
+   "name": "Zid desno (pe\u0107)",
    "kind": "v",
    "img": "uspravni1",
    "polys": [
@@ -2449,7 +2449,7 @@
   },
   {
    "id": "bure_levo",
-   "name": "Bure i krčag levo",
+   "name": "Bure i kr\u010dag levo",
    "kind": "v",
    "img": "uspravni2",
    "polys": [],
@@ -2525,7 +2525,7 @@
   },
   {
    "id": "sank_prednja",
-   "name": "Šank (prednja strana)",
+   "name": "\u0160ank (prednja strana)",
    "kind": "v",
    "img": "uspravni1",
    "polys": [
@@ -2577,7 +2577,7 @@
   },
   {
    "id": "sank_ploca",
-   "name": "Šank (gornja ploča)",
+   "name": "\u0160ank (gornja plo\u010da)",
    "kind": "h",
    "img": "lezeci",
    "polys": [
@@ -2641,7 +2641,7 @@
   },
   {
    "id": "stolica_sank",
-   "name": "Stolica kraj šanka",
+   "name": "Stolica kraj \u0161anka",
    "kind": "v",
    "img": "uspravni2",
    "polys": [],
@@ -2660,7 +2660,7 @@
   },
   {
    "id": "pec",
-   "name": "Peć",
+   "name": "Pe\u0107",
    "kind": "v",
    "img": "uspravni2",
    "polys": [],
