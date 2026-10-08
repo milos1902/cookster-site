@@ -9,7 +9,7 @@ W, H, Q = 1672, 941, 4
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 OUT = os.path.join(ROOT, 'assets/tavern/lights'); CLEAN = os.path.join(ROOT, 'assets/tavern/kafana_cista.webp')
 LAMPS = [
-  dict(id='visece', label='Viseća lampa', x=572, y=170, rx=82, ry=95, s=260),
+  dict(id='visece', label='Viseća lampa', x=572, y=170, rx=82, ry=95, s=380, main=True),   # main: also lights everything far from every lamp (the corners)
   dict(id='zid_levo', label='Lampa levo na zidu', x=424, y=52, rx=30, ry=46, s=200),
   dict(id='sank', label='Lampa na šanku', x=910, y=225, rx=42, ry=46, s=190),
   dict(id='zid_desno', label='Lampa desno na zidu', x=1643, y=140, rx=36, ry=52, s=260),
@@ -49,7 +49,7 @@ def main(dark):
     total = '+'.join(g(L) for L in LAMPS)
     manifest = []
     for k, L in enumerate(LAMPS):
-        run('convert', '-size', '%dx%d' % (w, h), 'xc:', '-fx', '(%s)/(%s+0.05)' % (g(L), total), '-colorspace', 'Gray', tmp + '/g.png')
+        run('convert', '-size', '%dx%d' % (w, h), 'xc:', '-fx', '(%s%s)/(%s+0.4)' % (g(L), '+0.4' if L.get('main') else '', total), '-colorspace', 'Gray', tmp + '/g.png')
         run('convert', '-size', '%dx%d' % (w, h), 'xc:white', tmp + '/g.png', '-alpha', 'off', '-compose', 'copy_opacity', '-composite', '-define', 'webp:alpha-quality=95', '-quality', '90', '%s/w%d.webp' % (OUT, k))
         e = dict(id=L['id'], label=L['label'], x=L['x'], y=L['y'], weight='w%d.webp' % k)
         if L.get('stove'): e['stove'] = True
