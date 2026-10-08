@@ -50,7 +50,7 @@ T.overlayCanvases=[];                              // pictures that lie over the
 var stoveCv=mk('canvas','tc-dirt');stoveCv.width=W;stoveCv.height=H;cv.parentNode.insertBefore(stoveCv,cv);
 var SC=stoveCv.getContext('2d'),STOVE_KEY='cookster.tavern-stove.v1',STOVE_RECT=[1150,285,1385,475],stoveLit=true,stoveA=0,stoveOk=false,stoveImg=new Image();
 try{stoveLit=localStorage.getItem(STOVE_KEY)==='on'}catch(e){}
-stoveImg.onload=function(){stoveOk=true;stoveA=stoveLit?0:1;drawStove()};stoveImg.src='assets/tavern/dirt/stove_off.webp?v=3';
+stoveImg.onload=function(){stoveOk=true;stoveA=stoveLit?0:1;drawStove()};stoveImg.src='assets/tavern/dirt/stove_off.webp?v=5';
 function drawStove(){SC.clearRect(0,0,W,H);if(stoveOk&&stoveA>0){SC.globalAlpha=stoveA;SC.drawImage(stoveImg,0,0,W,H);SC.globalAlpha=1}if(window.__drawLights)window.__drawLights()}
 function setStove(lit){
   if(!stoveOk||lit===stoveLit)return;
@@ -98,10 +98,10 @@ function lampAt(x,y){
   return null;
 }
 try{
-  fetch('assets/tavern/lights/lights.json?v=3').then(function(r){return r.json()}).then(function(d){
+  fetch('assets/tavern/lights/lights.json?v=5').then(function(r){return r.json()}).then(function(d){
     lightsDef=d;var left=1+d.lamps.length*2;
     function done(){if(--left<=0){d.lamps.forEach(function(L){if(!L.stove)lightA[L.id]=lightState[L.id]?1:0});drawLights()}}
-    function load(file){var im=new Image();im.onload=done;im.onerror=done;im.src='assets/tavern/lights/'+file+'?v=3';return im}
+    function load(file){var im=new Image();im.onload=done;im.onerror=done;im.src='assets/tavern/lights/'+file+'?v=5';return im}
     shadeImg=load(d.shade);
     d.lamps.forEach(function(L){lampImgs[L.weight]=load(L.weight);if(L.core)lampImgs[L.core.file]=load(L.core.file);else done()});
   }).catch(function(){});
@@ -112,7 +112,7 @@ var LV=[],LVN=5,STEP=2,TH=[2,12,26,44,66],TRECT=[[215,330,650,540],[590,500,1105
 var tlevel=[],tscore=[];
 var TQUAD=[[[236,428],[450,358],[600,432],[388,520]],[[612,632],[850,540],[1086,650],[827,786]],[[1201,476],[1400,400],[1600,474],[1416,568]]];   // the table tops (for the right click; can be cleaned at any moment)
 
-for(var li=1;li<=LVN;li++){(function(n){var im=new Image();im.onload=function(){initTables()};im.src='assets/tavern/dirt/lvl'+n+'.webp?v=3';LV[n]=im})(li)}
+for(var li=1;li<=LVN;li++){(function(n){var im=new Image();im.onload=function(){initTables()};im.src='assets/tavern/dirt/lvl'+n+'.webp?v=5';LV[n]=im})(li)}
 function lvReady(){for(var n=1;n<=LVN;n++)if(!LV[n]||!LV[n].naturalWidth)return false;return true}
 function lvDraw(i,n,alpha,op){var r=TRECT[i],im=LV[n];if(!r||!im||!im.naturalWidth)return;D.globalCompositeOperation=op;D.globalAlpha=alpha;D.drawImage(im,r[0],r[1],r[2]-r[0],r[3]-r[1],r[0],r[1],r[2]-r[0],r[3]-r[1]);D.globalAlpha=1;D.globalCompositeOperation='source-over'}
 var tinit=false;
