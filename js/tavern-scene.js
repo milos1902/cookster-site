@@ -837,19 +837,14 @@ function drawDish(ctx,d){
   }else ctx.drawImage(dirty,r.x,r.y,r.w,r.h);
   ctx.restore();
 }
-// the empty dirty bowl is cleared away with a click on it
-function clearDirtyDishAt(sx,sy){
+// the empty dirty bowl on a table: right click on it -> "Pranje" (js/tavern-clean.js) takes it to the sink in the kitchen
+function dirtyDishAt(sx,sy,take){
   for(var i=dishes.length-1;i>=0;i--){
     var d=dishes[i];if(d.phase!=='dirty')continue;
-    var r=dishRect(d);if(r&&sx>=r.x&&sx<=r.x+r.w&&sy>=r.y&&sy<=r.y+r.h){dishes.splice(i,1);return true}
+    var r=dishRect(d);if(r&&sx>=r.x-4&&sx<=r.x+r.w+4&&sy>=r.y-4&&sy<=r.y+r.h+4){if(take)dishes.splice(i,1);return true}
   }
   return false;
 }
-room.addEventListener('pointerdown',function(e){
-  if(state!=='tavern'||e.button!==0)return;
-  var rc=cv.getBoundingClientRect();if(!rc.width)return;
-  if(clearDirtyDishAt((e.clientX-rc.left)/rc.width*W,(e.clientY-rc.top)/rc.height*H)){e.preventDefault();e.stopImmediatePropagation()}
-},true);
 function eatingGuest(g){
   for(var i=0;i<dishes.length;i++){var d=dishes[i];if(d.phase==='eating'&&d.t>EAT_DELAY&&d.seatId===g.seat.id)return d}
   return null;
@@ -1102,7 +1097,7 @@ window.addEventListener('keydown',onKey,true);window.addEventListener('keyup',on
 window.CooksterTavern={
   open:open,close:close,spawn:spawn,
   deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
-  reactions:function(){return reactions.slice()},serveSpot:serveSpot,
+  reactions:function(){return reactions.slice()},serveSpot:serveSpot,dirtyDishAt:dirtyDishAt,
   tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose,draw:tiDraw,shadow:tiShadow,shDef:TI_SH},
   get isOpen(){return state==='tavern'},get busy(){return busy},
   debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
