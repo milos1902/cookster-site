@@ -533,7 +533,7 @@ function step(dt){
 var ash=[0,0,0],ASH=[{x:437,y:447},{x:886,y:660},{x:1377,y:503}],tableUsed=[0,0,0],floorT=0,idleT=0;
 function addDirt(table,units){
   tableUsed[table]=(tableUsed[table]||0)+units;
-  try{if(window.CooksterTavernClean)window.CooksterTavernClean.dirty(table,Math.round(units*2))}catch(e){}
+  try{if(window.CooksterTavernClean)window.CooksterTavernClean.dirty(table,units)}catch(e){}
 }
 function tickMess(dt){
   var seatedAt=[0,0,0],cl=cleanTables();
@@ -547,6 +547,7 @@ function tickMess(dt){
   floorT+=dt*Math.max(0,guests.length);
   if(floorT>40){floorT=0;try{window.CooksterTavernClean.floorDirt(1+Math.floor(guests.length/4))}catch(e){}}
   for(var t=0;t<TABLES.length;t++){
+    if(seatedAt[t]){try{window.CooksterTavernClean.dirty(t,seatedAt[t]*dt*.03)}catch(e){}}      // the table gets a bit dirtier the longer people sit (4 guests: ~7 points in 1 minute)
     ash[t]=Math.min(1,(ash[t]||0)+(seatedAt[t]||0)*dt/260);                     // 4 guests fill the ashtray in about a minute
     var present=guests.some(function(g){return g.seat.table===t});
     if(!present&&tableUsed[t]>0){
@@ -556,6 +557,7 @@ function tickMess(dt){
   }
 }
 function drawAsh(ctx,t){
+  return;                                              // the ashtrays are in the pictures of the dirt levels now
   var l=ash[t]||0,a=ASH[t];if(!a||l<.04)return;
   var sc=scaleAt(a.y)/.34,n=Math.round(l*14);
   ctx.save();ctx.translate(a.x,a.y);
