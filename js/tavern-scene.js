@@ -492,7 +492,7 @@ function spawnGroup(){
 function chKey(g,pose){return 'g'+(g.ch<10?'0':'')+g.ch+'_'+pose}
 function step(dt){
   clock+=dt;
-  if(GUESTS_ON&&clock>=nextArrival){nextArrival=clock+28+Math.random()*32;if(guests.length>=14||!spawnGroup())nextArrival=clock+4}      // no free clean table: look again in a moment
+  if(GUESTS_ON&&clock>=nextArrival){nextArrival=clock+28+Math.random()*32;if(guests.length>=14||!spawnGroup())nextArrival=clock+4;else if(state==='tavern'){try{window.CooksterSound.play('ambTavern','guestIn')}catch(e){}}}      // no free clean table: look again in a moment
   if(GUESTS_ON)stepWaiter(dt);
   tickDishes(dt);tickMess(dt);
   for(var i=guests.length-1;i>=0;i--){
@@ -1104,7 +1104,7 @@ window.CooksterTavern={
   deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,dirtyDishAt:dirtyDishAt,
   tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose,draw:tiDraw,shadow:tiShadow,shDef:TI_SH},
-  get isOpen(){return state==='tavern'},get busy(){return busy},
+  get isOpen(){return state==='tavern'},get busy(){return busy},guestCount:function(){return guests.length},
   debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},
   seatReach:function(){return SEATS.map(seatReachable)},poseFromDir:poseFromDir,seatScale:function(y){return scaleAt(y)*SIT_K},
