@@ -240,6 +240,8 @@
   }
   function onDown(e){
     const t=e.target;
+    if(t?.closest?.('.cookster-ctx'))return;      // a small menu (js/pantry-storage.js) lies over the barrel
+
     const hit=t?.closest?.('.kaca-lid-hit');
     if(hit){
       const el=hit.closest('.item');
