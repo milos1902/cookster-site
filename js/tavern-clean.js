@@ -46,14 +46,17 @@ T.dirtCanvas=dirt;                                    // the scene redraws parts
 // the dirt on the tables comes in 5 levels (assets/tavern/dirt/lvl1..5.webp: only the tables, the rest is transparent); a table gets dirtier level by level
 var LV=[],LVN=5,STEP=3,TRECT=[[215,330,650,540],[590,500,1105,800],[1180,360,1625,590]];   // the 3 tables: x1,y1,x2,y2
 var tlevel=[],tscore=[];
-for(var li=1;li<=LVN;li++){(function(n){var im=new Image();im.onload=function(){initTables()};im.src='assets/tavern/dirt/lvl'+n+'.webp?v=1';LV[n]=im})(li)}
+for(var li=1;li<=LVN;li++){(function(n){var im=new Image();im.onload=function(){initTables()};im.src='assets/tavern/dirt/lvl'+n+'.webp?v=2';LV[n]=im})(li)}
 function lvReady(){for(var n=1;n<=LVN;n++)if(!LV[n]||!LV[n].naturalWidth)return false;return true}
 function lvDraw(i,n,alpha,op){var r=TRECT[i],im=LV[n];if(!r||!im||!im.naturalWidth)return;D.globalCompositeOperation=op;D.globalAlpha=alpha;D.drawImage(im,r[0],r[1],r[2]-r[0],r[3]-r[1],r[0],r[1],r[2]-r[0],r[3]-r[1]);D.globalAlpha=1;D.globalCompositeOperation='source-over'}
 var tinit=false;
 function initTables(){              // the tables start at level 2; whatever the old dirty picture had on them is replaced by the levels
   if(!dirtyOk||!lvReady())return;
   if(tinit&&!initTables.force)return;tinit=true;initTables.force=false;
-  TRECT.forEach(function(r,i){D.globalCompositeOperation='destination-out';D.fillStyle='#000';D.fillRect(r[0],r[1],r[2]-r[0],r[3]-r[1]);D.globalCompositeOperation='source-over';tlevel[i]=2;tscore[i]=STEP;lvDraw(i,2,1,'source-over')});
+  TRECT.forEach(function(r,i){                // only the tables' own shapes are cleared (the sprites' transparent parts leave the floor alone)
+    for(var n=1;n<=LVN;n++){lvDraw(i,n,1,'destination-out');lvDraw(i,n,1,'destination-out')}
+    tlevel[i]=2;tscore[i]=STEP;lvDraw(i,2,1,'source-over');
+  });
 }
 var dirtyImg=new Image(),dirtyOk=false;
 function paintDirt(){
