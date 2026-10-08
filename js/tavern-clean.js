@@ -55,6 +55,7 @@ function drawStove(){SC.clearRect(0,0,W,H);if(stoveOk&&stoveA>0){SC.globalAlpha=
 function setStove(lit){
   if(!stoveOk||lit===stoveLit)return;
   stoveLit=lit;try{localStorage.setItem(STOVE_KEY,lit?'on':'off')}catch(e){}
+  if(lit)burst.pec=performance.now()+1200;
   var from=stoveA,to=lit?0:1,t0=performance.now();
   (function f(now){var k=Math.min(1,(now-t0)/700);stoveA=from+(to-from)*k;drawStove();if(k<1)requestAnimationFrame(f)})(t0);
 }
@@ -69,7 +70,17 @@ shadeCv.style.mixBlendMode='multiply';coreCv.width=W;coreCv.height=H;
 cv.parentNode.insertBefore(coreCv,cv);T.overlayCanvases.push(stoveCv,coreCv);cv.parentNode.insertBefore(shadeCv,cv.nextSibling);
 var LIGHTS_KEY='cookster.tavern-lights.v1',lightsDef=null,lightState={},lightA={},shadeImg=null,lampImgs={};
 try{lightState=JSON.parse(localStorage.getItem(LIGHTS_KEY)||'{}')||{}}catch(e){lightState={}}
-function lampAmount(L){return L.stove?(1-stoveA):(lightA[L.id]||0)}
+// flicker: a lit flame trembles a little (the light is a bit weaker now and then); right after lighting it, it stutters for a moment
+var flk={},burst={};
+function flickerOf(id,now,amp){
+  var o=flk[id]||(flk[id]={v:1,t:1,n:0}),b=burst[id]>now;
+  if(now>o.n){o.t=1-(b?amp*5:amp)*Math.random()*(Math.random()<.5?1:2);if(b&&Math.random()<.25)o.t=.35+Math.random()*.3;o.n=now+(b?40:70)+Math.random()*(b?70:150)}
+  o.v+=(o.t-o.v)*(b?.5:.3);return Math.max(.2,Math.min(1,o.v));
+}
+function lampAmount(L){
+  var a=L.stove?(1-stoveA):(lightA[L.id]||0);
+  return a>0?a*flickerOf(L.id,performance.now(),L.stove?.07:.04):0;
+}
 function drawLights(){
   if(!lightsDef||!shadeImg||!shadeImg.naturalWidth)return;
   if(!SH){shadeCv.width=shadeImg.naturalWidth;shadeCv.height=shadeImg.naturalHeight;SH=shadeCv.getContext('2d')}
@@ -86,6 +97,7 @@ function setLamp(L,on){
   if(L.stove){setStove(on);return}
   if(!!lightState[L.id]===on)return;
   lightState[L.id]=on;try{localStorage.setItem(LIGHTS_KEY,JSON.stringify(lightState))}catch(e){}
+  if(on)burst[L.id]=performance.now()+900;
   var from=lightA[L.id]||0,to=on?1:0,t0=performance.now();
   (function f(now){var k=Math.min(1,(now-t0)/600);lightA[L.id]=from+(to-from)*k;drawLights();if(k<1)requestAnimationFrame(f)})(t0);
 }
@@ -97,6 +109,35 @@ function lampAt(x,y){
     if(Math.abs(x-L.x)<=(L.core?L.core.w/2:40)+8&&Math.abs(y-L.y)<=(L.core?L.core.h/2:50)+8)return L}
   return null;
 }
+// sparks and dust next to the fire (while the stove is lit), and the flicker of the lamps; drawn only while the tavern is on the screen
+var sparkCv=mk('canvas','tc-fx'),SP=sparkCv.getContext('2d'),sparks=[],lastFx=0,spawnAcc=0;
+sparkCv.width=W;sparkCv.height=H;cv.parentNode.insertBefore(sparkCv,fx);
+var FIRE={x:1217,y:372};                                // the opening of the stove
+function spawnSpark(dust){
+  var up=dust?-(4+Math.random()*10):-(30+Math.random()*60);
+  sparks.push({x:FIRE.x+(Math.random()-.5)*(dust?150:34),y:FIRE.y+(dust?(Math.random()-.8)*110:(Math.random()-.4)*14),vx:(Math.random()-.5)*(dust?8:22),vy:up,t:0,life:dust?2.5+Math.random()*2.5:.9+Math.random()*1.4,r:dust?1.2+Math.random()*1.6:1.6+Math.random()*2.4,dust:dust,ph:Math.random()*6.28});
+}
+function fxTick(now){
+  requestAnimationFrame(fxTick);
+  if(!T.isOpen||now-lastFx<33)return;
+  var dt=Math.min(.1,(now-lastFx)/1000);lastFx=now;
+  if(lightsDef&&lightsDef.lamps.some(function(L){return L.stove?(stoveLit||stoveA<1):!!lightState[L.id]}))drawLights();
+  if(stoveLit&&stoveA<.5){spawnAcc+=dt*(9+Math.random()*5);while(spawnAcc>=1){spawnAcc--;spawnSpark(false);if(Math.random()<.6)spawnSpark(true)}}
+  if(!sparks.length)return;
+  SP.clearRect(0,0,W,H);SP.globalCompositeOperation='lighter';
+  for(var i=sparks.length-1;i>=0;i--){
+    var p=sparks[i];p.t+=dt;if(p.t>=p.life){sparks.splice(i,1);continue}
+    p.x+=p.vx*dt+Math.sin(p.t*3+p.ph)*(p.dust?5:14)*dt;p.y+=p.vy*dt;if(!p.dust)p.vy*=.985;
+    var k=p.t/p.life,a=(p.dust?.9*Math.sin(Math.PI*k)*(.6+.4*Math.sin(p.t*9+p.ph)):(1-k)*(.7+.3*Math.sin(p.t*30+p.ph)));
+    var g=SP.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*(p.dust?5:4));
+    g.addColorStop(0,p.dust?'rgba(255,225,160,'+a+')':'rgba(255,200,90,'+a+')');g.addColorStop(.35,p.dust?'rgba(255,190,100,'+a*.4+')':'rgba(255,120,30,'+a*.5+')');g.addColorStop(1,'rgba(255,100,20,0)');
+    SP.fillStyle=g;SP.fillRect(p.x-p.r*5,p.y-p.r*5,p.r*10,p.r*10);
+    if(!p.dust){SP.fillStyle='rgba(255,235,170,'+a+')';SP.fillRect(p.x-.8,p.y-.8,1.6,1.6)}
+  }
+  SP.globalCompositeOperation='source-over';
+  if(!sparks.length)SP.clearRect(0,0,W,H);
+}
+requestAnimationFrame(fxTick);
 try{
   fetch('assets/tavern/lights/lights.json?v=5').then(function(r){return r.json()}).then(function(d){
     lightsDef=d;var left=1+d.lamps.length*2;
@@ -135,7 +176,7 @@ dirtyImg.src=DIRTY;
 var cleanImg=new Image();cleanImg.src=T.roomSrc;           // the clean picture: the difference to the dirty one is what lies on the tables
 // the dirt and the effects lie exactly over the picture, wherever the scene puts it
 function sync(){
-  ['left','top','width','height'].forEach(function(k){dirt.style[k]=cv.style[k];fx.style[k]=cv.style[k];stoveCv.style[k]=cv.style[k];shadeCv.style[k]=cv.style[k];coreCv.style[k]=cv.style[k]});
+  ['left','top','width','height'].forEach(function(k){dirt.style[k]=cv.style[k];fx.style[k]=cv.style[k];stoveCv.style[k]=cv.style[k];shadeCv.style[k]=cv.style[k];coreCv.style[k]=cv.style[k];sparkCv.style[k]=cv.style[k]});
 }
 new MutationObserver(sync).observe(cv,{attributes:true,attributeFilter:['style']});
 addEventListener('resize',sync);sync();
