@@ -85,7 +85,7 @@ function preload(){
     jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=4').then(function(im){store('w_'+key,im)}));
   })(w+f2)});
   // walking toward the camera: 16 pictures of a whole walk (two steps), made from the three old ones with frame interpolation
-  [['walkd','wd'],['walku','wu'],['walks','ws']].forEach(function(pr){for(var wf=1;wf<=WD_N[pr[0]];wf++)(function(n){jobs.push(loadImg(WAITER+pr[0]+'24/f'+(n<10?'0':'')+n+'.webp?v=3').then(function(im){store('w_'+pr[1]+n,im)}))})(wf)});
+  [['walkd','wd'],['walku','wu'],['walks','ws']].forEach(function(pr){for(var wf=1;wf<=WD_N[pr[0]];wf++)(function(n){jobs.push(loadImg(WAITER+pr[0]+'24/f'+(n<10?'0':'')+n+'.webp?v=4').then(function(im){store('w_'+pr[1]+n,im)}))})(wf)});
   var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
   loading=Promise.all([roomJob].concat(jobs)).then(function(r){loaded=!!r[0];loading=null;return loaded});
   return loading;
@@ -576,7 +576,7 @@ function drawAsh(ctx,t){
 // ---------- the waiter ----------
 // he waits at his home place, walks (along his route) to a table where a guest sits who has not ordered yet, stands at the spot drawn for that table,
 // takes the order, and walks home. The pictures: toward the camera (walkd), away from it (walku), from the side (walks, looking right; flipped for left).
-var waiter=null,WSPEED=92,WD_N={walkd:16,walku:30,walks:37};
+var waiter=null,WSPEED=92,WD_N={walkd:23,walku:30,walks:37};
 var deliveries=[],reactions=[],dishes=[],DISH_SRC={plain:'assets/calibration_props/posuda_za_kupus/posuda_kupus.webp',paprika:'assets/calibration_props/posuda_za_kupus/posuda_kupus_paprika.webp'},DISH_SECS=25;
 DISH_SRC.dirty='assets/calibration_props/posuda_za_kupus/posuda_prljava.webp';
 var dishImgs={},EAT_SECS=18,DRINK_SECS=14,EAT_DELAY=1.5;['plain','paprika','dirty'].forEach(function(k){var im=new Image();im.src=DISH_SRC[k];dishImgs[k]=im});
