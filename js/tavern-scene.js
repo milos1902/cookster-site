@@ -651,7 +651,8 @@ function stepWaiter(dt){
         w.x+=dx/d*spd;w.y+=dy/d*spd;
         var s2=w.carry?carrySet(w):waiterFace(dx,dy);if(s2!==w.set){w.set=s2}
         if(s2==='walks'||s2==='foods'||s2==='drinks'){if(Math.abs(dx)>.3)w.flip=dx<0}else w.flip=false;
-        w.phase+=spd/(40*scaleAt(w.y)/.34);
+        var ph0=Math.floor(w.phase);w.phase+=spd/(40*scaleAt(w.y)/.34);
+        if(Math.floor(w.phase)!==ph0&&state==='tavern'){try{window.CooksterSound.play('waiter','step')}catch(e){}}      // one sound for every step
       }
     }
   }else if(w.mode==='give'){

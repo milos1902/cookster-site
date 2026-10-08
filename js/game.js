@@ -2262,6 +2262,9 @@ window.CooksterWoodBasket={
 
 // v79: samo pažljivo odabrani gameplay zvukovi. Stari generički SFX ostaju ugašeni.
 const SFX={
+ waiterStep1:'assets/sfx/game/waiterStep_1.wav',
+ waiterStep2:'assets/sfx/game/waiterStep_2.wav',
+ waiterStep3:'assets/sfx/game/waiterStep_3.wav',
  tomatoChop:'assets/sfx/game/tomatoChop_1.wav',
  boardPlace:'assets/sfx/game/boardPlace_1.wav',
  tableDropSoft:'assets/sfx/game/tableDropSoft_1.wav',
@@ -2398,7 +2401,7 @@ peelSoundTarget.dataset.soundActions='peel';
 const orderNoteSoundTarget=makeSoundTarget('__order_note','Papirić narudžbine — uzimanje, spuštanje, kačenje','pickup');
 orderNoteSoundTarget.dataset.soundActions='pickup,drop,open';
 const waiterServeSoundTarget=makeSoundTarget('__waiter_serve','Konobar — pojavljivanje i spuštanje jela','serve');
-waiterServeSoundTarget.dataset.soundActions='appear,serve,eat';
+waiterServeSoundTarget.dataset.soundActions='appear,serve,eat,step';
 // the ambient sound of the tavern (by the number of guests) and of the kitchen (morning / day / evening): chosen in the tool "Zvuk"
 const tavernAmbientTarget=makeSoundTarget('__ambient_tavern','Ambijent kafane — prazna, 2, 5 gostiju, puna, ulazak gostiju','amb0');
 tavernAmbientTarget.dataset.soundActions='amb0,amb2,amb5,amb12,guestIn';
@@ -2452,13 +2455,14 @@ function resolvedImpactConfig(el,action='drop'){
  else if(action==='cut'){sound='tomatoChop';volume=.78;}
  else if(action==='putIn'){sound='metalDrop';volume=.18;}
  else if(action==='peel'){sound='pickup';volume=.35;}
+ else if(action==='step'){sound='waiterStep1';volume=.28;}
  else if(action==='open'||action==='close'){
    const door=el===fireboxHotspot||el===ovenHotspot;
    if(door)sound=action==='open'?'stoveDoorOpen':'stoveDoorClose';
    else if(el?._lidMeta||isAjvarJar(el))sound=action==='open'?'lidOpen':'lidClose';
    volume=action==='open'?.50:.52;
  }
- return{...SOUND_DEFAULTS,volume,cooldown:action==='click'?.04:action==='hover'?.05:action==='cut'?.06:SOUND_DEFAULTS.cooldown,variants:sound&&!isLibrarySoundDeleted(sound)?[sound]:[]};
+ return{...SOUND_DEFAULTS,volume,cooldown:action==='step'?.15:action==='click'?.04:action==='hover'?.05:action==='cut'?.06:SOUND_DEFAULTS.cooldown,variants:action==='step'?['waiterStep1','waiterStep2','waiterStep3'].filter(k=>!isLibrarySoundDeleted(k)):sound&&!isLibrarySoundDeleted(sound)?[sound]:[]};
 }
 function removeSoundReferences(key){
  let used=0;
@@ -2615,7 +2619,7 @@ ssStyle.textContent=`
 document.head.appendChild(ssStyle);
 
 /* --- state --- */
-const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje papirića na šiljak'],['fall','Pad papirića sa šiljka'],['ring','Zvoni (kad ga dodirneš)'],['sprinkle','Sipaj (začin)'],['pour','Sipaj (ulje)'],['pourOut','Presipaj u drugu posudu'],['throw','Bacanje u kantu'],['empty','Pražnjenje kante'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara'],['eat','Gost jede (svaki zalogaj)'],['amb0','Kafana prazna (petlja)'],['amb2','Kafana: do 3 gosta (petlja)'],['amb5','Kafana: 4–8 gostiju (petlja)'],['amb12','Kafana puna: 9+ gostiju (petlja)'],['guestIn','Ulazak gostiju u kafanu'],['ambMorning','Kuhinja: jutro (petlja)'],['ambDay','Kuhinja: dan (petlja)'],['ambEvening','Kuhinja: veče (petlja)']];
+const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje papirića na šiljak'],['fall','Pad papirića sa šiljka'],['ring','Zvoni (kad ga dodirneš)'],['sprinkle','Sipaj (začin)'],['pour','Sipaj (ulje)'],['pourOut','Presipaj u drugu posudu'],['throw','Bacanje u kantu'],['empty','Pražnjenje kante'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara'],['eat','Gost jede (svaki zalogaj)'],['step','Koraci konobara (svaki korak)'],['amb0','Kafana prazna (petlja)'],['amb2','Kafana: do 3 gosta (petlja)'],['amb5','Kafana: 4–8 gostiju (petlja)'],['amb12','Kafana puna: 9+ gostiju (petlja)'],['guestIn','Ulazak gostiju u kafanu'],['ambMorning','Kuhinja: jutro (petlja)'],['ambDay','Kuhinja: dan (petlja)'],['ambEvening','Kuhinja: veče (petlja)']];
 const ssState={open:false,tab:'objekti',action:'drop',query:'',libQuery:'',libOpen:false};
 
 /* --- helpers (reuse ls* from light-studio) --- */
@@ -2818,7 +2822,7 @@ ssControls.push(()=>{
  const el=ssSel(),acts=el?ssObjActions(el):[];
  for(const [v,b] of ssActionBtns){
   const supported=el?.dataset?.soundActions?.split(',');
-  b.hidden=supported?!supported.includes(v):el?.dataset?.soundAction?v!==el.dataset.soundAction:(['click','insert','cut','peel','putIn','pageTurn','water','hover','eat','appear','serve','amb0','amb2','amb5','amb12','guestIn','ambMorning','ambDay','ambEvening'].includes(v)||(SS_SPECIAL_ACTIONS[v]&&!SS_SPECIAL_ACTIONS[v](el)));
+  b.hidden=supported?!supported.includes(v):el?.dataset?.soundAction?v!==el.dataset.soundAction:(['click','insert','cut','peel','putIn','pageTurn','water','hover','eat','appear','serve','step','amb0','amb2','amb5','amb12','guestIn','ambMorning','ambDay','ambEvening'].includes(v)||(SS_SPECIAL_ACTIONS[v]&&!SS_SPECIAL_ACTIONS[v](el)));
   b.setAttribute('aria-pressed',v===ssState.action?'true':'false');
   b.dataset.has=acts.includes(v)?'true':'false';
  }
