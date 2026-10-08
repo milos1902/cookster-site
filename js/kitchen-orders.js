@@ -331,8 +331,8 @@ function tick(now){
     if(!anim.checked&&anim.t>1.2){
       anim.checked=true;var dish=takeDish();
       if(dish)anim.carry=dish;
-      else{var mn=null;for(var q=0;q<notes.length;q++)if(missingFor(notes[q]).length){mn=notes[q];break}
-        if(mn){var ms=missingFor(mn);if(ms.length)anim.say='Fali: '+ms.join(', ')}}
+      var mn=null;for(var q=0;q<notes.length;q++)if(missingFor(notes[q]).length){mn=notes[q];break}           // what is still missing on the papers (also when he takes a part)
+      if(mn){var ms=missingFor(mn);if(ms.length)anim.say='Fali: '+ms.join(', ')}
     }
     if(anim.t>2.4){anim.phase='out';anim.t=0}
   }else if(anim.phase==='wait'){
@@ -357,7 +357,7 @@ function tick(now){
   }
   X.globalAlpha=alpha;
   drawWaiter(anim.x,FLOOR_Y,frame,flip,lean,anim.carry?(anim.carry.kind==='drink'?'drink':'food'):false);X.globalAlpha=1;
-  if(anim.phase==='listen'&&anim.t>.3)speech(anim.carry?(anim.carry.kind==='drink'?'Odnosim piće!':'Odnosim kupus!'):(anim.say||'Izvolite?'),anim.x,FLOOR_Y-440);
+  if(anim.phase==='listen'&&anim.t>.3)speech(anim.carry?((anim.carry.all&&anim.carry.all.length>1?'Odnosim sve ('+anim.carry.all.length+')!':(anim.carry.kind==='drink'?'Odnosim piće!':'Odnosim kupus!'))+(anim.say?' '+anim.say:'')):(anim.say||'Izvolite?'),anim.x,FLOOR_Y-440);
   requestAnimationFrame(tick);
 }
 setInterval(function(){

@@ -16,3 +16,4 @@ body.pantry-open #cursor,body.pantry-open #label{visibility:hidden!important;poi
 .pantry-camera-view{position:absolute;inset:0;overflow:hidden;background:#1a0c04;pointer-events:none;will-change:opacity}
 .pantry-camera-edge-fill{position:absolute;inset:-36px;background-position:center;background-size:cover;filter:blur(24px);pointer-events:none}
 body.pantry-turning .pantry-nav{visibility:hidden}
+body.pantry-open .placement-ghost{display:none!important}   /* the preview of where a held thing would land (kitchen) must not show above the pantry */

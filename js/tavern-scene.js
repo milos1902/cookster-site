@@ -630,7 +630,10 @@ function stepWaiter(dt){
   if(w.hidden){w.hidden=false;w.x=home.x;w.y=home.y}
   if(w.mode==='idle'){
     var tb=waitingTable();
-    if(deliveries.length&&waiterSpot(deliveries[0].table)){var dl=deliveries.shift();w.carry=dl;w.table=dl.table;w.mode='go';w.set=carrySet(w);waiterGo(waiterSpot(dl.table))}
+    if(deliveries.length&&waiterSpot(deliveries[0].table)){var dl=deliveries.shift();w.carry=dl;w.table=dl.table;
+      w.carryList=[dl];for(var di=deliveries.length-1;di>=0;di--)if(deliveries[di].table===dl.table)w.carryList.splice(1,0,deliveries.splice(di,1)[0]);      // everything for this table goes in ONE trip
+      w.carryList.sort(function(a,b){return(a.kind==='drink'?0:1)-(b.kind==='drink'?0:1)});
+     w.mode='go';w.set=carrySet(w);waiterGo(waiterSpot(dl.table))}
     else if(tb>=0&&waiterSpot(tb)){w.table=tb;w.guest=waitingGuest();w.mode='go';waiterGo(waiterSpot(tb))}
     else{var f0=dirFace(home.dir);w.set=f0.set;w.flip=f0.flip}
   }else if(w.mode==='go'||w.mode==='back'){
@@ -653,16 +656,18 @@ function stepWaiter(dt){
     w.t+=dt;
     if(w.t>1.1){
       try{if(window.CooksterSound)window.CooksterSound.play('waiter','serve')}catch(e){}
-      var isDrink=w.carry.kind==='drink',sv=serveSpot(w.table,isDrink?'pice':'jelo',w.carry.seatId);
-      var eatSeat=w.carry.seatId!=null&&w.carry.seatId>=0?w.carry.seatId:-1,secs=isDrink?DRINK_SECS:EAT_SECS;
+      (w.carryList||[w.carry]).forEach(function(c){
+      var isDrink=c.kind==='drink',sv=serveSpot(w.table,isDrink?'pice':'jelo',c.seatId);
+      var eatSeat=c.seatId!=null&&c.seatId>=0?c.seatId:-1,secs=isDrink?DRINK_SECS:EAT_SECS;
       if(eatSeat<0)guests.forEach(function(g){if(g.seat.table===w.table&&g.mode==='seated'&&(eatSeat<0||g.seat.id<eatSeat))eatSeat=g.seat.id});
       guests.forEach(function(g){if(g.seat.id===eatSeat){g.sitFor=Math.max(g.sitFor,g.sitT+EAT_DELAY+secs+8);if(g.grp)g.grp.until=Math.max(g.grp.until||0,clock+EAT_DELAY+secs+10)}});
       addDirt(w.table,isDrink?1:2);
       guests.forEach(function(g){if(g.seat.id===eatSeat){g.rounds=(g.rounds||0)+1;if(g.grp&&g.grp.long&&g.rounds<4)g.reorderAt=g.sitT+secs+30+Math.random()*30}});
-      dishes.push({table:w.table,kind:w.carry.kind||'plain',items:w.carry.items||null,secs:secs,t:0,eatT:0,bite:0,phase:'eating',seatId:eatSeat,x:sv?sv.x:null,y:sv?sv.y:null});
-      var ev=w.carry.ev||null,rep=ev&&window.CooksterQuality?window.CooksterQuality.addReputation(ev.score):null;
+      dishes.push({table:w.table,kind:c.kind||'plain',items:c.items||null,secs:secs,t:0,eatT:0,bite:0,phase:'eating',seatId:eatSeat,x:sv?sv.x:null,y:sv?sv.y:null});
+      var ev=c.ev||null,rep=ev&&window.CooksterQuality?window.CooksterQuality.addReputation(ev.score):null;
       reactions.push({table:w.table,t:0,ev:ev,rep:rep,delta:ev?ev.score:0});
-      w.carry=null;w.mode='back';waiterGo(home);
+      });
+      w.carry=null;w.carryList=null;w.mode='back';waiterGo(home);
     }
   }else if(w.mode==='serve'){
     w.t+=dt;
