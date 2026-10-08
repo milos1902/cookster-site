@@ -49,7 +49,7 @@ var D=dirt.getContext('2d'),X=fx.getContext('2d');
 var stoveCv=mk('canvas','tc-dirt');stoveCv.width=W;stoveCv.height=H;cv.parentNode.insertBefore(stoveCv,cv);
 var SC=stoveCv.getContext('2d'),STOVE_KEY='cookster.tavern-stove.v1',STOVE_RECT=[1150,285,1385,475],stoveLit=true,stoveA=0,stoveOk=false,stoveImg=new Image();
 try{stoveLit=localStorage.getItem(STOVE_KEY)!=='off'}catch(e){}
-stoveImg.onload=function(){stoveOk=true;stoveA=stoveLit?0:1;drawStove()};stoveImg.src='assets/tavern/dirt/stove_off.webp?v=1';
+stoveImg.onload=function(){stoveOk=true;stoveA=stoveLit?0:1;drawStove()};stoveImg.src='assets/tavern/dirt/stove_off.webp?v=2';
 function drawStove(){SC.clearRect(0,0,W,H);if(stoveOk&&stoveA>0){SC.globalAlpha=stoveA;SC.drawImage(stoveImg,0,0,W,H);SC.globalAlpha=1}}
 function setStove(lit){
   if(!stoveOk||lit===stoveLit)return;
