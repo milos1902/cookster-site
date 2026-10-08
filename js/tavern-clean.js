@@ -44,8 +44,10 @@ cv.parentNode.insertBefore(dirt,cv);cv.parentNode.insertBefore(fx,cv.nextSibling
 var D=dirt.getContext('2d'),X=fx.getContext('2d');
 T.dirtCanvas=dirt;                                    // the scene redraws parts of the picture over the guests, with the dirt that is still on it
 // the dirt on the tables comes in 5 levels (assets/tavern/dirt/lvl1..5.webp: only the tables, the rest is transparent); a table gets dirtier level by level
-var LV=[],LVN=5,STEP=3,TRECT=[[215,330,650,540],[590,500,1105,800],[1180,360,1625,590]];   // the 3 tables: x1,y1,x2,y2
+var LV=[],LVN=5,STEP=2,TH=[2,12,26,44,66],TRECT=[[215,330,650,540],[590,500,1105,800],[1180,360,1625,590]];   // the 3 tables: x1,y1,x2,y2
 var tlevel=[],tscore=[];
+var TQUAD=[[[236,428],[450,358],[600,432],[388,520]],[[612,632],[850,540],[1086,650],[827,786]],[[1201,476],[1400,400],[1600,474],[1416,568]]];   // the table tops (for the right click; can be cleaned at any moment)
+
 for(var li=1;li<=LVN;li++){(function(n){var im=new Image();im.onload=function(){initTables()};im.src='assets/tavern/dirt/lvl'+n+'.webp?v=2';LV[n]=im})(li)}
 function lvReady(){for(var n=1;n<=LVN;n++)if(!LV[n]||!LV[n].naturalWidth)return false;return true}
 function lvDraw(i,n,alpha,op){var r=TRECT[i],im=LV[n];if(!r||!im||!im.naturalWidth)return;D.globalCompositeOperation=op;D.globalAlpha=alpha;D.drawImage(im,r[0],r[1],r[2]-r[0],r[3]-r[1],r[0],r[1],r[2]-r[0],r[3]-r[1]);D.globalAlpha=1;D.globalCompositeOperation='source-over'}
@@ -55,7 +57,7 @@ function initTables(){              // the tables start at level 2; whatever the
   if(tinit&&!initTables.force)return;tinit=true;initTables.force=false;
   TRECT.forEach(function(r,i){                // only the tables' own shapes are cleared (the sprites' transparent parts leave the floor alone)
     for(var n=1;n<=LVN;n++){lvDraw(i,n,1,'destination-out');lvDraw(i,n,1,'destination-out')}
-    tlevel[i]=2;tscore[i]=STEP;lvDraw(i,2,1,'source-over');
+    tlevel[i]=1;tscore[i]=TH[0];lvDraw(i,1,1,'source-over');
   });
 }
 var dirtyImg=new Image(),dirtyOk=false;
@@ -151,7 +153,7 @@ function frame(t){
 // ---------- the table ----------
 // "Očisti sto" cleans only the drawn table mask (tableMask); the bottles are left out of it on purpose, and the floor under the table is cleaned by the sponge
 function cleanZone(i){
-  var poly=zones[i];if(!poly||cleaned[i]||cleaning[i])return;
+  if(!TRECT[i]||cleaning[i])return;
   cleaning[i]=true;
   var N=16,k=0,L=tlevel[i]||0;
   (function step(){
@@ -251,11 +253,11 @@ room.addEventListener('contextmenu',function(e){
   if(overUi(e))return;
   prepare();
   var p=toScene(e),zi=-1;
-  for(var i=0;i<zones.length;i++)if(pip(zones[i],p.x,p.y)){zi=i;break}
+  for(var i=0;i<TQUAD.length;i++)if(pip(TQUAD[i],p.x,p.y)){zi=i;break}
   if(zi<0){hideMenu();return}
   var btn=menu.querySelector('button');
   menu.querySelector('b').textContent='Sto '+(zi+1);
-  btn.textContent=cleaned[zi]?'✓ Sto je čist':'Očisti sto';btn.disabled=!!cleaned[zi];
+  var clean0=!tlevel[zi];btn.textContent=clean0?'✓ Sto je čist':'Očisti sto';btn.disabled=clean0||!!cleaning[zi];
   btn.onclick=function(ev){ev.stopPropagation();hideMenu();cleanZone(zi)};
   menu.style.left=Math.min(e.clientX,innerWidth-170)+'px';menu.style.top=Math.min(e.clientY,innerHeight-90)+'px';menu.style.display='block';
   sponge.style.display='none';
@@ -268,7 +270,7 @@ var hinted=false;
 room.addEventListener('pointerdown',function(){if(!hinted){hinted=true;setTimeout(function(){hint.style.opacity='0'},4000)}},true);
 
 // the hall gets dirty again while it works: a table gets (a little more) dirty with every dish and drink, the floor with every guest
-// the table gets dirty again with every dish and drink: every STEP points it goes one level up (the picture of the next level fades in over the old one)
+// the table gets dirty again with every dish and drink and with the time people sit at it; the points needed for each level are in TH (the last pictures, with lots of things, only after long sitting) (the picture of the next level fades in over the old one)
 function setLevel(i,n){
   var o=tlevel[i]||0;if(n<=o||!lvReady())return;
   tlevel[i]=n;var k=0,N=3;
@@ -277,8 +279,10 @@ function setLevel(i,n){
 }
 function dirtyZone(i,count){
   prepare();if(!TRECT[i]||!dirtyOk||cleaning[i])return;
-  tscore[i]=(tscore[i]||0)+Math.max(1,count||1);
-  setLevel(i,Math.min(LVN,1+Math.floor(tscore[i]/STEP)));
+  tscore[i]=(tscore[i]||0)+(count>0?count:1);
+  var n=0;while(n<LVN&&tscore[i]>=TH[n])n++;               // level n when the points reach TH[n-1]
+  if(n>0)cleaned[i]=false;
+  setLevel(i,n);
 }
 function markDirty(i){prepare();if(i>=0&&i<cleaned.length&&!cleaning[i]){cleaned[i]=false;refreshInfo()}}
 function floorDirt(n){
