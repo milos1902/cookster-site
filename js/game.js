@@ -10956,6 +10956,33 @@ window.CooksterBackpackController={
  hasHeldItem:()=>!!holding
 };
 
+// the pantry (js/pantry-storage.js) takes a barrel or a jar from the hand and gives it back later
+window.CooksterPantryBridge={
+ storable(el){const id=el?.dataset?.itemId||'';return !!id&&((id.startsWith('kaca_')&&id!=='kaca_poklopac')||id.includes('tegla'));},
+ hovered(x,y){return hoverItem||(Number.isFinite(x)?itemAt(x,y):null)||null;},
+ heldItem(){return holding||null;},
+ pick(el){if(!el||holding||placing||picking)return false;startHolding(el);return !!holding;},
+ detachHeld(){
+  const item=holding;if(!item)return null;
+  const saved=serializeWorldItem(item);
+  if(stirring)endStirring();
+  if(cleaning)endCleaning();
+  if(panWashing)endPanWashing();
+  if(oilPouring)endOilPour();
+  holding=null;heldGrabState=null;
+  clearHeldPlacementState(item);hidePlacementGhost();hideOriginGhost();clearPourTarget();
+  item.classList.remove('held','hovered','valid','invalid');
+  item.style.removeProperty('--held-z');item.style.visibility='';delete item.dataset.held;
+  removeItem(item);updateHover();CooksterSave.schedule();
+  return saved;
+ },
+ take(saved){
+  if(!saved||holding)return false;
+  const el=restoreWorldItem(saved);if(!el)return false;
+  startHolding(el);CooksterSave.schedule();return !!holding;
+ }
+};
+
 window.CooksterWorld={
  snapshot(){return {version:4,items:items.map(serializeWorldItem),
   backpack:backpackContents.map(item=>item?serializeWorldItem(item):null)};},
@@ -14813,6 +14840,7 @@ window.addEventListener('wheel',e=>{
   updateBagQtyBadge();
 },{passive:false});
 window.addEventListener('pointerdown',e=>{
+ if(e.target?.closest?.('.cookster-ctx'))return;       // the small menus of js/pantry-storage.js lie over the kitchen: a click on them is not a click on the thing under them
  if(quickWheelOpen){
    if(e.button===0){
      e.preventDefault();

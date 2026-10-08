@@ -107,13 +107,13 @@ function restoreKitchen(){
   cancelAnimations();
 }
 
-function open(){
+function open(force){                               // force: the player carries a jar or a barrel to put it in the pantry (js/pantry-storage.js)
   if(busy||state==='pantry')return Promise.resolve(false);
-  if(held()){say('Prvo spusti predmet iz ruke.');return Promise.resolve(false)}
+  if(held()&&!force){say('Prvo spusti predmet iz ruke.');return Promise.resolve(false)}
   busy=true;say('');
   return preload().then(function(ok){
     if(!ok){say('Slika \u0161pajza nije u\u010ditana.');busy=false;return false}
-    if(held()){say('Prvo spusti predmet iz ruke.');busy=false;return false}
+    if(held()&&!force){say('Prvo spusti predmet iz ruke.');busy=false;return false}
     lastFocus=document.activeElement;
     var cur=document.getElementById('cursor'),lab=document.getElementById('label');
     saved={vis:viewport.style.visibility,pe:viewport.style.pointerEvents,
@@ -183,7 +183,7 @@ window.addEventListener('keypress',onKey,true);
 window.CooksterPantry={
   open:open,close:close,
   get current(){return state==='pantry'?'pantry':state==='kitchen'?'kitchen':state},
-  get isOpen(){return state==='pantry'},
+  get isOpen(){return state==='pantry'},room:room,
   get busy(){return busy}
 };
 })();
