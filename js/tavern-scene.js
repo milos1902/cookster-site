@@ -84,6 +84,8 @@ function preload(){
   ['walkd','walku','walks','writes','foods','drinks'].forEach(function(w){for(var f2=1;f2<=3;f2++)(function(key){
     jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=4').then(function(im){store('w_'+key,im)}));
   })(w+f2)});
+  // walking toward the camera: 16 pictures of a whole walk (two steps), made from the three old ones with frame interpolation
+  for(var wf=1;wf<=WD_N;wf++)(function(n){jobs.push(loadImg(WAITER+'walkd24/f'+(n<10?'0':'')+n+'.webp?v=1').then(function(im){store('w_wd'+n,im)}))})(wf);
   var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
   loading=Promise.all([roomJob].concat(jobs)).then(function(r){loaded=!!r[0];loading=null;return loaded});
   return loading;
@@ -574,7 +576,7 @@ function drawAsh(ctx,t){
 // ---------- the waiter ----------
 // he waits at his home place, walks (along his route) to a table where a guest sits who has not ordered yet, stands at the spot drawn for that table,
 // takes the order, and walks home. The pictures: toward the camera (walkd), away from it (walku), from the side (walks, looking right; flipped for left).
-var waiter=null,WSPEED=92;
+var waiter=null,WSPEED=92,WD_N=16;
 var deliveries=[],reactions=[],dishes=[],DISH_SRC={plain:'assets/calibration_props/posuda_za_kupus/posuda_kupus.webp',paprika:'assets/calibration_props/posuda_za_kupus/posuda_kupus_paprika.webp'},DISH_SECS=25;
 DISH_SRC.dirty='assets/calibration_props/posuda_za_kupus/posuda_prljava.webp';
 var dishImgs={},EAT_SECS=18,DRINK_SECS=14,EAT_DELAY=1.5;['plain','paprika','dirty'].forEach(function(k){var im=new Image();im.src=DISH_SRC[k];dishImgs[k]=im});
@@ -890,6 +892,11 @@ function drawWaiter(ctx){
       return;
     }
     drawSprite(ctx,'w_'+w.set+'2',w.x,w.y,sc,w.flip,0,1);return;
+  }
+  // toward the camera: the 16 pictures of a whole walk (two steps = phase 0..2), they already move up and down by themselves
+  if(w.set==='walkd'&&!w.carry&&imgs['w_wd'+WD_N]){
+    var wi2=Math.floor(((w.phase%2)/2)*WD_N)%WD_N;
+    drawSprite(ctx,'w_wd'+(wi2+1),w.x,w.y,sc,false,0,1);return;
   }
   var ph=Math.abs(Math.sin(w.phase*Math.PI)),bob=ph*3.2*sc/.3;
   // walking. From the front and from behind the two pictures with a leg forward (1 and 3) are enough, one after the other. From the side
