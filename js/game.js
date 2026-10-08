@@ -2317,6 +2317,27 @@ let activeSoundPreview=null;
 const AUDIO_LIBRARY_KEY='cookster.audio-library.v1';
 let importedAudio={};
 try{importedAudio=JSON.parse(localStorage.getItem(AUDIO_LIBRARY_KEY)||'{}')||{};}catch(_){importedAudio={};}
+// The imported sounds are big (long ambient loops): they live in IndexedDB (hundreds of MB), not in localStorage (about 5 MB for the whole game).
+// importedAudio stays a plain object in memory; persistAudioLibrary() writes all of it, the old localStorage copy is moved there at the start.
+const AUDIO_DB='cookster-audio',AUDIO_STORE='lib';
+function audioDb(){return new Promise((res,rej)=>{try{const r=indexedDB.open(AUDIO_DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(AUDIO_STORE);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}catch(e){rej(e);}});}
+let audioWriteChain=Promise.resolve(true);
+function persistAudioLibrary(){
+ const snap={...importedAudio};
+ audioWriteChain=audioWriteChain.then(()=>audioDb()).then(db=>new Promise((res,rej)=>{
+  const tx=db.transaction(AUDIO_STORE,'readwrite');tx.objectStore(AUDIO_STORE).put(snap,'all');
+  tx.oncomplete=()=>{db.close();res(true);};tx.onerror=()=>{db.close();rej(tx.error);};tx.onabort=()=>{db.close();rej(tx.error);};
+ })).then(()=>{try{localStorage.removeItem(AUDIO_LIBRARY_KEY);}catch(_){}return true;})
+ .catch(()=>{try{localStorage.setItem(AUDIO_LIBRARY_KEY,JSON.stringify(snap));return true;}catch(_){return false;}});
+ return audioWriteChain;
+}
+audioDb().then(db=>new Promise(res=>{const q=db.transaction(AUDIO_STORE).objectStore(AUDIO_STORE).get('all');q.onsuccess=()=>{db.close();res(q.result||null);};q.onerror=()=>{db.close();res(null);};})).then(saved=>{
+ const legacy=Object.keys(importedAudio).length>0;
+ if(saved&&typeof saved==='object')for(const [id,v] of Object.entries(saved))if(!importedAudio[id])importedAudio[id]=v;
+ if(legacy)persistAudioLibrary();                    // the old copy in localStorage moves to IndexedDB
+ for(const k of Object.keys(sfxCache))if(k.startsWith('custom:'))delete sfxCache[k];
+ try{ssRenderLibTab();ssRenderObjList();ssSync();}catch(_){}
+}).catch(()=>{});
 const SOUND_LIBRARY_DELETED_KEY='cookster.deleted-sounds.v1';
 let deletedLibrarySounds=new Set();
 try{
@@ -2456,7 +2477,7 @@ function removeSoundReferences(key){
  return used;
 }
 function commitLibraryRemoval(keys){
- const storageKeys=[AUDIO_LIBRARY_KEY,SOUND_TOOL_KEY,SOUND_LIBRARY_DELETED_KEY];
+ const storageKeys=[SOUND_TOOL_KEY,SOUND_LIBRARY_DELETED_KEY];
  let stored;
  try{stored=storageKeys.map(key=>localStorage.getItem(key));}catch(_){return null;}
  const oldAudio={...importedAudio},oldImpact=JSON.parse(JSON.stringify(impactSounds)),oldDeleted=new Set(deletedLibrarySounds);
@@ -2467,11 +2488,11 @@ function commitLibraryRemoval(keys){
   else if(Object.hasOwn(SFX,key))deletedLibrarySounds.add(key);
  }
  try{
-  localStorage.setItem(AUDIO_LIBRARY_KEY,JSON.stringify(importedAudio));
+  persistAudioLibrary();
   localStorage.setItem(SOUND_TOOL_KEY,JSON.stringify(impactSounds));
   localStorage.setItem(SOUND_LIBRARY_DELETED_KEY,JSON.stringify([...deletedLibrarySounds]));
  }catch(_){
-  importedAudio=oldAudio;impactSounds=oldImpact;deletedLibrarySounds=oldDeleted;
+  importedAudio=oldAudio;impactSounds=oldImpact;deletedLibrarySounds=oldDeleted;persistAudioLibrary();
   // Restore metadata first so there is space for the original audio payload.
   for(let i=storageKeys.length-1;i>=0;i--){
    try{if(stored[i]===null)localStorage.removeItem(storageKeys[i]);else localStorage.setItem(storageKeys[i],stored[i]);}catch(_){}
@@ -2919,8 +2940,8 @@ async function ssImportFiles(fileList){
   const src=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result||''));r.onerror=()=>rej();r.readAsDataURL(file);});
   const id='snd_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,6);
   importedAudio[id]={name:file.name.replace(/\.[^.]+$/,''),src};
-  try{localStorage.setItem(AUDIO_LIBRARY_KEY,JSON.stringify(importedAudio));added++;}
-  catch(_){delete importedAudio[id];ssFlash('Nema mesta u pregledaču. Obriši stare zvukove.');break;}
+  if(await persistAudioLibrary())added++;
+  else{delete importedAudio[id];persistAudioLibrary();ssFlash('Nema mesta u pregledaču. Obriši stare zvukove.');break;}
   if(ssSel())ssAddVariant('custom:'+id);
  }
  ssRenderLibTab();ssRenderObjList();ssSync();
@@ -3030,7 +3051,7 @@ ssImportJsonInput.addEventListener('change',()=>{
    if(data.importedAudio&&typeof data.importedAudio==='object'){
     let n=0;
     for(const [id,v] of Object.entries(data.importedAudio)){if(!importedAudio[id]){importedAudio[id]=v;n++;}}
-    try{localStorage.setItem(AUDIO_LIBRARY_KEY,JSON.stringify(importedAudio));}catch(_){}
+    persistAudioLibrary();
     ssFlash(`Uvezeno ${n} novih zvukova.`);
    }
    if(data.impactSounds&&typeof data.impactSounds==='object'){
