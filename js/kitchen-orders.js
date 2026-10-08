@@ -95,7 +95,7 @@ function noteEl(n,big){
   return d;
 }
 // a sound chosen in the tool "Zvuk" replaces the built-in one
-function snd(name,action,fallback){var ok=false;try{ok=!!(window.CooksterSound&&window.CooksterSound.play(name,action))}catch(e){}if(!ok&&fallback){try{fallback()}catch(e){}}return ok}
+function snd(name,action,fallback){if(!kitchenVisible())return false;var ok=false;try{ok=!!(window.CooksterSound&&window.CooksterSound.play(name,action))}catch(e){}if(!ok&&fallback){try{fallback()}catch(e){}}return ok}
 function placeNote(n,drop){
   var d=noteEl(n,false);if(drop)d.classList.add('ko-drop');
   d.addEventListener('animationend',function(){d.classList.remove('ko-drop')});
@@ -361,7 +361,7 @@ function tick(now){
   requestAnimationFrame(tick);
 }
 setInterval(function(){
-  if(!anim&&kitchenVisible()){
+  if(!anim){                                           // the waiter does his work also while the player is in the tavern or the pantry (the kitchen is just not on the screen then)
     if(called){if(Date.now()>=calledAt)startCall();}
     else if(pending.length&&Date.now()>=pending[0].readyAt)start();
   }
