@@ -114,21 +114,22 @@ var sparkCv=mk('canvas','tc-fx'),SP=sparkCv.getContext('2d'),sparks=[],lastFx=0,
 sparkCv.width=W;sparkCv.height=H;cv.parentNode.insertBefore(sparkCv,fx);
 var FIRE={x:1217,y:372};                                // the opening of the stove
 function spawnSpark(dust){
-  var up=dust?-(4+Math.random()*10):-(30+Math.random()*60);
-  sparks.push({x:FIRE.x+(Math.random()-.5)*(dust?150:34),y:FIRE.y+(dust?(Math.random()-.8)*110:(Math.random()-.4)*14),vx:(Math.random()-.5)*(dust?8:22),vy:up,t:0,life:dust?2.5+Math.random()*2.5:.9+Math.random()*1.4,r:dust?1.2+Math.random()*1.6:1.6+Math.random()*2.4,dust:dust,ph:Math.random()*6.28});
+  var up=dust?-(2+Math.random()*5):-(14+Math.random()*28);
+  sparks.push({x:FIRE.x+(Math.random()-.5)*(dust?150:34),y:FIRE.y+(dust?(Math.random()-.8)*110:(Math.random()-.4)*14),vx:(Math.random()-.5)*(dust?4:10),vy:up,t:0,life:dust?4+Math.random()*4:1.8+Math.random()*2.4,r:dust?1.2+Math.random()*1.6:1.6+Math.random()*2.4,dust:dust,ph:Math.random()*6.28});
 }
 function fxTick(now){
   requestAnimationFrame(fxTick);
   if(!T.isOpen||now-lastFx<33)return;
   var dt=Math.min(.1,(now-lastFx)/1000);lastFx=now;
+  smokeTick(dt);
   if(lightsDef&&lightsDef.lamps.some(function(L){return L.stove?(stoveLit||stoveA<1):!!lightState[L.id]}))drawLights();
-  if(stoveLit&&stoveA<.5){spawnAcc+=dt*(9+Math.random()*5);while(spawnAcc>=1){spawnAcc--;spawnSpark(false);if(Math.random()<.6)spawnSpark(true)}}
+  if(stoveLit&&stoveA<.5){spawnAcc+=dt*(5+Math.random()*3);while(spawnAcc>=1){spawnAcc--;spawnSpark(false);if(Math.random()<.6)spawnSpark(true)}}
   if(!sparks.length)return;
   SP.clearRect(0,0,W,H);SP.globalCompositeOperation='lighter';
   for(var i=sparks.length-1;i>=0;i--){
     var p=sparks[i];p.t+=dt;if(p.t>=p.life){sparks.splice(i,1);continue}
-    p.x+=p.vx*dt+Math.sin(p.t*3+p.ph)*(p.dust?5:14)*dt;p.y+=p.vy*dt;if(!p.dust)p.vy*=.985;
-    var k=p.t/p.life,a=(p.dust?.9*Math.sin(Math.PI*k)*(.6+.4*Math.sin(p.t*9+p.ph)):(1-k)*(.7+.3*Math.sin(p.t*30+p.ph)));
+    p.x+=p.vx*dt+Math.sin(p.t*1.6+p.ph)*(p.dust?3:7)*dt;p.y+=p.vy*dt;if(!p.dust)p.vy*=.992;
+    var k=p.t/p.life,a=(p.dust?.9*Math.sin(Math.PI*k)*(.6+.4*Math.sin(p.t*4+p.ph)):(1-k)*(.75+.25*Math.sin(p.t*12+p.ph)));
     var g=SP.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*(p.dust?5:4));
     g.addColorStop(0,p.dust?'rgba(255,225,160,'+a+')':'rgba(255,200,90,'+a+')');g.addColorStop(.35,p.dust?'rgba(255,190,100,'+a*.4+')':'rgba(255,120,30,'+a*.5+')');g.addColorStop(1,'rgba(255,100,20,0)');
     SP.fillStyle=g;SP.fillRect(p.x-p.r*5,p.y-p.r*5,p.r*10,p.r*10);
@@ -136,6 +137,43 @@ function fxTick(now){
   }
   SP.globalCompositeOperation='source-over';
   if(!sparks.length)SP.clearRect(0,0,W,H);
+}
+// smoke that drifts slowly through the tavern: the more guests, the more of it (it grows and fades slowly, so a crowd fills the room and an empty room clears)
+var smokeCv=mk('canvas','tc-dirt'),SM=null,puffs=[],smokeLevel=0,smokeTex=[],SMW=W/2,SMH=H/2;
+smokeCv.width=SMW;smokeCv.height=SMH;SM=smokeCv.getContext('2d');cv.parentNode.insertBefore(smokeCv,shadeCv);
+(function makeSmokeTex(){
+  for(var n=0;n<4;n++){
+    var c=mk('canvas');c.width=c.height=256;var x=c.getContext('2d');
+    try{x.filter='blur(7px)'}catch(e){}
+    for(var i=0;i<16;i++){
+      var a=Math.random()*6.28,r=Math.random()*70,px=128+Math.cos(a)*r*(1.3),py=128+Math.sin(a)*r*.8,rad=28+Math.random()*44;
+      var g=x.createRadialGradient(px,py,0,px,py,rad);g.addColorStop(0,'rgba(232,212,190,.7)');g.addColorStop(.6,'rgba(222,202,182,.35)');g.addColorStop(1,'rgba(210,190,170,0)');
+      x.fillStyle=g;x.fillRect(px-rad,py-rad,rad*2,rad*2);
+    }
+    smokeTex.push(c);
+  }
+})();
+var SMOKE_SRC=[[420,440],[850,650],[1400,500],[760,250],[1250,380]];     // the tables, the bar, the stove: where it comes from
+function newPuff(){
+  var s=SMOKE_SRC[Math.floor(Math.random()*SMOKE_SRC.length)];
+  return{x:s[0]+(Math.random()-.5)*260,y:s[1]-40-Math.random()*160,vx:5+Math.random()*10,vy:-(1+Math.random()*4),size:230+Math.random()*260,rot:Math.random()*6.28,vr:(Math.random()-.5)*.05,t:0,life:16+Math.random()*14,tex:smokeTex[Math.floor(Math.random()*smokeTex.length)],ph:Math.random()*6.28,al:.5+Math.random()*.5};
+}
+function smokeTick(dt){
+  var guests=(T.guestCount?T.guestCount():0),target=Math.min(1,(T.smokeForce!=null?T.smokeForce:guests)/12);
+  smokeLevel+=(target-smokeLevel)*Math.min(1,dt/14);                  // slow: about 14 s to follow
+  var want=Math.round(3+55*smokeLevel);
+  while(puffs.length<want&&Math.random()<.5)puffs.push(newPuff());
+  SM.clearRect(0,0,SMW,SMH);
+  for(var i=puffs.length-1;i>=0;i--){
+    var p=puffs[i];p.t+=dt;
+    if(p.t>=p.life||(puffs.length>want+3&&p.t>p.life*.5)){puffs.splice(i,1);continue}
+    p.x+=(p.vx+Math.sin(p.t*.5+p.ph)*5)*dt;p.y+=(p.vy+Math.cos(p.t*.4+p.ph)*2)*dt;p.rot+=p.vr*dt;
+    var k=p.t/p.life,fade=Math.sin(Math.PI*k);
+    SM.globalAlpha=Math.min(.24,(.06+.14*smokeLevel)*p.al)*fade;
+    var sz=p.size*(1+k*.4)/2;
+    SM.save();SM.translate(p.x/2,p.y/2);SM.rotate(p.rot);SM.drawImage(p.tex,-sz/2,-sz/2,sz,sz);SM.restore();
+  }
+  SM.globalAlpha=1;
 }
 requestAnimationFrame(fxTick);
 try{
@@ -176,7 +214,7 @@ dirtyImg.src=DIRTY;
 var cleanImg=new Image();cleanImg.src=T.roomSrc;           // the clean picture: the difference to the dirty one is what lies on the tables
 // the dirt and the effects lie exactly over the picture, wherever the scene puts it
 function sync(){
-  ['left','top','width','height'].forEach(function(k){dirt.style[k]=cv.style[k];fx.style[k]=cv.style[k];stoveCv.style[k]=cv.style[k];shadeCv.style[k]=cv.style[k];coreCv.style[k]=cv.style[k];sparkCv.style[k]=cv.style[k]});
+  ['left','top','width','height'].forEach(function(k){dirt.style[k]=cv.style[k];fx.style[k]=cv.style[k];stoveCv.style[k]=cv.style[k];shadeCv.style[k]=cv.style[k];coreCv.style[k]=cv.style[k];sparkCv.style[k]=cv.style[k];smokeCv.style[k]=cv.style[k]});
 }
 new MutationObserver(sync).observe(cv,{attributes:true,attributeFilter:['style']});
 addEventListener('resize',sync);sync();
