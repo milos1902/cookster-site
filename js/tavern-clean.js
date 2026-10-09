@@ -529,7 +529,7 @@ function scrubOff(){scrubPrev=null;try{if(window.CooksterSound&&window.CooksterS
 room.addEventListener('pointermove',function(e){
   moveSponge(e);
   if(down&&tool==='sponge'){var p=toScene(e);rubTo(p.x,p.y);
-    var tn=performance.now();if(scrubPrev){try{if(window.CooksterSound&&window.CooksterSound.scrub)window.CooksterSound.scrub(p.x-scrubPrev.x,tn-scrubPrev.t)}catch(_){}}scrubPrev={x:p.x,t:tn}}      // the sound of the rubbing follows the mouse (tool "Zvuk": Sunđer)
+    var tn=performance.now();if(scrubPrev){try{if(window.CooksterSound&&window.CooksterSound.scrub)window.CooksterSound.scrub(p.x-scrubPrev.x,p.y-scrubPrev.y,tn-scrubPrev.t)}catch(_){}}scrubPrev={x:p.x,y:p.y,t:tn}}      // the sound of the rubbing follows the mouse (tool "Zvuk": Sunđer)
 });
 function release(e){
   if(!down)return;down=false;last=null;sponge.classList.remove('down');scrubOff();
@@ -603,5 +603,18 @@ function floorDirt(n){
   c.globalCompositeOperation='destination-in';c.drawImage(floorMask,0,0);
   D.globalCompositeOperation='source-over';D.drawImage(sc,0,0);
 }
-window.CooksterTavernClean={cleanTable:function(i){cleanZone(i)},dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},smoke:function(){return smokeLevel},doorOpen:function(){return doorOpen},doorProgress:function(){return doorA},setDoor:setDoor,autoDoor:autoDoor,stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
+// the floor gets dirty where people walk and sit: small spots are collected and put on the dirt layer together (every 1.5 s), so the dirty picture comes back slowly
+var blots=[],blotCv=null;
+function floorDirtAt(x,y,r,a){if(blots.length<60)blots.push([x,y,r,a])}
+setInterval(function(){
+  if(!blots.length)return;prepare();if(!floorMask||!dirtyOk||!T.isOpen)return;
+  if(!blotCv){blotCv=mk('canvas');blotCv.width=W;blotCv.height=H}
+  var c=blotCv.getContext('2d');c.globalCompositeOperation='source-over';c.clearRect(0,0,W,H);
+  blots.forEach(function(b){var g=c.createRadialGradient(b[0],b[1],0,b[0],b[1],b[2]);g.addColorStop(0,'rgba(0,0,0,'+b[3]+')');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.beginPath();c.arc(b[0],b[1],b[2],0,Math.PI*2);c.fill()});
+  blots=[];
+  c.globalCompositeOperation='source-in';c.drawImage(dirtyImg,0,0,W,H);
+  c.globalCompositeOperation='destination-in';c.drawImage(floorMask,0,0);
+  D.globalCompositeOperation='source-over';D.drawImage(blotCv,0,0);
+},1500);
+window.CooksterTavernClean={floorDirtAt:floorDirtAt,cleanTable:function(i){cleanZone(i)},dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},smoke:function(){return smokeLevel},doorOpen:function(){return doorOpen},doorProgress:function(){return doorA},setDoor:setDoor,autoDoor:autoDoor,stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
 })();
