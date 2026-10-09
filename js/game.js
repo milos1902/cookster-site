@@ -2407,6 +2407,7 @@ tavernAmbientTarget.dataset.soundActions='amb0,amb2,amb5,amb12,guestIn';
 const kitchenAmbientTarget=makeSoundTarget('__ambient_kitchen','Ambijent kuhinje — jutro, dan, veče','ambMorning');
 kitchenAmbientTarget.dataset.soundActions='ambMorning,ambDay,ambEvening';
 window.CooksterSound={targets:{note:orderNoteSoundTarget,waiter:waiterServeSoundTarget,ambTavern:tavernAmbientTarget,ambKitchen:kitchenAmbientTarget},
+  playKey:(key,vol)=>playSfx(key,Math.max(0,Math.min(1,+vol||0)),true),
   play:(name,action)=>{const t=window.CooksterSound.targets[name];return t?playImpactSound(t,action):false;}};
 // one virtual sound target per vegetable/fruit type: cutting and putting into a vessel share it
 const produceSoundTargets={};

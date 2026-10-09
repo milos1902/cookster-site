@@ -576,7 +576,7 @@ function drawAsh(ctx,t){
 // ---------- the waiter ----------
 // he waits at his home place, walks (along his route) to a table where a guest sits who has not ordered yet, stands at the spot drawn for that table,
 // takes the order, and walks home. The pictures: toward the camera (walkd), away from it (walku), from the side (walks, looking right; flipped for left).
-var waiter=null,WSPEED=92,WD_N={walkd:23,walku:30,walks:37},FOOT={walkd:[10,20],walku:[10,24],walks:[2,21]};   // the pictures of the walk (0-based) in which a foot touches the floor: a footstep is heard there
+var waiter=null,WSPEED=92,WD_N={walkd:23,walku:30,walks:37};
 var deliveries=[],reactions=[],dishes=[],DISH_SRC={plain:'assets/calibration_props/posuda_za_kupus/posuda_kupus.webp',paprika:'assets/calibration_props/posuda_za_kupus/posuda_kupus_paprika.webp'},DISH_SECS=25;
 DISH_SRC.dirty='assets/calibration_props/posuda_za_kupus/posuda_prljava.webp';
 var dishImgs={},EAT_SECS=18,DRINK_SECS=14,EAT_DELAY=1.5;['plain','paprika','dirty'].forEach(function(k){var im=new Image();im.src=DISH_SRC[k];dishImgs[k]=im});
@@ -878,6 +878,22 @@ function drawOrderBubble(ctx){
     drawBubble(ctx,sp.x,sp.y-hh,t.l1,t.l2);
   });
 }
+
+// the footsteps of the waiter: in which pictures of the walk (0-based) a foot touches the floor, and the sound of the step (tool "Koraci konobara", js/waiter-steps-tool.js)
+var FOOT_DEF={walkd:[10,20],walku:[10,24],walks:[2,21]},WS_KEY='cookster.waiter-steps.v1',WSD=null;
+function wsData(){
+  if(WSD)return WSD;
+  try{WSD=JSON.parse(localStorage.getItem(WS_KEY))}catch(e){}
+  if(!WSD||!WSD.sets)WSD={sets:{}};
+  Object.keys(FOOT_DEF).forEach(function(k){if(!Array.isArray(WSD.sets[k]))WSD.sets[k]=FOOT_DEF[k].map(function(f){return{f:f,snd:'',vol:1}})});
+  return WSD;
+}
+function wsPlay(e){
+  try{
+    if(!e.snd)window.CooksterSound.play('waiter','step');                  // the random step chosen in the tool "Zvuk"
+    else window.CooksterSound.playKey(e.snd,e.vol==null?1:e.vol);
+  }catch(x){}
+}
 function drawWaiter(ctx){
   var w=waiter;if(!w||w.hidden)return;
   var sc=scaleAt(w.y),moving=(w.mode==='go'||w.mode==='back')&&w.path&&w.path[w.pi];
@@ -899,8 +915,8 @@ function drawWaiter(ctx){
   if(W24&&!w.carry&&imgs['w_'+W24+N24]){
     var wi2=Math.floor(((w.phase%2)/2)*N24)%N24;
     // a footstep is heard in the pictures in which a foot touches the floor (also when some pictures are skipped)
-    var pf=w._wf==null?wi2:w._wf,fo=FOOT[w.set]||[];
-    for(var gd=0;pf!==wi2&&gd<N24;gd++){pf=(pf+1)%N24;if(fo.indexOf(pf)>=0){try{window.CooksterSound.play('waiter','step')}catch(e){}}}
+    var pf=w._wf==null?wi2:w._wf,fo=wsData().sets[w.set]||[];
+    for(var gd=0;pf!==wi2&&gd<N24;gd++){pf=(pf+1)%N24;fo.forEach(function(e){if(e.f===pf)wsPlay(e)})}
     w._wf=wi2;
     drawSprite(ctx,'w_'+W24+(wi2+1),w.x,w.y,sc,w.set==='walks'?w.flip:false,0,1);return;
   }
@@ -1116,6 +1132,7 @@ window.CooksterTavern={
   open:open,close:close,spawn:spawn,
   deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,dirtyDishAt:dirtyDishAt,
+  waiterSteps:{get:wsData,set:function(d){WSD=d;try{localStorage.setItem(WS_KEY,JSON.stringify(WSD))}catch(e){}},reset:function(){WSD=null;try{localStorage.removeItem(WS_KEY)}catch(e){}wsData()},count:function(k){return WD_N[k]||0},url:function(k,i){return WAITER+k+'24/f'+(i<10?'0':'')+i+'.webp?v=4'},play:wsPlay,stepClips:16},
   tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose,draw:tiDraw,shadow:tiShadow,shDef:TI_SH},
   get isOpen(){return state==='tavern'},get busy(){return busy},guestCount:function(){return guests.length},
   debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
