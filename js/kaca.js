@@ -240,6 +240,7 @@
   }
   function onDown(e){
     const t=e.target;
+    if(document.body.classList.contains('pantry-open'))return;      // the tavern / pantry is on the screen: the kitchen barrel behind it must not take clicks
     if(t?.closest?.('.cookster-ctx'))return;      // a small menu (js/pantry-storage.js) lies over the barrel
 
     const hit=t?.closest?.('.kaca-lid-hit');

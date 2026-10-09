@@ -291,7 +291,10 @@ function takeDish(){
           if(rp){
             var mid=(rp.lo+rp.hi)/2,hit=l.req.dir<0?(v>=rp.lo*.7&&v<mid):(v>mid&&v<=rp.hi*1.3);
             var what=l.req.ing==='ulje'?'ulja':'paprike';
-            ev=hit?{score:3,issues:['Tačno kako sam tražio!'],perfect:true,amounts:ev.amounts,good:true}:{score:Math.min(ev.score,0)-2,issues:['Tražio sam malo '+(l.req.dir<0?'manje ':'više ')+what+'!'],perfect:false,amounts:ev.amounts};
+            var HITS=['Tačno kako sam tražio!','Baš po mojoj meri!','Savršeno, kao što sam rekao!','Pogodio si ukus, svaka čast!','Tako treba, majstore!','Upravo ovako sam voleo!','Čuo si me, hvala!','Taman koliko treba!','Mnogo dobro, baš kako volim!','Ovo je to, bravo kuvaru!'],
+                MISS=['Tražio sam malo {q}!','Rekao sam malo {q}, zar ne?','Pa nisam ovo tražio, hteo sam malo {q}.','Nije to – ja sam hteo malo {q}.','Zar nisi čuo? Malo {q}!','Ovo nije po mom ukusu, trebalo je malo {q}.','Hej, ja sam naručio malo {q}!','Pogrešno, tražio sam malo {q}.','Ne ide to tako, malo {q} sam rekao.','Baš sam jasno rekao: malo {q}!'],
+                q=(l.req.dir<0?'manje ':'više ')+what,rn=function(a){return a[Math.floor(Math.random()*a.length)]};
+            ev=hit?{score:3,issues:[rn(HITS)],perfect:true,amounts:ev.amounts,good:true}:{score:Math.min(ev.score,0)-2,issues:[rn(MISS).replace('{q}',q)],perfect:false,amounts:ev.amounts};
           }
         }
         all.push({kind:(sp.tucana>0||sp.paprika>0)?'paprika':'plain',seatId:l.seatId,ev:ev});

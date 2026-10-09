@@ -464,7 +464,7 @@ function makeGuest(seat,grp,wait){
   var ch=pool.length?pool[Math.floor(Math.random()*pool.length)]:1+Math.floor(Math.random()*CHARS);
   var g={id:++UID,ch:ch,seat:seat,x:DOOR.x+(Math.random()*30-15),y:DOOR.y,
     mode:'in',path:findPath(DOOR,{x:seat.ax,y:seat.ay}),pi:1,phase:Math.random()*2,face:'dole',flip:false,
-    sitT:0,sitFor:grp?grp.sitFor:90+Math.random()*70,orderDelay:14+Math.random()*14,fade:0,from:null,speed:78+Math.random()*16,mood:'ok',grp:grp||null,wait:wait||0,rounds:0,patK:.85+Math.random()*.5,waitFoodSince:null,need:0,warned:false,leftAngry:false};
+    sitT:0,sitFor:grp?grp.sitFor:90+Math.random()*70,orderDelay:14+Math.random()*14,fade:0,from:null,speed:78+Math.random()*16,mood:'ok',grp:grp||null,wait:wait||0,rounds:0,patK:.85+Math.random()*.5,warmth:Math.random()<.3?'hot':'cold',waitFoodSince:null,need:0,warned:false,leftAngry:false};
   guests.push(g);return g;
 }
 // one guest (a free seat at a table that is clean)
@@ -511,8 +511,8 @@ function leaveAngry(g,text,delta){
 function checkPatience(g){
   if(g.leftAngry)return;
   var wait=g.ordered?(g.waitFoodSince!=null?clock-g.waitFoodSince:0):(g.sitT>g.orderDelay?g.sitT-g.orderDelay:0),lim=g.ordered?PAT_FOOD*g.patK:PAT_ORDER*g.patK;
-  if(wait>lim*.6&&!g.warned&&wait>20){g.warned=true;gsay(g,g.ordered?'Hoće li ta hrana doći danas?':'Konobare! Ima li koga?',0)}
-  if(wait>lim)leaveAngry(g,g.ordered?'Predugo se čeka, odlazim!':'Niko da dođe, odlazim!',-4);
+  if(wait>lim*.6&&!g.warned&&wait>20){g.warned=true;gsay(g,pick(g.ordered?SAY.waitFood:SAY.waitOrder),0)}
+  if(wait>lim)leaveAngry(g,pick(g.ordered?SAY.leaveFood:SAY.leaveOrder),-4);
 }
 function chKey(g,pose){return 'g'+(g.ch<10?'0':'')+g.ch+'_'+pose}
 function step(dt){
@@ -561,17 +561,43 @@ function addDirt(table,units){
   tableUsed[table]=(tableUsed[table]||0)+units;
   try{if(window.CooksterTavernClean)window.CooksterTavernClean.dirty(table,units)}catch(e){}
 }
-var remarkT=40,TC_BAD=['Ovaj sto je prljav...','Ko ovo čisti, bre?','Može li neko da obriše sto?','Ovde je baš prljavo!'],TC_FLOOR=['Pod je prljav, nije ni čudo...','Kakva prljava kafana!','Ovde bi trebalo pomesti.'],TC_GOOD=['Lepo je čisto ovde.','Baš je čista kafana!','Pohvala za čistoću!'];
-function tickRemarks(dt){                             // now and then a guest says something about the cleanliness; the reputation goes down (dirty) or up (clean)
-  remarkT-=dt;if(remarkT>0)return;remarkT=35+Math.random()*35;
+var remarkT=30;
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+// what the guests say (ten different sentences for each case)
+var SAY={
+  tableDirty:['Ovaj sto je prljav...','Ko ovo čisti, bre?','Može li neko da obriše sto?','Ovde je baš prljavo za stolom!','Pa ovde se lepi sve!','Majstore, sto nije brisan od juče!','Kao da niko ne briše ove stolove.','Ne mogu da stavim lakat, sve je ulepljeno.','Daj krpu, sam ću da obrišem!','Ovako prljav sto nisam video.'],
+  floorBad:['Pod je prljav, nije ni čudo...','Kakva prljava kafana!','Ovde bi trebalo pomesti.','Cela kafana je zaprljana!','Kad se ovde poslednji put brisalo?','Ne bih ovde ni mačku vodio.','Blato do članaka, majstore!','Fuj, pod se lepi za đonove.','Ovako prljavo nisam video.','Sunđer i metla, hitno!'],
+  floorMid:['Nije loše, ali može i čistije.','Prolazno, mogli bi malo da protrljaju.','Znao sam i čistije kafane.','Sasvim u redu, još malo da se pobriše.','Ni loše ni dobro, onako.','Može biti bolje, ali može i gore.','Nije baš sjajno, ali podnošljivo.','Malo sunđera ne bi škodilo.','Za običnu kafanu – korektno.','Obična čistoća, ništa posebno.'],
+  floorGood:['Lepo je čisto ovde.','Baš je čista kafana!','Pohvala za čistoću!','Sve blista, svaka čast majstore!','Ovde je pravo uživanje sedeti.','Čisto kao u apoteci!','Vidi se da neko vodi računa.','Bravo, ovako se drži kafana.','Redak je ovako čist lokal.','Ovde ću sigurno ponovo doći.'],
+  cold:['Hladno je ovde, upali vatru!','Majstore, zapali vatru, ledimo se!','Brrr, pa ovde je ledara!','Ugasila se peć, hladno je.','Daj malo vatre, drhtim!','Kad ćeš da naložiš peć?','Ovde se i pivo hladi samo od sebe.','Hladno je, upali peć, majstore!','Smrznuću se pre nego što dobijem jelo.','Bez vatre ovde nema ostanka.'],
+  hot:['Vruće je ovde, ugasi vatru!','Majstore, malo manje vatre, pecemo se!','Uf, pa ovo je sauna!','Peć je prejaka, gasi malo.','Znojim se, ugasi tu vatru!','Otvori vrata, ili ugasi peć!','Biće mi muka od ove vrućine.','Ugasi vatru, pregoreh!','Previše je toplo za ovo jelo.','Pa ovde se čovek ispeče!'],
+  dark:['Majstore, upali svetlo!','Ništa se ne vidi, upali lampe!','Pa ovde je mrak, majstore!','Ne vidim šta jedem, upali svetlo!','Daj malo svetla, bre!','Ko je ugasio svetla?','Pogodiću vilicom tanjir u mraku.','Upali lampu, pa da vidimo gde sedimo.','Mrak, kao u rupi!','Upali svetlo, ne vidim ni čašu.'],
+  waitOrder:['Konobare! Ima li koga?','Hoće li neko da primi porudžbinu?','Ovde smo, majstore!','Mi bismo nešto da naručimo!','Dugo se čeka na konobara...','Gde li je taj konobar?','Halo, može li narudžbina?','Umreću od žeđi ovde!','Je l’ ima ovde posluge?','Čekamo već čitavu večnost.'],
+  waitFood:['Hoće li ta hrana doći danas?','Dugo traje to jelo...','Gladan sam kao vuk!','Gde nam je porudžbina?','Pa koliko se čeka na jedan kupus?','Jesu li zaboravili na nas?','Stomak mi krči od čekanja.','Ovako sporo nisam doživeo.','Kuvar spava ili šta?','Ako ovo potraje, idem kući.'],
+  leaveOrder:['Niko da dođe, odlazim!','Ne mogu više da čekam, idem!','Ovde nema posluge, ja odoh!','Idem u drugu kafanu!','Ovako se ne radi, zbogom!','Nikog nema, odoh!','Ostajte vi sa Bogom!','Dosta mi je čekanja!','Ovde me više nećete videti!','Ovoliko čekanje je ponižavajuće, idem!'],
+  leaveFood:['Predugo se čeka, odlazim!','Sit sam čekanja, idem!','Hrane nema, a ja odlazim!','Ovde glad ne mine, idem!','Neću više čekati, doviđenja!','Toliko čekanja za jedan tanjir? Odoh!','Zaboravite na mene, idem!','Plaćam čekanje odlaskom!','Odoh kod komšije, tamo služe brže!','Dosta, odlazim gladan!']
+};
+window.CooksterSay=SAY;
+function tickRemarks(dt){                             // now and then a guest says something: about the cleanliness, the fire, the light; the reputation moves with it
+  remarkT-=dt;if(remarkT>0)return;remarkT=28+Math.random()*30;
   var C=window.CooksterTavernClean;if(!C||!C.levels)return;
-  var seated=guests.filter(function(g){return g.mode==='seated'&&!g.leftAngry});if(!seated.length)return;
-  var lv=C.levels(),dirtyT=seated.filter(function(g){return(lv[g.seat.table]||0)>=3&&!g.dirtyNoted});
-  if(dirtyT.length){var g=dirtyT[Math.floor(Math.random()*dirtyT.length)];g.dirtyNoted=true;gsay(g,TC_BAD[Math.floor(Math.random()*TC_BAD.length)],-2);return}
-  var pct=100;try{pct=C.floorPercent()}catch(e){}
-  var g2=seated[Math.floor(Math.random()*seated.length)];
-  if(pct<45&&!g2.floorNoted){g2.floorNoted=true;gsay(g2,TC_FLOOR[Math.floor(Math.random()*TC_FLOOR.length)],-2)}
-  else if(pct>=85&&(lv[g2.seat.table]||0)<=1&&!g2.praised&&Math.random()<.5){g2.praised=true;gsay(g2,TC_GOOD[Math.floor(Math.random()*TC_GOOD.length)],1)}       // not always
+  var seated=guests.filter(function(g){return g.mode==='seated'&&!g.leftAngry&&g.sitT>8});if(!seated.length)return;
+  var lv=C.levels(),opts=[];
+  var dirtyT=seated.filter(function(g){return(lv[g.seat.table]||0)>=3&&!g.dirtyNoted});
+  if(dirtyT.length)opts.push(function(){var g=pick(dirtyT);g.dirtyNoted=true;gsay(g,pick(SAY.tableDirty),-2)});
+  var pct=null;try{pct=C.floorPercent()}catch(e){}
+  var g2=pick(seated);
+  if(pct!=null){                                       // 0-30 % bad, 30-60 % so-so, 60-100 % good
+    if(pct<30&&!g2.floorNoted)opts.push(function(){g2.floorNoted=true;gsay(g2,pick(SAY.floorBad),-2)});
+    else if(pct>=30&&pct<60&&!g2.midNoted&&Math.random()<.6)opts.push(function(){g2.midNoted=true;gsay(g2,pick(SAY.floorMid),0)});
+    else if(pct>=60&&!g2.praised&&(lv[g2.seat.table]||0)<=2&&Math.random()<.5)opts.push(function(){g2.praised=true;gsay(g2,pick(SAY.floorGood),1)});
+  }
+  var lit=true;try{lit=C.stoveLit()}catch(e){}
+  if(!lit){var cold=seated.filter(function(g){return g.warmth!=='hot'&&!g.coldNoted});if(cold.length)opts.push(function(){var g=pick(cold);g.coldNoted=true;gsay(g,pick(SAY.cold),-1)})}
+  else{var hot=seated.filter(function(g){return g.warmth==='hot'&&!g.hotNoted});if(hot.length)opts.push(function(){var g=pick(hot);g.hotNoted=true;gsay(g,pick(SAY.hot),-1)})}
+  var lp=null;try{lp=C.lamps()}catch(e){}
+  if(lp&&lp.total&&lp.lit<=Math.floor(lp.total/3)){var dk=seated.filter(function(g){return!g.darkNoted});if(dk.length)opts.push(function(){var g=pick(dk);g.darkNoted=true;gsay(g,pick(SAY.dark),-1)})}
+  if(opts.length)pick(opts)();
 }
 function tickMess(dt){
   tickRemarks(dt);
