@@ -1088,7 +1088,8 @@ function wFilm(ctx,w,sc,name,still,loop){                 // draws the waiter as
   ctx.drawImage(fi,(-sw/2+m.ox)*sc,(-sh+m.oy)*sc,m.w*sc,m.h*sc);ctx.restore();
   return true;
 }
-function drawWaiter(ctx){
+function drawWaiter(ctx){try{drawWaiterBody(ctx)}finally{castGround=null}}
+function drawWaiterBody(ctx){
   var w=waiter;if(!w||w.hidden)return;
   var sc=scaleAt(w.y),moving=(w.mode==='go'||w.mode==='back')&&w.path&&w.path[w.pi];
   drawShadow(ctx,w.x,w.y,sc);
@@ -1209,13 +1210,28 @@ function drawSprite(ctx,key,x,y,sc,flip,rot,alpha){
   var im=timgs[key]||imgs[key];if(!im)return;
   im=graded(key,im);                       // (the pictures are the tinted ones: the grading comes on top of the tint)
   var w=(im.naturalWidth||im.width)*sc,h=(im.naturalHeight||im.height)*sc;
+  if(castGround!==null&&alpha>.02){castShadow(ctx,im,x,sc,flip,alpha);castGround=null}      // (once: the second picture of a blended step casts nothing more)
   ctx.save();ctx.globalAlpha=alpha;
   ctx.translate(x,y);if(rot)ctx.rotate(rot);if(flip)ctx.scale(-1,1);
   ctx.drawImage(im,-w/2,-h,w,h);
   ctx.restore();
 }
+// the shadow of somebody who walks: a dark soft spot where the feet touch the floor (contact shadow) and a longer soft shadow cast on the floor away from the lamps (to the right, a bit toward the
+// viewer; as long as the person is tall). drawSprite draws it (once) while castGround is set, because only it knows how tall the picture is.
+var castGround=null,SH_SX=.34,SH_SY=.05;
+function castShadow(ctx,im,x,sc,flip,alpha){
+  var h=(im.naturalHeight||im.height)*sc,k=flip?-1:1,len=h*.5,th=Math.max(7,h*.075),y=castGround+2;
+  ctx.save();ctx.globalAlpha=alpha;
+  ctx.translate(x+SH_SX*h*k*.55,y+SH_SY*h);ctx.rotate(.1*k);
+  ctx.scale(1,th/len);
+  var g=ctx.createRadialGradient(-len*.35*k,0,0,0,0,len);g.addColorStop(0,'rgba(14,5,1,.4)');g.addColorStop(.5,'rgba(14,5,1,.22)');g.addColorStop(1,'rgba(14,5,1,0)');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,len,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
 function drawShadow(ctx,x,y,sc){
-  ctx.save();ctx.fillStyle='rgba(20,8,2,.32)';ctx.beginPath();ctx.ellipse(x,y+2,34*sc/.3,9*sc/.3,0,0,Math.PI*2);ctx.fill();ctx.restore();
+  ctx.save();var r=ctx.createRadialGradient(x,y+1,0,x,y+1,30*sc/.3);r.addColorStop(0,'rgba(14,5,1,.5)');r.addColorStop(.55,'rgba(14,5,1,.28)');r.addColorStop(1,'rgba(14,5,1,0)');
+  ctx.translate(0,y+1);ctx.scale(1,.3);ctx.translate(0,-(y+1));ctx.fillStyle=r;ctx.beginPath();ctx.arc(x,y+1,30*sc/.3,0,Math.PI*2);ctx.fill();ctx.restore();
+  castGround=y;
 }
 function guestSortY(g){
   if(g.mode!=='seated'&&g.mode!=='sitting'&&g.mode!=='rising')return g.y;
@@ -1225,7 +1241,7 @@ function guestSortY(g){
   return y;
 }
 function drawGuest(ctx,g){
-  drawGuestBody(ctx,g);
+  drawGuestBody(ctx,g);castGround=null;
   if(g.mode==='seated'||g.mode==='sitting'||g.mode==='rising'){
     var cm=CAL.chairMask[g.seat.id];
     if(cm)cm.forEach(function(p){drawPolyFromPicture(ctx,p)});
