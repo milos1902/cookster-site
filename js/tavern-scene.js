@@ -501,6 +501,7 @@ function companyGuests(){                                // the four of the comp
   if(m.length<4||m.some(function(g){return g.mode!=='seated'||eatingGuest(g)}))return null;
   return m;
 }
+var CO_V0=.4,CO_V1=.85,CO_RAMP=2.5;
 function companyStep(m){                                 // starts / ends the parts of the film; returns {al, i} or null
   var a=coFrames(),st=coState;
   if(!a){return null}
@@ -509,11 +510,12 @@ function companyStep(m){                                 // starts / ends the pa
     var segs=COFILM.segs,pool=segs.map(function(_,i){return i}).filter(function(i){return i!==st.last});
     if(!pool.length)pool=segs.map(function(_,i){return i});
     var si=pool[Math.floor(Math.random()*pool.length)];st.last=si;
-    st.film={t0:clock,s:segs[si][0],e:segs[si][1],dur:(segs[si][1]-segs[si][0])/COFILM.fps};
+    var len=(segs[si][1]-segs[si][0])/COFILM.fps;st.film={t0:clock,s:segs[si][0],e:segs[si][1],dur:CO_RAMP+(len-(CO_V0+CO_V1)*CO_RAMP/2)/CO_V1};     // the film runs slower than recorded: it starts slowly (V0) and speeds up to V1 in the first CO_RAMP seconds
   }
   var f=st.film;if(!f)return null;
   var t=clock-f.t0,al=Math.max(0,Math.min(1,t/.5,(f.dur-t)/.6));al=al*al*(3-2*al);
-  return{al:al,i:Math.min(f.e-1,f.s+Math.floor(t*COFILM.fps))};
+  var p=t<CO_RAMP?CO_V0*t+(CO_V1-CO_V0)*t*t/(2*CO_RAMP):(CO_V0+CO_V1)*CO_RAMP/2+CO_V1*(t-CO_RAMP);   // seconds of the recorded film that have passed
+  return{al:al,i:Math.min(f.e-1,f.s+Math.floor(p*COFILM.fps))};
 }
 function spawnGroup(){
   var r=Math.random(),size=r<.38?1:r<.62?2:r<.84?3:4;
