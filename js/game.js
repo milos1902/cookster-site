@@ -2398,6 +2398,8 @@ const faucetSoundTarget=makeSoundTarget('__faucet','Česma — voda','water');
 const peelSoundTarget=makeSoundTarget('__peel_button','Dugme „Očisti luk“ — čišćenje','peel');
 peelSoundTarget.dataset.soundActions='peel';
 // the waiter and the orders: every sound can be chosen in the tool "Zvuk" (a chosen sound replaces the built-in one)
+const doorSoundTarget=makeSoundTarget('__tavern_door','Vrata kafane — otvaranje, tiho zatvaranje, zalupljivanje','open');
+doorSoundTarget.dataset.soundActions='open,close,slam';
 const orderNoteSoundTarget=makeSoundTarget('__order_note','Papirić narudžbine — uzimanje, spuštanje, kačenje','pickup');
 orderNoteSoundTarget.dataset.soundActions='pickup,drop,open';
 const waiterServeSoundTarget=makeSoundTarget('__waiter_serve','Konobar — pojavljivanje i spuštanje jela','serve');
@@ -2407,7 +2409,7 @@ const tavernAmbientTarget=makeSoundTarget('__ambient_tavern','Ambijent kafane �
 tavernAmbientTarget.dataset.soundActions='amb0,amb2,amb5,amb12,guestIn';
 const kitchenAmbientTarget=makeSoundTarget('__ambient_kitchen','Ambijent kuhinje — jutro, dan, veče','ambMorning');
 kitchenAmbientTarget.dataset.soundActions='ambMorning,ambDay,ambEvening';
-window.CooksterSound={targets:{note:orderNoteSoundTarget,waiter:waiterServeSoundTarget,ambTavern:tavernAmbientTarget,ambKitchen:kitchenAmbientTarget},
+window.CooksterSound={targets:{door:doorSoundTarget,note:orderNoteSoundTarget,waiter:waiterServeSoundTarget,ambTavern:tavernAmbientTarget,ambKitchen:kitchenAmbientTarget},
   playKey:(key,vol)=>playSfx(key,Math.max(0,Math.min(1,+vol||0)),true),
   play:(name,action)=>{const t=window.CooksterSound.targets[name];return t?playImpactSound(t,action):false;}};
 // one virtual sound target per vegetable/fruit type: cutting and putting into a vessel share it
@@ -2620,7 +2622,7 @@ ssStyle.textContent=`
 document.head.appendChild(ssStyle);
 
 /* --- state --- */
-const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje papirića na šiljak'],['fall','Pad papirića sa šiljka'],['ring','Zvoni (kad ga dodirneš)'],['sprinkle','Sipaj (začin)'],['pour','Sipaj (ulje)'],['pourOut','Presipaj u drugu posudu'],['throw','Bacanje u kantu'],['empty','Pražnjenje kante'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara'],['eat','Gost jede (svaki zalogaj)'],['step','Koraci konobara (svaki korak)'],['amb0','Kafana prazna (petlja)'],['amb2','Kafana: do 3 gosta (petlja)'],['amb5','Kafana: 4–8 gostiju (petlja)'],['amb12','Kafana puna: 9+ gostiju (petlja)'],['guestIn','Ulazak gostiju u kafanu'],['ambMorning','Kuhinja: jutro (petlja)'],['ambDay','Kuhinja: dan (petlja)'],['ambEvening','Kuhinja: veče (petlja)']];
+const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slam','Zalupljivanje vrata'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje papirića na šiljak'],['fall','Pad papirića sa šiljka'],['ring','Zvoni (kad ga dodirneš)'],['sprinkle','Sipaj (začin)'],['pour','Sipaj (ulje)'],['pourOut','Presipaj u drugu posudu'],['throw','Bacanje u kantu'],['empty','Pražnjenje kante'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara'],['eat','Gost jede (svaki zalogaj)'],['step','Koraci konobara (svaki korak)'],['amb0','Kafana prazna (petlja)'],['amb2','Kafana: do 3 gosta (petlja)'],['amb5','Kafana: 4–8 gostiju (petlja)'],['amb12','Kafana puna: 9+ gostiju (petlja)'],['guestIn','Ulazak gostiju u kafanu'],['ambMorning','Kuhinja: jutro (petlja)'],['ambDay','Kuhinja: dan (petlja)'],['ambEvening','Kuhinja: veče (petlja)']];
 const ssState={open:false,tab:'objekti',action:'drop',query:'',libQuery:'',libOpen:false};
 
 /* --- helpers (reuse ls* from light-studio) --- */
