@@ -1010,7 +1010,7 @@ function wsPlay(e){
 }
 // the waiter has short films too (tools/make_waiter_anims.py): from behind he waits for a guest (scratches his head), in profile he writes in his notebook (mirrored for the left)
 var WANIM=null,wfilms={};
-try{fetch('assets/tavern/waiter/anim/anim.json?v=1').then(function(r){return r.json()}).then(function(d){WANIM=d}).catch(function(){})}catch(e){}
+try{fetch('assets/tavern/waiter/anim/anim.json?v=2').then(function(r){return r.json()}).then(function(d){WANIM=d}).catch(function(){})}catch(e){}
 function wFrames(name){
   var m=WANIM&&WANIM[name];if(!m)return null;
   var a=wfilms[name];
@@ -1044,7 +1044,6 @@ function drawWaiter(ctx){
   if(!moving){w._wf=null;
     // taking the order (seen from the side): writes, now and then looks up at the guest; the other views only stand until their pictures exist
     if(w.mode==='serve'&&w.set==='walks'&&wFilm(ctx,w,sc,'write','w_writes2',true))return;
-    if(w.mode==='idle'&&w.set==='walku'&&wFilm(ctx,w,sc,'wait','w_walku2',false))return;
     if(w.mode==='serve'&&w.set==='walks'){
       var SEQW=[[1,.5],[2,.6],[3,.5],[2,.6]],tt=w.t%2.2,acc=0,wi=0;
       for(;wi<SEQW.length-1&&tt>=acc+SEQW[wi][1];wi++)acc+=SEQW[wi][1];
@@ -1096,7 +1095,11 @@ window.CooksterGrade={get:function(){return Object.assign({},GR)},set:function(p
 // the seated guests move: short films (frames cut from videos, tools/make_guest_anims.py) of a guest who drinks and talks ("pij") and who calls the waiter ("doziv").
 // The film starts and ends with the picture of the still guest; only for the guests that face us (the pose "lice") and only for the guests that have been made so far.
 var ANIM=null,animImgs={},ANIM_IN=.35,ANIM_OUT=.7;
-try{fetch('assets/tavern/guests/anim/anim.json?v=4').then(function(r){return r.json()}).then(function(d){ANIM=d}).catch(function(){})}catch(e){}
+var CUT_KEY='cookster.guest-anim-cuts.v1';
+function applyCuts(){                                     // the parts chosen in the tool "Animacije gostiju" replace the built-in ones
+  try{var c=JSON.parse(localStorage.getItem(CUT_KEY)||'{}');Object.keys(c).forEach(function(g){Object.keys(c[g]).forEach(function(n){var m=ANIM&&ANIM[g]&&ANIM[g][n],o=c[g][n];if(m&&o&&o.segs&&o.segs.length){m.segs=o.segs;m.solo=o.solo||0;m.custom=true}})})}catch(e){}
+}
+try{fetch('assets/tavern/guests/anim/anim.json?v=4').then(function(r){return r.json()}).then(function(d){ANIM=d;applyCuts()}).catch(function(){})}catch(e){}
 function gidOf(g){return 'g'+(g.ch<10?'0':'')+g.ch}
 function animFrames(g,name){                              // the frames of a film (loaded when the first guest of this character needs them), or null while they are coming
   var gid=gidOf(g),m=ANIM&&ANIM[gid]&&ANIM[gid][name];if(!m)return null;
@@ -1107,6 +1110,7 @@ function animFrames(g,name){                              // the frames of a fil
   }
   return a.ok>=m.n?a:null;
 }
+window.CooksterGuestAnim={meta:function(){return ANIM},apply:applyCuts,key:CUT_KEY,load:function(ch,name){return animFrames({ch:ch},name)},reload:function(){}};
 function tableMates(g){var n=0;guests.forEach(function(o){if(o.seat.table===g.seat.table&&(o.mode==='seated'||o.mode==='sitting'))n++});return n}
 function startAnim(g,name){
   if(g.an||g.mode!=='seated'||g.seat.pose!=='lice'&&g.seat.pose!=null)return false;
@@ -1114,10 +1118,10 @@ function startAnim(g,name){
   // the film is cut into parts (one sip, one talk ...): a different part each time; a guest who sits alone only has the first part (a sip), a company all of them
   var m=a.m,segs=m.segs||[[0,m.n]],seg;
   if(name==='pij'){
-    var pool=tableMates(g)<2?[0]:segs.map(function(_,i){return i}).filter(function(i){return i!==g.lastSeg});
+    var pool=tableMates(g)<2?[Math.min(m.solo||0,segs.length-1)]:segs.map(function(_,i){return i}).filter(function(i){return i!==g.lastSeg});
     if(!pool.length)pool=[0];
     g.lastSeg=pool[Math.floor(Math.random()*pool.length)];seg=segs[g.lastSeg];
-  }else seg=[0,m.n];
+  }else seg=m.custom?segs[0]:[0,m.n];
   g.an={name:name,t0:clock,s:seg[0],n:seg[1],dur:(seg[1]-seg[0])/m.fps};return true;
 }
 function drawAnim(ctx,g,x,y,sc,rot){                      // true if the guest was drawn as a film
