@@ -1139,7 +1139,7 @@ function drawWaiter(ctx){
 function drawWaiterBody(ctx){
   var w=waiter;if(!w||w.hidden)return;
   var sc=wScale(w.y),moving=(w.mode==='go'||w.mode==='back')&&w.path&&w.path[w.pi];
-  drawShadow(ctx,w.x,w.y,sc);
+  drawShadow(ctx,w.x,w.y,sc,'konobar');
   if(!moving){w._wf=null;
     // taking the order (seen from the side): writes, now and then looks up at the guest; the other views only stand until their pictures exist
     if(w.mode==='serve'&&w.set==='walks'&&wFilm(ctx,w,sc,'write','w_writes2',true))return;
@@ -1290,9 +1290,33 @@ function drawSprite(ctx,key,x,y,sc,flip,rot,alpha,sway){
   }else ctx.drawImage(im,-w/2,-h,w,h);
   ctx.restore();
 }
-function drawShadow(ctx,x,y,sc){
-  ctx.save();ctx.fillStyle='rgba(20,8,2,.32)';ctx.beginPath();ctx.ellipse(x,y+2,34*sc/.3,9*sc/.3,0,0,Math.PI*2);ctx.fill();ctx.restore();
+// The shadow of a person who walks or sits: a soft spot under the feet (strength, shift, width, height, blur: the tool "Svetlo i senke"; guests: "gosti", the waiter: "konobar") and, from every lit lamp,
+// a shadow that lies on the floor away from the light. Similar triangles: a lamp hangs hh person heights above the point G on the floor, a person stands at F: the shadow of his head lands at F + (F-G)/(hh-1).
+// It is stronger the nearer / brighter the lamp is, and it takes the colour of the warmth of the light. The people stand in the light of the lamps, so everything follows when a lamp is lit / put out.
+var PEO_SH={sho:.4,shx:0,shy:.03,shw:1,shh:.27,shb:3};
+function peopleShadow(ctx,x,y,sc,c){
+  var m={},k,ks=['sho','shx','shy','shw','shh','shb'];
+  for(k in PEO_SH)m[k]=PEO_SH[k];
+  if(c)ks.forEach(function(q){if(c[q]!=null)m[q]=+c[q]});
+  tiShadow(ctx,x,y,68*sc/.3,m);
 }
+function shadowTint(w){w=Math.max(-1,Math.min(1,+w||0));return w>=0?[Math.round(8+40*w),Math.round(4+10*w),0]:[8,Math.round(4-10*w),Math.round(0-44*w)]}
+function lampCast(ctx,x,y,h,k,c){
+  var C=window.CooksterTavernClean,L=C&&C.lightSources?C.lightSources():null;if(!L||!L.length)return;
+  var base=(c&&c.sho!=null?+c.sho:PEO_SH.sho)/PEO_SH.sho*(c&&c.lm!=null?+c.lm:1),llen=c&&c.ll!=null?+c.ll:1,thick=c&&c.shh!=null?+c.shh/PEO_SH.shh:1,wide=c&&c.shw!=null?+c.shw:1,list=[];
+  L.forEach(function(l){var dx=x-l.gx,dy=y-l.gy,d=Math.hypot(dx,dy*1.6),f=Math.max(0,1-d/l.r);if(f>0)list.push({l:l,dx:dx,dy:dy,d:Math.max(1,Math.hypot(dx,dy)),f:f})});
+  list.sort(function(a,b){return b.f*b.l.a*b.l.k-a.f*a.l.a*a.l.k});
+  list.slice(0,3).forEach(function(o){
+    var al=Math.min(.85,1.25*o.l.a*o.l.k*Math.pow(o.f,.7)*base*k);if(al<.02)return;
+    var s=1/Math.max(.25,o.l.hh-1),len=Math.min(h*.95,o.d*s)*wide*llen,ux=o.dx/o.d,uy=o.dy/o.d,th=Math.max(8,h*.1*thick),tc=shadowTint(o.l.warm).join(',');
+    if(len<th)len=th;
+    var mx=x+ux*len/2,my=y+1+uy*len/2*.6,ang=Math.atan2(uy*.6,ux);
+    ctx.save();ctx.translate(mx,my);ctx.rotate(ang);ctx.scale(1,th/(len/2));
+    var g=ctx.createRadialGradient(0,0,0,0,0,len/2);g.addColorStop(0,'rgba('+tc+','+al+')');g.addColorStop(.6,'rgba('+tc+','+al*.6+')');g.addColorStop(1,'rgba('+tc+',0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,len/2,0,Math.PI*2);ctx.fill();ctx.restore();
+  });
+}
+function drawShadow(ctx,x,y,sc,kind){var c=tiCal(kind||'gosti',-1);peopleShadow(ctx,x,y,sc,c);lampCast(ctx,x,y,250*sc/.34,1,c)}
 function guestSortY(g){
   if(g.mode!=='seated'&&g.mode!=='sitting'&&g.mode!=='rising')return g.y;
   var y=seatPos(g).y,my=TABLEMASKY[g.seat.table];
@@ -1312,7 +1336,7 @@ function drawGuestBody(ctx,g){
   var walk=(g.mode==='in'||g.mode==='out');
   if(walk){
     var sc=scaleAt(g.y),ph=Math.abs(Math.sin(g.phase*Math.PI)),bob=ph*3.2*sc/.3;
-    drawShadow(ctx,g.x,g.y,sc);
+    drawShadow(ctx,g.x,g.y,sc,'gosti');
     // the two pictures of a step: the left leg and the right arm forward, then the right leg and the left arm forward
     var rot=Math.sin(g.phase*Math.PI)*.012+(g.lean||0)*.09;
     {
@@ -1325,6 +1349,7 @@ function drawGuestBody(ctx,g){
     }
   }else{
     var sp=seatPos(g),ssc=scaleAt(sp.y)*SIT_K;
+    try{var im2=imgs[chKey(g,sitPose(g))];lampCast(ctx,sp.x,sp.y+4,(im2?im2.naturalHeight:300)*ssc*.55,.55,tiCal('gosti',-1))}catch(e){}      // the lamps cast the shadow of a seated guest too (weaker)
     if(g.mode==='sitting'||g.mode==='rising'){
       var t=g.mode==='sitting'?g.fade:1-g.fade,e=t*t*(3-2*t);
       var fx=g.seat.ax+(sp.x-g.seat.ax)*e,fy=g.seat.ay+(sp.y-g.seat.ay)*e;
@@ -1491,7 +1516,7 @@ window.CooksterTavern={
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,dirtyDishAt:dirtyDishAt,
   isOpenForGuests:function(){return openForGuests},setOpenForGuests:setOpenForGuests,say:function(i,t,d){var g=guests.filter(function(o){return o.id===i})[0];if(g)gsay(g,t,d)},
   waiterSteps:{get:wsData,set:function(d){WSD=d;try{localStorage.setItem(WS_KEY,JSON.stringify(WSD))}catch(e){}},reset:function(){WSD=null;try{localStorage.removeItem(WS_KEY)}catch(e){}wsData()},count:function(k){return WD_N[k]||0},url:function(k,i){return WAITER+k+'24/f'+(i<10?'0':'')+i+'.webp?v=6'},play:wsPlay,stepClips:16},
-  tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose,draw:tiDraw,shadow:tiShadow,shDef:TI_SH,cal:tiCal},
+  tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose,draw:tiDraw,shadow:tiShadow,shDef:TI_SH,cal:tiCal,peoDef:PEO_SH},
   get isOpen(){return state==='tavern'},get busy(){return busy},guestCount:function(){return guests.length},
   debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,held:!!g.held,an:g.an?g.an.name:'',pose:g.seat.pose,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},
