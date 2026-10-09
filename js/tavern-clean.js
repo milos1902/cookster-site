@@ -593,28 +593,20 @@ function dirtyZone(i,count){
 function markDirty(i){prepare();if(i>=0&&i<cleaned.length&&!cleaning[i]){cleaned[i]=false;refreshInfo()}}
 function floorDirt(n){
   prepare();if(!floorMask||!dirtyOk)return;
-  var sc=mk('canvas');sc.width=W;sc.height=H;var c=sc.getContext('2d');
-  for(var k=0;k<Math.max(1,n);k++){
-    var x=Math.random()*W,y=H*.35+Math.random()*H*.62,r=40+Math.random()*60;
-    var g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,'rgba(0,0,0,.55)');g.addColorStop(1,'rgba(0,0,0,0)');
-    c.globalCompositeOperation='source-over';c.fillStyle=g;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();
-  }
-  c.globalCompositeOperation='source-in';c.drawImage(dirtyImg,0,0,W,H);
-  c.globalCompositeOperation='destination-in';c.drawImage(floorMask,0,0);
-  D.globalCompositeOperation='source-over';D.drawImage(sc,0,0);
+  for(var k=0;k<Math.max(1,n);k++)floorDirtAt(Math.random()*W,H*.35+Math.random()*H*.62,40+Math.random()*60,.55);      // a spot of dirt that comes slowly (see below)
 }
-// the floor gets dirty where people walk and sit: small spots are collected and put on the dirt layer together (every 1.5 s), so the dirty picture comes back slowly
-var blots=[],blotCv=null;
-function floorDirtAt(x,y,r,a){if(blots.length<60)blots.push([x,y,r,a])}
+// the floor gets dirty where people walk and sit: every spot appears slowly (it is drawn a little at a time, 12 steps in about 9 seconds), never at once
+var blots=[],blotCv=null,BLOT_STEPS=12;
+function floorDirtAt(x,y,r,a){if(blots.length<80)blots.push({x:x,y:y,r:r,a:1-Math.pow(1-Math.min(.95,a),1/BLOT_STEPS),left:BLOT_STEPS})}      // (a little over the steps adds up to the whole strength a)
 setInterval(function(){
   if(!blots.length)return;prepare();if(!floorMask||!dirtyOk||!T.isOpen)return;
   if(!blotCv){blotCv=mk('canvas');blotCv.width=W;blotCv.height=H}
   var c=blotCv.getContext('2d');c.globalCompositeOperation='source-over';c.clearRect(0,0,W,H);
-  blots.forEach(function(b){var g=c.createRadialGradient(b[0],b[1],0,b[0],b[1],b[2]);g.addColorStop(0,'rgba(0,0,0,'+b[3]+')');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.beginPath();c.arc(b[0],b[1],b[2],0,Math.PI*2);c.fill()});
-  blots=[];
+  blots.forEach(function(b){var g=c.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);g.addColorStop(0,'rgba(0,0,0,'+b.a+')');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.beginPath();c.arc(b.x,b.y,b.r,0,Math.PI*2);c.fill();b.left--});
+  blots=blots.filter(function(b){return b.left>0});
   c.globalCompositeOperation='source-in';c.drawImage(dirtyImg,0,0,W,H);
   c.globalCompositeOperation='destination-in';c.drawImage(floorMask,0,0);
   D.globalCompositeOperation='source-over';D.drawImage(blotCv,0,0);
-},1500);
+},750);
 window.CooksterTavernClean={floorDirtAt:floorDirtAt,cleanTable:function(i){cleanZone(i)},dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},smoke:function(){return smokeLevel},doorOpen:function(){return doorOpen},doorProgress:function(){return doorA},setDoor:setDoor,autoDoor:autoDoor,stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
 })();

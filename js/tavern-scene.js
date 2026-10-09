@@ -490,7 +490,8 @@ function spawnCompany(){
 // the film of the company: the whole table with the four guests (a video of the game's own picture of that table), played over that part of the scene; between the parts
 // the guests sit still as always. The edges of the pictures fade out, the dishes and the waiter are drawn over the film.
 var COFILM=null,coImgs=null,coState={film:null,next:6,last:-1,al:0};
-try{fetch('assets/tavern/company/anim.json?v=5').then(function(r){return r.json()}).then(function(d){COFILM=d.dr1}).catch(function(){})}catch(e){}
+var CO_FILM_ON=false;      // the film of the four friends at the table is switched off (it was not nice); the four still sit at the table as ordinary guests. true = back on (the pictures are still in assets/tavern/company/)
+if(CO_FILM_ON)try{fetch('assets/tavern/company/anim.json?v=5').then(function(r){return r.json()}).then(function(d){COFILM=d.dr1}).catch(function(){})}catch(e){}
 function coFrames(){
   if(!COFILM)return null;
   if(!coImgs){coImgs={fr:[],ok:0};for(var i=0;i<COFILM.n;i++)(function(i){var im=new Image();im.onload=function(){coImgs.fr[i]=im;coImgs.ok++};im.src='assets/tavern/company/dr1_'+(i<10?'00':i<100?'0':'')+i+'.webp?v=4'})(i)}
@@ -1068,27 +1069,45 @@ function wFrames(name){
   if(!a){a=wfilms[name]={m:m,fr:[],ok:0};for(var i=0;i<m.n;i++)(function(i){var im=new Image();im.onload=function(){a.fr[i]=tint(im)||im;a.ok++};im.src='assets/tavern/waiter/anim/'+name+'_'+(i<10?'00':'0')+i+'.webp?v=3'})(i)}
   return a.ok>=m.n?a:null;
 }
-function wFilm(ctx,w,sc,name,still,loop){                 // draws the waiter as a film (blended over the still picture); false while the frames are still coming
+function wFilmFrame(ctx,w,sc,a,i,im0,alpha){             // one picture of a film of the waiter, over the still picture's place
+  var m=a.m,fi=graded('w'+a.name+i,a.fr[i]),sw=im0.naturalWidth||im0.width,sh=im0.naturalHeight||im0.height;
+  ctx.save();ctx.translate(w.x,w.y);if(w.flip)ctx.scale(-1,1);ctx.globalAlpha=alpha;
+  ctx.drawImage(fi,(-sw/2+m.ox)*sc,(-sh+m.oy)*sc,m.w*sc,m.h*sc);ctx.restore();
+}
+var W_XF=.45;                                             // seconds: one part of the film is dissolved into the next (both are pictures of the film, so the pose hardly changes)
+function wFilm(ctx,w,sc,name,still,loop){                 // draws the waiter as a film (blended over the still picture at the start); false while the frames are still coming
   var a=wFrames(name);if(!a)return false;
+  a.name=name;
   var f=w.film;
   if(!f||f.name!==name||clock>f.t0+f.dur){
     if(f&&f.name===name&&!loop){w.film=null;return false}
     if(!f&&!loop&&clock<(w.filmNext||0))return false;
     var segs=a.m.segs,pool=segs.map(function(_,i){return i}).filter(function(i){return i!==w.lastSeg});
     var si=pool[Math.floor(Math.random()*pool.length)];w.lastSeg=si;
-    f=w.film={name:name,t0:clock,s:segs[si][0],n:segs[si][1],dur:(segs[si][1]-segs[si][0])/a.m.fps};
+    var chain=f&&f.name===name&&clock-(f.t0+f.dur)<.5;      // the next part follows the last one at once: it dissolves from the last picture of that part, not from the still picture
+    var prevI=chain?f.n-1:-1;
+    f=w.film={name:name,t0:clock,s:segs[si][0],n:segs[si][1],dur:(segs[si][1]-segs[si][0])/a.m.fps,prev:prevI};
     if(!loop)w.filmNext=clock+f.dur+3+Math.random()*7;
   }
   var t=clock-f.t0,m=a.m,i=Math.min(f.n-1,f.s+Math.floor(t*m.fps));
-  var al=Math.max(0,Math.min(1,t/.35,(f.dur-t)/.6));al=al*al*(3-2*al);
   var im0=imgs[still]||timgs[still];if(!im0)return false;
+  w._wfDrawn=true;w._wfl={a:a,i:i,t:clock,im:im0};
+  if(f.prev>=0){                                          // dissolve from the end of the last part
+    var k=Math.min(1,t/W_XF);k=k*k*(3-2*k);
+    wFilmFrame(ctx,w,sc,a,f.prev,im0,1);if(k>0)wFilmFrame(ctx,w,sc,a,i,im0,k);
+    return true;
+  }
+  var al=Math.max(0,Math.min(1,t/.35));al=al*al*(3-2*al);   // the first part fades in over the still picture
   if(al<1)drawSprite(ctx,still,w.x,w.y,sc,w.flip,0,1);
-  var fi=graded('w'+name+i,a.fr[i]),sw=im0.naturalWidth||im0.width,sh=im0.naturalHeight||im0.height;
-  ctx.save();ctx.translate(w.x,w.y);if(w.flip)ctx.scale(-1,1);ctx.globalAlpha=al;
-  ctx.drawImage(fi,(-sw/2+m.ox)*sc,(-sh+m.oy)*sc,m.w*sc,m.h*sc);ctx.restore();
+  wFilmFrame(ctx,w,sc,a,i,im0,al);
   return true;
 }
-function drawWaiter(ctx){try{drawWaiterBody(ctx)}finally{castGround=null}}
+function drawWaiter(ctx){
+  var w=waiter;if(!w||w.hidden)return;
+  w._wfDrawn=false;drawWaiterBody(ctx);
+  // the film of the writing ends (he is done with the order, or walks off): its last picture fades out over what comes next, so there is no jump of the pose
+  var L=w._wfl;if(!w._wfDrawn&&L&&clock-L.t<.45&&clock>=L.t){var al=1-(clock-L.t)/.45;al=al*al*(3-2*al);wFilmFrame(ctx,w,scaleAt(w.y),L.a,L.i,L.im,al)}
+}
 function drawWaiterBody(ctx){
   var w=waiter;if(!w||w.hidden)return;
   var sc=scaleAt(w.y),moving=(w.mode==='go'||w.mode==='back')&&w.path&&w.path[w.pi];
@@ -1210,28 +1229,13 @@ function drawSprite(ctx,key,x,y,sc,flip,rot,alpha){
   var im=timgs[key]||imgs[key];if(!im)return;
   im=graded(key,im);                       // (the pictures are the tinted ones: the grading comes on top of the tint)
   var w=(im.naturalWidth||im.width)*sc,h=(im.naturalHeight||im.height)*sc;
-  if(castGround!==null&&alpha>.02){castShadow(ctx,im,x,sc,flip,alpha);castGround=null}      // (once: the second picture of a blended step casts nothing more)
   ctx.save();ctx.globalAlpha=alpha;
   ctx.translate(x,y);if(rot)ctx.rotate(rot);if(flip)ctx.scale(-1,1);
   ctx.drawImage(im,-w/2,-h,w,h);
   ctx.restore();
 }
-// the shadow of somebody who walks: a dark soft spot where the feet touch the floor (contact shadow) and a longer soft shadow cast on the floor away from the lamps (to the right, a bit toward the
-// viewer; as long as the person is tall). drawSprite draws it (once) while castGround is set, because only it knows how tall the picture is.
-var castGround=null,SH_SX=.34,SH_SY=.05;
-function castShadow(ctx,im,x,sc,flip,alpha){
-  var h=(im.naturalHeight||im.height)*sc,k=flip?-1:1,len=h*.5,th=Math.max(7,h*.075),y=castGround+2;
-  ctx.save();ctx.globalAlpha=alpha;
-  ctx.translate(x+SH_SX*h*k*.55,y+SH_SY*h);ctx.rotate(.1*k);
-  ctx.scale(1,th/len);
-  var g=ctx.createRadialGradient(-len*.35*k,0,0,0,0,len);g.addColorStop(0,'rgba(14,5,1,.4)');g.addColorStop(.5,'rgba(14,5,1,.22)');g.addColorStop(1,'rgba(14,5,1,0)');
-  ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,len,0,Math.PI*2);ctx.fill();
-  ctx.restore();
-}
 function drawShadow(ctx,x,y,sc){
-  ctx.save();var r=ctx.createRadialGradient(x,y+1,0,x,y+1,30*sc/.3);r.addColorStop(0,'rgba(14,5,1,.5)');r.addColorStop(.55,'rgba(14,5,1,.28)');r.addColorStop(1,'rgba(14,5,1,0)');
-  ctx.translate(0,y+1);ctx.scale(1,.3);ctx.translate(0,-(y+1));ctx.fillStyle=r;ctx.beginPath();ctx.arc(x,y+1,30*sc/.3,0,Math.PI*2);ctx.fill();ctx.restore();
-  castGround=y;
+  ctx.save();ctx.fillStyle='rgba(20,8,2,.32)';ctx.beginPath();ctx.ellipse(x,y+2,34*sc/.3,9*sc/.3,0,0,Math.PI*2);ctx.fill();ctx.restore();
 }
 function guestSortY(g){
   if(g.mode!=='seated'&&g.mode!=='sitting'&&g.mode!=='rising')return g.y;
@@ -1241,7 +1245,7 @@ function guestSortY(g){
   return y;
 }
 function drawGuest(ctx,g){
-  drawGuestBody(ctx,g);castGround=null;
+  drawGuestBody(ctx,g);
   if(g.mode==='seated'||g.mode==='sitting'||g.mode==='rising'){
     var cm=CAL.chairMask[g.seat.id];
     if(cm)cm.forEach(function(p){drawPolyFromPicture(ctx,p)});
