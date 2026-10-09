@@ -15146,6 +15146,22 @@ if(!__hasSavedWorld&&__starterSpoon){
  __starterSpoon.dataset.angle='178';
  setPose(__starterSpoon,+__starterSpoon.dataset.cx,+__starterSpoon.dataset.by,1);
 }
+// A new kitchen always begins with the bell for the waiter, the trash can and the spike for the orders in these places (the player can move them afterwards).
+// Saved placements are left untouched. Pose: cx = centre, by = bottom (scene pixels), zone = surface.
+const KITCHEN_FIXED_START=[
+ {id:'kanta_set_zatvorena',cx:330,by:905,zone:'floor'},
+ {id:'zvonce_konobar',cx:1120,by:300,zone:'table'},
+ {id:'siljak_narudzbine',cx:520,by:310,zone:'table'}
+];
+if(!__hasSavedWorld){
+ KITCHEN_FIXED_START.forEach(p=>{
+  try{
+   const def=kitchenEquipmentDef(p.id);if(!def||equipmentIsInKitchen(p.id))return;
+   const el=makeItem({...def,instanceId:nextItemInstanceId(def.id),x:p.cx-def.w/2-CENTER_OFFSET,y:p.by-def.h,z:++zCounter});
+   el.dataset.surfaceZone=p.zone;setPose(el,p.cx,p.by,1);
+  }catch(err){console.warn('[Cookster] start prop failed',p.id,err);}
+ });
+}
 cleanupQuickToolSceneClutter();
 setTimeout(cleanupQuickToolSceneClutter,50);
 setTimeout(cleanupQuickToolSceneClutter,350);

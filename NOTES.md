@@ -156,3 +156,6 @@ Alat „Predmeti na stolu": dugmad Kopiranje (Kopiraj ovu stolicu, Nalepi ovde, 
 - **Kupus sa željom**: 40% kupusa ima `req:{ing:'ulje'|'paprika',dir:±1}` ("malo manje ulja"...); u `takeDish` se poredi količina sa sredinom recepta; pogodak +3, promašaj −2 ili gore.
 - **Primedbe o čistoći** (`tickRemarks`): prljav sto (nivo ≥3) → −2, prljav pod (<45% čisto) → −2, čisto (≥85%) ponekad pohvala +1.
 - **Sudoper**: dok teče voda posude u sudoperu se tresu, mehurići, pa jedna po jedna nestaje (~2.4 s) – `js/sink-dishes.js`.
+
+- **Znak (slike)**: `assets/tavern/sign/radi.webp` i `neradi.webp` (Milošev „КАФАНА РАДИ“ / „НЕ РАДИ“) vise na vratima preko tri donja prozora; klik = okretanje oko uspravne ose pa njihanje (`js/tavern-clean.js`). Gornji deo slike je izbledeo (maska) da izgleda kao da je kanap zakačen iza zavese. Znak je u DOM-u iznad gostiju, pa niko ne prolazi iza njega.
+- **Početni raspored kuhinje** (`KITCHEN_FIXED_START` u `js/game.js`): na novoj igri kanta, zvonce i šiljak se same pojave na zadatim mestima (cx, by u pikselima scene). Mesta su za sada moja procena – Miloš treba da pošalje sliku kuhinje sa tačnim mestima. Sačuvana igra se ne dira.
