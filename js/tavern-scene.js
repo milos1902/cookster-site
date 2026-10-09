@@ -1132,7 +1132,7 @@ function drawWaiterBody(ctx){
       if(fa>0)drawSprite(ctx,'w_writes'+nx,w.x,w.y,sc,w.flip,0,fa);
       return;
     }
-    drawSprite(ctx,'w_'+w.set+'2',w.x,w.y,sc,w.flip,0,1);return;
+    drawSprite(ctx,'w_'+w.set+'2',w.x,w.y,sc,w.flip,0,1,{ph:3.1,k:w.mode==='idle'||!w.mode?1:0,s1:.2,s2:.55});return;      // (he stands and waits: the feet stay, the head and shoulders sway a tiny bit)
   }
   // the 16 pictures of a whole walk (two steps = phase 0..2) toward the camera, away from it and from the side (they already move up and down by themselves)
   var W24={walkd:'wd',walku:'wu',walks:'ws'}[w.set],N24=WD_N[w.set];
@@ -1219,8 +1219,9 @@ function idleFilm(g){                                       // the round-and-rou
 function drawBase(ctx,g,x,y,sc,rot){                      // the guest as he sits when nothing special happens: the idle film, or the still picture
   var a=idleFilm(g),key=chKey(g,sitPose(g));
   if(a){var i=Math.floor((clock+g.id*.37)*a.m.fps)%a.m.n;if(drawFrameAt(ctx,g,a,i,key,x,y,sc,rot,1))return}
-  drawSprite(ctx,key,x,y,sc,false,rot,1);
+  drawSprite(ctx,key,x,y,sc,false,rot,1,{ph:g.id*1.37,k:swayK,s1:.3,s2:.62});      // (a still guest sways a tiny bit)
 }
+var swayK=1;
 function drawAnim(ctx,g,x,y,sc,rot){                      // true if the guest was drawn as a film
   var an=g.an;if(!an)return false;
   var a=animFrames(g,an.name),t=clock-an.t0;
@@ -1230,19 +1231,34 @@ function drawAnim(ctx,g,x,y,sc,rot){                      // true if the guest w
   var i=Math.min(an.n-1,an.s+Math.floor(t*m.fps)),fi=graded(gidOf(g)+'_'+an.name+i,a.fr[i]);
   // the film is blended in and out over the still picture of the guest (the still one stays underneath), so nobody sees where the film starts or ends
   var al=Math.min(1,t/ANIM_IN,(an.dur-t)/ANIM_OUT);al=Math.max(0,al);al=al*al*(3-2*al);
-  if(al<1)drawBase(ctx,g,x,y,sc,rot);
+  if(al<1){swayK=1-al;drawBase(ctx,g,x,y,sc,rot);swayK=1}      // (the swaying fades out while a film comes in, so the film and the picture under it match)
   ctx.save();ctx.translate(x,y);if(rot)ctx.rotate(rot);ctx.globalAlpha=al;
   ctx.drawImage(fi,(-sw/2+m.ox)*sc,(-sh+m.oy)*sc,m.w*sc,m.h*sc);
   ctx.restore();
   return true;
 }
-function drawSprite(ctx,key,x,y,sc,flip,rot,alpha){
+// a person who stands or sits still: the picture is cut in three (head / body / the rest) and the upper two sway a tiny bit, like somebody who breathes and looks around;
+// the lower part (feet, hands on the table) stays where it is. sway = {ph: phase, k: strength 0..1, s1, s2: where the head and the body end (part of the height)}
+function swayAmt(t,ph,k){                                  // the strength changes slowly (now and then he is still), the two angles: head, body (radians)
+  var env=.35+.65*(.5+.5*Math.sin(t*.27+ph*1.7));
+  return{head:k*env*(.021*Math.sin(t*.95+ph)+.008*Math.sin(t*2.1+ph*2.3)),body:k*env*.0055*Math.sin(t*.62+ph*.7+1)};
+}
+function drawSprite(ctx,key,x,y,sc,flip,rot,alpha,sway){
   var im=timgs[key]||imgs[key];if(!im)return;
   im=graded(key,im);                       // (the pictures are the tinted ones: the grading comes on top of the tint)
   var w=(im.naturalWidth||im.width)*sc,h=(im.naturalHeight||im.height)*sc;
   ctx.save();ctx.globalAlpha=alpha;
   ctx.translate(x,y);if(rot)ctx.rotate(rot);if(flip)ctx.scale(-1,1);
-  ctx.drawImage(im,-w/2,-h,w,h);
+  if(sway&&sway.k>.01){
+    var iw=im.naturalWidth||im.width,ih=im.naturalHeight||im.height,A=swayAmt(clock,sway.ph,sway.k),
+        s1=Math.round(ih*(sway.s1||.3)),s2=Math.round(ih*(sway.s2||.62)),ov=Math.max(2,Math.round(ih*.02)),k=h/ih;
+    ctx.drawImage(im,0,s2,iw,ih-s2,-w/2,-h+s2*k,w,(ih-s2)*k);                                  // the lower part: still
+    ctx.save();ctx.translate(0,-h+s2*k);ctx.rotate(A.body);ctx.translate(0,h-s2*k);             // the body: turns a little around the waist
+    ctx.drawImage(im,0,s1,iw,s2-s1+ov,-w/2,-h+s1*k,w,(s2-s1+ov)*k);
+    ctx.translate(0,-h+s1*k);ctx.rotate(A.head);ctx.translate(0,h-s1*k);                          // the head: turns a little more around the neck
+    ctx.drawImage(im,0,0,iw,s1+ov,-w/2,-h,w,(s1+ov)*k);
+    ctx.restore();
+  }else ctx.drawImage(im,-w/2,-h,w,h);
   ctx.restore();
 }
 function drawShadow(ctx,x,y,sc){
