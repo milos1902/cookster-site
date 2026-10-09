@@ -474,8 +474,49 @@ function spawn(){
 }
 // a company: 1-4 guests come together to an empty clean table; a big one sometimes stays long and keeps ordering
 function cleanTables(){var cl=window.CooksterTavernClean&&window.CooksterTavernClean.cleaned?window.CooksterTavernClean.cleaned():null;return cl}
+// a fixed company of four (a film of the whole table is made for it, tools/make_company_anim.py): when a group of four comes and its table is free, it is always this company
+var COMPANY={table:0,members:[{seat:0,ch:6},{seat:1,ch:9},{seat:2,ch:10},{seat:3,ch:3}]};
+function companyOk(){
+  var cl=cleanTables();if(cl&&!cl[COMPANY.table])return false;
+  var ts=SEATS.filter(function(s){return s.table===COMPANY.table});
+  if(ts.length<4||ts.some(function(s){return s.taken||!seatReachable(s)}))return false;
+  return !guests.some(function(o){return COMPANY.members.some(function(m){return m.ch===o.ch})});
+}
+function spawnCompany(){
+  var ts=SEATS.filter(function(s){return s.table===COMPANY.table}),grp={id:++UID,size:4,long:true,company:true,sitFor:260+Math.random()*180};
+  COMPANY.members.forEach(function(m,i){var st=ts.filter(function(s){return s.id===m.seat})[0]||ts[i];var g=makeGuest(st,grp,i*.9+Math.random()*.4);g.ch=m.ch});
+  return true;
+}
+// the film of the company: the whole table with the four guests (a video of the game's own picture of that table), played over that part of the scene; between the parts
+// the guests sit still as always. The edges of the pictures fade out, the dishes and the waiter are drawn over the film.
+var COFILM=null,coImgs=null,coState={film:null,next:6,last:-1,al:0};
+try{fetch('assets/tavern/company/anim.json?v=1').then(function(r){return r.json()}).then(function(d){COFILM=d.dr1}).catch(function(){})}catch(e){}
+function coFrames(){
+  if(!COFILM)return null;
+  if(!coImgs){coImgs={fr:[],ok:0};for(var i=0;i<COFILM.n;i++)(function(i){var im=new Image();im.onload=function(){coImgs.fr[i]=im;coImgs.ok++};im.src='assets/tavern/company/dr1_'+(i<10?'00':'0')+i+'.webp?v=1'})(i)}
+  return coImgs.ok>=COFILM.n?coImgs:null;
+}
+function companyGuests(){                                // the four of the company, if all of them sit and nobody eats
+  var m=guests.filter(function(g){return g.grp&&g.grp.company});
+  if(m.length<4||m.some(function(g){return g.mode!=='seated'||eatingGuest(g)}))return null;
+  return m;
+}
+function companyStep(m){                                 // starts / ends the parts of the film; returns {al, i} or null
+  var a=coFrames(),st=coState;
+  if(!a){return null}
+  if(st.film&&clock>st.film.t0+st.film.dur)st.film=null,st.next=clock+1+Math.random()*4;
+  if(!st.film&&clock>=st.next){
+    var segs=COFILM.segs,pool=segs.map(function(_,i){return i}).filter(function(i){return i!==st.last});
+    var si=pool[Math.floor(Math.random()*pool.length)];st.last=si;
+    st.film={t0:clock,s:segs[si][0],e:segs[si][1],dur:(segs[si][1]-segs[si][0])/COFILM.fps};
+  }
+  var f=st.film;if(!f)return null;
+  var t=clock-f.t0,al=Math.max(0,Math.min(1,t/.5,(f.dur-t)/.6));al=al*al*(3-2*al);
+  return{al:al,i:Math.min(f.e-1,f.s+Math.floor(t*COFILM.fps))};
+}
 function spawnGroup(){
   var r=Math.random(),size=r<.38?1:r<.62?2:r<.84?3:4;
+  if(size===4&&companyOk())return spawnCompany();
   if(size===1)return spawn();
   var cl=cleanTables(),tables=[];
   for(var t=0;t<TABLES.length;t++){
@@ -1166,6 +1207,7 @@ function drawGuest(ctx,g){
   }
 }
 function drawGuestBody(ctx,g){
+  if(g._coHide&&g.mode==='seated')return;                  // he is in the film of the company just now
   var walk=(g.mode==='in'||g.mode==='out');
   if(walk){
     var sc=scaleAt(g.y),ph=Math.abs(Math.sin(g.phase*Math.PI)),bob=ph*3.2*sc/.3;
@@ -1193,7 +1235,7 @@ function drawGuestBody(ctx,g){
       var ed=eatingGuest(g),dip=0,tilt=0;
       if(ed){var ph=Math.max(0,Math.sin(ed.eatT*Math.PI/1.15*1)),dr=dishRect(ed);dip=ph*5*ssc/.3;tilt=ph*.035*((dr&&dr.x+dr.w/2<sp.x)?-1:1)}      // leans toward the bowl at every bite
       var rt=Math.sin((clock+g.id)*.5)*.006+tilt;
-      if(!ed&&!g.an&&state==='tavern'&&clock>=(g.anNext||0)){          // now and then he drinks / talks (not all of them, not all the time)
+      if(!ed&&!g.an&&!(g.grp&&g.grp.company)&&state==='tavern'&&clock>=(g.anNext||0)){          // now and then he drinks / talks (not all of them, not all the time)
         g.anNext=clock+5+Math.random()*10;if(Math.random()<.8)startAnim(g,'pij');
       }
       if(!drawAnim(ctx,g,sp.x,sp.y+br,ssc,rt))drawSprite(ctx,chKey(g,sitPose(g)),sp.x,sp.y+br+dip,ssc,false,rt,1);
@@ -1213,15 +1255,18 @@ function draw(){
   ctx.setTransform(k,0,0,k,0,0);ctx.clearRect(0,0,W,H);
   if(!GUESTS_ON)return;          // the cleaning room: no guests, and the table masks must not paint the clean picture over the dirt
   var list=guests.filter(function(g){return !(g.mode==='in'&&g.wait>0)&&!g.held}).map(function(g){return{y:guestSortY(g),g:g}});
-  for(var at=0;at<TABLES.length;at++)(function(t){var my=TABLEMASKY[t];list.push({y:(my!=null?my:TABLES[t].y)+.02,ash:t})})(at);
+  var cm=companyGuests(),cs=cm?companyStep(cm):null,coY=-1e9;
+  guests.forEach(function(g){g._coHide=false});
+  if(cs){coY=Math.max.apply(null,cm.map(guestSortY))+.001;list.push({y:coY,co:cs});if(cs.al>=1)cm.forEach(function(g){g._coHide=true})}
+  for(var at=0;at<TABLES.length;at++)(function(t){var my=TABLEMASKY[t];list.push({y:Math.max((my!=null?my:TABLES[t].y)+.02,t===COMPANY.table?coY+.0001:-1e9),ash:t})})(at);
   MASKS.forEach(function(m){list.push({y:m.y,m:m})});
-  if(waiter)list.push({y:waiter.y,w:true});
+  if(waiter)list.push({y:Math.max(waiter.y,(cs&&Math.abs(waiter.x-425)<260&&waiter.y>220&&waiter.y<720)?coY+.0001:-1e9),w:true});
   // a dish lies on the table: right above the cloth (and above the guests behind the table), but a guest who sits in front of the table covers it
   dishes.forEach(function(d){
     var tb=TABLES[d.table],dx=d.x!=null?d.x:(tb?tb.x:0),dy=d.y!=null?d.y:(tb?tb.y:0),my=-1e9;
     MASKS.forEach(function(m){if(pip(m.poly,dx,dy-4))my=Math.max(my,m.y)});            // the cloth (mask) of the table the dish stands on
     if(my<-1e8)my=TABLEMASKY[d.table]!=null?TABLEMASKY[d.table]:(tb?tb.y:0);
-    list.push({y:my+.01,dish:d});
+    list.push({y:Math.max(my+.01,d.table===COMPANY.table?coY+.0001:-1e9),dish:d});
   });
   // a chair covers whoever walks behind it, but only while nobody sits on it
   WALKMASKS.forEach(function(m){
@@ -1229,7 +1274,7 @@ function draw(){
     if(!busy)list.push({y:m.y,m:m});
   });
   list.sort(function(a,b){return a.y-b.y});
-  list.forEach(function(o){if(o.g)drawGuest(ctx,o.g);else if(o.w)drawWaiter(ctx);else if(o.dish)drawDish(ctx,o.dish);else if(o.ash!==undefined)drawAsh(ctx,o.ash);else drawPolyFromPicture(ctx,o.m.poly)});
+  list.forEach(function(o){if(o.co){ctx.save();ctx.globalAlpha=o.co.al;ctx.drawImage(coImgs.fr[o.co.i],COFILM.ox,COFILM.oy,COFILM.w,COFILM.h);ctx.restore()}else if(o.g)drawGuest(ctx,o.g);else if(o.w)drawWaiter(ctx);else if(o.dish)drawDish(ctx,o.dish);else if(o.ash!==undefined)drawAsh(ctx,o.ash);else drawPolyFromPicture(ctx,o.m.poly)});
   drawReactions(ctx,.016);drawOrderBubble(ctx);
 }
 
@@ -1339,7 +1384,7 @@ function onKey(e){
 window.addEventListener('keydown',onKey,true);window.addEventListener('keyup',onKey,true);window.addEventListener('keypress',onKey,true);
 
 window.CooksterTavern={
-  open:open,close:close,spawn:spawn,
+  open:open,close:close,spawn:spawn,spawnCompany:spawnCompany,
   deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,dirtyDishAt:dirtyDishAt,
   isOpenForGuests:function(){return openForGuests},setOpenForGuests:setOpenForGuests,say:function(i,t,d){var g=guests.filter(function(o){return o.id===i})[0];if(g)gsay(g,t,d)},
