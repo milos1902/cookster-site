@@ -1053,7 +1053,7 @@ function graded(key,im){
 window.CooksterGrade={get:function(){return Object.assign({},GR)},set:function(p){GR=Object.assign({},GR,p);grCache={};try{localStorage.setItem(GR_KEY,JSON.stringify(GR))}catch(e){}},reset:function(){GR=Object.assign({},GR_DEF);grCache={};try{localStorage.removeItem(GR_KEY)}catch(e){}}};
 function drawSprite(ctx,key,x,y,sc,flip,rot,alpha){
   var im=timgs[key]||imgs[key];if(!im)return;
-  if(!timgs[key])im=graded(key,im);
+  im=graded(key,im);                       // (the pictures are the tinted ones: the grading comes on top of the tint)
   var w=(im.naturalWidth||im.width)*sc,h=(im.naturalHeight||im.height)*sc;
   ctx.save();ctx.globalAlpha=alpha;
   ctx.translate(x,y);if(rot)ctx.rotate(rot);if(flip)ctx.scale(-1,1);
