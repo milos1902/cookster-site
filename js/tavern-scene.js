@@ -1384,7 +1384,7 @@ function onKey(e){
 window.addEventListener('keydown',onKey,true);window.addEventListener('keyup',onKey,true);window.addEventListener('keypress',onKey,true);
 
 window.CooksterTavern={
-  open:open,close:close,spawn:spawn,spawnCompany:spawnCompany,
+  open:open,close:close,spawn:spawn,spawnCompany:spawnCompany,companyOk:companyOk,companyTable:function(){return COMPANY.table},
   deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,dirtyDishAt:dirtyDishAt,
   isOpenForGuests:function(){return openForGuests},setOpenForGuests:setOpenForGuests,say:function(i,t,d){var g=guests.filter(function(o){return o.id===i})[0];if(g)gsay(g,t,d)},
