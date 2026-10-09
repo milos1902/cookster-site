@@ -576,7 +576,7 @@ function drawAsh(ctx,t){
 // ---------- the waiter ----------
 // he waits at his home place, walks (along his route) to a table where a guest sits who has not ordered yet, stands at the spot drawn for that table,
 // takes the order, and walks home. The pictures: toward the camera (walkd), away from it (walku), from the side (walks, looking right; flipped for left).
-var waiter=null,WSPEED=92,WD_N={walkd:23,walku:30,walks:37};
+var waiter=null,WSPEED=92,WD_N={walkd:23,walku:30,walks:37},FOOT={walkd:[10,20],walku:[10,24],walks:[2,21]};   // the pictures of the walk (0-based) in which a foot touches the floor: a footstep is heard there
 var deliveries=[],reactions=[],dishes=[],DISH_SRC={plain:'assets/calibration_props/posuda_za_kupus/posuda_kupus.webp',paprika:'assets/calibration_props/posuda_za_kupus/posuda_kupus_paprika.webp'},DISH_SECS=25;
 DISH_SRC.dirty='assets/calibration_props/posuda_za_kupus/posuda_prljava.webp';
 var dishImgs={},EAT_SECS=18,DRINK_SECS=14,EAT_DELAY=1.5;['plain','paprika','dirty'].forEach(function(k){var im=new Image();im.src=DISH_SRC[k];dishImgs[k]=im});
@@ -652,7 +652,7 @@ function stepWaiter(dt){
         var s2=w.carry?carrySet(w):waiterFace(dx,dy);if(s2!==w.set){w.set=s2}
         if(s2==='walks'||s2==='foods'||s2==='drinks'){if(Math.abs(dx)>.3)w.flip=dx<0}else w.flip=false;
         var ph0=Math.floor(w.phase);w.phase+=spd/(40*scaleAt(w.y)/.34);
-        if(Math.floor(w.phase)!==ph0&&state==='tavern'){try{window.CooksterSound.play('waiter','step')}catch(e){}}      // one sound for every step
+        if(Math.floor(w.phase)!==ph0&&state==='tavern'&&(w.carry||!WD_N[w.set])){try{window.CooksterSound.play('waiter','step')}catch(e){}}      // with a tray (old pictures): one sound for every step
       }
     }
   }else if(w.mode==='give'){
@@ -882,7 +882,7 @@ function drawWaiter(ctx){
   var w=waiter;if(!w||w.hidden)return;
   var sc=scaleAt(w.y),moving=(w.mode==='go'||w.mode==='back')&&w.path&&w.path[w.pi];
   drawShadow(ctx,w.x,w.y,sc);
-  if(!moving){
+  if(!moving){w._wf=null;
     // taking the order (seen from the side): writes, now and then looks up at the guest; the other views only stand until their pictures exist
     if(w.mode==='serve'&&w.set==='walks'){
       var SEQW=[[1,.5],[2,.6],[3,.5],[2,.6]],tt=w.t%2.2,acc=0,wi=0;
@@ -898,6 +898,10 @@ function drawWaiter(ctx){
   var W24={walkd:'wd',walku:'wu',walks:'ws'}[w.set],N24=WD_N[w.set];
   if(W24&&!w.carry&&imgs['w_'+W24+N24]){
     var wi2=Math.floor(((w.phase%2)/2)*N24)%N24;
+    // a footstep is heard in the pictures in which a foot touches the floor (also when some pictures are skipped)
+    var pf=w._wf==null?wi2:w._wf,fo=FOOT[w.set]||[];
+    for(var gd=0;pf!==wi2&&gd<N24;gd++){pf=(pf+1)%N24;if(fo.indexOf(pf)>=0){try{window.CooksterSound.play('waiter','step')}catch(e){}}}
+    w._wf=wi2;
     drawSprite(ctx,'w_'+W24+(wi2+1),w.x,w.y,sc,w.set==='walks'?w.flip:false,0,1);return;
   }
   var ph=Math.abs(Math.sin(w.phase*Math.PI)),bob=ph*3.2*sc/.3;

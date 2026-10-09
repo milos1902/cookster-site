@@ -2262,9 +2262,6 @@ window.CooksterWoodBasket={
 
 // v79: samo pažljivo odabrani gameplay zvukovi. Stari generički SFX ostaju ugašeni.
 const SFX={
- waiterStep1:'assets/sfx/game/waiterStep_1.wav',
- waiterStep2:'assets/sfx/game/waiterStep_2.wav',
- waiterStep3:'assets/sfx/game/waiterStep_3.wav',
  tomatoChop:'assets/sfx/game/tomatoChop_1.wav',
  boardPlace:'assets/sfx/game/boardPlace_1.wav',
  tableDropSoft:'assets/sfx/game/tableDropSoft_1.wav',
@@ -2284,6 +2281,8 @@ const SFX={
  oilSizzle:'assets/sfx/game/oilSizzle_1.wav',
  panPlace:'assets/sfx/game/panPlace_1.wav',
 };
+const WAITER_STEPS=16;                                       // the footsteps cut from the recording of walking on a wooden floor (assets/sfx/game/waiterStep_1..16.wav)
+for(let i=1;i<=WAITER_STEPS;i++)SFX['waiterStep'+i]=`assets/sfx/game/waiterStep_${i}.wav`;
 const SFX_VARIANTS={
  tableDropSoft:['assets/sfx/game/tableDropSoft_1.wav','assets/sfx/game/tableDropSoft_2.wav','assets/sfx/game/tableDropSoft_3.wav'],
  tableDropBright:['assets/sfx/game/tableDropBright_1.wav','assets/sfx/game/tableDropBright_2.wav','assets/sfx/game/tableDropBright_3.wav'],
@@ -2462,7 +2461,7 @@ function resolvedImpactConfig(el,action='drop'){
    else if(el?._lidMeta||isAjvarJar(el))sound=action==='open'?'lidOpen':'lidClose';
    volume=action==='open'?.50:.52;
  }
- return{...SOUND_DEFAULTS,volume,cooldown:action==='step'?.15:action==='click'?.04:action==='hover'?.05:action==='cut'?.06:SOUND_DEFAULTS.cooldown,variants:action==='step'?['waiterStep1','waiterStep2','waiterStep3'].filter(k=>!isLibrarySoundDeleted(k)):sound&&!isLibrarySoundDeleted(sound)?[sound]:[]};
+ return{...SOUND_DEFAULTS,volume,cooldown:action==='step'?.15:action==='click'?.04:action==='hover'?.05:action==='cut'?.06:SOUND_DEFAULTS.cooldown,variants:action==='step'?Array.from({length:WAITER_STEPS},(_,i)=>'waiterStep'+(i+1)).filter(k=>!isLibrarySoundDeleted(k)):sound&&!isLibrarySoundDeleted(sound)?[sound]:[]};
 }
 function removeSoundReferences(key){
  let used=0;
