@@ -880,12 +880,13 @@ function drawOrderBubble(ctx){
 }
 
 // the footsteps of the waiter: in which pictures of the walk (0-based) a foot touches the floor, and the sound of the step (tool "Koraci konobara", js/waiter-steps-tool.js)
-var FOOT_DEF={walkd:[[14,.57],[5,.57]],walku:[[6,.63],[19,.65]],walks:[[3,.56],[21,.51]]},WS_KEY='cookster.waiter-steps.v1',WSD=null;
+var FOOT_DEF={walkd:[[14,.57,2],[5,.57,1]],walku:[[6,.63,3],[19,.65,4]],walks:[[3,.56,1],[21,.51,2]]},   // [picture, volume, number of the step sound waiterStepM1..4]
+    WS_KEY='cookster.waiter-steps.v1',WSD=null;
 function wsData(){
   if(WSD)return WSD;
   try{WSD=JSON.parse(localStorage.getItem(WS_KEY))}catch(e){}
   if(!WSD||!WSD.sets)WSD={sets:{}};
-  Object.keys(FOOT_DEF).forEach(function(k){if(!Array.isArray(WSD.sets[k]))WSD.sets[k]=FOOT_DEF[k].map(function(a){return{f:a[0],snd:'random',vol:a[1]}})});
+  Object.keys(FOOT_DEF).forEach(function(k){if(!Array.isArray(WSD.sets[k]))WSD.sets[k]=FOOT_DEF[k].map(function(a){return{f:a[0],snd:'waiterStepM'+a[2],vol:a[1]}})});
   return WSD;
 }
 function wsPlay(e){
