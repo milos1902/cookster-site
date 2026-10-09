@@ -22,6 +22,12 @@ var ORDERS={
 // a bottle of wine comes with a glass for a spritzer (men) or a wine glass (women)
 function makeOrder(key,woman){
   var b=ORDERS[key]||ORDERS.kupus,o={key:key,name:b.name,extra:b.extra,cyr:b.cyr,cyrExtra:b.cyrExtra};
+  if(key==='kupus'&&Math.random()<.4){                 // the guest asks for a little more / less of oil or paprika
+    var ing=Math.random()<.5?'ulje':'paprika',dir=Math.random()<.5?-1:1;
+    o.req={ing:ing,dir:dir};
+    var gen=ing==='ulje'?(dir<0?'manje ulja':'više ulja'):(dir<0?'manje paprike':'više paprike'),cg=ing==='ulje'?(dir<0?'мање уља':'више уља'):(dir<0?'мање паприке':'више паприке');
+    o.extra='malo '+gen;o.cyrExtra='мало '+cg;
+  }
   if(b.items){
     o.items=b.items.slice();
     if(key==='crno_flasa'||key==='belo_flasa'){o.items.push(woman?(key==='crno_flasa'?'pice_casa_crno_vino':'pice_casa_belo_vino'):'pice_casa_spricer');o.extra=woman?'čaša vina':'čaša za špricer';o.cyrExtra=woman?'чаша вина':'чаша за шприцер'}
@@ -82,7 +88,7 @@ var drinkImg=new Image(),drinkOk=false;drinkImg.onload=function(){drinkOk=true};
 // one paper holds the whole order of the table: one row for every thing that was ordered (older single-line papers are wrapped)
 function noteLines(n){
   if(n.lines&&n.lines.length)return n.lines;
-  return[{name:n.name,extra:n.extra,cyr:n.cyr,cyrExtra:n.cyrExtra,items:n.items||null,key:n.key,seatId:n.seatId}];
+  return[{name:n.name,extra:n.extra,cyr:n.cyr,cyrExtra:n.cyrExtra,items:n.items||null,key:n.key,seatId:n.seatId,req:n.req||null}];
 }
 function noteEl(n,big){
   var d=mk('div','ko-note');d.dataset.id=n.id;
@@ -280,6 +286,14 @@ function takeDish(){
         var bowl=bowls.shift();if(!bowl){left.push(l);return}
         var sp={};try{sp=JSON.parse(bowl.dataset.spices||'{}')}catch(e){}
         var ev=window.CooksterQuality?window.CooksterQuality.evaluate(bowl,'kiseli_kupus'):null;
+        if(ev&&l.req){                                       // did he get the "little more / less" he asked for?
+          var Q=window.CooksterQuality,rp=Q.RECIPES.kiseli_kupus.parts[l.req.ing],v=Q.amountsOf(bowl)[l.req.ing]||0;
+          if(rp){
+            var mid=(rp.lo+rp.hi)/2,hit=l.req.dir<0?(v>=rp.lo*.7&&v<mid):(v>mid&&v<=rp.hi*1.3);
+            var what=l.req.ing==='ulje'?'ulja':'paprike';
+            ev=hit?{score:3,issues:['Tačno kako sam tražio!'],perfect:true,amounts:ev.amounts,good:true}:{score:Math.min(ev.score,0)-2,issues:['Tražio sam malo '+(l.req.dir<0?'manje ':'više ')+what+'!'],perfect:false,amounts:ev.amounts};
+          }
+        }
         all.push({kind:(sp.tucana>0||sp.paprika>0)?'paprika':'plain',seatId:l.seatId,ev:ev});
         try{removeItem(bowl)}catch(e){}
       }
@@ -342,7 +356,7 @@ function tick(now){
     if(!anim.dropped&&anim.t>.3){
       anim.dropped=true;
       var o=anim.o,sp=spotFor(notes.length),lst=(o.list&&o.list.length)?o.list:[{ord:o.ord||null,seatId:o.seatId}];
-      var lines=lst.map(function(e){var od=e.ord||{};return{name:od.name||ITEM.name,extra:od.extra!=null?od.extra:ITEM.extra,cyr:od.cyr||ITEM.cyr,cyrExtra:od.cyr?(od.cyrExtra||''):ITEM.cyrExtra,items:od.items||null,key:od.key||'kupus',seatId:e.seatId==null?-1:e.seatId}});
+      var lines=lst.map(function(e){var od=e.ord||{};return{name:od.name||ITEM.name,extra:od.extra!=null?od.extra:ITEM.extra,cyr:od.cyr||ITEM.cyr,cyrExtra:od.cyr?(od.cyrExtra||''):ITEM.cyrExtra,items:od.items||null,key:od.key||'kupus',req:od.req||null,seatId:e.seatId==null?-1:e.seatId}});
       var n={id:o.id,table:o.table,name:lines[0].name+(lines.length>1?' +'+(lines.length-1):''),lines:lines,x:sp.x,y:sp.y,rot:sp.rot};
       notes.push(n);placeNote(n,true);save();
     }
@@ -376,6 +390,20 @@ window.CooksterOrders={
     if(list&&!Array.isArray(list))list=[{ord:list,seatId:arguments[2]}];
     pending.push({id:++uid,table:table,list:list||[],readyAt:Date.now()+TRIP_MS});save()},
   make:makeOrder,
+  // a guest got up and left: his lines are taken off the paper and off the orders that are still on their way
+  cancelSeat:function(table,seatId){
+    function lines(o){return(o.lines||o.list||[]).filter(function(l){return l.seatId!==seatId})}
+    pending.forEach(function(o){if(o.table!==table)return;if(o.list)o.list=o.list.filter(function(e){return e.seatId!==seatId})});
+    pending=pending.filter(function(o){return !(o.table===table&&o.list&&!o.list.length)});
+    for(var i=notes.length-1;i>=0;i--){
+      var n=notes[i];if(n.table!==table||!n.lines)continue;
+      n.lines=n.lines.filter(function(l){return l.seatId!==seatId});
+      var el=scene.querySelector('.ko-note[data-id="'+n.id+'"]');
+      if(!n.lines.length){notes.splice(i,1);if(el)el.remove()}
+      else if(el){var nn=noteEl(n,false);nn.addEventListener('pointerdown',function(e){if(e.button===0)startNoteDrag(e,n,nn)});el.replaceWith(nn)}
+    }
+    save();
+  },
   busy:function(){return pending.length>0||!!anim||called},          // the waiter is away from the tavern
   debug:function(){return{pending:pending.slice(),notes:notes.slice(),animating:!!anim,called:called}},
   ringBell:callWaiter,

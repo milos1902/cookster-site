@@ -464,7 +464,7 @@ function makeGuest(seat,grp,wait){
   var ch=pool.length?pool[Math.floor(Math.random()*pool.length)]:1+Math.floor(Math.random()*CHARS);
   var g={id:++UID,ch:ch,seat:seat,x:DOOR.x+(Math.random()*30-15),y:DOOR.y,
     mode:'in',path:findPath(DOOR,{x:seat.ax,y:seat.ay}),pi:1,phase:Math.random()*2,face:'dole',flip:false,
-    sitT:0,sitFor:grp?grp.sitFor:90+Math.random()*70,orderDelay:14+Math.random()*14,fade:0,from:null,speed:78+Math.random()*16,mood:'ok',grp:grp||null,wait:wait||0,rounds:0};
+    sitT:0,sitFor:grp?grp.sitFor:90+Math.random()*70,orderDelay:14+Math.random()*14,fade:0,from:null,speed:78+Math.random()*16,mood:'ok',grp:grp||null,wait:wait||0,rounds:0,patK:.85+Math.random()*.5,waitFoodSince:null,need:0,warned:false,leftAngry:false};
   guests.push(g);return g;
 }
 // one guest (a free seat at a table that is clean)
@@ -491,10 +491,33 @@ function spawnGroup(){
   seats.forEach(function(st,i){makeGuest(st,grp,i*.9+Math.random()*.4)});
   return true;
 }
+// the sign on the door: "Otvoreno" / "Zatvoreno" (js/tavern-clean.js). While the tavern is closed no new guests come; those who are here stay.
+var OPEN_KEY='cookster.tavern-open.v1',openForGuests=true;
+try{openForGuests=localStorage.getItem(OPEN_KEY)!=='closed'}catch(e){}
+function setOpenForGuests(v){openForGuests=!!v;try{localStorage.setItem(OPEN_KEY,v?'open':'closed')}catch(e){}}
+// --- the guest says something and the reputation changes: a speech bubble over his head (also used for the complaints and the praise)
+function gsay(g,text,delta){
+  var rep=null;try{if(delta&&window.CooksterQuality)rep=window.CooksterQuality.addReputation(delta)}catch(e){}
+  reactions.push({table:g.seat.table,gid:g.id,t:1.4,ev:{issues:[text]},rep:rep,delta:delta||0,life:5});
+}
+// patience: waiting too long for the waiter, or for the food and drinks, he gets up and leaves (and the reputation falls)
+var PAT_ORDER=70,PAT_FOOD=170;                       // seconds: after the waiter should have come / after the order was taken
+function leaveAngry(g,text,delta){
+  gsay(g,text,delta);
+  g.leftAngry=true;g.mode='rising';g.fade=0;
+  try{if(window.CooksterOrders&&window.CooksterOrders.cancelSeat)window.CooksterOrders.cancelSeat(g.seat.table+1,g.seat.id)}catch(e){}
+  for(var i=deliveries.length-1;i>=0;i--)if(deliveries[i].seatId===g.seat.id)deliveries.splice(i,1);
+}
+function checkPatience(g){
+  if(g.leftAngry)return;
+  var wait=g.ordered?(g.waitFoodSince!=null?clock-g.waitFoodSince:0):(g.sitT>g.orderDelay?g.sitT-g.orderDelay:0),lim=g.ordered?PAT_FOOD*g.patK:PAT_ORDER*g.patK;
+  if(wait>lim*.6&&!g.warned&&wait>20){g.warned=true;gsay(g,g.ordered?'Hoće li ta hrana doći danas?':'Konobare! Ima li koga?',0)}
+  if(wait>lim)leaveAngry(g,g.ordered?'Predugo se čeka, odlazim!':'Niko da dođe, odlazim!',-4);
+}
 function chKey(g,pose){return 'g'+(g.ch<10?'0':'')+g.ch+'_'+pose}
 function step(dt){
   clock+=dt;
-  if(GUESTS_ON&&clock>=nextArrival){nextArrival=clock+28+Math.random()*32;if(guests.length>=14||!spawnGroup())nextArrival=clock+4;else if(state==='tavern'){try{window.CooksterSound.play('ambTavern','guestIn')}catch(e){}}}      // no free clean table: look again in a moment
+  if(GUESTS_ON&&clock>=nextArrival){nextArrival=clock+28+Math.random()*32;if(!openForGuests){nextArrival=clock+5}else if(guests.length>=14||!spawnGroup())nextArrival=clock+4;else if(state==='tavern'){try{window.CooksterSound.play('ambTavern','guestIn')}catch(e){}}}      // no free clean table: look again in a moment
   if(GUESTS_ON)stepWaiter(dt);
   tickDishes(dt);tickMess(dt);
   for(var i=guests.length-1;i>=0;i--){
@@ -521,7 +544,8 @@ function step(dt){
       if(g.fade>=1){g.mode='seated';g.sitT=0}
     }else if(g.mode==='seated'){
       g.sitT+=dt;
-      if(g.reorderAt&&g.sitT>g.reorderAt){g.reorderAt=0;g.ordered=false;g.orders=null}      // a long company orders again
+      if(g.reorderAt&&g.sitT>g.reorderAt){g.reorderAt=0;g.ordered=false;g.orders=null;g.warned=false;g.orderDelay=g.sitT}      // a long company orders again
+      if(GUESTS_ON)checkPatience(g);
       if(g.grp){if(!g.grp.until)g.grp.until=clock+g.grp.sitFor;if(clock>g.grp.until){g.mode='rising';g.fade=0}}
       else if(g.sitT>g.sitFor){g.mode='rising';g.fade=0}
     }else if(g.mode==='rising'){
@@ -537,7 +561,20 @@ function addDirt(table,units){
   tableUsed[table]=(tableUsed[table]||0)+units;
   try{if(window.CooksterTavernClean)window.CooksterTavernClean.dirty(table,units)}catch(e){}
 }
+var remarkT=40,TC_BAD=['Ovaj sto je prljav...','Ko ovo čisti, bre?','Može li neko da obriše sto?','Ovde je baš prljavo!'],TC_FLOOR=['Pod je prljav, nije ni čudo...','Kakva prljava kafana!','Ovde bi trebalo pomesti.'],TC_GOOD=['Lepo je čisto ovde.','Baš je čista kafana!','Pohvala za čistoću!'];
+function tickRemarks(dt){                             // now and then a guest says something about the cleanliness; the reputation goes down (dirty) or up (clean)
+  remarkT-=dt;if(remarkT>0)return;remarkT=35+Math.random()*35;
+  var C=window.CooksterTavernClean;if(!C||!C.levels)return;
+  var seated=guests.filter(function(g){return g.mode==='seated'&&!g.leftAngry});if(!seated.length)return;
+  var lv=C.levels(),dirtyT=seated.filter(function(g){return(lv[g.seat.table]||0)>=3&&!g.dirtyNoted});
+  if(dirtyT.length){var g=dirtyT[Math.floor(Math.random()*dirtyT.length)];g.dirtyNoted=true;gsay(g,TC_BAD[Math.floor(Math.random()*TC_BAD.length)],-2);return}
+  var pct=100;try{pct=C.floorPercent()}catch(e){}
+  var g2=seated[Math.floor(Math.random()*seated.length)];
+  if(pct<45&&!g2.floorNoted){g2.floorNoted=true;gsay(g2,TC_FLOOR[Math.floor(Math.random()*TC_FLOOR.length)],-2)}
+  else if(pct>=85&&(lv[g2.seat.table]||0)<=1&&!g2.praised&&Math.random()<.5){g2.praised=true;gsay(g2,TC_GOOD[Math.floor(Math.random()*TC_GOOD.length)],1)}       // not always
+}
 function tickMess(dt){
+  tickRemarks(dt);
   var seatedAt=[0,0,0],cl=cleanTables();
   guests.forEach(function(g){if(g.mode==='seated')seatedAt[g.seat.table]=(seatedAt[g.seat.table]||0)+1});
   // also without guests the hall slowly gets dirty again, one thing at a time: now a table, now a piece of the floor
@@ -599,6 +636,10 @@ function ensureWaiter(){
 var WOMEN={2:1,5:1,8:1,10:1};                        // which of the ten characters are women (they order wine by the glass, men "kilo na kilo")
 function pickOrderKeys(g){                            // what one guest orders: one thing, or a dish together with a drink (every combination can happen)
   var r=Math.random(),w=!!WOMEN[g.ch],drink=w?(Math.random()<.5?'crno_casa':'belo_casa'):(Math.random()<.6?'kilo':(Math.random()<.5?'belo_flasa':'crno_flasa'));
+  if(g.grp&&g.grp.size>1){                              // a company shares ONE bottle (red, white or "kilo na kilo"), everybody gets his own glass
+    if(g.grp.wine===undefined)g.grp.wine=Math.random()<.55?['crno_flasa','belo_flasa','kilo'][Math.floor(Math.random()*3)]:null;
+    if(g.grp.wine){drink=g.grp.wine;if(r<.3)r=.5}
+  }
   if(r<.3)return ['kupus'];
   if(r<.62)return [drink];
   return ['kupus',drink];
@@ -663,6 +704,7 @@ function stepWaiter(dt){
       var isDrink=c.kind==='drink',sv=serveSpot(w.table,isDrink?'pice':'jelo',c.seatId);
       var eatSeat=c.seatId!=null&&c.seatId>=0?c.seatId:-1,secs=isDrink?DRINK_SECS:EAT_SECS;
       if(eatSeat<0)guests.forEach(function(g){if(g.seat.table===w.table&&g.mode==='seated'&&(eatSeat<0||g.seat.id<eatSeat))eatSeat=g.seat.id});
+      guests.forEach(function(g){if(g.seat.id===eatSeat){g.need=Math.max(0,(g.need||1)-1);if(!g.need){g.waitFoodSince=null;g.warned=false}}});          // he got a thing he ordered; when all of it is here he waits no more
       guests.forEach(function(g){if(g.seat.id===eatSeat){g.sitFor=Math.max(g.sitFor,g.sitT+EAT_DELAY+secs+8);if(g.grp)g.grp.until=Math.max(g.grp.until||0,clock+EAT_DELAY+secs+10)}});
       addDirt(w.table,isDrink?1:2);
       guests.forEach(function(g){if(g.seat.id===eatSeat){g.rounds=(g.rounds||0)+1;if(g.grp&&g.grp.long&&g.rounds<4)g.reorderAt=g.sitT+secs+30+Math.random()*30}});
@@ -681,7 +723,17 @@ function stepWaiter(dt){
         if(og.seat.table!==table||og.mode!=='seated'||og.ordered)return;
         og.ordered=true;
         guestOrders(og).forEach(function(od){all.push({ord:od,seatId:og.seat.id})});
+        og.need=guestOrders(og).length;og.waitFoodSince=clock;og.warned=false;
         og.orders=null;
+      });
+      var shared={};                                       // one bottle / one siphon for the whole table: the others get only their glass
+      all.forEach(function(a){
+        var o=a.ord;if(!o.items)return;var keep=[];
+        o.items.forEach(function(it){if(/flasa$|sifon$/.test(it)){if(shared[it])return;shared[it]=1}keep.push(it)});
+        if(keep.length!==o.items.length){
+          o.items=keep;var gl=keep.filter(function(it){return/casa/.test(it)})[0];
+          if(gl&&(o.key==='crno_flasa'||o.key==='belo_flasa'||o.key==='kilo')){o.name=gl==='pice_casa_spricer'?'Čaša za špricer':gl==='pice_casa_crno_vino'?'Čaša crnog vina':'Čaša belog vina';o.extra='uz zajedničku flašu'}
+        }
       });
       if(all.length&&window.CooksterOrders)window.CooksterOrders.add(table+1,all);          // ONE paper with the whole order of the table goes to the kitchen
       w.mode='back';waiterGo(home);
@@ -861,11 +913,13 @@ function eatingGuest(g){
 function drawReactions(ctx,dt){
   for(var i=reactions.length-1;i>=0;i--){
     var r=reactions[i];r.t+=dt;
-    if(r.t>7){reactions.splice(i,1);continue}
+    if(r.t>(r.life?r.life+1.4:7)){reactions.splice(i,1);continue}
     if(r.t<1.4)continue;
-    var g=null;guests.forEach(function(o){if(!g&&o.seat.table===r.table&&(o.mode==='seated'||o.ordered))g=o});
+    var g=null;
+    if(r.gid){guests.forEach(function(o){if(o.id===r.gid)g=o})}
+    else guests.forEach(function(o){if(!g&&o.seat.table===r.table&&(o.mode==='seated'||o.ordered))g=o});
     if(!g)continue;
-    var sp=seatPos(g),im=imgs[chKey(g,sitPose(g))],hh=im?im.naturalHeight*scaleAt(sp.y)*SIT_K:300;
+    var sp=g.mode==='out'?{x:g.x,y:g.y}:seatPos(g),im=imgs[chKey(g,sitPose(g))],hh=g.mode==='out'?250*scaleAt(g.y)/.34:(im?im.naturalHeight*scaleAt(sp.y)*SIT_K:300);
     var iss=r.ev?r.ev.issues:[],l1=iss.length?iss[0]:'Odlično! Baš kako treba.',l2=iss.length>1?iss[1]:(r.delta>0?'Ugled kafane +'+r.delta:(r.delta<0?'Ugled kafane '+r.delta:''));
     drawBubble(ctx,sp.x,sp.y-hh,l1,l2);
   }
@@ -1134,6 +1188,7 @@ window.CooksterTavern={
   open:open,close:close,spawn:spawn,
   deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,dirtyDishAt:dirtyDishAt,
+  isOpenForGuests:function(){return openForGuests},setOpenForGuests:setOpenForGuests,say:function(i,t,d){var g=guests.filter(function(o){return o.id===i})[0];if(g)gsay(g,t,d)},
   waiterSteps:{get:wsData,set:function(d){WSD=d;try{localStorage.setItem(WS_KEY,JSON.stringify(WSD))}catch(e){}},reset:function(){WSD=null;try{localStorage.removeItem(WS_KEY)}catch(e){}wsData()},count:function(k){return WD_N[k]||0},url:function(k,i){return WAITER+k+'24/f'+(i<10?'0':'')+i+'.webp?v=4'},play:wsPlay,stepClips:16},
   tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose,draw:tiDraw,shadow:tiShadow,shDef:TI_SH},
   get isOpen(){return state==='tavern'},get busy(){return busy},guestCount:function(){return guests.length},
