@@ -450,7 +450,7 @@ function setDoor(v,opt){                               // opt.auto: opened/close
 // guests come in and go out through the door: it opens for them and closes by itself a bit later, slowly and quietly (a door that the player opened stays open)
 function autoDoor(){
   if(doorManual)return;
-  doorAutoUntil=performance.now()+3800;
+  doorAutoUntil=performance.now()+2400;
   if(!doorOpen)setDoor(true,{auto:true});
   if(!doorAutoTimer)doorAutoTimer=setInterval(function(){
     if(doorManual||!doorOpen){clearInterval(doorAutoTimer);doorAutoTimer=0;return}
@@ -596,5 +596,5 @@ function floorDirt(n){
   c.globalCompositeOperation='destination-in';c.drawImage(floorMask,0,0);
   D.globalCompositeOperation='source-over';D.drawImage(sc,0,0);
 }
-window.CooksterTavernClean={dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},smoke:function(){return smokeLevel},doorOpen:function(){return doorOpen},setDoor:setDoor,autoDoor:autoDoor,stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
+window.CooksterTavernClean={dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},smoke:function(){return smokeLevel},doorOpen:function(){return doorOpen},doorProgress:function(){return doorA},setDoor:setDoor,autoDoor:autoDoor,stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
 })();
