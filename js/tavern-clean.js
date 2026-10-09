@@ -123,6 +123,13 @@ function setLamp(L,on){
   (function f(now){var k=Math.min(1,(now-t0)/600);lightA[L.id]=from+(to-from)*k;drawLights();if(k<1)requestAnimationFrame(f)})(t0);
 }
 window.__drawLights=drawLights;
+// the lit lamps as real light sources for the people (their shadows follow the light, js/tavern-scene.js lampCast): where the light is on the floor (gx, gy), how strong it is now (a: with the fade and the flicker) and how far it reaches
+var LAMP_GROUND={visece:[572,455,560],zid_levo:[430,330,420],sank:[910,330,480],zid_desno:[1640,470,480],pec:[1270,420,520]};
+function lightSources(){
+  if(!lightsDef)return[];var out=[];
+  lightsDef.lamps.forEach(function(L){var a=lampAmount(L);if(a<.03)return;var g=LAMP_GROUND[L.id]||[L.x,L.y+200,480];out.push({id:L.id,gx:g[0],gy:g[1],r:g[2],a:a})});
+  return out;
+}
 function lampLit(L){return L.stove?stoveLit:!!lightState[L.id]}
 function lampAt(x,y){
   if(!lightsDef)return null;
@@ -615,5 +622,5 @@ setInterval(function(){
   c.globalCompositeOperation='destination-in';c.drawImage(floorMask,0,0);
   D.globalCompositeOperation='source-over';D.drawImage(blotCv,0,0);
 },750);
-window.CooksterTavernClean={floorDirtAt:floorDirtAt,toScene:toScene,tool:function(){return tool},msg:function(t){showMsg(t)},cleanTable:function(i){cleanZone(i)},dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},smoke:function(){return smokeLevel},doorOpen:function(){return doorOpen},doorProgress:function(){return doorA},setDoor:setDoor,autoDoor:autoDoor,stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
+window.CooksterTavernClean={lightSources:lightSources,floorDirtAt:floorDirtAt,toScene:toScene,tool:function(){return tool},msg:function(t){showMsg(t)},cleanTable:function(i){cleanZone(i)},dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},smoke:function(){return smokeLevel},doorOpen:function(){return doorOpen},doorProgress:function(){return doorA},setDoor:setDoor,autoDoor:autoDoor,stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
 })();

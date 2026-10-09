@@ -1291,14 +1291,28 @@ function drawSprite(ctx,key,x,y,sc,flip,rot,alpha,sway){
   ctx.restore();
 }
 // the shadow of the people who walk (guests: "gosti", the waiter: "konobar"): the same soft spot as the things on the tables; strength, shift, width, height and blur are chosen in the tool "Predmeti na stolu"
-var PEO_SH={sho:.32,shx:0,shy:.03,shw:1,shh:.27,shb:3};
+var PEO_SH={sho:.65,shx:0,shy:.03,shw:1,shh:.27,shb:3};
 function peopleShadow(ctx,x,y,sc,c){
   var m={},k,ks=['sho','shx','shy','shw','shh','shb'];
   for(k in PEO_SH)m[k]=PEO_SH[k];
   if(c)ks.forEach(function(q){if(c[q]!=null)m[q]=+c[q]});
   tiShadow(ctx,x,y,68*sc/.3,m);
 }
-function drawShadow(ctx,x,y,sc,kind){peopleShadow(ctx,x,y,sc,tiCal(kind||'gosti',-1))}
+// the shadow of a person from every lit lamp: it lies on the floor away from the lamp, longer the farther he is from it, stronger the nearer / the brighter the lamp is, and it follows him (and the lamp when it is lit / put out or flickers)
+function lampCast(ctx,x,y,h,k,c){
+  var C=window.CooksterTavernClean,L=C&&C.lightSources?C.lightSources():null;if(!L||!L.length)return;
+  var base=(c&&c.sho!=null?+c.sho:PEO_SH.sho)/PEO_SH.sho,thick=c&&c.shh!=null?+c.shh/PEO_SH.shh:1,wide=c&&c.shw!=null?+c.shw:1,list=[];
+  L.forEach(function(l){var dx=x-l.gx,dy=(y-l.gy)*1.6,d=Math.hypot(dx,dy),f=Math.max(0,1-d/l.r);if(f>0)list.push({l:l,dx:dx,dy:y-l.gy,d:Math.max(30,d),f:f})});
+  list.sort(function(a,b){return b.f*b.l.a-a.f*a.l.a});
+  list.slice(0,3).forEach(function(o){
+    var al=Math.min(.85,1.25*o.l.a*Math.pow(o.f,.7)*base*k);if(al<.02)return;
+    var ang=Math.atan2(o.dy*.45,o.dx),len=h*(.42+.4*Math.min(1,o.d/520))*wide,th=Math.max(8,h*.1*thick);
+    ctx.save();ctx.translate(x+Math.cos(ang)*len*.45,y+1+Math.sin(ang)*len*.45*.5);ctx.rotate(ang*.55);ctx.scale(1,th/len);
+    var g=ctx.createRadialGradient(0,0,0,0,0,len);g.addColorStop(0,'rgba(8,4,0,'+al+')');g.addColorStop(.55,'rgba(8,4,0,'+al*.55+')');g.addColorStop(1,'rgba(8,4,0,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,len,0,Math.PI*2);ctx.fill();ctx.restore();
+  });
+}
+function drawShadow(ctx,x,y,sc,kind){var c=tiCal(kind||'gosti',-1);peopleShadow(ctx,x,y,sc,c);lampCast(ctx,x,y,250*sc/.34,1,c)}
 function guestSortY(g){
   if(g.mode!=='seated'&&g.mode!=='sitting'&&g.mode!=='rising')return g.y;
   var y=seatPos(g).y,my=TABLEMASKY[g.seat.table];
@@ -1331,6 +1345,7 @@ function drawGuestBody(ctx,g){
     }
   }else{
     var sp=seatPos(g),ssc=scaleAt(sp.y)*SIT_K;
+    try{var im2=imgs[chKey(g,sitPose(g))];lampCast(ctx,sp.x,sp.y+4,(im2?im2.naturalHeight:300)*ssc*.55,.55,tiCal('gosti',-1))}catch(e){}      // the lamps cast the shadow of a seated guest too (weaker)
     if(g.mode==='sitting'||g.mode==='rising'){
       var t=g.mode==='sitting'?g.fade:1-g.fade,e=t*t*(3-2*t);
       var fx=g.seat.ax+(sp.x-g.seat.ax)*e,fy=g.seat.ay+(sp.y-g.seat.ay)*e;
