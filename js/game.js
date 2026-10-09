@@ -2757,7 +2757,7 @@ function ssSceneItems(){
   for(const [key,def] of Object.entries(VEGETABLES))produce.push(produceSoundTarget(false,key,def.label));
   for(const [key,def] of Object.entries(CooksterCatalog.FRUITS||{}))produce.push(produceSoundTarget(true,key,def.label));
  }catch(_){}
- return [buttonSoundTarget,firewoodSoundTarget,bookSoundTarget,faucetSoundTarget,peelSoundTarget,orderNoteSoundTarget,waiterServeSoundTarget,tavernAmbientTarget,kitchenAmbientTarget,...items,...catalogProps,...hotspots,...produce];
+ return [buttonSoundTarget,firewoodSoundTarget,bookSoundTarget,faucetSoundTarget,peelSoundTarget,doorSoundTarget,orderNoteSoundTarget,waiterServeSoundTarget,tavernAmbientTarget,kitchenAmbientTarget,...items,...catalogProps,...hotspots,...produce];
 }
 const ssCatalogTargets={};
 
