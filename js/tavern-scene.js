@@ -685,6 +685,7 @@ function tickRemarks(dt){                             // now and then a guest sa
 }
 function tickMess(dt){
   tickRemarks(dt);
+  try{if(window.CooksterAshtrays)window.CooksterAshtrays.tick(dt)}catch(e){}
   var seatedAt=[0,0,0],cl=cleanTables();
   guests.forEach(function(g){if(g.mode==='seated')seatedAt[g.seat.table]=(seatedAt[g.seat.table]||0)+1});
   // also without guests the hall slowly gets dirty again, one thing at a time: now a table, now a piece of the floor
@@ -713,6 +714,7 @@ function tickMess(dt){
   }
 }
 function drawAsh(ctx,t){
+  try{if(window.CooksterAshtrays)window.CooksterAshtrays.drawTable(ctx,t)}catch(e){}      // the ashtrays on the table (js/ashtrays.js)
   return;                                              // the ashtrays are in the pictures of the dirt levels now
   var l=ash[t]||0,a=ASH[t];if(!a||l<.04)return;
   var sc=scaleAt(a.y)/.34,n=Math.round(l*14);
@@ -1357,8 +1359,9 @@ function draw(){
   var cm=companyGuests(),cs=cm?companyStep(cm):null,coY=-1e9;
   guests.forEach(function(g){g._coHide=false});
   if(cs){coY=Math.max.apply(null,cm.map(guestSortY))+.001;list.push({y:coY,co:cs});if(cs.al>=1)cm.forEach(function(g){g._coHide=true})}
-  for(var at=0;at<TABLES.length;at++)(function(t){var my=TABLEMASKY[t];list.push({y:Math.max((my!=null?my:TABLES[t].y)+.02,t===COMPANY.table?coY+.0001:-1e9),ash:t})})(at);
+  for(var at=0;at<TABLES.length;at++)(function(t){var my=TABLEMASKY[t],a0=ASH[t],my2=-1e9;if(a0)MASKS.forEach(function(m){if(pip(m.poly,a0.x,a0.y-4))my2=Math.max(my2,m.y)});if(my2>-1e8)my=my2;list.push({y:Math.max((my!=null?my:TABLES[t].y)+.02,t===COMPANY.table?coY+.0001:-1e9),ash:t})})(at);
   MASKS.forEach(function(m){list.push({y:m.y,m:m})});
+  list.push({y:238,bar:true});                       // the ashtrays on the bar (js/ashtrays.js)
   if(waiter)list.push({y:Math.max(waiter.y,(cs&&Math.abs(waiter.x-425)<260&&waiter.y>220&&waiter.y<720)?coY+.0001:-1e9),w:true});
   // a dish lies on the table: right above the cloth (and above the guests behind the table), but a guest who sits in front of the table covers it
   dishes.forEach(function(d){
@@ -1373,7 +1376,7 @@ function draw(){
     if(!busy)list.push({y:m.y,m:m});
   });
   list.sort(function(a,b){return a.y-b.y});
-  list.forEach(function(o){if(o.co){ctx.save();ctx.globalAlpha=o.co.al;ctx.drawImage(coImgs.fr[o.co.i],COFILM.ox,COFILM.oy,COFILM.w,COFILM.h);ctx.restore()}else if(o.g)drawGuest(ctx,o.g);else if(o.w)drawWaiter(ctx);else if(o.dish)drawDish(ctx,o.dish);else if(o.ash!==undefined)drawAsh(ctx,o.ash);else drawPolyFromPicture(ctx,o.m.poly)});
+  list.forEach(function(o){if(o.co){ctx.save();ctx.globalAlpha=o.co.al;ctx.drawImage(coImgs.fr[o.co.i],COFILM.ox,COFILM.oy,COFILM.w,COFILM.h);ctx.restore()}else if(o.g)drawGuest(ctx,o.g);else if(o.w)drawWaiter(ctx);else if(o.dish)drawDish(ctx,o.dish);else if(o.ash!==undefined)drawAsh(ctx,o.ash);else if(o.bar){try{if(window.CooksterAshtrays)window.CooksterAshtrays.drawBar(ctx)}catch(e){}}else drawPolyFromPicture(ctx,o.m.poly)});
   drawReactions(ctx,.016);drawOrderBubble(ctx);
 }
 
@@ -1483,7 +1486,7 @@ function onKey(e){
 window.addEventListener('keydown',onKey,true);window.addEventListener('keyup',onKey,true);window.addEventListener('keypress',onKey,true);
 
 window.CooksterTavern={
-  tableReport:tableReport,waiterSize:{get:function(){return WSIZE},set:function(d){WSIZE=d;try{localStorage.setItem(WSIZE_KEY,JSON.stringify(d))}catch(e){}},scaleAt:wScale},open:open,close:close,spawn:spawn,spawnCompany:spawnCompany,companyOk:companyOk,companyTable:function(){return COMPANY.table},
+  say:gsay,guestsList:function(){return guests},scaleAt:scaleAt,clockNow:function(){return clock},  tableReport:tableReport,waiterSize:{get:function(){return WSIZE},set:function(d){WSIZE=d;try{localStorage.setItem(WSIZE_KEY,JSON.stringify(d))}catch(e){}},scaleAt:wScale},open:open,close:close,spawn:spawn,spawnCompany:spawnCompany,companyOk:companyOk,companyTable:function(){return COMPANY.table},
   deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,dirtyDishAt:dirtyDishAt,
   isOpenForGuests:function(){return openForGuests},setOpenForGuests:setOpenForGuests,say:function(i,t,d){var g=guests.filter(function(o){return o.id===i})[0];if(g)gsay(g,t,d)},
