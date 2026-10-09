@@ -880,17 +880,18 @@ function drawOrderBubble(ctx){
 }
 
 // the footsteps of the waiter: in which pictures of the walk (0-based) a foot touches the floor, and the sound of the step (tool "Koraci konobara", js/waiter-steps-tool.js)
-var FOOT_DEF={walkd:[10,20],walku:[10,24],walks:[2,21]},WS_KEY='cookster.waiter-steps.v1',WSD=null;
+var FOOT_DEF={walkd:[[14,.57],[5,.57]],walku:[[6,.63],[19,.65]],walks:[[3,.56],[21,.51]]},WS_KEY='cookster.waiter-steps.v1',WSD=null;
 function wsData(){
   if(WSD)return WSD;
   try{WSD=JSON.parse(localStorage.getItem(WS_KEY))}catch(e){}
   if(!WSD||!WSD.sets)WSD={sets:{}};
-  Object.keys(FOOT_DEF).forEach(function(k){if(!Array.isArray(WSD.sets[k]))WSD.sets[k]=FOOT_DEF[k].map(function(f){return{f:f,snd:'',vol:1}})});
+  Object.keys(FOOT_DEF).forEach(function(k){if(!Array.isArray(WSD.sets[k]))WSD.sets[k]=FOOT_DEF[k].map(function(a){return{f:a[0],snd:'random',vol:a[1]}})});
   return WSD;
 }
 function wsPlay(e){
   try{
     if(!e.snd)window.CooksterSound.play('waiter','step');                  // the random step chosen in the tool "Zvuk"
+    else if(e.snd==='random')window.CooksterSound.playKey('waiterStep'+(1+Math.floor(Math.random()*16)),e.vol==null?1:e.vol);      // one of the 16 steps from the recording
     else window.CooksterSound.playKey(e.snd,e.vol==null?1:e.vol);
   }catch(x){}
 }
