@@ -423,24 +423,39 @@ function dustPuff(){                                  // a small cloud of dust t
 function dustFall(){                                 // fine dust that falls down along the door after the slam
   for(var i=0;i<14;i++)puffs.push({x:140+Math.random()*210,y:20+Math.random()*120,vx:(Math.random()-.5)*10,vy:18+Math.random()*30,size:34+Math.random()*50,rot:Math.random()*6.28,vr:(Math.random()-.5)*.4,t:-Math.random()*.5,life:1.8+Math.random()*1.2,tex:smokeTex[Math.floor(Math.random()*smokeTex.length)],ph:Math.random()*6.28,al:4,dust:1});
 }
-function setDoor(v){
+var doorAnim=0,doorManual=false,doorAutoUntil=0,doorAutoTimer=0;
+function setDoor(v,opt){                               // opt.auto: opened/closed by the guests (gently, no message); manual close = the slam with dust
+  opt=opt||{};
   if(v===doorOpen)return;doorOpen=v;
-  var t0=performance.now();
+  if(!opt.auto)doorManual=v;
+  var id=++doorAnim,t0=performance.now(),soft=!!opt.soft;
   function slam(){dustPuff();dustFall();if(signEl){signEl.classList.remove('swing');void signEl.offsetWidth;signEl.classList.add('swing')}}      // the slam: dust at the door frame and falling down, the sign sways
-  if(!v&&doorClOk>=DOORC_N){                           // closing: its own frames (a video of the door shutting), quick, the curtain stays on the door
-    (function f(now){var k=Math.min(1,(now-t0)/620),e=.25*k+.75*k*k;
+  function done(){if(!soft)slam()}
+  if(!v&&doorClOk>=DOORC_N){                           // closing: its own frames (a video of the door shutting); the curtain stays on the door
+    var dur=soft?1500:620;
+    (function f(now){if(id!==doorAnim)return;var k=Math.min(1,(now-t0)/dur),e=soft?k*k*(3-2*k):.25*k+.75*k*k;
       var c=doorCv.getContext('2d');c.clearRect(0,0,W,H);c.drawImage(doorCl[Math.min(DOORC_N-1,Math.round(e*(DOORC_N-1)))],DOOR_POS[0],DOOR_POS[1],260,360);
       if(signWrap)signWrap.style.opacity='0';
-      if(k<1)requestAnimationFrame(f);else{doorA=0;drawDoor();slam()}
+      if(k<1)requestAnimationFrame(f);else{doorA=0;drawDoor();done()}
     })(t0);
   }else{
-    var from=doorA,to=v?1:0,dur=v?1700:420;
-    (function f(now){var k=Math.min(1,(now-t0)/dur),e=v?k*k*(3-2*k):k*k;doorA=from+(to-from)*e;drawDoor();
-      if(k<1)requestAnimationFrame(f);else if(!v)slam();
+    var from=doorA,to=v?1:0,dur2=v?1700:(soft?900:420);
+    (function f(now){if(id!==doorAnim)return;var k=Math.min(1,(now-t0)/dur2),e=v?k*k*(3-2*k):(soft?k*k*(3-2*k):k*k);doorA=from+(to-from)*e;drawDoor();
+      if(k<1)requestAnimationFrame(f);else if(!v)done();
     })(t0);
   }
   try{if(window.CooksterSound)window.CooksterSound.play('tavern',v?'doorOpen':'doorClose')}catch(e){}
-  showMsg(v?'Vrata su otvorena — provetrava se.':'Vrata su zatvorena.');
+  if(!opt.auto)showMsg(v?'Vrata su otvorena — provetrava se.':'Vrata su zatvorena.');
+}
+// guests come in and go out through the door: it opens for them and closes by itself a bit later, slowly and quietly (a door that the player opened stays open)
+function autoDoor(){
+  if(doorManual)return;
+  doorAutoUntil=performance.now()+3800;
+  if(!doorOpen)setDoor(true,{auto:true});
+  if(!doorAutoTimer)doorAutoTimer=setInterval(function(){
+    if(doorManual||!doorOpen){clearInterval(doorAutoTimer);doorAutoTimer=0;return}
+    if(performance.now()>doorAutoUntil){clearInterval(doorAutoTimer);doorAutoTimer=0;setDoor(false,{auto:true,soft:true})}
+  },300);
 }
 // ---------- the sign on the door: Otvoreno / Zatvoreno (click: it turns around, hanging on its strings) ----------
 (function(){
@@ -581,5 +596,5 @@ function floorDirt(n){
   c.globalCompositeOperation='destination-in';c.drawImage(floorMask,0,0);
   D.globalCompositeOperation='source-over';D.drawImage(sc,0,0);
 }
-window.CooksterTavernClean={dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},smoke:function(){return smokeLevel},doorOpen:function(){return doorOpen},setDoor:setDoor,stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
+window.CooksterTavernClean={dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},smoke:function(){return smokeLevel},doorOpen:function(){return doorOpen},setDoor:setDoor,autoDoor:autoDoor,stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
 })();

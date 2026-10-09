@@ -523,8 +523,9 @@ function step(dt){
   for(var i=guests.length-1;i>=0;i--){
     var g=guests[i];
     if(g.mode==='in'&&g.wait>0){g.wait-=dt;continue}
-    if(g.mode==='in'&&!g.greeted){g.greeted=true;if(Math.random()<.12&&state==='tavern'&&clock-greetAt>35){greetAt=clock;greetGuest(g)}}
+    if(g.mode==='in'&&!g.greeted){g.greeted=true;try{window.CooksterTavernClean.autoDoor()}catch(e){}if(Math.random()<.12&&state==='tavern'&&clock-greetAt>35){greetAt=clock;greetGuest(g)}}
     if(g.mode==='in'||g.mode==='out'){
+      if(g.mode==='out'&&state==='tavern'&&Math.hypot(g.x-DOOR.x,g.y-DOOR.y)<190){try{window.CooksterTavernClean.autoDoor()}catch(e){}}      // somebody leaves: the door opens
       var tgt=g.path[g.pi];
       if(!tgt){
         if(g.mode==='in'){g.mode='sitting';g.from={x:g.x,y:g.y,face:g.face};g.fade=0;g.sitT=0}
