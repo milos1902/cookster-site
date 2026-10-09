@@ -1,0 +1,42 @@
+{
+ "format": "cookster-waiter-steps",
+ "exportedAt": "2026-10-09T00:53:55.151Z",
+ "sets": {
+  "walkd": [
+   {
+    "f": 14,
+    "snd": "custom:snd_mv08pqdm_xxk91",
+    "vol": 0.57
+   },
+   {
+    "f": 5,
+    "snd": "custom:snd_mv08pqdk_1ebg0",
+    "vol": 0.57
+   }
+  ],
+  "walku": [
+   {
+    "f": 6,
+    "snd": "custom:snd_mv08pqdn_kc9n2",
+    "vol": 0.63
+   },
+   {
+    "f": 19,
+    "snd": "custom:snd_mv08pqdo_edti3",
+    "vol": 0.65
+   }
+  ],
+  "walks": [
+   {
+    "f": 3,
+    "snd": "custom:snd_mv08pqdk_1ebg0",
+    "vol": 0.56
+   },
+   {
+    "f": 21,
+    "snd": "custom:snd_mv08pqdm_xxk91",
+    "vol": 0.51
+   }
+  ]
+ }
+}

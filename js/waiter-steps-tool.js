@@ -14,7 +14,8 @@ function list(){var d=WS.get();if(!d.sets[set])d.sets[set]=[];return d.sets[set]
 function save(){WS.set(WS.get())}
 function img(s,i){var k=s+i;if(!imgs[k]){var im=new Image();im.onload=function(){if(ui.root&&ui.root.classList.contains('open'))paint()};im.src=WS.url(s,i+1);imgs[k]=im}return imgs[k]}
 function sounds(){
-  var o=[['','Nasumičan korak (alat „Zvuk“)']];
+  var o=[['random','Nasumičan od 16 koraka iz snimka'],['','Nasumičan korak (alat „Zvuk“)']];
+  for(var m=1;m<=4;m++)o.push(['waiterStepM'+m,'Tvoj korak '+m+' (hodanje po drvetu)']);
   for(var i=1;i<=WS.stepClips;i++)o.push(['waiterStep'+i,'Korak '+i+' (iz tvog snimka)']);
   try{Object.keys(importedAudio).forEach(function(id){var v=importedAudio[id];o.push(['custom:'+id,'Biblioteka: '+((v&&v.name)||id)])})}catch(e){}
   return o;

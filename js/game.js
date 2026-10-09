@@ -2283,6 +2283,7 @@ const SFX={
 };
 const WAITER_STEPS=16;                                       // the footsteps cut from the recording of walking on a wooden floor (assets/sfx/game/waiterStep_1..16.wav)
 for(let i=1;i<=WAITER_STEPS;i++)SFX['waiterStep'+i]=`assets/sfx/game/waiterStep_${i}.wav`;
+for(let i=1;i<=4;i++)SFX['waiterStepM'+i]=`assets/sfx/game/waiterStepM${i}.wav`;      // the 4 steps Milos cut in the tool "Koraci konobara" (walking on wood)
 const SFX_VARIANTS={
  tableDropSoft:['assets/sfx/game/tableDropSoft_1.wav','assets/sfx/game/tableDropSoft_2.wav','assets/sfx/game/tableDropSoft_3.wav'],
  tableDropBright:['assets/sfx/game/tableDropBright_1.wav','assets/sfx/game/tableDropBright_2.wav','assets/sfx/game/tableDropBright_3.wav'],
