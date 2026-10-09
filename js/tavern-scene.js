@@ -1181,14 +1181,14 @@ var CUT_KEY='cookster.guest-anim-cuts.v1';
 function applyCuts(){                                     // the parts chosen in the tool "Animacije gostiju" replace the built-in ones
   try{var c=JSON.parse(localStorage.getItem(CUT_KEY)||'{}');Object.keys(c).forEach(function(g){Object.keys(c[g]).forEach(function(n){var m=ANIM&&ANIM[g]&&ANIM[g][n],o=c[g][n];if(m&&o&&o.segs&&o.segs.length){m.segs=o.segs;m.solo=o.solo||0;m.custom=true}})})}catch(e){}
 }
-try{fetch('assets/tavern/guests/anim/anim.json?v=9').then(function(r){return r.json()}).then(function(d){ANIM=d;applyCuts()}).catch(function(){})}catch(e){}
+try{fetch('assets/tavern/guests/anim/anim.json?v=10').then(function(r){return r.json()}).then(function(d){ANIM=d;applyCuts()}).catch(function(){})}catch(e){}
 function gidOf(g){return 'g'+(g.ch<10?'0':'')+g.ch}
 function animFrames(g,name){                              // the frames of a film (loaded when the first guest of this character needs them), or null while they are coming
   var gid=gidOf(g),m=ANIM&&ANIM[gid]&&ANIM[gid][name];if(!m)return null;
   var key=gid+'_'+name,a=animImgs[key];
   if(!a){
     a=animImgs[key]={m:m,fr:[],ok:0,id:'a_'+key+'_'};
-    for(var i=0;i<m.n;i++)(function(i){var im=new Image();im.onload=function(){a.fr[i]=tint(im)||im;a.ok++};im.src='assets/tavern/guests/anim/'+key+'_'+(i<10?'00':i<100?'0':'')+i+'.webp?v=9'})(i);
+    for(var i=0;i<m.n;i++)(function(i){var im=new Image();im.onload=function(){a.fr[i]=tint(im)||im;a.ok++};im.src='assets/tavern/guests/anim/'+key+'_'+(i<10?'00':i<100?'0':'')+i+'.webp?v=10'})(i);
   }
   return a.ok>=m.n?a:null;
 }
@@ -1217,9 +1217,19 @@ function idleFilm(g){                                       // the round-and-rou
   var pz=g.seat.pose||'lice',a=animFrames(g,pz==='lice'?'idle':'idle_'+pz);return a&&a.m.loop?a:null;
 }
 function drawBase(ctx,g,x,y,sc,rot){                      // the guest as he sits when nothing special happens: the idle film, or the still picture
-  var a=idleFilm(g),key=chKey(g,sitPose(g));
-  if(a){var i=Math.floor((clock+g.id*.37)*a.m.fps)%a.m.n;if(drawFrameAt(ctx,g,a,i,key,x,y,sc,rot,1))return}
-  drawSprite(ctx,key,x,y,sc,false,rot,1,{ph:g.id*1.37,k:swayK,s1:.3,s2:.62});      // (a still guest sways a tiny bit)
+  var a=idleFilm(g),key=chKey(g,sitPose(g)),al=0,i=0;
+  if(a){
+    // the quiet film of a guest who sits alone (he drinks a bit, scratches his head ...) is played now and then (about every 5-12 s), from its first picture, which is the still picture;
+    // in between he sits and sways a tiny bit. The film is blended in and out over the swaying picture.
+    if(a.m.n>=80){var i0=Math.floor((clock+g.id*.37)*a.m.fps)%a.m.n;if(drawFrameAt(ctx,g,a,i0,key,x,y,sc,rot,1))return}      // (the long films of the guests 9 and 10 run round and round)
+    var d=a.m.n/a.m.fps,I=g._idleF;
+    if(!I){I=g._idleF={t0:-1e9,next:clock+2+Math.random()*7}}
+    if(clock>=I.next&&clock>I.t0+d){I.t0=clock;I.next=clock+d+5+Math.random()*7}
+    var t=clock-I.t0;
+    if(t>=0&&t<d){al=Math.max(0,Math.min(1,t/.45,(d-t)/.45));al=al*al*(3-2*al);i=Math.min(a.m.n-1,Math.floor(t*a.m.fps))}
+  }
+  if(al<1)drawSprite(ctx,key,x,y,sc,false,rot,1,{ph:g.id*1.37,k:swayK*(1-al),s1:.3,s2:.62});      // (a still guest sways a tiny bit)
+  if(al>0)drawFrameAt(ctx,g,a,i,key,x,y,sc,rot,al);
 }
 var swayK=1;
 function drawAnim(ctx,g,x,y,sc,rot){                      // true if the guest was drawn as a film
