@@ -223,6 +223,7 @@ T.dirtCanvas=dirt;                                    // the scene redraws parts
 var LV=[],LVN=5,STEP=2,TH=[2,12,26,44,66],TRECT=[[215,330,650,540],[590,500,1105,800],[1180,360,1625,590]];   // the 3 tables: x1,y1,x2,y2
 var tlevel=[],tscore=[];
 var TQUAD=[[[236,428],[450,358],[600,432],[388,520]],[[612,632],[850,540],[1086,650],[827,786]],[[1201,476],[1400,400],[1600,474],[1416,568]]];   // the table tops (for the right click; can be cleaned at any moment)
+T.tableQuads=TQUAD;
 
 for(var li=1;li<=LVN;li++){(function(n){var im=new Image();im.onload=function(){initTables()};im.src='assets/tavern/dirt/lvl'+n+'.webp?v=5';LV[n]=im})(li)}
 function lvReady(){for(var n=1;n<=LVN;n++)if(!LV[n]||!LV[n].naturalWidth)return false;return true}
@@ -562,6 +563,7 @@ room.addEventListener('contextmenu',function(e){
   if(dish)opts.push({ic:'🍽️',t:'Pranje',fn:function(){
     if(T.dirtyDishAt(p.x,p.y,true)){try{if(window.CooksterSinkDishes)window.CooksterSinkDishes.add()}catch(_){}}
   }});
+  (T.menuHooks||[]).forEach(function(h){try{h(p,opts)}catch(_){}});      // other modules add their own choices (the ashtrays on the bar: "Očisti pepeljare")
   menu.innerHTML='<div class="tc-ring"></div>';
   opts.forEach(function(o,k){
     var b=mk('button'),a=-Math.PI/2+k*2*Math.PI/opts.length;
@@ -613,5 +615,5 @@ setInterval(function(){
   c.globalCompositeOperation='destination-in';c.drawImage(floorMask,0,0);
   D.globalCompositeOperation='source-over';D.drawImage(blotCv,0,0);
 },750);
-window.CooksterTavernClean={floorDirtAt:floorDirtAt,cleanTable:function(i){cleanZone(i)},dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},smoke:function(){return smokeLevel},doorOpen:function(){return doorOpen},doorProgress:function(){return doorA},setDoor:setDoor,autoDoor:autoDoor,stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
+window.CooksterTavernClean={floorDirtAt:floorDirtAt,toScene:toScene,tool:function(){return tool},msg:function(t){showMsg(t)},cleanTable:function(i){cleanZone(i)},dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},smoke:function(){return smokeLevel},doorOpen:function(){return doorOpen},doorProgress:function(){return doorA},setDoor:setDoor,autoDoor:autoDoor,stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
 })();
