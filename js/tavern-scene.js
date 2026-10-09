@@ -1102,7 +1102,7 @@ function wFilm(ctx,w,sc,name,still,loop){                 // draws the waiter as
   }
   if(f.from){                                              // he has just stopped: the last picture of the walk dissolves into the film (the still picture is not shown at all)
     var kk=Math.min(1,t/.3);kk=kk*kk*(3-2*kk);
-    drawSprite(ctx,f.from.key,w.x,w.y-(f.from.bob||0),sc,f.from.flip,0,1);
+    if(kk<1)drawSprite(ctx,f.from.key,w.x,w.y-(f.from.bob||0),sc,f.from.flip,0,1-kk);      // (only while it dissolves: afterwards the walk picture must not stay behind him)
     if(kk>0)wFilmFrame(ctx,w,sc,a,i,im0,kk);
     return true;
   }
