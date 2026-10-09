@@ -1008,12 +1008,43 @@ function wsPlay(e){
     else window.CooksterSound.playKey(e.snd,e.vol==null?1:e.vol);
   }catch(x){}
 }
+// the waiter has short films too (tools/make_waiter_anims.py): from behind he waits for a guest (scratches his head), in profile he writes in his notebook (mirrored for the left)
+var WANIM=null,wfilms={};
+try{fetch('assets/tavern/waiter/anim/anim.json?v=1').then(function(r){return r.json()}).then(function(d){WANIM=d}).catch(function(){})}catch(e){}
+function wFrames(name){
+  var m=WANIM&&WANIM[name];if(!m)return null;
+  var a=wfilms[name];
+  if(!a){a=wfilms[name]={m:m,fr:[],ok:0};for(var i=0;i<m.n;i++)(function(i){var im=new Image();im.onload=function(){a.fr[i]=tint(im)||im;a.ok++};im.src='assets/tavern/waiter/anim/'+name+'_'+(i<10?'00':'0')+i+'.webp?v=1'})(i)}
+  return a.ok>=m.n?a:null;
+}
+function wFilm(ctx,w,sc,name,still,loop){                 // draws the waiter as a film (blended over the still picture); false while the frames are still coming
+  var a=wFrames(name);if(!a)return false;
+  var f=w.film;
+  if(!f||f.name!==name||clock>f.t0+f.dur){
+    if(f&&f.name===name&&!loop){w.film=null;return false}
+    if(!f&&!loop&&clock<(w.filmNext||0))return false;
+    var segs=a.m.segs,pool=segs.map(function(_,i){return i}).filter(function(i){return i!==w.lastSeg});
+    var si=pool[Math.floor(Math.random()*pool.length)];w.lastSeg=si;
+    f=w.film={name:name,t0:clock,s:segs[si][0],n:segs[si][1],dur:(segs[si][1]-segs[si][0])/a.m.fps};
+    if(!loop)w.filmNext=clock+f.dur+3+Math.random()*7;
+  }
+  var t=clock-f.t0,m=a.m,i=Math.min(f.n-1,f.s+Math.floor(t*m.fps));
+  var al=Math.max(0,Math.min(1,t/.35,(f.dur-t)/.6));al=al*al*(3-2*al);
+  var im0=imgs[still]||timgs[still];if(!im0)return false;
+  if(al<1)drawSprite(ctx,still,w.x,w.y,sc,w.flip,0,1);
+  var fi=graded('w'+name+i,a.fr[i]),sw=im0.naturalWidth||im0.width,sh=im0.naturalHeight||im0.height;
+  ctx.save();ctx.translate(w.x,w.y);if(w.flip)ctx.scale(-1,1);ctx.globalAlpha=al;
+  ctx.drawImage(fi,(-sw/2+m.ox)*sc,(-sh+m.oy)*sc,m.w*sc,m.h*sc);ctx.restore();
+  return true;
+}
 function drawWaiter(ctx){
   var w=waiter;if(!w||w.hidden)return;
   var sc=scaleAt(w.y),moving=(w.mode==='go'||w.mode==='back')&&w.path&&w.path[w.pi];
   drawShadow(ctx,w.x,w.y,sc);
   if(!moving){w._wf=null;
     // taking the order (seen from the side): writes, now and then looks up at the guest; the other views only stand until their pictures exist
+    if(w.mode==='serve'&&w.set==='walks'&&wFilm(ctx,w,sc,'write','w_writes2',true))return;
+    if(w.mode==='idle'&&w.set==='walku'&&wFilm(ctx,w,sc,'wait','w_walku2',false))return;
     if(w.mode==='serve'&&w.set==='walks'){
       var SEQW=[[1,.5],[2,.6],[3,.5],[2,.6]],tt=w.t%2.2,acc=0,wi=0;
       for(;wi<SEQW.length-1&&tt>=acc+SEQW[wi][1];wi++)acc+=SEQW[wi][1];
@@ -1064,35 +1095,44 @@ function graded(key,im){
 window.CooksterGrade={get:function(){return Object.assign({},GR)},set:function(p){GR=Object.assign({},GR,p);grCache={}},reset:function(){GR=Object.assign({},GR_DEF);grCache={}}};
 // the seated guests move: short films (frames cut from videos, tools/make_guest_anims.py) of a guest who drinks and talks ("pij") and who calls the waiter ("doziv").
 // The film starts and ends with the picture of the still guest; only for the guests that face us (the pose "lice") and only for the guests that have been made so far.
-var ANIM=null,animImgs={},ANIM_END=.4;
-try{fetch('assets/tavern/guests/anim/anim.json?v=2').then(function(r){return r.json()}).then(function(d){ANIM=d}).catch(function(){})}catch(e){}
+var ANIM=null,animImgs={},ANIM_IN=.35,ANIM_OUT=.7;
+try{fetch('assets/tavern/guests/anim/anim.json?v=4').then(function(r){return r.json()}).then(function(d){ANIM=d}).catch(function(){})}catch(e){}
 function gidOf(g){return 'g'+(g.ch<10?'0':'')+g.ch}
 function animFrames(g,name){                              // the frames of a film (loaded when the first guest of this character needs them), or null while they are coming
   var gid=gidOf(g),m=ANIM&&ANIM[gid]&&ANIM[gid][name];if(!m)return null;
   var key=gid+'_'+name,a=animImgs[key];
   if(!a){
     a=animImgs[key]={m:m,fr:[],ok:0};
-    for(var i=0;i<m.n;i++)(function(i){var im=new Image();im.onload=function(){a.fr[i]=tint(im)||im;a.ok++};im.src='assets/tavern/guests/anim/'+key+'_'+(i<10?'00':i<100?'0':'')+i+'.webp?v=1'})(i);
+    for(var i=0;i<m.n;i++)(function(i){var im=new Image();im.onload=function(){a.fr[i]=tint(im)||im;a.ok++};im.src='assets/tavern/guests/anim/'+key+'_'+(i<10?'00':i<100?'0':'')+i+'.webp?v=4'})(i);
   }
   return a.ok>=m.n?a:null;
 }
+function tableMates(g){var n=0;guests.forEach(function(o){if(o.seat.table===g.seat.table&&(o.mode==='seated'||o.mode==='sitting'))n++});return n}
 function startAnim(g,name){
   if(g.an||g.mode!=='seated'||g.seat.pose!=='lice'&&g.seat.pose!=null)return false;
   var a=animFrames(g,name);if(!a)return false;
-  g.an={name:name,t0:clock,dur:a.m.n/a.m.fps};return true;
+  // the film is cut into parts (one sip, one talk ...): a different part each time; a guest who sits alone only has the first part (a sip), a company all of them
+  var m=a.m,segs=m.segs||[[0,m.n]],seg;
+  if(name==='pij'){
+    var pool=tableMates(g)<2?[0]:segs.map(function(_,i){return i}).filter(function(i){return i!==g.lastSeg});
+    if(!pool.length)pool=[0];
+    g.lastSeg=pool[Math.floor(Math.random()*pool.length)];seg=segs[g.lastSeg];
+  }else seg=[0,m.n];
+  g.an={name:name,t0:clock,s:seg[0],n:seg[1],dur:(seg[1]-seg[0])/m.fps};return true;
 }
 function drawAnim(ctx,g,x,y,sc,rot){                      // true if the guest was drawn as a film
   var an=g.an;if(!an)return false;
   var a=animFrames(g,an.name),t=clock-an.t0;
-  if(!a||t>an.dur+ANIM_END){g.an=null;return false}
-  var im0=timgs[chKey(g,sitPose(g))]||imgs[chKey(g,sitPose(g))];if(!im0)return false;
+  if(!a||t>an.dur){g.an=null;return false}
+  var key=chKey(g,sitPose(g)),im0=timgs[key]||imgs[key];if(!im0)return false;
   var sw=im0.naturalWidth||im0.width,sh=im0.naturalHeight||im0.height,m=a.m;
-  var i=Math.min(m.n-1,Math.floor(Math.min(t,an.dur-.001)*m.fps)),fk=gidOf(g)+'_'+an.name+i,fi=graded(fk,a.fr[i]);
-  var end=t>an.dur?Math.min(1,(t-an.dur)/ANIM_END):0;     // at the end the last picture fades into the still guest
-  ctx.save();ctx.translate(x,y);if(rot)ctx.rotate(rot);
-  ctx.globalAlpha=1-end;ctx.drawImage(fi,(-sw/2+m.ox)*sc,(-sh+m.oy)*sc,m.w*sc,m.h*sc);
+  var i=Math.min(an.n-1,an.s+Math.floor(t*m.fps)),fi=graded(gidOf(g)+'_'+an.name+i,a.fr[i]);
+  // the film is blended in and out over the still picture of the guest (the still one stays underneath), so nobody sees where the film starts or ends
+  var al=Math.min(1,t/ANIM_IN,(an.dur-t)/ANIM_OUT);al=Math.max(0,al);al=al*al*(3-2*al);
+  if(al<1)drawSprite(ctx,key,x,y,sc,false,rot,1);
+  ctx.save();ctx.translate(x,y);if(rot)ctx.rotate(rot);ctx.globalAlpha=al;
+  ctx.drawImage(fi,(-sw/2+m.ox)*sc,(-sh+m.oy)*sc,m.w*sc,m.h*sc);
   ctx.restore();
-  if(end>0)drawSprite(ctx,chKey(g,sitPose(g)),x,y,sc,false,rot,end);
   return true;
 }
 function drawSprite(ctx,key,x,y,sc,flip,rot,alpha){
