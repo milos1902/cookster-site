@@ -198,10 +198,11 @@ function smokeTick(dt){
   }
   for(var i=puffs.length-1;i>=0;i--){
     var p=puffs[i];p.t+=dt;
-    if(p.t>=p.life||(puffs.length>want+3&&p.t>p.life*.5)){puffs.splice(i,1);continue}
+    if(p.t>=p.life||(!p.dust&&puffs.length>want+3&&p.t>p.life*.5)){puffs.splice(i,1);continue}
+    if(p.t<0)continue;
     p.x+=(p.vx+Math.sin(p.t*.5+p.ph)*5)*dt;p.y+=(p.vy+Math.cos(p.t*.4+p.ph)*2)*dt;p.rot+=p.vr*dt;
     var k=p.t/p.life,fade=Math.sin(Math.PI*k);
-    SM.globalAlpha=Math.min(.3,(.07+.18*smokeLevel)*p.al)*fade;
+    SM.globalAlpha=Math.min(p.dust?.55:.3,(.07+.18*smokeLevel)*p.al)*fade;
     var sz=p.size*(1+k*.4)/4;
     SM.save();SM.translate(p.x/4,p.y/4);SM.rotate(p.rot);SM.drawImage(p.tex,-sz/2,-sz/2,sz,sz);SM.restore();
   }
@@ -404,10 +405,18 @@ doorCv=mk('canvas','tc-dirt');doorCv.width=W;doorCv.height=H;
 cv.parentNode.insertBefore(doorCv,cv);                       // right under the people (above the dirt), so everybody walks in front of the door and the sign
 doorImg.src='assets/tavern/vrata_otvorena.webp?v=1';
 function drawDoor(){var c=doorCv.getContext('2d');c.clearRect(0,0,W,H);if(doorA>0&&doorImg.naturalWidth){c.globalAlpha=doorA;c.drawImage(doorImg,DOOR_POS[0],DOOR_POS[1]);c.globalAlpha=1}if(signWrap)signWrap.style.opacity=String(1-doorA)}
+function dustPuff(){                                  // a small cloud of dust that comes out of the door frame when the door is slammed
+  var spots=[[150,300,-14],[330,300,14],[240,340,0],[200,330,-6],[290,330,6]];
+  spots.forEach(function(a,i){puffs.push({x:a[0]+(Math.random()-.5)*20,y:a[1]+(Math.random()-.5)*14,vx:a[2]*(1+Math.random()*.6),vy:-(10+Math.random()*12),size:90+Math.random()*80,rot:Math.random()*6.28,vr:(Math.random()-.5)*.3,t:-i*.04,life:1.7+Math.random()*.6,tex:smokeTex[Math.floor(Math.random()*smokeTex.length)],ph:Math.random()*6.28,al:5,dust:1})});
+}
 function setDoor(v){
   if(v===doorOpen)return;doorOpen=v;
   var from=doorA,to=v?1:0,t0=performance.now();
-  (function f(now){var k=Math.min(1,(now-t0)/900);doorA=from+(to-from)*k;drawDoor();if(k<1)requestAnimationFrame(f)})(t0);
+  var dur=v?900:420;                                   // it opens slowly and is slammed shut quickly
+  (function f(now){var k=Math.min(1,(now-t0)/dur),e=v?k:k*k;doorA=from+(to-from)*e;drawDoor();
+    if(k<1)requestAnimationFrame(f);
+    else if(!v){dustPuff();if(signEl){signEl.classList.remove('swing');void signEl.offsetWidth;signEl.classList.add('swing')}}      // the slam: a puff of dust at the door and the sign sways
+  })(t0);
   try{if(window.CooksterSound)window.CooksterSound.play('tavern',v?'doorOpen':'doorClose')}catch(e){}
   showMsg(v?'Vrata su otvorena — provetrava se.':'Vrata su zatvorena.');
 }
