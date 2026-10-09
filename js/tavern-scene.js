@@ -448,7 +448,7 @@ var guests=[],nextArrival=2,clock=0,UID=0;
 var SCALE0=.31*GUEST_K,SCALE_K=.00012*GUEST_K,SIT_K=.78;      // size of a picture at height y of the hall
 function scaleAt(y){return SCALE0+SCALE_K*y}
 // the waiter grows as he comes toward the camera (nearer = bigger than the plain depth scale gives): from the size k=1 at y0 smoothly to k times bigger at y1 (the lower tables)
-var WSIZE_KEY='cookster.waiter-size.v1',WSIZE={y0:430,y1:850,k:1.32};
+var WSIZE_KEY='cookster.waiter-size.v2',WSIZE={y0:430,y1:850,k:1.2*scaleAt(430)/scaleAt(850)};      // k: how much bigger than the plain depth scale; chosen so that at the nearest place (y1) he is 20 % bigger than where he starts (y0)
 try{var _ws=JSON.parse(localStorage.getItem(WSIZE_KEY)||'null');if(_ws&&isFinite(_ws.y0)&&isFinite(_ws.y1)&&isFinite(_ws.k))WSIZE=_ws}catch(e){}
 function wk(y){var t=Math.max(0,Math.min(1,(y-WSIZE.y0)/Math.max(1,WSIZE.y1-WSIZE.y0)));t=t*t*(3-2*t);return 1+(WSIZE.k-1)*t}      // how much bigger he is at height y (when he stands)
 // while he walks the size does not follow his height (that made it jump in the last steps of the walk) but the way he has done: from the size where he started (k0) steadily to the size at the place
