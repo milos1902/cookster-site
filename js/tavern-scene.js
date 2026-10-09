@@ -450,7 +450,10 @@ function scaleAt(y){return SCALE0+SCALE_K*y}
 // the waiter grows as he comes toward the camera (nearer = bigger than the plain depth scale gives): from the size k=1 at y0 smoothly to k times bigger at y1 (the lower tables)
 var WSIZE_KEY='cookster.waiter-size.v1',WSIZE={y0:430,y1:850,k:1.32};
 try{var _ws=JSON.parse(localStorage.getItem(WSIZE_KEY)||'null');if(_ws&&isFinite(_ws.y0)&&isFinite(_ws.y1)&&isFinite(_ws.k))WSIZE=_ws}catch(e){}
-function wScale(y){var t=Math.max(0,Math.min(1,(y-WSIZE.y0)/Math.max(1,WSIZE.y1-WSIZE.y0)));t=t*t*(3-2*t);return scaleAt(y)*(1+(WSIZE.k-1)*t)}
+function wk(y){var t=Math.max(0,Math.min(1,(y-WSIZE.y0)/Math.max(1,WSIZE.y1-WSIZE.y0)));t=t*t*(3-2*t);return 1+(WSIZE.k-1)*t}      // how much bigger he is at height y (when he stands)
+// while he walks the size does not follow his height (that made it jump in the last steps of the walk) but the way he has done: from the size where he started (k0) steadily to the size at the place
+// where he is going (k1), in proportion to the distance walked; on the way back the same, backwards
+function wScale(y){var w=waiter;return scaleAt(y)*(w&&w.kNow!=null?w.kNow:wk(y))}
 function pickSeat(){
   // a guest sits only at a table that has been cleaned
   var cl=window.CooksterTavernClean&&window.CooksterTavernClean.cleaned?window.CooksterTavernClean.cleaned():null;
@@ -784,12 +787,14 @@ function carrySet(w){return(w.carry&&w.carry.kind==='drink'&&imgs['w_drinks2'])?
 function waiterGo(to){
   var w=ensureWaiter();
   w.path=waiterPath({x:w.x,y:w.y},{x:to.x,y:to.y});w.pi=1;
+  var L=0,pp=w.path||[];for(var qi=1;qi<pp.length;qi++)L+=Math.hypot(pp[qi].x-pp[qi-1].x,pp[qi].y-pp[qi-1].y);
+  w.k0=w.kNow!=null?w.kNow:wk(w.y);w.k1=wk(to.y);w.walkLen=Math.max(1,L);w.walked=0;
 }
 function stepWaiter(dt){
   var w=ensureWaiter(),home=waiterSpot('home')||{x:DOOR.x,y:DOOR.y,dir:90};
   if(w.replan){w.replan=false;if(w.mode==='go'||w.mode==='back')waiterGo(w.mode==='go'?waiterSpot(w.table)||home:home);else if(w.mode==='idle'){w.x=home.x;w.y=home.y}}
   if(w.mode==='idle'&&window.CooksterOrders&&window.CooksterOrders.busy()){w.hidden=true;return}    // he is in the kitchen with an order
-  if(w.hidden){w.hidden=false;w.x=home.x;w.y=home.y}
+  if(w.hidden){w.hidden=false;w.x=home.x;w.y=home.y;w.kNow=null;w.k1=null}
   if(w.mode==='idle'){
     var tb=waitingTable();
     if(deliveries.length&&waiterSpot(deliveries[0].table)){var dl=deliveries.shift();w.carry=dl;w.table=dl.table;
@@ -801,14 +806,15 @@ function stepWaiter(dt){
   }else if(w.mode==='go'||w.mode==='back'){
     var tgt=w.path&&w.path[w.pi];
     if(!tgt){
+      if(w.k1!=null)w.kNow=w.k1;      // he has arrived: the size of the place where he stands
       if(w.mode==='go'&&w.carry){w.mode='give';w.t=0;var sg=waiterSpot(w.table),fg=dirFace(sg?sg.dir:90);w.flip=fg.flip;w.set=carrySet(w)}
       else if(w.mode==='go'){w.mode='serve';w.t=0;var sp=waiterSpot(w.table),fs=dirFace(sp?sp.dir:90);w.set=fs.set;w.flip=fs.flip}
       else{w.mode='idle'}
     }else{
       var dx=tgt.x-w.x,dy=tgt.y-w.y,d=Math.hypot(dx,dy),spd=WSPEED*wScale(w.y)/.34*dt;
-      if(d<=spd){w.x=tgt.x;w.y=tgt.y;w.pi++}
+      if(d<=spd){w.x=tgt.x;w.y=tgt.y;w.pi++;w.walked=(w.walked||0)+d;if(w.k1!=null)w.kNow=w.k0+(w.k1-w.k0)*Math.min(1,w.walked/w.walkLen)}
       else{
-        w.x+=dx/d*spd;w.y+=dy/d*spd;
+        w.x+=dx/d*spd;w.y+=dy/d*spd;w.walked=(w.walked||0)+spd;if(w.k1!=null)w.kNow=w.k0+(w.k1-w.k0)*Math.min(1,w.walked/w.walkLen);
         var s2=w.carry?carrySet(w):waiterFace(dx,dy);if(s2!==w.set){w.set=s2}
         if(s2==='walks'||s2==='foods'||s2==='drinks'){if(Math.abs(dx)>.3)w.flip=dx<0}else w.flip=false;
         var ph0=Math.floor(w.phase);w.phase+=spd/(40*wScale(w.y)/.34);
