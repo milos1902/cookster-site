@@ -507,6 +507,7 @@ function companyStep(m){                                 // starts / ends the pa
   if(st.film&&clock>st.film.t0+st.film.dur)st.film=null,st.next=clock+1+Math.random()*4;
   if(!st.film&&clock>=st.next){
     var segs=COFILM.segs,pool=segs.map(function(_,i){return i}).filter(function(i){return i!==st.last});
+    if(!pool.length)pool=segs.map(function(_,i){return i});
     var si=pool[Math.floor(Math.random()*pool.length)];st.last=si;
     st.film={t0:clock,s:segs[si][0],e:segs[si][1],dur:(segs[si][1]-segs[si][0])/COFILM.fps};
   }
