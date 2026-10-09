@@ -404,7 +404,16 @@ var DOOR_RECT=[105,0,350,355],DOOR_POS=[100,0],doorImg=new Image();
 doorCv=mk('canvas','tc-dirt');doorCv.width=W;doorCv.height=H;
 cv.parentNode.insertBefore(doorCv,cv);                       // right under the people (above the dirt), so everybody walks in front of the door and the sign
 doorImg.src='assets/tavern/vrata_otvorena.webp?v=1';
-function drawDoor(){var c=doorCv.getContext('2d');c.clearRect(0,0,W,H);if(doorA>0&&doorImg.naturalWidth){c.globalAlpha=doorA;c.drawImage(doorImg,DOOR_POS[0],DOOR_POS[1]);c.globalAlpha=1}if(signWrap)signWrap.style.opacity=String(1-doorA)}
+var DOOR_N=40,doorFr=[],doorFrOk=0;
+for(var di=0;di<DOOR_N;di++)(function(i){var im=new Image();im.onload=function(){doorFrOk++};im.src='assets/tavern/vrata/d'+(i<10?'0':'')+i+'.webp?v=1';doorFr.push(im)})(di);
+function drawDoor(){                                   // doorA = how far the door is open (0 closed .. 1 open); the pictures are the frames of the door opening (from a video)
+  var c=doorCv.getContext('2d');c.clearRect(0,0,W,H);
+  if(doorA>0){
+    if(doorFrOk>=DOOR_N){var i=Math.min(DOOR_N-1,Math.round(doorA*(DOOR_N-1)));c.globalAlpha=Math.min(1,doorA*(DOOR_N-1)/2);c.drawImage(doorFr[i],DOOR_POS[0],DOOR_POS[1],260,360);c.globalAlpha=1}
+    else if(doorImg.naturalWidth){c.globalAlpha=doorA;c.drawImage(doorImg,DOOR_POS[0],DOOR_POS[1]);c.globalAlpha=1}
+  }
+  if(signWrap)signWrap.style.opacity=String(1-Math.min(1,doorA*6));
+}
 function dustPuff(){                                  // a small cloud of dust that comes out of the door frame when the door is slammed
   var spots=[[150,300,-14],[330,300,14],[240,340,0],[200,330,-6],[290,330,6]];
   spots.forEach(function(a,i){puffs.push({x:a[0]+(Math.random()-.5)*20,y:a[1]+(Math.random()-.5)*14,vx:a[2]*(1+Math.random()*.6),vy:-(10+Math.random()*12),size:90+Math.random()*80,rot:Math.random()*6.28,vr:(Math.random()-.5)*.3,t:-i*.04,life:1.7+Math.random()*.6,tex:smokeTex[Math.floor(Math.random()*smokeTex.length)],ph:Math.random()*6.28,al:5,dust:1})});
@@ -412,8 +421,8 @@ function dustPuff(){                                  // a small cloud of dust t
 function setDoor(v){
   if(v===doorOpen)return;doorOpen=v;
   var from=doorA,to=v?1:0,t0=performance.now();
-  var dur=v?900:420;                                   // it opens slowly and is slammed shut quickly
-  (function f(now){var k=Math.min(1,(now-t0)/dur),e=v?k:k*k;doorA=from+(to-from)*e;drawDoor();
+  var dur=v?1700:420;                                  // it opens slowly and is slammed shut quickly (the same frames backwards)
+  (function f(now){var k=Math.min(1,(now-t0)/dur),e=v?k*k*(3-2*k):k*k;doorA=from+(to-from)*e;drawDoor();
     if(k<1)requestAnimationFrame(f);
     else if(!v){dustPuff();if(signEl){signEl.classList.remove('swing');void signEl.offsetWidth;signEl.classList.add('swing')}}      // the slam: a puff of dust at the door and the sign sways
   })(t0);
