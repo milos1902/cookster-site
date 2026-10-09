@@ -1301,16 +1301,21 @@ function peopleShadow(ctx,x,y,sc,c){
 // the shadow of a person from every lit lamp: it lies on the floor away from the lamp, longer the farther he is from it, stronger the nearer / the brighter the lamp is, and it follows him (and the lamp when it is lit / put out or flickers)
 function lampCast(ctx,x,y,h,k,c){
   var C=window.CooksterTavernClean,L=C&&C.lightSources?C.lightSources():null;if(!L||!L.length)return;
-  var base=(c&&c.sho!=null?+c.sho:PEO_SH.sho)/PEO_SH.sho,thick=c&&c.shh!=null?+c.shh/PEO_SH.shh:1,wide=c&&c.shw!=null?+c.shw:1,list=[];
+  var base=(c&&c.sho!=null?+c.sho:PEO_SH.sho)/PEO_SH.sho*(c&&c.lm!=null?+c.lm:1),llen=c&&c.ll!=null?+c.ll:1,thick=c&&c.shh!=null?+c.shh/PEO_SH.shh:1,wide=c&&c.shw!=null?+c.shw:1,list=[];
   L.forEach(function(l){var dx=x-l.gx,dy=(y-l.gy)*1.6,d=Math.hypot(dx,dy),f=Math.max(0,1-d/l.r);if(f>0)list.push({l:l,dx:dx,dy:y-l.gy,d:Math.max(30,d),f:f})});
   list.sort(function(a,b){return b.f*b.l.a-a.f*a.l.a});
   list.slice(0,3).forEach(function(o){
     var al=Math.min(.85,1.25*o.l.a*Math.pow(o.f,.7)*base*k);if(al<.02)return;
-    var ang=Math.atan2(o.dy*.45,o.dx),len=h*(.42+.4*Math.min(1,o.d/520))*wide,th=Math.max(8,h*.1*thick);
+    var ang=Math.atan2(o.dy*.45,o.dx),len=h*(.42+.4*Math.min(1,o.d/520))*wide*llen,th=Math.max(8,h*.1*thick);
     ctx.save();ctx.translate(x+Math.cos(ang)*len*.45,y+1+Math.sin(ang)*len*.45*.5);ctx.rotate(ang*.55);ctx.scale(1,th/len);
     var g=ctx.createRadialGradient(0,0,0,0,0,len);g.addColorStop(0,'rgba(8,4,0,'+al+')');g.addColorStop(.55,'rgba(8,4,0,'+al*.55+')');g.addColorStop(1,'rgba(8,4,0,0)');
     ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,len,0,Math.PI*2);ctx.fill();ctx.restore();
   });
+}
+function peoplePreview(ctx,kind,x,y,c){                // for the tool "Senke likova": the person on the floor with his shadows (cal c = what is being chosen)
+  var sc=kind==='konobar'?scaleAt(y)*wk(y):scaleAt(y);
+  peopleShadow(ctx,x,y,sc,c);lampCast(ctx,x,y,250*sc/.34,1,c);
+  drawSprite(ctx,kind==='konobar'?'w_walks2':'g01_dole',x,y,sc,false,0,1);
 }
 function drawShadow(ctx,x,y,sc,kind){var c=tiCal(kind||'gosti',-1);peopleShadow(ctx,x,y,sc,c);lampCast(ctx,x,y,250*sc/.34,1,c)}
 function guestSortY(g){
@@ -1507,7 +1512,7 @@ function onKey(e){
 window.addEventListener('keydown',onKey,true);window.addEventListener('keyup',onKey,true);window.addEventListener('keypress',onKey,true);
 
 window.CooksterTavern={
-  say:gsay,guestsList:function(){return guests},scaleAt:scaleAt,clockNow:function(){return clock},  tableReport:tableReport,waiterSize:{get:function(){return WSIZE},set:function(d){WSIZE=d;try{localStorage.setItem(WSIZE_KEY,JSON.stringify(d))}catch(e){}},scaleAt:wScale},open:open,close:close,spawn:spawn,spawnCompany:spawnCompany,companyOk:companyOk,companyTable:function(){return COMPANY.table},
+  say:gsay,guestsList:function(){return guests},scaleAt:scaleAt,clockNow:function(){return clock},  peoplePreview:peoplePreview,tableReport:tableReport,waiterSize:{get:function(){return WSIZE},set:function(d){WSIZE=d;try{localStorage.setItem(WSIZE_KEY,JSON.stringify(d))}catch(e){}},scaleAt:wScale},open:open,close:close,spawn:spawn,spawnCompany:spawnCompany,companyOk:companyOk,companyTable:function(){return COMPANY.table},
   deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,dirtyDishAt:dirtyDishAt,
   isOpenForGuests:function(){return openForGuests},setOpenForGuests:setOpenForGuests,say:function(i,t,d){var g=guests.filter(function(o){return o.id===i})[0];if(g)gsay(g,t,d)},
