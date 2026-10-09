@@ -66,7 +66,7 @@ function setStove(lit){
 //   core<i>.webp - the lamp itself (unlit) drawn over the lit picture while the lamp is out
 // Right click on a lamp -> "Upali svetlo" / "Ugasi svetlo". The stove (fire) is one of the lamps, its picture is stove_off.webp (above).
 var shadeCv=mk('canvas','tc-dirt'),coreCv=mk('canvas','tc-dirt'),SH=null,CR=coreCv.getContext('2d');
-shadeCv.style.mixBlendMode='multiply';coreCv.width=W;coreCv.height=H;
+coreCv.width=W;coreCv.height=H;
 cv.parentNode.insertBefore(coreCv,cv);T.overlayCanvases.push(stoveCv,coreCv);cv.parentNode.insertBefore(shadeCv,cv.nextSibling);
 var LIGHTS_KEY='cookster.tavern-lights.v1',lightsDef=null,lightState={},lightA={},shadeImg=null,lampImgs={};
 try{lightState=JSON.parse(localStorage.getItem(LIGHTS_KEY)||'{}')||{}}catch(e){lightState={}}
@@ -81,17 +81,34 @@ function lampAmount(L){
   var a=L.stove?(1-stoveA):(lightA[L.id]||0);
   return a>0?a*flickerOf(L.id,performance.now(),L.stove?.07:.04):0;
 }
+// The darkness is a plain layer (almost black, with more or less alpha), not a "multiply" layer: a blend mode over the whole screen made the tavern
+// run at half the speed. The alpha of every point is worked out here: (how much darker the dark picture is) x (how much of the light of the lit lamps does not reach it).
+var fLum=null,wArr={},shData=null;
+function prepCpu(){
+  var w=shadeImg.naturalWidth,h=shadeImg.naturalHeight,c=mk('canvas');c.width=w;c.height=h;
+  var x=c.getContext('2d',{willReadFrequently:true}),d,i;
+  x.drawImage(shadeImg,0,0);d=x.getImageData(0,0,w,h).data;fLum=new Float32Array(w*h);
+  for(i=0;i<w*h;i++)fLum[i]=(d[i*4]*.5+d[i*4+1]*.35+d[i*4+2]*.15)/255;      // the light of the room is mostly red / orange: the red counts most
+  lightsDef.lamps.forEach(function(L){
+    x.clearRect(0,0,w,h);x.drawImage(lampImgs[L.weight],0,0,w,h);d=x.getImageData(0,0,w,h).data;
+    var arr=new Float32Array(w*h);for(i=0;i<w*h;i++)arr[i]=d[i*4+3]/255;wArr[L.id]=arr;
+  });
+  shadeCv.width=w;shadeCv.height=h;SH=shadeCv.getContext('2d');shData=SH.createImageData(w,h);
+  for(i=0;i<w*h;i++){shData.data[i*4+2]=6}
+}
 function drawLights(){
-  if(!lightsDef||!shadeImg||!shadeImg.naturalWidth)return;
-  if(!SH){shadeCv.width=shadeImg.naturalWidth;shadeCv.height=shadeImg.naturalHeight;SH=shadeCv.getContext('2d')}
-  SH.globalAlpha=1;SH.clearRect(0,0,shadeCv.width,shadeCv.height);SH.drawImage(shadeImg,0,0);
+  if(!lightsDef||!fLum)return;
+  var n=fLum.length,lit=new Float32Array(n),i;
   CR.clearRect(0,0,W,H);
   lightsDef.lamps.forEach(function(L){
-    var a=lampAmount(L),wi=lampImgs[L.weight];
-    if(a>0&&wi&&wi.naturalWidth){SH.globalAlpha=a;SH.drawImage(wi,0,0,shadeCv.width,shadeCv.height)}
+    var a=lampAmount(L),arr=wArr[L.id];
+    if(a>0&&arr){for(i=0;i<n;i++)lit[i]+=a*arr[i]}
     if(L.core&&a<1){var ci=lampImgs[L.core.file];if(ci&&ci.naturalWidth){CR.globalAlpha=1-a;CR.drawImage(ci,L.core.x,L.core.y,L.core.w,L.core.h)}}
   });
-  SH.globalAlpha=1;CR.globalAlpha=1;
+  CR.globalAlpha=1;
+  var dd=shData.data;
+  for(i=0;i<n;i++){var l=lit[i]>1?1:lit[i];dd[i*4+3]=(1-fLum[i])*(1-l)*255}
+  SH.putImageData(shData,0,0);
 }
 function setLamp(L,on){
   if(L.stove){setStove(on);return}
@@ -110,9 +127,14 @@ function lampAt(x,y){
   return null;
 }
 // sparks and dust next to the fire (while the stove is lit), and the flicker of the lamps; drawn only while the tavern is on the screen
-var sparkCv=mk('canvas','tc-fx'),SP=sparkCv.getContext('2d'),sparks=[],lastFx=0,spawnAcc=0;
+var sparkCv=mk('canvas','tc-fx'),SP=sparkCv.getContext('2d'),sparks=[],lastFx=0,spawnAcc=0,lightT=0,glowSpr={};
 sparkCv.width=W;sparkCv.height=H;cv.parentNode.insertBefore(sparkCv,fx);
 var FIRE={x:1217,y:372};                                // the opening of the stove
+function makeGlow(dust){
+  var c=mk('canvas');c.width=c.height=64;var x=c.getContext('2d'),g=x.createRadialGradient(32,32,0,32,32,32);
+  g.addColorStop(0,dust?'rgba(255,225,160,1)':'rgba(255,200,90,1)');g.addColorStop(.35,dust?'rgba(255,190,100,.4)':'rgba(255,120,30,.5)');g.addColorStop(1,'rgba(255,100,20,0)');
+  x.fillStyle=g;x.fillRect(0,0,64,64);return c;
+}
 function spawnSpark(dust){
   var up=dust?-(2+Math.random()*5):-(14+Math.random()*28);
   sparks.push({x:FIRE.x+(Math.random()-.5)*(dust?150:34),y:FIRE.y+(dust?(Math.random()-.8)*110:(Math.random()-.4)*14),vx:(Math.random()-.5)*(dust?4:10),vy:up,t:0,life:dust?4+Math.random()*4:1.8+Math.random()*2.4,r:dust?1.2+Math.random()*1.6:1.6+Math.random()*2.4,dust:dust,ph:Math.random()*6.28});
@@ -122,7 +144,7 @@ function fxTick(now){
   if(!T.isOpen||now-lastFx<33)return;
   var dt=Math.min(.1,(now-lastFx)/1000);lastFx=now;
   smokeTick(dt);
-  if(lightsDef&&lightsDef.lamps.some(function(L){return L.stove?(stoveLit||stoveA<1):!!lightState[L.id]}))drawLights();
+  lightT+=dt;if(lightT>=.066&&lightsDef&&lightsDef.lamps.some(function(L){return L.stove?(stoveLit||stoveA<1):!!lightState[L.id]})){lightT=0;drawLights()}
   if(stoveLit&&stoveA<.5){spawnAcc+=dt*(5+Math.random()*3);while(spawnAcc>=1){spawnAcc--;spawnSpark(false);if(Math.random()<.6)spawnSpark(true)}}
   if(!sparks.length)return;
   SP.clearRect(0,0,W,H);SP.globalCompositeOperation='lighter';
@@ -130,16 +152,15 @@ function fxTick(now){
     var p=sparks[i];p.t+=dt;if(p.t>=p.life){sparks.splice(i,1);continue}
     p.x+=p.vx*dt+Math.sin(p.t*1.6+p.ph)*(p.dust?3:7)*dt;p.y+=p.vy*dt;if(!p.dust)p.vy*=.992;
     var k=p.t/p.life,a=(p.dust?.9*Math.sin(Math.PI*k)*(.6+.4*Math.sin(p.t*4+p.ph)):(1-k)*(.75+.25*Math.sin(p.t*12+p.ph)));
-    var g=SP.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*(p.dust?5:4));
-    g.addColorStop(0,p.dust?'rgba(255,225,160,'+a+')':'rgba(255,200,90,'+a+')');g.addColorStop(.35,p.dust?'rgba(255,190,100,'+a*.4+')':'rgba(255,120,30,'+a*.5+')');g.addColorStop(1,'rgba(255,100,20,0)');
-    SP.fillStyle=g;SP.fillRect(p.x-p.r*5,p.y-p.r*5,p.r*10,p.r*10);
+    var spr=glowSpr[p.dust?'d':'e']||(glowSpr[p.dust?'d':'e']=makeGlow(p.dust)),gr=p.r*(p.dust?5:4);
+    SP.globalAlpha=Math.max(0,Math.min(1,a));SP.drawImage(spr,p.x-gr,p.y-gr,gr*2,gr*2);SP.globalAlpha=1;
     if(!p.dust){SP.fillStyle='rgba(255,235,170,'+a+')';SP.fillRect(p.x-.8,p.y-.8,1.6,1.6)}
   }
   SP.globalCompositeOperation='source-over';
   if(!sparks.length)SP.clearRect(0,0,W,H);
 }
 // smoke that drifts slowly through the tavern: the more guests, the more of it (it grows and fades slowly, so a crowd fills the room and an empty room clears)
-var smokeCv=mk('canvas','tc-dirt'),SM=null,puffs=[],smokeLevel=0,smokeTex=[],SMW=W/2,SMH=H/2;
+var smokeCv=mk('canvas','tc-dirt'),SM=null,puffs=[],smokeLevel=0,smokeTex=[],SMW=W/4,SMH=H/4,smokeT=0;
 smokeCv.width=SMW;smokeCv.height=SMH;SM=smokeCv.getContext('2d');cv.parentNode.insertBefore(smokeCv,shadeCv);
 (function makeSmokeTex(){
   for(var n=0;n<4;n++){
@@ -159,9 +180,10 @@ function newPuff(){
   return{x:s[0]+(Math.random()-.5)*260,y:s[1]-40-Math.random()*160,vx:5+Math.random()*10,vy:-(1+Math.random()*4),size:230+Math.random()*260,rot:Math.random()*6.28,vr:(Math.random()-.5)*.05,t:0,life:16+Math.random()*14,tex:smokeTex[Math.floor(Math.random()*smokeTex.length)],ph:Math.random()*6.28,al:.5+Math.random()*.5};
 }
 function smokeTick(dt){
+  smokeT+=dt;if(smokeT<.1)return;dt=smokeT;smokeT=0;                  // 10 times in a second is enough for such a slow smoke
   var guests=(T.guestCount?T.guestCount():0),target=Math.min(1,(T.smokeForce!=null?T.smokeForce:guests)/12);
   smokeLevel+=(target-smokeLevel)*Math.min(1,dt/14);                  // slow: about 14 s to follow
-  var want=Math.round(3+55*smokeLevel);
+  var want=Math.round(3+21*smokeLevel);
   while(puffs.length<want&&Math.random()<.5)puffs.push(newPuff());
   SM.clearRect(0,0,SMW,SMH);
   for(var i=puffs.length-1;i>=0;i--){
@@ -170,8 +192,8 @@ function smokeTick(dt){
     p.x+=(p.vx+Math.sin(p.t*.5+p.ph)*5)*dt;p.y+=(p.vy+Math.cos(p.t*.4+p.ph)*2)*dt;p.rot+=p.vr*dt;
     var k=p.t/p.life,fade=Math.sin(Math.PI*k);
     SM.globalAlpha=Math.min(.24,(.06+.14*smokeLevel)*p.al)*fade;
-    var sz=p.size*(1+k*.4)/2;
-    SM.save();SM.translate(p.x/2,p.y/2);SM.rotate(p.rot);SM.drawImage(p.tex,-sz/2,-sz/2,sz,sz);SM.restore();
+    var sz=p.size*(1+k*.4)/4;
+    SM.save();SM.translate(p.x/4,p.y/4);SM.rotate(p.rot);SM.drawImage(p.tex,-sz/2,-sz/2,sz,sz);SM.restore();
   }
   SM.globalAlpha=1;
 }
@@ -179,7 +201,7 @@ requestAnimationFrame(fxTick);
 try{
   fetch('assets/tavern/lights/lights.json?v=5').then(function(r){return r.json()}).then(function(d){
     lightsDef=d;var left=1+d.lamps.length*2;
-    function done(){if(--left<=0){d.lamps.forEach(function(L){if(!L.stove)lightA[L.id]=lightState[L.id]?1:0});drawLights()}}
+    function done(){if(--left<=0){d.lamps.forEach(function(L){if(!L.stove)lightA[L.id]=lightState[L.id]?1:0});prepCpu();drawLights()}}
     function load(file){var im=new Image();im.onload=done;im.onerror=done;im.src='assets/tavern/lights/'+file+'?v=5';return im}
     shadeImg=load(d.shade);
     d.lamps.forEach(function(L){lampImgs[L.weight]=load(L.weight);if(L.core)lampImgs[L.core.file]=load(L.core.file);else done()});
@@ -246,7 +268,8 @@ function sp(x,y){return T.spongeAt(Math.max(0,Math.min(W,x)),Math.max(0,Math.min
 function depthK(x,y){return sp(x,y).scale}
 function stamp(x,y){
   var q=sp(x,y),k=q.scale,rx=Math.round(RADIUS*k),ry=Math.max(2,Math.round(rx*flatOf(q))),sc=scratch.getContext('2d');
-  scratch.width=rx*2;scratch.height=ry*2;
+  if(scratch.width<rx*2||scratch.height<ry*2){scratch.width=Math.max(scratch.width,rx*2);scratch.height=Math.max(scratch.height,ry*2)}     // the work canvas only grows, resizing it for every touch was slow
+  sc.setTransform(1,0,0,1,0,0);sc.globalCompositeOperation='source-over';sc.clearRect(0,0,scratch.width,scratch.height);
   sc.setTransform(1,0,0,ry/rx,rx,ry);
   var g=sc.createRadialGradient(0,0,0,0,0,rx);
   g.addColorStop(0,'rgba(0,0,0,'+STRENGTH+')');g.addColorStop(.6,'rgba(0,0,0,'+STRENGTH*.7+')');g.addColorStop(1,'rgba(0,0,0,0)');
@@ -347,7 +370,7 @@ function refreshInfo(){
   var n=cleaned.filter(Boolean).length;
   info.textContent='Kafana: '+floorPercent()+'% čista  ·  Stolovi: '+n+' / '+zones.length+' čisti';
 }
-setInterval(function(){if(T.isOpen)refreshInfo()},500);
+setInterval(function(){if(T.isOpen&&!down)refreshInfo()},1500);                // reading the picture back is slow, so not while the sponge is rubbing
 
 // ---------- the mouse ----------
 var down=false,last=null,lastPos=null;
