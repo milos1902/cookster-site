@@ -13,7 +13,7 @@ var T=window.CooksterTavern,room=document.getElementById('tavernScene');
 if(!T||!room||window.CooksterTavernClean)return;
 var W=T.size.w,H=T.size.h,DIRTY='assets/tavern/kafana_prljava.webp?v=1';
 var IMG=T.spongeImg;                                  // the pictures of the sponge (size and the point where it touches the surface)
-var RADIUS=46,SPACING=9,STRENGTH=.06;               // sponge: size, distance between two touches, how much one touch removes
+var RADIUS=46,SPACING=9,STRENGTH=.085;               // sponge: size, distance between two touches, how much one touch removes
 var cv=room.querySelector('.ts-guests');
 if(!cv)return;
 
@@ -285,6 +285,17 @@ function stamp(x,y){
   D.drawImage(scratch,x-rx,y-ry);
   D.globalCompositeOperation='source-over';
 }
+// the sponge over a table: a few passes wipe the whole table clean (WIPE_NEED = how far the sponge has to travel over that table, scene pixels)
+var WIPE_NEED=760,wipe=[];
+function wipeTable(x0,y0,x1,y1,d){
+  for(var i=0;i<TQUAD.length;i++){
+    if(!tlevel[i]||cleaning[i]||!pip(TQUAD[i],x1,y1))continue;
+    var w0=wipe[i]||0,w1=Math.min(WIPE_NEED,w0+d);wipe[i]=w1;
+    var L=tlevel[i];lvDraw(i,L,Math.min(1,(w1-w0)/(WIPE_NEED-w0)),'destination-out');
+    if(Math.random()<.5){var r=TRECT[i];bubble(x1,y1,1)}
+    if(w1>=WIPE_NEED){lvDraw(i,L,1,'destination-out');cleaned[i]=true;tlevel[i]=0;tscore[i]=0;wipe[i]=0;refreshInfo()}
+  }
+}
 function rubTo(x,y){
   prepare();
   if(!last){last={x:x,y:y};stamp(x,y);return}
@@ -293,6 +304,7 @@ function rubTo(x,y){
     rubbed+=n*step;
     var ux=dx/d,uy=dy/d;
     for(var i=1;i<=n;i++)stamp(last.x+ux*step*i,last.y+uy*step*i);
+    wipeTable(last.x,last.y,last.x+ux*step*n,last.y+uy*step*n,n*step);
     last={x:last.x+ux*step*n,y:last.y+uy*step*n};
   }
   if(now()-lastBubble>45&&d>2){lastBubble=now();bubble(x,y,1)}
@@ -490,7 +502,7 @@ room.addEventListener('pointerdown',function(){if(!hinted){hinted=true;setTimeou
 // the table gets dirty again with every dish and drink and with the time people sit at it; the points needed for each level are in TH (the last pictures, with lots of things, only after long sitting) (the picture of the next level fades in over the old one)
 function setLevel(i,n){
   var o=tlevel[i]||0;if(n<=o||!lvReady())return;
-  tlevel[i]=n;var k=0,N=3;
+  tlevel[i]=n;wipe[i]=0;var k=0,N=3;
   if(o)lvDraw(i,o,1,'destination-out');
   (function step(){lvDraw(i,n,1/(N-k),'source-over');if(++k<N)setTimeout(step,200)})();
 }
@@ -514,5 +526,5 @@ function floorDirt(n){
   c.globalCompositeOperation='destination-in';c.drawImage(floorMask,0,0);
   D.globalCompositeOperation='source-over';D.drawImage(sc,0,0);
 }
-window.CooksterTavernClean={dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
+window.CooksterTavernClean={dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
 })();
