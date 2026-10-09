@@ -406,6 +406,8 @@ cv.parentNode.insertBefore(doorCv,cv);                       // right under the 
 doorImg.src='assets/tavern/vrata_otvorena.webp?v=1';
 var DOOR_N=40,doorFr=[],doorFrOk=0;
 for(var di=0;di<DOOR_N;di++)(function(i){var im=new Image();im.onload=function(){doorFrOk++};im.src='assets/tavern/vrata/d'+(i<10?'0':'')+i+'.webp?v=1';doorFr.push(im)})(di);
+var DOORC_N=41,doorCl=[],doorClOk=0;
+for(var dj=0;dj<DOORC_N;dj++)(function(i){var im=new Image();im.onload=function(){doorClOk++};im.src='assets/tavern/vrata_zatvaranje/c'+(i<10?'0':'')+i+'.webp?v=1';doorCl.push(im)})(dj);
 function drawDoor(){                                   // doorA = how far the door is open (0 closed .. 1 open); the pictures are the frames of the door opening (from a video)
   var c=doorCv.getContext('2d');c.clearRect(0,0,W,H);
   if(doorA>0){
@@ -418,14 +420,25 @@ function dustPuff(){                                  // a small cloud of dust t
   var spots=[[150,300,-14],[330,300,14],[240,340,0],[200,330,-6],[290,330,6]];
   spots.forEach(function(a,i){puffs.push({x:a[0]+(Math.random()-.5)*20,y:a[1]+(Math.random()-.5)*14,vx:a[2]*(1+Math.random()*.6),vy:-(10+Math.random()*12),size:90+Math.random()*80,rot:Math.random()*6.28,vr:(Math.random()-.5)*.3,t:-i*.04,life:1.7+Math.random()*.6,tex:smokeTex[Math.floor(Math.random()*smokeTex.length)],ph:Math.random()*6.28,al:5,dust:1})});
 }
+function dustFall(){                                 // fine dust that falls down along the door after the slam
+  for(var i=0;i<14;i++)puffs.push({x:140+Math.random()*210,y:20+Math.random()*120,vx:(Math.random()-.5)*10,vy:18+Math.random()*30,size:34+Math.random()*50,rot:Math.random()*6.28,vr:(Math.random()-.5)*.4,t:-Math.random()*.5,life:1.8+Math.random()*1.2,tex:smokeTex[Math.floor(Math.random()*smokeTex.length)],ph:Math.random()*6.28,al:4,dust:1});
+}
 function setDoor(v){
   if(v===doorOpen)return;doorOpen=v;
-  var from=doorA,to=v?1:0,t0=performance.now();
-  var dur=v?1700:420;                                  // it opens slowly and is slammed shut quickly (the same frames backwards)
-  (function f(now){var k=Math.min(1,(now-t0)/dur),e=v?k*k*(3-2*k):k*k;doorA=from+(to-from)*e;drawDoor();
-    if(k<1)requestAnimationFrame(f);
-    else if(!v){dustPuff();if(signEl){signEl.classList.remove('swing');void signEl.offsetWidth;signEl.classList.add('swing')}}      // the slam: a puff of dust at the door and the sign sways
-  })(t0);
+  var t0=performance.now();
+  function slam(){dustPuff();dustFall();if(signEl){signEl.classList.remove('swing');void signEl.offsetWidth;signEl.classList.add('swing')}}      // the slam: dust at the door frame and falling down, the sign sways
+  if(!v&&doorClOk>=DOORC_N){                           // closing: its own frames (a video of the door shutting), quick, the curtain stays on the door
+    (function f(now){var k=Math.min(1,(now-t0)/620),e=.25*k+.75*k*k;
+      var c=doorCv.getContext('2d');c.clearRect(0,0,W,H);c.drawImage(doorCl[Math.min(DOORC_N-1,Math.round(e*(DOORC_N-1)))],DOOR_POS[0],DOOR_POS[1],260,360);
+      if(signWrap)signWrap.style.opacity='0';
+      if(k<1)requestAnimationFrame(f);else{doorA=0;drawDoor();slam()}
+    })(t0);
+  }else{
+    var from=doorA,to=v?1:0,dur=v?1700:420;
+    (function f(now){var k=Math.min(1,(now-t0)/dur),e=v?k*k*(3-2*k):k*k;doorA=from+(to-from)*e;drawDoor();
+      if(k<1)requestAnimationFrame(f);else if(!v)slam();
+    })(t0);
+  }
   try{if(window.CooksterSound)window.CooksterSound.play('tavern',v?'doorOpen':'doorClose')}catch(e){}
   showMsg(v?'Vrata su otvorena — provetrava se.':'Vrata su zatvorena.');
 }
