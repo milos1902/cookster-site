@@ -1141,14 +1141,14 @@ var CUT_KEY='cookster.guest-anim-cuts.v1';
 function applyCuts(){                                     // the parts chosen in the tool "Animacije gostiju" replace the built-in ones
   try{var c=JSON.parse(localStorage.getItem(CUT_KEY)||'{}');Object.keys(c).forEach(function(g){Object.keys(c[g]).forEach(function(n){var m=ANIM&&ANIM[g]&&ANIM[g][n],o=c[g][n];if(m&&o&&o.segs&&o.segs.length){m.segs=o.segs;m.solo=o.solo||0;m.custom=true}})})}catch(e){}
 }
-try{fetch('assets/tavern/guests/anim/anim.json?v=6').then(function(r){return r.json()}).then(function(d){ANIM=d;applyCuts()}).catch(function(){})}catch(e){}
+try{fetch('assets/tavern/guests/anim/anim.json?v=7').then(function(r){return r.json()}).then(function(d){ANIM=d;applyCuts()}).catch(function(){})}catch(e){}
 function gidOf(g){return 'g'+(g.ch<10?'0':'')+g.ch}
 function animFrames(g,name){                              // the frames of a film (loaded when the first guest of this character needs them), or null while they are coming
   var gid=gidOf(g),m=ANIM&&ANIM[gid]&&ANIM[gid][name];if(!m)return null;
   var key=gid+'_'+name,a=animImgs[key];
   if(!a){
     a=animImgs[key]={m:m,fr:[],ok:0,id:'a_'+key+'_'};
-    for(var i=0;i<m.n;i++)(function(i){var im=new Image();im.onload=function(){a.fr[i]=tint(im)||im;a.ok++};im.src='assets/tavern/guests/anim/'+key+'_'+(i<10?'00':i<100?'0':'')+i+'.webp?v=6'})(i);
+    for(var i=0;i<m.n;i++)(function(i){var im=new Image();im.onload=function(){a.fr[i]=tint(im)||im;a.ok++};im.src='assets/tavern/guests/anim/'+key+'_'+(i<10?'00':i<100?'0':'')+i+'.webp?v=7'})(i);
   }
   return a.ok>=m.n?a:null;
 }

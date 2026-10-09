@@ -13,7 +13,7 @@ def run(*a):
     return subprocess.run(a,check=True,capture_output=True,text=True).stdout
 def ident(p):
     w,h=run('identify','-format','%w %h',p).split(); return int(w),int(h)
-args=[a for a in sys.argv[1:] if not a.startswith('--')]; LOOP='--loop' in sys.argv      # --loop: a film that is played round and round (nothing is cut off)
+args=[a for a in sys.argv[1:] if not a.startswith('--')]; LOOP='--loop' in sys.argv or '--returns' in sys.argv; RETURNS='--returns' in sys.argv      # --loop: a film that is played round and round (nothing is cut off)
 video,name=args[0],args[1]
 specs=[(int(a.split(':')[0]),(a.split(':')+['lice'])[1]) for a in args[2:6]]          # "9" or "9:ledja" (the pose; default lice)
 tmp=tempfile.mkdtemp(prefix='ga_'); os.makedirs(OUT,exist_ok=True)
@@ -41,7 +41,12 @@ for i,(g,pose) in enumerate(specs):
         r=subprocess.run(['compare','-metric','RMSE',a,b,'null:'],capture_output=True,text=True).stderr
         m=re.search(r'\(([0-9.eE+-]+)\)',r); return float(m.group(1)) if m else 0.0
     N=len(frames)
-    if LOOP: n=N; segs=[[0,N]]
+    if RETURNS:        # a film of several short actions, every one of which ends in the pose of the first picture: cut where the guest is back in that pose
+        n=N; dd=[dist(out[0],out[i]) for i in range(N)]; lo_,hi_=min(dd[3:]),max(dd); thr=lo_+.35*(hi_-lo_); cuts=[0]
+        for i in range(8,N-6):
+            if dd[i]<=thr and dd[i]==min(dd[max(0,i-4):i+5]) and i-cuts[-1]>=18: cuts.append(i)
+        cuts.append(N); segs=[[cuts[j],cuts[j+1]] for j in range(len(cuts)-1)]
+    elif LOOP: n=N; segs=[[0,N]]
     else:
         dd=[dist(out[0],out[i]) for i in range(N)]
         lo=max(10,int(N*.55)); end=min(range(lo,N),key=lambda i:(dd[i],-i))
