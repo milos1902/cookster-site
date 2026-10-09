@@ -2418,36 +2418,36 @@ function doorPlay(side,action,hit){                       // plans the sound of 
  const ms=Math.max(0,doorSoundAt(t===doorGuestSoundTarget?'guest':'me',action,hit).from)*1000;
  return setTimeout(()=>playImpactSound(t,action,{noDelay:true}),ms);
 }
-// the sponge rubbing the tavern floor: one sound for the mouse moving left, another for the mouse moving right; the faster the mouse moves, the faster (and louder) the sound plays
+// the sponge rubbing the tavern floor: one sound for every direction of the mouse (left, right, up, down); a sound plays ONCE per stroke (it is not repeated when the mouse goes on in the
+// same direction), and the faster the mouse moves, the faster (and louder) it plays
 const spongeSoundTarget=makeSoundTarget('__sponge','Sunđer — ribanje poda (zvuk prati pokret miša)','scrubLeft');
-spongeSoundTarget.dataset.soundActions='scrubLeft,scrubRight';
-const SCRUB={dir:'',audio:null,speed:0,lastMove:0,timer:0};
-function scrubStop(){
- const a=SCRUB.audio;SCRUB.audio=null;SCRUB.dir='';SCRUB.speed=0;
- if(a){let v=a.volume;const fade=setInterval(()=>{v-=.12;if(v<=0.02){clearInterval(fade);try{a.pause();}catch(_){}}else try{a.volume=v;}catch(_){}} ,25);}
-}
-function scrubStart(dir,speed){
- const action=dir==='L'?'scrubLeft':'scrubRight',cfg=resolvedImpactConfig(spongeSoundTarget,action),sound=pickActionSound(spongeSoundTarget,action,cfg);
- if(!sound)return null;
- return playSfx(sound,0,true)||null;
-}
+spongeSoundTarget.dataset.soundActions='scrubLeft,scrubRight,scrubUp,scrubDown';
+const SCRUB_ACT={L:'scrubLeft',R:'scrubRight',U:'scrubUp',D:'scrubDown'};
+const SCRUB={dir:'',cand:'',candN:0,audio:null,speed:0,lastMove:0,timer:0,vx:0,vy:0};
+function scrubFade(a){if(!a)return;let v=a.volume;const fade=setInterval(()=>{v-=.12;if(v<=0.02){clearInterval(fade);try{a.pause();}catch(_){}}else try{a.volume=v;}catch(_){}} ,25);}
+function scrubStop(){scrubFade(SCRUB.audio);SCRUB.audio=null;SCRUB.dir='';SCRUB.cand='';SCRUB.candN=0;SCRUB.speed=0;SCRUB.vx=SCRUB.vy=0;}
 function scrubSet(a,speed){                              // the sound follows the mouse: the speed of the mouse sets how fast (and how loud) it plays
- if(!a)return;const cfg=resolvedImpactConfig(spongeSoundTarget,SCRUB.dir==='L'?'scrubLeft':'scrubRight');
+ if(!a)return;const cfg=resolvedImpactConfig(spongeSoundTarget,SCRUB_ACT[SCRUB.dir]);
  const rate=Math.max(.6,Math.min(2.6,.6+speed/1300)),vol=Math.max(0,Math.min(1,(+cfg.volume||0)*Math.max(.3,Math.min(1,speed/900))));
  try{a.preservesPitch=false;a.mozPreservesPitch=false;a.webkitPreservesPitch=false;a.defaultPlaybackRate=rate;a.playbackRate=rate;a.volume=vol;}catch(_){}
 }
-function scrubMove(dx,dtMs){                             // dx: how far the mouse moved (scene pixels, minus = left), dtMs: how long it took
+function scrubMove(dx,dy,dtMs){                          // dx, dy: how far the mouse moved (scene pixels; minus = left / up), dtMs: how long it took
  if(!dtMs||dtMs<1)dtMs=16;const now=performance.now();
- const v=Math.abs(dx)/dtMs*1000;SCRUB.speed=SCRUB.speed*.6+v*.4;SCRUB.lastMove=now;
- if(Math.abs(dx)<1.2&&SCRUB.audio&&!SCRUB.audio.ended){scrubSet(SCRUB.audio,SCRUB.speed);return;}
- const dir=Math.abs(dx)<1.2?SCRUB.dir:(dx<0?'L':'R');
- if(!dir)return;
- if(dir!==SCRUB.dir||!SCRUB.audio||SCRUB.audio.ended||SCRUB.audio.paused){
-  if(SCRUB.audio&&dir===SCRUB.dir&&!SCRUB.audio.ended&&SCRUB.audio.paused){}
-  scrubStop();SCRUB.dir=dir;SCRUB.audio=scrubStart(dir,SCRUB.speed);
+ SCRUB.vx=SCRUB.vx*.5+dx*.5;SCRUB.vy=SCRUB.vy*.5+dy*.5;
+ const v=Math.hypot(dx,dy)/dtMs*1000;SCRUB.speed=SCRUB.speed*.6+v*.4;SCRUB.lastMove=now;
+ if(Math.hypot(SCRUB.vx,SCRUB.vy)>1){
+  const c=Math.abs(SCRUB.vx)>=Math.abs(SCRUB.vy)?(SCRUB.vx<0?'L':'R'):(SCRUB.vy<0?'U':'D');
+  if(c!==SCRUB.dir){                                    // a new direction (must hold for two moves, so a small shake does not start a new sound)
+   SCRUB.candN=c===SCRUB.cand?SCRUB.candN+1:1;SCRUB.cand=c;
+   if(SCRUB.candN>=2||!SCRUB.dir){
+    scrubFade(SCRUB.audio);SCRUB.dir=c;SCRUB.candN=0;
+    const action=SCRUB_ACT[c],cfg=resolvedImpactConfig(spongeSoundTarget,action),sound=pickActionSound(spongeSoundTarget,action,cfg);
+    SCRUB.audio=sound?(playSfx(sound,0,true)||null):null;
+   }
+  }else SCRUB.cand='';
  }
- scrubSet(SCRUB.audio,SCRUB.speed);
- if(!SCRUB.timer)SCRUB.timer=setInterval(()=>{if(performance.now()-SCRUB.lastMove>140){scrubStop();clearInterval(SCRUB.timer);SCRUB.timer=0;}},60);   // the mouse stands still: the sound stops
+ if(SCRUB.audio)scrubSet(SCRUB.audio,SCRUB.speed);
+ if(!SCRUB.timer)SCRUB.timer=setInterval(()=>{if(performance.now()-SCRUB.lastMove>140){scrubStop();clearInterval(SCRUB.timer);SCRUB.timer=0;}},60);   // the mouse stands still: the sound stops (the next move starts it again)
 }
 const orderNoteSoundTarget=makeSoundTarget('__order_note','Papirić narudžbine — uzimanje, spuštanje, kačenje','pickup');
 orderNoteSoundTarget.dataset.soundActions='pickup,drop,open';
@@ -2672,7 +2672,7 @@ ssStyle.textContent=`
 document.head.appendChild(ssStyle);
 
 /* --- state --- */
-const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slam','Zalupljivanje vrata'],['scrubLeft','Ribanje: miš ide ulevo'],['scrubRight','Ribanje: miš ide udesno'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje papirića na šiljak'],['fall','Pad papirića sa šiljka'],['ring','Zvoni (kad ga dodirneš)'],['sprinkle','Sipaj (začin)'],['pour','Sipaj (ulje)'],['pourOut','Presipaj u drugu posudu'],['throw','Bacanje u kantu'],['empty','Pražnjenje kante'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara'],['eat','Gost jede (svaki zalogaj)'],['step','Koraci konobara (svaki korak)'],['amb0','Kafana prazna (petlja)'],['amb2','Kafana: do 3 gosta (petlja)'],['amb5','Kafana: 4–8 gostiju (petlja)'],['amb12','Kafana puna: 9+ gostiju (petlja)'],['guestIn','Ulazak gostiju u kafanu'],['ambMorning','Kuhinja: jutro (petlja)'],['ambDay','Kuhinja: dan (petlja)'],['ambEvening','Kuhinja: veče (petlja)']];
+const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slam','Zalupljivanje vrata'],['scrubLeft','Ribanje: miš ide ulevo'],['scrubRight','Ribanje: miš ide udesno'],['scrubUp','Ribanje: miš ide gore'],['scrubDown','Ribanje: miš ide dole'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje papirića na šiljak'],['fall','Pad papirića sa šiljka'],['ring','Zvoni (kad ga dodirneš)'],['sprinkle','Sipaj (začin)'],['pour','Sipaj (ulje)'],['pourOut','Presipaj u drugu posudu'],['throw','Bacanje u kantu'],['empty','Pražnjenje kante'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara'],['eat','Gost jede (svaki zalogaj)'],['step','Koraci konobara (svaki korak)'],['amb0','Kafana prazna (petlja)'],['amb2','Kafana: do 3 gosta (petlja)'],['amb5','Kafana: 4–8 gostiju (petlja)'],['amb12','Kafana puna: 9+ gostiju (petlja)'],['guestIn','Ulazak gostiju u kafanu'],['ambMorning','Kuhinja: jutro (petlja)'],['ambDay','Kuhinja: dan (petlja)'],['ambEvening','Kuhinja: veče (petlja)']];
 const ssState={open:false,tab:'objekti',action:'drop',query:'',libQuery:'',libOpen:false};
 
 /* --- helpers (reuse ls* from light-studio) --- */
@@ -2885,7 +2885,7 @@ ssControls.push(()=>{
  const el=ssSel(),acts=el?ssObjActions(el):[];
  for(const [v,b] of ssActionBtns){
   const supported=el?.dataset?.soundActions?.split(',');
-  b.hidden=supported?!supported.includes(v):el?.dataset?.soundAction?v!==el.dataset.soundAction:(['click','insert','cut','peel','putIn','pageTurn','water','hover','eat','appear','serve','step','amb0','amb2','amb5','amb12','guestIn','slam','scrubLeft','scrubRight','ambMorning','ambDay','ambEvening'].includes(v)||(SS_SPECIAL_ACTIONS[v]&&!SS_SPECIAL_ACTIONS[v](el)));
+  b.hidden=supported?!supported.includes(v):el?.dataset?.soundAction?v!==el.dataset.soundAction:(['click','insert','cut','peel','putIn','pageTurn','water','hover','eat','appear','serve','step','amb0','amb2','amb5','amb12','guestIn','slam','scrubLeft','scrubRight','scrubUp','scrubDown','ambMorning','ambDay','ambEvening'].includes(v)||(SS_SPECIAL_ACTIONS[v]&&!SS_SPECIAL_ACTIONS[v](el)));
   b.setAttribute('aria-pressed',v===ssState.action?'true':'false');
   b.dataset.has=acts.includes(v)?'true':'false';
  }

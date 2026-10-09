@@ -674,12 +674,19 @@ function tickMess(dt){
   guests.forEach(function(g){if(g.mode==='seated')seatedAt[g.seat.table]=(seatedAt[g.seat.table]||0)+1});
   // also without guests the hall slowly gets dirty again, one thing at a time: now a table, now a piece of the floor
   idleT+=dt;
-  if(idleT>75){idleT=0;
+  if(idleT>50){idleT=0;
     if(Math.random()<.5){var rt=Math.floor(Math.random()*TABLES.length);if(!guests.some(function(g){return g.seat.table===rt})){try{window.CooksterTavernClean.dirty(rt,2);window.CooksterTavernClean.markDirty(rt)}catch(e){}}}
     else{try{window.CooksterTavernClean.floorDirt(1)}catch(e){}}
   }
+  // the floor gets dirty with the guests: where they walk (a spot every ~90 px, more near the door) and under the chairs where they sit
+  try{var CC=window.CooksterTavernClean;if(CC&&CC.floorDirtAt)guests.forEach(function(g){
+    if(g.mode==='seated'){g._sd=(g._sd||0)+dt;if(g._sd>22){g._sd=0;CC.floorDirtAt(g.x+(Math.random()-.5)*50,g.y+10+Math.random()*16,26+Math.random()*22,.2)}return}
+    if(g._lx===undefined){g._lx=g.x;g._ly=g.y;g._wd=0;if(g.mode==='in')CC.floorDirtAt(DOOR.x+(Math.random()-.5)*60,DOOR.y+20,60+Math.random()*30,.32);return}
+    g._wd+=Math.hypot(g.x-g._lx,g.y-g._ly);g._lx=g.x;g._ly=g.y;
+    if(g._wd>120){g._wd=0;CC.floorDirtAt(g.x+(Math.random()-.5)*14,g.y+(Math.random()-.5)*8,22+Math.random()*18,.2)}
+  })}catch(e){}
   floorT+=dt*Math.max(0,guests.length);
-  if(floorT>40){floorT=0;try{window.CooksterTavernClean.floorDirt(1+Math.floor(guests.length/4))}catch(e){}}
+  if(floorT>30){floorT=0;try{window.CooksterTavernClean.floorDirt(1+Math.floor(guests.length/4))}catch(e){}}
   for(var t=0;t<TABLES.length;t++){
     if(seatedAt[t]){try{window.CooksterTavernClean.dirty(t,seatedAt[t]*dt*.03)}catch(e){}}      // the table gets a bit dirtier the longer people sit (4 guests: ~7 points in 1 minute)
     ash[t]=Math.min(1,(ash[t]||0)+(seatedAt[t]||0)*dt/260);                     // 4 guests fill the ashtray in about a minute
