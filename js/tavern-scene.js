@@ -511,7 +511,7 @@ function leaveAngry(g,text,delta){
 function checkPatience(g){
   if(g.leftAngry)return;
   var wait=g.ordered?(g.waitFoodSince!=null?clock-g.waitFoodSince:0):(g.sitT>g.orderDelay?g.sitT-g.orderDelay:0),lim=g.ordered?PAT_FOOD*g.patK:PAT_ORDER*g.patK;
-  if(wait>lim*.6&&!g.warned&&wait>20){g.warned=true;gsay(g,pick(g.ordered?SAY.waitFood:SAY.waitOrder),0)}
+  if(wait>lim*.6&&!g.warned&&wait>20){g.warned=true;g.an=null;startAnim(g,'doziv');gsay(g,pick(g.ordered?SAY.waitFood:SAY.waitOrder),0)}
   if(wait>lim)leaveAngry(g,pick(g.ordered?SAY.leaveFood:SAY.leaveOrder),-4);
 }
 function chKey(g,pose){return 'g'+(g.ch<10?'0':'')+g.ch+'_'+pose}
@@ -1062,6 +1062,39 @@ function graded(key,im){
   return grCache[key]=c;
 }
 window.CooksterGrade={get:function(){return Object.assign({},GR)},set:function(p){GR=Object.assign({},GR,p);grCache={}},reset:function(){GR=Object.assign({},GR_DEF);grCache={}}};
+// the seated guests move: short films (frames cut from videos, tools/make_guest_anims.py) of a guest who drinks and talks ("pij") and who calls the waiter ("doziv").
+// The film starts and ends with the picture of the still guest; only for the guests that face us (the pose "lice") and only for the guests that have been made so far.
+var ANIM=null,animImgs={},ANIM_END=.4;
+try{fetch('assets/tavern/guests/anim/anim.json?v=1').then(function(r){return r.json()}).then(function(d){ANIM=d}).catch(function(){})}catch(e){}
+function gidOf(g){return 'g'+(g.ch<10?'0':'')+g.ch}
+function animFrames(g,name){                              // the frames of a film (loaded when the first guest of this character needs them), or null while they are coming
+  var gid=gidOf(g),m=ANIM&&ANIM[gid]&&ANIM[gid][name];if(!m)return null;
+  var key=gid+'_'+name,a=animImgs[key];
+  if(!a){
+    a=animImgs[key]={m:m,fr:[],ok:0};
+    for(var i=0;i<m.n;i++)(function(i){var im=new Image();im.onload=function(){a.fr[i]=tint(im)||im;a.ok++};im.src='assets/tavern/guests/anim/'+key+'_'+(i<10?'00':i<100?'0':'')+i+'.webp?v=1'})(i);
+  }
+  return a.ok>=m.n?a:null;
+}
+function startAnim(g,name){
+  if(g.an||g.mode!=='seated'||g.seat.pose!=='lice'&&g.seat.pose!=null)return false;
+  var a=animFrames(g,name);if(!a)return false;
+  g.an={name:name,t0:clock,dur:a.m.n/a.m.fps};return true;
+}
+function drawAnim(ctx,g,x,y,sc,rot){                      // true if the guest was drawn as a film
+  var an=g.an;if(!an)return false;
+  var a=animFrames(g,an.name),t=clock-an.t0;
+  if(!a||t>an.dur+ANIM_END){g.an=null;return false}
+  var im0=timgs[chKey(g,sitPose(g))]||imgs[chKey(g,sitPose(g))];if(!im0)return false;
+  var sw=im0.naturalWidth||im0.width,sh=im0.naturalHeight||im0.height,m=a.m;
+  var i=Math.min(m.n-1,Math.floor(Math.min(t,an.dur-.001)*m.fps)),fk=gidOf(g)+'_'+an.name+i,fi=graded(fk,a.fr[i]);
+  var end=t>an.dur?Math.min(1,(t-an.dur)/ANIM_END):0;     // at the end the last picture fades into the still guest
+  ctx.save();ctx.translate(x,y);if(rot)ctx.rotate(rot);
+  ctx.globalAlpha=1-end;ctx.drawImage(fi,(-sw/2+m.ox)*sc,(-sh+m.oy)*sc,m.w*sc,m.h*sc);
+  ctx.restore();
+  if(end>0)drawSprite(ctx,chKey(g,sitPose(g)),x,y,sc,false,rot,end);
+  return true;
+}
 function drawSprite(ctx,key,x,y,sc,flip,rot,alpha){
   var im=timgs[key]||imgs[key];if(!im)return;
   im=graded(key,im);                       // (the pictures are the tinted ones: the grading comes on top of the tint)
@@ -1115,7 +1148,11 @@ function drawGuestBody(ctx,g){
       var br=Math.sin((clock+g.id*1.7)*1.6)*.6;
       var ed=eatingGuest(g),dip=0,tilt=0;
       if(ed){var ph=Math.max(0,Math.sin(ed.eatT*Math.PI/1.15*1)),dr=dishRect(ed);dip=ph*5*ssc/.3;tilt=ph*.035*((dr&&dr.x+dr.w/2<sp.x)?-1:1)}      // leans toward the bowl at every bite
-      drawSprite(ctx,chKey(g,sitPose(g)),sp.x,sp.y+br+dip,ssc,false,Math.sin((clock+g.id)*.5)*.006+tilt,1);
+      var rt=Math.sin((clock+g.id)*.5)*.006+tilt;
+      if(!ed&&!g.an&&state==='tavern'&&clock>=(g.anNext||0)){          // now and then he drinks / talks (not all of them, not all the time)
+        g.anNext=clock+5+Math.random()*10;if(Math.random()<.8)startAnim(g,'pij');
+      }
+      if(!drawAnim(ctx,g,sp.x,sp.y+br,ssc,rt))drawSprite(ctx,chKey(g,sitPose(g)),sp.x,sp.y+br+dip,ssc,false,rt,1);
     }
   }
 }
@@ -1265,7 +1302,7 @@ window.CooksterTavern={
   waiterSteps:{get:wsData,set:function(d){WSD=d;try{localStorage.setItem(WS_KEY,JSON.stringify(WSD))}catch(e){}},reset:function(){WSD=null;try{localStorage.removeItem(WS_KEY)}catch(e){}wsData()},count:function(k){return WD_N[k]||0},url:function(k,i){return WAITER+k+'24/f'+(i<10?'0':'')+i+'.webp?v=4'},play:wsPlay,stepClips:16},
   tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose,draw:tiDraw,shadow:tiShadow,shDef:TI_SH},
   get isOpen(){return state==='tavern'},get busy(){return busy},guestCount:function(){return guests.length},
-  debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,held:!!g.held,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
+  debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,held:!!g.held,an:g.an?g.an.name:'',pose:g.seat.pose,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},
   seatReach:function(){return SEATS.map(seatReachable)},poseFromDir:poseFromDir,seatScale:function(y){return scaleAt(y)*SIT_K},
   poseInfo:function(pose){var im=imgs['g01_sedi_'+pose];return im?{src:im.src,w:im.naturalWidth,h:im.naturalHeight}:null},
