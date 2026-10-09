@@ -82,7 +82,7 @@ function preload(){
   })('g'+(c2<10?'0':'')+c2+'_'+w+f)});
   // the waiter: three pictures of a step toward the camera (walkd), away from it (walku) and from the side (walks, looking right)
   ['walkd','walku','walks','writes','foods','drinks'].forEach(function(w){for(var f2=1;f2<=3;f2++)(function(key){
-    jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=6').then(function(im){store('w_'+key,im)}));
+    jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=7').then(function(im){store('w_'+key,im)}));
   })(w+f2)});
   // walking toward the camera: 16 pictures of a whole walk (two steps), made from the three old ones with frame interpolation
   [['walkd','wd'],['walku','wu'],['walks','ws']].forEach(function(pr){for(var wf=1;wf<=WD_N[pr[0]];wf++)(function(n){jobs.push(loadImg(WAITER+pr[0]+'24/f'+(n<10?'0':'')+n+'.webp?v=6').then(function(im){store('w_'+pr[1]+n,im)}))})(wf)});
@@ -1052,11 +1052,11 @@ function wsPlay(e){
 }
 // the waiter has short films too (tools/make_waiter_anims.py): from behind he waits for a guest (scratches his head), in profile he writes in his notebook (mirrored for the left)
 var WANIM=null,wfilms={};
-try{fetch('assets/tavern/waiter/anim/anim.json?v=2').then(function(r){return r.json()}).then(function(d){WANIM=d}).catch(function(){})}catch(e){}
+try{fetch('assets/tavern/waiter/anim/anim.json?v=3').then(function(r){return r.json()}).then(function(d){WANIM=d}).catch(function(){})}catch(e){}
 function wFrames(name){
   var m=WANIM&&WANIM[name];if(!m)return null;
   var a=wfilms[name];
-  if(!a){a=wfilms[name]={m:m,fr:[],ok:0};for(var i=0;i<m.n;i++)(function(i){var im=new Image();im.onload=function(){a.fr[i]=tint(im)||im;a.ok++};im.src='assets/tavern/waiter/anim/'+name+'_'+(i<10?'00':'0')+i+'.webp?v=1'})(i)}
+  if(!a){a=wfilms[name]={m:m,fr:[],ok:0};for(var i=0;i<m.n;i++)(function(i){var im=new Image();im.onload=function(){a.fr[i]=tint(im)||im;a.ok++};im.src='assets/tavern/waiter/anim/'+name+'_'+(i<10?'00':'0')+i+'.webp?v=3'})(i)}
   return a.ok>=m.n?a:null;
 }
 function wFilm(ctx,w,sc,name,still,loop){                 // draws the waiter as a film (blended over the still picture); false while the frames are still coming
