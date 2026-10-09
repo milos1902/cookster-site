@@ -1065,7 +1065,7 @@ window.CooksterGrade={get:function(){return Object.assign({},GR)},set:function(p
 // the seated guests move: short films (frames cut from videos, tools/make_guest_anims.py) of a guest who drinks and talks ("pij") and who calls the waiter ("doziv").
 // The film starts and ends with the picture of the still guest; only for the guests that face us (the pose "lice") and only for the guests that have been made so far.
 var ANIM=null,animImgs={},ANIM_END=.4;
-try{fetch('assets/tavern/guests/anim/anim.json?v=1').then(function(r){return r.json()}).then(function(d){ANIM=d}).catch(function(){})}catch(e){}
+try{fetch('assets/tavern/guests/anim/anim.json?v=2').then(function(r){return r.json()}).then(function(d){ANIM=d}).catch(function(){})}catch(e){}
 function gidOf(g){return 'g'+(g.ch<10?'0':'')+g.ch}
 function animFrames(g,name){                              // the frames of a film (loaded when the first guest of this character needs them), or null while they are coming
   var gid=gidOf(g),m=ANIM&&ANIM[gid]&&ANIM[gid][name];if(!m)return null;

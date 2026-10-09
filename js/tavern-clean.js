@@ -430,7 +430,7 @@ function setDoor(v,opt){                               // opt.auto: opened/close
   if(!opt.auto)doorManual=v;
   var id=++doorAnim,t0=performance.now(),soft=!!opt.soft;
   function slam(){dustPuff();dustFall();if(signEl){signEl.classList.remove('swing');void signEl.offsetWidth;signEl.classList.add('swing')}}      // the slam: dust at the door frame and falling down, the sign sways
-  function snd(a){try{if(window.CooksterSound)window.CooksterSound.play('door',a)}catch(e){}}
+  function snd(a){try{if(window.CooksterSound&&!window.CooksterSound.play('door',a)){var alt=a==='slam'?'close':a==='close'?'slam':'';if(alt)window.CooksterSound.play('door',alt)}}catch(e){}}      // a slam without its own sound uses the one chosen for "closing" (and the other way round)
   function done(){snd(soft?'close':'slam');if(!soft)slam()}                 // the sound of the closing door comes when it hits the frame
   if(!v&&doorClOk>=DOORC_N){                           // closing: its own frames (a video of the door shutting); the curtain stays on the door
     var dur=soft?1500:620;
