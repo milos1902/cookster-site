@@ -71,7 +71,7 @@ function setStove(lit){
 // Right click on a lamp -> "Upali svetlo" / "Ugasi svetlo". The stove (fire) is one of the lamps, its picture is stove_off.webp (above).
 var shadeCv=mk('canvas','tc-dirt'),coreCv=mk('canvas','tc-dirt'),SH=null,CR=coreCv.getContext('2d');
 coreCv.width=W;coreCv.height=H;
-cv.parentNode.insertBefore(coreCv,cv);T.overlayCanvases.push(stoveCv,coreCv);cv.parentNode.insertBefore(shadeCv,cv.nextSibling);
+cv.parentNode.insertBefore(coreCv,cv);T.overlayCanvases.push(stoveCv,coreCv);cv.parentNode.insertBefore(shadeCv,cv.nextSibling);var glowCv=mk('canvas','tc-dirt'),GL=null;cv.parentNode.insertBefore(glowCv,shadeCv.nextSibling);      // the warm glow of the lamps (tool "Svetlo i senke"), above the darkness
 var LIGHTS_KEY='cookster.tavern-lights.v1',lightsDef=null,lightState={},lightA={},shadeImg=null,lampImgs={};
 try{lightState=JSON.parse(localStorage.getItem(LIGHTS_KEY)||'{}')||{}}catch(e){lightState={}}
 // flicker: a lit flame trembles a little (the light is a bit weaker now and then); right after lighting it, it stutters for a moment
@@ -97,7 +97,7 @@ function prepCpu(){
     x.clearRect(0,0,w,h);x.drawImage(lampImgs[L.weight],0,0,w,h);d=x.getImageData(0,0,w,h).data;
     var arr=new Float32Array(w*h);for(i=0;i<w*h;i++)arr[i]=d[i*4+3]/255;wArr[L.id]=arr;
   });
-  shadeCv.width=w;shadeCv.height=h;SH=shadeCv.getContext('2d');shData=SH.createImageData(w,h);
+  shadeCv.width=w;shadeCv.height=h;SH=shadeCv.getContext('2d');shData=SH.createImageData(w,h);glowCv.width=w;glowCv.height=h;GL=glowCv.getContext('2d');
   for(i=0;i<w*h;i++){shData.data[i*4+2]=6}
 }
 function drawLights(){
@@ -113,6 +113,26 @@ function drawLights(){
   var dd=shData.data;
   for(i=0;i<n;i++){var l=lit[i]>1?1:lit[i];dd[i*4+3]=(1-fLum[i])*(1-l)*255}
   SH.putImageData(shData,0,0);
+  drawGlow();
+}
+// the warm (or cool) glow of every lit lamp: the picture of its light, painted in the colour of the lamp, over the room and the people (the colour and the strength are chosen in the tool "Svetlo i senke")
+var glowSpr={};
+function warmColor(w){w=Math.max(-1,Math.min(1,+w||0));return w>=0?[255,Math.round(205-90*w),Math.round(150-110*w)]:[Math.round(255+95*w),Math.round(215+20*w),255]}      // from cool (blue-white) over neutral to hot orange
+function glowSprite(L,col){
+  var k=L.id+'|'+col.join(','),sp=glowSpr[k];if(sp)return sp;
+  var im=lampImgs[L.weight];if(!im||!im.naturalWidth)return null;
+  sp=document.createElement('canvas');sp.width=im.naturalWidth;sp.height=im.naturalHeight;var x=sp.getContext('2d');
+  x.drawImage(im,0,0);x.globalCompositeOperation='source-in';x.fillStyle='rgb('+col.join(',')+')';x.fillRect(0,0,sp.width,sp.height);
+  return glowSpr[k]=sp;
+}
+function drawGlow(){
+  if(!GL)return;GL.clearRect(0,0,glowCv.width,glowCv.height);
+  lightsDef.lamps.forEach(function(L){
+    var a=lampAmount(L),o=lampOf(L.id);if(a<=.01||!(o.gl>0))return;
+    var sp=glowSprite(L,warmColor(o.warm));if(!sp)return;
+    GL.globalAlpha=Math.min(1,a*o.gl*.55);GL.drawImage(sp,0,0,glowCv.width,glowCv.height);
+  });
+  GL.globalAlpha=1;
 }
 function setLamp(L,on){
   if(L.stove){setStove(on);return}
@@ -123,6 +143,28 @@ function setLamp(L,on){
   (function f(now){var k=Math.min(1,(now-t0)/600);lightA[L.id]=from+(to-from)*k;drawLights();if(k<1)requestAnimationFrame(f)})(t0);
 }
 window.__drawLights=drawLights;
+// The lit lamps are real light sources for the people (their shadows follow the light, js/tavern-scene.js lampCast). Every lamp has: where its light touches the floor (gx, gy: the point under the lamp), how far it reaches (r),
+// how high it hangs (hh, counted in heights of a person: the lower, the longer the shadows), how strong the shadow is (k), the warmth of its light (warm: -1 cool .. +1 hot) and the strength of its glow (gl).
+// All chosen in the tool "Svetlo i senke" (cookster.light-shadows.v1).
+var LAMP_DEF={visece:{gx:572,gy:455,r:560,hh:2,k:1,warm:.5,gl:.35},zid_levo:{gx:430,gy:330,r:420,hh:2.6,k:1,warm:.5,gl:.35},sank:{gx:910,gy:330,r:480,hh:2.2,k:1,warm:.5,gl:.35},zid_desno:{gx:1640,gy:470,r:480,hh:2.6,k:1,warm:.5,gl:.35},pec:{gx:1270,gy:420,r:520,hh:3,k:1,warm:.8,gl:.35}};
+var LAMP_KEY='cookster.light-shadows.v1',lampCfg={};
+try{lampCfg=JSON.parse(localStorage.getItem(LAMP_KEY)||'{}')||{}}catch(e){lampCfg={}}
+function lampOf(id){var d=LAMP_DEF[id]||{gx:800,gy:500,r:480,hh:2.4,k:1,warm:.5,gl:.35},c=lampCfg[id]||{},o={},k;for(k in d)o[k]=c[k]!=null&&isFinite(c[k])?+c[k]:d[k];return o}
+function saveLamps(){try{localStorage.setItem(LAMP_KEY,JSON.stringify(lampCfg))}catch(e){}}
+function lightSources(force){                           // force: all the lamps as if they were lit
+  if(!lightsDef)return[];var out=[];
+  lightsDef.lamps.forEach(function(L){var a=force?1:lampAmount(L);if(a<.03)return;var g=lampOf(L.id);out.push({id:L.id,gx:g.gx,gy:g.gy,r:g.r,hh:g.hh,k:g.k,warm:g.warm,a:a})});
+  return out;
+}
+window.CooksterLampShadows={
+  ids:function(){return(lightsDef?lightsDef.lamps:[]).map(function(L){return{id:L.id,label:L.label||L.id,x:L.x,y:L.y}})},
+  get:lampOf,all:function(){return lampCfg},
+  set:function(id,k,v){(lampCfg[id]||(lampCfg[id]={}))[k]=+v;saveLamps();if(k==='warm'||k==='gl')drawLights()},
+  reset:function(id){delete lampCfg[id];saveLamps();drawLights()},
+  setAll:function(o){lampCfg=o||{};saveLamps();drawLights()},
+  lit:function(id){var L=lightsDef&&lightsDef.lamps.filter(function(l){return l.id===id})[0];return L?lampLit(L):false},
+  toggle:function(id){var L=lightsDef&&lightsDef.lamps.filter(function(l){return l.id===id})[0];if(L)setLamp(L,!lampLit(L))}
+};
 function lampLit(L){return L.stove?stoveLit:!!lightState[L.id]}
 function lampAt(x,y){
   if(!lightsDef)return null;
@@ -248,7 +290,7 @@ dirtyImg.src=DIRTY;
 var cleanImg=new Image();cleanImg.src=T.roomSrc;           // the clean picture: the difference to the dirty one is what lies on the tables
 // the dirt and the effects lie exactly over the picture, wherever the scene puts it
 function sync(){
-  ['left','top','width','height'].forEach(function(k){dirt.style[k]=cv.style[k];fx.style[k]=cv.style[k];stoveCv.style[k]=cv.style[k];if(doorCv)doorCv.style[k]=cv.style[k];if(signWrap)signWrap.style[k]=cv.style[k];shadeCv.style[k]=cv.style[k];coreCv.style[k]=cv.style[k];sparkCv.style[k]=cv.style[k];smokeCv.style[k]=cv.style[k]});
+  ['left','top','width','height'].forEach(function(k){dirt.style[k]=cv.style[k];fx.style[k]=cv.style[k];stoveCv.style[k]=cv.style[k];if(doorCv)doorCv.style[k]=cv.style[k];if(signWrap)signWrap.style[k]=cv.style[k];shadeCv.style[k]=cv.style[k];glowCv.style[k]=cv.style[k];coreCv.style[k]=cv.style[k];sparkCv.style[k]=cv.style[k];smokeCv.style[k]=cv.style[k]});
 }
 new MutationObserver(sync).observe(cv,{attributes:true,attributeFilter:['style']});
 addEventListener('resize',sync);sync();
@@ -615,5 +657,5 @@ setInterval(function(){
   c.globalCompositeOperation='destination-in';c.drawImage(floorMask,0,0);
   D.globalCompositeOperation='source-over';D.drawImage(blotCv,0,0);
 },750);
-window.CooksterTavernClean={floorDirtAt:floorDirtAt,toScene:toScene,tool:function(){return tool},msg:function(t){showMsg(t)},cleanTable:function(i){cleanZone(i)},dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},smoke:function(){return smokeLevel},doorOpen:function(){return doorOpen},doorProgress:function(){return doorA},setDoor:setDoor,autoDoor:autoDoor,stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
+window.CooksterTavernClean={lightSources:lightSources,floorDirtAt:floorDirtAt,toScene:toScene,tool:function(){return tool},msg:function(t){showMsg(t)},cleanTable:function(i){cleanZone(i)},dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},smoke:function(){return smokeLevel},doorOpen:function(){return doorOpen},doorProgress:function(){return doorA},setDoor:setDoor,autoDoor:autoDoor,stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
 })();
