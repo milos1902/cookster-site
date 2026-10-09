@@ -15149,9 +15149,9 @@ if(!__hasSavedWorld&&__starterSpoon){
 // A new kitchen always begins with the bell for the waiter, the trash can and the spike for the orders in these places (the player can move them afterwards).
 // Saved placements are left untouched. Pose: cx = centre, by = bottom (scene pixels), zone = surface.
 const KITCHEN_FIXED_START=[
- {id:'kanta_set_zatvorena',cx:330,by:905,zone:'floor'},
- {id:'zvonce_konobar',cx:1120,by:300,zone:'table'},
- {id:'siljak_narudzbine',cx:520,by:310,zone:'table'}
+ {id:'kanta_set_zatvorena',cx:1223,by:232,zone:'floor'},
+ {id:'zvonce_konobar',cx:1171,by:366,zone:'table'},
+ {id:'siljak_narudzbine',cx:994,by:275,zone:'table'}
 ];
 if(!__hasSavedWorld){
  KITCHEN_FIXED_START.forEach(p=>{

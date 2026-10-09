@@ -409,11 +409,9 @@ setInterval(function(){if(T.isOpen&&!down)refreshInfo()},1500);
   });
   im.addEventListener('contextmenu',function(e){e.stopPropagation()});
   // the pose of the sign (placement tool "Mesta"): position and size in % of the picture, tilt in degrees
-  var SPK='cookster.sign-pose.v1',SDEF={x:9.7,y:6.4,w:9.72,rz:0,ry:0,rx:0},spose=SDEF;
-  try{var sv=JSON.parse(localStorage.getItem(SPK));if(sv&&typeof sv.x==='number')spose=Object.assign({},SDEF,sv)}catch(x){}
-  function applyPose(){sg.style.left=spose.x+'%';sg.style.top=spose.y+'%';sg.style.width=spose.w+'%';sg.style.transform='perspective(900px) rotateX('+spose.rx+'deg) rotateY('+spose.ry+'deg) rotate('+spose.rz+'deg)'}
-  window.CooksterSign={def:SDEF,get:function(){return Object.assign({},spose)},set:function(p){spose=Object.assign({},spose,p);applyPose();try{localStorage.setItem(SPK,JSON.stringify(spose))}catch(x){}},reset:function(){spose=Object.assign({},SDEF);applyPose();try{localStorage.removeItem(SPK)}catch(x){}}};
-  applyPose();
+  // the pose of the sign (from Miloš's export): position and size in % of the picture, tilt in degrees
+  var P={x:10.2,y:9.7,w:7,rz:-8,ry:0,rx:0};
+  sg.style.left=P.x+'%';sg.style.top=P.y+'%';sg.style.width=P.w+'%';sg.style.transform='perspective(900px) rotateX('+P.rx+'deg) rotateY('+P.ry+'deg) rotate('+P.rz+'deg)';
   cv.parentNode.insertBefore(wrap,shadeCv);signWrap=wrap;sync();
 })();                // reading the picture back is slow, so not while the sponge is rubbing
 
