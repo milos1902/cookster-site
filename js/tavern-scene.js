@@ -1083,10 +1083,13 @@ function wFilm(ctx,w,sc,name,still,loop){                 // draws the waiter as
     if(f&&f.name===name&&!loop){w.film=null;return false}
     if(!f&&!loop&&clock<(w.filmNext||0))return false;
     var segs=a.m.segs,pool=segs.map(function(_,i){return i}).filter(function(i){return i!==w.lastSeg});
-    var si=pool[Math.floor(Math.random()*pool.length)];w.lastSeg=si;
-    var chain=f&&f.name===name&&clock-(f.t0+f.dur)<.5;      // the next part follows the last one at once: it dissolves from the last picture of that part, not from the still picture
+    var si=pool[Math.floor(Math.random()*pool.length)];
+    var fresh=!(f&&f.name===name&&clock-(f.t0+f.dur)<.5);      // the film starts now (he has just stopped at the table), not as the next part of a running one
+    if(fresh&&loop)si=0;                                         // the first part (it starts calm, like the standing picture)
+    w.lastSeg=si;
+    var chain=!fresh;      // the next part follows the last one at once: it dissolves from the last picture of that part, not from the still picture
     var prevI=chain?f.n-1:-1;
-    f=w.film={name:name,t0:clock,s:segs[si][0],n:segs[si][1],dur:(segs[si][1]-segs[si][0])/a.m.fps,prev:prevI};
+    f=w.film={name:name,t0:clock,s:segs[si][0],n:segs[si][1],dur:(segs[si][1]-segs[si][0])/a.m.fps,prev:prevI,from:(fresh&&w._lw&&clock-w._lw.t<.6)?w._lw:null};     // from: the last picture of the walk, which the film dissolves from
     if(!loop)w.filmNext=clock+f.dur+3+Math.random()*7;
   }
   var t=clock-f.t0,m=a.m,i=Math.min(f.n-1,f.s+Math.floor(t*m.fps));
@@ -1095,6 +1098,12 @@ function wFilm(ctx,w,sc,name,still,loop){                 // draws the waiter as
   if(f.prev>=0){                                          // dissolve from the end of the last part
     var k=Math.min(1,t/W_XF);k=k*k*(3-2*k);
     wFilmFrame(ctx,w,sc,a,f.prev,im0,1);if(k>0)wFilmFrame(ctx,w,sc,a,i,im0,k);
+    return true;
+  }
+  if(f.from){                                              // he has just stopped: the last picture of the walk dissolves into the film (the still picture is not shown at all)
+    var kk=Math.min(1,t/.3);kk=kk*kk*(3-2*kk);
+    drawSprite(ctx,f.from.key,w.x,w.y-(f.from.bob||0),sc,f.from.flip,0,1);
+    if(kk>0)wFilmFrame(ctx,w,sc,a,i,im0,kk);
     return true;
   }
   var al=Math.max(0,Math.min(1,t/.35));al=al*al*(3-2*al);   // the first part fades in over the still picture
@@ -1133,6 +1142,7 @@ function drawWaiterBody(ctx){
     var pf=w._wf==null?wi2:w._wf,fo=wsData().sets[w.set]||[];
     for(var gd=0;pf!==wi2&&gd<N24;gd++){pf=(pf+1)%N24;fo.forEach(function(e){if(e.f===pf)wsPlay(e)})}
     w._wf=wi2;
+    w._lw={key:'w_'+W24+(wi2+1),flip:w.set==='walks'?w.flip:false,t:clock};
     drawSprite(ctx,'w_'+W24+(wi2+1),w.x,w.y,sc,w.set==='walks'?w.flip:false,0,1);return;
   }
   var ph=Math.abs(Math.sin(w.phase*Math.PI)),bob=ph*3.2*sc/.3;
@@ -1143,6 +1153,7 @@ function drawWaiterBody(ctx){
   var q=side?w.phase*2:w.phase,qi=Math.floor(q),fr=q-qi,f0=.3,f1=.9;
   // from the side the pictures differ in height (legs apart, legs together), so a blend would show two heads: there they just follow each other
   var fade=side?0:Math.max(0,Math.min(1,(fr-f0)/(f1-f0)));fade=fade*fade*(3-2*fade);
+  w._lw={key:'w_'+w.set+SEQ[qi%NS],flip:w.flip,t:clock,bob:bob};
   drawSprite(ctx,'w_'+w.set+SEQ[qi%NS],w.x,w.y-bob,sc,w.flip,0,1);
   if(fade>0)drawSprite(ctx,'w_'+w.set+SEQ[(qi+1)%NS],w.x,w.y-bob,sc,w.flip,0,fade);
 }
