@@ -520,23 +520,26 @@ room.addEventListener('pointerdown',function(e){
   if(e.button!==0||overUi(e)){if(e.button===0&&!e.target.closest('.tc-menu'))hideMenu();return}
   hideMenu();
   if(tool!=='sponge')return;
-  down=true;sponge.classList.add('down');last=null;
+  down=true;sponge.classList.add('down');last=null;scrubPrev=null;
   try{room.setPointerCapture(e.pointerId)}catch(_){}
   var p=toScene(e);rubTo(p.x,p.y);moveSponge(e);
 });
+var scrubPrev=null;
+function scrubOff(){scrubPrev=null;try{if(window.CooksterSound&&window.CooksterSound.scrubStop)window.CooksterSound.scrubStop()}catch(_){}}
 room.addEventListener('pointermove',function(e){
   moveSponge(e);
-  if(down&&tool==='sponge'){var p=toScene(e);rubTo(p.x,p.y)}
+  if(down&&tool==='sponge'){var p=toScene(e);rubTo(p.x,p.y);
+    var tn=performance.now();if(scrubPrev){try{if(window.CooksterSound&&window.CooksterSound.scrub)window.CooksterSound.scrub(p.x-scrubPrev.x,tn-scrubPrev.t)}catch(_){}}scrubPrev={x:p.x,t:tn}}      // the sound of the rubbing follows the mouse (tool "Zvuk": Sunđer)
 });
 function release(e){
-  if(!down)return;down=false;last=null;sponge.classList.remove('down');
+  if(!down)return;down=false;last=null;sponge.classList.remove('down');scrubOff();
   try{room.releasePointerCapture(e.pointerId)}catch(_){}
   refreshInfo();moveSponge(e);
 }
 room.addEventListener('pointerup',release);room.addEventListener('pointercancel',release);
 room.addEventListener('pointerleave',function(){if(!down)sponge.style.display='none'});
 setTool('ruka');
-function setTool(t){tool=t;down=false;last=null;sponge.style.display='none';room.classList.toggle('tc-sponge-on',false);if(t==='sponge')room.classList.add('tc-sponge-on')}
+function setTool(t){tool=t;down=false;last=null;scrubOff();sponge.style.display='none';room.classList.toggle('tc-sponge-on',false);if(t==='sponge')room.classList.add('tc-sponge-on')}
 // right click anywhere: a ring with the tools (sponge, hand) and, where it fits, "Očisti sto" (over a table) and "Pranje" (over a dirty bowl)
 room.addEventListener('contextmenu',function(e){
   e.preventDefault();
