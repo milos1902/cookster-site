@@ -82,10 +82,10 @@ function preload(){
   })('g'+(c2<10?'0':'')+c2+'_'+w+f)});
   // the waiter: three pictures of a step toward the camera (walkd), away from it (walku) and from the side (walks, looking right)
   ['walkd','walku','walks','writes','foods','drinks'].forEach(function(w){for(var f2=1;f2<=3;f2++)(function(key){
-    jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=5').then(function(im){store('w_'+key,im)}));
+    jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=6').then(function(im){store('w_'+key,im)}));
   })(w+f2)});
   // walking toward the camera: 16 pictures of a whole walk (two steps), made from the three old ones with frame interpolation
-  [['walkd','wd'],['walku','wu'],['walks','ws']].forEach(function(pr){for(var wf=1;wf<=WD_N[pr[0]];wf++)(function(n){jobs.push(loadImg(WAITER+pr[0]+'24/f'+(n<10?'0':'')+n+'.webp?v=5').then(function(im){store('w_'+pr[1]+n,im)}))})(wf)});
+  [['walkd','wd'],['walku','wu'],['walks','ws']].forEach(function(pr){for(var wf=1;wf<=WD_N[pr[0]];wf++)(function(n){jobs.push(loadImg(WAITER+pr[0]+'24/f'+(n<10?'0':'')+n+'.webp?v=6').then(function(im){store('w_'+pr[1]+n,im)}))})(wf)});
   var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
   loading=Promise.all([roomJob].concat(jobs)).then(function(r){loaded=!!r[0];loading=null;return loaded});
   return loading;
@@ -1141,25 +1141,26 @@ var CUT_KEY='cookster.guest-anim-cuts.v1';
 function applyCuts(){                                     // the parts chosen in the tool "Animacije gostiju" replace the built-in ones
   try{var c=JSON.parse(localStorage.getItem(CUT_KEY)||'{}');Object.keys(c).forEach(function(g){Object.keys(c[g]).forEach(function(n){var m=ANIM&&ANIM[g]&&ANIM[g][n],o=c[g][n];if(m&&o&&o.segs&&o.segs.length){m.segs=o.segs;m.solo=o.solo||0;m.custom=true}})})}catch(e){}
 }
-try{fetch('assets/tavern/guests/anim/anim.json?v=5').then(function(r){return r.json()}).then(function(d){ANIM=d;applyCuts()}).catch(function(){})}catch(e){}
+try{fetch('assets/tavern/guests/anim/anim.json?v=6').then(function(r){return r.json()}).then(function(d){ANIM=d;applyCuts()}).catch(function(){})}catch(e){}
 function gidOf(g){return 'g'+(g.ch<10?'0':'')+g.ch}
 function animFrames(g,name){                              // the frames of a film (loaded when the first guest of this character needs them), or null while they are coming
   var gid=gidOf(g),m=ANIM&&ANIM[gid]&&ANIM[gid][name];if(!m)return null;
   var key=gid+'_'+name,a=animImgs[key];
   if(!a){
     a=animImgs[key]={m:m,fr:[],ok:0,id:'a_'+key+'_'};
-    for(var i=0;i<m.n;i++)(function(i){var im=new Image();im.onload=function(){a.fr[i]=tint(im)||im;a.ok++};im.src='assets/tavern/guests/anim/'+key+'_'+(i<10?'00':i<100?'0':'')+i+'.webp?v=5'})(i);
+    for(var i=0;i<m.n;i++)(function(i){var im=new Image();im.onload=function(){a.fr[i]=tint(im)||im;a.ok++};im.src='assets/tavern/guests/anim/'+key+'_'+(i<10?'00':i<100?'0':'')+i+'.webp?v=6'})(i);
   }
   return a.ok>=m.n?a:null;
 }
 window.CooksterGuestAnim={meta:function(){return ANIM},apply:applyCuts,key:CUT_KEY,load:function(ch,name){return animFrames({ch:ch},name)},reload:function(){}};
 function tableMates(g){var n=0;guests.forEach(function(o){if(o.seat.table===g.seat.table&&(o.mode==='seated'||o.mode==='sitting'))n++});return n}
 function startAnim(g,name){
-  if(g.an||g.mode!=='seated'||g.seat.pose!=='lice'&&g.seat.pose!=null)return false;
-  var a=animFrames(g,name);if(!a)return false;
+  if(g.an||g.mode!=='seated')return false;
+  var pz=g.seat.pose||'lice',full=name+(pz==='lice'?'':'_'+pz),a=animFrames(g,full);if(!a)return false;      // the films of the other poses (from behind) are named 'pij_ledja' ...
+  var baseName=name;name=full;
   // the film is cut into parts (one sip, one talk ...): a different part each time; a guest who sits alone only has the first part (a sip), a company all of them
   var m=a.m,segs=m.segs||[[0,m.n]],seg;
-  if(name==='pij'){
+  if(baseName==='pij'){
     var pool=tableMates(g)<2?[Math.min(m.solo||0,segs.length-1)]:segs.map(function(_,i){return i}).filter(function(i){return i!==g.lastSeg});
     if(!pool.length)pool=[0];
     g.lastSeg=pool[Math.floor(Math.random()*pool.length)];seg=segs[g.lastSeg];
@@ -1403,7 +1404,7 @@ window.CooksterTavern={
   deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,dirtyDishAt:dirtyDishAt,
   isOpenForGuests:function(){return openForGuests},setOpenForGuests:setOpenForGuests,say:function(i,t,d){var g=guests.filter(function(o){return o.id===i})[0];if(g)gsay(g,t,d)},
-  waiterSteps:{get:wsData,set:function(d){WSD=d;try{localStorage.setItem(WS_KEY,JSON.stringify(WSD))}catch(e){}},reset:function(){WSD=null;try{localStorage.removeItem(WS_KEY)}catch(e){}wsData()},count:function(k){return WD_N[k]||0},url:function(k,i){return WAITER+k+'24/f'+(i<10?'0':'')+i+'.webp?v=5'},play:wsPlay,stepClips:16},
+  waiterSteps:{get:wsData,set:function(d){WSD=d;try{localStorage.setItem(WS_KEY,JSON.stringify(WSD))}catch(e){}},reset:function(){WSD=null;try{localStorage.removeItem(WS_KEY)}catch(e){}wsData()},count:function(k){return WD_N[k]||0},url:function(k,i){return WAITER+k+'24/f'+(i<10?'0':'')+i+'.webp?v=6'},play:wsPlay,stepClips:16},
   tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose,draw:tiDraw,shadow:tiShadow,shDef:TI_SH},
   get isOpen(){return state==='tavern'},get busy(){return busy},guestCount:function(){return guests.length},
   debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,held:!!g.held,an:g.an?g.an.name:'',pose:g.seat.pose,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
