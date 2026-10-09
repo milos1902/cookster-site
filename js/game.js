@@ -2525,7 +2525,8 @@ function ambDesired(){
  try{
   if(window.CooksterTavern&&window.CooksterTavern.isOpen){
    const n=window.CooksterTavern.guestCount?window.CooksterTavern.guestCount():0;
-   return[tavernAmbientTarget,n<=0?'amb0':n<4?'amb2':n<9?'amb5':'amb12'];
+   if(n<=0)return null;                                           // nobody in the tavern: no ambient sound at all (the strange sound that came with the empty tavern is gone)
+   return[tavernAmbientTarget,n<4?'amb2':n<9?'amb5':'amb12'];
   }
   const h=currentGameMinute()/60;
   return[kitchenAmbientTarget,h>=5&&h<11?'ambMorning':h>=11&&h<17.5?'ambDay':'ambEvening'];
