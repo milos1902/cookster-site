@@ -82,10 +82,10 @@ function preload(){
   })('g'+(c2<10?'0':'')+c2+'_'+w+f)});
   // the waiter: three pictures of a step toward the camera (walkd), away from it (walku) and from the side (walks, looking right)
   ['walkd','walku','walks','writes','foods','drinks'].forEach(function(w){for(var f2=1;f2<=3;f2++)(function(key){
-    jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=4').then(function(im){store('w_'+key,im)}));
+    jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=5').then(function(im){store('w_'+key,im)}));
   })(w+f2)});
   // walking toward the camera: 16 pictures of a whole walk (two steps), made from the three old ones with frame interpolation
-  [['walkd','wd'],['walku','wu'],['walks','ws']].forEach(function(pr){for(var wf=1;wf<=WD_N[pr[0]];wf++)(function(n){jobs.push(loadImg(WAITER+pr[0]+'24/f'+(n<10?'0':'')+n+'.webp?v=4').then(function(im){store('w_'+pr[1]+n,im)}))})(wf)});
+  [['walkd','wd'],['walku','wu'],['walks','ws']].forEach(function(pr){for(var wf=1;wf<=WD_N[pr[0]];wf++)(function(n){jobs.push(loadImg(WAITER+pr[0]+'24/f'+(n<10?'0':'')+n+'.webp?v=5').then(function(im){store('w_'+pr[1]+n,im)}))})(wf)});
   var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
   loading=Promise.all([roomJob].concat(jobs)).then(function(r){loaded=!!r[0];loading=null;return loaded});
   return loading;
@@ -490,7 +490,7 @@ function spawnCompany(){
 // the film of the company: the whole table with the four guests (a video of the game's own picture of that table), played over that part of the scene; between the parts
 // the guests sit still as always. The edges of the pictures fade out, the dishes and the waiter are drawn over the film.
 var COFILM=null,coImgs=null,coState={film:null,next:6,last:-1,al:0};
-try{fetch('assets/tavern/company/anim.json?v=1').then(function(r){return r.json()}).then(function(d){COFILM=d.dr1}).catch(function(){})}catch(e){}
+try{fetch('assets/tavern/company/anim.json?v=2').then(function(r){return r.json()}).then(function(d){COFILM=d.dr1}).catch(function(){})}catch(e){}
 function coFrames(){
   if(!COFILM)return null;
   if(!coImgs){coImgs={fr:[],ok:0};for(var i=0;i<COFILM.n;i++)(function(i){var im=new Image();im.onload=function(){coImgs.fr[i]=im;coImgs.ok++};im.src='assets/tavern/company/dr1_'+(i<10?'00':'0')+i+'.webp?v=1'})(i)}
@@ -1140,14 +1140,14 @@ var CUT_KEY='cookster.guest-anim-cuts.v1';
 function applyCuts(){                                     // the parts chosen in the tool "Animacije gostiju" replace the built-in ones
   try{var c=JSON.parse(localStorage.getItem(CUT_KEY)||'{}');Object.keys(c).forEach(function(g){Object.keys(c[g]).forEach(function(n){var m=ANIM&&ANIM[g]&&ANIM[g][n],o=c[g][n];if(m&&o&&o.segs&&o.segs.length){m.segs=o.segs;m.solo=o.solo||0;m.custom=true}})})}catch(e){}
 }
-try{fetch('assets/tavern/guests/anim/anim.json?v=4').then(function(r){return r.json()}).then(function(d){ANIM=d;applyCuts()}).catch(function(){})}catch(e){}
+try{fetch('assets/tavern/guests/anim/anim.json?v=5').then(function(r){return r.json()}).then(function(d){ANIM=d;applyCuts()}).catch(function(){})}catch(e){}
 function gidOf(g){return 'g'+(g.ch<10?'0':'')+g.ch}
 function animFrames(g,name){                              // the frames of a film (loaded when the first guest of this character needs them), or null while they are coming
   var gid=gidOf(g),m=ANIM&&ANIM[gid]&&ANIM[gid][name];if(!m)return null;
   var key=gid+'_'+name,a=animImgs[key];
   if(!a){
-    a=animImgs[key]={m:m,fr:[],ok:0};
-    for(var i=0;i<m.n;i++)(function(i){var im=new Image();im.onload=function(){a.fr[i]=tint(im)||im;a.ok++};im.src='assets/tavern/guests/anim/'+key+'_'+(i<10?'00':i<100?'0':'')+i+'.webp?v=4'})(i);
+    a=animImgs[key]={m:m,fr:[],ok:0,id:'a_'+key+'_'};
+    for(var i=0;i<m.n;i++)(function(i){var im=new Image();im.onload=function(){a.fr[i]=tint(im)||im;a.ok++};im.src='assets/tavern/guests/anim/'+key+'_'+(i<10?'00':i<100?'0':'')+i+'.webp?v=5'})(i);
   }
   return a.ok>=m.n?a:null;
 }
@@ -1165,6 +1165,20 @@ function startAnim(g,name){
   }else seg=m.custom?segs[0]:[0,m.n];
   g.an={name:name,t0:clock,s:seg[0],n:seg[1],dur:(seg[1]-seg[0])/m.fps};return true;
 }
+function drawFrameAt(ctx,g,a,i,key,x,y,sc,rot,al){          // one picture of a film of the guest (the position is given relative to his still picture)
+  var im0=timgs[key]||imgs[key];if(!im0)return false;
+  var sw=im0.naturalWidth||im0.width,sh=im0.naturalHeight||im0.height,m=a.m,fi=graded(a.id+i,a.fr[i]);
+  ctx.save();ctx.translate(x,y);if(rot)ctx.rotate(rot);ctx.globalAlpha=al;
+  ctx.drawImage(fi,(-sw/2+m.ox)*sc,(-sh+m.oy)*sc,m.w*sc,m.h*sc);ctx.restore();return true;
+}
+function idleFilm(g){                                       // the round-and-round film of the guest in his pose (very small movements), or null
+  var pz=g.seat.pose||'lice',a=animFrames(g,pz==='lice'?'idle':'idle_'+pz);return a&&a.m.loop?a:null;
+}
+function drawBase(ctx,g,x,y,sc,rot){                      // the guest as he sits when nothing special happens: the idle film, or the still picture
+  var a=idleFilm(g),key=chKey(g,sitPose(g));
+  if(a){var i=Math.floor((clock+g.id*.37)*a.m.fps)%a.m.n;if(drawFrameAt(ctx,g,a,i,key,x,y,sc,rot,1))return}
+  drawSprite(ctx,key,x,y,sc,false,rot,1);
+}
 function drawAnim(ctx,g,x,y,sc,rot){                      // true if the guest was drawn as a film
   var an=g.an;if(!an)return false;
   var a=animFrames(g,an.name),t=clock-an.t0;
@@ -1174,7 +1188,7 @@ function drawAnim(ctx,g,x,y,sc,rot){                      // true if the guest w
   var i=Math.min(an.n-1,an.s+Math.floor(t*m.fps)),fi=graded(gidOf(g)+'_'+an.name+i,a.fr[i]);
   // the film is blended in and out over the still picture of the guest (the still one stays underneath), so nobody sees where the film starts or ends
   var al=Math.min(1,t/ANIM_IN,(an.dur-t)/ANIM_OUT);al=Math.max(0,al);al=al*al*(3-2*al);
-  if(al<1)drawSprite(ctx,key,x,y,sc,false,rot,1);
+  if(al<1)drawBase(ctx,g,x,y,sc,rot);
   ctx.save();ctx.translate(x,y);if(rot)ctx.rotate(rot);ctx.globalAlpha=al;
   ctx.drawImage(fi,(-sw/2+m.ox)*sc,(-sh+m.oy)*sc,m.w*sc,m.h*sc);
   ctx.restore();
@@ -1238,7 +1252,7 @@ function drawGuestBody(ctx,g){
       if(!ed&&!g.an&&!(g.grp&&g.grp.company)&&state==='tavern'&&clock>=(g.anNext||0)){          // now and then he drinks / talks (not all of them, not all the time)
         g.anNext=clock+5+Math.random()*10;if(Math.random()<.8)startAnim(g,'pij');
       }
-      if(!drawAnim(ctx,g,sp.x,sp.y+br,ssc,rt))drawSprite(ctx,chKey(g,sitPose(g)),sp.x,sp.y+br+dip,ssc,false,rt,1);
+      if(!drawAnim(ctx,g,sp.x,sp.y+br,ssc,rt)){if(ed)drawSprite(ctx,chKey(g,sitPose(g)),sp.x,sp.y+br+dip,ssc,false,rt,1);else drawBase(ctx,g,sp.x,sp.y+br,ssc,rt)}
     }
   }
 }
@@ -1388,7 +1402,7 @@ window.CooksterTavern={
   deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,dirtyDishAt:dirtyDishAt,
   isOpenForGuests:function(){return openForGuests},setOpenForGuests:setOpenForGuests,say:function(i,t,d){var g=guests.filter(function(o){return o.id===i})[0];if(g)gsay(g,t,d)},
-  waiterSteps:{get:wsData,set:function(d){WSD=d;try{localStorage.setItem(WS_KEY,JSON.stringify(WSD))}catch(e){}},reset:function(){WSD=null;try{localStorage.removeItem(WS_KEY)}catch(e){}wsData()},count:function(k){return WD_N[k]||0},url:function(k,i){return WAITER+k+'24/f'+(i<10?'0':'')+i+'.webp?v=4'},play:wsPlay,stepClips:16},
+  waiterSteps:{get:wsData,set:function(d){WSD=d;try{localStorage.setItem(WS_KEY,JSON.stringify(WSD))}catch(e){}},reset:function(){WSD=null;try{localStorage.removeItem(WS_KEY)}catch(e){}wsData()},count:function(k){return WD_N[k]||0},url:function(k,i){return WAITER+k+'24/f'+(i<10?'0':'')+i+'.webp?v=5'},play:wsPlay,stepClips:16},
   tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose,draw:tiDraw,shadow:tiShadow,shDef:TI_SH},
   get isOpen(){return state==='tavern'},get busy(){return busy},guestCount:function(){return guests.length},
   debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,held:!!g.held,an:g.an?g.an.name:'',pose:g.seat.pose,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},

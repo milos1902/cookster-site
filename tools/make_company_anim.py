@@ -21,12 +21,7 @@ for n,f in enumerate(frames):
 def dist(a,b):
     r=subprocess.run(['compare','-metric','RMSE',a,b,'null:'],capture_output=True,text=True).stderr
     m=re.search(r'\(([0-9.eE+-]+)\)',r); return float(m.group(1)) if m else 0.0
-mv=[dist(out[i],out[i+1]) for i in range(N-1)]
-K=max(1,round(N/FPS/3.5)); cuts=[0]
-for j in range(1,K):
-    c=round(j*N/K); w=range(max(cuts[-1]+6,c-8),min(N-6,c+9))
-    if len(w): cuts.append(min(w,key=lambda i:mv[i]))
-cuts.append(N); segs=[[cuts[i],cuts[i+1]] for i in range(len(cuts)-1)]
+segs=[[0,N]]                                             # the whole film is played (about 8 s)
 meta_p=os.path.join(OUT,'anim.json'); meta=json.load(open(meta_p)) if os.path.exists(meta_p) else {}
 meta[name]={'n':N,'fps':FPS,'segs':segs,'w':BOX[2],'h':BOX[3],'ox':BOX[0],'oy':BOX[1]}
 json.dump(meta,open(meta_p,'w'),indent=1); print(name,N,segs); shutil.rmtree(tmp)
