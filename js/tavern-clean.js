@@ -164,7 +164,7 @@ function fxTick(now){
   if(!sparks.length)SP.clearRect(0,0,W,H);
 }
 // smoke that drifts slowly through the tavern: the more guests, the more of it (it grows and fades slowly, so a crowd fills the room and an empty room clears)
-var smokeCv=mk('canvas','tc-dirt'),SM=null,puffs=[],smokeLevel=0,smokeTex=[],SMW=W/4,SMH=H/4,smokeT=0;
+var ventK=0,smokeCv=mk('canvas','tc-dirt'),SM=null,puffs=[],smokeLevel=0,smokeTex=[],SMW=W/4,SMH=H/4,smokeT=0;
 smokeCv.width=SMW;smokeCv.height=SMH;SM=smokeCv.getContext('2d');cv.parentNode.insertBefore(smokeCv,shadeCv);
 (function makeSmokeTex(){
   for(var n=0;n<4;n++){
@@ -180,22 +180,27 @@ smokeCv.width=SMW;smokeCv.height=SMH;SM=smokeCv.getContext('2d');cv.parentNode.i
 })();
 var SMOKE_SRC=[[420,440],[850,650],[1400,500],[760,250],[1250,380]];     // the tables, the bar, the stove: where it comes from
 function newPuff(){
-  var s=SMOKE_SRC[Math.floor(Math.random()*SMOKE_SRC.length)];
+  var s=SMOKE_SRC[Math.floor(Math.random()*SMOKE_SRC.length)],rise=Math.random()<.65;       // most of the smoke climbs slowly up to the ceiling
+  if(rise)return{x:s[0]+(Math.random()-.5)*220,y:s[1]-60-Math.random()*80,vx:(Math.random()-.5)*14,vy:-(20+Math.random()*16),size:200+Math.random()*220,rot:Math.random()*6.28,vr:(Math.random()-.5)*.05,t:0,life:20+Math.random()*10,tex:smokeTex[Math.floor(Math.random()*smokeTex.length)],ph:Math.random()*6.28,al:.6+Math.random()*.5,rise:1};
   return{x:s[0]+(Math.random()-.5)*260,y:s[1]-40-Math.random()*160,vx:5+Math.random()*10,vy:-(1+Math.random()*4),size:230+Math.random()*260,rot:Math.random()*6.28,vr:(Math.random()-.5)*.05,t:0,life:16+Math.random()*14,tex:smokeTex[Math.floor(Math.random()*smokeTex.length)],ph:Math.random()*6.28,al:.5+Math.random()*.5};
 }
 function smokeTick(dt){
   smokeT+=dt;if(smokeT<.1)return;dt=smokeT;smokeT=0;                  // 10 times in a second is enough for such a slow smoke
-  var guests=(T.guestCount?T.guestCount():0),target=Math.min(1,(T.smokeForce!=null?T.smokeForce:guests)/12);
+  var guests=(T.guestCount?T.guestCount():0),target=Math.min(1,(T.smokeForce!=null?T.smokeForce:guests)/9)*(1-.85*ventK);
   smokeLevel+=(target-smokeLevel)*Math.min(1,dt/14);                  // slow: about 14 s to follow
-  var want=Math.round(3+21*smokeLevel);
-  while(puffs.length<want&&Math.random()<.5)puffs.push(newPuff());
+  var want=Math.round(5+40*smokeLevel);
+  while(puffs.length<want&&Math.random()<.6)puffs.push(newPuff());
   SM.clearRect(0,0,SMW,SMH);
+  if(smokeLevel>.05){                                                  // the smoke collects under the ceiling
+    var hz=SM.createLinearGradient(0,0,0,SMH*.5);hz.addColorStop(0,'rgba(200,184,164,'+(.5*smokeLevel).toFixed(3)+')');hz.addColorStop(.55,'rgba(200,184,164,'+(.16*smokeLevel).toFixed(3)+')');hz.addColorStop(1,'rgba(200,184,164,0)');
+    SM.fillStyle=hz;SM.fillRect(0,0,SMW,SMH*.5);
+  }
   for(var i=puffs.length-1;i>=0;i--){
     var p=puffs[i];p.t+=dt;
     if(p.t>=p.life||(puffs.length>want+3&&p.t>p.life*.5)){puffs.splice(i,1);continue}
     p.x+=(p.vx+Math.sin(p.t*.5+p.ph)*5)*dt;p.y+=(p.vy+Math.cos(p.t*.4+p.ph)*2)*dt;p.rot+=p.vr*dt;
     var k=p.t/p.life,fade=Math.sin(Math.PI*k);
-    SM.globalAlpha=Math.min(.24,(.06+.14*smokeLevel)*p.al)*fade;
+    SM.globalAlpha=Math.min(.3,(.07+.18*smokeLevel)*p.al)*fade;
     var sz=p.size*(1+k*.4)/4;
     SM.save();SM.translate(p.x/4,p.y/4);SM.rotate(p.rot);SM.drawImage(p.tex,-sz/2,-sz/2,sz,sz);SM.restore();
   }
@@ -524,5 +529,5 @@ function floorDirt(n){
   c.globalCompositeOperation='destination-in';c.drawImage(floorMask,0,0);
   D.globalCompositeOperation='source-over';D.drawImage(sc,0,0);
 }
-window.CooksterTavernClean={dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
+window.CooksterTavernClean={dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},smoke:function(){return smokeLevel},setVent:function(k){ventK=Math.max(0,Math.min(1,k))},stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
 })();

@@ -571,6 +571,7 @@ var SAY={
   floorGood:['Lepo je čisto ovde.','Baš je čista kafana!','Pohvala za čistoću!','Sve blista, svaka čast majstore!','Ovde je pravo uživanje sedeti.','Čisto kao u apoteci!','Vidi se da neko vodi računa.','Bravo, ovako se drži kafana.','Redak je ovako čist lokal.','Ovde ću sigurno ponovo doći.'],
   cold:['Hladno je ovde, upali vatru!','Majstore, zapali vatru, ledimo se!','Brrr, pa ovde je ledara!','Ugasila se peć, hladno je.','Daj malo vatre, drhtim!','Kad ćeš da naložiš peć?','Ovde se i pivo hladi samo od sebe.','Hladno je, upali peć, majstore!','Smrznuću se pre nego što dobijem jelo.','Bez vatre ovde nema ostanka.'],
   hot:['Vruće je ovde, ugasi vatru!','Majstore, malo manje vatre, pecemo se!','Uf, pa ovo je sauna!','Peć je prejaka, gasi malo.','Znojim se, ugasi tu vatru!','Otvori vrata, ili ugasi peć!','Biće mi muka od ove vrućine.','Ugasi vatru, pregoreh!','Previše je toplo za ovo jelo.','Pa ovde se čovek ispeče!'],
+  stuffy:['Uf, zagušljivo je, provetri malo!','Ne može se disati od dima, majstore!','Otvori vrata, ugušićemo se!','Dim, dim, svuda dim – provetri!','Pa ovde je magla kao u kotlu!','Oči mi suze od dima, provetri!','Majstore, malo vazduha, molim te!','Kašljem od ovog dima, otvori vrata!','Ovde se ne vidi plafon od dima!','Daj malo svežeg vazduha, gušim se!'],
   dark:['Majstore, upali svetlo!','Ništa se ne vidi, upali lampe!','Pa ovde je mrak, majstore!','Ne vidim šta jedem, upali svetlo!','Daj malo svetla, bre!','Ko je ugasio svetla?','Pogodiću vilicom tanjir u mraku.','Upali lampu, pa da vidimo gde sedimo.','Mrak, kao u rupi!','Upali svetlo, ne vidim ni čašu.'],
   waitOrder:['Konobare! Ima li koga?','Hoće li neko da primi porudžbinu?','Ovde smo, majstore!','Mi bismo nešto da naručimo!','Dugo se čeka na konobara...','Gde li je taj konobar?','Halo, može li narudžbina?','Umreću od žeđi ovde!','Je l’ ima ovde posluge?','Čekamo već čitavu večnost.'],
   waitFood:['Hoće li ta hrana doći danas?','Dugo traje to jelo...','Gladan sam kao vuk!','Gde nam je porudžbina?','Pa koliko se čeka na jedan kupus?','Jesu li zaboravili na nas?','Stomak mi krči od čekanja.','Ovako sporo nisam doživeo.','Kuvar spava ili šta?','Ako ovo potraje, idem kući.'],
@@ -597,6 +598,8 @@ function tickRemarks(dt){                             // now and then a guest sa
   else{var hot=seated.filter(function(g){return g.warmth==='hot'&&!g.hotNoted});if(hot.length)opts.push(function(){var g=pick(hot);g.hotNoted=true;gsay(g,pick(SAY.hot),-1)})}
   var lp=null;try{lp=C.lamps()}catch(e){}
   if(lp&&lp.total&&lp.lit<=Math.floor(lp.total/3)){var dk=seated.filter(function(g){return!g.darkNoted});if(dk.length)opts.push(function(){var g=pick(dk);g.darkNoted=true;gsay(g,pick(SAY.dark),-1)})}
+  var sm=0;try{sm=C.smoke()}catch(e){}
+  if(sm>.55){var sf=seated.filter(function(g){return!g.smokeNoted});if(sf.length){var fnS=function(){var g=pick(sf);g.smokeNoted=true;gsay(g,pick(SAY.stuffy),-1)};opts.push(fnS,fnS)}}
   if(opts.length)pick(opts)();
 }
 function tickMess(dt){
