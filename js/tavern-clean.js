@@ -27,12 +27,8 @@ css.textContent=
 '#tavernScene .tc-sponge img{position:absolute;left:0;top:0;width:100%;height:100%;display:block;-webkit-user-drag:none}'+
 '#tavernScene .tc-sponge .tc-shadow{position:absolute;border-radius:50%;background:radial-gradient(ellipse at center,rgba(0,0,0,.6),rgba(0,0,0,0) 70%)}'+
 '#tavernScene .tc-signwrap{position:absolute;container-type:inline-size;pointer-events:none;z-index:1}'+
-'#tavernScene .tc-sign{position:absolute;left:12%;top:22%;width:6.2%;height:5.4%;pointer-events:auto;cursor:pointer;transform-origin:50% -30%;perspective:300px;filter:drop-shadow(0 3px 3px rgba(0,0,0,.55))}'+
-'#tavernScene .tc-sign i{position:absolute;top:-34%;width:1px;height:42%;background:#2a1a0c}#tavernScene .tc-sign i.s1{left:18%;transform:rotate(-9deg)}#tavernScene .tc-sign i.s2{right:18%;transform:rotate(9deg)}'+
-'#tavernScene .tc-sign .in{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.4,.1,.3,1)}'+
-'#tavernScene .tc-sign .f{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;align-items:center;justify-content:center;border:1px solid #1d1209;border-radius:3px;background:linear-gradient(#9a6a38,#7a4f27)}'+
-'#tavernScene .tc-sign .f b{font:800 .72cqw/1 Georgia,serif;letter-spacing:.04em;color:#f5e6c4;text-shadow:0 1px 0 #2a1a0c;padding:0 2px;text-align:center}'+
-'#tavernScene .tc-sign .a{background:linear-gradient(#3f7a3c,#2c5a2a)}#tavernScene .tc-sign .b{background:linear-gradient(#a03a2c,#7a261c);transform:rotateY(180deg)}'+
+'#tavernScene .tc-sign{position:absolute;left:9.7%;top:6.4%;width:9.72%;aspect-ratio:520/515;pointer-events:none;transform-origin:54% 12%;perspective:700px}'+
+'#tavernScene .tc-sign img{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:auto;cursor:pointer;-webkit-user-drag:none;transform-origin:54% 50%;filter:drop-shadow(0 4px 4px rgba(0,0,0,.6));-webkit-mask-image:linear-gradient(transparent 33%,#000 42%);mask-image:linear-gradient(transparent 33%,#000 42%)}'+
 '#tavernScene .tc-sign.swing{animation:tcSwing 1.5s ease-out}@keyframes tcSwing{0%{rotate:0deg}20%{rotate:7deg}40%{rotate:-5deg}60%{rotate:3deg}80%{rotate:-1.5deg}100%{rotate:0deg}}'+
 '#tavernScene .tc-info{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:70;padding:6px 14px;border-radius:9px;background:rgba(32,20,9,.82);border:1px solid #7a5428;color:#f3e3c2;font:600 14px/1.2 system-ui,sans-serif;pointer-events:none;white-space:nowrap}'+
 '#tavernScene .tc-hint{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);z-index:70;padding:5px 12px;border-radius:8px;background:rgba(32,20,9,.7);color:#d9c69c;font:12px/1.2 system-ui,sans-serif;pointer-events:none;white-space:nowrap;transition:opacity .6s}'+
@@ -385,18 +381,21 @@ function showMsg(t){info.textContent=t;msgUntil=performance.now()+2600;setTimeou
 setInterval(function(){if(T.isOpen&&!down)refreshInfo()},1500);
 // ---------- the sign on the door: Otvoreno / Zatvoreno (click: it turns around, hanging on its strings) ----------
 (function(){
-  var wrap=mk('div','tc-signwrap'),open=T.isOpenForGuests?T.isOpenForGuests():true;
-  wrap.innerHTML='<div class="tc-sign"><i class="s1"></i><i class="s2"></i><div class="in"><div class="f a"><b>OTVORENO</b></div><div class="f b"><b>ZATVORENO</b></div></div></div>';
-  var sg=wrap.firstChild,inner=sg.querySelector('.in');
-  function show(){inner.style.transform='rotateY('+(open?0:180)+'deg)'}
-  inner.style.transition='none';show();setTimeout(function(){inner.style.transition=''},50);
-  sg.addEventListener('pointerdown',function(e){e.stopPropagation();e.preventDefault()});
-  sg.addEventListener('click',function(e){
-    e.stopPropagation();open=!open;try{T.setOpenForGuests(open)}catch(x){}
-    sg.classList.remove('swing');void sg.offsetWidth;show();sg.classList.add('swing');
-    showMsg(open?'Kafana je otvorena — gosti dolaze.':'Kafana je zatvorena — novi gosti ne dolaze.');
+  var wrap=mk('div','tc-signwrap'),open=T.isOpenForGuests?T.isOpenForGuests():true,SRC={1:'assets/tavern/sign/radi.webp?v=1',0:'assets/tavern/sign/neradi.webp?v=1'};
+  wrap.innerHTML='<div class="tc-sign"><img alt="Kafana" draggable="false"></div>';
+  var sg=wrap.firstChild,im=sg.firstChild,busyTurn=false;
+  [SRC[1],SRC[0]].forEach(function(u){var pre=new Image();pre.src=u});
+  im.src=SRC[open?1:0];
+  im.addEventListener('pointerdown',function(e){e.stopPropagation();e.preventDefault()});
+  im.addEventListener('click',function(e){
+    e.stopPropagation();if(busyTurn)return;busyTurn=true;open=!open;try{T.setOpenForGuests(open)}catch(x){}
+    var turn=function(from,to,ms,ease){return im.animate?im.animate([{transform:'rotateY('+from+'deg)'},{transform:'rotateY('+to+'deg)'}],{duration:ms,easing:ease,fill:'forwards'}).finished:Promise.resolve()};
+    turn(0,90,230,'ease-in').then(function(){im.src=SRC[open?1:0];return turn(-90,0,300,'ease-out')}).then(function(){
+      busyTurn=false;sg.classList.remove('swing');void sg.offsetWidth;sg.classList.add('swing');
+    }).catch(function(){busyTurn=false});
+    showMsg(open?'Kafana radi — gosti dolaze.':'Kafana ne radi — novi gosti ne dolaze.');
   });
-  sg.addEventListener('contextmenu',function(e){e.stopPropagation()});
+  im.addEventListener('contextmenu',function(e){e.stopPropagation()});
   cv.parentNode.insertBefore(wrap,shadeCv);signWrap=wrap;sync();
 })();                // reading the picture back is slow, so not while the sponge is rubbing
 
