@@ -971,8 +971,8 @@ function tiShadow(ctx,cx,bottom,w,c){
   g.addColorStop(0,'rgba(8,4,0,'+Math.min(1,o)+')');g.addColorStop(Math.max(0,1-soft),'rgba(8,4,0,'+Math.min(1,o)*.8+')');g.addColorStop(1,'rgba(8,4,0,0)');
   ctx.save();ctx.translate(cx+sx*w,bottom+sy*w);ctx.scale(rx,ry);ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,1,0,Math.PI*2);ctx.fill();ctx.restore();
 }
-function tiBase(key,y){return scaleAt(y)*(key==='dish'?.2:.19)}
-function tiSrc(key){if(key==='dish')return dishImgs.plain&&dishImgs.plain.src;var im=drinkImg(key);return im&&im.src}
+function tiBase(key,y){return scaleAt(y)*(key==='dish'?.2:key==='pepeljara'?.4:(key==='konobar'||key==='gosti')?1:.19)}
+function tiSrc(key){if(key==='dish')return dishImgs.plain&&dishImgs.plain.src;if(key==='pepeljara')return 'assets/tavern/ashtray/prazna.webp?v=1';if(key==='konobar')return 'assets/tavern/waiter/waiter_walks2.webp?v=7';if(key==='gosti')return 'assets/tavern/guests/g01_dole.webp';var im=drinkImg(key);return im&&im.src}
 function tiApply(data){TI=data&&data.items?data:{items:{}}}
 // the drinks of one guest stand side by side on his "piće" spot (the spot is the middle of the group); a drink that was calibrated stands where it was put
 function drinkLayout(d){
@@ -1139,7 +1139,7 @@ function drawWaiter(ctx){
 function drawWaiterBody(ctx){
   var w=waiter;if(!w||w.hidden)return;
   var sc=wScale(w.y),moving=(w.mode==='go'||w.mode==='back')&&w.path&&w.path[w.pi];
-  drawShadow(ctx,w.x,w.y,sc);
+  drawShadow(ctx,w.x,w.y,sc,'konobar');
   if(!moving){w._wf=null;
     // taking the order (seen from the side): writes, now and then looks up at the guest; the other views only stand until their pictures exist
     if(w.mode==='serve'&&w.set==='walks'&&wFilm(ctx,w,sc,'write','w_writes2',true))return;
@@ -1290,9 +1290,15 @@ function drawSprite(ctx,key,x,y,sc,flip,rot,alpha,sway){
   }else ctx.drawImage(im,-w/2,-h,w,h);
   ctx.restore();
 }
-function drawShadow(ctx,x,y,sc){
-  ctx.save();ctx.fillStyle='rgba(20,8,2,.32)';ctx.beginPath();ctx.ellipse(x,y+2,34*sc/.3,9*sc/.3,0,0,Math.PI*2);ctx.fill();ctx.restore();
+// the shadow of the people who walk (guests: "gosti", the waiter: "konobar"): the same soft spot as the things on the tables; strength, shift, width, height and blur are chosen in the tool "Predmeti na stolu"
+var PEO_SH={sho:.32,shx:0,shy:.03,shw:1,shh:.27,shb:3};
+function peopleShadow(ctx,x,y,sc,c){
+  var m={},k,ks=['sho','shx','shy','shw','shh','shb'];
+  for(k in PEO_SH)m[k]=PEO_SH[k];
+  if(c)ks.forEach(function(q){if(c[q]!=null)m[q]=+c[q]});
+  tiShadow(ctx,x,y,68*sc/.3,m);
 }
+function drawShadow(ctx,x,y,sc,kind){peopleShadow(ctx,x,y,sc,tiCal(kind||'gosti',-1))}
 function guestSortY(g){
   if(g.mode!=='seated'&&g.mode!=='sitting'&&g.mode!=='rising')return g.y;
   var y=seatPos(g).y,my=TABLEMASKY[g.seat.table];
@@ -1312,7 +1318,7 @@ function drawGuestBody(ctx,g){
   var walk=(g.mode==='in'||g.mode==='out');
   if(walk){
     var sc=scaleAt(g.y),ph=Math.abs(Math.sin(g.phase*Math.PI)),bob=ph*3.2*sc/.3;
-    drawShadow(ctx,g.x,g.y,sc);
+    drawShadow(ctx,g.x,g.y,sc,'gosti');
     // the two pictures of a step: the left leg and the right arm forward, then the right leg and the left arm forward
     var rot=Math.sin(g.phase*Math.PI)*.012+(g.lean||0)*.09;
     {
@@ -1491,7 +1497,7 @@ window.CooksterTavern={
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,dirtyDishAt:dirtyDishAt,
   isOpenForGuests:function(){return openForGuests},setOpenForGuests:setOpenForGuests,say:function(i,t,d){var g=guests.filter(function(o){return o.id===i})[0];if(g)gsay(g,t,d)},
   waiterSteps:{get:wsData,set:function(d){WSD=d;try{localStorage.setItem(WS_KEY,JSON.stringify(WSD))}catch(e){}},reset:function(){WSD=null;try{localStorage.removeItem(WS_KEY)}catch(e){}wsData()},count:function(k){return WD_N[k]||0},url:function(k,i){return WAITER+k+'24/f'+(i<10?'0':'')+i+'.webp?v=6'},play:wsPlay,stepClips:16},
-  tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose,draw:tiDraw,shadow:tiShadow,shDef:TI_SH},
+  tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose,draw:tiDraw,shadow:tiShadow,shDef:TI_SH,cal:tiCal,people:peopleShadow,peoDef:PEO_SH},
   get isOpen(){return state==='tavern'},get busy(){return busy},guestCount:function(){return guests.length},
   debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,held:!!g.held,an:g.an?g.an.name:'',pose:g.seat.pose,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},

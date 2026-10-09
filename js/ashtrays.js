@@ -1,5 +1,5 @@
 /* Ashtrays ("piksle") of the tavern.
-   - A pile of clean ashtrays lies on the bar. Click one: it is in your hand; click a table: it stands there (two places on every table). Click the bar: it goes on the pile.
+   - A pile of clean ashtrays lies on the bar. Click one: it is in your hand; click a table: it stands exactly where you click (anywhere on the table top, no fixed places). Click the bar: it goes on the pile.
    - Guests smoke: the ashtray of their table slowly fills (three pictures: empty, half, full). A table without an ashtray and a full ashtray make the guests ask for one (Zoki, daj pikslu!).
    - Change: take the dirty one from the table and put a clean one there (or the other way round); put the dirty ones on the bar, right click on the bar -> "Očisti pepeljare": they are empty again.
    The state is kept in localStorage (cookster.ashtrays.v1). Drawn by tavern-scene.js (drawTable / drawBar), clicks come from the room of the tavern. */
@@ -16,9 +16,10 @@ var room=document.getElementById('tavernScene');
 var items=[];
 function load(){
   try{var a=JSON.parse(localStorage.getItem(KEY)||'null');if(Array.isArray(a)&&a.length){items=a.filter(function(i){return i&&(i.loc==='bar'||i.loc==='table')&&isFinite(i.fill)});}}catch(e){}
+  items.forEach(function(i){if(i.loc==='table'&&i.x==null){var sl=SLOTS[i.t]&&SLOTS[i.t][i.s||0]||ASHC[i.t||0];i.x=sl.x;i.y=sl.y}});      // (older saved places -> a free place)
   if(!items.length){
     for(var k=0;k<3;k++)items.push({id:k+1,loc:'bar',fill:0});
-    for(var t=0;t<3;t++)items.push({id:4+t,loc:'table',t:t,s:0,fill:0});
+    for(var t=0;t<3;t++)items.push({id:4+t,loc:'table',t:t,x:ASHC[t].x,y:ASHC[t].y,fill:0});
   }
   items.forEach(function(i,k){if(!i.id)i.id=k+1});
 }
@@ -30,16 +31,18 @@ var nextId=items.reduce(function(m,i){return Math.max(m,i.id)},0)+1;
 function lvl(i){return i.fill<.34?0:i.fill<.72?1:2}
 function sc(y){return T.scaleAt?T.scaleAt(y):.6}
 function wAt(y){return 104*sc(y)}                                    // the width of an ashtray at height y
+function calOf(){var c=T.tableItems&&T.tableItems.cal?T.tableItems.cal('pepeljara',-1):null;return c?Object.assign({sho:0},c):null}      // from the tool "Predmeti na stolu" (size, colours, shadow); no shadow unless it is chosen there
 function drawOne(ctx,i,x,y,alpha){
   var im=IMG[lvl(i)];if(!im||!im.naturalWidth)return;
-  var w=wAt(y),h=w*im.naturalHeight/im.naturalWidth;
+  var c=calOf(),w=wAt(y)*((c&&c.s)||1),h=w*im.naturalHeight/im.naturalWidth;
   ctx.save();ctx.globalAlpha=alpha==null?1:alpha;
-  ctx.fillStyle='rgba(20,8,2,.28)';ctx.beginPath();ctx.ellipse(x+w*.04,y-h*.02,w*.5,h*.2,0,0,Math.PI*2);ctx.fill();      // a little shadow on the table
-  ctx.drawImage(im,x-w/2,y-h*.9,w,h);ctx.restore();
+  if(c&&T.tableItems.shadow)T.tableItems.shadow(ctx,x,y-h*.4+h/2,w,c);
+  var pic=c&&T.tableItems.img?T.tableItems.img(im,c):im;
+  ctx.drawImage(pic,x-w/2,y-h*.9,w,h);ctx.restore();
 }
 function barItems(){return items.filter(function(i){return i.loc==='bar'})}
 function tableItems(t){return items.filter(function(i){return i.loc==='table'&&i.t===t})}
-function drawTable(ctx,t){tableItems(t).forEach(function(i){var s=SLOTS[t][i.s||0];drawOne(ctx,i,s.x,s.y)})}
+function drawTable(ctx,t){tableItems(t).sort(function(a,b){return a.y-b.y}).forEach(function(i){drawOne(ctx,i,i.x,i.y)})}
 function drawBar(ctx){barItems().forEach(function(i,k){drawOne(ctx,i,BAR.x+(k%2)*3,BAR.y-k*9)})}      // one over another
 
 // ---- the ashtray in the hand
@@ -60,7 +63,7 @@ function inBar(p){var r=BAR.rect;return p.x>=r[0]&&p.x<=r[2]&&p.y>=r[1]&&p.y<=r[
 function tableAt(p){var q=T.tableQuads||[];for(var i=0;i<q.length;i++)if(pip(q[i],p.x,p.y))return i;return -1}
 function putBack(){                                                  // right click / Esc: the ashtray goes where it came from (or on the bar)
   if(!hand)return;var h=hand;hand=null;
-  if(h.from&&h.from.loc==='table'&&!tableItems(h.from.t).some(function(o){return(o.s||0)===h.from.s})){h.loc='table';h.t=h.from.t;h.s=h.from.s}
+  if(h.from&&h.from.loc==='table'){h.loc='table';h.t=h.from.t;h.x=h.from.x;h.y=h.from.y}
   else{h.loc='bar'}
   showHand();save();
 }
@@ -71,10 +74,9 @@ function onDown(e){
   if(hand){
     var t=tableAt(p);
     if(t>=0){
-      var used=tableItems(t).map(function(o){return o.s||0}),free=[0,1].filter(function(s){return used.indexOf(s)<0});
-      if(!free.length){C.msg('Na stolu već stoje dve pepeljare.');e.stopPropagation();e.preventDefault();return}
-      var s=free.length===1?free[0]:(Math.hypot(p.x-SLOTS[t][0].x,p.y-SLOTS[t][0].y)<=Math.hypot(p.x-SLOTS[t][1].x,p.y-SLOTS[t][1].y)?0:1);
-      hand.loc='table';hand.t=t;hand.s=s;hand.from=null;hand=null;showHand();save();
+      if(tableItems(t).length>=4){C.msg('Na stolu već stoje četiri pepeljare.');e.stopPropagation();e.preventDefault();return}
+      var im0=IMG[lvl(hand)],cc=calOf(),hh=wAt(p.y)*((cc&&cc.s)||1)*(im0.naturalHeight||1)/(im0.naturalWidth||1);
+      hand.loc='table';hand.t=t;hand.x=Math.round(p.x);hand.y=Math.round(p.y+hh*.4);hand.from=null;hand=null;showHand();save();      // it stands exactly where the middle of it was under the mouse
       e.stopPropagation();e.preventDefault();return;
     }
     if(inBar(p)){
@@ -86,11 +88,12 @@ function onDown(e){
   }
   if(inBar(p)){var b=barItems();if(b.length)take=b[b.length-1]}
   if(!take){
-    for(k=0;k<items.length;k++){var i=items[k];if(i.loc!=='table')continue;var sl=SLOTS[i.t][i.s||0],w=wAt(sl.y);
-      if(Math.abs(p.x-sl.x)<w*.55&&p.y>sl.y-w*.7&&p.y<sl.y+w*.25){take=i;break}}
+    var bestD=1e9;
+    for(k=0;k<items.length;k++){var i=items[k];if(i.loc!=='table')continue;var cc2=calOf(),w=wAt(i.y)*((cc2&&cc2.s)||1),h2=w*.9,cy=i.y-h2*.4;
+      var d=Math.hypot((p.x-i.x)/(w*.55),(p.y-cy)/(h2*.55));if(d<=1&&d<bestD){bestD=d;take=i}}      // the topmost / nearest one under the mouse
   }
   if(take){
-    take.from=take.loc==='table'?{loc:'table',t:take.t,s:take.s||0}:{loc:'bar'};
+    take.from=take.loc==='table'?{loc:'table',t:take.t,x:take.x,y:take.y}:{loc:'bar'};
     take.loc='hand';hand=take;showHand(e);save();
     e.stopPropagation();e.preventDefault();
   }

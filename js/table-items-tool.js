@@ -6,7 +6,8 @@
 'use strict';
 var T=window.CooksterTavern,room=document.getElementById('tavernScene');
 if(!T||!room||window.CooksterTableItemsTool||!T.tableItems)return;
-var ITEMS=[['dish','Činija sa kupusom'],['pice_vino_crno_flasa','Flaša crnog vina'],['pice_vino_belo_flasa','Flaša belog vina'],['pice_soda_sifon','Soda voda (sifon)'],['pice_casa_spricer','Čaša za špricer'],['pice_casa_belo_vino','Čaša belog vina'],['pice_casa_crno_vino','Čaša crnog vina']];
+var ITEMS=[['dish','Činija sa kupusom'],['pice_vino_crno_flasa','Flaša crnog vina'],['pice_vino_belo_flasa','Flaša belog vina'],['pice_soda_sifon','Soda voda (sifon)'],['pice_casa_spricer','Čaša za špricer'],['pice_casa_belo_vino','Čaša belog vina'],['pice_casa_crno_vino','Čaša crnog vina'],['pepeljara','Pepeljara (veličina, boja, senka; bez položaja)'],['konobar','Konobar — senka'],['gosti','Gosti (koji hodaju) — senka']];
+var NOPOS={pepeljara:1,konobar:1,gosti:1};      // these have no place on a table: the pepeljara stands where the player puts it, the waiter and the guests walk; here only size, colours and the shadow are chosen (for all of them)
 var imgs={},key='dish',table=0,seat=0,scope='seat',ui={},cv,g,img=null,imgKey=null,room_img=new Image(),drag=false;
 room_img.src=T.roomSrc;
 var CROP={w:760,h:428},view={z:1,cx:null,cy:null};                                 // part of the hall that is shown (scene pixels), around the table
@@ -21,15 +22,17 @@ function defaultPos(){
 }
 function cur(){                                          // what is valid for this chair now
   var it=entry(false),p=defaultPos(),o=(it&&it.seat[seatId()])||null,d=(it&&it.def)||{},r={x:p.x,y:p.y,s:1,rot:0,sk:0,tilt:0,hl:0,h:0,sat:1,b:1,c:1,sho:T.tableItems.shDef.sho,shx:T.tableItems.shDef.shx,shy:T.tableItems.shDef.shy,shw:T.tableItems.shDef.shw,shh:T.tableItems.shDef.shh,shb:T.tableItems.shDef.shb},k;
-  for(k in d)r[k]=d[k];if(o)for(k in o)r[k]=o[k];return r;
+  if(key==='pepeljara')r.sho=0;      // the ashtray has no shadow until one is chosen here
+  if(key==='konobar'||key==='gosti'){var pd=T.tableItems.peoDef;r.sho=pd.sho;r.shx=pd.shx;r.shy=pd.shy;r.shw=pd.shw;r.shh=pd.shh;r.shb=pd.shb}
+  for(k in d)r[k]=d[k];if(o&&!NOPOS[key])for(k in o)r[k]=o[k];return r;
 }
 function setVal(k,v){
   var it=entry(true);
-  if(k==='x'||k==='y'||scope==='seat'){var id=seatId();if(!it.seat[id])it.seat[id]={};it.seat[id][k]=v}
+  if(!NOPOS[key]&&(k==='x'||k==='y'||scope==='seat')){var id=seatId();if(!it.seat[id])it.seat[id]={};it.seat[id][k]=v}
   else it.def[k]=v;
   save();refreshUi();draw();
 }
-function setPos(x,y){var it=entry(true),id=seatId();if(!it.seat[id])it.seat[id]={};it.seat[id].x=Math.round(x);it.seat[id].y=Math.round(y);save();draw()}
+function setPos(x,y){if(NOPOS[key])return;var it=entry(true),id=seatId();if(!it.seat[id])it.seat[id]={};it.seat[id].x=Math.round(x);it.seat[id].y=Math.round(y);save();draw()}
 function vw(){return CROP.w/view.z}function vh(){return CROP.h/view.z}
 function box(){
   var tb=T.tables[table],cx=view.cx==null?tb.x:view.cx,cy=view.cy==null?tb.y-CROP.h*.05:view.cy;
@@ -49,7 +52,7 @@ function draw(){
   function paint(k,c){
     var im=pic(k);if(!im||!im.complete||!im.naturalWidth)return;
     var sc=T.tableItems.base(k,c.y)*c.s,w=im.naturalWidth*sc,h=im.naturalHeight*sc;
-    T.tableItems.shadow(g,c.x,c.y+h/2,w,c);
+    if(k==='konobar'||k==='gosti')T.tableItems.people(g,c.x,c.y+h/2,T.tableItems.base(k,c.y)/1,c);else T.tableItems.shadow(g,c.x,c.y+h/2,w,c);
     g.save();T.tableItems.pose(g,c.x,c.y,c);T.tableItems.draw(g,T.tableItems.img(im,c),-w/2,-h/2,w,h,c);g.restore();
   }
   var d0=data().items||{},selId=seatId();
