@@ -393,7 +393,12 @@ function refreshInfo(){
   var n=cleaned.filter(Boolean).length;
   var rep=0;try{rep=window.CooksterQuality?window.CooksterQuality.reputation():0}catch(e){}
   if(performance.now()<msgUntil)return;
-  info.textContent='Kafana: '+floorPercent()+'% čista  ·  Stolovi: '+n+' / '+zones.length+' čisti  ·  Ugled: '+(rep>0?'+':'')+rep;
+  var why='';try{(T.tableReport?T.tableReport():[]).forEach(function(r){
+    if(!r.hasZone)why+='  ·  Sto '+r.table+': nema oblika za čišćenje';
+    else if(r.reach===0)why+='  ·  Sto '+r.table+': gosti ne mogu do njega (zabrana puta)';
+    else if(r.reach<r.total)why+='  ·  Sto '+r.table+': '+(r.total-r.reach)+' mesta nedostupno';
+  })}catch(e){}
+  info.textContent='Kafana: '+floorPercent()+'% čista  ·  Stolovi: '+n+' / '+zones.length+' čisti  ·  Ugled: '+(rep>0?'+':'')+rep+why;
 }
 var msgUntil=0;
 function showMsg(t){info.textContent=t;msgUntil=performance.now()+2600;setTimeout(refreshInfo,2700)}

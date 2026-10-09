@@ -518,6 +518,13 @@ function companyStep(m){                                 // starts / ends the pa
   var p=t<CO_RAMP?CO_V0*t+(CO_V1-CO_V0)*t*t/(2*CO_RAMP):(CO_V0+CO_V1)*CO_RAMP/2+CO_V1*(t-CO_RAMP);   // seconds of the recorded film that have passed
   return{al:al,i:Math.min(f.e-1,f.s+Math.floor(p*COFILM.fps))};
 }
+function tableReport(){                                // why a table may not receive guests: no shape to clean, not clean, or its chairs cannot be reached from the door
+  var cl=cleanTables();
+  return TABLES.map(function(t,ti){
+    var seats=SEATS.filter(function(x){return x.table===ti});
+    return{table:ti+1,hasZone:!cl||ti<cl.length,clean:!cl||cl[ti]===true,reach:seats.filter(seatReachable).length,free:seats.filter(function(x){return !x.taken}).length,total:seats.length};
+  });
+}
 function spawnGroup(){
   var r=Math.random(),size=r<.38?1:r<.62?2:r<.84?3:4;
   if(size===4&&companyOk())return spawnCompany();
@@ -1466,7 +1473,7 @@ function onKey(e){
 window.addEventListener('keydown',onKey,true);window.addEventListener('keyup',onKey,true);window.addEventListener('keypress',onKey,true);
 
 window.CooksterTavern={
-  open:open,close:close,spawn:spawn,spawnCompany:spawnCompany,companyOk:companyOk,companyTable:function(){return COMPANY.table},
+  tableReport:tableReport,open:open,close:close,spawn:spawn,spawnCompany:spawnCompany,companyOk:companyOk,companyTable:function(){return COMPANY.table},
   deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,dirtyDishAt:dirtyDishAt,
   isOpenForGuests:function(){return openForGuests},setOpenForGuests:setOpenForGuests,say:function(i,t,d){var g=guests.filter(function(o){return o.id===i})[0];if(g)gsay(g,t,d)},
