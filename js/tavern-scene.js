@@ -1042,8 +1042,8 @@ function seatPos(g){return{x:g.seat.x,y:g.seat.y}}
 // the chairs on the right side of a table: the guest looks to the left, towards the others
 function sitPose(g){return 'sedi_'+(g.seat.pose||'lice')}
 // colour grading of the people (guests, waiter): contrast, brightness, saturation, warmth (yellow). Set in the one-time tool js/grade-tool.js; the graded copies are cached.
-var GR_KEY='cookster.sprite-grade.v1',GR_DEF={c:1,b:1,s:1,w:0},GR=Object.assign({},GR_DEF),grCache={};
-try{var gsv=JSON.parse(localStorage.getItem(GR_KEY));if(gsv&&typeof gsv.c==='number')GR=Object.assign({},GR_DEF,gsv)}catch(e){}
+var GR_KEY='cookster.sprite-grade.v1',GR_DEF={c:1.19,b:1.07,s:.76,w:.14},GR=Object.assign({},GR_DEF),grCache={};
+try{localStorage.removeItem(GR_KEY)}catch(e){}
 function grNeutral(){return GR.c===1&&GR.b===1&&GR.s===1&&GR.w===0}
 function graded(key,im){
   if(grNeutral())return im;
@@ -1054,7 +1054,7 @@ function graded(key,im){
   if(GR.w>0){x.globalCompositeOperation='source-atop';x.fillStyle='rgba(255,185,60,'+(GR.w*.45).toFixed(3)+')';x.fillRect(0,0,w,h)}
   return grCache[key]=c;
 }
-window.CooksterGrade={get:function(){return Object.assign({},GR)},set:function(p){GR=Object.assign({},GR,p);grCache={};try{localStorage.setItem(GR_KEY,JSON.stringify(GR))}catch(e){}},reset:function(){GR=Object.assign({},GR_DEF);grCache={};try{localStorage.removeItem(GR_KEY)}catch(e){}}};
+window.CooksterGrade={get:function(){return Object.assign({},GR)},set:function(p){GR=Object.assign({},GR,p);grCache={}},reset:function(){GR=Object.assign({},GR_DEF);grCache={}}};
 function drawSprite(ctx,key,x,y,sc,flip,rot,alpha){
   var im=timgs[key]||imgs[key];if(!im)return;
   im=graded(key,im);                       // (the pictures are the tinted ones: the grading comes on top of the tint)
