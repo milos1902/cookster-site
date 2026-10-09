@@ -23,6 +23,28 @@ function render(){
     layer.appendChild(im);
   }
 }
+// ---- washing: while the tap runs the bowls in the sink shake in the water, suds rise, and one by one they are washed (they disappear)
+var WASH_SECS=2.4,washT=0,css=document.createElement('style');
+css.textContent='@keyframes sdShake{0%{transform:translate(-50%,-50%) rotate(-6deg) scale(1)}50%{transform:translate(-46%,-54%) rotate(6deg) scale(1.04)}100%{transform:translate(-50%,-50%) rotate(-6deg) scale(1)}}'+
+ '@keyframes sdGone{0%{opacity:1;filter:brightness(1)}60%{opacity:1;filter:brightness(1.9) saturate(.3)}100%{opacity:0;filter:brightness(2.4);transform:translate(-50%,-70%) scale(.5)}}'+
+ '@keyframes sdBub{0%{opacity:0;transform:translateY(0) scale(.4)}30%{opacity:.9}100%{opacity:0;transform:translateY(-34px) scale(1.1)}}'+
+ '#sinkDishLayer.sdwash img{animation:sdShake .5s ease-in-out infinite}#sinkDishLayer img.sdgone{animation:sdGone .7s ease-in forwards!important}'+
+ '#sinkDishLayer .sdb{position:absolute;width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#bfe6ff 60%,rgba(150,210,255,.4));animation:sdBub 1.1s ease-out forwards}';
+document.head.appendChild(css);
+function tapOn(){try{return !!(typeof faucetOn!=='undefined'&&faucetOn)}catch(e){return false}}
+setInterval(function(){
+  if(!layer||!layer.isConnected)return;
+  var on=tapOn()&&n>0;layer.classList.toggle('sdwash',on);
+  if(!on){washT=0;return}
+  var imgs=layer.querySelectorAll('img:not(.sdgone)');
+  for(var i=0;i<imgs.length;i++){if(Math.random()<.5){var b=document.createElement('i');b.className='sdb';b.style.left=(parseFloat(imgs[i].style.left)+(Math.random()*40-20)).toFixed(0)+'px';b.style.top=(parseFloat(imgs[i].style.top)-8)+'px';layer.appendChild(b);setTimeout(function(x){x.remove()}.bind(null,b),1150)}}
+  washT+=.3;
+  if(washT>=WASH_SECS&&imgs.length){
+    washT=0;var last=imgs[imgs.length-1];last.classList.add('sdgone');n=Math.max(0,n-1);save();
+    try{if(window.CooksterSound&&window.CooksterSound.play)window.CooksterSound.play('kitchen','wash')}catch(e){}
+    setTimeout(render,750);
+  }
+},300);
 window.CooksterSinkDishes={add:function(){n++;save();render()},count:function(){return n},render:render};
 setTimeout(render,800);
 })();

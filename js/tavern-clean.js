@@ -26,6 +26,14 @@ css.textContent=
 '#tavernScene .tc-sponge{position:fixed;left:0;top:0;pointer-events:none;z-index:60;display:none;will-change:transform}'+
 '#tavernScene .tc-sponge img{position:absolute;left:0;top:0;width:100%;height:100%;display:block;-webkit-user-drag:none}'+
 '#tavernScene .tc-sponge .tc-shadow{position:absolute;border-radius:50%;background:radial-gradient(ellipse at center,rgba(0,0,0,.6),rgba(0,0,0,0) 70%)}'+
+'#tavernScene .tc-signwrap{position:absolute;container-type:inline-size;pointer-events:none;z-index:1}'+
+'#tavernScene .tc-sign{position:absolute;left:12%;top:22%;width:6.2%;height:5.4%;pointer-events:auto;cursor:pointer;transform-origin:50% -30%;perspective:300px;filter:drop-shadow(0 3px 3px rgba(0,0,0,.55))}'+
+'#tavernScene .tc-sign i{position:absolute;top:-34%;width:1px;height:42%;background:#2a1a0c}#tavernScene .tc-sign i.s1{left:18%;transform:rotate(-9deg)}#tavernScene .tc-sign i.s2{right:18%;transform:rotate(9deg)}'+
+'#tavernScene .tc-sign .in{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.4,.1,.3,1)}'+
+'#tavernScene .tc-sign .f{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;align-items:center;justify-content:center;border:1px solid #1d1209;border-radius:3px;background:linear-gradient(#9a6a38,#7a4f27)}'+
+'#tavernScene .tc-sign .f b{font:800 .72cqw/1 Georgia,serif;letter-spacing:.04em;color:#f5e6c4;text-shadow:0 1px 0 #2a1a0c;padding:0 2px;text-align:center}'+
+'#tavernScene .tc-sign .a{background:linear-gradient(#3f7a3c,#2c5a2a)}#tavernScene .tc-sign .b{background:linear-gradient(#a03a2c,#7a261c);transform:rotateY(180deg)}'+
+'#tavernScene .tc-sign.swing{animation:tcSwing 1.5s ease-out}@keyframes tcSwing{0%{rotate:0deg}20%{rotate:7deg}40%{rotate:-5deg}60%{rotate:3deg}80%{rotate:-1.5deg}100%{rotate:0deg}}'+
 '#tavernScene .tc-info{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:70;padding:6px 14px;border-radius:9px;background:rgba(32,20,9,.82);border:1px solid #7a5428;color:#f3e3c2;font:600 14px/1.2 system-ui,sans-serif;pointer-events:none;white-space:nowrap}'+
 '#tavernScene .tc-hint{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);z-index:70;padding:5px 12px;border-radius:8px;background:rgba(32,20,9,.7);color:#d9c69c;font:12px/1.2 system-ui,sans-serif;pointer-events:none;white-space:nowrap;transition:opacity .6s}'+
 '#tavernScene .tc-reset{position:absolute;right:14px;top:12px;z-index:70;border:2px solid #351b0d;border-radius:9px;background:#e8c27a;color:#351b0d;font:700 13px/1 system-ui,sans-serif;padding:7px 12px;opacity:.85}'+
@@ -236,7 +244,7 @@ dirtyImg.src=DIRTY;
 var cleanImg=new Image();cleanImg.src=T.roomSrc;           // the clean picture: the difference to the dirty one is what lies on the tables
 // the dirt and the effects lie exactly over the picture, wherever the scene puts it
 function sync(){
-  ['left','top','width','height'].forEach(function(k){dirt.style[k]=cv.style[k];fx.style[k]=cv.style[k];stoveCv.style[k]=cv.style[k];shadeCv.style[k]=cv.style[k];coreCv.style[k]=cv.style[k];sparkCv.style[k]=cv.style[k];smokeCv.style[k]=cv.style[k]});
+  ['left','top','width','height'].forEach(function(k){dirt.style[k]=cv.style[k];fx.style[k]=cv.style[k];stoveCv.style[k]=cv.style[k];if(signWrap)signWrap.style[k]=cv.style[k];shadeCv.style[k]=cv.style[k];coreCv.style[k]=cv.style[k];sparkCv.style[k]=cv.style[k];smokeCv.style[k]=cv.style[k]});
 }
 new MutationObserver(sync).observe(cv,{attributes:true,attributeFilter:['style']});
 addEventListener('resize',sync);sync();
@@ -368,14 +376,35 @@ function floorPercent(){
 function refreshInfo(){
   prepare();
   var n=cleaned.filter(Boolean).length;
-  info.textContent='Kafana: '+floorPercent()+'% čista  ·  Stolovi: '+n+' / '+zones.length+' čisti';
+  var rep=0;try{rep=window.CooksterQuality?window.CooksterQuality.reputation():0}catch(e){}
+  if(performance.now()<msgUntil)return;
+  info.textContent='Kafana: '+floorPercent()+'% čista  ·  Stolovi: '+n+' / '+zones.length+' čisti  ·  Ugled: '+(rep>0?'+':'')+rep;
 }
-setInterval(function(){if(T.isOpen&&!down)refreshInfo()},1500);                // reading the picture back is slow, so not while the sponge is rubbing
+var msgUntil=0;
+function showMsg(t){info.textContent=t;msgUntil=performance.now()+2600;setTimeout(refreshInfo,2700)}
+setInterval(function(){if(T.isOpen&&!down)refreshInfo()},1500);
+// ---------- the sign on the door: Otvoreno / Zatvoreno (click: it turns around, hanging on its strings) ----------
+(function(){
+  var wrap=mk('div','tc-signwrap'),open=T.isOpenForGuests?T.isOpenForGuests():true;
+  wrap.innerHTML='<div class="tc-sign"><i class="s1"></i><i class="s2"></i><div class="in"><div class="f a"><b>OTVORENO</b></div><div class="f b"><b>ZATVORENO</b></div></div></div>';
+  var sg=wrap.firstChild,inner=sg.querySelector('.in');
+  function show(){inner.style.transform='rotateY('+(open?0:180)+'deg)'}
+  inner.style.transition='none';show();setTimeout(function(){inner.style.transition=''},50);
+  sg.addEventListener('pointerdown',function(e){e.stopPropagation();e.preventDefault()});
+  sg.addEventListener('click',function(e){
+    e.stopPropagation();open=!open;try{T.setOpenForGuests(open)}catch(x){}
+    sg.classList.remove('swing');void sg.offsetWidth;show();sg.classList.add('swing');
+    showMsg(open?'Kafana je otvorena — gosti dolaze.':'Kafana je zatvorena — novi gosti ne dolaze.');
+  });
+  sg.addEventListener('contextmenu',function(e){e.stopPropagation()});
+  cv.parentNode.insertBefore(wrap,shadeCv);signWrap=wrap;sync();
+})();                // reading the picture back is slow, so not while the sponge is rubbing
 
 // ---------- the mouse ----------
 var down=false,last=null,lastPos=null;
 function toScene(e){var r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*W,y:(e.clientY-r.top)/r.height*H}}
 function overUi(e){return !!(e.target.closest&&e.target.closest('button,.tc-menu'))}
+var signWrap;
 var tool='ruka';                                      // the tool chosen in the ring menu (right click): 'sponge' or 'ruka' (hand)
 function moveSponge(e){
   var over=overUi(e);
@@ -480,5 +509,5 @@ function floorDirt(n){
   c.globalCompositeOperation='destination-in';c.drawImage(floorMask,0,0);
   D.globalCompositeOperation='source-over';D.drawImage(sc,0,0);
 }
-window.CooksterTavernClean={dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
+window.CooksterTavernClean={dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
 })();
