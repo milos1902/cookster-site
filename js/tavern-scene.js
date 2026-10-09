@@ -490,10 +490,10 @@ function spawnCompany(){
 // the film of the company: the whole table with the four guests (a video of the game's own picture of that table), played over that part of the scene; between the parts
 // the guests sit still as always. The edges of the pictures fade out, the dishes and the waiter are drawn over the film.
 var COFILM=null,coImgs=null,coState={film:null,next:6,last:-1,al:0};
-try{fetch('assets/tavern/company/anim.json?v=4').then(function(r){return r.json()}).then(function(d){COFILM=d.dr1}).catch(function(){})}catch(e){}
+try{fetch('assets/tavern/company/anim.json?v=5').then(function(r){return r.json()}).then(function(d){COFILM=d.dr1}).catch(function(){})}catch(e){}
 function coFrames(){
   if(!COFILM)return null;
-  if(!coImgs){coImgs={fr:[],ok:0};for(var i=0;i<COFILM.n;i++)(function(i){var im=new Image();im.onload=function(){coImgs.fr[i]=im;coImgs.ok++};im.src='assets/tavern/company/dr1_'+(i<10?'00':i<100?'0':'')+i+'.webp?v=3'})(i)}
+  if(!coImgs){coImgs={fr:[],ok:0};for(var i=0;i<COFILM.n;i++)(function(i){var im=new Image();im.onload=function(){coImgs.fr[i]=im;coImgs.ok++};im.src='assets/tavern/company/dr1_'+(i<10?'00':i<100?'0':'')+i+'.webp?v=4'})(i)}
   return coImgs.ok>=COFILM.n?coImgs:null;
 }
 function companyGuests(){                                // the four of the company, if all of them sit and nobody eats
@@ -501,7 +501,7 @@ function companyGuests(){                                // the four of the comp
   if(m.length<4||m.some(function(g){return g.mode!=='seated'||eatingGuest(g)}))return null;
   return m;
 }
-var CO_V0=.4,CO_V1=.85,CO_RAMP=2.5;
+var CO_V0=.6,CO_V1=.85,CO_RAMP=2;
 function companyStep(m){                                 // starts / ends the parts of the film; returns {al, i} or null
   var a=coFrames(),st=coState;
   if(!a){return null}
