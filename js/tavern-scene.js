@@ -523,6 +523,7 @@ function step(dt){
   for(var i=guests.length-1;i>=0;i--){
     var g=guests[i];
     if(g.mode==='in'&&g.wait>0){g.wait-=dt;continue}
+    if(g.mode==='in'&&!g.greeted){g.greeted=true;if(Math.random()<.35&&state==='tavern')greetGuest(g)}
     if(g.mode==='in'||g.mode==='out'){
       var tgt=g.path[g.pi];
       if(!tgt){
@@ -560,6 +561,17 @@ var ash=[0,0,0],ASH=[{x:437,y:447},{x:886,y:660},{x:1377,y:503}],tableUsed=[0,0,
 function addDirt(table,units){
   tableUsed[table]=(tableUsed[table]||0)+units;
   try{if(window.CooksterTavernClean)window.CooksterTavernClean.dirty(table,units)}catch(e){}
+}
+var NAMES_M=['Dragoslave','Milivoje','Radovane','Stojadine','Dobrivoje','Radisave','Ljubomire','Vukašine','Mirko','Slobodane','Radomire','Branko','Živote','Milorade','Svetozare','Aćime'],
+    NAMES_F=['Radmilo','Dragice','Milice','Stanojko','Ljubice','Desanko','Vukosavo','Smiljo','Rado','Zorko'];
+var HELLO=['Zdravo, Miško!','Dobar dan, Kuksteru!','Miloše, živ bio!','Kuksteru, kako ide?','Dobro veče, Miško!','Pomaže bog, Kuksteru!','Evo mene, Miloše!','Miško, brate, zdravo!','Dobar dan, Miloše!','Kuksteru, ćao!'];
+function greetGuest(g){                              // a guest who knows the owner says hello when he comes in; the owner always answers
+  var woman=!!WOMEN[g.ch],nm=pick(woman?NAMES_F:NAMES_M),r=Math.random(),rep;
+  if(r<.55)rep=pick(['Zdravo, ','Dobar dan, ','Dobro veče, ','Izvolite, '])+nm+'!';
+  else if(r<.8)rep='Dobar dan!';
+  else rep=woman?'Dobar dan, gospođo, izvolite!':'Dobar dan, gospodine, izvolite!';
+  reactions.push({gid:g.id,table:g.seat.table,t:1.4,life:4,text:pick(HELLO)});
+  reactions.push({gid:g.id,table:g.seat.table,t:.1,life:3.6,text:rep,owner:1});
 }
 var remarkT=30;
 function pick(a){return a[Math.floor(Math.random()*a.length)]}
@@ -677,7 +689,12 @@ function guestOrders(g){
   if(!g.orders){var O=window.CooksterOrders;g.orders=O&&O.make?pickOrderKeys(g).map(function(k){return O.make(k,!!WOMEN[g.ch])}):[]}
   return g.orders;
 }
-function orderText(g){var o=guestOrders(g);return{l1:o.map(function(x){return x.name}).join(' + '),l2:o.map(function(x){return x.extra}).filter(Boolean).join(' · ')}}
+var ADDR=['Miško, daj ','Kuksteru, daj ','Miloše, daj ','Konobar! Daj ','Gazda, daj ','Ej, majstore, daj '];
+function orderText(g){var o=guestOrders(g);
+  if(g.addr===undefined)g.addr=Math.random()<.4?ADDR[Math.floor(Math.random()*ADDR.length)]:'';      // some of them call the owner by name (or shout for the waiter) when they order
+  var nm=o.map(function(x){return x.name}).join(' + ');
+  if(g.addr){nm=g.addr+((g.rounds||0)>0?'još ':'')+nm.charAt(0).toLowerCase()+nm.slice(1)}
+  return{l1:nm,l2:o.map(function(x){return x.extra}).filter(Boolean).join(' · ')}}
 function seatedCount(t){var n=0;guests.forEach(function(g){if(g.seat.table===t&&g.mode==='seated'&&!g.ordered)n++});return n}
 function guestReady(g){                              // he has sat long enough to know what he wants, and his company is all there
   if(g.mode!=='seated'||g.ordered||g.sitT<g.orderDelay)return false;
@@ -770,10 +787,10 @@ function stepWaiter(dt){
   }
 }
 // what the guest says to the waiter: the dish he orders
-function drawBubble(ctx,x,y,l1,l2){
+function drawBubble(ctx,x,y,l1,l2,tint){
   ctx.save();ctx.font='700 17px system-ui,sans-serif';
   var w=Math.max(ctx.measureText(l1).width,(ctx.font='600 13px system-ui,sans-serif',ctx.measureText(l2).width))+26,h=l2?50:32,bx=x-w/2,by=y-h-12;
-  ctx.fillStyle='rgba(250,238,206,.96)';ctx.strokeStyle='#5b3d1e';ctx.lineWidth=2;
+  ctx.fillStyle=tint==='owner'?'rgba(214,232,246,.97)':'rgba(250,238,206,.96)';ctx.strokeStyle=tint==='owner'?'#27425e':'#5b3d1e';ctx.lineWidth=2;
   ctx.beginPath();ctx.roundRect?ctx.roundRect(bx,by,w,h,10):ctx.rect(bx,by,w,h);ctx.fill();ctx.stroke();
   ctx.beginPath();ctx.moveTo(x-8,by+h);ctx.lineTo(x,by+h+12);ctx.lineTo(x+8,by+h);ctx.closePath();ctx.fill();ctx.stroke();
   ctx.fillStyle='#3a2410';ctx.textAlign='center';
@@ -948,8 +965,9 @@ function drawReactions(ctx,dt){
     if(r.gid){guests.forEach(function(o){if(o.id===r.gid)g=o})}
     else guests.forEach(function(o){if(!g&&o.seat.table===r.table&&(o.mode==='seated'||o.ordered))g=o});
     if(!g)continue;
-    var sp=g.mode==='out'?{x:g.x,y:g.y}:seatPos(g),im=imgs[chKey(g,sitPose(g))],hh=g.mode==='out'?250*scaleAt(g.y)/.34:(im?im.naturalHeight*scaleAt(sp.y)*SIT_K:300);
+    var walking=g.mode==='out'||g.mode==='in',sp=walking?{x:g.x,y:g.y}:seatPos(g),im=imgs[chKey(g,sitPose(g))],hh=walking?250*scaleAt(g.y)/.34:(im?im.naturalHeight*scaleAt(sp.y)*SIT_K:300);
     var iss=r.ev?r.ev.issues:[],l1=iss.length?iss[0]:'Odlično! Baš kako treba.',l2=iss.length>1?iss[1]:(r.delta>0?'Ugled kafane +'+r.delta:(r.delta<0?'Ugled kafane '+r.delta:''));
+    if(r.text){drawBubble(ctx,sp.x,sp.y-hh-(r.owner?62:0),r.text,'',r.owner?'owner':'');continue}
     drawBubble(ctx,sp.x,sp.y-hh,l1,l2);
   }
 }
