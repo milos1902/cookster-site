@@ -445,8 +445,9 @@ function setDoor(v,opt){                               // opt.auto: opened/close
       if(k<1)requestAnimationFrame(f);else if(!v)done();
     })(t0);
   }
-  if(v)snd('open');
-  else{try{if(window.CooksterSound&&!window.CooksterSound.play('door','close')&&soft)window.CooksterSound.play('door','slam')}catch(e){}}      // the closing sound starts with the door (a soft close without it uses the slam sound)
+  var gA=!!opt.auto;      // the guests have their own sounds (guestOpen / guestClose); without them they use the ones of the player (open / close, and a soft close the slam)
+  if(v){try{if(!(gA&&window.CooksterSound&&window.CooksterSound.play('door','guestOpen')))snd('open')}catch(e){}}
+  else{try{if(window.CooksterSound&&!(gA&&window.CooksterSound.play('door','guestClose'))&&!window.CooksterSound.play('door','close')&&soft)window.CooksterSound.play('door','slam')}catch(e){}}      // the closing sound starts with the door (a soft close without it uses the slam sound)
   if(!opt.auto)showMsg(v?'Vrata su otvorena — provetrava se.':'Vrata su zatvorena.');
 }
 // guests come in and go out through the door: it opens for them and closes by itself a bit later, slowly and quietly (a door that the player opened stays open)
