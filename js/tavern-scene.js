@@ -447,6 +447,10 @@ applyCal();
 var guests=[],nextArrival=2,clock=0,UID=0;
 var SCALE0=.31*GUEST_K,SCALE_K=.00012*GUEST_K,SIT_K=.78;      // size of a picture at height y of the hall
 function scaleAt(y){return SCALE0+SCALE_K*y}
+// the waiter grows as he comes toward the camera (nearer = bigger than the plain depth scale gives): from the size k=1 at y0 smoothly to k times bigger at y1 (the lower tables)
+var WSIZE_KEY='cookster.waiter-size.v1',WSIZE={y0:430,y1:850,k:1.32};
+try{var _ws=JSON.parse(localStorage.getItem(WSIZE_KEY)||'null');if(_ws&&isFinite(_ws.y0)&&isFinite(_ws.y1)&&isFinite(_ws.k))WSIZE=_ws}catch(e){}
+function wScale(y){var t=Math.max(0,Math.min(1,(y-WSIZE.y0)/Math.max(1,WSIZE.y1-WSIZE.y0)));t=t*t*(3-2*t);return scaleAt(y)*(1+(WSIZE.k-1)*t)}
 function pickSeat(){
   // a guest sits only at a table that has been cleaned
   var cl=window.CooksterTavernClean&&window.CooksterTavernClean.cleaned?window.CooksterTavernClean.cleaned():null;
@@ -801,13 +805,13 @@ function stepWaiter(dt){
       else if(w.mode==='go'){w.mode='serve';w.t=0;var sp=waiterSpot(w.table),fs=dirFace(sp?sp.dir:90);w.set=fs.set;w.flip=fs.flip}
       else{w.mode='idle'}
     }else{
-      var dx=tgt.x-w.x,dy=tgt.y-w.y,d=Math.hypot(dx,dy),spd=WSPEED*scaleAt(w.y)/.34*dt;
+      var dx=tgt.x-w.x,dy=tgt.y-w.y,d=Math.hypot(dx,dy),spd=WSPEED*wScale(w.y)/.34*dt;
       if(d<=spd){w.x=tgt.x;w.y=tgt.y;w.pi++}
       else{
         w.x+=dx/d*spd;w.y+=dy/d*spd;
         var s2=w.carry?carrySet(w):waiterFace(dx,dy);if(s2!==w.set){w.set=s2}
         if(s2==='walks'||s2==='foods'||s2==='drinks'){if(Math.abs(dx)>.3)w.flip=dx<0}else w.flip=false;
-        var ph0=Math.floor(w.phase);w.phase+=spd/(40*scaleAt(w.y)/.34);
+        var ph0=Math.floor(w.phase);w.phase+=spd/(40*wScale(w.y)/.34);
         if(Math.floor(w.phase)!==ph0&&state==='tavern'&&(w.carry||!WD_N[w.set])){try{window.CooksterSound.play('waiter','step')}catch(e){}}      // with a tray (old pictures): one sound for every step
       }
     }
@@ -1030,7 +1034,7 @@ function drawReactions(ctx,dt){
     var r=reactions[i];r.t+=dt;
     if(r.t>(r.life?r.life+1.4:7)){reactions.splice(i,1);continue}
     if(r.t<1.4)continue;
-    if(r.owner){var wv=waiter;if(wv&&!wv.hidden){var wh=250*scaleAt(wv.y)/.34;drawBubble(ctx,wv.x,wv.y-wh,r.text,'','owner')}continue}
+    if(r.owner){var wv=waiter;if(wv&&!wv.hidden){var wh=250*wScale(wv.y)/.34;drawBubble(ctx,wv.x,wv.y-wh,r.text,'','owner')}continue}
     var g=null;
     if(r.gid){guests.forEach(function(o){if(o.id===r.gid)g=o})}
     else guests.forEach(function(o){if(!g&&o.seat.table===r.table&&(o.mode==='seated'||o.ordered))g=o});
@@ -1122,11 +1126,11 @@ function drawWaiter(ctx){
   var w=waiter;if(!w||w.hidden)return;
   w._wfDrawn=false;drawWaiterBody(ctx);
   // the film of the writing ends (he is done with the order, or walks off): its last picture fades out over what comes next, so there is no jump of the pose
-  var L=w._wfl;if(!w._wfDrawn&&L&&clock-L.t<.45&&clock>=L.t){var al=1-(clock-L.t)/.45;al=al*al*(3-2*al);wFilmFrame(ctx,w,scaleAt(w.y),L.a,L.i,L.im,al)}
+  var L=w._wfl;if(!w._wfDrawn&&L&&clock-L.t<.45&&clock>=L.t){var al=1-(clock-L.t)/.45;al=al*al*(3-2*al);wFilmFrame(ctx,w,wScale(w.y),L.a,L.i,L.im,al)}
 }
 function drawWaiterBody(ctx){
   var w=waiter;if(!w||w.hidden)return;
-  var sc=scaleAt(w.y),moving=(w.mode==='go'||w.mode==='back')&&w.path&&w.path[w.pi];
+  var sc=wScale(w.y),moving=(w.mode==='go'||w.mode==='back')&&w.path&&w.path[w.pi];
   drawShadow(ctx,w.x,w.y,sc);
   if(!moving){w._wf=null;
     // taking the order (seen from the side): writes, now and then looks up at the guest; the other views only stand until their pictures exist
@@ -1473,7 +1477,7 @@ function onKey(e){
 window.addEventListener('keydown',onKey,true);window.addEventListener('keyup',onKey,true);window.addEventListener('keypress',onKey,true);
 
 window.CooksterTavern={
-  tableReport:tableReport,open:open,close:close,spawn:spawn,spawnCompany:spawnCompany,companyOk:companyOk,companyTable:function(){return COMPANY.table},
+  tableReport:tableReport,waiterSize:{get:function(){return WSIZE},set:function(d){WSIZE=d;try{localStorage.setItem(WSIZE_KEY,JSON.stringify(d))}catch(e){}},scaleAt:wScale},open:open,close:close,spawn:spawn,spawnCompany:spawnCompany,companyOk:companyOk,companyTable:function(){return COMPANY.table},
   deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,dirtyDishAt:dirtyDishAt,
   isOpenForGuests:function(){return openForGuests},setOpenForGuests:setOpenForGuests,say:function(i,t,d){var g=guests.filter(function(o){return o.id===i})[0];if(g)gsay(g,t,d)},
