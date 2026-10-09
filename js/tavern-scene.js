@@ -522,10 +522,16 @@ function step(dt){
   tickDishes(dt);tickMess(dt);
   for(var i=guests.length-1;i>=0;i--){
     var g=guests[i];
-    if(g.mode==='in'&&g.wait>0){g.wait-=dt;continue}
+    if(g.mode==='in'&&g.wait>0){g.wait-=dt;if(g.wait<2.2&&state==='tavern'){try{window.CooksterTavernClean.autoDoor()}catch(e){}}continue}      // the door starts to open before he comes in
+    if(g.mode==='in'&&!g.entered){                    // he comes in only when the door is (nearly) open
+      var dp=1;try{if(state==='tavern')dp=window.CooksterTavernClean.doorProgress()}catch(e){}
+      g.holdFor=(g.holdFor||0)+dt;
+      if(dp<.6&&g.holdFor<4){g.held=true;try{window.CooksterTavernClean.autoDoor()}catch(e){}continue}
+      g.held=false;g.entered=true;
+    }
     if(g.mode==='in'&&!g.greeted){g.greeted=true;try{window.CooksterTavernClean.autoDoor()}catch(e){}if(Math.random()<.12&&state==='tavern'&&clock-greetAt>35){greetAt=clock;greetGuest(g)}}
     if(g.mode==='in'||g.mode==='out'){
-      if(g.mode==='out'&&state==='tavern'&&Math.hypot(g.x-DOOR.x,g.y-DOOR.y)<190){try{window.CooksterTavernClean.autoDoor()}catch(e){}}      // somebody leaves: the door opens
+      if(state==='tavern'&&Math.hypot(g.x-DOOR.x,g.y-DOOR.y)<230){try{window.CooksterTavernClean.autoDoor()}catch(e){}}      // somebody comes in or leaves: the door stays open while he is at it
       var tgt=g.path[g.pi];
       if(!tgt){
         if(g.mode==='in'){g.mode='sitting';g.from={x:g.x,y:g.y,face:g.face};g.fade=0;g.sitT=0}
@@ -1125,7 +1131,7 @@ function draw(){
   var ctx=cv.getContext('2d'),k=cv.width/W;
   ctx.setTransform(k,0,0,k,0,0);ctx.clearRect(0,0,W,H);
   if(!GUESTS_ON)return;          // the cleaning room: no guests, and the table masks must not paint the clean picture over the dirt
-  var list=guests.filter(function(g){return !(g.mode==='in'&&g.wait>0)}).map(function(g){return{y:guestSortY(g),g:g}});
+  var list=guests.filter(function(g){return !(g.mode==='in'&&g.wait>0)&&!g.held}).map(function(g){return{y:guestSortY(g),g:g}});
   for(var at=0;at<TABLES.length;at++)(function(t){var my=TABLEMASKY[t];list.push({y:(my!=null?my:TABLES[t].y)+.02,ash:t})})(at);
   MASKS.forEach(function(m){list.push({y:m.y,m:m})});
   if(waiter)list.push({y:waiter.y,w:true});
