@@ -523,7 +523,7 @@ function step(dt){
   for(var i=guests.length-1;i>=0;i--){
     var g=guests[i];
     if(g.mode==='in'&&g.wait>0){g.wait-=dt;continue}
-    if(g.mode==='in'&&!g.greeted){g.greeted=true;if(Math.random()<.35&&state==='tavern')greetGuest(g)}
+    if(g.mode==='in'&&!g.greeted){g.greeted=true;if(Math.random()<.12&&state==='tavern'&&clock-greetAt>35){greetAt=clock;greetGuest(g)}}
     if(g.mode==='in'||g.mode==='out'){
       var tgt=g.path[g.pi];
       if(!tgt){
@@ -564,10 +564,13 @@ function addDirt(table,units){
 }
 var NAMES_M=['Dragoslave','Milivoje','Radovane','Stojadine','Dobrivoje','Radisave','Ljubomire','Vukašine','Mirko','Slobodane','Radomire','Branko','Živote','Milorade','Svetozare','Aćime'],
     NAMES_F=['Radmilo','Dragice','Milice','Stanojko','Ljubice','Desanko','Vukosavo','Smiljo','Rado','Zorko'];
-var HELLO=['Zdravo, Miško!','Dobar dan, Kuksteru!','Miloše, živ bio!','Kuksteru, kako ide?','Dobro veče, Miško!','Pomaže bog, Kuksteru!','Evo mene, Miloše!','Miško, brate, zdravo!','Dobar dan, Miloše!','Kuksteru, ćao!'];
-function greetGuest(g){                              // a guest who knows the owner says hello when he comes in; the owner always answers
-  var woman=!!WOMEN[g.ch],nm=pick(woman?NAMES_F:NAMES_M),r=Math.random(),rep;
-  if(r<.55)rep=pick(['Zdravo, ','Dobar dan, ','Dobro veče, ','Izvolite, '])+nm+'!';
+var HELLO=['Zdravo, Zoki!','Dobar dan, Zorane!','Zoki, živ bio!','Zoki, kako ide?','Dobro veče, Zorane!','Pomaže bog, Zoki!','Evo mene, Zoki!','Ej, Zoki, brate, zdravo!','Gde si, Zoki, šta radiš?','Zoki, ćao!'],
+    HELLO_BRKO=['Desi, Brko!','Gde si, Brko, šta radiš?','Ej, Brko, živ bio!','Brko, kako je?'];
+var greetAt=-99;
+function greetGuest(g){                              // now and then a guest who knows the waiter says hello when he comes in; the waiter (the player) answers above his own head
+  var woman=!!WOMEN[g.ch],nm=pick(woman?NAMES_F:NAMES_M),r=Math.random(),rep,brko=!woman&&Math.random()<.2;
+  if(brko)rep=pick(HELLO_BRKO);
+  else if(r<.55)rep=pick(['Zdravo, ','Dobar dan, ','Dobro veče, ','Izvolite, '])+nm+'!';
   else if(r<.8)rep='Dobar dan!';
   else rep=woman?'Dobar dan, gospođo, izvolite!':'Dobar dan, gospodine, izvolite!';
   reactions.push({gid:g.id,table:g.seat.table,t:1.4,life:4,text:pick(HELLO)});
@@ -689,7 +692,7 @@ function guestOrders(g){
   if(!g.orders){var O=window.CooksterOrders;g.orders=O&&O.make?pickOrderKeys(g).map(function(k){return O.make(k,!!WOMEN[g.ch])}):[]}
   return g.orders;
 }
-var ADDR=['Miško, daj ','Kuksteru, daj ','Miloše, daj ','Konobar! Daj ','Gazda, daj ','Ej, majstore, daj '];
+var ADDR=['Zoki, daj ','Zorane, daj ','Konobar! Daj ','Ej, Zoki, daj ','Zoki, brate, daj ','Konobare, daj '];
 function orderText(g){var o=guestOrders(g);
   if(g.addr===undefined)g.addr=Math.random()<.4?ADDR[Math.floor(Math.random()*ADDR.length)]:'';      // some of them call the owner by name (or shout for the waiter) when they order
   var nm=o.map(function(x){return x.name}).join(' + ');
@@ -961,13 +964,14 @@ function drawReactions(ctx,dt){
     var r=reactions[i];r.t+=dt;
     if(r.t>(r.life?r.life+1.4:7)){reactions.splice(i,1);continue}
     if(r.t<1.4)continue;
+    if(r.owner){var wv=waiter;if(wv&&!wv.hidden){var wh=250*scaleAt(wv.y)/.34;drawBubble(ctx,wv.x,wv.y-wh,r.text,'','owner')}continue}
     var g=null;
     if(r.gid){guests.forEach(function(o){if(o.id===r.gid)g=o})}
     else guests.forEach(function(o){if(!g&&o.seat.table===r.table&&(o.mode==='seated'||o.ordered))g=o});
     if(!g)continue;
     var walking=g.mode==='out'||g.mode==='in',sp=walking?{x:g.x,y:g.y}:seatPos(g),im=imgs[chKey(g,sitPose(g))],hh=walking?250*scaleAt(g.y)/.34:(im?im.naturalHeight*scaleAt(sp.y)*SIT_K:300);
     var iss=r.ev?r.ev.issues:[],l1=iss.length?iss[0]:'Odlično! Baš kako treba.',l2=iss.length>1?iss[1]:(r.delta>0?'Ugled kafane +'+r.delta:(r.delta<0?'Ugled kafane '+r.delta:''));
-    if(r.text){drawBubble(ctx,sp.x,sp.y-hh-(r.owner?62:0),r.text,'',r.owner?'owner':'');continue}
+    if(r.text){drawBubble(ctx,sp.x,sp.y-hh,r.text,'','');continue}
     drawBubble(ctx,sp.x,sp.y-hh,l1,l2);
   }
 }

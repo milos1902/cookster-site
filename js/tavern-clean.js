@@ -26,9 +26,9 @@ css.textContent=
 '#tavernScene .tc-sponge{position:fixed;left:0;top:0;pointer-events:none;z-index:60;display:none;will-change:transform}'+
 '#tavernScene .tc-sponge img{position:absolute;left:0;top:0;width:100%;height:100%;display:block;-webkit-user-drag:none}'+
 '#tavernScene .tc-sponge .tc-shadow{position:absolute;border-radius:50%;background:radial-gradient(ellipse at center,rgba(0,0,0,.6),rgba(0,0,0,0) 70%)}'+
-'#tavernScene .tc-signwrap{position:absolute;container-type:inline-size;pointer-events:none;z-index:1}'+
+'#tavernScene .tc-signwrap{position:absolute;container-type:inline-size;pointer-events:none;transition:opacity .5s}'+
 '#tavernScene .tc-sign{position:absolute;left:9.7%;top:6.4%;width:9.72%;aspect-ratio:520/515;pointer-events:none;transform-origin:54% 12%;perspective:700px}'+
-'#tavernScene .tc-sign img{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:auto;cursor:pointer;-webkit-user-drag:none;transform-origin:54% 50%;filter:drop-shadow(0 4px 4px rgba(0,0,0,.6));-webkit-mask-image:linear-gradient(transparent 33%,#000 42%);mask-image:linear-gradient(transparent 33%,#000 42%)}'+
+'#tavernScene .tc-sign img{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;-webkit-user-drag:none;transform-origin:54% 50%;filter:drop-shadow(0 4px 4px rgba(0,0,0,.6));-webkit-mask-image:linear-gradient(transparent 33%,#000 42%);mask-image:linear-gradient(transparent 33%,#000 42%)}'+
 '#tavernScene .tc-sign.swing{animation:tcSwing 1.5s ease-out}@keyframes tcSwing{0%{rotate:0deg}20%{rotate:7deg}40%{rotate:-5deg}60%{rotate:3deg}80%{rotate:-1.5deg}100%{rotate:0deg}}'+
 '#tavernScene .tc-info{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:70;padding:6px 14px;border-radius:9px;background:rgba(32,20,9,.82);border:1px solid #7a5428;color:#f3e3c2;font:600 14px/1.2 system-ui,sans-serif;pointer-events:none;white-space:nowrap}'+
 '#tavernScene .tc-hint{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);z-index:70;padding:5px 12px;border-radius:8px;background:rgba(32,20,9,.7);color:#d9c69c;font:12px/1.2 system-ui,sans-serif;pointer-events:none;white-space:nowrap;transition:opacity .6s}'+
@@ -186,6 +186,7 @@ function newPuff(){
 }
 function smokeTick(dt){
   smokeT+=dt;if(smokeT<.1)return;dt=smokeT;smokeT=0;                  // 10 times in a second is enough for such a slow smoke
+  ventK+=((doorOpen?1:0)-ventK)*Math.min(1,dt/7);
   var guests=(T.guestCount?T.guestCount():0),target=Math.min(1,(T.smokeForce!=null?T.smokeForce:guests)/9)*(1-.85*ventK);
   smokeLevel+=(target-smokeLevel)*Math.min(1,dt/14);                  // slow: about 14 s to follow
   var want=Math.round(5+40*smokeLevel);
@@ -245,7 +246,7 @@ dirtyImg.src=DIRTY;
 var cleanImg=new Image();cleanImg.src=T.roomSrc;           // the clean picture: the difference to the dirty one is what lies on the tables
 // the dirt and the effects lie exactly over the picture, wherever the scene puts it
 function sync(){
-  ['left','top','width','height'].forEach(function(k){dirt.style[k]=cv.style[k];fx.style[k]=cv.style[k];stoveCv.style[k]=cv.style[k];if(signWrap)signWrap.style[k]=cv.style[k];shadeCv.style[k]=cv.style[k];coreCv.style[k]=cv.style[k];sparkCv.style[k]=cv.style[k];smokeCv.style[k]=cv.style[k]});
+  ['left','top','width','height'].forEach(function(k){dirt.style[k]=cv.style[k];fx.style[k]=cv.style[k];stoveCv.style[k]=cv.style[k];if(doorCv)doorCv.style[k]=cv.style[k];if(signWrap)signWrap.style[k]=cv.style[k];shadeCv.style[k]=cv.style[k];coreCv.style[k]=cv.style[k];sparkCv.style[k]=cv.style[k];smokeCv.style[k]=cv.style[k]});
 }
 new MutationObserver(sync).observe(cv,{attributes:true,attributeFilter:['style']});
 addEventListener('resize',sync);sync();
@@ -396,6 +397,20 @@ function refreshInfo(){
 var msgUntil=0;
 function showMsg(t){info.textContent=t;msgUntil=performance.now()+2600;setTimeout(refreshInfo,2700)}
 setInterval(function(){if(T.isOpen&&!down)refreshInfo()},1500);
+// ---------- the door: right click -> "Provetri": the door opens (the picture of the open door fades in over the closed one) and the smoke thins out ----------
+var doorOpen=false,doorA=0,doorCv=null;
+var DOOR_RECT=[105,0,350,355],DOOR_POS=[100,0],doorImg=new Image();
+doorCv=mk('canvas','tc-dirt');doorCv.width=W;doorCv.height=H;
+cv.parentNode.insertBefore(doorCv,cv);                       // right under the people (above the dirt), so everybody walks in front of the door and the sign
+doorImg.src='assets/tavern/vrata_otvorena.webp?v=1';
+function drawDoor(){var c=doorCv.getContext('2d');c.clearRect(0,0,W,H);if(doorA>0&&doorImg.naturalWidth){c.globalAlpha=doorA;c.drawImage(doorImg,DOOR_POS[0],DOOR_POS[1]);c.globalAlpha=1}if(signWrap)signWrap.style.opacity=String(1-doorA)}
+function setDoor(v){
+  if(v===doorOpen)return;doorOpen=v;
+  var from=doorA,to=v?1:0,t0=performance.now();
+  (function f(now){var k=Math.min(1,(now-t0)/900);doorA=from+(to-from)*k;drawDoor();if(k<1)requestAnimationFrame(f)})(t0);
+  try{if(window.CooksterSound)window.CooksterSound.play('tavern',v?'doorOpen':'doorClose')}catch(e){}
+  showMsg(v?'Vrata su otvorena — provetrava se.':'Vrata su zatvorena.');
+}
 // ---------- the sign on the door: Otvoreno / Zatvoreno (click: it turns around, hanging on its strings) ----------
 (function(){
   var wrap=mk('div','tc-signwrap'),open=T.isOpenForGuests?T.isOpenForGuests():true,SRC={1:'assets/tavern/sign/radi.webp?v=1',0:'assets/tavern/sign/neradi.webp?v=1'};
@@ -403,28 +418,33 @@ setInterval(function(){if(T.isOpen&&!down)refreshInfo()},1500);
   var sg=wrap.firstChild,im=sg.firstChild,busyTurn=false;
   [SRC[1],SRC[0]].forEach(function(u){var pre=new Image();pre.src=u});
   im.src=SRC[open?1:0];
-  im.addEventListener('pointerdown',function(e){e.stopPropagation();e.preventDefault()});
-  im.addEventListener('click',function(e){
-    e.stopPropagation();if(busyTurn)return;busyTurn=true;open=!open;try{T.setOpenForGuests(open)}catch(x){}
+  function toggleSign(){
+    if(busyTurn)return;busyTurn=true;open=!open;try{T.setOpenForGuests(open)}catch(x){}
     var turn=function(from,to,ms,ease){return im.animate?im.animate([{transform:'rotateY('+from+'deg)'},{transform:'rotateY('+to+'deg)'}],{duration:ms,easing:ease,fill:'forwards'}).finished:Promise.resolve()};
     turn(0,90,230,'ease-in').then(function(){im.src=SRC[open?1:0];return turn(-90,0,300,'ease-out')}).then(function(){
       busyTurn=false;sg.classList.remove('swing');void sg.offsetWidth;sg.classList.add('swing');
     }).catch(function(){busyTurn=false});
     showMsg(open?'Kafana radi — gosti dolaze.':'Kafana ne radi — novi gosti ne dolaze.');
-  });
-  im.addEventListener('contextmenu',function(e){e.stopPropagation()});
+  }
+  // the sign is the lowest layer (glued to the door, everybody walks in front of it), so the click is caught on the room and tested against the picture of the sign
+  room.addEventListener('pointerdown',function(e){
+    if(e.button!==0||tool==='sponge'||doorOpen||overUi(e)||e.target.closest&&e.target.closest('.tc-menu'))return;
+    var r=im.getBoundingClientRect();
+    if(e.clientX>=r.left+r.width*.12&&e.clientX<=r.right-r.width*.12&&e.clientY>=r.top+r.height*.35&&e.clientY<=r.bottom-r.height*.08){e.stopImmediatePropagation();e.preventDefault();toggleSign()}
+  },true);
   // the pose of the sign (placement tool "Mesta"): position and size in % of the picture, tilt in degrees
   // the pose of the sign (from Miloš's export): position and size in % of the picture, tilt in degrees
   var P={x:10.2,y:9.7,w:7,rz:-8,ry:0,rx:0};
   sg.style.left=P.x+'%';sg.style.top=P.y+'%';sg.style.width=P.w+'%';sg.style.transform='perspective(900px) rotateX('+P.rx+'deg) rotateY('+P.ry+'deg) rotate('+P.rz+'deg)';
-  cv.parentNode.insertBefore(wrap,shadeCv);signWrap=wrap;sync();
+  cv.parentNode.insertBefore(wrap,doorCv);                      // the lowest layer of the people: glued to the door, guests and the waiter walk in front of it
+  signWrap=wrap;signEl=sg;sync();
 })();                // reading the picture back is slow, so not while the sponge is rubbing
 
 // ---------- the mouse ----------
 var down=false,last=null,lastPos=null;
 function toScene(e){var r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*W,y:(e.clientY-r.top)/r.height*H}}
 function overUi(e){return !!(e.target.closest&&e.target.closest('button,.tc-menu'))}
-var signWrap;
+var signWrap,signEl;
 var tool='ruka';                                      // the tool chosen in the ring menu (right click): 'sponge' or 'ruka' (hand)
 function moveSponge(e){
   var over=overUi(e);
@@ -479,6 +499,7 @@ room.addEventListener('contextmenu',function(e){
   var lamp=lampAt(p.x,p.y);
   if(lamp)opts.push({ic:'💡',t:lampLit(lamp)?'Ugasi svetlo':'Upali svetlo',fn:function(){setLamp(lamp,!lampLit(lamp))}});
   if(stoveOk&&p.x>=STOVE_RECT[0]&&p.x<=STOVE_RECT[2]&&p.y>=STOVE_RECT[1]&&p.y<=STOVE_RECT[3])opts.push({ic:'🔥',t:stoveLit?'Ugasi vatru':'Zapali vatru',fn:function(){setStove(!stoveLit)}});
+  if(p.x>=DOOR_RECT[0]&&p.x<=DOOR_RECT[2]&&p.y>=DOOR_RECT[1]&&p.y<=DOOR_RECT[3])opts.push({ic:'🚪',t:doorOpen?'Zatvori vrata':'Provetri',fn:function(){setDoor(!doorOpen)}});
   if(zi>=0)opts.push({ic:'🫧',t:'Očisti sto',off:!tlevel[zi]||!!cleaning[zi],fn:function(){cleanZone(zi)}});
   if(dish)opts.push({ic:'🍽️',t:'Pranje',fn:function(){
     if(T.dirtyDishAt(p.x,p.y,true)){try{if(window.CooksterSinkDishes)window.CooksterSinkDishes.add()}catch(_){}}
@@ -529,5 +550,5 @@ function floorDirt(n){
   c.globalCompositeOperation='destination-in';c.drawImage(floorMask,0,0);
   D.globalCompositeOperation='source-over';D.drawImage(sc,0,0);
 }
-window.CooksterTavernClean={dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},smoke:function(){return smokeLevel},setVent:function(k){ventK=Math.max(0,Math.min(1,k))},stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
+window.CooksterTavernClean={dirty:dirtyZone,markDirty:markDirty,floorDirt:floorDirt,reset:function(){reset.click()},floorPercent:floorPercent,levels:function(){return tlevel.slice()},smoke:function(){return smokeLevel},doorOpen:function(){return doorOpen},setDoor:setDoor,stoveLit:function(){return stoveLit},lamps:function(){if(!lightsDef)return null;var t=0,l=0;lightsDef.lamps.forEach(function(L){if(L.stove)return;t++;if(lightState[L.id])l++});return{lit:l,total:t}},zones:function(){return zones.length},cleaned:function(){return cleaned.slice()}};
 })();
