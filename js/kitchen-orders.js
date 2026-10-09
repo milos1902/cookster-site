@@ -7,7 +7,7 @@
 'use strict';
 var scene=document.getElementById('scene');
 if(!scene||window.CooksterOrders)return;
-var W=1672,H=941,KEY='cookster.kitchen-orders.v1',WAITER='assets/tavern/waiter/waiter_walks',NOTE_IMG='assets/ui/order_note.webp?v=2';
+var W=1672,H=941,KEY='cookster.kitchen-orders.v1',WAITER='assets/tavern/waiter/waiter_walks',NOTE_IMG='assets/ui/order_note_table.webp?v=1',NOTE_BIG='assets/ui/order_note_big.webp?v=1';
 var ITEM={name:'Kiseli kupus',extra:'ulje, tucana paprika',cyr:'Кисели купус',cyrExtra:'уље, туцана паприка'};           // the default dish
 // everything a guest can order: a dish (the bowl), or drinks (the bottles and glasses from "Piće" that the player puts on the table)
 var ITEM_NAMES={pice_vino_crno_flasa:'flaša crnog vina',pice_vino_belo_flasa:'flaša belog vina',pice_soda_sifon:'soda',pice_casa_spricer:'čaša za špricer',pice_casa_belo_vino:'čaša belog vina',pice_casa_crno_vino:'čaša crnog vina'};
@@ -55,22 +55,23 @@ function mk(tag,cls){var e=document.createElement(tag);if(cls)e.className=cls;re
 var css=document.createElement('style');
 css.textContent=
 '#kitchenWaiter{position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;pointer-events:none;z-index:46}'+
-'.ko-note{position:absolute;height:var(--h,200px);aspect-ratio:820/1478;z-index:3000;cursor:pointer;color:#17275c;font:700 calc(var(--h,200px)*.03)/1 "Segoe Print","Bradley Hand","Comic Sans MS",cursive;'+
-  'background:url('+NOTE_IMG+') center/100% 100% no-repeat,linear-gradient(160deg,#f6e7c4,#e8cf9b);filter:drop-shadow(0 5px 7px rgba(40,20,5,.5));transition:transform .15s}'+
+'.ko-note{position:absolute;height:var(--h,200px);aspect-ratio:560/500;z-index:3000;cursor:pointer;color:#17275c;font:700 calc(var(--h,200px)*.03)/1 "Segoe Print","Bradley Hand","Comic Sans MS",cursive;'+
+  'background:url('+NOTE_IMG+') center/100% 100% no-repeat;filter:drop-shadow(0 5px 6px rgba(40,20,5,.5));transition:transform .15s}'+
 '.ko-note:hover{transform:scale(1.07) rotate(var(--r,0deg))}'+
-// the handwriting goes into the rows of the table printed on the paper (row 1 and 2: the number of the table, the dish, the amount)
+'.ko-note.big{aspect-ratio:1000/1340;background:url('+NOTE_BIG+') center/100% 100% no-repeat;filter:drop-shadow(0 14px 18px rgba(30,15,5,.6))}'+
+// the handwriting goes into the rows of the table printed on the paper (11 rows: the number, the dish, the amount)
 '.ko-c{position:absolute;white-space:nowrap;transform:translateY(-50%)}'+
-'.ko-c.c1{left:5.1%;width:13.3%;text-align:center;top:39.6%;font-size:.86em}'+
-'.ko-c.c2{left:20%;width:56%;text-align:left;top:39.6%}'+
-'.ko-c.c3{left:77.7%;width:17%;text-align:center;top:39.6%}'+
-'.ko-c.r2{top:44.1%;font-size:.82em;font-weight:600}'+
-'.ko-c.rw{font-size:.84em}.ko-c.rw small{font-size:.8em;font-weight:600}'+
+'.ko-c.c1{left:6%;width:13%;text-align:center}'+
+'.ko-c.c2{left:24%;width:51%;text-align:left;overflow:hidden}'+
+'.ko-c.c3{left:79%;width:14%;text-align:center}'+
+'.ko-c.rw{font-size:.92em}.ko-c.rw small{font-size:.6em;font-weight:600}'+
+'.ko-c.tb{left:9%;top:94%;width:50%;text-align:left;font-size:1.15em}'+
 '.ko-ghost{position:fixed!important;z-index:2147483000;pointer-events:none;transition:none!important;filter:drop-shadow(0 10px 12px rgba(30,15,5,.55))}'+
 '.ko-ghost.ko-ready{filter:drop-shadow(0 0 10px #ffd84d) drop-shadow(0 10px 12px rgba(30,15,5,.55))}'+
-'.ko-drop{animation:koDrop .45s cubic-bezier(.3,.7,.3,1) both}'+
-'@keyframes koDrop{from{opacity:0;translate:0 -70px}to{opacity:1;translate:0 0}}'+
+'.ko-drop{animation:koSlide .75s cubic-bezier(.2,.7,.25,1) both}'+
+'@keyframes koSlide{0%{opacity:0;translate:-62px 4px;rotate:-5deg}30%{opacity:1}100%{opacity:1;translate:0 0;rotate:0deg}}'+
 '.ko-modal{position:fixed;inset:0;z-index:2147483000;background:rgba(10,5,2,.62);display:flex;align-items:center;justify-content:center;cursor:pointer}'+
-'.ko-modal .ko-note{position:relative;--h:min(82vh,760px);--r:-1.5deg;cursor:default;transition:none;transform:rotate(-1.5deg)}'+
+'.ko-modal .ko-note{position:relative;--h:min(86vh,820px);--r:-1.5deg;cursor:default;transition:none;transform:rotate(-1.5deg)}'+
 '.ko-modal .ko-note:hover{transform:rotate(-1.5deg)}'+
 '.ko-done{position:absolute;left:50%;bottom:-54px;transform:translateX(-50%);padding:9px 18px;border:2px solid #351b0d;border-radius:9px;background:#e8c27a;color:#351b0d;font:700 15px system-ui,sans-serif;cursor:pointer;white-space:nowrap}';
 document.head.appendChild(css);
@@ -91,13 +92,17 @@ function noteLines(n){
   return[{name:n.name,extra:n.extra,cyr:n.cyr,cyrExtra:n.cyrExtra,items:n.items||null,key:n.key,seatId:n.seatId,req:n.req||null}];
 }
 function noteEl(n,big){
-  var d=mk('div','ko-note');d.dataset.id=n.id;
-  var L=noteLines(n),h='<span class="ko-c c1">Сто '+n.table+'</span>';
-  L.forEach(function(l,i){var top=(39.6+4.5*i).toFixed(1)+'%',ex=l.cyrExtra?' <small>'+l.cyrExtra+'</small>':'';
-    h+='<span class="ko-c c2 rw" style="top:'+top+'">'+(l.cyr||ITEM.cyr)+ex+'</span><span class="ko-c c3" style="top:'+top+'">1</span>'});
-  d.innerHTML=h;
-  d.style.setProperty('--h',big?'':'130px');
-  if(!big){d.style.left=n.x+'px';d.style.top=n.y+'px';d.style.transform='rotate('+n.rot+'deg)';d.style.setProperty('--r',n.rot+'deg')}
+  var d=mk('div','ko-note'+(big?' big':''));d.dataset.id=n.id;
+  if(big){
+    var L=noteLines(n),h='';
+    L.forEach(function(l,i){var top=(43.8+4.65*i).toFixed(2)+'%',ex=l.cyrExtra?' <small>'+l.cyrExtra+'</small>':'';
+      h+='<span class="ko-c c1" style="top:'+top+'">'+(i+1)+'.</span><span class="ko-c c2 rw" style="top:'+top+'">'+(l.cyr||ITEM.cyr)+ex+'</span><span class="ko-c c3" style="top:'+top+'">1</span>'});
+    h+='<span class="ko-c tb">Сто '+n.table+'</span>';
+    d.innerHTML=h;
+  }else{
+    d.style.setProperty('--h','100px');
+    d.style.left=n.x+'px';d.style.top=n.y+'px';d.style.transform='rotate('+n.rot+'deg)';d.style.setProperty('--r',n.rot+'deg');
+  }
   return d;
 }
 // a sound chosen in the tool "Zvuk" replaces the built-in one
@@ -130,7 +135,7 @@ function startNoteDrag(e,n,d){
     if(!moved){
       if(Math.hypot(ev.clientX-sx,ev.clientY-sy)<6)return;
       moved=true;
-      ghost=noteEl(n,true);ghost.classList.add('ko-ghost');ghost.style.setProperty('--h',Math.round(r0.height*.96)+'px');
+      ghost=noteEl(n,false);ghost.classList.add('ko-ghost');ghost.style.setProperty('--h',Math.round(r0.height)+'px');
       ghost.style.setProperty('--r',n.rot+'deg');ghost.style.transform='rotate('+n.rot+'deg)';
       document.body.appendChild(ghost);d.style.opacity='.25';
     }
@@ -139,7 +144,7 @@ function startNoteDrag(e,n,d){
   function up(ev){
     removeEventListener('pointermove',mv,true);removeEventListener('pointerup',up,true);removeEventListener('pointercancel',up,true);
     d.style.opacity='';
-    if(!moved){openNote(n);return}
+    if(!moved){openNote(n,d);return}
     ghost.remove();
     var sp=spikeAt(ev.clientX,ev.clientY);
     if(sp){hangOnSpike(sp,n);return}
@@ -231,14 +236,31 @@ window.addEventListener('pointerdown',function(e){
   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
   ringBell(it);
 },true);
-function openNote(n){
+function openNote(n,small){
   snd('note','open');
-  var m=mk('div','ko-modal'),d=noteEl(n,true),b=mk('button','ko-done');
+  var m=mk('div','ko-modal'),d=noteEl(n,true),b=mk('button','ko-done'),closing=false;
   b.type='button';b.textContent='✓ Gotovo (ukloni papirić)';
   d.appendChild(b);m.appendChild(d);document.body.appendChild(m);
+  // the paper rises from the table to the front: it starts where the small one lies and grows to the big one
+  var sr=small&&small.getBoundingClientRect(),br=d.getBoundingClientRect(),from=null;
+  if(sr&&br.width&&d.animate){
+    var sc=sr.height/br.height,dx=(sr.left+sr.width/2)-(br.left+br.width/2),dy=(sr.top+sr.height/2)-(br.top+br.height/2);
+    from='translate('+dx.toFixed(1)+'px,'+dy.toFixed(1)+'px) scale('+sc.toFixed(3)+') rotate('+(n.rot||0)+'deg)';
+    small.style.opacity='0';
+    d.animate([{transform:from,opacity:.35},{opacity:1,offset:.3},{transform:'rotate(-1.5deg)',opacity:1}],{duration:460,easing:'cubic-bezier(.2,.8,.25,1)',fill:'both'});
+    if(m.animate)m.animate([{opacity:0},{opacity:1}],{duration:300,fill:'both'});
+  }
+  function shut(){
+    if(closing)return;closing=true;
+    if(from&&d.animate){
+      var a=d.animate([{transform:'rotate(-1.5deg)',opacity:1},{opacity:1,offset:.7},{transform:from,opacity:.35}],{duration:320,easing:'ease-in',fill:'both'});
+      if(m.animate)m.animate([{opacity:1},{opacity:0}],{duration:320,fill:'both'});
+      a.onfinish=function(){m.remove();if(small)small.style.opacity=''};
+    }else{m.remove();if(small)small.style.opacity=''}
+  }
   function stop(e){e.stopPropagation()}
   ['pointerdown','pointerup','mousedown','mouseup','wheel','contextmenu','keydown'].forEach(function(t){m.addEventListener(t,stop)});
-  m.addEventListener('click',function(e){e.stopPropagation();m.remove()});
+  m.addEventListener('click',function(e){e.stopPropagation();shut()});
   b.addEventListener('click',function(e){
     e.stopPropagation();m.remove();
     notes=notes.filter(function(q){return q.id!==n.id});save();
