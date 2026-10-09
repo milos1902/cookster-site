@@ -78,8 +78,8 @@ document.head.appendChild(css);
 var cv=mk('canvas');cv.id='kitchenWaiter';cv.width=W;cv.height=H;scene.appendChild(cv);
 var X=cv.getContext('2d');
 for(var i=1;i<=3;i++){var im=new Image();im.src=WAITER+i+'.webp?v=4';imgs[i]=im}
-var foodImg=new Image();foodImg.src='assets/tavern/waiter/waiter_foods2.webp';
-var drinkImg=new Image(),drinkOk=false;drinkImg.onload=function(){drinkOk=true};drinkImg.src='assets/tavern/waiter/waiter_drinks2.webp';
+var foodImg=new Image();foodImg.src='assets/tavern/waiter/waiter_foods2.webp?v=2';
+var drinkImg=new Image(),drinkOk=false;drinkImg.onload=function(){drinkOk=true};drinkImg.src='assets/tavern/waiter/waiter_drinks2.webp?v=2';
 
 // stop the clicks on a paper from reaching the game
 ['pointerdown','pointerup','mousedown','mouseup','click','dblclick','contextmenu','touchstart','wheel'].forEach(function(n){
