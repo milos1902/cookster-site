@@ -464,7 +464,7 @@ function makeGuest(seat,grp,wait){
   var ch=pool.length?pool[Math.floor(Math.random()*pool.length)]:1+Math.floor(Math.random()*CHARS);
   var g={id:++UID,ch:ch,seat:seat,x:DOOR.x+(Math.random()*30-15),y:DOOR.y,
     mode:'in',path:findPath(DOOR,{x:seat.ax,y:seat.ay}),pi:1,phase:Math.random()*2,face:'dole',flip:false,
-    sitT:0,sitFor:grp?grp.sitFor:90+Math.random()*70,orderDelay:14+Math.random()*14,fade:0,from:null,speed:78+Math.random()*16,mood:'ok',grp:grp||null,wait:wait||0,rounds:0,patK:.85+Math.random()*.5,warmth:Math.random()<.3?'hot':'cold',waitFoodSince:null,need:0,warned:false,leftAngry:false};
+    sitT:0,sitFor:grp?grp.sitFor:90+Math.random()*70,orderDelay:14+Math.random()*14,fade:0,from:null,speed:78+Math.random()*16,mood:'ok',grp:grp||null,wait:wait||0,rounds:0,held:true,patK:.85+Math.random()*.5,warmth:Math.random()<.3?'hot':'cold',waitFoodSince:null,need:0,warned:false,leftAngry:false};
   guests.push(g);return g;
 }
 // one guest (a free seat at a table that is clean)
@@ -522,16 +522,16 @@ function step(dt){
   tickDishes(dt);tickMess(dt);
   for(var i=guests.length-1;i>=0;i--){
     var g=guests[i];
-    if(g.mode==='in'&&g.wait>0){g.wait-=dt;if(g.wait<2.2&&state==='tavern'){try{window.CooksterTavernClean.autoDoor()}catch(e){}}continue}      // the door starts to open before he comes in
+    if(g.mode==='in'&&g.wait>0){g.wait-=dt;if(g.wait<2.2){try{window.CooksterTavernClean.autoDoor()}catch(e){}}continue}      // the door starts to open before he comes in
     if(g.mode==='in'&&!g.entered){                    // he comes in only when the door is (nearly) open
-      var dp=1;try{if(state==='tavern')dp=window.CooksterTavernClean.doorProgress()}catch(e){}
+      var dp=1;try{dp=window.CooksterTavernClean.doorProgress()}catch(e){}
       g.holdFor=(g.holdFor||0)+dt;
       if(dp<.6&&g.holdFor<4){g.held=true;try{window.CooksterTavernClean.autoDoor()}catch(e){}continue}
       g.held=false;g.entered=true;
     }
     if(g.mode==='in'&&!g.greeted){g.greeted=true;try{window.CooksterTavernClean.autoDoor()}catch(e){}if(Math.random()<.12&&state==='tavern'&&clock-greetAt>35){greetAt=clock;greetGuest(g)}}
     if(g.mode==='in'||g.mode==='out'){
-      if(state==='tavern'&&Math.hypot(g.x-DOOR.x,g.y-DOOR.y)<230){try{window.CooksterTavernClean.autoDoor()}catch(e){}}      // somebody comes in or leaves: the door stays open while he is at it
+      if(Math.hypot(g.x-DOOR.x,g.y-DOOR.y)<230){try{window.CooksterTavernClean.autoDoor()}catch(e){}}      // somebody comes in or leaves: the door stays open while he is at it
       var tgt=g.path[g.pi];
       if(!tgt){
         if(g.mode==='in'){g.mode='sitting';g.from={x:g.x,y:g.y,face:g.face};g.fade=0;g.sitT=0}
@@ -1265,7 +1265,7 @@ window.CooksterTavern={
   waiterSteps:{get:wsData,set:function(d){WSD=d;try{localStorage.setItem(WS_KEY,JSON.stringify(WSD))}catch(e){}},reset:function(){WSD=null;try{localStorage.removeItem(WS_KEY)}catch(e){}wsData()},count:function(k){return WD_N[k]||0},url:function(k,i){return WAITER+k+'24/f'+(i<10?'0':'')+i+'.webp?v=4'},play:wsPlay,stepClips:16},
   tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose,draw:tiDraw,shadow:tiShadow,shDef:TI_SH},
   get isOpen(){return state==='tavern'},get busy(){return busy},guestCount:function(){return guests.length},
-  debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
+  debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,held:!!g.held,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},
   seatReach:function(){return SEATS.map(seatReachable)},poseFromDir:poseFromDir,seatScale:function(y){return scaleAt(y)*SIT_K},
   poseInfo:function(pose){var im=imgs['g01_sedi_'+pose];return im?{src:im.src,w:im.naturalWidth,h:im.naturalHeight}:null},
