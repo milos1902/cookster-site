@@ -1,5 +1,5 @@
 /* Zadnje korišćeno: šest kvadratića dole pokazuju poslednje predmete koje je igrač uzeo (najnoviji je prvi).
-   Klik na kvadratić vraća taj predmet na sto (ili ga uzima u ruku ako je već u kuhinji), pa ne mora da se ulazi u Kuhinjske elemente. */
+   Klik na kvadratić uvek pravi novu kopiju tog predmeta u ruci (osim stvari koje postoje samo jednom: zvonce, šiljak, rail, kanta, bure, mlin, začini), pa ne mora da se ulazi u Kuhinjske elemente. */
 (function(){
   'use strict';
   const KEY='cookster.recent-items.v1',MAX=6;
@@ -40,8 +40,10 @@
     const id=recent[slot],def=id&&defOf(id);
     if(!def)return false;
     // already in the kitchen: take that one in the hand
-    const there=(window.items||items).find(el=>el.dataset.itemId===id&&el!==holding);
     if(typeof holding!=='undefined'&&holding){try{showToast('Prvo spusti ono što držiš.');}catch(_){}return true;}
+    // a click always makes a NEW copy (two bowls, three glasses...); only the things that exist once (the bell, the spike, the rail, the bin, the barrel, the mill, the spices) are taken from where they are
+    const UNIQUE=/^(siljak_narudzbine|zvonce_konobar|ticket_rail|kanta_set_zatvorena|mlin_za_mes.|kaca_.*|zacin_.*)$/;
+    const there=UNIQUE.test(id)?(window.items||items).find(el=>el.dataset.itemId===id&&el!==holding):null;
     if(there){try{startHolding(there);}catch(_){}return true;}
     const el=makeItem({...def,instanceId:nextItemInstanceId(id),x:700-def.w/2,y:560-def.h,z:++zCounter});
     if(!el)return false;
