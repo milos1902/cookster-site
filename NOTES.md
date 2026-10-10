@@ -152,7 +152,7 @@ Alat „Predmeti na stolu": dugmad Kopiranje (Kopiraj ovu stolicu, Nalepi ovde, 
 - **Znak na vratima** (`js/tavern-clean.js`, IIFE "the sign on the door"): klik ga okrene (rotateY + njihanje), poruka u info traci; stanje u `cookster.tavern-open.v1`; kad je zatvoreno novi gosti ne dolaze (`openForGuests` u tavern-scene.js).
 - **Strpljenje** (`checkPatience`): `PAT_ORDER=70`, `PAT_FOOD=170` sekundi puta `g.patK`; na 60% upozori, posle ustane (`leaveAngry`), rating −4, njegove stavke se skidaju sa papirića (`CooksterOrders.cancelSeat`).
 - **Govor gosta**: `gsay(g,text,delta)` (NE `say`, to je statusna poruka scene).
-- **Zajedničko vino**: grupa (`grp.wine`) deli jednu flašu crnog/belog vina, svako dobija svoju čašu; duplikati flaše se izbacuju pri slanju porudžbine. „Kilo na kilo“ se NE deli: svaki gost dobija kompletan komplet (flaša belog, sifon, čaša za špricer).
+- **Zajedničko vino**: grupa (`grp.wine`) deli jednu flašu / jedan sifon, svako dobija svoju čašu; duplikati flaše/sifona se izbacuju pri slanju porudžbine. Na papiriću (`displayRows` u kitchen-orders.js) „Kilo na kilo“ piše jednom (belo vino, soda), a čaše celog stola se broje ispod („Čaša za špricer“ × 3).
 - **Kupus sa željom**: 40% kupusa ima `req:{ing:'ulje'|'paprika',dir:±1}` ("malo manje ulja"...); u `takeDish` se poredi količina sa sredinom recepta; pogodak +3, promašaj −2 ili gore.
 - **Primedbe o čistoći** (`tickRemarks`): prljav sto (nivo ≥3) → −2, prljav pod (<45% čisto) → −2, čisto (≥85%) ponekad pohvala +1.
 - **Sudoper**: dok teče voda posude u sudoperu se tresu, mehurići, pa jedna po jedna nestaje (~2.4 s) – `js/sink-dishes.js`.

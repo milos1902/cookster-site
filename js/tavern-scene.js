@@ -861,7 +861,7 @@ function stepWaiter(dt){
       });
       var shared={};                                       // one bottle / one siphon for the whole table: the others get only their glass
       all.forEach(function(a){
-        var o=a.ord;if(!o.items||o.key==='kilo')return;var keep=[];          // a "kilo na kilo" is always complete (bottle, siphon and glass for every guest); only the bottles of wine are shared
+        var o=a.ord;if(!o.items)return;var keep=[];
         o.items.forEach(function(it){if(/flasa$|sifon$/.test(it)){if(shared[it])return;shared[it]=1}keep.push(it)});
         if(keep.length!==o.items.length){
           o.items=keep;var gl=keep.filter(function(it){return/casa/.test(it)})[0];

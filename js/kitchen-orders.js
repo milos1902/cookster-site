@@ -92,12 +92,26 @@ function noteLines(n){
   if(n.lines&&n.lines.length)return n.lines;
   return[{name:n.name,extra:n.extra,cyr:n.cyr,cyrExtra:n.cyrExtra,items:n.items||null,key:n.key,seatId:n.seatId,req:n.req||null}];
 }
+// the rows that are written on the paper: a "kilo na kilo" is written once (wine, soda) and the glasses of the whole table are counted together below it ("3 x čaša za špricer")
+var GLASS_CYR={pice_casa_spricer:'Чаша за шприцер',pice_casa_belo_vino:'Чаша белог вина',pice_casa_crno_vino:'Чаша црног вина'};
+function displayRows(L){
+  var rows=[],gl={},order=[];
+  function addGlass(id){if(!gl[id]){gl[id]=0;order.push(id)}gl[id]++}
+  L.forEach(function(l){
+    var it=l.items||[],g=it.filter(function(id){return GLASS_CYR[id]});
+    if(l.key==='kilo'&&g.length&&it.length>1){rows.push({cyr:l.cyr,cyrExtra:'бело вино, сода',q:1});g.forEach(addGlass)}
+    else if(it.length===1&&GLASS_CYR[it[0]])addGlass(it[0]);
+    else rows.push({cyr:l.cyr,cyrExtra:l.cyrExtra,q:1});
+  });
+  order.forEach(function(id){rows.push({cyr:GLASS_CYR[id],cyrExtra:'',q:gl[id]})});
+  return rows;
+}
 function noteEl(n,big){
   var d=mk('div','ko-note'+(big?' big':''));d.dataset.id=n.id;
   if(big){
-    var L=noteLines(n),h='';
-    L.forEach(function(l,i){var top=(43.8+4.65*i).toFixed(2)+'%',ex=l.cyrExtra?' <small>'+l.cyrExtra+'</small>':'';
-      h+='<span class="ko-c c1" style="top:'+top+'">'+(i+1)+'.</span><span class="ko-c c2 rw" style="top:'+top+'">'+(l.cyr||ITEM.cyr)+ex+'</span><span class="ko-c c3" style="top:'+top+'">1</span>'});
+    var rows=displayRows(noteLines(n)),h='';
+    rows.forEach(function(r,i){var top=(43.8+4.65*i).toFixed(2)+'%',ex=r.cyrExtra?' <small>'+r.cyrExtra+'</small>':'';
+      h+='<span class="ko-c c1" style="top:'+top+'">'+(i+1)+'.</span><span class="ko-c c2 rw" style="top:'+top+'">'+(r.cyr||ITEM.cyr)+ex+'</span><span class="ko-c c3" style="top:'+top+'">'+r.q+'</span>'});
     h+='<span class="ko-c tb">Сто '+n.table+'</span>';
     d.innerHTML=h;
   }else{
