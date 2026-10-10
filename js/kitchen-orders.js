@@ -56,7 +56,8 @@ var css=document.createElement('style');
 css.textContent=
 '#kitchenWaiter{position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;pointer-events:none;z-index:46}'+
 '.ko-note{position:absolute;height:var(--h,200px);aspect-ratio:560/500;z-index:3000;cursor:pointer;color:#17275c;font:700 calc(var(--h,200px)*.03)/1 "Segoe Print","Bradley Hand","Comic Sans MS",cursive;'+
-  'background:url('+NOTE_IMG+') center/100% 100% no-repeat;filter:drop-shadow(0 5px 6px rgba(40,20,5,.5));transition:transform .15s}'+
+  'filter:drop-shadow(0 5px 6px rgba(40,20,5,.5));transition:transform .15s}'+
+'.ko-note:not(.big){background:none}.ko-note .ko-im{position:absolute;inset:0;background:url('+NOTE_IMG+') center/100% 100% no-repeat}.ko-note .ko-sh{display:none;position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;background:url('+NOTE_IMG+') center/100% 100% no-repeat;transform-origin:50% 100%}'+
 '.ko-note:hover{transform:scale(1.07) rotate(var(--r,0deg))}'+
 '.ko-note.big{aspect-ratio:1000/1340;background:url('+NOTE_BIG+') center/100% 100% no-repeat;filter:drop-shadow(0 14px 18px rgba(30,15,5,.6))}'+
 // the handwriting goes into the rows of the table printed on the paper (11 rows: the number, the dish, the amount)
@@ -101,6 +102,7 @@ function noteEl(n,big){
     d.innerHTML=h;
   }else{
     d.style.setProperty('--h','100px');
+    d.appendChild(mk('div','ko-sh'));d.appendChild(mk('div','ko-im'));
     d.style.left=n.x+'px';d.style.top=n.y+'px';d.style.transform='rotate('+n.rot+'deg)';d.style.setProperty('--r',n.rot+'deg');
   }
   return d;
@@ -128,13 +130,14 @@ function startNoteDrag(e,n,d){
   e.preventDefault();e.stopPropagation();
   var sx=e.clientX,sy=e.clientY,moved=false,ghost=null,r0=d.getBoundingClientRect(),ox=sx-r0.left,oy=sy-r0.top;
   function over(ev){
-    var t=spikeAt(ev.clientX,ev.clientY);
-    ghost.classList.toggle('ko-ready',!!t);
+    var t=spikeAt(ev.clientX,ev.clientY),tp=null;
+    try{var q=screenToScene(ev.clientX-ox+r0.width/2,ev.clientY-oy+r0.height/2);tp=trayAt(q.x,q.y)}catch(_){}
+    ghost.classList.toggle('ko-ready',!!t||!!tp);
   }
   function mv(ev){
     if(!moved){
       if(Math.hypot(ev.clientX-sx,ev.clientY-sy)<6)return;
-      moved=true;
+      moved=true;if(n.tray){n.tray=null;save()}
       ghost=noteEl(n,false);ghost.classList.add('ko-ghost');ghost.style.setProperty('--h',Math.round(r0.height)+'px');
       ghost.style.setProperty('--r',n.rot+'deg');ghost.style.transform='rotate('+n.rot+'deg)';
       document.body.appendChild(ghost);d.style.opacity='.25';
@@ -150,6 +153,7 @@ function startNoteDrag(e,n,d){
     if(sp){hangOnSpike(sp,n);return}
     try{
       var p=screenToScene(ev.clientX-ox+r0.width/2,ev.clientY-oy+r0.height/2);   // where the middle of the paper is now, in the scene
+      var tr=trayAt(p.x,p.y);if(tr){snapToTray(n,tr,d);return}
       n.x=Math.round(Math.max(0,Math.min(W-80,p.x-36)));n.y=Math.round(Math.max(0,Math.min(H-130,p.y-65)));
       d.style.left=n.x+'px';d.style.top=n.y+'px';save();snd('note','drop');
     }catch(_){}
@@ -284,28 +288,82 @@ function drawWaiter(x,y,frame,flip,lean,food){
 // (the bottles and glasses from "Piće" that stand in the kitchen); the oldest paper that can be fulfilled goes first
 function haveCounts(){var have={};(window.items||[]).forEach(function(it){var id=it.dataset&&it.dataset.itemId;if(id)have[id]=(have[id]||0)+1});return have}
 function freeBowls(){return(window.items||[]).filter(function(b){return b.dataset&&b.dataset.itemId==='posuda_za_kupus'&&b.classList.contains('bowl-photo-look')})}
-function missingFor(n){
-  var have=haveCounts(),bowls=freeBowls().length,out=[];
-  noteLines(n).forEach(function(l){
-    if(l.items&&l.items.length){l.items.forEach(function(id){if(have[id]>0)have[id]--;else out.push(ITEM_NAMES[id]||id)})}
-    else{if(bowls>0)bowls--;else out.push('kiseli kupus')}
+// ---------- the trays ----------
+// Every order goes on its own tray: the player puts a tray on the table, makes everything that is on the paper, lays it on the tray and puts the paper on the tray too
+// (it snaps into the corner). The waiter takes the whole tray to the table of the paper, whether the guests are still there or not. There are 12 trays in all.
+var TRAY_ID='posluzavnik_narudzbine',TRAY_MAX=12,TRAY_SPOT={x:585,y:545},TRAY_BACK_MS=25000,restock=[];
+function trays(){return(window.items||[]).filter(function(el){return el&&el.dataset&&el.dataset.itemId===TRAY_ID})}
+function trayRect(t){var cx=+t.dataset.cx,by=+t.dataset.by,w=parseFloat(t.style.width)||300,h=parseFloat(t.style.height)||172;return{l:cx-w/2,r:cx+w/2,t:by-h,b:by,w:w,h:h}}
+function noteOfTray(t){var id=t.dataset.instanceId;for(var i=0;i<notes.length;i++)if(notes[i].tray===id)return notes[i];return null}
+function isFood(el){var id=el.dataset&&el.dataset.itemId;return !!id&&(id.indexOf('pice_')===0||(id==='posuda_za_kupus'&&el.classList.contains('bowl-photo-look')))}
+// which food lies on which tray (one thing lies on one tray only: the one with a paper, else the one in front)
+function trayMap(){
+  var T=trays(),map=new Map();T.forEach(function(t){map.set(t,[])});
+  (window.items||[]).forEach(function(el){
+    if(!isFood(el)||el.classList.contains('held'))return;
+    var cx=+el.dataset.cx,by=+el.dataset.by,best=null;
+    T.forEach(function(t){var r=trayRect(t);
+      if(cx>=r.l&&cx<=r.r&&by>=r.t+r.h*.15&&by<=r.b+r.h*.12){
+        if(!best){best=t;return}
+        var a=!!noteOfTray(t),b=!!noteOfTray(best);
+        if((a&&!b)||(a===b&&(+t.dataset.by>+best.dataset.by)))best=t;
+      }});
+    if(best)map.get(best).push(el);
   });
-  return out;
+  return map;
 }
-// the waiter takes from a paper everything that can be served now (the rest stays on the paper) and brings it to the table in one trip
-function takeDish(){
-  var list=window.items||[];
-  for(var k=0;k<notes.length;k++){
-    var n=notes[k],have=haveCounts(),bowls=freeBowls(),lines=noteLines(n),left=[],all=[];
-    lines.forEach(function(l){
+function trayAt(x,y){var best=null;trays().forEach(function(t){var r=trayRect(t);if(x>=r.l-20&&x<=r.r+20&&y>=r.t-20&&y<=r.b+20&&!noteOfTray(t)){if(!best||+t.dataset.by>+best.dataset.by)best=t}});return best}
+function snapToTray(n,t,d){
+  var r=trayRect(t);n.tray=t.dataset.instanceId;n.x=Math.round(r.l+10);n.y=Math.round(r.b-100-8);
+  if(d){d.style.left=n.x+'px';d.style.top=n.y+'px'}
+  save();snd('note','drop');
+}
+// the paper and the things on a tray move with it
+function followTrays(){
+  var map=trayMap();
+  trays().forEach(function(t){
+    var cx=+t.dataset.cx,by=+t.dataset.by,last=t._ko_last;
+    if(last&&(cx!==last[0]||by!==last[1])){
+      var dx=cx-last[0],dy=by-last[1],n=noteOfTray(t);
+      if(n){n.x+=dx;n.y+=dy;var el=scene.querySelector('.ko-note[data-id="'+n.id+'"]');if(el){el.style.left=n.x+'px';el.style.top=n.y+'px'}}
+      (t._ko_on||[]).forEach(function(it){if(it.isConnected&&!it.classList.contains('held')){try{setPose(it,(+it.dataset.cx)+dx,(+it.dataset.by)+dy,+it.dataset.vis||1)}catch(e){}}});
+    }
+    t._ko_last=[+t.dataset.cx,+t.dataset.by];t._ko_on=(map.get(t)||[]).slice();
+  });
+}
+function spawnTray(){
+  try{
+    var def=kitchenEquipmentDef(TRAY_ID);if(!def)return false;
+    var el=makeItem(Object.assign({},def,{instanceId:nextItemInstanceId(def.id),x:TRAY_SPOT.x-def.w/2-CENTER_OFFSET,y:TRAY_SPOT.y-def.h,z:++zCounter}));
+    if(!el)return false;el.dataset.surfaceZone='table';setPose(el,TRAY_SPOT.x,TRAY_SPOT.y,1);return true;
+  }catch(e){return false}
+}
+// there is always an empty tray at the left end of the table (until all 12 are in use); the ones the waiter took come back after a while
+function maintainTrays(){
+  var now=Date.now();restock=restock.filter(function(t){return t>now});
+  if(typeof makeItem!=='function'||typeof kitchenEquipmentDef!=='function'||!window.items)return;
+  var T=trays(),map=trayMap(),free=false;
+  T.forEach(function(t){var r=trayRect(t);if(Math.abs((+t.dataset.cx)-TRAY_SPOT.x)<40&&Math.abs((+t.dataset.by)-TRAY_SPOT.y)<40&&!noteOfTray(t)&&!(map.get(t)||[]).length)free=true});
+  if(!free&&T.length+restock.length<TRAY_MAX)spawnTray();
+}
+// the waiter takes the oldest tray that is complete; a thing that is missing on a tray is said aloud
+function takeTray(){
+  var map=trayMap(),cand=[],loose=0,miss=null;
+  trays().forEach(function(t){var n=noteOfTray(t);if(n)cand.push({t:t,n:n,on:map.get(t)||[]})});
+  cand.sort(function(a,b){return a.n.id-b.n.id});
+  for(var k=0;k<cand.length;k++){
+    var c=cand[k],n=c.n,pool={},bowls=[],missing=[],all=[],used=[];
+    c.on.forEach(function(el){var id=el.dataset.itemId;if(id==='posuda_za_kupus')bowls.push(el);else(pool[id]=pool[id]||[]).push(el)});
+    noteLines(n).forEach(function(l){
+      var optional=l.seatId===-2;                       // the guest has left: his order is taken along if it is there, but it is not waited for
       if(l.items&&l.items.length){
-        var ok=l.items.every(function(id){return have[id]>0});
-        if(!ok){left.push(l);return}
-        var used={};
-        l.items.forEach(function(id){have[id]--;for(var i=0;i<list.length;i++){var it=list[i];if(it.dataset&&it.dataset.itemId===id&&!used[i]&&!it._takenByWaiter){used[i]=1;it._takenByWaiter=1;try{removeItem(it)}catch(e){}break}}});
+        var ok=true,cnt={};l.items.forEach(function(id){cnt[id]=(cnt[id]||0)+1;if((pool[id]||[]).length<cnt[id])ok=false});
+        if(!ok){if(!optional)l.items.forEach(function(id){if(!(pool[id]||[]).length)missing.push(ITEM_NAMES[id]||id)});return}
+        l.items.forEach(function(id){used.push(pool[id].shift())});
         all.push({kind:'drink',items:l.items.slice(),seatId:l.seatId,ev:{score:2,issues:[],perfect:true,amounts:{}}});
       }else{
-        var bowl=bowls.shift();if(!bowl){left.push(l);return}
+        var bowl=bowls.shift();if(!bowl){if(!optional)missing.push('kiseli kupus');return}
+        used.push(bowl);
         var sp={};try{sp=JSON.parse(bowl.dataset.spices||'{}')}catch(e){}
         var ev=window.CooksterQuality?window.CooksterQuality.evaluate(bowl,'kiseli_kupus'):null;
         if(ev&&l.req){                                       // did he get the "little more / less" he asked for?
@@ -320,18 +378,20 @@ function takeDish(){
           }
         }
         all.push({kind:(sp.tucana>0||sp.paprika>0)?'paprika':'plain',seatId:l.seatId,ev:ev});
-        try{removeItem(bowl)}catch(e){}
       }
     });
+    if(missing.length){if(!miss)miss='Fali na poslužavniku (sto '+n.table+'): '+missing.join(', ');continue}
     if(!all.length)continue;
-    var el=scene.querySelector('.ko-note[data-id="'+n.id+'"]');
-    if(left.length){n.lines=left;if(el){var nn=noteEl(n,false);nn.addEventListener('pointerdown',function(e){if(e.button===0)startNoteDrag(e,n,nn)});el.replaceWith(nn)}}
-    else{notes.splice(k,1);if(el)el.remove()}
-    save();
+    used.forEach(function(it){try{removeItem(it)}catch(e){}});                    // the things leave with the waiter ...
+    try{removeItem(c.t)}catch(e){}                                                    // ... and so does the tray (it comes back later) ...
+    var nel=scene.querySelector('.ko-note[data-id="'+n.id+'"]');if(nel)nel.remove();
+    notes.splice(notes.indexOf(n),1);save();                                          // ... and the paper
+    restock.push(Date.now()+TRAY_BACK_MS);
     var head=all.filter(function(x){return x.kind==='drink'})[0]||all[0];
-    return{table:n.table,kind:head.kind,seatId:head.seatId,items:head.items||null,ev:head.ev,all:all};
+    return{carry:{table:n.table,kind:head.kind,seatId:head.seatId,items:head.items||null,ev:head.ev,all:all}};
   }
-  return null;
+  notes.forEach(function(n){if(!n.tray)loose++});
+  return{say:miss||(loose?'Stavi papirić na poslužavnik sa onim što piše!':(notes.length?'Fali nešto na poslužavniku.':null))};
 }
 function start(){
   var o=pending[0];if(!o)return;
@@ -368,10 +428,9 @@ function tick(now){
     if(anim.t>=.2){anim.phase=anim.call?'listen':'wait';anim.t=0}
   }else if(anim.phase==='listen'){
     if(!anim.checked&&anim.t>1.2){
-      anim.checked=true;var dish=takeDish();
-      if(dish)anim.carry=dish;
-      var mn=null;for(var q=0;q<notes.length;q++)if(missingFor(notes[q]).length){mn=notes[q];break}           // what is still missing on the papers (also when he takes a part)
-      if(mn){var ms=missingFor(mn);if(ms.length)anim.say='Fali: '+ms.join(', ')}
+      anim.checked=true;var tk=takeTray();
+      if(tk.carry)anim.carry=tk.carry;
+      if(tk.say)anim.say=tk.say;
     }
     if(anim.t>2.4){anim.phase='out';anim.t=0}
   }else if(anim.phase==='wait'){
@@ -408,6 +467,17 @@ setInterval(function(){
 
 load();
 notes.forEach(function(n){placeNote(n,false)});
+var shSig='';
+function noteShadow(){                                  // the shadow of the paper is calibrated in the tool "senke" (Papirić narudžbine)
+  var c=null;try{c=window.CooksterContactShadowCfg&&window.CooksterContactShadowCfg('order_note_paper')}catch(e){}
+  var sig=JSON.stringify(c);if(sig===shSig)return;shSig=sig;
+  var st=document.getElementById('koShStyle');if(!st){st=document.createElement('style');st.id='koShStyle';document.head.appendChild(st)}
+  if(!c){st.textContent='';return}
+  var h=100,w=112,sx=+c.width||.72,sy=+c.height||.07,op=Math.max(0,Math.min(1,c.opacity==null?.5:+c.opacity));
+  st.textContent='.ko-note:not(.big){filter:none!important}.ko-note:not(.big) .ko-sh{display:block;filter:brightness(0) blur('+(+c.blur||0)+'px);opacity:'+op+';transform:translate('+(+c.shadowX||0)+'px,'+(+c.shadowY||0)+'px) rotate('+(+c.angle||0)+'deg) scale('+sx+','+sy+')}';
+}
+setInterval(noteShadow,700);noteShadow();
+setInterval(followTrays,80);setInterval(maintainTrays,1000);
 
 window.CooksterOrders={
   // the waiter has taken an order at a table (1, 2, 3...): after a while he arrives in the kitchen
@@ -417,16 +487,10 @@ window.CooksterOrders={
   make:makeOrder,
   // a guest got up and left: his lines are taken off the paper and off the orders that are still on their way
   cancelSeat:function(table,seatId){
-    function lines(o){return(o.lines||o.list||[]).filter(function(l){return l.seatId!==seatId})}
-    pending.forEach(function(o){if(o.table!==table)return;if(o.list)o.list=o.list.filter(function(e){return e.seatId!==seatId})});
-    pending=pending.filter(function(o){return !(o.table===table&&o.list&&!o.list.length)});
-    for(var i=notes.length-1;i>=0;i--){
-      var n=notes[i];if(n.table!==table||!n.lines)continue;
-      n.lines=n.lines.filter(function(l){return l.seatId!==seatId});
-      var el=scene.querySelector('.ko-note[data-id="'+n.id+'"]');
-      if(!n.lines.length){notes.splice(i,1);if(el)el.remove()}
-      else if(el){var nn=noteEl(n,false);nn.addEventListener('pointerdown',function(e){if(e.button===0)startNoteDrag(e,n,nn)});el.replaceWith(nn)}
-    }
+    // the lines of the guest who left stay on the papers (the waiter takes them along if they are on the tray, nobody waits for them): they get seat -2
+    function orphan(l){if(l&&l.seatId===seatId)l.seatId=-2}
+    pending.forEach(function(o){if(o.table===table)(o.list||[]).forEach(orphan)});
+    notes.forEach(function(n){if(n.table===table)(n.lines||[]).forEach(orphan)});
     save();
   },
   busy:function(){return pending.length>0||!!anim||called},          // the waiter is away from the tavern

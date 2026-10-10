@@ -4374,6 +4374,10 @@ function createContactShadowLab(){
       src:PAPRIKA_ROAST_CHOPPED_ASSETS.peeled,w:96,h:76,
       snapProfile:'produce',shadowProfile:'tiny',category:'roasted-chopped-produce-shadow'
     });
+    map.set('order_note_paper',{
+      id:'order_note_paper',label:'Papirić narudžbine (u kuhinji)',src:'assets/ui/order_note_table.webp',
+      w:112,h:100,snapProfile:'flat',shadowProfile:'tiny',category:'order-note'
+    });
     map.set('market_bag',{
       id:'market_bag',label:'Kesa sa pijace',src:MARKET_BAG_ASSET,
       w:112,h:112,snapProfile:'flat',shadowProfile:'tiny',category:'market-bag'
@@ -4722,6 +4726,8 @@ window.CooksterWoodBasketShadow={
  open(){if(!openContactShadowLab())return false;
    contactShadowLab.selectItem(WOOD_BASKET_OUTDOOR_SHADOW_ID);return true;}
 };
+// the papers of the orders (kitchen-orders.js) take their shadow from the same master
+window.CooksterContactShadowCfg=id=>{const e=contactShadowMaster.items?.[id];return e&&e.shadow?{...e.shadow}:null;};
 const contactShadowLabDockButton=document.createElement('button');
 contactShadowLabDockButton.type='button';
 contactShadowLabDockButton.textContent='senke';
