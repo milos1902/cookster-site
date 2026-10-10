@@ -66,6 +66,10 @@ css.textContent=
 '.ko-c.c2{left:24%;width:51%;text-align:left;overflow:hidden}'+
 '.ko-c.c3{left:79%;width:14%;text-align:center}'+
 '.ko-c.rw{font-size:.92em}.ko-c.rw small{font-size:.6em;font-weight:600}'+
+'.ko-c.x{text-decoration:line-through;text-decoration-thickness:.14em;text-decoration-color:#b3261e;opacity:.8}'+
+'.ko-note.ko-complete::after,.ko-note.ko-served::after{content:"✓";position:absolute;right:-5px;top:-7px;width:19px;height:19px;border-radius:50%;background:#2e8b3d;color:#fff;font:700 13px/19px system-ui,sans-serif;text-align:center;box-shadow:0 0 8px #7dff8f}'+
+'.ko-note.ko-served::after{background:#8a8a8a;box-shadow:none}.ko-note.ko-served{opacity:.85}'+
+'.ko-railfront{position:absolute;pointer-events:none;background-repeat:no-repeat;background-size:100% 100%}'+
 '.ko-c.tb{left:9%;top:94%;width:50%;text-align:left;font-size:1.15em}'+
 '.ko-ghost{position:fixed!important;z-index:2147483000;pointer-events:none;transition:none!important;filter:drop-shadow(0 10px 12px rgba(30,15,5,.55))}'+
 '.ko-ghost.ko-ready{filter:drop-shadow(0 0 10px #ffd84d) drop-shadow(0 10px 12px rgba(30,15,5,.55))}'+
@@ -92,12 +96,27 @@ function noteLines(n){
   if(n.lines&&n.lines.length)return n.lines;
   return[{name:n.name,extra:n.extra,cyr:n.cyr,cyrExtra:n.cyrExtra,items:n.items||null,key:n.key,seatId:n.seatId,req:n.req||null}];
 }
+// the rows that are written on the paper: a "kilo na kilo" is written once (wine, soda) and the glasses of the whole table are counted together below it ("3 x čaša za špricer")
+var GLASS_CYR={pice_casa_spricer:'Чаша за шприцер',pice_casa_belo_vino:'Чаша белог вина',pice_casa_crno_vino:'Чаша црног вина'};
+function displayRows(L,ok){
+  var rows=[],gl={},order=[];
+  function addGlass(id,i){if(!gl[id])gl[id]={q:0,done:true};order.indexOf(id)<0&&order.push(id);gl[id].q++;if(!(ok&&ok[i]))gl[id].done=false}
+  L.forEach(function(l,i){
+    var it=l.items||[],g=it.filter(function(id){return GLASS_CYR[id]}),d=!!(ok&&ok[i]);
+    if(l.key==='kilo'&&g.length&&it.length>1){rows.push({cyr:l.cyr,cyrExtra:'бело вино, сода',q:1,done:d});g.forEach(function(id){addGlass(id,i)})}
+    else if(it.length===1&&GLASS_CYR[it[0]])addGlass(it[0],i);
+    else rows.push({cyr:l.cyr,cyrExtra:l.cyrExtra,q:1,done:d});
+  });
+  order.forEach(function(id){rows.push({cyr:GLASS_CYR[id],cyrExtra:'',q:gl[id].q,done:gl[id].done})});
+  return rows;
+}
 function noteEl(n,big){
   var d=mk('div','ko-note'+(big?' big':''));d.dataset.id=n.id;
   if(big){
-    var L=noteLines(n),h='';
-    L.forEach(function(l,i){var top=(43.8+4.65*i).toFixed(2)+'%',ex=l.cyrExtra?' <small>'+l.cyrExtra+'</small>':'';
-      h+='<span class="ko-c c1" style="top:'+top+'">'+(i+1)+'.</span><span class="ko-c c2 rw" style="top:'+top+'">'+(l.cyr||ITEM.cyr)+ex+'</span><span class="ko-c c3" style="top:'+top+'">1</span>'});
+    var rows=displayRows(noteLines(n),n._ok),h='';
+    rows.forEach(function(r,i){var top=(43.8+4.65*i).toFixed(2)+'%',ex=r.cyrExtra?' <small>'+r.cyrExtra+'</small>':'';
+      var x=r.done?' x':'';
+      h+='<span class="ko-c c1'+x+'" style="top:'+top+'">'+(i+1)+'.</span><span class="ko-c c2 rw'+x+'" style="top:'+top+'">'+(r.cyr||ITEM.cyr)+ex+'</span><span class="ko-c c3'+x+'" style="top:'+top+'">'+r.q+'</span>'});
     h+='<span class="ko-c tb">Сто '+n.table+'</span>';
     d.innerHTML=h;
   }else{
@@ -179,11 +198,22 @@ function layoutRail(){
     var cx,by,w,h;
     if(rl){cx=+rl.dataset.cx;by=+rl.dataset.by;w=parseFloat(rl.style.width)||420;h=parseFloat(rl.style.height)||58}
     else{cx=1060;by=215;w=420;h=58}
-    var L=cx-w/2,ph=Math.round(h*1.75),pw=ph*1.12,pitch=w*.125,x=L+w*.05+Math.min(i,RAIL_MAX-1)*pitch;
-    var z=(rl?parseInt(rl.style.zIndex)||250:250)-1-Math.min(i,RAIL_MAX-1);
-    el.style.setProperty('--h',ph+'px');el.style.left=Math.round(x)+'px';el.style.top=Math.round(by-h*.55-ph+h*.0)+'px';
+    var L=cx-w/2,ph=Math.round(h*1.3),pw=ph*1.12,pitch=w*.125,x=L+w*.05+Math.min(i,RAIL_MAX-1)*pitch;
+    var z=(rl?parseInt(rl.style.zIndex)||250:250)+1+(RAIL_MAX-1-Math.min(i,RAIL_MAX-1));
+    el.style.setProperty('--h',ph+'px');el.style.left=Math.round(x)+'px';el.style.top=Math.round(by-h*.58-ph)+'px';
     el.style.zIndex=String(Math.max(1,z));el.style.transform='rotate('+((i%2?1:-1)*1.2)+'deg)';el.style.setProperty('--r',((i%2?1:-1)*1.2)+'deg');
   });
+}
+// the front bar of the rail is drawn again above the papers, so that they stand IN the slot (between the back bar and the front bar)
+var RAIL_FRONT={top:.21,bottom:.55};
+function railFront(){
+  var rl=railEl(),f=document.getElementById('koRailFront');
+  if(!rl||!notes.some(function(n){return n.at==='rail'})){if(f)f.style.display='none';return}
+  if(!f){f=mk('div','ko-railfront');f.id='koRailFront';scene.appendChild(f)}
+  var img=rl.querySelector('.body'),src=img&&img.src;if(src&&f.dataset.src!==src){f.dataset.src=src;f.style.backgroundImage='url("'+src+'")'}
+  var st=rl.style;f.style.display='block';f.style.left=st.left;f.style.top=st.top;f.style.width=st.width;f.style.height=st.height;f.style.transform=st.transform;f.style.transformOrigin=st.transformOrigin;
+  f.style.clipPath='inset('+(RAIL_FRONT.top*100)+'% 0 '+((1-RAIL_FRONT.bottom)*100)+'% 0)';
+  f.style.zIndex=String((parseInt(st.zIndex)||250)+RAIL_MAX+3);
 }
 // a world that was saved before the rail existed gets one
 var railTried=0;
@@ -326,55 +356,73 @@ function drawWaiter(x,y,frame,flip,lean,food){
 function haveCounts(){var have={};(window.items||[]).forEach(function(it){var id=it.dataset&&it.dataset.itemId;if(id)have[id]=(have[id]||0)+1});return have}
 function freeBowls(){return(window.items||[]).filter(function(b){return b.dataset&&b.dataset.itemId==='posuda_za_kupus'&&b.classList.contains('bowl-photo-look')})}
 // ---------- what the waiter takes ----------
-// The player makes what is on the papers, puts it on the table and lays the papers (taken from the ticket rail) next to it. When the bell rings the waiter looks at every paper that lies
-// on the table: if nothing is missing for it he takes its order (all papers in one trip, table after table), if something is missing he says what. Nothing else decides who gets what:
-// the things go to the table of the paper, whether the guests are still there or not.
+// Everything that the player puts on the kitchen table is crossed off the papers by itself: the papers are served in the order they came (a paper that was laid on the table first),
+// and every row whose things are on the table gets a line through it. When all the rows of a paper are crossed off the paper is ready (a green tick); when the bell rings the waiter takes
+// the things of all ready papers (table after table) and the player puts the paper on the spike. A guest who has left does not matter: the things are put on his table anyway.
 function isFood(el){var id=el.dataset&&el.dataset.itemId;return !!id&&(id.indexOf('pice_')===0||(id==='posuda_za_kupus'&&el.classList.contains('bowl-photo-look')))}
-function takeOrders(){
-  var pool={},bowls=[],papers=notes.filter(function(n){return n.at==='table'}).sort(function(a,b){return a.id-b.id}),all=[],used=[],miss=[],done=[],food=0;
+function paperOrder(){return notes.filter(function(n){return !n.served}).sort(function(a,b){return((a.at==='table'?0:1)-(b.at==='table'?0:1))||(a.id-b.id)})}
+function allocate(){
+  var pool={},bowls=[];
   (window.items||[]).forEach(function(el){
     if(!isFood(el)||el.classList.contains('held'))return;
-    food++;var id=el.dataset.itemId;if(id==='posuda_za_kupus')bowls.push(el);else(pool[id]=pool[id]||[]).push(el);
+    var id=el.dataset.itemId;if(id==='posuda_za_kupus')bowls.push(el);else(pool[id]=pool[id]||[]).push(el);
   });
-  papers.forEach(function(n){
-    var p2={},b2=bowls.slice(),missing=[],out=[],u=[];
-    for(var k in pool)p2[k]=pool[k].slice();
-    noteLines(n).forEach(function(l){
-      var optional=l.seatId===-2;                       // the guest has left: his order is taken along if it is there, but it is not waited for
+  notes.forEach(function(n){if(n.served){n._ok=noteLines(n).map(function(){return true});n.ready=false}});
+  paperOrder().forEach(function(n){
+    var lines=noteLines(n),ready=true,any=false;n._ok=[];n._els=[];n._miss=[];
+    lines.forEach(function(l,i){
+      var optional=l.seatId===-2,els=null;                       // the guest has left: his order is taken along if it is there, but it is not waited for
       if(l.items&&l.items.length){
-        var ok=true,cnt={};l.items.forEach(function(id){cnt[id]=(cnt[id]||0)+1;if((p2[id]||[]).length<cnt[id])ok=false});
-        if(!ok){if(!optional)l.items.forEach(function(id){if(!(p2[id]||[]).length)missing.push(ITEM_NAMES[id]||id)});return}
-        l.items.forEach(function(id){u.push(p2[id].shift())});
-        out.push({kind:'drink',items:l.items.slice(),seatId:l.seatId,table:n.table,ev:{score:2,issues:[],perfect:true,amounts:{}}});
-      }else{
-        var bowl=b2.shift();if(!bowl){if(!optional)missing.push('kiseli kupus');return}
-        u.push(bowl);
-        var sp={};try{sp=JSON.parse(bowl.dataset.spices||'{}')}catch(e){}
-        var ev=window.CooksterQuality?window.CooksterQuality.evaluate(bowl,'kiseli_kupus'):null;
-        if(ev&&l.req){                                       // did he get the "little more / less" he asked for?
-          var Q=window.CooksterQuality,rp=Q.RECIPES.kiseli_kupus.parts[l.req.ing],v=Q.amountsOf(bowl)[l.req.ing]||0;
-          if(rp){
-            var mid=(rp.lo+rp.hi)/2,hit=l.req.dir<0?(v>=rp.lo*.7&&v<mid):(v>mid&&v<=rp.hi*1.3);
-            var what=l.req.ing==='ulje'?'ulja':'paprike';
-            var HITS=['Tačno kako sam tražio!','Baš po mojoj meri!','Savršeno, kao što sam rekao!','Pogodio si ukus, svaka čast!','Tako treba, majstore!','Upravo ovako sam voleo!','Čuo si me, hvala!','Taman koliko treba!','Mnogo dobro, baš kako volim!','Ovo je to, bravo kuvaru!'],
-                MISS=['Tražio sam malo {q}!','Rekao sam malo {q}, zar ne?','Pa nisam ovo tražio, hteo sam malo {q}.','Nije to – ja sam hteo malo {q}.','Zar nisi čuo? Malo {q}!','Ovo nije po mom ukusu, trebalo je malo {q}.','Hej, ja sam naručio malo {q}!','Pogrešno, tražio sam malo {q}.','Ne ide to tako, malo {q} sam rekao.','Baš sam jasno rekao: malo {q}!'],
-                q=(l.req.dir<0?'manje ':'više ')+what,rn=function(a){return a[Math.floor(Math.random()*a.length)]};
-            ev=hit?{score:3,issues:[rn(HITS)],perfect:true,amounts:ev.amounts,good:true}:{score:Math.min(ev.score,0)-2,issues:[rn(MISS).replace('{q}',q)],perfect:false,amounts:ev.amounts};
-          }
-        }
-        out.push({kind:(sp.tucana>0||sp.paprika>0)?'paprika':'plain',seatId:l.seatId,table:n.table,ev:ev});
-      }
+        var need={};l.items.forEach(function(id){need[id]=(need[id]||0)+1});
+        var ok=Object.keys(need).every(function(id){return(pool[id]||[]).length>=need[id]});
+        if(ok){els=[];l.items.forEach(function(id){els.push(pool[id].shift())})}
+        else if(!optional)Object.keys(need).forEach(function(id){if((pool[id]||[]).length<need[id])n._miss.push(ITEM_NAMES[id]||id)});
+      }else{var bw=bowls.shift();if(bw)els=[bw];else if(!optional)n._miss.push('kiseli kupus')}
+      n._ok[i]=!!els;n._els[i]=els;
+      if(els)any=true;else if(!optional)ready=false;
     });
-    if(missing.length){miss.push('sto '+n.table+': '+missing.join(', '));return}
-    if(!out.length)return;
-    pool=p2;bowls=b2;used=used.concat(u);all=all.concat(out);done.push(n);
+    n.ready=ready&&any;
   });
-  if(!done.length)return{say:miss.length?'Fali — '+miss.join('; '):(food&&!papers.length?'Gde je papirić? Stavi ga pored stvari.':null)};
+}
+function takeOrders(){
+  allocate();
+  var order=paperOrder(),ready=order.filter(function(n){return n.ready}),all=[],used=[];
+  ready.forEach(function(n){
+    noteLines(n).forEach(function(l,i){
+      var els=n._els[i];if(!els)return;
+      used=used.concat(els);
+      if(l.items&&l.items.length){all.push({kind:'drink',items:l.items.slice(),seatId:l.seatId,table:n.table,ev:{score:2,issues:[],perfect:true,amounts:{}}});return}
+      var bowl=els[0],sp={};try{sp=JSON.parse(bowl.dataset.spices||'{}')}catch(e){}
+      var ev=window.CooksterQuality?window.CooksterQuality.evaluate(bowl,'kiseli_kupus'):null;
+      if(ev&&l.req){                                       // did he get the "little more / less" he asked for?
+        var Q=window.CooksterQuality,rp=Q.RECIPES.kiseli_kupus.parts[l.req.ing],v=Q.amountsOf(bowl)[l.req.ing]||0;
+        if(rp){
+          var mid=(rp.lo+rp.hi)/2,hit=l.req.dir<0?(v>=rp.lo*.7&&v<mid):(v>mid&&v<=rp.hi*1.3);
+          var what=l.req.ing==='ulje'?'ulja':'paprike';
+          var HITS=['Tačno kako sam tražio!','Baš po mojoj meri!','Savršeno, kao što sam rekao!','Pogodio si ukus, svaka čast!','Tako treba, majstore!','Upravo ovako sam voleo!','Čuo si me, hvala!','Taman koliko treba!','Mnogo dobro, baš kako volim!','Ovo je to, bravo kuvaru!'],
+              MISS=['Tražio sam malo {q}!','Rekao sam malo {q}, zar ne?','Pa nisam ovo tražio, hteo sam malo {q}.','Nije to – ja sam hteo malo {q}.','Zar nisi čuo? Malo {q}!','Ovo nije po mom ukusu, trebalo je malo {q}.','Hej, ja sam naručio malo {q}!','Pogrešno, tražio sam malo {q}.','Ne ide to tako, malo {q} sam rekao.','Baš sam jasno rekao: malo {q}!'],
+              q=(l.req.dir<0?'manje ':'više ')+what,rn=function(a){return a[Math.floor(Math.random()*a.length)]};
+          ev=hit?{score:3,issues:[rn(HITS)],perfect:true,amounts:ev.amounts,good:true}:{score:Math.min(ev.score,0)-2,issues:[rn(MISS).replace('{q}',q)],perfect:false,amounts:ev.amounts};
+        }
+      }
+      all.push({kind:(sp.tucana>0||sp.paprika>0)?'paprika':'plain',seatId:l.seatId,table:n.table,ev:ev});
+    });
+  });
+  var first=order.filter(function(n){return !n.ready})[0],say=first&&first._miss&&first._miss.length?'Fali — sto '+first.table+': '+first._miss.join(', '):null;
+  if(!all.length)return{say:say};
   used.forEach(function(it){try{removeItem(it)}catch(e){}});
-  done.forEach(function(n){var el=scene.querySelector('.ko-note[data-id="'+n.id+'"]');if(el)el.remove();notes.splice(notes.indexOf(n),1)});
-  save();layoutRail();
+  ready.forEach(function(n){n.served=true});            // the papers stay in the rail with every row crossed off, until the player puts them on the spike
+  save();refreshPapers();
   var head=all.filter(function(x){return x.kind==='drink'})[0]||all[0];
-  return{carry:{table:head.table,kind:head.kind,seatId:head.seatId,items:head.items||null,ev:head.ev,all:all},say:miss.length?'Fali — '+miss.join('; '):null};
+  return{carry:{table:head.table,kind:head.kind,seatId:head.seatId,items:head.items||null,ev:head.ev,all:all},say:say};
+}
+function refreshPapers(){
+  allocate();
+  notes.forEach(function(n){
+    var el=scene.querySelector('.ko-note[data-id="'+n.id+'"]');if(!el)return;
+    el.classList.toggle('ko-complete',!!n.ready&&!n.served);el.classList.toggle('ko-served',!!n.served);
+  });
+  layoutRail();
 }
 function start(){
   var o=pending[0];if(!o)return;
@@ -460,7 +508,7 @@ function noteShadow(){                                  // the shadow of the pap
   st.textContent='.ko-note:not(.big){filter:none!important}.ko-note:not(.big) .ko-sh{display:block;filter:brightness(0) blur('+(+c.blur||0)+'px);opacity:'+op+';transform:translate('+(+c.shadowX||0)+'px,'+(+c.shadowY||0)+'px) rotate('+(+c.angle||0)+'deg) scale('+sx+','+sy+')}';
 }
 setInterval(noteShadow,700);noteShadow();
-setInterval(layoutRail,400);setInterval(ensureRail,1500);
+setInterval(refreshPapers,350);setInterval(railFront,100);setInterval(ensureRail,1500);
 
 window.CooksterOrders={
   // the waiter has taken an order at a table (1, 2, 3...): after a while he arrives in the kitchen

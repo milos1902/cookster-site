@@ -560,7 +560,7 @@ function gsay(g,text,delta){
   reactions.push({table:g.seat.table,gid:g.id,t:1.4,ev:{issues:[text]},rep:rep,delta:delta||0,life:5});
 }
 // patience: waiting too long for the waiter, or for the food and drinks, he gets up and leaves (and the reputation falls)
-var PAT_ORDER=70,PAT_FOOD=170;                       // seconds: after the waiter should have come / after the order was taken
+var PAT_ORDER=70,PAT_FOOD=240;                       // seconds: after the waiter should have come / after the order was taken
 function leaveAngry(g,text,delta){
   gsay(g,text,delta);
   g.leftAngry=true;g.mode='rising';g.fade=0;
