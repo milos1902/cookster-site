@@ -10463,7 +10463,7 @@ function equipmentCountInKitchen(id){
 }
 function equipmentIsInKitchen(id){return equipmentCountInKitchen(id)>0;}
 
-function spawnKitchenEquipment(id){
+function spawnKitchenEquipment(id,hold=true){
  const def=kitchenEquipmentDef(id);
  if(!def||(!OBJECT_CALIBRATION_MODE&&!ownedKitchenEquipment().includes(id)))return false;
  if(!OBJECT_CALIBRATION_MODE&&equipmentIsInKitchen(id)){
@@ -10494,9 +10494,18 @@ function spawnKitchenEquipment(id){
  dropBounce(el);
  popArtPuff(slot.cx,slot.by-10,1);
  playSfxVariant('woodDrop',.18);
- startHolding(el);
+ if(hold)startHolding(el);
  return true;
 }
+// several copies at once (the number chosen with the arrows on the card in "Piće"): all but the last stand on the table, the last one is in the hand
+function spawnKitchenEquipmentMany(id,n){
+ const count=Math.max(1,Math.min(12,Math.floor(+n)||1));
+ for(let k=1;k<count;k++){if(!spawnKitchenEquipment(id,false))return false;}
+ return spawnKitchenEquipment(id,true);
+}
+const DRINK_QTY_KEY='cookster.drink-qty.v1';
+let drinkQty={};try{drinkQty=JSON.parse(localStorage.getItem(DRINK_QTY_KEY)||'{}')||{};}catch(_){drinkQty={};}
+function drinkQtyOf(id){return Math.max(1,Math.min(12,Math.floor(+drinkQty[id])||1));}
 function closeKitchenElements(){
  const sceneEl=document.getElementById('kitchenElementsScene');
  if(!sceneEl)return;
@@ -10532,8 +10541,23 @@ function kitchenEquipmentCard(def,mode){
      }
    }
    text.append(info,state);
+   if(def.category==='drink'){                       // arrows up / down and a number: how many of them are taken at once
+     const box=document.createElement('div');
+     box.style.cssText='display:flex;align-items:center;gap:6px;margin-top:6px';
+     const num=document.createElement('strong');num.style.cssText='min-width:26px;text-align:center;font-size:18px';num.textContent=String(drinkQtyOf(def.id));
+     const mk=(label,delta)=>{
+       const b=document.createElement('span');b.setAttribute('role','button');b.textContent=label;b.title=delta>0?'Više':'Manje';
+       b.style.cssText='display:inline-block;width:28px;height:26px;line-height:26px;text-align:center;border:1px solid #7a5428;border-radius:6px;background:#3a2410;color:#f3e3c2;cursor:pointer;user-select:none;font-size:15px;font-weight:700;color:#ffe9b8';
+       const act=e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();};
+       ['pointerdown','mousedown','mouseup','pointerup','dblclick'].forEach(t=>b.addEventListener(t,act));
+       b.addEventListener('click',e=>{act(e);drinkQty[def.id]=Math.max(1,Math.min(12,drinkQtyOf(def.id)+delta));num.textContent=String(drinkQty[def.id]);try{localStorage.setItem(DRINK_QTY_KEY,JSON.stringify(drinkQty));}catch(_){}});
+       return b;
+     };
+     box.append(mk('▼',-1),num,mk('▲',1));
+     text.appendChild(box);
+   }
    button.addEventListener('click',()=>{
-     if(spawnKitchenEquipment(def.id)){
+     if(def.category==='drink'?spawnKitchenEquipmentMany(def.id,drinkQtyOf(def.id)):spawnKitchenEquipment(def.id)){
        closeKitchenElements();
        updateHover();
      }

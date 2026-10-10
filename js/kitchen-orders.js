@@ -113,7 +113,7 @@ function displayRows(L,ok){
 function noteEl(n,big){
   var d=mk('div','ko-note'+(big?' big':''));d.dataset.id=n.id;
   if(big){
-    var rows=displayRows(noteLines(n),n._ok),h='';
+    var rows=displayRows(noteLines(n),rt(n).ok),h='';
     rows.forEach(function(r,i){var top=(43.8+4.65*i).toFixed(2)+'%',ex=r.cyrExtra?' <small>'+r.cyrExtra+'</small>':'';
       var x=r.done?' x':'';
       h+='<span class="ko-c c1'+x+'" style="top:'+top+'">'+(i+1)+'.</span><span class="ko-c c2 rw'+x+'" style="top:'+top+'">'+(r.cyr||ITEM.cyr)+ex+'</span><span class="ko-c c3'+x+'" style="top:'+top+'">'+r.q+'</span>'});
@@ -361,35 +361,50 @@ function freeBowls(){return(window.items||[]).filter(function(b){return b.datase
 // the things of all ready papers (table after table) and the player puts the paper on the spike. A guest who has left does not matter: the things are put on his table anyway.
 function isFood(el){var id=el.dataset&&el.dataset.itemId;return !!id&&(id.indexOf('pice_')===0||(id==='posuda_za_kupus'&&el.classList.contains('bowl-photo-look')))}
 function paperOrder(){return notes.filter(function(n){return !n.served}).sort(function(a,b){return((a.at==='table'?0:1)-(b.at==='table'?0:1))||(a.id-b.id)})}
+// the game remembers which things belong to which paper: a thing that was reserved for a paper stays with it (it is never moved to another order); a new thing goes to the first paper
+// that still needs it. This is kept outside of the notes (RT) because the notes are saved.
+var RT={};
+function rt(n){return RT[n.id]||(RT[n.id]={res:[],ok:[],els:[],miss:[],ready:false})}
+function slotsOf(l){return(l.items&&l.items.length)?l.items.slice():['__bowl']}
+function slotValid(el,id){
+  if(!el||!el.isConnected||(window.items||[]).indexOf(el)<0)return false;
+  return id==='__bowl'?el.classList.contains('bowl-photo-look'):el.dataset.itemId===id;
+}
 function allocate(){
-  var pool={},bowls=[];
-  (window.items||[]).forEach(function(el){
-    if(!isFood(el)||el.classList.contains('held'))return;
-    var id=el.dataset.itemId;if(id==='posuda_za_kupus')bowls.push(el);else(pool[id]=pool[id]||[]).push(el);
-  });
-  notes.forEach(function(n){if(n.served){n._ok=noteLines(n).map(function(){return true});n.ready=false}});
-  paperOrder().forEach(function(n){
-    var lines=noteLines(n),ready=true,any=false;n._ok=[];n._els=[];n._miss=[];
-    lines.forEach(function(l,i){
-      var optional=l.seatId===-2,els=null;                       // the guest has left: his order is taken along if it is there, but it is not waited for
-      if(l.items&&l.items.length){
-        var need={};l.items.forEach(function(id){need[id]=(need[id]||0)+1});
-        var ok=Object.keys(need).every(function(id){return(pool[id]||[]).length>=need[id]});
-        if(ok){els=[];l.items.forEach(function(id){els.push(pool[id].shift())})}
-        else if(!optional)Object.keys(need).forEach(function(id){if((pool[id]||[]).length<need[id])n._miss.push(ITEM_NAMES[id]||id)});
-      }else{var bw=bowls.shift();if(bw)els=[bw];else if(!optional)n._miss.push('kiseli kupus')}
-      n._ok[i]=!!els;n._els[i]=els;
-      if(els)any=true;else if(!optional)ready=false;
+  var all=window.items||[],pool={},claimed=[],order=paperOrder();
+  Object.keys(RT).forEach(function(k){if(!notes.some(function(n){return String(n.id)===k&&!n.served}))delete RT[k]});
+  order.forEach(function(n){                              // what was reserved stays reserved, as long as it is still there
+    var r=rt(n);noteLines(n).forEach(function(l,i){
+      var sl=slotsOf(l),cur=r.res[i]||(r.res[i]=[]);
+      sl.forEach(function(id,j){if(cur[j]&&slotValid(cur[j],id))claimed.push(cur[j]);else cur[j]=null});
     });
-    n.ready=ready&&any;
   });
+  all.forEach(function(el){                               // the free things on the table
+    if(!isFood(el)||el.classList.contains('held')||claimed.indexOf(el)>=0)return;
+    var id=el.dataset.itemId==='posuda_za_kupus'?'__bowl':el.dataset.itemId;(pool[id]=pool[id]||[]).push(el);
+  });
+  notes.forEach(function(n){if(n.served){var r=rt(n);r.ok=noteLines(n).map(function(){return true});r.ready=false}});
+  order.forEach(function(n){
+    var r=rt(n),lines=noteLines(n),ready=true,any=false;r.ok=[];r.els=[];r.miss=[];
+    lines.forEach(function(l,i){
+      var optional=l.seatId===-2,sl=slotsOf(l),cur=r.res[i],full=true;
+      sl.forEach(function(id,j){
+        if(!cur[j]&&pool[id]&&pool[id].length)cur[j]=pool[id].shift();       // reserve a free thing for this paper
+        if(!cur[j]){full=false;if(!optional)r.miss.push(id==='__bowl'?'kiseli kupus':(ITEM_NAMES[id]||id))}
+      });
+      r.ok[i]=full;r.els[i]=full?cur.slice():null;
+      if(full)any=true;else if(!optional)ready=false;
+    });
+    r.ready=ready&&any;
+  });
+  notes.forEach(function(n){n.ready=!!(RT[n.id]&&RT[n.id].ready)});
 }
 function takeOrders(){
   allocate();
   var order=paperOrder(),ready=order.filter(function(n){return n.ready}),all=[],used=[];
   ready.forEach(function(n){
     noteLines(n).forEach(function(l,i){
-      var els=n._els[i];if(!els)return;
+      var els=rt(n).els[i];if(!els)return;
       used=used.concat(els);
       if(l.items&&l.items.length){all.push({kind:'drink',items:l.items.slice(),seatId:l.seatId,table:n.table,ev:{score:2,issues:[],perfect:true,amounts:{}}});return}
       var bowl=els[0],sp={};try{sp=JSON.parse(bowl.dataset.spices||'{}')}catch(e){}
@@ -408,10 +423,10 @@ function takeOrders(){
       all.push({kind:(sp.tucana>0||sp.paprika>0)?'paprika':'plain',seatId:l.seatId,table:n.table,ev:ev});
     });
   });
-  var first=order.filter(function(n){return !n.ready})[0],say=first&&first._miss&&first._miss.length?'Fali — sto '+first.table+': '+first._miss.join(', '):null;
+  var first=order.filter(function(n){return !n.ready})[0],say=first&&rt(first).miss.length?'Fali — sto '+first.table+': '+rt(first).miss.join(', '):null;
   if(!all.length)return{say:say};
   used.forEach(function(it){try{removeItem(it)}catch(e){}});
-  ready.forEach(function(n){n.served=true});            // the papers stay in the rail with every row crossed off, until the player puts them on the spike
+  ready.forEach(function(n){n.served=true;delete RT[n.id]});            // the papers stay in the rail with every row crossed off, until the player puts them on the spike
   save();refreshPapers();
   var head=all.filter(function(x){return x.kind==='drink'})[0]||all[0];
   return{carry:{table:head.table,kind:head.kind,seatId:head.seatId,items:head.items||null,ev:head.ev,all:all},say:say};
@@ -458,12 +473,12 @@ function tick(now){
     alpha=Math.min(1,anim.t/.2);
     if(anim.t>=.2){anim.phase=anim.call?'listen':'wait';anim.t=0}
   }else if(anim.phase==='listen'){
-    if(!anim.checked&&anim.t>1.2){
+    if(!anim.checked&&anim.t>.6){
       anim.checked=true;var tk=takeOrders();
       if(tk.carry)anim.carry=tk.carry;
       if(tk.say)anim.say=tk.say;
     }
-    if(anim.t>2.4){anim.phase='out';anim.t=0}
+    if(anim.t>2.6){anim.phase='out';anim.t=0}
   }else if(anim.phase==='wait'){
     if(anim.t>.35){anim.phase='put';anim.t=0}
   }else if(anim.phase==='put'){
@@ -486,7 +501,7 @@ function tick(now){
   }
   X.globalAlpha=alpha;
   drawWaiter(anim.x,FLOOR_Y,frame,flip,lean,anim.carry?(anim.carry.kind==='drink'?'drink':'food'):false);X.globalAlpha=1;
-  if(anim.phase==='listen'&&anim.t>.3)speech(anim.carry?((anim.carry.all&&anim.carry.all.length>1?'Odnosim sve ('+anim.carry.all.length+')!':(anim.carry.kind==='drink'?'Odnosim piće!':'Odnosim kupus!'))+(anim.say?' '+anim.say:'')):(anim.say||'Izvolite?'),anim.x,FLOOR_Y-440);
+  if(anim.phase==='listen'&&anim.checked&&(anim.carry||anim.say))speech(anim.carry?((anim.carry.all&&anim.carry.all.length>1?'Odnosim sve ('+anim.carry.all.length+')!':(anim.carry.kind==='drink'?'Odnosim piće!':'Odnosim kupus!'))+(anim.say?' '+anim.say:'')):anim.say,anim.x,FLOOR_Y-440);
   requestAnimationFrame(tick);
 }
 setInterval(function(){
