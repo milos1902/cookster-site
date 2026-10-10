@@ -10501,22 +10501,27 @@ function spawnKitchenEquipment(id,hold=true,slotOverride=null){
 let drinkOrder={};
 function drinkOrderTotal(){return Object.values(drinkOrder).reduce((a,b)=>a+b,0);}
 function putDrinkOrderOnTable(){
- // the drinks are scattered at random over the left part of the table, not too close to each other or to what already stands there
- const placed=items.filter(el=>(el.dataset.surfaceZone||'table')==='table'&&Number.isFinite(+el.dataset.cx)).map(el=>({x:+el.dataset.cx,y:+el.dataset.by}));
+ // the drinks are scattered at random over the left part of the table (wider if there is no room) and NEVER over what already stands there: every candidate place is tried with the real size of the drink
+ const rectOf=el=>{const cx=+el.dataset.cx,by=+el.dataset.by,w=parseFloat(el.style.width)||+el.dataset.baseW||60,h=parseFloat(el.style.height)||+el.dataset.baseH||60;return{l:cx-w/2,r:cx+w/2,t:by-h,b:by};};
+ const overlap=(a,b,m)=>{const w=Math.min(a.r,b.r)-Math.max(a.l,b.l)+m,h=Math.min(a.b,b.b)-Math.max(a.t,b.t)+m;return w>0&&h>0?w*h:0;};
+ const onTable=el=>(el.dataset.surfaceZone||'table')==='table'&&Number.isFinite(+el.dataset.cx);
  for(const [id,n] of Object.entries(drinkOrder)){
   for(let i=0;i<n;i++){
-   let best=null,bestD=-1;
-   for(let t=0;t<200;t++){
-    const c={cx:Math.round(450+Math.random()*340),by:Math.round(370+Math.random()*180)};
-    const d=placed.reduce((m,q)=>Math.min(m,Math.hypot(q.x-c.cx,(q.y-c.by)*1.6)),999);
-    if(d>bestD){bestD=d;best=c;}
-    if(d>=95)break;
+   if(!spawnKitchenEquipment(id,false))continue;
+   const el=items[items.length-1],others=items.filter(o=>o!==el&&onTable(o)).map(rectOf);
+   let best=null,bestA=Infinity;
+   for(let t=0;t<260&&bestA>0;t++){
+    const wide=t>=130;                                  // first the left part of the table, then all of it
+    const cx=Math.round(wide?440+Math.random()*760:450+Math.random()*340),by=Math.round(360+Math.random()*195);
+    setPose(el,cx,by,1);
+    const r=rectOf(el),a=others.reduce((m,q)=>m+overlap(r,q,10),0);
+    if(a<bestA){bestA=a;best={cx,by};}
    }
-   placed.push({x:best.cx,y:best.by});
-   spawnKitchenEquipment(id,false,best);
+   setPose(el,best.cx,best.by,1);
   }
  }
  drinkOrder={};
+ try{CooksterSave.schedule();}catch(_){}
 }
 function closeKitchenElements(){
  const sceneEl=document.getElementById('kitchenElementsScene');
