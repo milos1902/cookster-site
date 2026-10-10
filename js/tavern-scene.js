@@ -560,7 +560,10 @@ function gsay(g,text,delta){
   reactions.push({table:g.seat.table,gid:g.id,t:1.4,ev:{issues:[text]},rep:rep,delta:delta||0,life:5});
 }
 // patience: waiting too long for the waiter, or for the food and drinks, he gets up and leaves (and the reputation falls)
-var PAT_ORDER=70,PAT_FOOD=330;                       // seconds: after the waiter should have come / after the order was taken
+// how long a table waits for what it ordered (seconds, times the patience of the guest .85-1.35): only drinks 80 s + 30 s for every other guest (1 guest: ~70-110 s, 4 guests: ~150-240 s);
+// with a dish 190 s + 60 s for every other guest (1 guest: ~160-260 s, 4 guests: ~310-500 s)
+function waitLimit(g){var n=Math.max(1,g.ordN||1);return g.ordFood?190+60*(n-1):80+30*(n-1)}
+var PAT_ORDER=70;                       // seconds: after the waiter should have come / after the order was taken
 function leaveAngry(g,text,delta){
   gsay(g,text,delta);
   g.leftAngry=true;g.mode='rising';g.fade=0;
@@ -569,7 +572,7 @@ function leaveAngry(g,text,delta){
 }
 function checkPatience(g){
   if(g.leftAngry)return;
-  var wait=g.ordered?(g.waitFoodSince!=null?clock-g.waitFoodSince:0):(g.sitT>g.orderDelay?g.sitT-g.orderDelay:0),lim=g.ordered?PAT_FOOD*g.patK:PAT_ORDER*g.patK;
+  var wait=g.ordered?(g.waitFoodSince!=null?clock-g.waitFoodSince:0):(g.sitT>g.orderDelay?g.sitT-g.orderDelay:0),lim=g.ordered?waitLimit(g)*g.patK:PAT_ORDER*g.patK;
   if(wait>lim*.6&&!g.warned&&wait>20){g.warned=true;g.an=null;startAnim(g,'doziv');gsay(g,pick(g.ordered?SAY.waitFood:SAY.waitOrder),0)}
   if(wait>lim)leaveAngry(g,pick(g.ordered?SAY.leaveFood:SAY.leaveOrder),-4);
 }
@@ -851,14 +854,16 @@ function stepWaiter(dt){
     w.t+=dt;
     if(w.t>3.4+.7*seatedCount(w.table)){
       var table=w.table;
-      var all=[];
+      var all=[],ordGuests=[],ordFood=false;
       guests.forEach(function(og){
         if(og.seat.table!==table||og.mode!=='seated'||og.ordered)return;
-        og.ordered=true;
+        og.ordered=true;ordGuests.push(og);
+        if(guestOrders(og).some(function(od){return !od.items}))ordFood=true;
         guestOrders(og).forEach(function(od){all.push({ord:od,seatId:og.seat.id})});
         og.need=guestOrders(og).length;og.waitFoodSince=clock;og.warned=false;
         og.orders=null;
       });
+      ordGuests.forEach(function(og){og.ordN=ordGuests.length;og.ordFood=ordFood});          // how long the table will wait depends on how many guests ordered and on whether there is a dish
       var shared={};                                       // one bottle / one siphon for the whole table: the others get only their glass
       all.forEach(function(a){
         var o=a.ord;if(!o.items)return;var keep=[];
