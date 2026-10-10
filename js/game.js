@@ -10501,11 +10501,19 @@ function spawnKitchenEquipment(id,hold=true,slotOverride=null){
 let drinkOrder={};
 function drinkOrderTotal(){return Object.values(drinkOrder).reduce((a,b)=>a+b,0);}
 function putDrinkOrderOnTable(){
- let k=0;
+ // the drinks are scattered at random over the left part of the table, not too close to each other or to what already stands there
+ const placed=items.filter(el=>(el.dataset.surfaceZone||'table')==='table'&&Number.isFinite(+el.dataset.cx)).map(el=>({x:+el.dataset.cx,y:+el.dataset.by}));
  for(const [id,n] of Object.entries(drinkOrder)){
   for(let i=0;i<n;i++){
-   const slot={cx:400+(k%9)*100,by:596+Math.floor(k/9)*34};k++;
-   spawnKitchenEquipment(id,false,slot);
+   let best=null,bestD=-1;
+   for(let t=0;t<200;t++){
+    const c={cx:Math.round(450+Math.random()*340),by:Math.round(370+Math.random()*180)};
+    const d=placed.reduce((m,q)=>Math.min(m,Math.hypot(q.x-c.cx,(q.y-c.by)*1.6)),999);
+    if(d>bestD){bestD=d;best=c;}
+    if(d>=95)break;
+   }
+   placed.push({x:best.cx,y:best.by});
+   spawnKitchenEquipment(id,false,best);
   }
  }
  drinkOrder={};
