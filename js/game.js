@@ -105,6 +105,8 @@ const ROASTED_CHOPPED_CONTACT_SHADOW_CALIBRATION={
  'produce_paprika_pecena_seckana_oljustena':{itemId:'produce_paprika_pecena_seckana_oljustena',label:'Pečena paprika — seckana oljuštena',shadow:{shadowX:0,shadowY:0,width:.84,height:.16,blur:3.8,opacity:.58,angle:.6}}
 };
 const ADDITIONAL_MOVABLE_CONTACT_SHADOW_CALIBRATION={
+ 'produce_paprika_zelena_pecena':{itemId:'produce_paprika_zelena_pecena',label:'Pečena zelena paprika',shadow:{shadowX:0,shadowY:0,width:.82,height:.22,blur:4.2,opacity:.62,angle:.6}},
+ 'produce_paprika_zelena_oljustena':{itemId:'produce_paprika_zelena_oljustena',label:'Oljuštena zelena paprika',shadow:{shadowX:0,shadowY:0,width:.82,height:.2,blur:3.8,opacity:.58,angle:.6}},
  'produce_paprika_pecena_cela':{itemId:'produce_paprika_pecena_cela',label:'Pečena paprika — cela',shadow:{shadowX:0,shadowY:0,width:.82,height:.22,blur:4.2,opacity:.62,angle:.6}},
  'produce_paprika_pecena_oljustena':{itemId:'produce_paprika_pecena_oljustena',label:'Pečena paprika — cela oljuštena',shadow:{shadowX:0,shadowY:0,width:.8,height:.18,blur:3.8,opacity:.58,angle:.6}},
  'produce_crate':{itemId:'produce_crate',label:'Gajbica sa povrćem',shadow:{shadowX:0,shadowY:0,width:.92,height:.24,blur:3.2,opacity:.58,angle:.6}},
@@ -249,6 +251,7 @@ function contactShadowProfileKeyFor(el){
        :'produce_paprika_pecena_cela';
    }
    if(key==='patlidzan'&&(+el.dataset.roastPhase||0)>=3)return 'produce_patlidzan_pecen';
+   if(key==='paprika_zelena'&&((+el.dataset.roastProgress||0)>0||(+el.dataset.roastPhase||0)>=2))return el.dataset.peeled==='1'?'produce_paprika_zelena_oljustena':'produce_paprika_zelena_pecena';
    if(key)return `produce_${key}`;
  }
  return id;
@@ -4346,6 +4349,16 @@ function createContactShadowLab(){
         });
       }
     }
+    map.set('produce_paprika_zelena_pecena',{
+      id:'produce_paprika_zelena_pecena',label:'Pečena zelena paprika',
+      src:ZELENA_ROAST_ASSETS[2],w:+VEGETABLES.paprika_zelena?.w||70,h:+VEGETABLES.paprika_zelena?.h||70,
+      snapProfile:'produce',shadowProfile:'tiny',category:'roasted-produce-shadow'
+    });
+    map.set('produce_paprika_zelena_oljustena',{
+      id:'produce_paprika_zelena_oljustena',label:'Oljuštena zelena paprika',
+      src:ZELENA_PEEL_ASSETS.peeled,w:+VEGETABLES.paprika_zelena?.w||70,h:+VEGETABLES.paprika_zelena?.h||70,
+      snapProfile:'produce',shadowProfile:'tiny',category:'roasted-produce-shadow'
+    });
     map.set('produce_patlidzan_pecen',{
       id:'produce_patlidzan_pecen',label:'Pečen patlidžan',
       src:PATLIDZAN_ROAST_ASSETS[2],
@@ -6842,7 +6855,16 @@ const PATLIDZAN_PEEL_ASSETS={
 };
 function isWholePaprika(el){return !!el&&el.dataset.vegetable==='1'&&el.dataset.vegKey==='paprika'&&el.dataset.cutState==='whole';}
 function isWholePatlidzan(el){return !!el&&el.dataset.vegetable==='1'&&el.dataset.vegKey==='patlidzan'&&(el.dataset.cutState||'whole')==='whole';}
-function isWholeStoveRoast(el){return isWholePaprika(el)||isWholePatlidzan(el);}
+// the green pepper ("belolučana paprika") is roasted like the eggplant (3 phases, straight to peeling, no steaming bag) and then goes on the oval plate
+const ZELENA_ROAST_ASSETS=['assets/ingredients/zelena_roast/phase_1.png','assets/ingredients/zelena_roast/phase_2.png','assets/ingredients/zelena_roast/phase_3.png'];
+const ZELENA_PEEL_ASSETS={partial:'assets/ingredients/zelena_peel/partial.png',peeled:'assets/ingredients/zelena_peel/peeled.png'};
+function isWholeZelena(el){return !!el&&el.dataset.vegetable==='1'&&el.dataset.vegKey==='paprika_zelena'&&(el.dataset.cutState||'whole')==='whole';}
+function isWholeStraight(el){return isWholePatlidzan(el)||isWholeZelena(el);}
+// the texts of the eggplant, said for the green pepper
+function zl(el,str){return isWholeZelena(el)?String(str).replace(/Pečen patlidžan/g,'Pečena zelena paprika').replace(/Oljušten pečen patlidžan/g,'Oljuštena zelena paprika').replace(/Patlidžan · izgoreo/g,'Zelena paprika · izgorela').replace(/Patlidžan/g,'Zelena paprika').replace(/patlidžan/g,'zelena paprika').replace(/izgoreo/g,'izgorela').replace(/ pečen/g,' pečena'):str;}
+function straightRoastAssets(el){return isWholeZelena(el)?ZELENA_ROAST_ASSETS:PATLIDZAN_ROAST_ASSETS;}
+function straightPeelAssets(el){return isWholeZelena(el)?ZELENA_PEEL_ASSETS:PATLIDZAN_PEEL_ASSETS;}
+function isWholeStoveRoast(el){return isWholePaprika(el)||isWholeStraight(el);}
 function isProduceItem(el){return !!el&&(el.dataset.vegetable==='1'||el.dataset.fruit==='1');}
 function renderDirectProduceHeat(el){
  if(!isProduceItem(el)||isWholeStoveRoast(el))return;
@@ -6873,20 +6895,20 @@ function setProduceOnStove(el,on){
 function paprikaRoastPhase(el){return Math.max(1,Math.min(4,+el.dataset.roastPhase||1));}
 function renderPaprikaRoast(el){
  if(!isWholeStoveRoast(el))return;
- const eggplant=isWholePatlidzan(el);
+ const eggplant=isWholeStraight(el);
  if(eggplant&&(el.dataset.peeled==='1'||(+el.dataset.peelHits||0)>0)){
    renderPaprikaPeelState(el);return;
  }
  const phase=paprikaRoastPhase(el),body=el.querySelector('.body');
  if(body){
-   body.src=eggplant?PATLIDZAN_ROAST_ASSETS[Math.min(3,phase)-1]:PAPRIKA_ROAST_ASSETS[phase-1];
+   body.src=eggplant?straightRoastAssets(el)[Math.min(3,phase)-1]:PAPRIKA_ROAST_ASSETS[phase-1];
    body.style.filter=(+el.dataset.roastProgress||0)>=1.08
      ?'brightness(.38) saturate(.55) sepia(.45)':'';
  }
  el.dataset.label=eggplant
-   ?(phase>=3?'Pečen patlidžan':(phase>=2?'Patlidžan se peče':'Patlidžan'))
+   ?zl(el,(phase>=3?'Pečen patlidžan':(phase>=2?'Patlidžan se peče':'Patlidžan')))
    :(phase>=4?'Pečena paprika':(phase>=2?'Paprika se peče':'Paprika'));
- if((+el.dataset.roastProgress||0)>=1.08)el.dataset.label=eggplant?'Patlidžan · izgoreo':'Paprika · izgorela';
+ if((+el.dataset.roastProgress||0)>=1.08)el.dataset.label=eggplant?zl(el,'Patlidžan · izgoreo'):'Paprika · izgorela';
 }
 function setPaprikaOnStove(el,on){
  if(!isWholeStoveRoast(el))return;
@@ -6895,11 +6917,11 @@ function setPaprikaOnStove(el,on){
    if(el.dataset.roastProgress===undefined)el.dataset.roastProgress='0';
    if(el.dataset.roastPhase===undefined)el.dataset.roastPhase='1';
    renderPaprikaRoast(el);
-   const name=isWholePatlidzan(el)?'Patlidžan':'Paprika';
+   const name=isWholeZelena(el)?'Zelena paprika':isWholePatlidzan(el)?'Patlidžan':'Paprika';
    showToast(stoveState.fireOn?`${name} je na vreloj plotni — počinje da se peče.`:`${name} je na plotni, ali vatra je ugašena.`);
  }else{
    delete el.dataset.onStoveTop;
-   if(isWholePatlidzan(el)&&(+el.dataset.roastProgress||0)>=.75&&
+   if(isWholeStraight(el)&&(+el.dataset.roastProgress||0)>=.75&&
       (+el.dataset.roastProgress||0)<1.08&&el.dataset.peeled!=='1'){
      el.dataset.readyToPeel='1';
      renderPaprikaPeelState(el);
@@ -10218,17 +10240,17 @@ function steamedPepperFromBag(bag){
 function paprikaPeelHits(el){return Math.max(0,Math.min(2,Math.round(+el?.dataset?.peelHits||0)));}
 function renderPaprikaPeelState(el){
   if(!el)return;
-  const eggplant=isWholePatlidzan(el);
+  const eggplant=isWholeStraight(el);
   if(!eggplant&&el.dataset.steamedPepper!=='1')return;
   const body=el.querySelector('.body'),shadow=el._contactShadow?.querySelector('img');
   const peeled=el.dataset.peeled==='1',partial=paprikaPeelHits(el)>=1;
   const src=eggplant
-    ?(peeled?PATLIDZAN_PEEL_ASSETS.peeled:partial?PATLIDZAN_PEEL_ASSETS.partial:PATLIDZAN_ROAST_ASSETS[2])
+    ?(peeled?straightPeelAssets(el).peeled:partial?straightPeelAssets(el).partial:straightRoastAssets(el)[2])
     :(peeled?PAPRIKA_PEEL_ASSETS.peeled:partial?PAPRIKA_PEEL_ASSETS.partial:PAPRIKA_ROAST_ASSETS[3]);
   if(body)body.src=src;
   if(shadow)shadow.src=src;
   el.dataset.label=eggplant
-    ?(peeled?'Oljušten pečen patlidžan':partial?'Patlidžan — ljuštenje u toku':'Pečen patlidžan')
+    ?zl(el,(peeled?'Oljušten pečen patlidžan':partial?'Patlidžan — ljuštenje u toku':'Pečen patlidžan'))
     :(peeled?'Oljuštena paprika':partial?'Paprika — ljuštenje u toku':'Potparena paprika');
 }
 let paprikaPeelGame=null;
@@ -10340,7 +10362,7 @@ function openPaprikaBagActionMenu(target,x,y){
   const menu=document.createElement('div');menu.className='paprika-bag-action-menu';
   Object.assign(menu.style,{position:'fixed',left:'0px',top:'0px',zIndex:'30000',display:'flex',flexDirection:'column',gap:'5px',padding:'7px',background:'rgba(39,28,19,.96)',border:'1px solid rgba(255,220,150,.75)',borderRadius:'7px',boxShadow:'0 5px 18px rgba(0,0,0,.45)',color:'#fff',font:'600 13px/1.2 system-ui,sans-serif'});
   menu.addEventListener('pointerdown',e=>e.stopPropagation());
-  const title=document.createElement('strong');title.textContent=isPaprikaSteamBag(target)?`Kesa · ${paprikaSteamBagCount(target)}/10`:isWholePatlidzan(target)?'Pečen patlidžan':'Potparena paprika';title.style.padding='2px 5px 4px';menu.appendChild(title);
+  const title=document.createElement('strong');title.textContent=isPaprikaSteamBag(target)?`Kesa · ${paprikaSteamBagCount(target)}/10`:isWholeZelena(target)?'Pečena zelena paprika':isWholeStraight(target)?'Pečen patlidžan':'Potparena paprika';title.style.padding='2px 5px 4px';menu.appendChild(title);
   const addAction=(label,disabled,fn)=>{
     const button=document.createElement('button');button.type='button';button.textContent=label;button.disabled=!!disabled;
     Object.assign(button.style,{border:'0',borderRadius:'5px',padding:'7px 10px',cursor:disabled?'not-allowed':'pointer',background:disabled?'rgba(255,255,255,.14)':'#f0c36a',color:disabled?'rgba(255,255,255,.55)':'#2a1a0e',font:'700 13px system-ui'});
@@ -10691,7 +10713,7 @@ function openKitchenElements(mode){
 
 function serializeWorldItem(el){
  const body=el.querySelector('.body');
-  const keep=['trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
+  const keep=['trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','ovalN','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
  const data={};
  for(const k of keep)if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
  for(const k of ['ajvarMl','ajvarBatchMl'])if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
@@ -10748,7 +10770,7 @@ function restoreWorldItem(saved){
     renderWoodBasket(el);
   }
  if(isPaprikaSteamBag(el))renderPaprikaSteamBag(el);
- if(el.dataset.steamedPepper==='1'||(isWholePatlidzan(el)&&el.dataset.peeled==='1'))renderPaprikaPeelState(el);
+ if(el.dataset.steamedPepper==='1'||(isWholeStraight(el)&&el.dataset.peeled==='1'))renderPaprikaPeelState(el);
  if(el.dataset.creatorShelfSlot)delete el.dataset.creatorShelfSlot;
  if(!el.dataset.collisionProfile){
    if(el.dataset.crate==='1')el.dataset.collisionProfile='crate';
@@ -13948,10 +13970,10 @@ function simulateDirectProduceItem(produce,dt){
  const fireLevel=Math.max(1,Math.min(3,+stoveState.fireLevel||1));
 
  if(isWholeStoveRoast(produce)){
-   const eggplant=isWholePatlidzan(produce);
+   const eggplant=isWholeStraight(produce);
    let progress=Math.max(0,+produce.dataset.roastProgress||0);
    const roastSeconds=fireLevel===1?42:(fireLevel===2?32:24);
-   const roastCfg=VEGETABLES[eggplant?'patlidzan':'paprika']?.cooking||{};
+   const roastCfg=VEGETABLES[eggplant?(isWholeZelena(produce)?'paprika_zelena':'patlidzan'):'paprika']?.cooking||{};
    const roastSpeed=progress<.75?(+roastCfg.cookSpeed||1):(+roastCfg.burnSpeed||1);
    progress=Math.min(1.22,progress+(dt/roastSeconds)*roastSpeed);
    produce.dataset.roastProgress=String(progress);
@@ -13960,12 +13982,12 @@ function simulateDirectProduceItem(produce,dt){
    if(+produce.dataset.roastPhase!==phase){
     produce.dataset.roastPhase=String(phase);
     renderPaprikaRoast(produce);
-    if(phase===(eggplant?3:4))showToast(`${eggplant?'Patlidžan':'Paprika'} je ${eggplant?'pečen':'pečena'} — ako ostane na vatri, izgoreće.`);
+    if(phase===(eggplant?3:4))showToast(isWholeZelena(produce)?'Zelena paprika je pečena — ako ostane na vatri, izgoreće.':`${eggplant?'Patlidžan':'Paprika'} je ${eggplant?'pečen':'pečena'} — ako ostane na vatri, izgoreće.`);
    }
    if(progress>=1.08){
     const body=produce.querySelector('.body');
     if(body)body.style.filter='brightness(.38) saturate(.55) sepia(.45)';
-    produce.dataset.label=eggplant?'Patlidžan · izgoreo':'Paprika · izgorela';
+    produce.dataset.label=eggplant?zl(produce,'Patlidžan · izgoreo'):'Paprika · izgorela';
    }
    return;
  }
@@ -14699,6 +14721,8 @@ function dropHolding(){
 
  // The sauerkraut barrel takes whole cabbages and its own lid.
  if(window.CooksterKaca&&CooksterKaca.tryDrop(holding))return;
+ // the oval plate takes peeled green peppers (three of them make the dish)
+ if(window.CooksterOval&&CooksterOval.tryDrop(holding))return;
  // One authoritative ingredient -> vessel path.
  if(isIngredientItem(holding)&&commitHeldIngredientToVessel(holding,mouse.x,mouse.y))return;
 
