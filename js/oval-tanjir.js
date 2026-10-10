@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.CooksterOval)return;
-const ID='oval_tanjir',DIR='assets/calibration_props/oval/',MAX=4;
+const ID='oval_tanjir',DIR='assets/calibration_props/oval/',NEAT=4,MAX=8;          // up to NEAT peppers lie tidily, up to MAX in a heap; what is more falls next to the plate
 const SPR={z:DIR+'zelena_oljustena.png',c:DIR+'crvena_oljustena.png'};
 const WIDTH={z:.60,c:.42};                                             // the width of one pepper on the plate (a part of the width of the plate picture)
 // the places for 1..4 peppers: [x, y, rotation] as a part of the picture of the plate (the plate is tilted a little, the peppers lie along it)
@@ -15,6 +15,18 @@ const SLOTS={
   3:[[.45,.30,.18],[.50,.50,.22],[.55,.70,.20]],
   4:[[.44,.25,.18],[.49,.41,.22],[.53,.58,.20],[.57,.75,.18]]
 };
+// where the pieces lie: up to NEAT on the prepared places, more of them in a heap (smaller, lying over each other, along the plate)
+function placesFor(n,seed){
+  if(n<=NEAT)return SLOTS[n].map(p=>[p[0],p[1],p[2],1]);
+  const r=rng((seed||7)*7+3),rows=Math.ceil(n/2),sc=n<=6?.64:.52,c=Math.cos(ZONE.rot),sn=Math.sin(ZONE.rot),out=[];
+  // plate coordinates: a along the plate, b across it (in the units of the width of the picture), then turned like the plate
+  for(let i=0;i<n;i++){
+    const row=Math.floor(i/2),inRow=(i%2),single=(row===rows-1&&n%2===1);
+    const b=(row-(rows-1)/2)*(rows>3?.105:.125)+(r()-.5)*.012,a=(single?0:(inRow?.15:-.15))+(r()-.5)*.03;
+    out.push([ZONE.x+(a*c-b*sn),ZONE.y+(a*sn+b*c)*(W0/H0),ZONE.rot*.8+(r()-.5)*.25,sc*(.94+r()*.1)]);
+  }
+  return out.sort((x,y)=>x[1]-y[1]);                                     // the lower ones are drawn over the higher ones
+}
 const imgs={};
 function load(src){return imgs[src]||(imgs[src]=(()=>{const i=new Image();i.src=src;return i;})());}
 [DIR+'oval_prazan.webp',DIR+'oval_puna.webp',SPR.z,SPR.c].forEach(load);
@@ -26,7 +38,7 @@ function listOf(el){
 }
 const isFinished=l=>l.length===3&&l.every(x=>x==='z');
 // everything else that is cut small (garlic, onion, tomato...) is a "pinch" that is scattered over the food: the list is dataset.ovalExtras (vegetable keys, at most 4)
-function extrasOf(el){let l=null;try{l=JSON.parse(el.dataset.ovalExtras||'null');}catch(_){}return Array.isArray(l)?l.filter(k=>typeof k==='string').slice(0,4):[];}
+function extrasOf(el){let l=null;try{l=JSON.parse(el.dataset.ovalExtras||'null');}catch(_){}return Array.isArray(l)?l.filter(k=>typeof k==='string'):[];}
 function dicedSrcOf(k){try{return VEGETABLES[k]&&VEGETABLES[k].dicedSrc||'';}catch(_){return '';}}
 // the single pieces of a "pinch" picture (a heap of chopped garlic...): every piece that is not touching the others is cut out of the picture (the heap itself gives a few more squares)
 const piecesCache={};
@@ -65,6 +77,7 @@ function piecesOf(k){
 }
 function veg(k){try{return(VEGETABLES[k]&&VEGETABLES[k].label)||k;}catch(_){return k;}}
 // The zone of the food on the plate (an ellipse, tilted like the plate; the rim of the plate is outside of it). Oil shines and parsley falls only here.
+const W0=640,H0=478;
 const ZONE={x:.50,y:.50,rx:.40,ry:.285,rot:.34};
 function rng(seed){let a=(seed>>>0)||1;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 function zonePath(g,W,H,k){g.beginPath();g.ellipse(W*ZONE.x,H*ZONE.y,W*ZONE.rx*(k||1),W*ZONE.ry*(k||1),ZONE.rot,0,Math.PI*2);}
@@ -116,9 +129,9 @@ function compose(l,oil,parsley,seed,extras){
       const gr=g.createRadialGradient(W*.5,H*.5,W*.05,W*.5,H*.5,W*.4);gr.addColorStop(0,`rgba(255,206,70,${.20+.12*oil})`);gr.addColorStop(1,`rgba(255,196,60,${.06*oil})`);
       g.fillStyle=gr;g.fillRect(0,0,W,H);g.restore();
     }
-    food=mk();const f=food.getContext('2d'),slots=SLOTS[l.length];
+    food=mk();const f=food.getContext('2d'),slots=placesFor(l.length,seed);
     l.forEach((k,i)=>{
-      const pep=load(SPR[k]),[fx,fy,rot]=slots[i],w=W*WIDTH[k],h=w*pep.naturalHeight/pep.naturalWidth;
+      const pep=load(SPR[k]),[fx,fy,rot,sc]=slots[i],w=W*WIDTH[k]*sc,h=w*pep.naturalHeight/pep.naturalWidth;
       g.save();g.translate(W*fx,H*fy);g.rotate(rot);g.shadowColor='rgba(50,25,5,.38)';g.shadowBlur=11;g.shadowOffsetY=5;g.drawImage(pep,-w/2,-h/2,w,h);g.restore();
       f.save();f.translate(W*fx,H*fy);f.rotate(rot);f.drawImage(pep,-w/2,-h/2,w,h);f.restore();
     });
@@ -137,7 +150,7 @@ function compose(l,oil,parsley,seed,extras){
     const re=rng((seed||7)*13+5);
     let fd=null;try{if(food)fd=food.getContext('2d').getImageData(0,0,W,H).data;}catch(_){}
     const onFood=(x,y)=>{if(!fd)return true;const i=((Math.round(y)*W)+Math.round(x))*4+3;return fd[i]>140;};
-    extras.forEach(k=>{
+    extras.slice(0,12).forEach(k=>{
       const ps=piecesOf(k);if(!ps.length)return;
       for(let i=0;i<24;i++){
         let x,y;
@@ -186,7 +199,6 @@ function tryDropExtra(item){
   if(!item||!item.dataset||item.dataset.vegetable!=='1'||item.dataset.cutState!=='diced'||!dicedSrcOf(item.dataset.vegKey))return false;
   const el=ovalAt(mouse.x,mouse.y);if(!el)return false;
   const ex=extrasOf(el);
-  if(ex.length>=4){showToast('Na ovalu već ima dosta dodataka.');return true;}
   ex.push(item.dataset.vegKey);el.dataset.ovalExtras=JSON.stringify(ex);el.dataset.ovalSeed=el.dataset.ovalSeed||String(1+Math.floor(Math.random()*99999));
   removeItem(item);holding=null;
   try{hidePlacementGhost();hideOriginGhost();clearPanTargets();updateHover();}catch(_){}
@@ -199,12 +211,17 @@ function tryDrop(item){
   const k=kindOf(item);if(!k)return false;
   const el=ovalAt(mouse.x,mouse.y);if(!el)return false;
   const l=listOf(el);
-  if(l.length>=MAX){showToast('Oval je pun — staje najviše 4 paprike.');return true;}
+  if(l.length>=MAX){                                                     // the plate is full: the pepper falls next to the plate (it is put down on the table there)
+    const rc=el.getBoundingClientRect(),a=Math.random()*Math.PI*2,sx=rc.width*.62+Math.random()*30,sy=rc.height*.55+Math.random()*20;
+    mouse.x=Math.round(mouse.x+Math.cos(a)*sx);mouse.y=Math.round(mouse.y+Math.sin(a)*sy*.8);
+    showToast('Oval je pun — paprika je pala pored tanjira.');
+    return false;
+  }
   l.push(k);el.dataset.ovalItems=JSON.stringify(l);el.dataset.ovalN=String(l.length);
   removeItem(item);holding=null;
   try{hidePlacementGhost();hideOriginGhost();clearPanTargets();updateHover();}catch(_){}
   render(el);try{playImpactSound(el,'drop');}catch(_){}try{CooksterSave.schedule();}catch(_){}
-  showToast(isFinished(l)?'Belolučane paprike su gotove!':`Paprika je na ovalu (${l.length}/${MAX}).`);
+  showToast(isFinished(l)?'Belolučane paprike su gotove!':`Paprika je na ovalu (${l.length}).`);
   return true;
 }
 // right click on the plate: oil and parsley (until there are the real pouring and sprinkling): the same for every dish, the picture is computed from what is on the plate
