@@ -25,6 +25,10 @@ function listOf(el){
   return l.filter(x=>x==='z'||x==='c').slice(0,MAX);
 }
 const isFinished=l=>l.length===3&&l.every(x=>x==='z');
+// everything else that is cut small (garlic, onion, tomato...) is a "pinch" that is scattered over the food: the list is dataset.ovalExtras (vegetable keys, at most 4)
+function extrasOf(el){let l=null;try{l=JSON.parse(el.dataset.ovalExtras||'null');}catch(_){}return Array.isArray(l)?l.filter(k=>typeof k==='string').slice(0,4):[];}
+function dicedSrcOf(k){try{return VEGETABLES[k]&&VEGETABLES[k].dicedSrc||'';}catch(_){return '';}}
+function veg(k){try{return(VEGETABLES[k]&&VEGETABLES[k].label)||k;}catch(_){return k;}}
 // The zone of the food on the plate (an ellipse, tilted like the plate; the rim of the plate is outside of it). Oil shines and parsley falls only here.
 const ZONE={x:.50,y:.50,rx:.40,ry:.285,rot:.34};
 function rng(seed){let a=(seed>>>0)||1;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
@@ -61,11 +65,12 @@ function shines(g,W,H,r,count,strength,box){
     g.fillStyle=gr;g.beginPath();g.arc(0,0,len,0,Math.PI*2);g.fill();g.restore();
   }
 }
-function compose(l,oil,parsley,seed){
-  const key=l.join('')+'|o'+oil+'|p'+parsley+'|s'+seed;
+function compose(l,oil,parsley,seed,extras){
+  extras=extras||[];
+  const key=l.join('')+'|o'+oil+'|p'+parsley+'|s'+seed+'|e'+extras.join(',');
   if(cache[key])return cache[key];
   const finished=isFinished(l),baseSrc=finished?DIR+'oval_puna.webp':DIR+'oval_prazan.webp',base=load(baseSrc);
-  if(!base.complete||!base.naturalWidth||l.some(k=>{const p=load(SPR[k]);return !p.complete||!p.naturalWidth;}))return baseSrc;
+  if(!base.complete||!base.naturalWidth||l.some(k=>{const p=load(SPR[k]);return !p.complete||!p.naturalWidth;})||extras.some(k=>{const p=load(dicedSrcOf(k));return !p.complete||!p.naturalWidth;}))return baseSrc;
   const W=base.naturalWidth,H=base.naturalHeight,mk=()=>{const c=document.createElement('canvas');c.width=W;c.height=H;return c;};
   const out=mk(),g=out.getContext('2d'),r=rng(seed||7);
   g.drawImage(base,0,0);
@@ -93,6 +98,16 @@ function compose(l,oil,parsley,seed){
     g.save();g.globalCompositeOperation='screen';g.globalAlpha=.75;g.drawImage(sh,0,0);g.restore();
     if(food){g.save();g.globalCompositeOperation='overlay';g.globalAlpha=.34*oil;g.drawImage(food,0,0);g.restore();}   // a bit more contrast and colour, as on a wet surface
   }
+  if(extras.length){                                                     // the pinches of chopped things: a few small heaps scattered over the zone
+    const re=rng((seed||7)*13+5);
+    extras.forEach(k=>{
+      const im=load(dicedSrcOf(k)),n=4,sz=W*.15;
+      for(let i=0;i<n;i++){
+        const [x,y]=zonePoint(re,W,H),a=(.8+re()*.4)*sz;
+        g.save();g.translate(x,y);g.rotate((re()-.5)*1.2);g.shadowColor='rgba(40,20,5,.35)';g.shadowBlur=5;g.shadowOffsetY=2;g.drawImage(im,-a/2,-a/2,a,a);g.restore();
+      }
+    });
+  }
   if(parsley>0){
     const rp=rng((seed||7)*31+17);
     for(let i=0;i<parsley;i++){
@@ -102,7 +117,7 @@ function compose(l,oil,parsley,seed){
   }
   try{return cache[key]=out.toDataURL('image/png');}catch(_){return baseSrc;}
 }
-function labelOf(l,oil,parsley){const x=(oil?' · nauljeno':'')+(parsley?' · peršun':'');return labelBase(l)+(l.length?x:'');}
+function labelOf(l,oil,parsley,extras){const x=((extras&&extras.length)?' · '+[...new Set(extras)].map(k=>veg(k).toLowerCase()).join(', '):'')+(oil?' · nauljeno':'')+(parsley?' · peršun':'');return labelBase(l)+((l.length||(extras&&extras.length))?x:'');}
 function labelBase(l){
   if(!l.length)return 'Oval (prazan)';
   if(isFinished(l))return 'Belolučane paprike';
@@ -112,10 +127,10 @@ function labelBase(l){
 }
 function ovals(){return(window.items||[]).filter(el=>el&&el.dataset&&el.dataset.itemId===ID);}
 function render(el){
-  const l=listOf(el),src=compose(l,Math.max(0,Math.min(2,+el.dataset.ovalOil||0)),Math.max(0,Math.min(40,+el.dataset.ovalParsley||0)),+el.dataset.ovalSeed||7);
+  const l=listOf(el),ex=extrasOf(el),src=compose(l,Math.max(0,Math.min(2,+el.dataset.ovalOil||0)),Math.max(0,Math.min(40,+el.dataset.ovalParsley||0)),+el.dataset.ovalSeed||7,ex);
   const body=el.querySelector('.body'),shadow=el._contactShadow&&el._contactShadow.querySelector('img');
   if(body&&body.dataset.ovalSrc!==src){body.dataset.ovalSrc=src;body.src=src;if(shadow)shadow.src=src;}
-  el.dataset.label=labelOf(l,+el.dataset.ovalOil||0,+el.dataset.ovalParsley||0);
+  el.dataset.label=labelOf(l,+el.dataset.ovalOil||0,+el.dataset.ovalParsley||0,ex);
 }
 function ovalAt(x,y){
   const l=ovals();
@@ -128,7 +143,20 @@ function kindOf(item){
   if(item.dataset.vegKey==='paprika')return 'c';
   return null;
 }
+function tryDropExtra(item){
+  if(!item||!item.dataset||item.dataset.vegetable!=='1'||item.dataset.cutState!=='diced'||!dicedSrcOf(item.dataset.vegKey))return false;
+  const el=ovalAt(mouse.x,mouse.y);if(!el)return false;
+  const ex=extrasOf(el);
+  if(ex.length>=4){showToast('Na ovalu već ima dosta dodataka.');return true;}
+  ex.push(item.dataset.vegKey);el.dataset.ovalExtras=JSON.stringify(ex);el.dataset.ovalSeed=el.dataset.ovalSeed||String(1+Math.floor(Math.random()*99999));
+  removeItem(item);holding=null;
+  try{hidePlacementGhost();hideOriginGhost();clearPanTargets();updateHover();}catch(_){}
+  render(el);try{playImpactSound(el,'drop');}catch(_){}try{CooksterSave.schedule();}catch(_){}
+  showToast(`${veg(item.dataset.vegKey)} (seckano) je na ovalu.`);
+  return true;
+}
 function tryDrop(item){
+  if(tryDropExtra(item))return true;
   const k=kindOf(item);if(!k)return false;
   const el=ovalAt(mouse.x,mouse.y);if(!el)return false;
   const l=listOf(el);
@@ -155,7 +183,7 @@ function openMenu(el,x,y){
   const oil=+el.dataset.ovalOil||0,pars=+el.dataset.ovalParsley||0;
   add(oil<2?(oil?'Još ulja':'Prelij uljem'):'Ulja je dosta',()=>{el.dataset.ovalOil=String(Math.min(2,oil+1));});
   add(pars<30?'Pospi peršunom':'Peršuna je dosta',()=>{el.dataset.ovalParsley=String(Math.min(30,pars+(pars?7:9)));});
-  if(oil||pars)add('Očisti ulje i peršun',()=>{el.dataset.ovalOil='0';el.dataset.ovalParsley='0';});
+  if(oil||pars||extrasOf(el).length)add('Očisti ulje, peršun i dodatke',()=>{el.dataset.ovalOil='0';el.dataset.ovalParsley='0';el.dataset.ovalExtras='[]';});
   document.body.appendChild(menu);
   const r=menu.getBoundingClientRect();menu.style.left=Math.max(6,Math.min(innerWidth-r.width-6,x))+'px';menu.style.top=Math.max(6,Math.min(innerHeight-r.height-6,y))+'px';
 }
