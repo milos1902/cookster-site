@@ -10501,25 +10501,35 @@ function spawnKitchenEquipment(id,hold=true,slotOverride=null){
 let drinkOrder={};
 function drinkOrderTotal(){return Object.values(drinkOrder).reduce((a,b)=>a+b,0);}
 function putDrinkOrderOnTable(){
- // the drinks are scattered at random over the left part of the table (wider if there is no room) and NEVER over what already stands there: every candidate place is tried with the real size of the drink
+ // the drinks are put together in one circle on the left part of the table, in the place that is the most free (away from what already stands there); if there is no free place they go where they fit best
  const rectOf=el=>{const cx=+el.dataset.cx,by=+el.dataset.by,w=parseFloat(el.style.width)||+el.dataset.baseW||60,h=parseFloat(el.style.height)||+el.dataset.baseH||60;return{l:cx-w/2,r:cx+w/2,t:by-h,b:by};};
  const overlap=(a,b,m)=>{const w=Math.min(a.r,b.r)-Math.max(a.l,b.l)+m,h=Math.min(a.b,b.b)-Math.max(a.t,b.t)+m;return w>0&&h>0?w*h:0;};
  const onTable=el=>(el.dataset.surfaceZone||'table')==='table'&&Number.isFinite(+el.dataset.cx);
- for(const [id,n] of Object.entries(drinkOrder)){
-  for(let i=0;i<n;i++){
-   if(!spawnKitchenEquipment(id,false))continue;
-   const el=items[items.length-1],others=items.filter(o=>o!==el&&onTable(o)).map(rectOf);
-   let best=null,bestA=Infinity;
-   for(let t=0;t<260&&bestA>0;t++){
-    const wide=t>=130;                                  // first the left part of the table, then all of it
-    const cx=Math.round(wide?440+Math.random()*760:450+Math.random()*340),by=Math.round(360+Math.random()*195);
-    setPose(el,cx,by,1);
-    const r=rectOf(el),a=others.reduce((m,q)=>m+overlap(r,q,10),0);
-    if(a<bestA){bestA=a;best={cx,by};}
-   }
-   setPose(el,best.cx,best.by,1);
-  }
+ const list=[];for(const [id,n] of Object.entries(drinkOrder))for(let i=0;i<n;i++)list.push(id);
+ const existing=items.filter(onTable).map(rectOf),total=list.length;
+ // the middle of the circle: the left-hand point of the table that is the farthest from everything that stands there
+ let centre={x:560,y:470},bestFree=-1;
+ for(let x=500;x<=820;x+=18)for(let y=380;y<=545;y+=15){
+  const free=existing.reduce((m,q)=>Math.min(m,Math.hypot(Math.max(q.l-x,0,x-q.r),Math.max((q.t+(q.b-q.t)*.5)-y,0,y-q.b)*1.5)),999);
+  if(free>bestFree){bestFree=free;centre={x,y};}
  }
+ const R=total<=1?0:Math.min(70,26+total*5);
+ const placed=[];
+ list.forEach((id,k)=>{
+  if(!spawnKitchenEquipment(id,false))return;
+  const el=items[items.length-1],others=existing.concat(placed);
+  const ring=k<7?0:1,idx=ring?k-7:k,cnt=ring?Math.max(1,total-7):Math.min(7,total);
+  const ang=-Math.PI/2+idx*(2*Math.PI/cnt),rr=R*(ring?1.7:1);
+  let best=null,bestA=Infinity;
+  for(let t=0;t<120&&bestA>0;t++){
+   const j=t?Math.min(40,t*1.2):0;
+   const cx=Math.round(centre.x+Math.cos(ang)*rr+(Math.random()-.5)*j),by=Math.round(centre.y+Math.sin(ang)*rr*.62+(Math.random()-.5)*j);
+   setPose(el,cx,by,1);
+   const a=others.reduce((m,q)=>m+overlap(rectOf(el),q,6),0);
+   if(a<bestA){bestA=a;best={cx,by};}
+  }
+  setPose(el,best.cx,best.by,1);placed.push(rectOf(el));
+ });
  drinkOrder={};
  try{CooksterSave.schedule();}catch(_){}
 }
@@ -10695,6 +10705,8 @@ function serializeWorldItem(el){
  };
 }
 function restoreWorldItem(saved){
+ // the bowl for the cabbage was made 30% smaller: bowls from older saves are shrunk once
+ if(saved&&saved.id==='posuda_za_kupus'&&+saved.baseW>150){saved.baseW=Math.round(saved.baseW*.7);saved.baseH=Math.round((+saved.baseH||132)*.7);}
  // v198.5.31: creator camera was removed from the gameplay build.
  if(saved?.id==='kamera_stativ')return null;
  // the blue pot with a lid was removed from the game; old saves may still contain it
@@ -14202,6 +14214,14 @@ function spawnSourHalf(target){
  half.dataset.vegetable='1';half.dataset.collisionProfile='vegetable';half.dataset.vegKey='kupus';half.dataset.cutState='whole';
  half.dataset.fermentPhase='3';half.dataset.kupusHalf='1';
  setPose(half,x+w/2,(+d.by||0),+d.vis||1);
+ // the other half stays ON the board (next to the chopped one) and moves with it
+ try{
+  const bd=getBoardEl();
+  if(bd&&(target.dataset.attachedToBoard==='1'||pointInPoly(+d.cx,+d.by,getBoardPoly(bd)))){
+   half.dataset.boardRelX='.22';half.dataset.boardRelY='.5';half.dataset.boardRelAngle='0';half.dataset.attachedToBoard='1';
+   syncOneBoardAttachment(half,bd);
+  }
+ }catch(_){}
 }
 function beginCutAction(){
  if(isCutting)return;
