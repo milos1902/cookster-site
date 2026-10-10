@@ -792,6 +792,14 @@ function waiterGo(to){
   var L=0,pp=w.path||[];for(var qi=1;qi<pp.length;qi++)L+=Math.hypot(pp[qi].x-pp[qi-1].x,pp[qi].y-pp[qi-1].y);
   w.k0=w.kNow!=null?w.kNow:wk(w.y);w.k1=wk(to.y);w.walkLen=Math.max(1,L);w.walked=0;
 }
+// the waiter takes the next table's things from the queue and walks there (everything for one table goes in one go; the tables follow one another without a walk home in between)
+function beginDelivery(w){
+  if(!deliveries.length||!waiterSpot(deliveries[0].table))return false;
+  var dl=deliveries.shift();w.carry=dl;w.table=dl.table;
+  w.carryList=[dl];for(var di=deliveries.length-1;di>=0;di--)if(deliveries[di].table===dl.table)w.carryList.splice(1,0,deliveries.splice(di,1)[0]);
+  w.carryList.sort(function(a,b){return(a.kind==='drink'?0:1)-(b.kind==='drink'?0:1)});
+  w.mode='go';w.set=carrySet(w);waiterGo(waiterSpot(dl.table));return true;
+}
 function stepWaiter(dt){
   var w=ensureWaiter(),home=waiterSpot('home')||{x:DOOR.x,y:DOOR.y,dir:90};
   if(w.replan){w.replan=false;if(w.mode==='go'||w.mode==='back')waiterGo(w.mode==='go'?waiterSpot(w.table)||home:home);else if(w.mode==='idle'){w.x=home.x;w.y=home.y}}
@@ -799,10 +807,7 @@ function stepWaiter(dt){
   if(w.hidden){w.hidden=false;w.x=home.x;w.y=home.y;w.kNow=null;w.k1=null}
   if(w.mode==='idle'){
     var tb=waitingTable();
-    if(deliveries.length&&waiterSpot(deliveries[0].table)){var dl=deliveries.shift();w.carry=dl;w.table=dl.table;
-      w.carryList=[dl];for(var di=deliveries.length-1;di>=0;di--)if(deliveries[di].table===dl.table)w.carryList.splice(1,0,deliveries.splice(di,1)[0]);      // everything for this table goes in ONE trip
-      w.carryList.sort(function(a,b){return(a.kind==='drink'?0:1)-(b.kind==='drink'?0:1)});
-     w.mode='go';w.set=carrySet(w);waiterGo(waiterSpot(dl.table))}
+    if(beginDelivery(w)){}
     else if(tb>=0&&waiterSpot(tb)){w.table=tb;w.guest=waitingGuest();w.mode='go';waiterGo(waiterSpot(tb))}
     else{var f0=dirFace(home.dir);w.set=f0.set;w.flip=f0.flip}
   }else if(w.mode==='go'||w.mode==='back'){
@@ -839,7 +844,8 @@ function stepWaiter(dt){
       var ev=c.ev||null,rep=ev&&window.CooksterQuality?window.CooksterQuality.addReputation(ev.score):null;
       reactions.push({table:w.table,t:0,ev:ev,rep:rep,delta:ev?ev.score:0});
       });
-      w.carry=null;w.carryList=null;w.mode='back';waiterGo(home);
+      w.carry=null;w.carryList=null;
+      if(!beginDelivery(w)){w.mode='back';waiterGo(home)}
     }
   }else if(w.mode==='serve'){
     w.t+=dt;

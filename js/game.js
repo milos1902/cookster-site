@@ -15245,7 +15245,8 @@ if(!__hasSavedWorld&&__starterSpoon){
 const KITCHEN_FIXED_START=[
  {id:'kanta_set_zatvorena',cx:1223,by:232,zone:'floor'},
  {id:'zvonce_konobar',cx:1171,by:366,zone:'table'},
- {id:'siljak_narudzbine',cx:994,by:275,zone:'table'}
+ {id:'siljak_narudzbine',cx:994,by:275,zone:'table'},
+ {id:'ticket_rail',cx:1060,by:215,zone:'decor'}
 ];
 if(!__hasSavedWorld){
  KITCHEN_FIXED_START.forEach(p=>{
