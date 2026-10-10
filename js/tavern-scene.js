@@ -565,7 +565,7 @@ function leaveAngry(g,text,delta){
   gsay(g,text,delta);
   g.leftAngry=true;g.mode='rising';g.fade=0;
   try{if(window.CooksterOrders&&window.CooksterOrders.cancelSeat)window.CooksterOrders.cancelSeat(g.seat.table+1,g.seat.id)}catch(e){}
-  for(var i=deliveries.length-1;i>=0;i--)if(deliveries[i].seatId===g.seat.id)deliveries.splice(i,1);
+  for(var i=deliveries.length-1;i>=0;i--)if(deliveries[i].seatId===g.seat.id)deliveries[i].seatId=-2;          // what is already on its way is still brought to the table (nobody eats it)
 }
 function checkPatience(g){
   if(g.leftAngry)return;
@@ -830,7 +830,7 @@ function stepWaiter(dt){
       (w.carryList||[w.carry]).forEach(function(c){
       var isDrink=c.kind==='drink',sv=serveSpot(w.table,isDrink?'pice':'jelo',c.seatId);
       var eatSeat=c.seatId!=null&&c.seatId>=0?c.seatId:-1,secs=isDrink?DRINK_SECS:EAT_SECS;
-      if(eatSeat<0)guests.forEach(function(g){if(g.seat.table===w.table&&g.mode==='seated'&&(eatSeat<0||g.seat.id<eatSeat))eatSeat=g.seat.id});
+      if(eatSeat<0&&c.seatId!==-2)guests.forEach(function(g){if(g.seat.table===w.table&&g.mode==='seated'&&(eatSeat<0||g.seat.id<eatSeat))eatSeat=g.seat.id});
       guests.forEach(function(g){if(g.seat.id===eatSeat){g.need=Math.max(0,(g.need||1)-1);if(!g.need){g.waitFoodSince=null;g.warned=false}}});          // he got a thing he ordered; when all of it is here he waits no more
       guests.forEach(function(g){if(g.seat.id===eatSeat){g.sitFor=Math.max(g.sitFor,g.sitT+EAT_DELAY+secs+8);if(g.grp)g.grp.until=Math.max(g.grp.until||0,clock+EAT_DELAY+secs+10)}});
       addDirt(w.table,isDrink?1:2);
@@ -895,7 +895,7 @@ function tickDishes(dt){
     if(d.phase==='eating'){
       if(d.t>EAT_DELAY){
         d.eatT+=dt;d.bite+=dt;
-        if(d.bite>1.15){d.bite=0;try{if(window.CooksterSound)window.CooksterSound.play('waiter','eat')}catch(e){}}
+        if(d.bite>1.15){d.bite=0;if(d.seatId>=0)try{if(window.CooksterSound)window.CooksterSound.play('waiter','eat')}catch(e){}}
         if(d.eatT>=(d.secs||EAT_SECS)){d.phase='dirty';d.dirtyT=0}
       }
     }else d.dirtyT=(d.dirtyT||0)+dt;
