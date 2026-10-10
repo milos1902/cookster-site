@@ -10463,7 +10463,7 @@ function equipmentCountInKitchen(id){
 }
 function equipmentIsInKitchen(id){return equipmentCountInKitchen(id)>0;}
 
-function spawnKitchenEquipment(id,hold=true){
+function spawnKitchenEquipment(id,hold=true,slotOverride=null){
  const def=kitchenEquipmentDef(id);
  if(!def||(!OBJECT_CALIBRATION_MODE&&!ownedKitchenEquipment().includes(id)))return false;
  if(!OBJECT_CALIBRATION_MODE&&equipmentIsInKitchen(id)){
@@ -10474,7 +10474,7 @@ function spawnKitchenEquipment(id,hold=true){
    {cx:360,by:590},{cx:530,by:610},{cx:700,by:590},
    {cx:870,by:610},{cx:1040,by:590},{cx:1180,by:610}
  ];
- const slot=slots[kitchenSpawnIndex++%slots.length];
+ const slot=slotOverride||slots[kitchenSpawnIndex++%slots.length];
  const el=makeItem({
    ...def,
    instanceId:nextItemInstanceId(def.id||'calibration_prop'),
@@ -10497,15 +10497,19 @@ function spawnKitchenEquipment(id,hold=true){
  if(hold)startHolding(el);
  return true;
 }
-// several copies at once (the number chosen with the arrows on the card in "Piće"): all but the last stand on the table, the last one is in the hand
-function spawnKitchenEquipmentMany(id,n){
- const count=Math.max(1,Math.min(12,Math.floor(+n)||1));
- for(let k=1;k<count;k++){if(!spawnKitchenEquipment(id,false))return false;}
- return spawnKitchenEquipment(id,true);
+// the drinks that were chosen in the window "Piće" are put on the table in a row, all at once (the button "Stavi na sto")
+let drinkOrder={};
+function drinkOrderTotal(){return Object.values(drinkOrder).reduce((a,b)=>a+b,0);}
+function putDrinkOrderOnTable(){
+ let k=0;
+ for(const [id,n] of Object.entries(drinkOrder)){
+  for(let i=0;i<n;i++){
+   const slot={cx:400+(k%9)*100,by:596+Math.floor(k/9)*34};k++;
+   spawnKitchenEquipment(id,false,slot);
+  }
+ }
+ drinkOrder={};
 }
-const DRINK_QTY_KEY='cookster.drink-qty.v1';
-let drinkQty={};try{drinkQty=JSON.parse(localStorage.getItem(DRINK_QTY_KEY)||'{}')||{};}catch(_){drinkQty={};}
-function drinkQtyOf(id){return Math.max(1,Math.min(12,Math.floor(+drinkQty[id])||1));}
 function closeKitchenElements(){
  const sceneEl=document.getElementById('kitchenElementsScene');
  if(!sceneEl)return;
@@ -10541,23 +10545,14 @@ function kitchenEquipmentCard(def,mode){
      }
    }
    text.append(info,state);
-   if(def.category==='drink'){                       // arrows up / down and a number: how many of them are taken at once
-     const box=document.createElement('div');
-     box.style.cssText='display:flex;align-items:center;gap:6px;margin-top:6px';
-     const num=document.createElement('strong');num.style.cssText='min-width:26px;text-align:center;font-size:18px';num.textContent=String(drinkQtyOf(def.id));
-     const mk=(label,delta)=>{
-       const b=document.createElement('span');b.setAttribute('role','button');b.textContent=label;b.title=delta>0?'Više':'Manje';
-       b.style.cssText='display:inline-block;width:28px;height:26px;line-height:26px;text-align:center;border:1px solid #7a5428;border-radius:6px;background:#3a2410;color:#f3e3c2;cursor:pointer;user-select:none;font-size:15px;font-weight:700;color:#ffe9b8';
-       const act=e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();};
-       ['pointerdown','mousedown','mouseup','pointerup','dblclick'].forEach(t=>b.addEventListener(t,act));
-       b.addEventListener('click',e=>{act(e);drinkQty[def.id]=Math.max(1,Math.min(12,drinkQtyOf(def.id)+delta));num.textContent=String(drinkQty[def.id]);try{localStorage.setItem(DRINK_QTY_KEY,JSON.stringify(drinkQty));}catch(_){}});
-       return b;
-     };
-     box.append(mk('▼',-1),num,mk('▲',1));
-     text.appendChild(box);
-   }
+   if(def.category==='drink'){                       // a drink is only added to the list on the right; the button "Stavi na sto" puts everything on the table
+     info.textContent='Klik = dodaj na listu';
+     const cnt=drinkOrder[def.id]||0;
+     if(cnt){const bd=document.createElement('span');bd.textContent='× '+cnt;bd.style.cssText='position:absolute;right:10px;top:8px;padding:2px 8px;border-radius:10px;background:#2e8b3d;color:#fff!important;font-weight:900;font-size:14px';button.appendChild(bd);}
+     button.addEventListener('click',()=>{drinkOrder[def.id]=Math.min(12,(drinkOrder[def.id]||0)+1);renderKitchenElements();});
+   }else
    button.addEventListener('click',()=>{
-     if(def.category==='drink'?spawnKitchenEquipmentMany(def.id,drinkQtyOf(def.id)):spawnKitchenEquipment(def.id)){
+     if(spawnKitchenEquipment(def.id)){
        closeKitchenElements();
        updateHover();
      }
@@ -10584,6 +10579,27 @@ function kitchenEquipmentCard(def,mode){
  return button;
 }
 let kitchenPanelMode='equipment';
+function renderDrinkOrder(sec){
+ sec.innerHTML='';
+ const head=document.createElement('div');head.className='ke-section-title';head.innerHTML='<strong>Za sto</strong><span>Šta stavljaš na sto</span>';sec.appendChild(head);
+ const ids=Object.keys(drinkOrder).filter(id=>drinkOrder[id]>0);
+ if(!ids.length){const e=document.createElement('div');e.className='ke-empty';e.textContent='Klikni na piće sa leve strane.';sec.appendChild(e);}
+ for(const id of ids){
+  const def=kitchenEquipmentDef(id);if(!def)continue;
+  const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 8px;margin:6px 0;border:2px solid #7c4b25;border-radius:12px;background:#fff6dc';
+  const im=document.createElement('img');im.src=def.src;im.alt='';im.style.cssText='width:44px;height:44px;object-fit:contain';
+  const nm=document.createElement('strong');nm.textContent=def.label;nm.style.cssText='flex:1;font-size:14px';
+  const mkb=(t,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.style.cssText='width:30px;height:30px;border:1px solid #7a5428;border-radius:8px;background:#3a2410;color:#ffe9b8;font-weight:900;font-size:15px;cursor:pointer';b.onclick=e=>{e.stopPropagation();fn();renderKitchenElements();};return b;};
+  const num=document.createElement('strong');num.textContent=String(drinkOrder[id]);num.style.cssText='min-width:26px;text-align:center;font-size:18px';
+  row.append(im,nm,mkb('▼',()=>{drinkOrder[id]=drinkOrder[id]-1;if(drinkOrder[id]<=0)delete drinkOrder[id];}),num,mkb('▲',()=>{drinkOrder[id]=Math.min(12,drinkOrder[id]+1);}),mkb('✕',()=>{delete drinkOrder[id];}));
+  sec.appendChild(row);
+ }
+ const put=document.createElement('button');put.type='button';const tot=drinkOrderTotal();
+ put.textContent=tot?`Stavi na sto (${tot})`:'Stavi na sto';put.disabled=!tot;
+ put.style.cssText='display:block;width:100%;margin-top:14px;padding:12px;border:3px solid #351b0d;border-radius:12px;background:#e8c27a;color:#351b0d;font-weight:900;font-size:17px;cursor:'+(tot?'pointer':'default')+';opacity:'+(tot?1:.5);
+ put.onclick=()=>{if(!drinkOrderTotal())return;putDrinkOrderOnTable();closeKitchenElements();updateHover();};
+ sec.appendChild(put);
+}
 function renderKitchenElements(){
  const ownedGrid=document.getElementById('kitchenOwnedGrid');
  const shopGrid=document.getElementById('kitchenShopGrid');
@@ -10593,6 +10609,15 @@ function renderKitchenElements(){
 
  const ownedIds=ownedKitchenEquipment();
  const inPanel=d=>kitchenPanelMode==='drinks'?d.category==='drink':d.category!=='drink';
+ const shopSec=shopGrid.closest('section'),ownTitle=ownedGrid.parentNode.querySelector('.ke-section-title strong'),ownHint=ownedGrid.parentNode.querySelector('.ke-section-title span');
+ let orderSec=document.getElementById('drinkOrderSection');
+ if(kitchenPanelMode==='drinks'){
+  shopSec.style.display='none';if(ownTitle)ownTitle.textContent='Piće';if(ownHint)ownHint.textContent='Klik = dodaj na listu';
+  if(!orderSec){orderSec=document.createElement('section');orderSec.id='drinkOrderSection';orderSec.className='kitchen-elements-shop';shopSec.parentNode.appendChild(orderSec);}
+  orderSec.style.display='';renderDrinkOrder(orderSec);
+ }else{
+  shopSec.style.display='';if(ownTitle)ownTitle.textContent='Moja kuhinja';if(ownHint)ownHint.textContent='Klik = stvori na stolu';if(orderSec)orderSec.style.display='none';
+ }
  const titleEl=document.getElementById('kitchenElementsTitle');if(titleEl)titleEl.textContent=kitchenPanelMode==='drinks'?'🍷 Piće':'🍳 Kuhinjski elementi';
  const ownedDefs=KITCHEN_EQUIPMENT.filter(d=>ownedIds.includes(d.id)&&inPanel(d));
  for(const def of ownedDefs)ownedGrid.appendChild(kitchenEquipmentCard(def,'owned'));
@@ -10630,6 +10655,7 @@ function ensureKitchenElementsScroll(){
 }
 function openKitchenElements(mode){
  kitchenPanelMode=mode==='drinks'?'drinks':'equipment';
+ drinkOrder={};
  ensureKitchenElementsScroll();
  if(document.body.classList.contains('market-open'))return;
  const sceneEl=document.getElementById('kitchenElementsScene');
