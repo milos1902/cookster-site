@@ -471,7 +471,7 @@ function makeGuest(seat,grp,wait){
   var ch=pool.length?pool[Math.floor(Math.random()*pool.length)]:1+Math.floor(Math.random()*CHARS);
   var g={id:++UID,ch:ch,seat:seat,x:DOOR.x+(Math.random()*30-15),y:DOOR.y,
     mode:'in',path:findPath(DOOR,{x:seat.ax,y:seat.ay}),pi:1,phase:Math.random()*2,face:'dole',flip:false,
-    sitT:0,sitFor:grp?grp.sitFor:90+Math.random()*70,orderDelay:14+Math.random()*14,fade:0,from:null,speed:78+Math.random()*16,mood:'ok',grp:grp||null,wait:wait||0,rounds:0,held:true,patK:.85+Math.random()*.5,warmth:Math.random()<.3?'hot':'cold',waitFoodSince:null,need:0,warned:false,leftAngry:false};
+    sitT:0,sitFor:grp?grp.sitFor:90+Math.random()*70,orderDelay:4+Math.random()*5,fade:0,from:null,speed:78+Math.random()*16,mood:'ok',grp:grp||null,wait:wait||0,rounds:0,held:true,patK:.85+Math.random()*.5,warmth:Math.random()<.3?'hot':'cold',waitFoodSince:null,need:0,warned:false,leftAngry:false};
   guests.push(g);return g;
 }
 // one guest (a free seat at a table that is clean)
@@ -560,7 +560,7 @@ function gsay(g,text,delta){
   reactions.push({table:g.seat.table,gid:g.id,t:1.4,ev:{issues:[text]},rep:rep,delta:delta||0,life:5});
 }
 // patience: waiting too long for the waiter, or for the food and drinks, he gets up and leaves (and the reputation falls)
-var PAT_ORDER=70,PAT_FOOD=240;                       // seconds: after the waiter should have come / after the order was taken
+var PAT_ORDER=70,PAT_FOOD=330;                       // seconds: after the waiter should have come / after the order was taken
 function leaveAngry(g,text,delta){
   gsay(g,text,delta);
   g.leftAngry=true;g.mode='rising';g.fade=0;

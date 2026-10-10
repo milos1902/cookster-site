@@ -746,7 +746,7 @@ body{
 .detached-lid.hovered .lid-crop,
 .lid-hit.hover-lid .lid-crop{
   transform-origin:center center;
-  animation:cooksterHoverPopWarm .20s cubic-bezier(.2,.9,.28,1) 1;
+  animation:none;
   filter:
     drop-shadow(0 0 8px rgba(194,148,58,.76))
     drop-shadow(0 0 2px rgba(103,67,31,.72)) !important;
