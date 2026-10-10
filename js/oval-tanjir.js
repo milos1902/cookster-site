@@ -28,6 +28,41 @@ const isFinished=l=>l.length===3&&l.every(x=>x==='z');
 // everything else that is cut small (garlic, onion, tomato...) is a "pinch" that is scattered over the food: the list is dataset.ovalExtras (vegetable keys, at most 4)
 function extrasOf(el){let l=null;try{l=JSON.parse(el.dataset.ovalExtras||'null');}catch(_){}return Array.isArray(l)?l.filter(k=>typeof k==='string').slice(0,4):[];}
 function dicedSrcOf(k){try{return VEGETABLES[k]&&VEGETABLES[k].dicedSrc||'';}catch(_){return '';}}
+// the single pieces of a "pinch" picture (a heap of chopped garlic...): every piece that is not touching the others is cut out of the picture (the heap itself gives a few more squares)
+const piecesCache={};
+function piecesOf(k){
+  if(piecesCache[k])return piecesCache[k];
+  const src=dicedSrcOf(k),im=load(src);if(!src||!im.complete||!im.naturalWidth)return[];
+  const w=im.naturalWidth,h=im.naturalHeight,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(im,0,0);
+  let d;try{d=g.getImageData(0,0,w,h).data;}catch(_){return piecesCache[k]=[];}
+  const lab=new Int32Array(w*h),comps=[];let n=0;
+  for(let i=0;i<w*h;i++){
+    if(lab[i]||d[i*4+3]<60)continue;
+    n++;const st=[i];lab[i]=n;let minx=w,maxx=0,miny=h,maxy=0,area=0;
+    while(st.length){
+      const j=st.pop(),x=j%w,y=(j-x)/w;area++;if(x<minx)minx=x;if(x>maxx)maxx=x;if(y<miny)miny=y;if(y>maxy)maxy=y;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const xx=x+dx,yy=y+dy;if(xx<0||yy<0||xx>=w||yy>=h)continue;const q=yy*w+xx;if(!lab[q]&&d[q*4+3]>=60){lab[q]=n;st.push(q);}}
+    }
+    comps.push({n,minx,maxx,miny,maxy,area});
+  }
+  comps.sort((a,b)=>b.area-a.area);
+  const big=comps[0],out=[];
+  comps.slice(1).forEach(cp=>{                                           // the pieces that lie alone
+    if(cp.area<80||cp.area>big.area*.2)return;
+    const bw=cp.maxx-cp.minx+1,bh=cp.maxy-cp.miny+1,pc=document.createElement('canvas');pc.width=bw;pc.height=bh;const pg=pc.getContext('2d'),id=pg.createImageData(bw,bh);
+    for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){const q=(cp.miny+y)*w+cp.minx+x;if(lab[q]===cp.n){const o=(y*bw+x)*4,s2=q*4;id.data[o]=d[s2];id.data[o+1]=d[s2+1];id.data[o+2]=d[s2+2];id.data[o+3]=d[s2+3];}}
+    pg.putImageData(id,0,0);out.push(pc);
+  });
+  if(out.length<6&&big){                                                 // not enough single pieces: small squares from inside of the heap
+    const bw=big.maxx-big.minx,bh=big.maxy-big.miny,sz=Math.max(18,Math.round(Math.min(bw,bh)*.1));let tries=0;
+    while(out.length<10&&tries++<200){
+      const x=big.minx+Math.floor(Math.random()*(bw-sz)),y=big.miny+Math.floor(Math.random()*(bh-sz));
+      let ok=true;for(let yy=0;yy<sz&&ok;yy+=3)for(let xx=0;xx<sz;xx+=3){if(lab[(y+yy)*w+x+xx]!==big.n){ok=false;break;}}
+      if(!ok)continue;const pc=document.createElement('canvas');pc.width=sz;pc.height=sz;pc.getContext('2d').drawImage(im,x,y,sz,sz,0,0,sz,sz);out.push(pc);
+    }
+  }
+  return piecesCache[k]=out;
+}
 function veg(k){try{return(VEGETABLES[k]&&VEGETABLES[k].label)||k;}catch(_){return k;}}
 // The zone of the food on the plate (an ellipse, tilted like the plate; the rim of the plate is outside of it). Oil shines and parsley falls only here.
 const ZONE={x:.50,y:.50,rx:.40,ry:.285,rot:.34};
@@ -98,13 +133,17 @@ function compose(l,oil,parsley,seed,extras){
     g.save();g.globalCompositeOperation='screen';g.globalAlpha=.75;g.drawImage(sh,0,0);g.restore();
     if(food){g.save();g.globalCompositeOperation='overlay';g.globalAlpha=.34*oil;g.drawImage(food,0,0);g.restore();}   // a bit more contrast and colour, as on a wet surface
   }
-  if(extras.length){                                                     // the pinches of chopped things: a few small heaps scattered over the zone
+  if(extras.length){                                                     // the pinches of chopped things: single small pieces, scattered all over the food
     const re=rng((seed||7)*13+5);
+    let fd=null;try{if(food)fd=food.getContext('2d').getImageData(0,0,W,H).data;}catch(_){}
+    const onFood=(x,y)=>{if(!fd)return true;const i=((Math.round(y)*W)+Math.round(x))*4+3;return fd[i]>140;};
     extras.forEach(k=>{
-      const im=load(dicedSrcOf(k)),n=4,sz=W*.15;
-      for(let i=0;i<n;i++){
-        const [x,y]=zonePoint(re,W,H),a=(.8+re()*.4)*sz;
-        g.save();g.translate(x,y);g.rotate((re()-.5)*1.2);g.shadowColor='rgba(40,20,5,.35)';g.shadowBlur=5;g.shadowOffsetY=2;g.drawImage(im,-a/2,-a/2,a,a);g.restore();
+      const ps=piecesOf(k);if(!ps.length)return;
+      for(let i=0;i<24;i++){
+        let x,y;
+        for(let t=0;t<40;t++){[x,y]=zonePoint(re,W,H);if(re()<.12||onFood(x,y))break;}      // most of the pieces lie on the food, a few fall on the plate
+        const pc=ps[Math.floor(re()*ps.length)],a=W*(.034+re()*.016),h=a*pc.height/pc.width;
+        g.save();g.translate(x,y);g.rotate(re()*Math.PI*2);g.shadowColor='rgba(40,20,5,.4)';g.shadowBlur=3;g.shadowOffsetY=1.5;g.drawImage(pc,-a/2,-h/2,a,h);g.restore();
       }
     });
   }
