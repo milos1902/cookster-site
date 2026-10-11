@@ -11,11 +11,9 @@ const OVAL='oval_tanjir',HEAP=14,OVALDIR='assets/calibration_props/oval/';
 // the zone of the food in every kind of vessel (parts of the width / height of its picture; rot = tilt of the zone)
 const ZONES={
   oval_tanjir:{x:.50,y:.50,rx:.40,ry:.38,rot:.34},
-  kal_02_tanjir_ravni:{x:.50,y:.50,rx:.27,ry:.22,rot:0},
-  kal_02_duboki_tanjir:{x:.50,y:.50,rx:.28,ry:.25,rot:0},
-  DEEP:{x:.50,y:.36,rx:.38,ry:.22,rot:0}                               // bowls (vangle, činije, posuda za kupus) are seen from above at an angle: the opening is in the upper part
+  ANY:{x:.50,y:.50,rx:.43,ry:.42,rot:0}                                // every other vessel: almost the whole picture, so food stays exactly where the player put it
 };
-const zoneOf=id=>ZONES[id]||ZONES.DEEP;
+const zoneOf=id=>ZONES[id]||ZONES.ANY;
 function defOf(id){try{return kitchenEquipmentDef(id);}catch(_){return null;}}
 const NOT_SERVING={lavor_emajl_veliki:1,kal_01_okrugli_pleh:1,kal_01_pravougaoni_pleh:1};      // the washing basin and the baking trays: this logic is not for them (the choice of the player)
 function isServing(el){
@@ -178,7 +176,7 @@ function compose(el){
         else if(i===0){x=bb0?(bb0.x0+bb0.x1)/2:cal.bx;y=bb0?(bb0.y0+bb0.y1)/2:cal.by;}
         else{const lv=Math.min(1,i/9),yb=cal.by+(cal.top<cal.by?(cal.by-cal.top)*.04:4),yt=cal.by-(cal.by-cal.top)*(.18+.82*lv);[x,y]=polyPoint(rp,cal.food,Math.min(yt,cal.by),yb);}
         return{x,y,rot:(rp()-.5)*1.1,sc:i===0?1:.9+rp()*.2,first:i===0&&!hasXY(it)};});
-    }else{pl=places(pcs.length,Z,W,H,seed);pl.forEach((q,i)=>{if(hasXY(pcs[i])){q.x=pcs[i].x*W;q.y=pcs[i].y*H;}});}
+    }else{pl=places(pcs.length,Z,W,H,seed);pl.forEach((q,i)=>{if(hasXY(pcs[i])){q.x=pcs[i].x*W;q.y=pcs[i].y*H;q.sc=1;}});}
     pcs.map((it,i)=>i).sort((a,b)=>pl[a].y-pl[b].y).forEach(i=>{                  // the lower ones are drawn over the higher ones (the places themselves do not change)
       const it=pcs[i],spr=sprite(it.s),p=pl[i];let w=W*Math.max(.1,Math.min(.62,it.w))*p.sc;
       let h=w*spr.height/spr.width;
@@ -191,8 +189,9 @@ function compose(el){
         const inside=(x,y)=>poly?inPoly(poly,x,y):zin(x,y);
         const fits=(ww,hh)=>{for(let a=0;a<16;a++){const t=a/16*Math.PI*2,ex=Math.cos(t)*ww*.46,ey=Math.sin(t)*hh*.46;if(!inside(p.x+ex*cs-ey*sn,p.y+ex*sn+ey*cs))return false;}return true;};
         const cx=poly?(polyBox(poly).x0+polyBox(poly).x1)/2:W*Z.x,cy=poly?(polyBox(poly).y0+polyBox(poly).y1)/2:H*Z.y;
-        for(let n=0;n<14&&!fits(w,h);n++){p.x+=(cx-p.x)*.12;p.y+=(cy-p.y)*.12;}   // first it is moved a little toward the middle
-        for(let n=0;n<40&&!fits(w,h);n++){w*=.94;h*=.94;}
+        for(let n=0;n<8&&!fits(w,h);n++){w*=.92;h*=.92;}                      // first smaller (the place stays), only then a little toward the middle
+        for(let n=0;n<30&&!fits(w,h);n++){p.x+=(cx-p.x)*.1;p.y+=(cy-p.y)*.1;}
+        for(let n=0;n<30&&!fits(w,h);n++){w*=.94;h*=.94;}
       }
       [g,f].forEach((c,k)=>{c.save();if(cal){polyPath(c,cal.food);c.clip();}c.translate(p.x,p.y);c.rotate(p.rot);if(k===0){c.shadowColor='rgba(50,25,5,.38)';c.shadowBlur=10;c.shadowOffsetY=4;}c.drawImage(spr,-w/2,-h/2,w,h);c.restore();});
     });

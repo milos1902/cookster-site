@@ -255,3 +255,4 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Cela hrana se nikad ne seče: ako komad ne staje u zonu (poligon ili elipsu ovala), prvo se malo pomeri ka sredini pa se smanji dok ne stane do ivice.
 - Gotova slika ovala sa tri zelene paprike (`oval_puna.webp`) i sva logika "gotovog jela" su obrisani: oval se crta kao svaka druga posuda, od liste sadržaja.
 - Mesto spuštanja: svaki komad pamti gde je igrač spustio miš (`x`,`y` u delovima slike posude) i tu stoji; seckano povrće se rasipa oko te tačke. Starije stavke bez x/y imaju stari automatski raspored.
+- Zona za posude bez kalibracije je sada skoro cela slika (`ZONES.ANY`), samo oval ima svoju elipsu; uzrok što činije/vangle/ravni tanjir nisu slušale mesto spuštanja bila je uska zona koja je vukla komade ka sredini. Cela hrana se prvo smanji (mesto ostaje), tek onda pomeri ka sredini.
