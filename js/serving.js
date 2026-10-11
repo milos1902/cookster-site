@@ -125,11 +125,36 @@ function places(n,Z,W,H,seed){
   }
   return out.sort((p,q)=>p.y-q.y);                                       // the lower ones are drawn over the higher ones
 }
+// ---------- the calibrated vessels (the player drew where the food is seen: js/data/vessel-food-zones.js, tool "Maska hrane u posudi") ----------
+function calOf(id){
+  let c=null;
+  try{const ls=JSON.parse(localStorage.getItem('cookster.vessel-food-mask-calibration.v1')||'null');const v=ls&&ls.vessels?ls.vessels[id]:ls&&ls[id];if(v&&Array.isArray(v.foodVisible)&&v.foodVisible.length>=3)c=v;}catch(_){}
+  if(!c){const z=window.__COOKSTER_VESSEL_FOOD_ZONES__;c=z&&z[id]||null;}
+  return c;
+}
+const pt2=p=>Array.isArray(p)?[p[0],p[1]]:[p.x,p.y];
+function calPx(c,W,H){
+  const poly=l=>(l||[]).map(p=>{const q=pt2(p);return[q[0]/100*W,q[1]/100*H];});
+  const dp=p=>p?(()=>{const q=pt2(p);return[q[0]/100*W,q[1]/100*H];})():null;
+  const food=poly(c.foodVisible),bottom=poly(c.bottom),db=dp(c.depth&&c.depth.bottom),dt=dp(c.depth&&c.depth.foodTop);
+  const ys=food.map(p=>p[1]),xs=food.map(p=>p[0]);
+  return{food,bottom:bottom.length>=3?bottom:null,by:db?db[1]:Math.max(...ys)*.9,top:dt?dt[1]:Math.min(...ys),minx:Math.min(...xs),maxx:Math.max(...xs),bx:db?db[0]:(Math.min(...xs)+Math.max(...xs))/2};
+}
+function inPoly(poly,x,y){let ins=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])ins=!ins;}return ins;}
+function polyPath(g,poly){g.beginPath();poly.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.closePath();}
+function polyBox(poly){const xs=poly.map(p=>p[0]),ys=poly.map(p=>p[1]);return{x0:Math.min(...xs),x1:Math.max(...xs),y0:Math.min(...ys),y1:Math.max(...ys)};}
+function polyPoint(r,poly,y0,y1){const b=polyBox(poly);for(let i=0;i<90;i++){const x=b.x0+r()*(b.x1-b.x0),y=y0+r()*(y1-y0);if(inPoly(poly,x,y))return[x,y];}return[(b.x0+b.x1)/2,(y0+y1)/2];}
+// the first thing lies on the bottom of the vessel (blue), the next ones fill it up to the green polygon: the more there is, the higher the food reaches (from the point of the bottom to the point of the top)
+function calState(cal,n){
+  const level=n<=1?0:Math.min(1,(n-1)/9),bandBottom=cal.by+(cal.top<cal.by?(cal.by-cal.top)*.04:4),bandTop=cal.by-(cal.by-cal.top)*(.18+.82*level)*(n<=1?0:1);
+  const single=n===1&&!!cal.bottom;
+  return{single,poly:single?cal.bottom:cal.food,y0:single?polyBox(cal.bottom).y0:Math.min(bandTop,cal.by),y1:single?polyBox(cal.bottom).y1:bandBottom,clip:single?cal.bottom:cal.food};
+}
 const cache={};
 function compose(el){
   const id=el.dataset.itemId,l=listOf(el),oil=Math.max(0,Math.min(2,+el.dataset.srvOil||0)),pars=Math.max(0,Math.min(40,+el.dataset.srvParsley||0)),seed=+el.dataset.srvSeed||7;
   const finished=isFinished(el,l),bsrc=finished?OVALDIR+'oval_puna.webp':baseSrc(el);
-  const key=id+'|'+JSON.stringify(l)+'|o'+oil+'|p'+pars+'|s'+seed;
+  const cj=calOf(id),key=id+'|'+JSON.stringify(l)+'|o'+oil+'|p'+pars+'|s'+seed+(cj?'|c'+JSON.stringify(cj).length:'');
   if(cache[key])return cache[key];
   const base=load(bsrc);
   if(!bsrc||!base.complete||!base.naturalWidth)return bsrc;
@@ -137,39 +162,54 @@ function compose(el){
   if(sp.some(v=>v===null))return bsrc;                                  // the pictures are still coming
   const W=base.naturalWidth,H=base.naturalHeight,Z=zoneOf(id),mk=()=>{const c=document.createElement('canvas');c.width=W;c.height=H;return c;};
   const out=mk(),g=out.getContext('2d'),r=rng(seed);
+  const pcs=finished?[]:pieces(l),cal=(!finished&&cj)?calPx(cj,W,H):null,st=cal?calState(cal,pcs.length||(scattered(l).length?2:0)):null;
+  const sample=rr=>cal?polyPoint(rr,st.poly,st.y0,st.y1):zonePoint(rr,Z,W,H);
   g.drawImage(base,0,0);
-  const pcs=finished?[]:pieces(l);let food=null;
-  if(pcs.length||(finished&&0)){
-    if(oil>0){g.save();zonePath(g,Z,W,H,.93);g.clip();const gr=g.createRadialGradient(W*Z.x,H*Z.y,W*.04,W*Z.x,H*Z.y,W*Z.rx);gr.addColorStop(0,`rgba(255,206,70,${.20+.12*oil})`);gr.addColorStop(1,`rgba(255,196,60,${.06*oil})`);g.fillStyle=gr;g.fillRect(0,0,W,H);g.restore();}
-    food=mk();const f=food.getContext('2d'),pl=places(pcs.length,Z,W,H,seed);
+  let food=null;
+  if(pcs.length){
+    if(oil>0){g.save();if(cal)polyPath(g,st.clip);else zonePath(g,Z,W,H,.93);g.clip();const cx=cal?cal.bx:W*Z.x,cy=cal?(st.y0+st.y1)/2:H*Z.y,gr=g.createRadialGradient(cx,cy,W*.03,cx,cy,W*.32);gr.addColorStop(0,`rgba(255,206,70,${.20+.12*oil})`);gr.addColorStop(1,`rgba(255,196,60,${.06*oil})`);g.fillStyle=gr;g.fillRect(0,0,W,H);g.restore();}
+    food=mk();const f=food.getContext('2d');
+    let pl;
+    if(cal){                                                             // inside of the calibrated vessel: the heap rises with the number of pieces
+      const rp=rng(seed*7+3),sc=pcs.length<=1?1:Math.min(1,1.5/Math.sqrt(pcs.length));
+      pl=pcs.map((it,i)=>{const [x,y]=pcs.length===1?[cal.bottom?(polyBox(cal.bottom).x0+polyBox(cal.bottom).x1)/2:cal.bx,cal.bottom?(polyBox(cal.bottom).y0+polyBox(cal.bottom).y1)/2:cal.by]:polyPoint(rp,st.poly,st.y0,st.y1);return{x,y,rot:(rp()-.5)*1.1,sc:sc*(.9+rp()*.2)};}).sort((a,b)=>a.y-b.y);
+    }else pl=places(pcs.length,Z,W,H,seed);
     pcs.forEach((it,i)=>{
-      const spr=sprite(it.s),p=pl[i],w=W*Math.max(.1,Math.min(.62,it.w))*p.sc,h=w*spr.height/spr.width;
-      g.save();g.translate(p.x,p.y);g.rotate(p.rot);g.shadowColor='rgba(50,25,5,.38)';g.shadowBlur=10;g.shadowOffsetY=4;g.drawImage(spr,-w/2,-h/2,w,h);g.restore();
-      f.save();f.translate(p.x,p.y);f.rotate(p.rot);f.drawImage(spr,-w/2,-h/2,w,h);f.restore();
+      const spr=sprite(it.s),p=pl[i];let w=W*Math.max(.1,Math.min(.62,it.w))*p.sc;
+      let h=w*spr.height/spr.width;
+      if(cal){                                                           // the piece is fitted INTO the polygon (not cut by its edge): its size is limited by the width and the height of the polygon
+        const bb=polyBox(st.clip),maxW=(bb.x1-bb.x0)*(pcs.length===1?.97:.46),maxH=(bb.y1-bb.y0)*(pcs.length===1?.97:.62);if(pcs.length===1){const k1=Math.max((bb.x1-bb.x0)*.9/w,(bb.y1-bb.y0)*.9/h);if(k1>1){w*=Math.min(k1,1.8);h*=Math.min(k1,1.8);}}   // the first thing fills the floor (blue)
+        const k=Math.min(1,maxW/w,maxH/h);w*=k;h*=k;
+      }
+      [g,f].forEach((c,k)=>{c.save();if(cal){polyPath(c,st.clip);c.clip();}c.translate(p.x,p.y);c.rotate(p.rot);if(k===0){c.shadowColor='rgba(50,25,5,.38)';c.shadowBlur=10;c.shadowOffsetY=4;}c.drawImage(spr,-w/2,-h/2,w,h);c.restore();});
     });
   }
   if(oil>0&&(finished||food)){
     const sh=mk(),s=sh.getContext('2d');
     if(food){s.drawImage(food,0,0);s.globalCompositeOperation='source-atop';}else{zonePath(s,Z,W,H,1);s.clip();}
     if(food){s.save();s.globalAlpha=.09*oil;s.fillStyle='rgba(255,236,170,1)';s.fillRect(0,0,W,H);s.restore();}
-    shines(s,Z,W,H,r,9+6*oil,.50+.18*oil);
+    for(let i=0;i<9+6*oil;i++){const [x,y]=sample(r),len=W*(.05+r()*.07),th=len*(.18+r()*.14),rot=(r()-.5)*.9,strength=.50+.18*oil;
+      s.save();s.translate(x,y);s.rotate(rot);s.scale(1,th/len);const gr=s.createRadialGradient(0,0,0,0,0,len);gr.addColorStop(0,`rgba(255,252,225,${.85*strength})`);gr.addColorStop(.5,`rgba(255,244,190,${.35*strength})`);gr.addColorStop(1,'rgba(255,240,170,0)');s.fillStyle=gr;s.beginPath();s.arc(0,0,len,0,Math.PI*2);s.fill();s.restore();}
     g.save();g.globalCompositeOperation='screen';g.globalAlpha=.75;g.drawImage(sh,0,0);g.restore();
     if(food){g.save();g.globalCompositeOperation='overlay';g.globalAlpha=.34*oil;g.drawImage(food,0,0);g.restore();}
   }
   const sc=scattered(l);
-  if(sc.length){                                                         // chopped things: single small pieces, most of them over the food
+  if(sc.length){
     const re=rng(seed*13+5);let fd=null;try{if(food)fd=food.getContext('2d').getImageData(0,0,W,H).data;}catch(_){}
     const onFood=(x,y)=>{if(!fd)return true;return fd[((Math.round(y)*W)+Math.round(x))*4+3]>140;};
+    g.save();if(cal){polyPath(g,cal.food);g.clip();}
     sc.slice(0,12).forEach(it=>{
       const ps=piecesOf(it.s);if(!ps.length)return;
       for(let i=0;i<24;i++){
-        let x,y;for(let t=0;t<40;t++){[x,y]=zonePoint(re,Z,W,H);if(re()<.12||onFood(x,y))break;}
+        let x,y;for(let t=0;t<40;t++){[x,y]=sample(re);if(re()<.12||onFood(x,y))break;}
         const pc=ps[Math.floor(re()*ps.length)],a=W*(.034+re()*.016),h=a*pc.height/pc.width;
         g.save();g.translate(x,y);g.rotate(re()*Math.PI*2);g.shadowColor='rgba(40,20,5,.4)';g.shadowBlur=3;g.shadowOffsetY=1.5;g.drawImage(pc,-a/2,-h/2,a,h);g.restore();
       }
     });
+    g.restore();
   }
-  if(pars>0){const rp=rng(seed*31+17);for(let i=0;i<pars;i++){const [x,y]=zonePoint(rp,Z,W,H),size=W*(.045+rp()*.03);g.save();g.translate(x,y);g.shadowColor='rgba(20,30,5,.45)';g.shadowBlur=4;g.shadowOffsetY=2.5;leaf(g,size,rp()*Math.PI*2,rp());g.restore();}}
+  if(pars>0){const rp=rng(seed*31+17);g.save();if(cal){polyPath(g,cal.food);g.clip();}for(let i=0;i<pars;i++){const [x,y]=sample(rp),size=W*(.045+rp()*.03);g.save();g.translate(x,y);g.shadowColor='rgba(20,30,5,.45)';g.shadowBlur=4;g.shadowOffsetY=2.5;leaf(g,size,rp()*Math.PI*2,rp());g.restore();}g.restore();}
+  if(window.__SRV_DEBUG&&cal){g.save();g.lineWidth=3;g.strokeStyle='#18c24a';polyPath(g,cal.food);g.stroke();if(cal.bottom){g.strokeStyle='#2b6bff';polyPath(g,cal.bottom);g.stroke();}g.restore();}
   try{return cache[key]=out.toDataURL('image/png');}catch(_){return bsrc;}
 }
 function nameOf(el,l){
@@ -182,13 +222,14 @@ function render(el){
   if(!el.dataset.baseLabel)el.dataset.baseLabel=String(el.dataset.label||'').replace(/ ·.*$/,'');
   const l=listOf(el);
   if(!l.length&&!(+el.dataset.srvOil)&&!(+el.dataset.srvParsley)){
-    if(el.dataset.srvDrawn){const b=el.querySelector('.body'),sh=el._contactShadow&&el._contactShadow.querySelector('img'),s=baseSrc(el);if(b&&s){b.src=s;if(sh)sh.src=s;}delete el.dataset.srvDrawn;delete el.dataset.srvSrc;el.dataset.label=el.dataset.baseLabel;}
+    if(el.dataset.srvDrawn){const b=el.querySelector('.body'),sh=el._contactShadow&&el._contactShadow.querySelector('img'),s=baseSrc(el);if(b&&s){b.src=s;if(sh)sh.src=s;}delete el.dataset.srvDrawn;delete el.dataset.srvSrc;el.dataset.label=el.dataset.baseLabel;const fm=el._vesselFrontMask||el.querySelector('.vessel-front-mask');if(fm)fm.style.display='';}
     return;
   }
   const src=compose(el);if(!src)return;
   const b=el.querySelector('.body'),sh=el._contactShadow&&el._contactShadow.querySelector('img');
   if(b&&el.dataset.srvSrc!==src){el.dataset.srvSrc=src;b.src=src;if(sh)sh.src=src;}
   el.dataset.srvDrawn='1';
+  const fm=el._vesselFrontMask||el.querySelector('.vessel-front-mask');if(fm)fm.style.display='none';          // the old "front wall" picture would cover the food: the picture drawn here already has the right edges
   el.dataset.label=nameOf(el,l)+((+el.dataset.srvOil)?' · nauljeno':'')+((+el.dataset.srvParsley)?' · peršun':'');
 }
 // ---------- the vessels in the scene ----------
