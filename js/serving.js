@@ -178,7 +178,7 @@ function compose(el){
       const spr=sprite(it.s),p=pl[i];let w=W*Math.max(.1,Math.min(.62,it.w))*p.sc;
       let h=w*spr.height/spr.width;
       if(cal){                                                           // the piece is fitted INTO the polygon (not cut by its edge): its size is limited by the width and the height of the polygon
-        const bb=polyBox(st.clip),maxW=(bb.x1-bb.x0)*(pcs.length===1?.80:.46),maxH=(bb.y1-bb.y0)*(pcs.length===1?.80:.62);
+        const bb=polyBox(st.clip),maxW=(bb.x1-bb.x0)*(pcs.length===1?.97:.46),maxH=(bb.y1-bb.y0)*(pcs.length===1?.97:.62);if(pcs.length===1){const k1=Math.max((bb.x1-bb.x0)*.9/w,(bb.y1-bb.y0)*.9/h);if(k1>1){w*=Math.min(k1,1.8);h*=Math.min(k1,1.8);}}   // the first thing fills the floor (blue)
         const k=Math.min(1,maxW/w,maxH/h);w*=k;h*=k;
       }
       [g,f].forEach((c,k)=>{c.save();if(cal){polyPath(c,st.clip);c.clip();}c.translate(p.x,p.y);c.rotate(p.rot);if(k===0){c.shadowColor='rgba(50,25,5,.38)';c.shadowBlur=10;c.shadowOffsetY=4;}c.drawImage(spr,-w/2,-h/2,w,h);c.restore();});
@@ -209,6 +209,7 @@ function compose(el){
     g.restore();
   }
   if(pars>0){const rp=rng(seed*31+17);g.save();if(cal){polyPath(g,cal.food);g.clip();}for(let i=0;i<pars;i++){const [x,y]=sample(rp),size=W*(.045+rp()*.03);g.save();g.translate(x,y);g.shadowColor='rgba(20,30,5,.45)';g.shadowBlur=4;g.shadowOffsetY=2.5;leaf(g,size,rp()*Math.PI*2,rp());g.restore();}g.restore();}
+  if(window.__SRV_DEBUG&&cal){g.save();g.lineWidth=3;g.strokeStyle='#18c24a';polyPath(g,cal.food);g.stroke();if(cal.bottom){g.strokeStyle='#2b6bff';polyPath(g,cal.bottom);g.stroke();}g.restore();}
   try{return cache[key]=out.toDataURL('image/png');}catch(_){return bsrc;}
 }
 function nameOf(el,l){
@@ -221,13 +222,14 @@ function render(el){
   if(!el.dataset.baseLabel)el.dataset.baseLabel=String(el.dataset.label||'').replace(/ ·.*$/,'');
   const l=listOf(el);
   if(!l.length&&!(+el.dataset.srvOil)&&!(+el.dataset.srvParsley)){
-    if(el.dataset.srvDrawn){const b=el.querySelector('.body'),sh=el._contactShadow&&el._contactShadow.querySelector('img'),s=baseSrc(el);if(b&&s){b.src=s;if(sh)sh.src=s;}delete el.dataset.srvDrawn;delete el.dataset.srvSrc;el.dataset.label=el.dataset.baseLabel;}
+    if(el.dataset.srvDrawn){const b=el.querySelector('.body'),sh=el._contactShadow&&el._contactShadow.querySelector('img'),s=baseSrc(el);if(b&&s){b.src=s;if(sh)sh.src=s;}delete el.dataset.srvDrawn;delete el.dataset.srvSrc;el.dataset.label=el.dataset.baseLabel;const fm=el._vesselFrontMask||el.querySelector('.vessel-front-mask');if(fm)fm.style.display='';}
     return;
   }
   const src=compose(el);if(!src)return;
   const b=el.querySelector('.body'),sh=el._contactShadow&&el._contactShadow.querySelector('img');
   if(b&&el.dataset.srvSrc!==src){el.dataset.srvSrc=src;b.src=src;if(sh)sh.src=src;}
   el.dataset.srvDrawn='1';
+  const fm=el._vesselFrontMask||el.querySelector('.vessel-front-mask');if(fm)fm.style.display='none';          // the old "front wall" picture would cover the food: the picture drawn here already has the right edges
   el.dataset.label=nameOf(el,l)+((+el.dataset.srvOil)?' · nauljeno':'')+((+el.dataset.srvParsley)?' · peršun':'');
 }
 // ---------- the vessels in the scene ----------
