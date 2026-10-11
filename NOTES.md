@@ -253,3 +253,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - `oval_tanjir` je dodat u alat "Maska hrane u posudi" (vessel-food-mask-tool.js), pa se zona hrane za oval crta kao za ostale posude.
 - Dogovor: sastojci idu u svaku posudu (sem tiganj/šerpa/lavor/plehovi), ali će GOTOVA JELA imati pravila u koju posudu idu (npr. belolučane paprike → oval, sir → oval, salate → činije, neka jela → tanjiri). Još nije implementirano.
 - Cela hrana se nikad ne seče: ako komad ne staje u zonu (poligon ili elipsu ovala), prvo se malo pomeri ka sredini pa se smanji dok ne stane do ivice.
+- Gotova slika ovala sa tri zelene paprike (`oval_puna.webp`) i sva logika "gotovog jela" su obrisani: oval se crta kao svaka druga posuda, od liste sadržaja.
+- Mesto spuštanja: svaki komad pamti gde je igrač spustio miš (`x`,`y` u delovima slike posude) i tu stoji; seckano povrće se rasipa oko te tačke. Starije stavke bez x/y imaju stari automatski raspored.
