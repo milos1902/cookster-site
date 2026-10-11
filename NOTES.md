@@ -256,3 +256,10 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Gotova slika ovala sa tri zelene paprike (`oval_puna.webp`) i sva logika "gotovog jela" su obrisani: oval se crta kao svaka druga posuda, od liste sadržaja.
 - Mesto spuštanja: svaki komad pamti gde je igrač spustio miš (`x`,`y` u delovima slike posude) i tu stoji; seckano povrće se rasipa oko te tačke. Starije stavke bez x/y imaju stari automatski raspored.
 - Zona za posude bez kalibracije je sada skoro cela slika (`ZONES.ANY`), samo oval ima svoju elipsu; uzrok što činije/vangle/ravni tanjir nisu slušale mesto spuštanja bila je uska zona koja je vukla komade ka sredini. Cela hrana se prvo smanji (mesto ostaje), tek onda pomeri ka sredini.
+
+### Belolučane paprike u kafani
+- Novo jelo u porudžbinama: `paprike` (Belolučane paprike; `js/kitchen-orders.js` ORDERS). Gost ga naručuje kao i kiseli kupus (u `pickOrderKeys`, `js/tavern-scene.js`, 45% jela su paprike).
+- Red na papiriću traži jedan oval (`oval_tanjir`, slot `__oval`) u kome su bar dve oljuštene paprike (`ovalReady`). Oceni ga `evalOval`: zelena + crvena, beli luk, ulje, ne previše stvari.
+- Konobar odnosi oval (u `takeOrders` se uzima slika ovala `srvSrc` i prosleđuje kao `img` preko `CooksterTavern.deliver`); na stolu se crta slika ovala (`kind:'oval'`, šira od činije, a hrana nestaje kako gost jede), posle jela ostaje prazan oval za pranje.
+- Oljuštene zelene i crvene paprike u posudi imaju približno istu veličinu (duža strana ~34% širine slike posude).
+- Isprobano automatski (Playwright): papir → oval sa paprikama → zvono → konobar odnosi → oval na stolu u kafani. Nije isprobano sa pravim gostima koji naručuju.
