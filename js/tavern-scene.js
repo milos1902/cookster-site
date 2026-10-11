@@ -762,9 +762,10 @@ function pickOrderKeys(g){                            // what one guest orders: 
     if(g.grp.wine===undefined)g.grp.wine=Math.random()<.55?['crno_flasa','belo_flasa','kilo'][Math.floor(Math.random()*3)]:null;
     if(g.grp.wine){drink=g.grp.wine;if(r<.3)r=.5}
   }
-  if(r<.3)return ['kupus'];
+  var dish=Math.random()<.45?'paprike':'kupus';                         // a dish: sour cabbage or "belolučane paprike" (the oval)
+  if(r<.3)return [dish];
   if(r<.62)return [drink];
-  return ['kupus',drink];
+  return [dish,drink];
 }
 function guestOrders(g){
   if(!g.orders){var O=window.CooksterOrders;g.orders=O&&O.make?pickOrderKeys(g).map(function(k){return O.make(k,!!WOMEN[g.ch])}):[]}
@@ -843,7 +844,8 @@ function stepWaiter(dt){
       guests.forEach(function(g){if(g.seat.id===eatSeat){g.sitFor=Math.max(g.sitFor,g.sitT+EAT_DELAY+secs+8);if(g.grp)g.grp.until=Math.max(g.grp.until||0,clock+EAT_DELAY+secs+10)}});
       addDirt(w.table,isDrink?1:2);
       guests.forEach(function(g){if(g.seat.id===eatSeat){g.rounds=(g.rounds||0)+1;if(g.grp&&g.grp.long&&g.rounds<4)g.reorderAt=g.sitT+secs+30+Math.random()*30}});
-      dishes.push({table:w.table,kind:c.kind||'plain',items:c.items||null,secs:secs,t:0,eatT:0,bite:0,phase:'eating',seatId:eatSeat,x:sv?sv.x:null,y:sv?sv.y:null});
+      var ovIm=null;if(c.kind==='oval'&&c.img){ovIm=new Image();ovIm.src=c.img}
+      dishes.push({table:w.table,kind:c.kind||'plain',im:ovIm,items:c.items||null,secs:secs,t:0,eatT:0,bite:0,phase:'eating',seatId:eatSeat,x:sv?sv.x:null,y:sv?sv.y:null});
       var ev=c.ev||null,rep=ev&&window.CooksterQuality?window.CooksterQuality.addReputation(ev.score):null;
       reactions.push({table:w.table,t:0,ev:ev,rep:rep,delta:ev?ev.score:0});
       });
@@ -1011,8 +1013,10 @@ function dishRect(d){
   }
   var im=dishImgs.dirty;if(!im||!im.naturalWidth)return null;
   var c=tiCal('dish',d.seatId),dx=(c&&c.x!=null)?c.x:(d.x!=null?d.x:tb.x),dy=(c&&c.y!=null)?c.y:(d.y!=null?d.y:tb.y+8),sc=tiBase('dish',dy)*((c&&c.s)||1),w=im.naturalWidth*sc,h=im.naturalHeight*sc;
+  if(d.kind==='oval'){var oi=d.im&&d.im.naturalWidth?d.im:null;if(!oi)return null;w*=1.7;h=w*oi.naturalHeight/oi.naturalWidth}              // the oval is wider than the bowl
   return{x:dx-w/2,y:dy-h/2,w:w,h:h,cal:c};                          // the spot is the middle of the dish
 }
+var ovalEmptyImg=null;function ovalEmpty(){if(!ovalEmptyImg){ovalEmptyImg=new Image();ovalEmptyImg.src='assets/calibration_props/oval/oval_prazan.webp'}return ovalEmptyImg}
 function drawDish(ctx,d){
   if(d.items&&d.items.length){
     var L=drinkLayout(d);if(!L)return;
@@ -1022,7 +1026,8 @@ function drawDish(ctx,d){
     ctx.restore();return;
   }
   var r=dishRect(d);if(!r)return;
-  var full=dishImgs[d.kind]||dishImgs.plain,dirty=dishImgs.dirty;
+  var full=d.kind==='oval'?d.im:(dishImgs[d.kind]||dishImgs.plain),dirty=d.kind==='oval'?ovalEmpty():dishImgs.dirty;
+  if(!dirty||!dirty.naturalWidth)return;
   var a=d.phase==='eating'?Math.min(1,d.t/.3):1;
   ctx.save();ctx.globalAlpha=a;tiShadow(ctx,r.x+r.w/2,r.y+r.h,r.w,r.cal);
   if(r.cal&&(r.cal.rot||r.cal.sk)){tiPose(ctx,r.x+r.w/2,r.y+r.h/2,r.cal);ctx.translate(-(r.x+r.w/2),-(r.y+r.h/2))}
@@ -1031,7 +1036,7 @@ function drawDish(ctx,d){
   if(d.phase==='eating'){
     ctx.drawImage(dirty,r.x,r.y,r.w,r.h);                                  // the bowl underneath (it gets dirty while the food goes)
     var frac=Math.max(0,1-d.eatT/EAT_SECS),cut=r.h*.72*(1-frac);               // the food goes down from the top
-    if(full&&full.naturalWidth){ctx.beginPath();ctx.rect(r.x-2,r.y+cut,r.w+4,r.h-cut+2);ctx.clip();ctx.drawImage(full,r.x,r.y,r.w,r.h)}
+    if(full&&(full.naturalWidth||full.width)){ctx.beginPath();ctx.rect(r.x-2,r.y+cut,r.w+4,r.h-cut+2);ctx.clip();ctx.drawImage(full,r.x,r.y,r.w,r.h)}
   }else ctx.drawImage(dirty,r.x,r.y,r.w,r.h);
   ctx.restore();
 }
@@ -1498,13 +1503,13 @@ window.addEventListener('keydown',onKey,true);window.addEventListener('keyup',on
 
 window.CooksterTavern={
   say:gsay,guestsList:function(){return guests},scaleAt:scaleAt,clockNow:function(){return clock},  tableReport:tableReport,waiterSize:{get:function(){return WSIZE},set:function(d){WSIZE=d;try{localStorage.setItem(WSIZE_KEY,JSON.stringify(d))}catch(e){}},scaleAt:wScale},open:open,close:close,spawn:spawn,spawnCompany:spawnCompany,companyOk:companyOk,companyTable:function(){return COMPANY.table},
-  deliver:function(table,kind,ev,seatId,items){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null})},
+  deliver:function(table,kind,ev,seatId,items,img){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null,img:img||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,dirtyDishAt:dirtyDishAt,
   isOpenForGuests:function(){return openForGuests},setOpenForGuests:setOpenForGuests,say:function(i,t,d){var g=guests.filter(function(o){return o.id===i})[0];if(g)gsay(g,t,d)},
   waiterSteps:{get:wsData,set:function(d){WSD=d;try{localStorage.setItem(WS_KEY,JSON.stringify(WSD))}catch(e){}},reset:function(){WSD=null;try{localStorage.removeItem(WS_KEY)}catch(e){}wsData()},count:function(k){return WD_N[k]||0},url:function(k,i){return WAITER+k+'24/f'+(i<10?'0':'')+i+'.webp?v=6'},play:wsPlay,stepClips:16},
   tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose,draw:tiDraw,shadow:tiShadow,shDef:TI_SH,cal:tiCal},
   get isOpen(){return state==='tavern'},get busy(){return busy},guestCount:function(){return guests.length},
-  debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,held:!!g.held,an:g.an?g.an.name:'',pose:g.seat.pose,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
+  debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)+':'+d.kind+':'+(d.im?d.im.naturalWidth:'-')}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,held:!!g.held,an:g.an?g.an.name:'',pose:g.seat.pose,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},
   seatReach:function(){return SEATS.map(seatReachable)},poseFromDir:poseFromDir,seatScale:function(y){return scaleAt(y)*SIT_K},
   poseInfo:function(pose){var im=imgs['g01_sedi_'+pose];return im?{src:im.src,w:im.naturalWidth,h:im.naturalHeight}:null},
