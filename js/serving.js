@@ -184,6 +184,14 @@ function compose(el){
         const bb=(p.first&&cal.bottom)?polyBox(cal.bottom):polyBox(cal.food),maxW=(bb.x1-bb.x0)*(p.first?.97:.46),maxH=(bb.y1-bb.y0)*(p.first?.97:.62);if(p.first){const k1=Math.max((bb.x1-bb.x0)*.9/w,(bb.y1-bb.y0)*.9/h);if(k1>1){w*=Math.min(k1,1.8);h*=Math.min(k1,1.8);}}   // the first thing fills the floor (blue) and stays there
         const k=Math.min(1,maxW/w,maxH/h);w*=k;h*=k;
       }
+      {                                                                  // a whole piece is never cut: if it does not fit, it is made smaller until it reaches the edge
+        const poly=cal?((p.first&&cal.bottom)?cal.bottom:cal.food):null,cs=Math.cos(p.rot),sn=Math.sin(p.rot);
+        const inside=(x,y)=>poly?inPoly(poly,x,y):(()=>{const c=Math.cos(Z.rot),s2=Math.sin(Z.rot),dx=x-W*Z.x,dy=y-H*Z.y,u=dx*c+dy*s2,v=-dx*s2+dy*c;return(u*u)/((W*Z.rx)**2)+(v*v)/((H*Z.ry)**2)<=1;})();
+        const fits=(ww,hh)=>{for(let a=0;a<16;a++){const t=a/16*Math.PI*2,ex=Math.cos(t)*ww*.46,ey=Math.sin(t)*hh*.46;if(!inside(p.x+ex*cs-ey*sn,p.y+ex*sn+ey*cs))return false;}return true;};
+        const cx=poly?(polyBox(poly).x0+polyBox(poly).x1)/2:W*Z.x,cy=poly?(polyBox(poly).y0+polyBox(poly).y1)/2:H*Z.y;
+        for(let n=0;n<14&&!fits(w,h);n++){p.x+=(cx-p.x)*.12;p.y+=(cy-p.y)*.12;}   // first it is moved a little toward the middle
+        for(let n=0;n<40&&!fits(w,h);n++){w*=.94;h*=.94;}
+      }
       [g,f].forEach((c,k)=>{c.save();if(cal){polyPath(c,cal.food);c.clip();}c.translate(p.x,p.y);c.rotate(p.rot);if(k===0){c.shadowColor='rgba(50,25,5,.38)';c.shadowBlur=10;c.shadowOffsetY=4;}c.drawImage(spr,-w/2,-h/2,w,h);c.restore();});
     });
   }
