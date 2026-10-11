@@ -263,3 +263,9 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Konobar odnosi oval (u `takeOrders` se uzima slika ovala `srvSrc` i prosleđuje kao `img` preko `CooksterTavern.deliver`); na stolu se crta slika ovala (`kind:'oval'`, šira od činije, a hrana nestaje kako gost jede), posle jela ostaje prazan oval za pranje.
 - Oljuštene zelene i crvene paprike u posudi imaju približno istu veličinu (duža strana ~34% širine slike posude).
 - Isprobano automatski (Playwright): papir → oval sa paprikama → zvono → konobar odnosi → oval na stolu u kafani. Nije isprobano sa pravim gostima koji naručuju.
+
+### Nova slika kuhinje (roštilj, kaubojska vrata, bez leve peći)
+- Glavna pozadina kuhinje je nova slika; sva stanja šporeta su u `assets/stove_states_v2/*.webp` (fire_off_closed, fire_on_closed, firebox_open, firebox_open_off, firebox_open_fire, oven_open, firebox_base_no_door).
+- Napravljena su tako što je nova slika uzeta kao osnova, a samo mesto gde se stanje šporeta razlikuje (prozorčić ložišta, vratanca ložišta, rerna) je preuzeto iz starih slika (`assets/stove_states/`, stara slika se poklapa sa novom na piksel). Vratanca ložišta (`firebox_door_*.png`) ostaju iz stare fascikle.
+- Mesta kuhinjskih stvari (začini, šiljak, kanta…) nisu menjana; neka su sada ispred roštilja umesto ispred stare police.
+- Stari prozor/peć i polica više ne postoje u pozadini, pa više nema starog ložišta levo.

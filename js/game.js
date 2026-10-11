@@ -1647,14 +1647,14 @@ purgeLegacyCloudLighting();
 new MutationObserver(purgeLegacyCloudLighting).observe(document.documentElement,{childList:true,subtree:true});
 
 const SCENE_BACKGROUNDS={
- fireOnClosed:'assets/stove_states/fire_on_closed.png',
- fireboxOpenOff:'assets/stove_states/firebox_open_off.png',
- fireboxOpenFire:'assets/stove_states/firebox_open_fire.png',
- ovenOpen:'assets/stove_states/oven_open.png',
- fireOffClosed:'assets/stove_states/fire_off_closed.png'
+ fireOnClosed:'assets/stove_states_v2/fire_on_closed.webp',
+ fireboxOpenOff:'assets/stove_states_v2/firebox_open_off.webp',
+ fireboxOpenFire:'assets/stove_states_v2/firebox_open_fire.webp',
+ ovenOpen:'assets/stove_states_v2/oven_open.webp',
+ fireOffClosed:'assets/stove_states_v2/fire_off_closed.webp'
 };
 const DOOR_OVERLAYS={open:'assets/stove_states/firebox_door_open.png',close:'assets/stove_states/firebox_door_closed.png'};
-const FIREBOX_BASE_NO_DOOR='assets/stove_states/firebox_base_no_door.png';
+const FIREBOX_BASE_NO_DOOR='assets/stove_states_v2/firebox_base_no_door.webp';
 // Decode door layers before the first click so the old frame never lingers
 // while the browser fetches the PNG.
 Object.values({...SCENE_BACKGROUNDS,...DOOR_OVERLAYS}).forEach(src=>{const im=new Image();im.src=src;});
