@@ -114,7 +114,6 @@ function listOf(el){
   return l.filter(x=>x&&typeof x.s==='string');
 }
 const pieces=l=>l.filter(x=>x.f!=='d'),scattered=l=>l.filter(x=>x.f==='d');
-const isFinished=(el,l)=>el.dataset.itemId===OVAL&&l.length===3&&l.every(x=>x.k==='zelena_oljustena');
 function baseSrc(el){const d=defOf(el.dataset.itemId);return(d&&d.src)||'';}
 // where the pieces lie: a heap in the zone (every next piece a little over the previous ones; the more pieces, the smaller they are)
 function places(n,Z,W,H,seed){
@@ -153,7 +152,7 @@ function calState(cal,n){
 const cache={};
 function compose(el){
   const id=el.dataset.itemId,l=listOf(el),oil=Math.max(0,Math.min(2,+el.dataset.srvOil||0)),pars=Math.max(0,Math.min(40,+el.dataset.srvParsley||0)),seed=+el.dataset.srvSeed||7;
-  const finished=isFinished(el,l),bsrc=finished?OVALDIR+'oval_puna.webp':baseSrc(el);
+  const finished=false,bsrc=baseSrc(el);
   const cj=calOf(id),key=id+'|'+JSON.stringify(l)+'|o'+oil+'|p'+pars+'|s'+seed+(cj?'|c'+JSON.stringify(cj).length:'');
   if(cache[key])return cache[key];
   const base=load(bsrc);
@@ -164,6 +163,8 @@ function compose(el){
   const out=mk(),g=out.getContext('2d'),r=rng(seed);
   const pcs=finished?[]:pieces(l),cal=(!finished&&cj)?calPx(cj,W,H):null,st=cal?calState(cal,pcs.length||(scattered(l).length?2:0)):null;
   const sample=rr=>cal?polyPoint(rr,st.poly,st.y0,st.y1):zonePoint(rr,Z,W,H);
+  const zin=(x,y)=>cal?inPoly(cal.food,x,y):(()=>{const c=Math.cos(Z.rot),s2=Math.sin(Z.rot),dx=x-W*Z.x,dy=y-H*Z.y,u=dx*c+dy*s2,v=-dx*s2+dy*c;return(u*u)/((W*Z.rx)**2)+(v*v)/((H*Z.ry)**2)<=1;})();
+  const hasXY=e=>e&&typeof e.x==='number'&&typeof e.y==='number';
   g.drawImage(base,0,0);
   let food=null;
   if(pcs.length){
@@ -173,10 +174,11 @@ function compose(el){
     if(cal){                                                             // inside of the calibrated vessel: the heap rises with the number of pieces
       const bb0=cal.bottom?polyBox(cal.bottom):null;                      // a piece's place depends only on its number (not on how many there are), so nothing moves when something new is added
       pl=pcs.map((it,i)=>{const rp=rng(seed*7+3+i*977);let x,y;
-        if(i===0){x=bb0?(bb0.x0+bb0.x1)/2:cal.bx;y=bb0?(bb0.y0+bb0.y1)/2:cal.by;}
+        if(hasXY(it)){x=it.x*W;y=it.y*H;}
+        else if(i===0){x=bb0?(bb0.x0+bb0.x1)/2:cal.bx;y=bb0?(bb0.y0+bb0.y1)/2:cal.by;}
         else{const lv=Math.min(1,i/9),yb=cal.by+(cal.top<cal.by?(cal.by-cal.top)*.04:4),yt=cal.by-(cal.by-cal.top)*(.18+.82*lv);[x,y]=polyPoint(rp,cal.food,Math.min(yt,cal.by),yb);}
-        return{x,y,rot:(rp()-.5)*1.1,sc:i===0?1:.9+rp()*.2,first:i===0};});
-    }else pl=places(pcs.length,Z,W,H,seed);
+        return{x,y,rot:(rp()-.5)*1.1,sc:i===0?1:.9+rp()*.2,first:i===0&&!hasXY(it)};});
+    }else{pl=places(pcs.length,Z,W,H,seed);pl.forEach((q,i)=>{if(hasXY(pcs[i])){q.x=pcs[i].x*W;q.y=pcs[i].y*H;}});}
     pcs.map((it,i)=>i).sort((a,b)=>pl[a].y-pl[b].y).forEach(i=>{                  // the lower ones are drawn over the higher ones (the places themselves do not change)
       const it=pcs[i],spr=sprite(it.s),p=pl[i];let w=W*Math.max(.1,Math.min(.62,it.w))*p.sc;
       let h=w*spr.height/spr.width;
@@ -186,7 +188,7 @@ function compose(el){
       }
       {                                                                  // a whole piece is never cut: if it does not fit, it is made smaller until it reaches the edge
         const poly=cal?((p.first&&cal.bottom)?cal.bottom:cal.food):null,cs=Math.cos(p.rot),sn=Math.sin(p.rot);
-        const inside=(x,y)=>poly?inPoly(poly,x,y):(()=>{const c=Math.cos(Z.rot),s2=Math.sin(Z.rot),dx=x-W*Z.x,dy=y-H*Z.y,u=dx*c+dy*s2,v=-dx*s2+dy*c;return(u*u)/((W*Z.rx)**2)+(v*v)/((H*Z.ry)**2)<=1;})();
+        const inside=(x,y)=>poly?inPoly(poly,x,y):zin(x,y);
         const fits=(ww,hh)=>{for(let a=0;a<16;a++){const t=a/16*Math.PI*2,ex=Math.cos(t)*ww*.46,ey=Math.sin(t)*hh*.46;if(!inside(p.x+ex*cs-ey*sn,p.y+ex*sn+ey*cs))return false;}return true;};
         const cx=poly?(polyBox(poly).x0+polyBox(poly).x1)/2:W*Z.x,cy=poly?(polyBox(poly).y0+polyBox(poly).y1)/2:H*Z.y;
         for(let n=0;n<14&&!fits(w,h);n++){p.x+=(cx-p.x)*.12;p.y+=(cy-p.y)*.12;}   // first it is moved a little toward the middle
@@ -212,7 +214,9 @@ function compose(el){
     sc.slice(0,12).forEach(it=>{
       const ps=piecesOf(it.s);if(!ps.length)return;
       for(let i=0;i<24;i++){
-        let x,y;for(let t=0;t<40;t++){[x,y]=sample(re);if(re()<.12||onFood(x,y))break;}
+        let x,y;
+        if(hasXY(it)){for(let t=0;t<60;t++){const a2=re()*Math.PI*2,d=Math.sqrt(re())*W*.1;x=it.x*W+Math.cos(a2)*d;y=it.y*H+Math.sin(a2)*d*.75;if(zin(x,y))break;}if(!zin(x,y)){x=it.x*W;y=it.y*H;}}
+        else for(let t=0;t<40;t++){[x,y]=sample(re);if(re()<.12||onFood(x,y))break;}
         const pc=ps[Math.floor(re()*ps.length)],a=W*(.034+re()*.016),h=a*pc.height/pc.width;
         g.save();g.translate(x,y);g.rotate(re()*Math.PI*2);g.shadowColor='rgba(40,20,5,.4)';g.shadowBlur=3;g.shadowOffsetY=1.5;g.drawImage(pc,-a/2,-h/2,a,h);g.restore();
       }
@@ -225,7 +229,6 @@ function compose(el){
 }
 function nameOf(el,l){
   if(!l.length)return el.dataset.baseLabel||'';
-  if(isFinished(el,l))return 'Belolučane paprike';
   const cnt={},order=[];l.forEach(x=>{const n=x.l||x.k;if(!cnt[n]){cnt[n]=0;order.push(n);}cnt[n]++;});
   return (el.dataset.baseLabel||'')+' · '+order.map(n=>cnt[n]>1?`${cnt[n]}× ${n.toLowerCase()}`:n.toLowerCase()).join(', ');
 }
@@ -273,12 +276,12 @@ function tryDrop(item){
   let kk=String(meta.key||'x'),ll=String(meta.label||item.dataset.label||'sastojak');
   if(item.dataset.peeled==='1'&&item.dataset.vegKey==='paprika_zelena'){kk='zelena_oljustena';ll='Oljuštena zelena paprika';}
   else if(item.dataset.peeled==='1'&&item.dataset.vegKey==='paprika'){kk='crvena_oljustena';ll='Oljuštena crvena paprika';}
-  const entry={s:src,f:form,w:Math.max(.16,Math.min(.6,ratio*1.9*(meta.cutState==='sliced'?.85:1))),k:kk,l:ll};
+  const rcv=el.getBoundingClientRect(),entry={x:+Math.max(.02,Math.min(.98,(mouse.x-rcv.left)/rcv.width)).toFixed(4),y:+Math.max(.02,Math.min(.98,(mouse.y-rcv.top)/rcv.height)).toFixed(4),s:src,f:form,w:Math.max(.16,Math.min(.6,ratio*1.9*(meta.cutState==='sliced'?.85:1))),k:kk,l:ll};
   l.push(entry);el.dataset.srvItems=JSON.stringify(l);el.dataset.srvSeed=el.dataset.srvSeed||String(1+Math.floor(Math.random()*99999));
   removeItem(item);holding=null;
   try{hidePlacementGhost();hideOriginGhost();clearPanTargets();updateHover();}catch(_){}
   render(el);try{playImpactSound(el,'drop');}catch(_){}try{CooksterSave.schedule();}catch(_){}
-  showToast(isFinished(el,l)?'Belolučane paprike su gotove!':`${entry.l} je u posudi.`);
+  showToast(`${entry.l} je u posudi.`);
   return true;
 }
 // right click on a vessel: oil and parsley (until the real pouring and sprinkling), clear
