@@ -10713,7 +10713,7 @@ function openKitchenElements(mode){
 
 function serializeWorldItem(el){
  const body=el.querySelector('.body');
-  const keep=['trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','ovalN','ovalItems','ovalOil','ovalParsley','ovalSeed','ovalExtras','srvItems','srvOil','srvParsley','srvSeed','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
+  const keep=['trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','cutStyle','ovalN','ovalItems','ovalOil','ovalParsley','ovalSeed','ovalExtras','srvItems','srvOil','srvParsley','srvSeed','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
  const data={};
  for(const k of keep)if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
  for(const k of ['ajvarMl','ajvarBatchMl'])if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
@@ -14245,18 +14245,20 @@ function spawnSourHalf(target){
   }
  }catch(_){}
 }
-function beginCutAction(){
+// E: the quick cut (the knife chops by itself) -> chopped small; C: the cut with the mouse (the board comes close, the knife is dragged over the vegetable) -> rounds / slices
+function beginCutAction(mode='dice'){
  if(isCutting)return;
  const board=getBoardEl();
  const knife=getKnifeEl();
  const target=findCutTargetOnBoard();
  if(!board||!knife||!target){showToast('Stavi sastojak na dasku.');return;}
- if(window.CooksterTomatoCut?.supports(target)){
+ if(mode==='slices'&&window.CooksterTomatoCut?.supports(target)){
    const def=VEGETABLES[target.dataset.vegKey]||{};
    if(def.src&&def.slicedSrc){
      const cutCallbacks={board,onCutSound(){playImpactSound(vegSoundTarget(target),'cut');},onPeelSound(){playImpactSound(peelSoundTarget,'peel');},onDone(src,atlas){
        spawnSourHalf(target);
        showToast(setVegetableDiced(target));
+       target.dataset.cutStyle='slices';target.dataset.label=String(target.dataset.label||'').replace(/sitno seckan[a-z]*/i,'isečen na kolutove');   // the pieces are what the player cut: they are served as pieces, not scattered
        if(atlas)target.dataset.pieceAtlas=atlas;
        const body=target.querySelector('.body');if(body)body.src=src;
        const shadowImg=target._contactShadow?.querySelector('img');if(shadowImg)shadowImg.src=src;
@@ -14320,7 +14322,8 @@ function beginCutAction(){
    if(beforeState==='whole'){
      // v198.5.78: skip the intermediate "sliced" stage when the vegetable
      // has diced art (all 13 currently do) — one cut, straight to kockice.
-     showToast(targetDef.dicedSrc?setVegetableDiced(target):setVegetableSliced(target));
+     spawnSourHalf(target);
+     showToast((mode==='slices'||!targetDef.dicedSrc)?setVegetableSliced(target):setVegetableDiced(target));
    }else if(beforeState==='sliced'){
      // Still supported so any vegetable/save that predates this change (or
      // has no diced art) can finish the old two-step path.
@@ -15317,7 +15320,12 @@ window.addEventListener('keydown',e=>{
  if((e.key==='e'||e.key==='E')&&!e.repeat){
    if(isCutting){e.preventDefault();return;}
    const target=findCutTargetOnBoard();
-   if(target){e.preventDefault();beginCutAction();}
+   if(target){e.preventDefault();beginCutAction('dice');}
+ }
+ if((e.key==='c'||e.key==='C')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName||'')){
+   if(isCutting)return;
+   const target=findCutTargetOnBoard();
+   if(target){e.preventDefault();beginCutAction('slices');}
  }
 });
 
