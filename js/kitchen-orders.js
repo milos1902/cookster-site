@@ -13,6 +13,7 @@ var ITEM={name:'Kiseli kupus',extra:'ulje, tucana paprika',cyr:'Кисели к�
 var ITEM_NAMES={pice_vino_crno_flasa:'flaša crnog vina',pice_vino_belo_flasa:'flaša belog vina',pice_soda_sifon:'soda',pice_casa_spricer:'čaša za špricer',pice_casa_belo_vino:'čaša belog vina',pice_casa_crno_vino:'čaša crnog vina'};
 var ORDERS={
   kupus:{name:'Kiseli kupus',extra:'ulje, tucana paprika',cyr:'Кисели купус',cyrExtra:'уље, туцана паприка'},
+  paprike:{name:'Belolučane paprike',extra:'zelena i crvena paprika, beli luk, ulje',cyr:'Белолучане паприке',cyrExtra:'зелена и црвена паприка, бели лук, уље'},
   kilo:{name:'Kilo na kilo',extra:'belo vino, soda, čaša',cyr:'Кило на кило',cyrExtra:'бело вино, сода, чаша',items:['pice_vino_belo_flasa','pice_soda_sifon','pice_casa_spricer']},
   crno_casa:{name:'Čaša crnog vina',extra:'',cyr:'Чаша црног вина',cyrExtra:'',items:['pice_casa_crno_vino']},
   belo_casa:{name:'Čaša belog vina',extra:'',cyr:'Чаша белог вина',cyrExtra:'',items:['pice_casa_belo_vino']},
@@ -360,16 +361,28 @@ function freeBowls(){return(window.items||[]).filter(function(b){return b.datase
 // Everything that the player puts on the kitchen table is crossed off the papers by itself: the papers are served in the order they came (a paper that was laid on the table first),
 // and every row whose things are on the table gets a line through it. When all the rows of a paper are crossed off the paper is ready (a green tick); when the bell rings the waiter takes
 // the things of all ready papers (table after table) and the player puts the paper on the spike. A guest who has left does not matter: the things are put on his table anyway.
-function isFood(el){var id=el.dataset&&el.dataset.itemId;return !!id&&(id.indexOf('pice_')===0||(id==='posuda_za_kupus'&&el.classList.contains('bowl-photo-look')))}
+function isFood(el){var id=el.dataset&&el.dataset.itemId;return !!id&&(id.indexOf('pice_')===0||(id==='posuda_za_kupus'&&el.classList.contains('bowl-photo-look'))||ovalReady(el))}
 function paperOrder(){return notes.filter(function(n){return !n.served}).sort(function(a,b){return((a.at==='table'?0:1)-(b.at==='table'?0:1))||(a.id-b.id)})}
 // the game remembers which things belong to which paper: a thing that was reserved for a paper stays with it (it is never moved to another order); a new thing goes to the first paper
 // that still needs it. This is kept outside of the notes (RT) because the notes are saved.
 var RT={};
 function rt(n){return RT[n.id]||(RT[n.id]={res:[],ok:[],els:[],miss:[],ready:false})}
-function slotsOf(l){return(l.items&&l.items.length)?l.items.slice():['__bowl']}
+function slotsOf(l){return(l.items&&l.items.length)?l.items.slice():[l.key==='paprike'?'__oval':'__bowl']}
+// the oval with peeled peppers (put together with the serving logic, js/serving.js): at least two peeled peppers lie in it
+function ovalList(el){try{var l=JSON.parse(el.dataset.srvItems||'[]');return Array.isArray(l)?l:[]}catch(e){return[]}}
+function ovalReady(el){return el.dataset&&el.dataset.itemId==='oval_tanjir'&&ovalList(el).filter(function(x){return /oljustena$/.test(x.k||'')}).length>=2}
+function evalOval(el){
+  var l=ovalList(el),g=0,r=0,garlic=false,issues=[],score=1;
+  l.forEach(function(x){if(x.k==='zelena_oljustena')g++;else if(x.k==='crvena_oljustena')r++;else if(/beli_luk/.test(x.k||''))garlic=true});
+  if(g&&r)score++;else issues.push(g?'Tražio sam i crvene paprike!':'Tražio sam i zelene paprike!');
+  if(garlic)score++;else issues.push('Gde je beli luk?');
+  if(+el.dataset.srvOil>0)score++;else issues.push('Fali malo ulja.');
+  if(l.length>8){score--;issues.push('Previše svega, nema mesta u tanjiru!')}
+  return{score:score-1,issues:issues.length?[issues[0]]:['Belolučane paprike, baš kako treba!'],perfect:!issues.length,good:!issues.length,amounts:{}};
+}
 function slotValid(el,id){
   if(!el||!el.isConnected||(window.items||[]).indexOf(el)<0)return false;
-  return id==='__bowl'?el.classList.contains('bowl-photo-look'):el.dataset.itemId===id;
+  return id==='__bowl'?el.classList.contains('bowl-photo-look'):id==='__oval'?ovalReady(el):el.dataset.itemId===id;
 }
 function allocate(){
   var all=window.items||[],pool={},claimed=[],order=paperOrder();
@@ -382,7 +395,7 @@ function allocate(){
   });
   all.forEach(function(el){                               // the free things on the table
     if(!isFood(el)||el.classList.contains('held')||claimed.indexOf(el)>=0)return;
-    var id=el.dataset.itemId==='posuda_za_kupus'?'__bowl':el.dataset.itemId;(pool[id]=pool[id]||[]).push(el);
+    var id=el.dataset.itemId==='posuda_za_kupus'?'__bowl':el.dataset.itemId==='oval_tanjir'?'__oval':el.dataset.itemId;(pool[id]=pool[id]||[]).push(el);
   });
   notes.forEach(function(n){if(n.served){var r=rt(n);r.ok=noteLines(n).map(function(){return true});r.ready=false}});
   order.forEach(function(n){
@@ -391,7 +404,7 @@ function allocate(){
       var optional=l.seatId===-2,sl=slotsOf(l),cur=r.res[i],full=true;
       sl.forEach(function(id,j){
         if(!cur[j]&&pool[id]&&pool[id].length)cur[j]=pool[id].shift();       // reserve a free thing for this paper
-        if(!cur[j]){full=false;if(!optional)r.miss.push(id==='__bowl'?'kiseli kupus':(ITEM_NAMES[id]||id))}
+        if(!cur[j]){full=false;if(!optional)r.miss.push(id==='__bowl'?'kiseli kupus':id==='__oval'?'belolučane paprike':(ITEM_NAMES[id]||id))}
       });
       r.ok[i]=full;r.els[i]=full?cur.slice():null;
       if(full)any=true;else if(!optional)ready=false;
@@ -408,6 +421,7 @@ function takeOrders(){
       var els=rt(n).els[i];if(!els)return;
       used=used.concat(els);
       if(l.items&&l.items.length){all.push({kind:'drink',items:l.items.slice(),seatId:l.seatId,table:n.table,ev:{score:2,issues:[],perfect:true,amounts:{}}});return}
+      if(l.key==='paprike'){var ov=els[0],bd=ov.querySelector('.body');all.push({kind:'oval',img:ov.dataset.srvSrc||(bd&&bd.src)||'',seatId:l.seatId,table:n.table,ev:evalOval(ov)});return}
       var bowl=els[0],sp={};try{sp=JSON.parse(bowl.dataset.spices||'{}')}catch(e){}
       var ev=window.CooksterQuality?window.CooksterQuality.evaluate(bowl,'kiseli_kupus'):null;
       if(ev&&l.req){                                       // did he get the "little more / less" he asked for?
@@ -496,7 +510,7 @@ function tick(now){
     alpha=Math.max(0,1-anim.t/.2);
     if(anim.t>=.2){
       if(!anim.call){pending.shift();save()}
-      if(anim.carry&&window.CooksterTavern&&window.CooksterTavern.deliver)(anim.carry.all||[anim.carry]).forEach(function(d){window.CooksterTavern.deliver((d.table||anim.carry.table)-1,d.kind,d.ev,d.seatId,d.items||null)});
+      if(anim.carry&&window.CooksterTavern&&window.CooksterTavern.deliver)(anim.carry.all||[anim.carry]).forEach(function(d){window.CooksterTavern.deliver((d.table||anim.carry.table)-1,d.kind,d.ev,d.seatId,d.items||null,d.img||null)});
       anim=null;X.clearRect(0,0,W,H);return;
     }
   }

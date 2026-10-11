@@ -180,6 +180,7 @@ function compose(el){
     pcs.map((it,i)=>i).sort((a,b)=>pl[a].y-pl[b].y).forEach(i=>{                  // the lower ones are drawn over the higher ones (the places themselves do not change)
       const it=pcs[i],spr=sprite(it.s),p=pl[i];let w=W*Math.max(.1,Math.min(.62,it.w))*p.sc;
       let h=w*spr.height/spr.width;
+      if(/oljustena$/.test(it.k||'')){const L=Math.max(spr.width,spr.height),t=W*.34*p.sc;w=t*spr.width/L;h=t*spr.height/L;}   // peeled green and red peppers are about the same size in the vessel
       if(cal){                                                           // the piece is fitted INTO the polygon (not cut by its edge): its size is limited by the width and the height of the polygon
         const bb=(p.first&&cal.bottom)?polyBox(cal.bottom):polyBox(cal.food),maxW=(bb.x1-bb.x0)*(p.first?.97:.46),maxH=(bb.y1-bb.y0)*(p.first?.97:.62);if(p.first){const k1=Math.max((bb.x1-bb.x0)*.9/w,(bb.y1-bb.y0)*.9/h);if(k1>1){w*=Math.min(k1,1.8);h*=Math.min(k1,1.8);}}   // the first thing fills the floor (blue) and stays there
         const k=Math.min(1,maxW/w,maxH/h);w*=k;h*=k;
