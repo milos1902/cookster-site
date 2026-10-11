@@ -118,12 +118,12 @@ const isFinished=(el,l)=>el.dataset.itemId===OVAL&&l.length===3&&l.every(x=>x.k=
 function baseSrc(el){const d=defOf(el.dataset.itemId);return(d&&d.src)||'';}
 // where the pieces lie: a heap in the zone (every next piece a little over the previous ones; the more pieces, the smaller they are)
 function places(n,Z,W,H,seed){
-  const r=rng((seed||7)*7+3),out=[],sc=n<=1?1:Math.min(1,1.55/Math.sqrt(n)),phase=r()*6.28,c=Math.cos(Z.rot),s=Math.sin(Z.rot);
+  const r=rng((seed||7)*7+3),out=[],phase=r()*6.28,c=Math.cos(Z.rot),s=Math.sin(Z.rot);
   for(let i=0;i<n;i++){
-    const rad=n===1?0:Math.sqrt((i+.5)/n)*.62,a=phase+i*2.39996,ex=Math.cos(a)*rad*Z.rx*W+(r()-.5)*.03*W,ey=Math.sin(a)*rad*Z.ry*H+(r()-.5)*.03*H;
+    const rad=i===0?0:Math.sqrt((i+.5)/HEAP)*.62,sc=i===0?1:.78,a=phase+i*2.39996,ex=Math.cos(a)*rad*Z.rx*W+(r()-.5)*.03*W,ey=Math.sin(a)*rad*Z.ry*H+(r()-.5)*.03*H;
     out.push({x:W*Z.x+ex*c-ey*s,y:H*Z.y+ex*s+ey*c,rot:Z.rot*.7+(r()-.5)*.9,sc:sc*(.9+r()*.2)});
   }
-  return out.sort((p,q)=>p.y-q.y);                                       // the lower ones are drawn over the higher ones
+  return out;                                       // the lower ones are drawn over the higher ones
 }
 // ---------- the calibrated vessels (the player drew where the food is seen: js/data/vessel-food-zones.js, tool "Maska hrane u posudi") ----------
 function calOf(id){
@@ -171,17 +171,28 @@ function compose(el){
     food=mk();const f=food.getContext('2d');
     let pl;
     if(cal){                                                             // inside of the calibrated vessel: the heap rises with the number of pieces
-      const rp=rng(seed*7+3),sc=pcs.length<=1?1:Math.min(1,1.5/Math.sqrt(pcs.length));
-      pl=pcs.map((it,i)=>{const [x,y]=pcs.length===1?[cal.bottom?(polyBox(cal.bottom).x0+polyBox(cal.bottom).x1)/2:cal.bx,cal.bottom?(polyBox(cal.bottom).y0+polyBox(cal.bottom).y1)/2:cal.by]:polyPoint(rp,st.poly,st.y0,st.y1);return{x,y,rot:(rp()-.5)*1.1,sc:sc*(.9+rp()*.2)};}).sort((a,b)=>a.y-b.y);
+      const bb0=cal.bottom?polyBox(cal.bottom):null;                      // a piece's place depends only on its number (not on how many there are), so nothing moves when something new is added
+      pl=pcs.map((it,i)=>{const rp=rng(seed*7+3+i*977);let x,y;
+        if(i===0){x=bb0?(bb0.x0+bb0.x1)/2:cal.bx;y=bb0?(bb0.y0+bb0.y1)/2:cal.by;}
+        else{const lv=Math.min(1,i/9),yb=cal.by+(cal.top<cal.by?(cal.by-cal.top)*.04:4),yt=cal.by-(cal.by-cal.top)*(.18+.82*lv);[x,y]=polyPoint(rp,cal.food,Math.min(yt,cal.by),yb);}
+        return{x,y,rot:(rp()-.5)*1.1,sc:i===0?1:.9+rp()*.2,first:i===0};});
     }else pl=places(pcs.length,Z,W,H,seed);
-    pcs.forEach((it,i)=>{
-      const spr=sprite(it.s),p=pl[i];let w=W*Math.max(.1,Math.min(.62,it.w))*p.sc;
+    pcs.map((it,i)=>i).sort((a,b)=>pl[a].y-pl[b].y).forEach(i=>{                  // the lower ones are drawn over the higher ones (the places themselves do not change)
+      const it=pcs[i],spr=sprite(it.s),p=pl[i];let w=W*Math.max(.1,Math.min(.62,it.w))*p.sc;
       let h=w*spr.height/spr.width;
       if(cal){                                                           // the piece is fitted INTO the polygon (not cut by its edge): its size is limited by the width and the height of the polygon
-        const bb=polyBox(st.clip),maxW=(bb.x1-bb.x0)*(pcs.length===1?.97:.46),maxH=(bb.y1-bb.y0)*(pcs.length===1?.97:.62);if(pcs.length===1){const k1=Math.max((bb.x1-bb.x0)*.9/w,(bb.y1-bb.y0)*.9/h);if(k1>1){w*=Math.min(k1,1.8);h*=Math.min(k1,1.8);}}   // the first thing fills the floor (blue)
+        const bb=(p.first&&cal.bottom)?polyBox(cal.bottom):polyBox(cal.food),maxW=(bb.x1-bb.x0)*(p.first?.97:.46),maxH=(bb.y1-bb.y0)*(p.first?.97:.62);if(p.first){const k1=Math.max((bb.x1-bb.x0)*.9/w,(bb.y1-bb.y0)*.9/h);if(k1>1){w*=Math.min(k1,1.8);h*=Math.min(k1,1.8);}}   // the first thing fills the floor (blue) and stays there
         const k=Math.min(1,maxW/w,maxH/h);w*=k;h*=k;
       }
-      [g,f].forEach((c,k)=>{c.save();if(cal){polyPath(c,st.clip);c.clip();}c.translate(p.x,p.y);c.rotate(p.rot);if(k===0){c.shadowColor='rgba(50,25,5,.38)';c.shadowBlur=10;c.shadowOffsetY=4;}c.drawImage(spr,-w/2,-h/2,w,h);c.restore();});
+      {                                                                  // a whole piece is never cut: if it does not fit, it is made smaller until it reaches the edge
+        const poly=cal?((p.first&&cal.bottom)?cal.bottom:cal.food):null,cs=Math.cos(p.rot),sn=Math.sin(p.rot);
+        const inside=(x,y)=>poly?inPoly(poly,x,y):(()=>{const c=Math.cos(Z.rot),s2=Math.sin(Z.rot),dx=x-W*Z.x,dy=y-H*Z.y,u=dx*c+dy*s2,v=-dx*s2+dy*c;return(u*u)/((W*Z.rx)**2)+(v*v)/((H*Z.ry)**2)<=1;})();
+        const fits=(ww,hh)=>{for(let a=0;a<16;a++){const t=a/16*Math.PI*2,ex=Math.cos(t)*ww*.46,ey=Math.sin(t)*hh*.46;if(!inside(p.x+ex*cs-ey*sn,p.y+ex*sn+ey*cs))return false;}return true;};
+        const cx=poly?(polyBox(poly).x0+polyBox(poly).x1)/2:W*Z.x,cy=poly?(polyBox(poly).y0+polyBox(poly).y1)/2:H*Z.y;
+        for(let n=0;n<14&&!fits(w,h);n++){p.x+=(cx-p.x)*.12;p.y+=(cy-p.y)*.12;}   // first it is moved a little toward the middle
+        for(let n=0;n<40&&!fits(w,h);n++){w*=.94;h*=.94;}
+      }
+      [g,f].forEach((c,k)=>{c.save();if(cal){polyPath(c,cal.food);c.clip();}c.translate(p.x,p.y);c.rotate(p.rot);if(k===0){c.shadowColor='rgba(50,25,5,.38)';c.shadowBlur=10;c.shadowOffsetY=4;}c.drawImage(spr,-w/2,-h/2,w,h);c.restore();});
     });
   }
   if(oil>0&&(finished||food)){

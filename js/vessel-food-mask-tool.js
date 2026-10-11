@@ -11,7 +11,8 @@
     {id:'vangla_srednja',label:'Srednja vangla',src:'assets/new_props/vangla_srednja.png'},
     {id:'vangla_mala',label:'Mala vangla',src:'assets/new_props/vangla_mala.png'},
     {id:'vangla_velika',label:'Velika vangla',src:'assets/new_props/vangla_velika.png'},
-    {id:'lavor_emajl_veliki',label:'Veliki emajlirani lavor',src:'assets/new_props/lavor_emajl_veliki.png'}
+    {id:'lavor_emajl_veliki',label:'Veliki emajlirani lavor',src:'assets/new_props/lavor_emajl_veliki.png'},
+    {id:'oval_tanjir',label:'Veliki oval (tanjir)',src:'assets/calibration_props/oval/oval_prazan.webp'}
   ];
   // Every container that is added to the game later (KITCHEN_EQUIPMENT with vessel:true, or with capacityMl / fillStates) is listed here by itself.
   let VESSELS=BASE_VESSELS.slice();
