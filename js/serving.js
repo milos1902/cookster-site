@@ -176,8 +176,11 @@ function compose(el){
     }else pl=places(pcs.length,Z,W,H,seed);
     pcs.forEach((it,i)=>{
       const spr=sprite(it.s),p=pl[i];let w=W*Math.max(.1,Math.min(.62,it.w))*p.sc;
-      if(cal){const bb=polyBox(st.clip);w=Math.min(w,(bb.x1-bb.x0)*(pcs.length===1?.92:.55));}
-      const h=w*spr.height/spr.width;
+      let h=w*spr.height/spr.width;
+      if(cal){                                                           // the piece is fitted INTO the polygon (not cut by its edge): its size is limited by the width and the height of the polygon
+        const bb=polyBox(st.clip),maxW=(bb.x1-bb.x0)*(pcs.length===1?.80:.46),maxH=(bb.y1-bb.y0)*(pcs.length===1?.80:.62);
+        const k=Math.min(1,maxW/w,maxH/h);w*=k;h*=k;
+      }
       [g,f].forEach((c,k)=>{c.save();if(cal){polyPath(c,st.clip);c.clip();}c.translate(p.x,p.y);c.rotate(p.rot);if(k===0){c.shadowColor='rgba(50,25,5,.38)';c.shadowBlur=10;c.shadowOffsetY=4;}c.drawImage(spr,-w/2,-h/2,w,h);c.restore();});
     });
   }
