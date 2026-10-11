@@ -247,3 +247,8 @@ Alat „Predmeti na stolu": dugmad Kopiranje (Kopiraj ovu stolicu, Nalepi ovde, 
 
 ### Serving: stara maska prednjeg zida (.vessel-front-mask)
 Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-oblikom odsecala hranu u kalibrisanim posudama). Prva stvar u kalibrisanoj posudi se uvećava da popuni plavo polje (dno). `window.__SRV_DEBUG=true` crta obrise poligona.
+
+### Serving: stabilan raspored + oval u alatu za maske hrane
+- Mesto i veličina svakog komada zavise samo od njegovog rednog broja (ne od ukupnog broja), pa se ništa ne pomera kad se doda novo. Prvi komad uvek ostaje na dnu (plavo polje).
+- `oval_tanjir` je dodat u alat "Maska hrane u posudi" (vessel-food-mask-tool.js), pa se zona hrane za oval crta kao za ostale posude.
+- Dogovor: sastojci idu u svaku posudu (sem tiganj/šerpa/lavor/plehovi), ali će GOTOVA JELA imati pravila u koju posudu idu (npr. belolučane paprike → oval, sir → oval, salate → činije, neka jela → tanjiri). Još nije implementirano.
