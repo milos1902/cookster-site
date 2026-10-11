@@ -211,7 +211,7 @@ function tryDrop(item){
   if(hasOldContents(el)&&!listOf(el).length)return false;
   const body=item.querySelector('.body'),src=body&&body.getAttribute('src');if(!src)return false;
   const l=listOf(el);
-  const form=(meta.cutState==='diced'||meta.form==='diced')?'d':'p';
+  const form=((meta.cutState==='diced'||meta.form==='diced')&&item.dataset.cutStyle!=='slices')?'d':'p';
   if(form==='p'&&pieces(l).length>=HEAP){                                // the vessel is full: the piece falls next to it (it is put down on the table there)
     const rc=el.getBoundingClientRect(),a=Math.random()*Math.PI*2,sx=rc.width*.62+Math.random()*30,sy=rc.height*.55+Math.random()*20;
     mouse.x=Math.round(mouse.x+Math.cos(a)*sx);mouse.y=Math.round(mouse.y+Math.sin(a)*sy*.8);
