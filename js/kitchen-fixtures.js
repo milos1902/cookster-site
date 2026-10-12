@@ -172,14 +172,14 @@ function zoomDoor(){
   vid.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .12s ease;transform-origin:50% 36.7%;will-change:transform';
   var vok=true;vid.onerror=function(){vok=false};vid.src='assets/doors/dolazak.mp4?v=1';
   vo.appendChild(vid);document.body.appendChild(vo);document.body.appendChild(dark);view={_busy:true,remove:function(){}};
-  var T=window.CooksterTavern,PLAY=950,ZM=380;      // first the doors swing open (PLAY), then a sudden zoom through them (ZM); the tavern starts to show up from the centre while the zoom ends
+  var T=window.CooksterTavern,PLAY=0,ZM=1150;      // the zoom (ZM) into the dark runs while the doors swing open; the tavern starts to show up from the centre behind them
   try{if(T&&T.preload)T.preload()}catch(e){}                  // the pictures of the tavern are fetched while the film runs
   // the tavern grows out of the middle of the dark: a small picture with soft (faded) edges in the centre, which grows to the whole screen
   var reveal=function(){
     var room=document.getElementById('tavernScene');
     if(!room){vo.remove();view=null;dark.remove();return}
     var oz=room.style.zIndex;room.style.zIndex='30001';room.style.willChange='transform,opacity';
-    var DUR=1150,t0=performance.now();
+    var DUR=1000,t0=performance.now();
     (function step(now){
       var t=Math.min(1,(now-t0)/DUR),e=t<.51?.22*(t/.51):.22+.78*(1-Math.pow(1-(t-.51)/.49,3));       // slowly at first (behind the opening doors), faster when the zoom goes through them
       var sc=.2+.8*e,inner=lerp(4,146,e),outer=inner+lerp(40,8,e);
@@ -202,8 +202,8 @@ function zoomDoor(){
       var t0=performance.now();
       (function step(now){
         var el=now-t0,k=Math.max(0,Math.min(1,(el-PLAY)/ZM));
-        if(vok)vid.style.transform='scale('+(1+8*Math.pow(k,2.4))+')';        // a sudden zoom into the dark behind the open doors
-        dark.style.opacity=vok?(k>.5?(k-.5)/.5:0):Math.min(1,el/(PLAY*.5));       // (without the film the screen just goes dark)
+        if(vok)vid.style.transform='scale('+(1+7*Math.pow(k,2.2))+')';        // the zoom into the dark behind the doors goes on while they swing open (slow at first, then faster)
+        dark.style.opacity=vok?(k>.62?(k-.62)/.38:0):Math.min(1,el/700);       // (without the film the screen just goes dark)
         if(!opened&&el>=300){opened=true;      // the tavern begins to appear behind the doors while they are only starting to open
           Promise.resolve(T&&T.open?T.open({instant:true}):false).then(reveal,reveal);
         }
