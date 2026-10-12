@@ -323,3 +323,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - `STORY_LINES` + `tickStory`: svakih ~24–50 s neki sedeći lik kaže repliku (ime: tekst), zavisno ko sedi za istim stolom (`withN`).
 - Oblačići: dugi tekst se lomi u više redova (do 250 px) i raste naviše; oblačići se više ne preklapaju (kasniji se gurne gore, `bubbleRects`).
 - Još nije urađeno: da Mileva uvek sedi sama, da Stana i Radovan dolaze zajedno, dnevni događaji priče.
+- Scene (tavern-scene.js): *posetioci* (`makeVisitor`, mode `stand`/`go`, skripte u `VIS`): Radovan ponekad dođe sam (25%), žali se na Stanu (`COMPLAIN_R`), pa dođe Stana samo po njega, izgrdi ga i zajedno odu (`forceLeave`). Vukašin ponekad priđe Milevi, ona ga odbija, pa ode kod prijatelja za drugim stolom i laže da joj se sviđa (`liar`). Mileva uvek sedi sama i niko ne seda za njen sto (`milevaAt`, `tableBusy`).
+- Zoki (konobar) pri dolasku na sto: sam gost → „Desi, Mirko, šta ćeš piješ?“, društvo → „Šta ćete pijete?“, Mileva → „Izvolite, Madame Mileva.“, tri žene → „Meine Damen, izvolite.“ (`waiterGreetText`). Niko ga ne zove „konobar“ (Zoki, Zorane, Zoranče, Zokili, `zokiText`) osim Stojana, koji se sa Zoranom ne podnosi (`tickZokiChat`: Zoki i Stojan se žale jedan na drugog).
+- Govor likova: južnosrpski (vranjski/leskovački/niški/pirotski): bre, more, mori, be, dede, kaj, „ne ću“, „dojde“...
