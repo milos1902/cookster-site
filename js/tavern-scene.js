@@ -1526,10 +1526,9 @@ function drawShadow(ctx,x,y,sc){
 }
 function guestSortY(g){
   if(g.mode!=='seated'&&g.mode!=='sitting'&&g.mode!=='rising')return g.y;
-  var y=seatPos(g).y,my=TABLEMASKY[g.seat.table];
-  // a guest at the far side of the table sits above the cloth: his arms lie on the table, the table must not cover him
-  if(g.seat.k==='back'&&my!==undefined)y=Math.max(y,my+1);
-  return y;
+  // a guest at the far side of the table sits BEHIND it: the mask of the table (its far edge) covers him, the same at all three tables
+  // (before, the guests at the far side of tables 2 and 3 were drawn above the cloth and showed over the far edge; table 1 only worked because its mask has no match in TABLEMASKY)
+  return seatPos(g).y;
 }
 function drawGuest(ctx,g){
   drawGuestBody(ctx,g);
