@@ -15151,7 +15151,7 @@ window.addEventListener('pointerdown',e=>{
  if(e.button===0&&holding&&isDisposableMarketPackaging(holding)&&cookstoveHot==='firebox'){if(insertHeldPackagingIntoFirebox())return;}
 if(e.button===0&&!holding&&cookstoveHot==='firebox'){const action=stoveState.fireboxOpen?'close':'open';toggleCookstoveFirebox();playImpactSound(fireboxHotspot,action);return;}
 if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOpen?'close':'open';toggleCookstoveOven();playImpactSound(ovenHotspot,action);return;}
- if(e.button===0&&!holding&&window.CooksterKitchenFx&&!CooksterKitchenFx.isZoomed()){const kfx=CooksterKitchenFx.hit(e.clientX,e.clientY);if(kfx){CooksterKitchenFx.click(kfx);return;}}
+ if(e.button===0&&!holding&&window.CooksterKitchenFx&&!CooksterKitchenFx.isZoomed()){const kfx=CooksterKitchenFx.hit(e.clientX,e.clientY);if(kfx){CooksterKitchenFx.click(kfx,e);return;}}
  if(e.button===0&&faucetHit(e.clientX,e.clientY)){setFaucet(!faucetOn);return;}
  if(e.button===0&&holding&&isHeatableCookwareItem(holding)&&sinkHit(e.clientX,e.clientY)){if(beginPanWashing(holding,e))return;}
  if(e.button===0&&holding&&isStirSpoon(holding)){
