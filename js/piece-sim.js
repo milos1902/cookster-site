@@ -170,8 +170,10 @@
       for(const id of [...this.pieces.keys()])if(!want.has(id)){this.pieces.delete(id);this.list=null;}
       this.fit();
       this.applyLevel();
+      const sig=this.poly.map(q=>q.x.toFixed(1)+','+q.y.toFixed(1)).join(';');          // the area of the food has changed (the vessel was calibrated again): the pieces that lie outside are pulled in
+      const moved=this._sig!==undefined&&this._sig!==sig;this._sig=sig;
       for(const p of created)this.scatter(p);
-      if(created.length)this.relax(60);
+      if(created.length)this.relax(60);else if(moved){for(const p of this.pieces.values())if(!this.inside(p.x,p.y))this.scatter(p);this.relax(40);}
       this.dirty=true;
     }
     // Depth: pieces keep their real size. When there are more than fit on the floor of the vessel they are
