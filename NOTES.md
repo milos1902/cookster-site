@@ -276,8 +276,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Roštilj: klik na roštilj (`GRILL` zona) otvara sliku `assets/grill_zoom.webp` preko cele scene sa kratkom animacijom zuma; dugme „nazad u kuhinju" ili Esc zatvara.
 - Još nije urađeno: začini u fioci, vuča miša za otvaranje fioke (čeka frejmove animacije), zvuk fioke, pečenje na roštilju.
 
-### Fioke se vuku mišem (js/kitchen-fixtures.js)
-- Kad je miš iznad ručice fioke, tačka miša postaje mala ruka (`#cursor.fx-hand`); kad se klikne i drži, postaje šaka (`fx-grab`). Povlačenjem na dole fioka se otvara, na gore zatvara, koliko se povuče toliko je otvorena (`DR[k].p` 0..1). Običan klik na ručicu otvara do kraja / zatvara do kraja (kratka animacija).
-- Slike: 15 koraka po fioci, `assets/drawers/<left|right>_<1..15>.webp` (1-14 su frejmovi iz Higgsfield videa — Seedance 2.0 Mini, 4 s, 720p, start = zatvoreno, kraj = otvoreno; frejmovi izabrani po „stepenu otvorenosti"; 15 je originalna oštra slika). Korak 0 je zatvorena fioka na pozadini. Isečak je providan, preko iste pozadine; spojene slike se keširaju.
-- Senka fioke na podu se crta u kodu (`shade()`), jača što je fioka otvorenija.
-- Pozicija ručice po koraku je interpolacija između zatvorene i otvorene (`h0`,`h1`). Stanje fioka se ne pamti posle osvežavanja.
+### Fioke: klik otvara / zatvara za 0,3 s (js/kitchen-fixtures.js)
+- Klik na fioku (prednja strana ili ručica) otvara je za 0,3 s, ponovni klik zatvara za 0,3 s. Vučenje mišem i mala ruka su uklonjeni (kočilo je, jer se pozadina iznova spajala; sada je otvorena fioka mala slika preko kuhinje).
+- Slike: 15 koraka po fioci, `assets/drawers/<left|right>_<1..15>.webp` — frejmovi iz Higgsfield videa (Seedance 2.0 Mini, 4 s, 720p, start = zatvoreno, kraj = otvoreno), isečeni na deo fioke zajedno sa senkom na podu iz videa (nema senke crtane u kodu). Slika je providna, `z-index:26` (iznad zaklanjanja stola, ispod predmeta). Korak 0 = zatvorena (ništa se ne prikazuje). Stanje fioka se ne pamti posle osvežavanja.
