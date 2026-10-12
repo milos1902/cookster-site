@@ -10,7 +10,7 @@ var DR={
   left:{x:380,y:585,N:16,G:[0,0,.007,.03,.06,.10,.15,.18,.27,.33,.45,.54,.66,.77,.87,1,1.03],p:0,idx:0,to:0,label:'leva fioka',x0:485,x1:825,dx0:-39,dx1:-3,dy:153,el:null,ims:[]},
   right:{x:828,y:585,N:15,G:[0,0,.016,.04,.087,.135,.19,.214,.27,.357,.444,.563,.635,.77,.873,1],p:0,idx:0,to:0,label:'desna fioka',x0:835,x1:1170,dx0:-8,dx1:31,dy:124,el:null,ims:[]}
 };
-var GRILL={l:225,t:20,r:760,b:235},ZOOM_SRC='assets/grill_zoom.webp?v=1';
+var GRILL={l:225,t:20,r:760,b:235},ZOOM_SRC='assets/grill_zoom.webp?v=2';
 var imgs={};
 function load(src){var im=imgs[src];if(!im){im=imgs[src]=new Image();im.src=src}return im}
 Object.keys(DR).forEach(function(k){for(var i=1;i<=DR[k].N;i++)DR[k].ims[i]=load('assets/drawers/'+k+'_'+i+'.webp?v=11')});
@@ -158,7 +158,7 @@ var view=null;
 // the camera zooms in on the grill (frames of a Higgsfield video: assets/grillzoom/z_1..22.webp, from the whole kitchen to the grill) in about half a second,
 // then the picture of the grill (the same one) takes over; the zoom out is the same frames the other way round
 var ZN=22,ZMS=300,FADE=110,zimgs=[];
-for(var zi=1;zi<=ZN;zi++){zimgs[zi]=new Image();zimgs[zi].src='assets/grillzoom/z_'+zi+'.webp?v=2'}
+for(var zi=1;zi<=ZN;zi++){zimgs[zi]=new Image();zimgs[zi].src='assets/grillzoom/z_'+zi+'.webp?v=3'}
 var zoomImg=new Image();zoomImg.src=ZOOM_SRC;
 function zoomReady(){for(var i=1;i<=ZN;i++)if(!zimgs[i].complete||!zimgs[i].naturalWidth)return false;return zoomImg.complete}
 function animateZoom(v,back,done){
@@ -169,7 +169,7 @@ function animateZoom(v,back,done){
     var f=Math.max(0,Math.min(1,u/ZMS)),idx=1+Math.round(f*(ZN-1));
     fr.src=zimgs[idx].src;
     var g=u<=ZMS?0:Math.min(1,(u-ZMS)/FADE);gi.style.opacity=g;
-    vg.style.opacity=Math.max(0,Math.min(1,(u-ZMS*.5)/(total-ZMS*.5)));     // the left edge (window, flowers) fades into the dark while the camera arrives
+    vg.style.opacity=0;                                                         // (the dark edge on the left is not needed any more: the new picture of the grill has the firewood on its left)
     if(e<total)requestAnimationFrame(step);else done();
   })(t0);
 }
