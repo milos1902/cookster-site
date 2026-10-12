@@ -157,31 +157,32 @@ function hit(x,y){
 var view=null;
 // the camera zooms in on the grill (frames of a Higgsfield video: assets/grillzoom/z_1..41.webp, from the whole kitchen to the grill) in about half a second,
 // then the picture of the grill (the same one) takes over; the zoom out is the same frames the other way round
-var ZN=44,ZMS=400,FADE=110,zimgs=[],zbit=[];
+var ZN=64,ZMS=400,ZIN=330,FADE=110,zimgs=[],zbit=[],ARC=[0.0000,0.0329,0.0892,0.1419,0.1692,0.1935,0.2165,0.2384,0.2603,0.2824,0.3047,0.3273,0.3496,0.3658,0.3831,0.4002,0.4151,0.4312,0.4475,0.4710,0.4953,0.5187,0.5414,0.5645,0.5874,0.6090,0.6312,0.6527,0.6748,0.6980,0.7214,0.7396,0.7584,0.7765,0.7849,0.7953,0.8047,0.8122,0.8217,0.8301,0.8447,0.8615,0.8766,0.8895,0.9040,0.9179,0.9282,0.9403,0.9509,0.9568,0.9655,0.9732,0.9756,0.9798,0.9821,0.9833,0.9866,0.9878,0.9899,0.9940,0.9962,0.9971,0.9991,1.0000];       // ARC[i-1]: how far the picture has travelled (0..1, measured as the sum of the differences between the frames) at frame i: the time is mapped to the travelled distance, so the motion is smooth whatever the speed of the video was
 // the frames are decoded once into bitmaps (createImageBitmap) and drawn on a canvas: setting img.src for every frame made the first frames come too late (the zoom seemed to start from the middle)
 for(var zi=1;zi<=ZN;zi++){(function(i){
-  var im=new Image();im.src='assets/grillzoom/z_'+i+'.webp?v=5';zimgs[i]=im;
+  var im=new Image();im.src='assets/grillzoom/z_'+i+'.webp?v=6';zimgs[i]=im;
   var go=function(){if(window.createImageBitmap)createImageBitmap(im).then(function(b){zbit[i]=b}).catch(function(){})};
   if(im.decode)im.decode().then(go).catch(function(){}) ;else im.onload=go;
 })(zi)}
 var zoomImg=new Image();zoomImg.src=ZOOM_SRC;if(zoomImg.decode)zoomImg.decode().catch(function(){});
 function zoomReady(){for(var i=1;i<=ZN;i++)if(!zbit[i]&&!(zimgs[i].complete&&zimgs[i].naturalWidth))return false;return zoomImg.complete}
 function drawFrame(cv,i){var g=cv.getContext('2d');g.drawImage(zbit[i]||zimgs[i],0,0,cv.width,cv.height)}
+function frameAt(q){q=Math.max(0,Math.min(1,q));var lo=0,hi=ZN-1;while(lo<hi){var mid=(lo+hi)>>1;if(ARC[mid]<q)lo=mid+1;else hi=mid}return lo+1}
 function animateZoom(v,back,done){
-  var fr=v.querySelector('.gz-frame'),gi=v.querySelector('.gz-grill'),total=FADE+ZMS+FADE,t0=performance.now(),last=-1;
+  var fr=v.querySelector('.gz-frame'),gi=v.querySelector('.gz-grill'),ZM=back?ZMS:ZIN,total=FADE+ZM+FADE,t0=performance.now(),last=-1;
   (function step(now){
     var e=Math.max(0,Math.min(total,now-t0)),f,g;
     // the same both ways (the zoom in is the zoom out drawn the other way round): a short stop (FADE), then the camera starts slowly and gets faster, and at the end the picture of the other side takes over (FADE)
     if(!back){                                                    // the kitchen -> the grill
-      var t=Math.max(0,Math.min(1,(e-FADE)/ZMS));f=t*t;g=e>FADE+ZMS?(e-FADE-ZMS)/FADE:0;
+      var t=Math.max(0,Math.min(1,(e-FADE)/ZM));f=t*t;g=e>FADE+ZM?(e-FADE-ZM)/FADE:0;
     }else{                                                        // the grill -> the kitchen
-      var t2=Math.max(0,Math.min(1,(e-FADE)/ZMS));f=1-t2*t2;g=e<FADE?1-e/FADE:0;
+      var t2=Math.max(0,Math.min(1,(e-FADE)/ZM));f=1-t2*t2;g=e<FADE?1-e/FADE:0;
     }
-    var idx=1+Math.round(Math.max(0,Math.min(1,f))*(ZN-1));
+    var idx=frameAt(f);
     if(idx!==last){drawFrame(fr,idx);last=idx}
     gi.style.opacity=Math.max(0,Math.min(1,g));
     // the things on the table (they are behind the frames, which show the empty kitchen) stay while the camera is still standing, melt away when it starts, and fade back in while it comes back, so they do not just pop
-    fr.style.opacity=back?Math.max(0,Math.min(1,f<.45?f/.45:1)):Math.max(0,Math.min(1,(e-FADE)/(ZMS*.3)));       // forward: the things stay during the stop and melt away only when the camera starts to move
+    fr.style.opacity=back?Math.max(0,Math.min(1,f<.45?f/.45:1)):Math.max(0,Math.min(1,(e-FADE)/(ZM*.3)));       // forward: the things stay during the stop and melt away only when the camera starts to move
     if(e<total)requestAnimationFrame(step);else done();
   })(t0);
 }
@@ -191,7 +192,7 @@ function zoomGrill(){
   var v=document.createElement('div');v.id='grillZoom';v.setAttribute('data-tool-ui','1');
   v.style.cssText='position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;z-index:30000;overflow:hidden;cursor:default';
   var css='position:absolute;left:0;top:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none';
-  var fr=document.createElement('canvas');fr.className='gz-frame';fr.width=1280;fr.height=720;fr.style.cssText=css;if(zoomReady())drawFrame(fr,1);
+  var fr=document.createElement('canvas');fr.className='gz-frame';fr.width=960;fr.height=540;fr.style.cssText=css;if(zoomReady())drawFrame(fr,1);
   var gi=document.createElement('img');gi.className='gz-grill';gi.draggable=false;gi.style.cssText=css+';opacity:0';gi.src=ZOOM_SRC;
   var vg=document.createElement('div');vg.className='gz-vig';vg.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;opacity:0;background:linear-gradient(90deg,rgba(24,12,4,.94) 0%,rgba(24,12,4,.82) 7%,rgba(24,12,4,.45) 13%,rgba(24,12,4,0) 22%)';
   var back=document.createElement('button');back.type='button';back.textContent='← nazad u kuhinju';
