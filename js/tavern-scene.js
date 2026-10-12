@@ -1711,7 +1711,7 @@ function close(opt){
   }).catch(function(){restoreKitchen();say('Prelaz je prekinut. Kuhinja je ponovo dostupna.');return false});
 }
 openBtn.addEventListener('click',function(e){e.stopPropagation();open()});
-function leaveToKitchen(){return close()}
+function leaveToKitchen(){var K=window.CooksterKitchenFx;if(K&&K.leaveTavern&&!busy&&state==='tavern')return K.leaveTavern(function(){return close({instant:true})});return close()}
 backBtn.addEventListener('click',function(e){e.stopPropagation();leaveToKitchen()});
 function onKey(e){
   if(state==='kitchen'||window.__tavernEditor)return;
