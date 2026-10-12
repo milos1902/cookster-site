@@ -12,6 +12,10 @@
 const CURDS_PER_EGG=9;           // the pieces of fried egg (assets/eggs/skuvano_1..12.webp), they lie under the film
 const CURD_W=15;                 // width of a piece of fried egg (simulation units) for a 150 px picture
 const CURD=[...Array(12)].map((_,i)=>'assets/eggs/skuvano_'+(i+1)+'.webp?v=1');
+const RAW=[1,2,3].map(i=>'assets/eggs/sirovo_'+i+'.webp?v=2');   // the raw egg (white + yolk) that lies in the dish right after it is put in
+const RAW_W=44;
+const rawImgs={};
+function loadRaw(i){let e=rawImgs[i];if(e)return e;e=rawImgs[i]={img:new Image(),ready:false};e.img.onload=()=>{e.ready=true;for(const s of live)s.dirty=true;kick();};e.img.src=RAW[i];return e;}
 const curdImgs={};
 function loadCurd(i){let e=curdImgs[i];if(e)return e;e=curdImgs[i]={img:new Image(),ready:false};e.img.onload=()=>{e.ready=true;for(const s of live)s.dirty=true;kick();};e.img.src=CURD[i];return e;}
   const MAX_EGGS=8;
@@ -111,7 +115,8 @@ function loadCurd(i){let e=curdImgs[i];if(e)return e;e=curdImgs[i]={img:new Imag
               curds.push({x:drop.x+Math.cos(a)*r,y:drop.y+Math.sin(a)*r*.7,vx:0,vy:0,rot:Math.random()*6.283,
                 img:Math.floor(Math.random()*12),sc:.8+Math.random()*.45,mass:.9+Math.random()*.9,tx:tgt.x,ty:tgt.y});
             }
-            this.eggs.set(id,{id,batch:b.id,parts,curds,prog:0});
+            const raw={x:drop.x,y:drop.y,vx:0,vy:0,rot:(Math.random()-.5)*.9,img:Math.floor(Math.random()*3),mass:1.6,born:performance.now()};
+            this.eggs.set(id,{id,batch:b.id,parts,curds,raw,prog:0});
           }
         }
       }
@@ -126,7 +131,7 @@ function loadCurd(i){let e=curdImgs[i];if(e)return e;e=curdImgs[i]={img:new Imag
       const lx=(clientX-rect.left)/rect.width*SIM_W,ly=(clientY-rect.top)/rect.height*this.H;
       const vx=mx/rect.width*SIM_W,vy=my/rect.height*this.H,speed=Math.hypot(vx,vy),cx=this.cx,cy=this.cy;
       const dir=((lx-cx)*vy-(ly-cy)*vx)>=0?1:-1,R=26;
-      for(const e of this.eggs.values())for(const p of e.parts.concat(e.curds)){
+      for(const e of this.eggs.values())for(const p of e.parts.concat(e.curds,[e.raw])){
         const dx=p.x-lx,dy=p.y-ly,d=Math.hypot(dx,dy);
         if(d>=R)continue;
         const w=(1-d/R)*(1-d/R*.3)/p.mass;
@@ -141,9 +146,10 @@ function loadCurd(i){let e=curdImgs[i];if(e)return e;e=curdImgs[i]={img:new Imag
       let energy=0;
       for(const e of this.eggs.values()){
         // the patches spread over the food area while the egg sets; what the spoon has moved stays moved
+        if(performance.now()-e.raw.born<300){this.dirty=true;energy=Math.max(energy,.001);}   // the egg drops in: keep drawing until it has landed
         const s=smooth(0,.8,this.curdOf(e)),ds=s-e.prog;
-        if(ds>1e-5){const f=Math.min(1,ds/Math.max(.02,1-e.prog));for(const p of e.parts.concat(e.curds)){p.x+=(p.tx-p.x)*f;p.y+=(p.ty-p.y)*f;}e.prog=s;energy=Math.max(energy,.001);this.dirty=true;}
-        for(const p of e.parts.concat(e.curds)){
+        if(ds>1e-5){const f=Math.min(1,ds/Math.max(.02,1-e.prog));for(const p of e.parts.concat(e.curds,[e.raw])){p.x+=(p.tx-p.x)*f;p.y+=(p.ty-p.y)*f;}e.prog=s;energy=Math.max(energy,.001);this.dirty=true;}
+        for(const p of e.parts.concat(e.curds,[e.raw])){
           p.x+=p.vx;p.y+=p.vy;p.rot+=p.vx*.01;
           const sp=Math.hypot(p.vx,p.vy),cap=.27/p.mass;
           if(sp>cap){p.vx*=cap/sp;p.vy*=cap/sp;}
@@ -166,6 +172,19 @@ function loadCurd(i){let e=curdImgs[i];if(e)return e;e=curdImgs[i]={img:new Imag
         const g=el.getContext('2d'),sc=w/SIM_W;
         g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
         g.save();g.beginPath();this.poly.forEach((q,i)=>i?g.lineTo(q.x*sc,q.y*sc):g.moveTo(q.x*sc,q.y*sc));g.closePath();g.clip();
+        for(const e of eggs){       // the raw egg: right away visible with its yolk, it sets (turns white and fades) as the egg is stirred in the heat
+          const k=this.curdOf(e),r=e.raw,ent=loadRaw(r.img);if(!ent.ready)continue;
+          const a=1-smooth(.3,.85,k),white=smooth(0,.6,k),born=Math.min(1,(performance.now()-r.born)/220);
+          if(a<=.01)continue;
+          const im=ent.img,kk=RAW_W/300*(.6+.4*born)*(1-.15*smooth(.2,1,k)),dw=im.width*kk*sc,dh=im.height*kk*sc;
+          let src=im;
+          if(white>.03){
+            const sc2=this.rawScratch||(this.rawScratch=document.createElement('canvas'));sc2.width=Math.max(1,Math.ceil(dw));sc2.height=Math.max(1,Math.ceil(dh));
+            const sg=sc2.getContext('2d');sg.clearRect(0,0,sc2.width,sc2.height);sg.drawImage(im,0,0,sc2.width,sc2.height);
+            sg.globalCompositeOperation='source-atop';sg.fillStyle='rgba(248,244,232,'+(white*.9).toFixed(3)+')';sg.fillRect(0,0,sc2.width,sc2.height);sg.globalCompositeOperation='source-over';src=sc2;
+          }
+          g.save();g.globalAlpha=a*born;g.translate(r.x*sc,r.y*sc);g.rotate(r.rot);g.drawImage(src,-dw/2,-dh/2,dw,dh);g.restore();
+        }
         for(const e of eggs){       // the pieces of fried egg lie under the film
           const k=this.curdOf(e),ca=smooth(.2,.75,k),grow=.5+.5*smooth(.15,1,k);
           if(ca<=.01)continue;
