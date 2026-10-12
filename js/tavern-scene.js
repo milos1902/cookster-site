@@ -1524,6 +1524,33 @@ function drawSprite(ctx,key,x,y,sc,flip,rot,alpha,sway){
 function drawShadow(ctx,x,y,sc){
   ctx.save();ctx.fillStyle='rgba(20,8,2,.32)';ctx.beginPath();ctx.ellipse(x,y+2,34*sc/.3,9*sc/.3,0,0,Math.PI*2);ctx.fill();ctx.restore();
 }
+// the hands of a guest at the far side of a table (and what he holds): the part of his picture that stays ABOVE the cloth, while the rest of him is covered by the mask of the table
+// (his chest goes behind the far edge of the table, his forearms and the mug lie on it). Polygons in the picture of the guest (u = 0..1 from the left, v = 0..1 from the top), measured by eye, for each character (the far guests all sit 'lice')
+var HANDS={
+  1:[[[0,.68],[.30,.64],[.54,.66],[.54,.92],[.30,.94],[0,.90]],[[.54,.86],[.70,.84],[.78,.78],[1,.72],[1,.95],[.72,1],[.54,1]]],
+  2:[[[0,.72],[.28,.66],[.42,.74],[.68,.74],[.8,.70],[1,.74],[1,.92],[.9,.98],[.2,.98],[0,.92]]],
+  3:[[[0,.66],[.30,.70],[.62,.70],[1,.64],[1,.96],[.85,1],[.30,1],[0,.95]]],
+  4:[[[0,.72],[.30,.72],[.55,.78],[.70,.80],[1,.70],[1,.90],[.88,1],[.15,1],[0,.90]]],
+  5:[[[.05,.78],[.30,.78],[.50,.76],[.80,.76],[1,.74],[1,.97],[.10,1],[0,.98]]],
+  6:[[[0,.66],[.28,.62],[.50,.62],[.55,.88],[.45,.90],[.20,.90],[0,.90]],[[.60,.86],[.78,.80],[1,.72],[1,.90],[.85,1],[.60,.98]]],
+  7:[[[0,.70],[.30,.70],[.60,.76],[.78,.80],[1,.70],[1,.88],[.85,1],[.40,1],[0,.95]]],
+  8:[[[.10,.70],[.30,.72],[.45,.68],[.60,.70],[.75,.74],[.95,.74],[.95,.95],[.85,1],[.30,1],[.10,.95]]],
+  9:[[[.02,.68],[.50,.68],[.50,.90],[.35,.92],[.02,.92]],[[.55,.82],[.75,.78],[.98,.76],[.98,.92],[.80,.96],[.55,.96]]],
+  10:[[[0,.74],[.30,.72],[.45,.74],[.70,.75],[1,.60],[1,.80],[.85,.90],[.70,1],[.40,1],[.20,.92],[0,.88]]]
+};
+function farMaskY(t){          // the y of the mask of a table (the table 1 has no match in TABLEMASKY: its mask is the one that contains the middle of the table)
+  var my=TABLEMASKY[t];
+  if(my==null){var tb=TABLES[t];MASKS.forEach(function(m){if(pip(m.poly,tb.x,tb.y))my=Math.max(my==null?-1e9:my,m.y)})}
+  return my==null?TABLES[t].y+90:my;
+}
+function drawHands(ctx,g){
+  var P=HANDS[g.ch];if(!P)return;
+  var key=chKey(g,'sedi_lice'),im=timgs[key]||imgs[key];if(!im)return;
+  var sp=seatPos(g),ssc=scaleAt(sp.y)*SIT_K,w=(im.naturalWidth||im.width)*ssc,h=(im.naturalHeight||im.height)*ssc,x0=sp.x-w/2,y0=sp.y-h;
+  ctx.save();ctx.beginPath();
+  P.forEach(function(poly){poly.forEach(function(q,i){var X=x0+q[0]*w,Y=y0+q[1]*h;if(i)ctx.lineTo(X,Y);else ctx.moveTo(X,Y)});ctx.closePath()});
+  ctx.clip();drawGuestBody(ctx,g);ctx.restore();
+}
 function guestSortY(g){
   if(g.mode!=='seated'&&g.mode!=='sitting'&&g.mode!=='rising')return g.y;
   // a guest at the far side of the table sits BEHIND it: the mask of the table (its far edge) covers him, the same at all three tables
@@ -1589,6 +1616,7 @@ function draw(){
   var cm=companyGuests(),cs=cm?companyStep(cm):null,coY=-1e9;
   guests.forEach(function(g){g._coHide=false});
   if(cs){coY=Math.max.apply(null,cm.map(guestSortY))+.001;list.push({y:coY,co:cs});if(cs.al>=1)cm.forEach(function(g){g._coHide=true})}
+  guests.forEach(function(g){if(g.mode==='seated'&&g.seat.k==='back'&&!g.held&&!g._coHide&&HANDS[g.ch])list.push({y:farMaskY(g.seat.table)+.005,h:g})});      // the hands of the guests at the far side lie on the table: right above its cloth (a dish on the table is still above them)
   for(var at=0;at<TABLES.length;at++)(function(t){var my=TABLEMASKY[t],a0=ASH[t],my2=-1e9;if(a0)MASKS.forEach(function(m){if(pip(m.poly,a0.x,a0.y-4))my2=Math.max(my2,m.y)});if(my2>-1e8)my=my2;list.push({y:Math.max((my!=null?my:TABLES[t].y)+.02,t===COMPANY.table?coY+.0001:-1e9),ash:t})})(at);
   MASKS.forEach(function(m){list.push({y:m.y,m:m})});
   list.push({y:238,bar:true});                       // the ashtrays on the bar (js/ashtrays.js)
@@ -1606,7 +1634,7 @@ function draw(){
     if(!busy)list.push({y:m.y,m:m});
   });
   list.sort(function(a,b){return a.y-b.y});
-  list.forEach(function(o){if(o.co){ctx.save();ctx.globalAlpha=o.co.al;ctx.drawImage(coImgs.fr[o.co.i],COFILM.ox,COFILM.oy,COFILM.w,COFILM.h);ctx.restore()}else if(o.g)drawGuest(ctx,o.g);else if(o.w)drawWaiter(ctx);else if(o.dish)drawDish(ctx,o.dish);else if(o.ash!==undefined)drawAsh(ctx,o.ash);else if(o.bar){try{if(window.CooksterAshtrays)window.CooksterAshtrays.drawBar(ctx)}catch(e){}}else drawPolyFromPicture(ctx,o.m.poly)});
+  list.forEach(function(o){if(o.co){ctx.save();ctx.globalAlpha=o.co.al;ctx.drawImage(coImgs.fr[o.co.i],COFILM.ox,COFILM.oy,COFILM.w,COFILM.h);ctx.restore()}else if(o.g)drawGuest(ctx,o.g);else if(o.h)drawHands(ctx,o.h);else if(o.w)drawWaiter(ctx);else if(o.dish)drawDish(ctx,o.dish);else if(o.ash!==undefined)drawAsh(ctx,o.ash);else if(o.bar){try{if(window.CooksterAshtrays)window.CooksterAshtrays.drawBar(ctx)}catch(e){}}else drawPolyFromPicture(ctx,o.m.poly)});
   drawReactions(ctx,.016);drawOrderBubble(ctx);
 }
 
