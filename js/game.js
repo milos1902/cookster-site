@@ -15441,7 +15441,7 @@ if(!__hasSavedWorld){
 }
 // Props placed by the owner (measured from his save, 2026-10-12): they stand exactly here at the start of every game and cannot be moved (dataset.locked).
 const FIXED_PROPS=[
- {id:'daska',cx:839.1996770721205,by:484.8223259742607,vis:0.9826182397886274,zone:'table'},
+ {id:'daska',cx:839.1996770721205,by:484.8223259742607,vis:0.9826182397886274,zone:'table',startOnly:true},
  {id:'korpa_drva',cx:1355.6103336921421,by:848.0204520990312,vis:1.165,zone:'floor'},
  {id:'kanta_set_zatvorena',cx:1574.4822389666308,by:944.109900380681,vis:1.463239401919793,zone:'floor'},
  {id:'zvonce_konobar',cx:1176.064585575888,by:309.2766415500538,vis:0.73,zone:'table'},
@@ -15456,12 +15456,15 @@ function lockFixedProps(){
     el=makeItem({...def,instanceId:nextItemInstanceId(def.id),x:p.cx-def.w/2-CENTER_OFFSET,y:p.by-def.h,z:++zCounter});
    }
    if(!el||el===holding)continue;
+   if(p.startOnly){   // only the starting place of a NEW game; the item is not locked and a saved game keeps where the player left it
+    if(!__hasSavedWorld){el.dataset.surfaceZone=p.zone;setPose(el,p.cx,p.by,p.vis);syncBoardAttachments(el);}
+    continue;
+   }
    el.dataset.surfaceZone=p.zone;el.dataset.angle='0';el.dataset.tilt='0';
    setPose(el,p.cx,p.by,p.vis);
    el.dataset.fixedVis=String(p.vis);
    setPose(el,p.cx,p.by,p.vis);
    el.dataset.locked='1';
-   if(p.id==='daska')syncBoardAttachments(el);
   }catch(err){console.warn('[Cookster] fixed prop failed',p.id,err);}
  }
 }
