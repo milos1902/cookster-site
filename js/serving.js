@@ -297,6 +297,7 @@ function openMenu(el,x,y){
   const oil=+el.dataset.srvOil||0,pars=+el.dataset.srvParsley||0,has=listOf(el).length;
   add(oil<2?(oil?'Još ulja':'Prelij uljem'):'Ulja je dosta',()=>{el.dataset.srvOil=String(Math.min(2,oil+1));});
   add(pars<30?'Pospi peršunom':'Peršuna je dosta',()=>{el.dataset.srvParsley=String(Math.min(30,pars+(pars?7:9)));});
+  if(has&&window.CooksterMenu)add('📖 Dodaj u meni',()=>{window.CooksterMenu.addFromVessel(el);});
   if(oil||pars||has)add('Isprazni posudu',()=>{el.dataset.srvItems='[]';el.dataset.ovalItems='[]';el.dataset.ovalExtras='[]';el.dataset.srvOil='0';el.dataset.srvParsley='0';});
   document.body.appendChild(menu);
   const r=menu.getBoundingClientRect();menu.style.left=Math.max(6,Math.min(innerWidth-r.width-6,x))+'px';menu.style.top=Math.max(6,Math.min(innerHeight-r.height-6,y))+'px';
