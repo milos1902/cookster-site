@@ -44,10 +44,14 @@ css.textContent=`
 #menuBook .mb-leaf{transform-origin:left center;transform-style:preserve-3d;transition:transform .95s cubic-bezier(.5,.05,.25,1)}
 #menuBook .mb-leaf.turned{transform:rotateY(-180deg)}
 #menuBook .mb-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
-#menuBook .mb-face:not(.mb-cover){transform:translateX(-8%);-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 9%);mask-image:linear-gradient(90deg,transparent 0,#000 9%)}      /* the picture of a page has a ragged edge of about 5%: both pages are moved to the middle so that the paper of the left and of the right page touch at the fold */
-#menuBook .mb-back{transform:translateX(-8%) rotateY(180deg)!important}
-#menuBook .mb-fold{position:absolute;left:50%;top:1.5%;bottom:1.5%;width:9%;margin-left:-4.5%;pointer-events:none;z-index:60;opacity:0;transition:opacity .5s ease;background:linear-gradient(90deg,rgba(30,12,2,0) 0,rgba(30,12,2,.28) 38%,rgba(30,12,2,.55) 50%,rgba(30,12,2,.28) 62%,rgba(30,12,2,0) 100%)}
+#menuBook .mb-face:not(.mb-cover){transform:translateX(-4.6%)}      /* the picture of a page has a ragged edge of about 5%: both pages are moved to the middle so that the paper of the left and of the right page touch at the fold */
+#menuBook .mb-back{transform:translateX(-4.6%) rotateY(180deg)!important}
+#menuBook .mb-fold{position:absolute;left:50%;top:1.5%;bottom:1.5%;width:6%;margin-left:-3%;pointer-events:none;z-index:60;opacity:0;transition:opacity .5s ease;background:linear-gradient(90deg,rgba(30,12,2,0) 0,rgba(30,12,2,.28) 38%,rgba(30,12,2,.55) 50%,rgba(30,12,2,.28) 62%,rgba(30,12,2,0) 100%)}
 #menuBook .mb-fold.on{opacity:1}
+/* the back cover of the open book: it lies behind both pages, so there is no crack to see the kitchen through (leather of the same colour as the cover) */
+#menuBook .mb-hard{position:absolute;left:-1.6%;right:-1.6%;top:-1.3%;bottom:-1.3%;z-index:0;opacity:0;transition:opacity .5s ease;border-radius:14px;background:radial-gradient(ellipse at 50% 40%,#6a3a18 0,#52290e 70%,#3e1f08 100%);box-shadow:0 18px 40px rgba(0,0,0,.6),inset 0 0 0 3px #7a4a22,inset 0 0 40px rgba(20,8,0,.7);pointer-events:none}
+#menuBook .mb-hard::after{content:'';position:absolute;left:50%;top:0;bottom:0;width:4px;margin-left:-2px;background:linear-gradient(90deg,rgba(0,0,0,.0),rgba(0,0,0,.65),rgba(0,0,0,.0))}
+#menuBook .mb-hard.on{opacity:1}
 #menuBook .mb-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;user-select:none}
 #menuBook .mb-cover .mb-bg{filter:drop-shadow(0 14px 22px rgba(0,0,0,.65))}
 #menuBook .mb-cover{cursor:pointer}
@@ -127,6 +131,7 @@ function buildBook(){
     bookEl.appendChild(lf);leafEls.push(lf);
   });
   const fold=el('div','mb-fold');bookEl.appendChild(fold);
+  bookEl.insertBefore(el('div','mb-hard'),bookEl.firstChild);
   renderEntries();layout(true);
 }
 function layout(now){
@@ -135,6 +140,7 @@ function layout(now){
     if(now)lf.style.zIndex=turned?10+i:20-i;
   });
   const fd=bookEl.querySelector('.mb-fold');if(fd)fd.classList.toggle('on',t>0);
+  const hd=bookEl.querySelector('.mb-hard');if(hd)hd.classList.toggle('on',t>0);
   const bs=bookEl.querySelector('.mb-base');if(bs)bs.classList.toggle('closed',t===0);
   const pw=bookEl.offsetWidth/2;bookEl.style.transform='translateX('+(t===0?-pw/2:0)+'px)';
   navL.disabled=t<=0;navR.disabled=t>=LEAVES.length;
