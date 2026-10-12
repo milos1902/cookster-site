@@ -9101,6 +9101,16 @@ function playOilPourFx(bottle,vessel){
     playSfxVariant('oilSizzle',.16);
 }
 
+// the tool "Maska posude" changed the calibration of a vessel: every such vessel in the kitchen takes the new area of the food at once
+window.addEventListener('cookster:vessel-calibration',e=>{
+  const id=e&&e.detail&&e.detail.id;if(!id)return;
+  (window.items||[]).filter(it=>it&&it.dataset&&it.dataset.itemId===id&&isContainerItem(it)).forEach(it=>{
+    try{applyVesselVisualPreset(it);}catch(_){}
+    try{const fm=it._vesselFrontMask;if(fm)window.CooksterVesselFoodCalibration?.applyToVessel?.(it,it._vesselContent,fm,vesselVisualPreset(it));}catch(_){}
+    try{renderCookwareContents(it);}catch(_){}
+    try{window.CooksterServe&&window.CooksterServe.render(it);}catch(_){}
+  });
+});
 function renderCookwareContents(el,modelOverride=null,stateOverride=null){
  if(!el||!isContainerItem(el))return;
  if(isPanItem(el)){

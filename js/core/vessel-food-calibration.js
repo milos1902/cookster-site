@@ -153,7 +153,7 @@
     }
   }catch(_){}
 
-  function get(vesselOrId){
+  function baseGet(vesselOrId){
     const id=typeof vesselOrId==='string'
       ?vesselOrId
       :(vesselOrId?.dataset?.itemId||'');
@@ -171,6 +171,41 @@
     return pr;
   }
   const zoneCache={};
+
+  // what Miloš draws in the tool "Maska posude" is used by the game at once (and every time the game starts, from the same browser memory):
+  // LIVE[id] = {mask,foodVisible,bottom,depth:{bottom,foodTop}} in [x,y] pairs; every part that is drawn (a polygon of 3+ points, a point) replaces that part of the built-in profile
+  const LIVE={},liveCache={};
+  const pair=p=>Array.isArray(p)?[+p[0],+p[1]]:(p&&Number.isFinite(+p.x)?[+p.x,+p.y]:null);
+  const poly3=l=>Array.isArray(l)&&l.length>=3?l.map(pair).filter(Boolean):null;
+  function setLive(id,shape){
+    if(!id)return;
+    const o={};
+    if(shape){
+      const m=poly3(shape.mask),f=poly3(shape.foodVisible),b=poly3(shape.bottom),db=pair(shape.depth&&shape.depth.bottom),dt=pair(shape.depth&&shape.depth.foodTop);
+      if(m&&m.length>=3)o.mask=m;if(f&&f.length>=3)o.foodVisible=f;if(b&&b.length>=3)o.bottom=b;
+      if(db||dt)o.depth={bottom:db,foodTop:dt};
+    }
+    if(Object.keys(o).length)LIVE[id]=o;else delete LIVE[id];
+    delete liveCache[id];
+  }
+  function importSaved(){
+    try{
+      const d=JSON.parse(localStorage.getItem('cookster.vessel-food-mask-calibration.v1')||'null');
+      if(d&&d.vessels)Object.keys(d.vessels).forEach(id=>setLive(id,d.vessels[id]));
+    }catch(_){}
+  }
+  function get(vesselOrId){
+    const id=typeof vesselOrId==='string'?vesselOrId:(vesselOrId?.dataset?.itemId||'');
+    const base=baseGet(id),lv=LIVE[id];
+    if(!lv)return base;
+    const c=liveCache[id];if(c&&c.base===base)return c.p;
+    const p={mask:lv.mask||(base&&base.mask)||null,foodVisible:lv.foodVisible||(base&&base.foodVisible)||null,bottom:lv.bottom||(base&&base.bottom)||null,
+      depth:{bottom:(lv.depth&&lv.depth.bottom)||(base&&base.depth&&base.depth.bottom)||null,foodTop:(lv.depth&&lv.depth.foodTop)||(base&&base.depth&&base.depth.foodTop)||null}};
+    // a profile that is not complete cannot be used (the game then keeps what it had)
+    const ok=p.foodVisible&&p.depth.bottom&&p.depth.foodTop;
+    if(ok&&!p.mask)p.mask=p.foodVisible;
+    liveCache[id]={base,p:ok?p:base};return liveCache[id].p;
+  }
   function applyToVessel(vessel,wrap,front,preset){
     const profile=get(vessel);
     if(!profile||!vessel)return false;
@@ -290,7 +325,9 @@
     }
     return slots;
   }
+  importSaved();
   window.CooksterVesselFoodCalibration={
+    setLive,
     get:v=>copy(get(v)),
     frame:v=>copy(frameFor(v)),
     applyToVessel,
