@@ -457,6 +457,7 @@ function refreshPapers(){
 function start(){
   var o=pending[0];if(!o)return;
   anim={o:o,t:0,x:STOP_X,phase:'in',dropped:false,last:performance.now()};snd('waiter','appear');
+  if(window.CooksterKitchenFx&&CooksterKitchenFx.swingDoors)CooksterKitchenFx.swingDoors();
   requestAnimationFrame(tick);
 }
 // the bell: the waiter comes into the kitchen and waits for a moment (what he takes away comes later)
@@ -466,6 +467,7 @@ function callWaiter(){called=true;calledAt=Date.now()+3000+Math.random()*2000}  
 function startCall(){
   called=false;
   anim={o:null,call:true,t:0,x:STOP_X,phase:'in',last:performance.now()};snd('waiter','appear');
+  if(window.CooksterKitchenFx&&CooksterKitchenFx.swingDoors)CooksterKitchenFx.swingDoors();
   requestAnimationFrame(tick);
 }
 function speech(text,x,y){

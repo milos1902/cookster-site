@@ -303,3 +303,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ### Ulazak u kafanu kroz kafanska vrata (js/kitchen-fixtures.js, js/tavern-scene.js)
 - Klik na kafanska vrata u kuhinji (`DOOR`, gore u sredini; kad ništa nije u ruci): kamera zumira živu scenu ka vratima (isto kao zum na roštilj, `ZIN` ms, kriva `t^2`), pri kraju ekran tamni (`#0b0502`), pa se poziva `CooksterTavern.open({instant:true})` (otvaranje kafane bez panoramskog okretanja) i dok se svetlo vraća, kafana „odleti dronom": `#tavernScene` se animira od `translateY(-9%) scale(1.7)` do normalne veličine za ~1 s (odzumira i spusti sliku). Prvi put kafana učitava slike pa tamni ekran traje dok se ne učitaju. Dugme „kafana" na levoj ivici radi kao pre (panoramski prelaz).
+
+## Kafanska vrata – konobar ulazi (samo frejmovi vrata)
+- `assets/doors/d_1..d_60.webp`: isečeni samo delovi vrata (400×185 na x=765,y=0) iz Wan 2.7 videa cele kuhinje; sve ostalo je providno, pozadina kuhinje se ne dira.
+- `CooksterKitchenFx.swingDoors()` (kitchen-fixtures.js) prikazuje frejmove ~1.3 s preko slike; zove se iz `start()` i `startCall()` u kitchen-orders.js kad konobar uđe.
+- Ograničenje: zatvaranje je sporije, bez opruge (kako je u videu). Nije testirano uz zvuk niti uz stvarnog konobara u igri, samo sam pozvao `swingDoors()` direktno.
