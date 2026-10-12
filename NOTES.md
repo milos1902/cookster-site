@@ -332,3 +332,4 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Ulaz u kafanu: zum na vrata + film otvaranja
 - Klik na vrata u kuhinji: kamera zumira na vrata (K=2.4), zatim se pusti `assets/doors/dolazak.mp4` (zumirana vrata se otvaraju, tamno), zatim zatamnjenje (.26 s), kafana se otvara trenutno i dron-odmicanje (kao ranije). Povratak u kuhinju je kao ranije (okretanje kamere). Ako se video ne učita (nema kodeka) preskače se. Sav kod u `zoomDoor()` (kitchen-fixtures.js); video se unapred učitava 4 s posle starta. LMAX učitavanja slika kafane = 24.
+- Zum na vrata je sada K=3.3 i završava tako da je gornja ivica slike kuhinje tačno na vrhu ekrana (nema praznog pojasa iznad); video je poravnat sa vratima (translateY + scale 1.16).

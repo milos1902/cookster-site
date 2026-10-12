@@ -161,8 +161,9 @@ function zoomDoor(){
   if(view||(window.CooksterTavern&&(window.CooksterTavern.busy||window.CooksterTavern.isOpen)))return;
   try{if(typeof holding!=='undefined'&&holding){showToast('Prvo spusti predmet iz ruke.');return}}catch(e){}
   var scn=document.getElementById('scene');if(!scn)return;
-  var sc=scale||1,tx0=offsetX-cameraX*sc,ty0=offsetY,K=2.4,G={x:970,y:75},T={x:W/2,y:H/2-40};
-  var p0={x:tx0+G.x*sc,y:ty0+G.y*sc},p1={x:innerWidth/2,y:innerHeight/2-40*sc},S1=sc*K;
+  var sc=scale||1,tx0=offsetX-cameraX*sc,ty0=offsetY,K=3.3,G={x:970,y:75},T={x:W/2,y:H/2-40};
+  // the doors end in the middle (left-right) and so high that the top of the kitchen picture lies exactly on the top of the screen (no empty strip above the picture)
+  var S1=sc*K,p0={x:tx0+G.x*sc,y:ty0+G.y*sc},p1={x:innerWidth/2,y:G.y*S1};
   var dark=document.createElement('div');dark.setAttribute('data-tool-ui','1');
   dark.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;z-index:30000;background:#0b0502;opacity:0;pointer-events:all';
   ['pointerdown','pointerup','mousedown','mouseup','click','dblclick','contextmenu','wheel'].forEach(function(n){dark.addEventListener(n,function(e){e.stopPropagation()})});
@@ -178,7 +179,7 @@ function zoomDoor(){
     vo.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;z-index:29990;pointer-events:all;background:transparent';
     ['pointerdown','pointerup','mousedown','mouseup','click','dblclick','contextmenu','wheel'].forEach(function(n){vo.addEventListener(n,function(ev){ev.stopPropagation()})});
     var vid=document.createElement('video');vid.muted=true;vid.playsInline=true;vid.preload='auto';vid.setAttribute('playsinline','');
-    vid.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .18s ease';
+    vid.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .18s ease;transform-origin:50% 36.7%;transform:translateY('+(p1.y-.367*innerHeight)+'px) scale(1.16)';      // the doors of the film lie where the doors of the zoomed kitchen are
     var vok=true;vid.onerror=function(){vok=false};vid.src='assets/doors/dolazak.mp4?v=1';vo.appendChild(vid);document.body.appendChild(vo);
     var wt=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
     var film=wt(vok?120:0).then(function(){
