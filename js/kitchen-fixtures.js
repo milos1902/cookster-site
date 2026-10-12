@@ -157,67 +157,72 @@ function hit(x,y){
 // ---------- the saloon doors (the way to the tavern): the camera zooms into them, the screen goes dark, and the tavern lights up ----------
 var warmed=false;
 var DOOR={l:795,t:5,r:1145,b:145};
-try{setTimeout(function(){var pv=document.createElement('video');pv.preload='auto';pv.muted=true;pv.src='assets/doors/dolazak.mp4?v=1'},4000)}catch(e){}      // the film of the doors is fetched in good time
+// the camera zooms from the first picture of the kitchen into the saloon doors (the same live zoom as to the grill: the whole scene, with everything on it, is zoomed), the doors swing open (the film frames
+// of the waiter's entrance, which zoom together with the scene), and behind them the picture of the tavern appears and grows with soft edges until it fills the screen: one zoom follows the other.
+// The way back is the same thing the other way round: the tavern shrinks into the doorway, the camera zooms out of the doors, which close.
+var view=null;
+function DZf(){return 620*(window.__dzMul||1)}      // (the length of the zoom can be stretched for testing: window.__dzMul)
+var DZ=620;                                                        // the length of the zoom (ms), about the same as the zoom to the grill
+function doorGeom(){
+  var sc=scale||1,tx0=offsetX-cameraX*sc,ty0=offsetY,K=3.3,G={x:970,y:75},S1=sc*K;
+  // the doors end in the middle (left-right) and so high that the top of the kitchen picture lies on the top of the screen (no empty strip above it)
+  return{sc:sc,G:G,S1:S1,p0:{x:tx0+G.x*sc,y:ty0+G.y*sc},p1:{x:innerWidth/2,y:G.y*S1}};
+}
+function doorFrame(g,scn,S){var w=(S-g.sc)/(g.S1-g.sc),px=g.p0.x+(g.p1.x-g.p0.x)*w,py=g.p0.y+(g.p1.y-g.p0.y)*w;scn.style.transform='translate('+(px-g.G.x*S)+'px,'+(py-g.G.y*S)+'px) scale('+S+')';return{x:px,y:py}}
+function ease(u){return u*u*(3-2*u)}
+function lerp(a,b,k){return a+(b-a)*k}
+// the picture of the tavern grows out of the doorway: p 0..1 (small and soft in the doorway → the whole screen)
+function tavernAt(room,c,p){
+  var e=Math.pow(p,1.5),W=innerWidth,H=innerHeight;
+  room.style.transformOrigin='50% 50%';
+  room.style.transform='translate('+((c.x-W/2)*(1-e))+'px,'+((c.y-H/2)*(1-e))+'px) scale('+lerp(.16,1,e)+')';
+  room.style.opacity=String(Math.min(1,.4+e*1.3));
+  var inner=lerp(4,146,e),outer=inner+lerp(40,8,e),m='radial-gradient(ellipse closest-side at 50% 50%,#000 '+inner+'%,rgba(0,0,0,0) '+outer+'%)';
+  room.style.webkitMaskImage=m;room.style.maskImage=m;
+}
+function tavernClear(room){room.style.transform='';room.style.transformOrigin='';room.style.opacity='';room.style.webkitMaskImage='';room.style.maskImage='';room.style.willChange=''}
 function zoomDoor(){
   if(view||(window.CooksterTavern&&(window.CooksterTavern.busy||window.CooksterTavern.isOpen)))return;
   try{if(typeof holding!=='undefined'&&holding){showToast('Prvo spusti predmet iz ruke.');return}}catch(e){}
-  // a click on the doors: the film of the zoomed doors (assets/doors/dolazak.mp4) starts at once; while the doors swing open the picture zooms into the dark behind them,
-  // the screen is black for half a second, and the tavern lights up (the camera flies out of the doors like a drone)
-  var dark=document.createElement('div');dark.setAttribute('data-tool-ui','1');
-  dark.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;z-index:30000;background:#0b0502;opacity:0;pointer-events:all';
-  var vo=document.createElement('div');vo.setAttribute('data-tool-ui','1');
-  vo.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;z-index:29990;pointer-events:all;overflow:hidden;background:transparent';
-  [dark,vo].forEach(function(el){['pointerdown','pointerup','mousedown','mouseup','click','dblclick','contextmenu','wheel'].forEach(function(n){el.addEventListener(n,function(ev){ev.stopPropagation()})})});
-  var vid=document.createElement('video');vid.muted=true;vid.playsInline=true;vid.preload='auto';vid.setAttribute('playsinline','');
-  vid.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .12s ease;transform-origin:50% 36.7%;will-change:transform';
-  var vok=true;vid.onerror=function(){vok=false};vid.src='assets/doors/dolazak.mp4?v=1';
-  vo.appendChild(vid);document.body.appendChild(vo);document.body.appendChild(dark);view={_busy:true,remove:function(){}};
-  var T=window.CooksterTavern,PLAY=0,ZM=1150;      // the zoom (ZM) into the dark runs while the doors swing open; the tavern starts to show up from the centre behind them
-  try{if(T&&T.preload)T.preload()}catch(e){}                  // the pictures of the tavern are fetched while the film runs
-  // the tavern grows out of the middle of the dark: a small picture with soft (faded) edges in the centre, which grows to the whole screen
-  var reveal=function(){
-    var room=document.getElementById('tavernScene');
-    if(!room){vo.remove();view=null;dark.remove();return}
-    var oz=room.style.zIndex;room.style.zIndex='30001';room.style.willChange='transform,opacity';
-    var DUR=1000,t0=performance.now();
-    (function step(now){
-      var t=Math.min(1,(now-t0)/DUR),e=t<.51?.22*(t/.51):.22+.78*(1-Math.pow(1-(t-.51)/.49,3));       // slowly at first (behind the opening doors), faster when the zoom goes through them
-      var sc=.2+.8*e,inner=lerp(4,146,e),outer=inner+lerp(40,8,e);
-      room.style.transform='scale('+sc+')';room.style.transformOrigin='50% 42%';
-      room.style.opacity=String(Math.min(1,.35+e*1.4));
-      var m='radial-gradient(ellipse closest-side at 50% 42%,#000 '+inner+'%,rgba(0,0,0,0) '+outer+'%)';
-      room.style.webkitMaskImage=m;room.style.maskImage=m;
-      if(t<1){requestAnimationFrame(step);return}
-      room.style.transform='';room.style.transformOrigin='';room.style.opacity='';room.style.webkitMaskImage='';room.style.maskImage='';room.style.willChange='';room.style.zIndex=oz;
-      dark.remove();vo.remove();view=null;
-    })(t0);
-    function lerp(a2,b2,k2){return a2+(b2-a2)*k2}
-  };
-  var go=function(){
-    var started=false,opened=false;
-    function run(){
-      if(started)return;started=true;
-      if(vok){try{vid.currentTime=0;var pr=vid.play();if(pr&&pr.catch)pr.catch(function(){vok=false})}catch(e3){vok=false}}
-      if(vok)vid.style.opacity='1';
-      var t0=performance.now();
-      (function step(now){
-        var el=now-t0,k=Math.max(0,Math.min(1,(el-PLAY)/ZM));
-        if(vok)vid.style.transform='scale('+(1+7*Math.pow(k,2.2))+')';        // the zoom into the dark behind the doors goes on while they swing open (slow at first, then faster)
-        dark.style.opacity=vok?(k>.62?(k-.62)/.38:0):Math.min(1,el/700);       // (without the film the screen just goes dark)
-        if(!opened&&el>=300){opened=true;      // the tavern begins to appear behind the doors while they are only starting to open
-          Promise.resolve(T&&T.open?T.open({instant:true}):false).then(reveal,reveal);
-        }
-        if(k<1||!opened)requestAnimationFrame(step);
-      })(t0);
-    }
-    if(vid.readyState>=3)run();else{vid.oncanplay=run;setTimeout(function(){if(!started){vok=false;run()}},900)}
-  };
-  go();
+  var scn=document.getElementById('scene'),vp=document.getElementById('viewport'),room=document.getElementById('tavernScene'),T=window.CooksterTavern;if(!scn||!room||!T)return;
+  var DZ_=DZf(),g=doorGeom();view={_busy:true,remove:function(){}};
+  scn.style.transition='none';scn.style.willChange='transform';
+  try{if(T.preload)T.preload()}catch(e){}
+  swingDoors(DZ_+300);
+  var t0=performance.now(),opened=false,ready=false;
+  (function step(now){
+    var el=now-t0,u=Math.min(1,el/DZ_),S=g.sc*Math.pow(g.S1/g.sc,ease(u)),c=doorFrame(g,scn,S);
+    if(!opened&&el>=90){opened=true;Promise.resolve(T.open({instant:true})).then(function(){try{vp.style.visibility='visible'}catch(e2){}room.style.willChange='transform,opacity';ready=true},function(){ready=true})}      // the tavern is opened behind the doors, the kitchen stays on the screen under it
+    if(ready){tavernAt(room,c,ease(Math.min(1,Math.max(0,(el-90)/(DZ_-90)))))}
+    if(u<1||!ready){requestAnimationFrame(step);return}
+    tavernClear(room);try{vp.style.visibility='hidden'}catch(e3){}
+    try{applyCamera()}catch(e4){}scn.style.willChange='';requestAnimationFrame(function(){scn.style.transition=''});
+    view=null;
+  })(t0);
 }
-// ---------- the grill: the camera comes close ----------
-var view=null;
-var ZIN=330;                                  // the length of the zoom (ms)
-var zoomImg=new Image();zoomImg.src=ZOOM_SRC;if(zoomImg.decode)zoomImg.decode().catch(function(){});
+var leaving=false;
+function leaveTavern(restore){
+  if(leaving)return Promise.resolve(false);leaving=true;
+  var scn=document.getElementById('scene'),vp=document.getElementById('viewport'),room=document.getElementById('tavernScene');
+  if(!scn||!room){leaving=false;return Promise.resolve(restore())}
+  var DZ_=DZf(),g=doorGeom();
+  scn.style.transition='none';scn.style.willChange='transform';doorFrame(g,scn,g.S1);
+  try{vp.style.visibility='visible'}catch(e){}room.style.willChange='transform,opacity';
+  swingDoors(DZ_+300,.3);                                               // the doors are open and close while the camera zooms out
+  return new Promise(function(done){
+    var t0=performance.now();
+    (function step(now){
+      var u=Math.min(1,(now-t0)/DZ_),S=g.S1*Math.pow(g.sc/g.S1,ease(u)),c=doorFrame(g,scn,S);
+      tavernAt(room,c,1-ease(Math.min(1,u*1.15)));                     // the tavern shrinks into the doorway
+      if(u<1){requestAnimationFrame(step);return}
+      tavernClear(room);
+      Promise.resolve(restore()).then(function(){},function(){}).then(function(){
+        try{applyCamera()}catch(e4){}scn.style.willChange='';requestAnimationFrame(function(){scn.style.transition=''});
+        leaving=false;done(true);
+      });
+    })(t0);
+  });
+}
 // ---------- the zoom into the grill: the live scene itself is zoomed toward the grill, with everything that stands on the table, then the picture of the grill takes over ----------
 function liveParams(){
   var sc=scale||1,tx0=offsetX-cameraX*sc,ty0=offsetY,K=2.52,G={x:492,y:125},T={x:870,y:470};
@@ -285,72 +290,15 @@ function liveAt(u){                                              // (for testing
 }
 // ---------- the saloon doors swing when the waiter comes in: only the door frames (cut out of the video) over the untouched kitchen ----------
 var dEl=null,dBusy=false,dImgs=null;
-function swingDoors(dur){
+function swingDoors(dur,from){
   var sc=document.getElementById('scene');if(!sc||dBusy)return;dBusy=true;
   if(!dImgs){dImgs=[];for(var i=1;i<=60;i++){(function(i){var m=new Image(),t=0;m.onerror=function(){if(++t<4)setTimeout(function(){m.src='assets/doors/d_'+i+'.webp?v=1&r='+t},300*t)};m.src='assets/doors/d_'+i+'.webp?v=1';dImgs.push(m)})(i)}}
   if(!dEl||!dEl.isConnected){dEl=document.createElement('img');dEl.draggable=false;dEl.style.cssText='position:absolute;left:765px;top:0;width:400px;height:185px;z-index:26;pointer-events:none;display:none';sc.appendChild(dEl)}
   var t0=performance.now(),DUR=dur||1300,last=-1;
-  (function f(now){var k=Math.min(59,Math.floor((now-t0)/DUR*60));
+  var f0=Math.max(0,Math.min(.95,from||0));      // from: the part of the film where it starts (0.3: the doors are already wide open)
+  (function f(now){var k=Math.min(59,Math.floor((f0+(1-f0)*Math.min(1,(now-t0)/DUR))*60));
     if(k!==last&&dImgs[k].complete&&dImgs[k].naturalWidth){dEl.src=dImgs[k].src;dEl.style.display='';last=k}
     if(now-t0<DUR)requestAnimationFrame(f);else{dEl.style.display='none';dBusy=false}})(t0);
-}
-// ---------- from the tavern back into the kitchen: the tavern shrinks into the dark (soft edges), the film zooms out of the dark, the doors close, and the picture turns into the kitchen ----------
-var leaving=false;
-function leaveTavern(restore){
-  if(leaving)return Promise.resolve(false);leaving=true;
-  var scn=document.getElementById('scene'),room=document.getElementById('tavernScene');
-  if(!room){leaving=false;return Promise.resolve(restore())}
-  var sc=scale||1,tx0=offsetX-cameraX*sc,ty0=offsetY,K=3.3,G={x:970,y:75},S1=sc*K;
-  var p0={x:tx0+G.x*sc,y:ty0+G.y*sc},p1={x:innerWidth/2,y:G.y*S1},dy=p1.y-.367*innerHeight;
-  var dark=document.createElement('div');dark.setAttribute('data-tool-ui','1');
-  dark.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;z-index:29980;background:#0b0502;opacity:1;pointer-events:all';
-  var vo=document.createElement('div');vo.setAttribute('data-tool-ui','1');
-  vo.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;z-index:29990;pointer-events:all;overflow:hidden;background:transparent';
-  [dark,vo].forEach(function(el){['pointerdown','pointerup','mousedown','mouseup','click','dblclick','contextmenu','wheel'].forEach(function(n){el.addEventListener(n,function(ev){ev.stopPropagation()})})});
-  var vid=document.createElement('video');vid.muted=true;vid.playsInline=true;vid.preload='auto';vid.setAttribute('playsinline','');
-  var tf=function(q){return 'translateY('+dy+'px) scale('+(1.16*(1+8*q))+')'};      // q=1: deep in the dark, q=0: the doors as in the kitchen
-  vid.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;opacity:0;transform-origin:50% 36.7%;will-change:transform;transform:'+tf(1);
-  var vok=true;vid.onerror=function(){vok=false};vid.src='assets/doors/odlazak.mp4?v=1';
-  vo.appendChild(vid);document.body.appendChild(vo);document.body.appendChild(dark);
-  var oz=room.style.zIndex;room.style.zIndex='30001';room.style.willChange='transform,opacity';
-  function lerp(a,b,k){return a+(b-a)*k}
-  function wt(ms){return new Promise(function(r){setTimeout(r,ms)})}
-  function put(S){var w=(S-sc)/(S1-sc),px=p0.x+(p1.x-p0.x)*w,py=p0.y+(p1.y-p0.y)*w;scn.style.transform='translate('+(px-G.x*S)+'px,'+(py-G.y*S)+'px) scale('+S+')'}
-  var A=650,B=420,started=false,restored=false,played=false;
-  return new Promise(function(done){
-    var t0=performance.now();
-    (function step(now){
-      var el=now-t0,t=Math.min(1,el/A),e=1-Math.pow(1-t,3),r=1-e;                    // r: 1 → 0, the tavern shrinks
-      room.style.transformOrigin='50% 42%';room.style.transform='scale('+(.2+.8*r)+')';room.style.opacity=String(Math.min(1,.35+r*1.4));
-      var inner=lerp(4,146,r),outer=inner+lerp(8,40,r),m='radial-gradient(ellipse closest-side at 50% 42%,#000 '+inner+'%,rgba(0,0,0,0) '+outer+'%)';
-      room.style.webkitMaskImage=m;room.style.maskImage=m;
-      if(vok&&el>A*.25)vid.style.opacity=String(Math.min(1,(el-A*.25)/(A*.4)));       // the dark of the film shows behind the shrinking tavern
-      // the zoom out of the film starts while the tavern is already small
-      if(vok&&el>A*.55){
-        if(!played){played=true;try{vid.currentTime=0;var pr=vid.play();if(pr&&pr.catch)pr.catch(function(){vok=false})}catch(e3){vok=false}}
-        var k=Math.min(1,(el-A*.55)/B);vid.style.transform=tf(Math.pow(1-k,2.4));
-      }
-      if(t<1){requestAnimationFrame(step);return}
-      room.style.transform='';room.style.transformOrigin='';room.style.opacity='';room.style.webkitMaskImage='';room.style.maskImage='';room.style.willChange='';room.style.zIndex=oz;
-      Promise.resolve(restore()).then(function(){},function(){}).then(function(){
-        // the film plays on (the doors close) until it ends; then the picture turns into the kitchen
-        return vok?wt(Math.max(200,1100-(performance.now()-t0-A*.55))+80):wt(150);
-      }).then(function(){
-        try{vid.pause()}catch(e4){}
-        if(!scn){vo.remove();dark.remove();leaving=false;done(true);return}
-        scn.style.transition='none';scn.style.willChange='transform';put(S1);
-        vo.style.transition='opacity .25s ease';dark.style.transition='opacity .25s ease';vo.style.opacity='0';dark.style.opacity='0';
-        var z0=performance.now(),D=950;
-        (function zs(now2){
-          var u=Math.min(1,Math.max(0,(now2-z0-120)/D)),eu=1-Math.pow(1-u,3);
-          put(S1*Math.pow(sc/S1,eu));
-          if(u<1){requestAnimationFrame(zs);return}
-          try{applyCamera()}catch(e5){}scn.style.willChange='';requestAnimationFrame(function(){scn.style.transition=''});
-          vo.remove();dark.remove();leaving=false;done(true);
-        })(z0);
-      });
-    })(t0);
-  });
 }
 window.CooksterKitchenFx={leaveTavern:leaveTavern,swingDoors:swingDoors,liveAt:liveAt,compose:function(src){return src},hit:hit,click:click,tryDrop:tryDrop,updateJars:updateJars,zoomGrill:zoomGrill,closeGrill:closeGrill,
   drawer:function(k){return DR[k]?DR[k].p:0},setDrawer:function(k,v){if(DR[k])setP(k,v)},isZoomed:function(){return !!view}};
