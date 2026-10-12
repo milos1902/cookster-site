@@ -9908,7 +9908,7 @@ function addIngredientToContainer(item,vessel){
    return true;
  }
 
- if(meta.type!=='staple'&&containerTotal(vessel)>=containerCapacity(vessel)){
+ if(meta.type!=='staple'&&meta.key!=='jaje'&&containerTotal(vessel)>=containerCapacity(vessel)){   // eggs do not take room: they are mixed into the dish
    showToast(`${vessel.dataset.label} je pun — kapacitet je ${containerCapacity(vessel)}.`);
    return true;
  }
@@ -13425,7 +13425,7 @@ function renderFoodContents(wrap,counts,stage=1,metaItems={},batches=[],heat=0,m
   const count=keys.reduce((sum,key)=>sum+(+counts[key]||0),0);
   const foodCount=keys.reduce((sum,key)=>{
     const meta=metaItems?.[key];
-    return meta?.type==='staple'?sum:sum+(+counts[key]||0);
+    return (meta?.type==='staple'||key==='jaje')?sum:sum+(+counts[key]||0);
   },0);
   const vessel=vesselArg||wrap.closest?.('.item')||null;
   const fillState=vesselFillState(vessel,foodCount);
