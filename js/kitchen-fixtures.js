@@ -157,14 +157,14 @@ function hit(x,y){
 var view=null;
 // the camera zooms in on the grill (frames of a Higgsfield video: assets/grillzoom/z_1..22.webp, from the whole kitchen to the grill) in about half a second,
 // then the picture of the grill (the same one) takes over; the zoom out is the same frames the other way round
-var ZN=22,ZMS=300,FADE=110,zimgs=[];
+var ZN=22,ZMS=300,FADE=110,HOLD=140,zimgs=[];             // HOLD: a short stop on the first picture before the camera starts (and after it ends on the way back)
 for(var zi=1;zi<=ZN;zi++){zimgs[zi]=new Image();zimgs[zi].src='assets/grillzoom/z_'+zi+'.webp?v=3'}
 var zoomImg=new Image();zoomImg.src=ZOOM_SRC;
 function zoomReady(){for(var i=1;i<=ZN;i++)if(!zimgs[i].complete||!zimgs[i].naturalWidth)return false;return zoomImg.complete}
 function animateZoom(v,back,done){
-  var fr=v.querySelector('.gz-frame'),gi=v.querySelector('.gz-grill'),vg=v.querySelector('.gz-vig'),t0=performance.now(),total=ZMS+FADE;
+  var fr=v.querySelector('.gz-frame'),gi=v.querySelector('.gz-grill'),vg=v.querySelector('.gz-vig'),t0=performance.now(),total=HOLD+ZMS+FADE;
   (function step(now){
-    var e=Math.min(total,now-t0),u=back?total-e:e;
+    var e=Math.min(total,now-t0),u=(back?total-e:e)-HOLD;
     // forward: frames for 0..ZMS, then the grill picture fades in over them; backward: the reverse
     var f=Math.max(0,Math.min(1,u/ZMS)),idx=1+Math.round(f*(ZN-1));
     fr.src=zimgs[idx].src;
