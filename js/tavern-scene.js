@@ -1489,6 +1489,7 @@ function drawAnim(ctx,g,x,y,sc,rot){                      // true if the guest w
   var key=chKey(g,sitPose(g)),im0=timgs[key]||imgs[key];if(!im0)return false;
   var sw=im0.naturalWidth||im0.width,sh=im0.naturalHeight||im0.height,m=a.m;
   var i=Math.min(an.n-1,an.s+Math.floor(t*m.fps)),fi=graded(gidOf(g)+'_'+an.name+i,a.fr[i]);
+  g._fn=an.name;g._fi=i;      // (for the shapes that hide the body: which frame of which film is drawn now)
   // the film is blended in and out over the still picture of the guest (the still one stays underneath), so nobody sees where the film starts or ends
   var al=Math.min(1,t/ANIM_IN,(an.dur-t)/ANIM_OUT);al=Math.max(0,al);al=al*al*(3-2*al);
   if(al<1){swayK=1-al;drawBase(ctx,g,x,y,sc,rot);swayK=1}      // (the swaying fades out while a film comes in, so the film and the picture under it match)
@@ -1549,6 +1550,16 @@ CUT_DEF[2]=[[[.22,.45],[.78,.45],[.78,.66],[.72,.74],[.34,.74],[.30,.64],[.24,.6
 var CUT=JSON.parse(JSON.stringify(CUT_DEF)),CUT_KEY2='cookster.guest-cut.v1',COVR={};      // (COVR: what Miloš cut in the tool; it wins over the built-in shapes)
 try{COVR=JSON.parse(localStorage.getItem(CUT_KEY2)||'{}')||{};Object.keys(COVR).forEach(function(k){if(Array.isArray(COVR[k]))CUT[k]=COVR[k]})}catch(e){COVR={}}
 function cutSave(){try{localStorage.setItem(CUT_KEY2,JSON.stringify(COVR))}catch(e){}}
+// the shapes can change while a film plays (the arm is down on the table: one shape; the arm goes up: the body under it needs a new one): CUTF[ch][film] = [{f: first frame, s: shapes}, ...] (keyframes:
+// from the frame f on, until the next keyframe, these shapes are used). A film without keyframes uses the shapes of the still picture (CUT).
+var CUTF={},CUTF_KEY='cookster.guest-cutf.v1';
+try{CUTF=JSON.parse(localStorage.getItem(CUTF_KEY)||'{}')||{}}catch(e){CUTF={}}
+function cutFSave(){try{localStorage.setItem(CUTF_KEY,JSON.stringify(CUTF))}catch(e){}}
+function cutShapes(g){
+  var L=g._fn&&CUTF[g.ch]&&CUTF[g.ch][g._fn];
+  if(L&&L.length){var k=L[0];for(var i=0;i<L.length;i++)if(L[i].f<=g._fi)k=L[i];return k.s}
+  return CUT[g.ch];
+}
 function farMaskY(t){          // the y of the mask of a table (the table 1 has no match in TABLEMASKY: its mask is the one that contains the middle of the table)
   var my=TABLEMASKY[t];
   if(my==null){var tb=TABLES[t];MASKS.forEach(function(m){if(pip(m.poly,tb.x,tb.y))my=Math.max(my==null?-1e9:my,m.y)})}
@@ -1572,7 +1583,7 @@ function tableTop(t){
   TTOP[t]={v:CAL,p:poly};return poly;
 }
 function cutBody(ctx,g){
-  var P=CUT[g.ch],tt=tableTop(g.seat.table);if(!P||!P.length||tt.length<3)return;
+  var P=cutShapes(g),tt=tableTop(g.seat.table);if(!P||!P.length||tt.length<3)return;
   var key=chKey(g,'sedi_lice'),im=timgs[key]||imgs[key];if(!im)return;
   var sp=seatPos(g),ssc=scaleAt(sp.y)*SIT_K,w=(im.naturalWidth||im.width)*ssc,h=(im.naturalHeight||im.height)*ssc,x0=sp.x-w/2,y0=sp.y-h;
   ctx.save();ctx.beginPath();
@@ -1629,6 +1640,7 @@ function drawGuestBody(ctx,g){
       if(!ed&&!g.an&&!(g.grp&&g.grp.company)&&state==='tavern'&&clock>=(g.anNext||0)){          // now and then he drinks / talks (not all of them, not all the time)
         g.anNext=clock+5+Math.random()*10;if(Math.random()<.8)startAnim(g,'pij');
       }
+      g._fn=null;
       if(!drawAnim(ctx,g,sp.x,sp.y+br,ssc,rt)){if(ed)drawSprite(ctx,chKey(g,sitPose(g)),sp.x,sp.y+br+dip,ssc,false,rt,1);else drawBase(ctx,g,sp.x,sp.y+br,ssc,rt)}
     }
   }
@@ -1798,6 +1810,10 @@ window.CooksterTavern={preload:function(){return preload()},
   fit:function(){fit();draw()},isOpenScene:function(){return state!=='kitchen'},
   cut:{key:CUT_KEY2,get:function(ch){return JSON.parse(JSON.stringify(CUT[ch]||[]))},def:function(ch){return JSON.parse(JSON.stringify(CUT_DEF[ch]||[]))},
     set:function(ch,polys){CUT[ch]=polys;COVR[ch]=polys;cutSave()},reset:function(ch){CUT[ch]=JSON.parse(JSON.stringify(CUT_DEF[ch]||[]));delete COVR[ch];cutSave()},
+    getF:function(ch,name){return JSON.parse(JSON.stringify((CUTF[ch]&&CUTF[ch][name])||[]))},
+    setF:function(ch,name,list){(CUTF[ch]=CUTF[ch]||{})[name]=list;cutFSave()},
+    resetF:function(ch,name){if(CUTF[ch]){delete CUTF[ch][name];cutFSave()}},
+    allF:function(){return JSON.parse(JSON.stringify(CUTF))},setAllF:function(o){Object.keys(o||{}).forEach(function(k){CUTF[k]=o[k]});cutFSave()},
     all:function(){return JSON.parse(JSON.stringify(COVR))},setAll:function(o){Object.keys(o||{}).forEach(function(k){if(Array.isArray(o[k])){CUT[k]=o[k];COVR[k]=o[k]}});cutSave()}},
   // for the tool "Ruke gostiju": seat a guest on every free seat at once (each one a different character), and take them away again
   seatTest:function(){var chs=[1,2,3,4,5,6,7,9,10,1,3,4];SEATS.forEach(function(s,i){if(s.taken)return;var g=makeGuest(s,null,0,chs[i%chs.length]);g.mode='seated';g.held=false;g.fade=1;g.sitT=0;g.sitFor=1e9;g.orderDelay=1e9;g.x=s.ax;g.y=s.ay;g.testGuest=true})},
