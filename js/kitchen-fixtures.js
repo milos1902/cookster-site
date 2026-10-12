@@ -43,7 +43,7 @@ function paint(k){
 }
 function setP(k,v){
   var d=DR[k];d.p=Math.max(0,Math.min(1,v));var i=Math.round(d.p*d.N);
-  if(i!==d.idx){d.idx=i;paint(k)}
+  if(i!==d.idx){d.idx=i;paint(k);if(k==='left')updateJars()}
 }
 // a click on the drawer: it opens (or closes) in 0.3 s
 function toggle(k){
@@ -58,31 +58,54 @@ function toggle(k){
 }
 // ---------- the spice jars stand in the compartments of the left drawer (the pictures are cut out of the picture of the drawer with the jars) ----------
 // a jar that is in the drawer is only a picture; when it is taken a real jar (the item zacin_<name>) is in the hand, and when it is put back over the open drawer the item goes away and the picture is shown again
+// in the compartment where it was put (any jar can stand in any compartment); the jars move together with the drawer while it opens (they are cut off by the table and by the front of the drawer)
 var JARS=[
-  {id:'paprika',x:506,y:596,box:{l:512,t:602,r:568,b:680}},
-  {id:'tucana',x:579,y:595,box:{l:585,t:601,r:639,b:680}},
-  {id:'biber',x:654,y:595,box:{l:660,t:601,r:711,b:680}},
-  {id:'so',x:726,y:595,box:{l:732,t:601,r:785,b:680}},
-  {id:'secer',x:490,y:675,box:{l:496,t:681,r:555,b:751}},
-  {id:'lovor',x:570,y:676,box:{l:576,t:682,r:632,b:751}}
+  {id:'paprika',x:506,y:596,box:{l:512,t:602,r:568,b:680},slot:0},
+  {id:'tucana',x:579,y:595,box:{l:585,t:601,r:639,b:680},slot:1},
+  {id:'biber',x:654,y:595,box:{l:660,t:601,r:711,b:680},slot:2},
+  {id:'so',x:726,y:595,box:{l:732,t:601,r:785,b:680},slot:3},
+  {id:'secer',x:490,y:675,box:{l:496,t:681,r:555,b:751},slot:4},
+  {id:'lovor',x:570,y:676,box:{l:576,t:682,r:632,b:751},slot:5}
 ];
+// the eight compartments: where the middle of the bottom of a jar stands (back row, then front row)
+var SLOTS=[{cx:540,b:680},{cx:612,b:680},{cx:686,b:680},{cx:759,b:680},{cx:525,b:751},{cx:604,b:751},{cx:683,b:751},{cx:762,b:751}];
+var slotJar=[];                                                  // slotJar[i] = id of the jar that stands in the compartment i (or null)
+for(var si=0;si<SLOTS.length;si++)slotJar[si]=null;
+JARS.forEach(function(j){j.im=load('assets/drawers/jar_'+j.id+'.webp?v=2');j.el=null;j.slot=-1;j.cx0=(j.box.l+j.box.r)/2;j.b0=j.box.b});
+(function(){var def=['paprika','tucana','biber','so','secer','lovor'];def.forEach(function(id,i){JARS.forEach(function(j){if(j.id===id){j.slot=i;slotJar[i]=id}})})})();
 var DRAWER_IN={l:462,t:603,r:818,b:756};                        // the inside of the open left drawer
-JARS.forEach(function(j){j.im=load('assets/drawers/jar_'+j.id+'.webp?v=1');j.el=null});
+var jarClip=null;
 function jarOut(j){try{return(window.items||items).some(function(el){return el.dataset&&el.dataset.itemId==='zacin_'+j.id})}catch(e){return false}}
+function freeSlotNear(x,y){var best=-1,bd=1e9;for(var i=0;i<SLOTS.length;i++){if(slotJar[i])continue;var d=Math.hypot(SLOTS[i].cx-x,(SLOTS[i].b-30)-y);if(d<bd){bd=d;best=i}}return best}
+function slotBox(j){var o=SLOTS[j.slot];return{l:j.box.l+o.cx-j.cx0,r:j.box.r+o.cx-j.cx0,t:j.box.t+o.b-j.b0,b:j.box.b+o.b-j.b0}}
 function updateJars(){
   var sc=document.getElementById('scene');if(!sc)return;
-  var open=DR.left.idx===DR.left.N;
+  var d=DR.left,t=d.idx/d.N,frontTop=605+147*t;
+  if(!jarClip||!jarClip.isConnected){jarClip=document.createElement('div');jarClip.style.cssText='position:absolute;z-index:27;pointer-events:none;overflow:hidden;left:440px;top:603px;width:390px;height:0px';sc.appendChild(jarClip)}
+  JARS.forEach(function(j){                                     // reconcile: a jar that is out of the drawer frees its compartment, a jar that is in the drawer gets one
+    if(jarOut(j)){if(j.slot>=0){slotJar[j.slot]=null;j.slot=-1}}
+    else if(j.slot<0){var f=freeSlotNear(660,700);if(f>=0){j.slot=f;slotJar[f]=j.id}}
+  });
+  var shown=d.idx>0;
+  var L=Math.round(d.x0+d.dx0*t)+6,R=Math.round(d.x1+d.dx1*t)-6;                // the jars can be seen only inside of the drawer (between its walls)
+  jarClip.style.left=L+'px';jarClip.style.width=Math.max(0,R-L)+'px';
+  jarClip.style.height=Math.max(0,Math.round(frontTop-603))+'px';jarClip.style.display=shown?'block':'none';
+  var dy=-(1-t)*147,dx=-(1-t)*30;
   JARS.forEach(function(j){
-    if(!j.el||!j.el.isConnected){j.el=document.createElement('img');j.el.draggable=false;j.el.style.cssText='position:absolute;z-index:27;pointer-events:none;display:none;left:'+j.x+'px;top:'+j.y+'px';sc.appendChild(j.el)}
-    var show=open&&!jarOut(j);
-    if(show&&!j.el.src)j.el.src=j.im.src;
+    if(!j.el||!j.el.isConnected){j.el=document.createElement('img');j.el.draggable=false;j.el.style.cssText='position:absolute;pointer-events:none;display:none';jarClip.appendChild(j.el)}
+    var show=shown&&j.slot>=0;
+    if(show){
+      var o=SLOTS[j.slot];if(!j.el.src)j.el.src=j.im.src;
+      j.el.style.left=Math.round(j.x+(o.cx-j.cx0)+dx-L)+'px';j.el.style.top=Math.round(j.y+(o.b-j.b0)+dy-603)+'px';
+      j.el.style.zIndex=o.b>700?'2':'1';
+    }
     j.el.style.display=show?'block':'none';
   });
 }
 setInterval(updateJars,150);
 function jarAt(p){
   if(DR.left.idx!==DR.left.N)return null;
-  for(var i=0;i<JARS.length;i++){var j=JARS[i];if(!jarOut(j)&&inR(p,j.box))return j}
+  for(var i=0;i<JARS.length;i++){var j=JARS[i];if(j.slot>=0&&!jarOut(j)&&inR(p,slotBox(j)))return j}
   return null;
 }
 function takeJar(j){
@@ -96,15 +119,17 @@ function takeJar(j){
     try{CooksterSave.schedule()}catch(e){}
   }catch(e){}
 }
-// a jar that is put down over the open drawer goes back into its compartment
+// a jar that is put down over the open drawer goes into the compartment that is the nearest to the place (a free one)
 function tryDrop(item){
   try{
     if(!item||!item.dataset||DR.left.idx!==DR.left.N)return false;
-    if(!/^zacin_(paprika|tucana|biber|so|secer|lovor)$/.test(item.dataset.itemId||''))return false;
+    var m=/^zacin_(paprika|tucana|biber|so|secer|lovor)$/.exec(item.dataset.itemId||'');if(!m)return false;
     var p=screenToScene(mouse.x,mouse.y);if(!inR(p,DRAWER_IN))return false;
-    removeItem(item);holding=null;
+    var jar=null;JARS.forEach(function(j){if(j.id===m[1])jar=j});if(!jar)return false;
+    var f=freeSlotNear(p.x,p.y);if(f<0)return false;
+    removeItem(item);holding=null;jar.slot=f;slotJar[f]=jar.id;
     try{hidePlacementGhost();hideOriginGhost();clearPanTargets();updateHover()}catch(e){}
-    updateJars();try{showToast('Tegla je vraćena u fioku.')}catch(e){}try{CooksterSave.schedule()}catch(e){}
+    updateJars();try{showToast('Tegla je u fioci.')}catch(e){}try{CooksterSave.schedule()}catch(e){}
     return true;
   }catch(e){return false}
 }
