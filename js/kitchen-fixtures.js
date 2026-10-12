@@ -198,18 +198,23 @@ function setLive(P,u){
   var sc=document.getElementById('scene');sc.style.transform='translate('+(px-P.G.x*S)+'px,'+(py-P.G.y*S)+'px) scale('+S+')';
 }
 function runLive(v,back,done){
-  var P=v._P,gi=v.querySelector('.gz-grill'),ZM=back?ZMS:ZIN,total=ZM+FADE,t0=performance.now();
+  var P=v._P,gi=v.querySelector('.gz-grill'),ZM=back?ZMS:ZIN,total=ZM,t0=performance.now();
+  var Kz=P.S1/P.sc,Tl={x:870*P.sc,y:470*P.sc};
   (function step(now){
-    var e=Math.max(0,Math.min(total,now-t0)),u,g;
-    if(!back){var t=Math.min(1,e/ZM);u=t*t;g=e>ZM?(e-ZM)/FADE:0}else{var t2=Math.max(0,Math.min(1,(e-FADE)/ZM));u=1-t2*t2;g=e<FADE?1-e/FADE:0}
-    setLive(P,u);gi.style.opacity=Math.max(0,Math.min(1,g));
+    var e=Math.max(0,Math.min(total,now-t0)),t=Math.min(1,e/ZM),u=back?1-t*t:t*t;
+    setLive(P,u);
+    // the picture of the grill zooms in together with the scene: when the scene is at the zoom u, the picture is at the scale Kz^(u-1) of its final size, with its point T on the place where the scene puts the grill
+    var S=P.sc*Math.pow(Kz,u),w=(S-P.sc)/(P.S1-P.sc),px=P.p0.x+(P.p1.x-P.p0.x)*w-P.tx0,py=P.p0.y+(P.p1.y-P.p0.y)*w-P.ty0,r=Math.pow(Kz,u-1);
+    gi.style.transformOrigin=Tl.x+'px '+Tl.y+'px';
+    gi.style.transform='translate('+(px-Tl.x)+'px,'+(py-Tl.y)+'px) scale('+r+')';
+    gi.style.opacity=Math.max(0,Math.min(1,(u-.28)/.42));          // it melts in while both are zooming
     if(e<total)requestAnimationFrame(step);else done();
   })(t0);
 }
 function zoomLive(){
   var P=liveParams(),v=document.createElement('div');v.id='grillZoom';v.setAttribute('data-tool-ui','1');v._live=true;v._P=P;
   v.style.cssText='position:fixed;left:'+P.tx0+'px;top:'+P.ty0+'px;width:'+(W*P.sc)+'px;height:'+(H*P.sc)+'px;z-index:30000;overflow:hidden;cursor:default';
-  var gi=document.createElement('img');gi.className='gz-grill';gi.draggable=false;gi.src=ZOOM_SRC;gi.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;display:block';
+  var gi=document.createElement('img');gi.className='gz-grill';gi.draggable=false;gi.src=ZOOM_SRC;gi.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;display:block;will-change:transform,opacity';
   var back=document.createElement('button');back.type='button';back.textContent='← nazad u kuhinju';
   back.style.cssText='position:absolute;right:24px;top:72px;padding:10px 18px;font:700 16px system-ui,sans-serif;color:#fff;background:rgba(44,20,8,.92);border:2px solid #f1af33;border-radius:10px;cursor:pointer;opacity:0;transition:opacity .2s';
   v.appendChild(gi);v.appendChild(back);document.body.appendChild(v);view=v;
@@ -256,6 +261,12 @@ function click(h){
   if(h.kind==='drawer')toggle(h.key);else if(h.kind==='grill')zoomGrill();else if(h.kind==='jar'){for(var i=0;i<JARS.length;i++)if(JARS[i].id===h.id)takeJar(JARS[i])}
   return true;
 }
-window.CooksterKitchenFx={compose:function(src){return src},hit:hit,click:click,tryDrop:tryDrop,updateJars:updateJars,zoomGrill:zoomGrill,closeGrill:closeGrill,
+function liveAt(u){                                              // (for testing) the live zoom frozen at the zoom u (0..1)
+  if(!view){zoomLive();view._busy=true;view._frozen=true}
+  var v=view,P=v._P,gi=v.querySelector('.gz-grill'),Kz=P.S1/P.sc,Tl={x:870*P.sc,y:470*P.sc};
+  setLive(P,u);var S=P.sc*Math.pow(Kz,u),w=(S-P.sc)/(P.S1-P.sc),px=P.p0.x+(P.p1.x-P.p0.x)*w-P.tx0,py=P.p0.y+(P.p1.y-P.p0.y)*w-P.ty0,r=Math.pow(Kz,u-1);
+  gi.style.transformOrigin=Tl.x+'px '+Tl.y+'px';gi.style.transform='translate('+(px-Tl.x)+'px,'+(py-Tl.y)+'px) scale('+r+')';gi.style.opacity=Math.max(0,Math.min(1,(u-.28)/.42));
+}
+window.CooksterKitchenFx={liveAt:liveAt,compose:function(src){return src},hit:hit,click:click,tryDrop:tryDrop,updateJars:updateJars,zoomGrill:zoomGrill,closeGrill:closeGrill,
   drawer:function(k){return DR[k]?DR[k].p:0},setDrawer:function(k,v){if(DR[k])setP(k,v)},isZoomed:function(){return !!view}};
 })();
