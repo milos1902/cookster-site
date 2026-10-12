@@ -467,18 +467,20 @@ function wScale(y){var w=waiter;return scaleAt(y)*(w&&w.kNow!=null?w.kNow:wk(y))
 function pickSeat(){
   // a guest sits only at a table that has been cleaned
   var cl=window.CooksterTavernClean&&window.CooksterTavernClean.cleaned?window.CooksterTavernClean.cleaned():null;
-  var free=SEATS.filter(function(s){return !s.taken&&(!cl||cl[s.table])&&seatReachable(s)});
+  var free=SEATS.filter(function(s){return !s.taken&&(!cl||cl[s.table])&&seatReachable(s)&&!milevaAt(s.table)});
   if(!free.length)return null;
   // fill the tables that already have guests first, as real guests do
   var busy=free.filter(function(s){return SEATS.some(function(o){return o.taken&&o.table===s.table})});
   var from=(busy.length&&Math.random()<.6)?busy:free;
   return from[Math.floor(Math.random()*from.length)];
 }
-function makeGuest(seat,grp,wait){
+function tableBusy(t){return guests.some(function(o){return o.seat.table===t&&!o.visit&&o.mode!=='out'})}
+function milevaAt(t){return guests.some(function(o){return o.ch===8&&!o.visit&&o.seat.table===t&&o.mode!=='out'})}
+function makeGuest(seat,grp,wait,forceCh){
   seat.taken=true;
   var used={};guests.forEach(function(o){used[o.ch]=1});
-  var pool=[];for(var c=1;c<=CHARS;c++)if(!used[c])pool.push(c);
-  var ch=pool.length?pool[Math.floor(Math.random()*pool.length)]:1+Math.floor(Math.random()*CHARS);
+  var pool=[];for(var c=1;c<=CHARS;c++)if(!used[c]&&!(c===8&&(grp||tableBusy(seat.table))))pool.push(c);      // Mileva always sits alone (never in a company, never at a table where somebody sits)
+  var ch=forceCh||(pool.length?pool[Math.floor(Math.random()*pool.length)]:1+Math.floor(Math.random()*CHARS));
   var g={id:++UID,ch:ch,seat:seat,x:DOOR.x+(Math.random()*30-15),y:DOOR.y,
     mode:'in',path:findPath(DOOR,{x:seat.ax,y:seat.ay}),pi:1,phase:Math.random()*2,face:'dole',flip:false,
     sitT:0,sitFor:grp?grp.sitFor:90+Math.random()*70,orderDelay:4+Math.random()*5,fade:0,from:null,speed:78+Math.random()*16,mood:'ok',grp:grp||null,wait:wait||0,rounds:0,held:true,patK:.85+Math.random()*.5,warmth:Math.random()<.3?'hot':'cold',waitFoodSince:null,need:0,warned:false,leftAngry:false};
@@ -487,6 +489,9 @@ function makeGuest(seat,grp,wait){
 // one guest (a free seat at a table that is clean)
 function spawn(){
   var seat=pickSeat();if(!seat)return null;
+  if(!guests.some(function(o){return o.ch===6||o.ch===2})&&Math.random()<.25){      // deda Radovan comes alone for a drink (and complains about Stana, who then comes and takes him home)
+    var rg=makeGuest(seat,null,0,6);rg.sc={t:0,next:9,n:0,called:false};rg.sitFor=1e9;return rg;
+  }
   return makeGuest(seat,null,0);
 }
 // a company: 1-4 guests come together to an empty clean table; a big one sometimes stays long and keeps ordering
@@ -549,6 +554,7 @@ function spawnGroup(){
   var cl=cleanTables(),tables=[];
   for(var t=0;t<TABLES.length;t++){
     if(cl&&!cl[t])continue;
+    if(milevaAt(t))continue;
     var seats=SEATS.filter(function(s){return s.table===t&&seatReachable(s)});
     if(seats.length>=size&&!SEATS.some(function(s){return s.table===t&&s.taken}))tables.push(seats);
   }
@@ -580,11 +586,21 @@ function leaveAngry(g,text,delta){
   try{if(window.CooksterOrders&&window.CooksterOrders.cancelSeat)window.CooksterOrders.cancelSeat(g.seat.table+1,g.seat.id)}catch(e){}
   for(var i=deliveries.length-1;i>=0;i--)if(deliveries[i].seatId===g.seat.id)deliveries[i].seatId=-2;          // what is already on its way is still brought to the table (nobody eats it)
 }
+function stillWaiting(g){return !g.leftAngry&&(!g.ordered||(g.need||0)>0)}      // he has not ordered yet or has not got all that he ordered
+var ZOKI=['Zoki','Zorane','Zoranče','Zokili'];
+function zokiText(g,t){                              // nobody calls the waiter "konobar": Zoki, Zorane, Zoranče, Zokili (only Stojan says konobar)
+  if(g.ch===4)return t.replace(/Zoki|Zorane|Zoranče|Zokili/g,'Konobar');
+  return t.replace(/Konobare/g,pick(ZOKI)).replace(/na konobara/g,'na Zokija').replace(/taj konobar/g,'taj Zoki').replace(/[Kk]onobar[a-z]*/g,pick(ZOKI));
+}
 function checkPatience(g){
   if(g.leftAngry)return;
   var wait=g.ordered?(g.waitFoodSince!=null?clock-g.waitFoodSince:0):(g.sitT>g.orderDelay?g.sitT-g.orderDelay:0),lim=g.ordered?waitLimit(g)*g.patK:PAT_ORDER*g.patK;
-  if(wait>lim*.6&&!g.warned&&wait>20){g.warned=true;g.an=null;startAnim(g,'doziv');gsay(g,pick(g.ordered?SAY.waitFood:SAY.waitOrder),0)}
-  if(wait>lim)leaveAngry(g,pick(g.ordered?SAY.leaveFood:SAY.leaveOrder),-4);
+  if(wait>lim*.6&&!g.warned&&wait>20){g.warned=true;g.an=null;startAnim(g,'doziv');gsay(g,zokiText(g,pick(g.ordered?SAY.waitFood:SAY.waitOrder)),0)}
+  // too long a wait: the guest does NOT leave (he has to wait for his food); he only complains, and every complaint lowers the reputation (the first -4, then -2 every 45 s, at most 6 times)
+  if(wait>lim&&(g.nextCompl==null||clock>=g.nextCompl)&&(g.complaints||0)<6){
+    gsay(g,zokiText(g,pick(g.ordered?SAY.waitFood:SAY.waitOrder)),(g.complaints||0)?-2:-4);
+    g.complaints=(g.complaints||0)+1;g.nextCompl=clock+45;g.an=null;startAnim(g,'doziv');
+  }
 }
 function chKey(g,pose){return 'g'+(g.ch<10?'0':'')+g.ch+'_'+pose}
 function step(dt){
@@ -601,12 +617,13 @@ function step(dt){
       if(dp<.6&&g.holdFor<4){g.held=true;try{window.CooksterTavernClean.autoDoor()}catch(e){}continue}
       g.held=false;g.entered=true;
     }
-    if(g.mode==='in'&&!g.greeted){g.greeted=true;try{window.CooksterTavernClean.autoDoor()}catch(e){}if(Math.random()<.12&&state==='tavern'&&clock-greetAt>35){greetAt=clock;greetGuest(g)}}
-    if(g.mode==='in'||g.mode==='out'){
+    if(g.mode==='in'&&!g.greeted&&!g.visit){g.greeted=true;try{window.CooksterTavernClean.autoDoor()}catch(e){}if(Math.random()<.12&&state==='tavern'&&clock-greetAt>35){greetAt=clock;greetGuest(g)}}
+    if(g.mode==='in'||g.mode==='out'||g.mode==='go'){
       if(Math.hypot(g.x-DOOR.x,g.y-DOOR.y)<230){try{window.CooksterTavernClean.autoDoor()}catch(e){}}      // somebody comes in or leaves: the door stays open while he is at it
       var tgt=g.path[g.pi];
       if(!tgt){
-        if(g.mode==='in'){g.mode='sitting';g.from={x:g.x,y:g.y,face:g.face};g.fade=0;g.sitT=0}
+        if(g.mode==='go'||(g.mode==='in'&&g.visit)){g.mode='stand';g.visit.t=0;g.visit.wait=1.2;g.face=(g.visit.look.y>g.y)?'dole':'gore';g.phase=0}
+        else if(g.mode==='in'){g.mode='sitting';g.from={x:g.x,y:g.y,face:g.face};g.fade=0;g.sitT=0}
         else{guests.splice(i,1);g.seat.taken=false;continue}
       }else{
         var dx=tgt.x-g.x,dy=tgt.y-g.y,d=Math.hypot(dx,dy),sp=g.speed*scaleAt(g.y)/.34*dt;
@@ -618,6 +635,8 @@ function step(dt){
         }
         g.phase+=sp/(40*scaleAt(g.y)/.34);
       }
+    }else if(g.mode==='stand'){
+      runVisit(g,dt);
     }else if(g.mode==='sitting'){
       // he steps from the place beside the table onto the chair
       g.fade=Math.min(1,g.fade+dt/.55);
@@ -626,8 +645,9 @@ function step(dt){
       g.sitT+=dt;
       if(g.reorderAt&&g.sitT>g.reorderAt){g.reorderAt=0;g.ordered=false;g.orders=null;g.warned=false;g.orderDelay=g.sitT}      // a long company orders again
       if(GUESTS_ON)checkPatience(g);
-      if(g.grp){if(!g.grp.until)g.grp.until=clock+g.grp.sitFor;if(clock>g.grp.until){g.mode='rising';g.fade=0}}
-      else if(g.sitT>g.sitFor){g.mode='rising';g.fade=0}
+      // nobody gets up and leaves while he is still waiting for his food or drink (he may complain, see checkPatience, but he has to wait)
+      if(g.grp){if(!g.grp.until)g.grp.until=clock+g.grp.sitFor;if(clock>g.grp.until&&!guests.some(function(o){return o.grp===g.grp&&stillWaiting(o)})){g.mode='rising';g.fade=0}}
+      else if(g.sitT>g.sitFor&&!stillWaiting(g)){g.mode='rising';g.fade=0}
     }else if(g.mode==='rising'){
       g.fade=Math.min(1,g.fade+dt/.55);
       if(g.fade>=1){g.x=g.seat.ax;g.y=g.seat.ay;g.mode='out';g.path=findPath({x:g.x,y:g.y},DOOR);g.pi=1}
@@ -645,15 +665,120 @@ var NAMES_M=['Dragoslave','Milivoje','Radovane','Stojadine','Dobrivoje','Radisav
     NAMES_F=['Radmilo','Dragice','Milice','Stanojko','Ljubice','Desanko','Vukosavo','Smiljo','Rado','Zorko'];
 var HELLO=['Zdravo, Zoki!','Dobar dan, Zorane!','Zoki, živ bio!','Zoki, kako ide?','Dobro veče, Zorane!','Pomaže bog, Zoki!','Evo mene, Zoki!','Ej, Zoki, brate, zdravo!','Gde si, Zoki, šta radiš?','Zoki, ćao!'],
     HELLO_BRKO=['Desi, Brko!','Gde si, Brko, šta radiš?','Ej, Brko, živ bio!','Brko, kako je?'];
+var VOC={Dragoslav:'Dragoslave',Stana:'Stano',Mića:'Mićo',Stojan:'Stojane',Ljubica:'Ljubice',Radovan:'Radovane',Mirko:'Mirko',Mileva:'Mileva',Vukašin:'Vukašine',Smilja:'Smiljo'};
+// what Zoki (the waiter) says when he comes to a table: one guest: "Desi, Mirko, šta ćeš da piješ?"; a company: "Šta ćete da pijete?"; never "izvolite", only to Mileva
+// ("Izvolite, Madame Mileva.") and to three women ("Meine Damen, izvolite.")
+function waiterGreetText(gs){
+  if(!gs.length)return null;
+  if(gs.some(function(g){return g.ch===8}))return 'Izvolite, Madame Mileva.';
+  if(gs.length>=3&&gs.every(function(g){return WOMEN[g.ch]}))return 'Meine Damen, izvolite.';
+  if(gs.length===1){var n=VOC[CH_NAME[gs[0].ch]]||CH_NAME[gs[0].ch];return pick(['Desi, '+n+', šta ćeš piješ?','Ej, '+n+', šta ćeš piješ?',n+', šta ćeš piješ, bre?','Pomaže bog, '+n+', šta ćeš piješ?'])}
+  return pick(['Šta ćete pijete?','Desi, društvo, šta ćete pijete?','Šta ćete pijete, bre, ljudi?']);
+}
+function waiterGreet(table){
+  var gs=guests.filter(function(g){return g.seat.table===table&&g.mode==='seated'&&!g.visit&&!g.ordered});
+  var t=waiterGreetText(gs);if(t)reactions.push({table:table,t:1.4,life:3.4,text:t,owner:1});
+}
 var greetAt=-99;
 function greetGuest(g){                              // now and then a guest who knows the waiter says hello when he comes in; the waiter (the player) answers above his own head
-  var woman=!!WOMEN[g.ch],nm=pick(woman?NAMES_F:NAMES_M),r=Math.random(),rep,brko=!woman&&Math.random()<.2;
+  var woman=!!WOMEN[g.ch],nm=CH_NAME[g.ch]||pick(woman?NAMES_F:NAMES_M),r=Math.random(),rep,brko=!woman&&Math.random()<.2;
   if(brko)rep=pick(HELLO_BRKO);
-  else if(r<.55)rep=pick(['Zdravo, ','Dobar dan, ','Dobro veče, ','Izvolite, '])+nm+'!';
+  else if(r<.55)rep=pick(['Zdravo, ','Dobar dan, ','Dobro veče, ','Desi, '])+(VOC[nm]||nm)+'!';
   else if(r<.8)rep='Dobar dan!';
-  else rep=woman?'Dobar dan, gospođo, izvolite!':'Dobar dan, gospodine, izvolite!';
+  else rep=woman?'Dobar dan, gospođo!':'Dobar dan, gospodine!';
+  if(g.ch===8)rep='Izvolite, Madame Mileva.';
   reactions.push({gid:g.id,table:g.seat.table,t:1.4,life:4,text:pick(HELLO)});
   reactions.push({gid:g.id,table:g.seat.table,t:.1,life:3.6,text:rep,owner:1});
+}
+// ---------- the people of the tavern and their story ----------
+// every one of the ten characters has a name; Mileva (8) is secretly loved by all the men, but nobody dares to come near her; she herself is in love with the blacksmith Mirko (7),
+// who talks only about his work; Vukašin (9) tells everybody that only he is worthy of her; Stojan (4) boasts about what he saw in Germany; Mića (3) likes Smilja (10) and she secretly likes him
+// (at a table with him she plays coy, with Ljubica (5) she confesses); baba Stana (2) and deda Radovan (6) are husband and wife.
+var CH_NAME={1:'Dragoslav',2:'Stana',3:'Mića',4:'Stojan',5:'Ljubica',6:'Radovan',7:'Mirko',8:'Mileva',9:'Vukašin',10:'Smilja'};
+var CH_FULL={1:'Dragoslav',2:'baba Stana Jovanović',3:'Mića',4:'Stojan',5:'Ljubica',6:'deda Radovan Jovanović',7:'kovač Mirko',8:'Mileva Jakšić',9:'gospodin Vukašin',10:'Smilja'};
+var STORY_LINES={
+  9:{any:['Samo ja sam dorastao gospođi Milevi, bre, to svi znaju.','Nijedan od ovih nije ni do kolena gospođi Milevi. Samo ja, more.','Ja i Mileva, bre, bi bili savršen par. Ne ću da kažem više.','Ovi ovde ne znaju šta je dama. Ja znam, bre.','Kaj će ti drugi, mori, kad imaš mene, gospođo Mileva.']},
+  7:{any:['Juče iskovah potkovicu, dva sata na žaru, bre!','Gvožđe je k’o čoek: mora da ga zagreješ pa da ga savijaš.','Bez čekića nema ni leba, more.','Nakovanj je teži nego što misliš, majstore.','Ne mi pričaj ti o ženama, ja imam posla do guše.','Dede, mori, daj mi čekić, ne vidiš da radim!','Kaj ćeš, be, kovač sam, ne mogu da stojim bez posla.']},
+  4:{any:['U Nemačku sam video mašinu koja sama pere sudove, bre!','Kad bejah u Nemačku, tamo su ulice čiste k’o sto.','Ja sam u Nemačku video svašta, ne ćete da verujete.','Taj Zoran, kolomar jedan, ne podnosim ga, bre!','Konobar! Da li će neko da me usluži večeras?','Ovaj Zoran ništa ne zna, a ja sam Nemce video.','Ne ćemo mi, mori, kao u Nemačku, nema reda ovde!']},
+  8:{any:['Molim vas, ne prilazite.','Ostavite me da popijem čašu u miru.'],with7:['Ah... taj kovač, ni da me pogleda.','Mirko... zar nikad ne će da me primeti?']},
+  3:{any:['Gde li je Smilja danas...'],with10:['Smiljo, danas ti je kosa baš lepa.','Smiljo, oćeš li da ti naručim nešto?','Smiljo, ti si najlepša u celu kafanu, bre.']},
+  10:{any:['Će li Mića da dođe danas...'],with3:['Ma pusti me, Mićo, šta ti je bre...','Ih, Mićo, ne zbijaj šale sa mene!'],with5:['Ljubice, samo da znaš... sviđa mi se Mića.','Ne govori nikom, Ljubice, ali Mića mi je drag.']},
+  5:{with10:['Znala sam ja! Treba da mu kažeš, Smiljo, bre!','Pa kaži mu, more, ako ti se sviđa!']},
+  2:{any:['Radovane, jesi li popio lekove, bre?','Gde si, Radovane, more?','Celog života ga učim, a on ništa ne nauči!','Kad dojde kući, ima da čuje on!','Da nije mene, ne bi imao ni čistu košulju.','Radovane, bez gluposti, more!'],with6:['Radovane, sedi pravo, bre, nisi više mlad!','Radovane, ne pij više!','Radovane, jesi li ti normalan, čoveče?','Opet si zaboravio šta sam ti rekla!','Radovane, ti mene uopšte ne slušaš, bre!','Ma ne znam šta ću s tebe, čoveče!','Ko te je naučio da tako sediš, more?'],far:['Radovane! Čujem te odavde, bre!','Radovane, ne zaboravi lekove!','Čekaj da dođemo kući, Radovane!']},
+  6:{any:['Gde je ta moja Stana...','Ženo, ostavi me na miru bar na jedno piće.','Samo mir ja hoću, bre.','Pa dobro, Stano, ne vikaj.'],with2:['Stano, ne zanovetaj, ženo.','Pa evo, Stano, sedim.','Stano, ja samo jedno popih!','Ne vičeš ti na mene, ja sam glava kuće, bre!','Dobro, dobro, ništa nisam rekao.','Stano, ćuti malo, pobogu!','Ti si najgora žena na svet... i najbolja.'],far:['Stano, ne čujem te!','Eno je, opet viče.','Evo, evo, dolazim, Stano!']}
+};
+// ---------- visitors: guests who do not sit down, they come to somebody (Vukašin to Mileva, Stana to her Radovan) ----------
+var VIS={
+  vuk:[['v','Dobro veče, gospođo Mileva. Dozvolite da vam se pridružim, bre?',3.6],['t','Hvala, gospodine Vukašine, ali čekam nekoga.',3.4],['v','Samo sam ja vama dorastao, gospođo, samo ja, more!',3.4],['t','Molim vas, ostavite me na miru.',3.2],['v','Eh... doći ću opet, Mileva. Dojdoh i doći ću.',2.8]],
+  liar:[['v','Ljudi, ne ćete da verujete: Mileva mi reče da joj se sviđam, bre!',3.8],['t','Ma daj, Vukašine, ti to izmišljaš.',3.2],['v','Kunem se, gledaše me celu večer!',3.2],['t','Aha... a mi malopre videsmo kako te odbija.',3.6],['v','To je ona od stid, ženska duša, znate kako je, bre!',3.2]],
+  stana:[['v','Radovane! Evo te, bre, a kod kuće ti sve stoji!',3.6],['t','Pa sad, Stano, samo jedno piće...',3.2],['v','Jedno?! Ceo dan me ostavljaš sa drva i sa kokoške, more!',3.8],['t','Ženo, ne pred ljude...',3],['v','Ajde, ustaj, idemo kući, dosta si se nasedeo, bre!',3.4],['t','Idem, idem, Stano... evo me.',2.4]]
+};
+function makeVisitor(ch,tg,type){
+  var seat=Object.assign({},tg.seat,{taken:true}),g=makeGuest(seat,null,0,ch);
+  g.visit={type:type,tg:tg,i:0,t:0,wait:1.2,look:seatPos(tg),script:VIS[type]};g.greeted=true;return g;
+}
+function visitOut(g){g.mode='out';g.path=findPath({x:g.x,y:g.y},DOOR);g.pi=1;g.visit=null}
+function forceLeave(g){                              // he is taken away: the orders are cancelled, he gets up and goes
+  g.leftAngry=true;g.mode='rising';g.fade=0;
+  try{if(window.CooksterOrders&&window.CooksterOrders.cancelSeat)window.CooksterOrders.cancelSeat(g.seat.table+1,g.seat.id)}catch(e){}
+  for(var i=deliveries.length-1;i>=0;i--)if(deliveries[i].seatId===g.seat.id)deliveries[i].seatId=-2;
+}
+function runVisit(g,dt){
+  var v=g.visit;if(!v)return;v.t+=dt;
+  if(v.leaving){if(v.t>=v.wait)visitOut(g);return}
+  if(guests.indexOf(v.tg)<0||v.tg.mode==='out'){visitOut(g);return}      // the one he came to has gone
+  if(v.t<v.wait)return;
+  if(v.i<v.script.length){
+    var st=v.script[v.i++],sp=st[0]==='v'?g:v.tg;
+    gsay(sp,CH_NAME[sp.ch]+': '+st[1],0);v.t=0;v.wait=st[2];return;
+  }
+  // the script is over
+  if(v.type==='stana'){forceLeave(v.tg);v.leaving=true;v.t=0;v.wait=1.1;return}
+  if(v.type==='vuk'){                                  // he goes to his friends and lies to them that Mileva likes him
+    var fr=guests.filter(function(o){return o.mode==='seated'&&!o.visit&&o.ch!==8&&o.seat.table!==v.tg.seat.table});
+    if(fr.length){var f=pick(fr);g.visit={type:'liar',tg:f,i:0,t:0,wait:1.2,look:seatPos(f),script:VIS.liar};g.mode='go';g.path=findPath({x:g.x,y:g.y},{x:f.seat.ax,y:f.seat.ay});g.pi=1;return}
+  }
+  visitOut(g);
+}
+var COMPLAIN_R=['Moja Stana ne da mira ni u kuću, ni u kafanu, bre...','Pobegoh od nju na jedno piće, samo da znaš.','Celu nedelju me gnjavi zbog onaj krov, more!','Ženo moja, k’o zapovednik u vojsku, brate.','Rekoh joj da idem po drva, a dojdoh ovde, ssst, nemoj da joj kažeš.','Trideset godina u brak i ni jednom nisam bio u pravo.','Kaže da pijem previše. Ja samo jedno, a ona broji, bre!'];
+var visitT=30;
+function tickScenes(dt){
+  if(state!=='tavern')return;
+  guests.forEach(function(g){
+    if(!g.sc||g.mode!=='seated'||g.leftAngry)return;
+    var sc=g.sc;sc.t+=dt;
+    if(sc.t>=sc.next&&sc.n<4){sc.n++;sc.next=sc.t+8+Math.random()*4;gsay(g,'Radovan: '+pick(COMPLAIN_R),0)}
+    if(sc.n>=3&&!sc.called&&sc.t>sc.next-4){sc.called=true;makeVisitor(2,g,'stana')}       // Stana comes only for him
+  });
+  visitT-=dt;
+  if(visitT<=0){visitT=28+Math.random()*30;
+    var mil=guests.filter(function(o){return o.ch===8&&o.mode==='seated'&&!o.visit})[0];
+    if(mil&&!guests.some(function(o){return o.ch===9})&&guests.length<14&&Math.random()<.6)makeVisitor(9,mil,'vuk');
+  }
+}
+var ZOKI_CHAT=[['Ne podnosim onog debelog sa šeširom, bre, kunem ti se.','Ma ne mari za njega, Zorane.'],['Taj Stojan priča o Nemačku, a ja ga ne trpim.','Znam, Zoki, svi znamo.'],['Samo me gleda ispod oka, onaj debeli.','Pusti ga, Zoki, ne vredi.'],['Kolko ti je daleko ta Nemačka, a on stalno o njoj!','Eh, Zoki, pusti ga.'],['Kaj mi se meša, mori, onaj debeli?','Dede, Zoki, ne gledaj ga.']];
+function tickZokiChat(){
+  var guest=guests.filter(function(g){return g.mode==='seated'&&!g.visit&&g.ch!==4});
+  var st=guests.filter(function(g){return g.ch===4&&g.mode==='seated'})[0];
+  if(!guest.length)return;
+  var r=Math.random();
+  if(r<.35&&st){gsay(st,'Stojan: Taj Zoran, kolomar jedan, ne podnosim ga, bre!',0);return}
+  if(r<.7){var g=pick(guest),c=pick(ZOKI_CHAT);reactions.push({table:g.seat.table,t:1.4,life:3.6,text:'Zoki: '+c[0],owner:1});reactions.push({table:g.seat.table,gid:g.id,t:4.2,life:3.6,ev:{issues:[CH_NAME[g.ch]+': '+c[1]]}});return}
+  if(r<.85){var g2=pick(guest);gsay(g2,CH_NAME[g2.ch]+': '+pick(['Zoki, more, dojdi na jedno piće!','Zorane, sedi s nas malo!','Zoranče, šta ima, bre?','Zokili, kaži ti nama kako je?']),0)}
+}
+var storyT=22;
+function tickStory(dt){
+  storyT-=dt;if(storyT>0)return;storyT=14+Math.random()*16;
+  if(state!=='tavern')return;
+  var seated=guests.filter(function(g){return g.mode==='seated'&&!g.leftAngry&&g.sitT>6&&STORY_LINES[g.ch]});if(!seated.length)return;
+  if(Math.random()<.2)tickZokiChat();
+  var sr=seated.filter(function(o){return o.ch===2||o.ch===6}),g=(sr.length&&Math.random()<.5)?pick(sr):pick(seated),sl=STORY_LINES[g.ch],lines=(sl.any||[]).slice(),m=false;
+  Object.keys(sl).forEach(function(k){if(k.indexOf('with')===0){var c=+k.slice(4);
+    if(guests.some(function(o){return o!==g&&o.ch===c&&o.mode==='seated'&&o.seat.table===g.seat.table})){lines=sl[k].slice();m=true}}});
+  if(!m&&sl.far&&guests.some(function(o){return o.ch===(g.ch===2?6:2)&&o.mode==='seated'&&o.seat.table!==g.seat.table}))lines=lines.concat(sl.far);
+  if(!m&&g.ch===8&&guests.some(function(o){return o.ch===7&&o.mode==='seated'}))lines=lines.concat(sl.with7);      // Mileva sighs when the blacksmith is somewhere in the room
+  if(!lines.length)return;
+  gsay(g,CH_NAME[g.ch]+': '+pick(lines),0);
 }
 var remarkT=30;
 function pick(a){return a[Math.floor(Math.random()*a.length)]}
@@ -667,7 +792,7 @@ var SAY={
   hot:['Vruće je ovde, ugasi vatru!','Majstore, malo manje vatre, pecemo se!','Uf, pa ovo je sauna!','Peć je prejaka, gasi malo.','Znojim se, ugasi tu vatru!','Otvori vrata, ili ugasi peć!','Biće mi muka od ove vrućine.','Ugasi vatru, pregoreh!','Previše je toplo za ovo jelo.','Pa ovde se čovek ispeče!'],
   stuffy:['Uf, zagušljivo je, provetri malo!','Ne može se disati od dima, majstore!','Otvori vrata, ugušićemo se!','Dim, dim, svuda dim – provetri!','Pa ovde je magla kao u kotlu!','Oči mi suze od dima, provetri!','Majstore, malo vazduha, molim te!','Kašljem od ovog dima, otvori vrata!','Ovde se ne vidi plafon od dima!','Daj malo svežeg vazduha, gušim se!'],
   dark:['Majstore, upali svetlo!','Ništa se ne vidi, upali lampe!','Pa ovde je mrak, majstore!','Ne vidim šta jedem, upali svetlo!','Daj malo svetla, bre!','Ko je ugasio svetla?','Pogodiću vilicom tanjir u mraku.','Upali lampu, pa da vidimo gde sedimo.','Mrak, kao u rupi!','Upali svetlo, ne vidim ni čašu.'],
-  waitOrder:['Konobare! Ima li koga?','Hoće li neko da primi porudžbinu?','Ovde smo, majstore!','Mi bismo nešto da naručimo!','Dugo se čeka na konobara...','Gde li je taj konobar?','Halo, može li narudžbina?','Umreću od žeđi ovde!','Je l’ ima ovde posluge?','Čekamo već čitavu večnost.'],
+  waitOrder:['Konobare! Ima li koga, bre?','Zoki, more, dojdi ovamo!','Zorane, ne vidiš li da čekamo?','Hoće li neko da primi porudžbinu?','Ovde smo, majstore!','Mi bismo nešto da naručimo!','Dugo se čeka na konobara, bre...','Gde li je taj konobar, more?','Halo, može li narudžbina?','Umreću od žeđi ovde!','Je l’ ima ovde posluge?','Čekamo već čitavu večnost.'],
   waitFood:['Hoće li ta hrana doći danas?','Dugo traje to jelo...','Gladan sam kao vuk!','Gde nam je porudžbina?','Pa koliko se čeka na jedan kupus?','Jesu li zaboravili na nas?','Stomak mi krči od čekanja.','Ovako sporo nisam doživeo.','Kuvar spava ili šta?','Ako ovo potraje, idem kući.'],
   leaveOrder:['Niko da dođe, odlazim!','Ne mogu više da čekam, idem!','Ovde nema posluge, ja odoh!','Idem u drugu kafanu!','Ovako se ne radi, zbogom!','Nikog nema, odoh!','Ostajte vi sa Bogom!','Dosta mi je čekanja!','Ovde me više nećete videti!','Ovoliko čekanje je ponižavajuće, idem!'],
   leaveFood:['Predugo se čeka, odlazim!','Sit sam čekanja, idem!','Hrane nema, a ja odlazim!','Ovde glad ne mine, idem!','Neću više čekati, doviđenja!','Toliko čekanja za jedan tanjir? Odoh!','Zaboravite na mene, idem!','Plaćam čekanje odlaskom!','Odoh kod komšije, tamo služe brže!','Dosta, odlazim gladan!']
@@ -697,7 +822,7 @@ function tickRemarks(dt){                             // now and then a guest sa
   if(opts.length)pick(opts)();
 }
 function tickMess(dt){
-  tickRemarks(dt);
+  tickRemarks(dt);tickStory(dt);tickScenes(dt);
   try{if(window.CooksterAshtrays)window.CooksterAshtrays.tick(dt)}catch(e){}
   var seatedAt=[0,0,0],cl=cleanTables();
   guests.forEach(function(g){if(g.mode==='seated')seatedAt[g.seat.table]=(seatedAt[g.seat.table]||0)+1});
@@ -781,9 +906,9 @@ function guestOrders(g){
   if(!g.orders){var O=window.CooksterOrders;g.orders=O&&O.make?pickOrderKeys(g).map(function(k){return O.make(k,!!WOMEN[g.ch])}):[]}
   return g.orders;
 }
-var ADDR=['Zoki, daj ','Zorane, daj ','Konobar! Daj ','Ej, Zoki, daj ','Zoki, brate, daj ','Konobare, daj '];
+var ADDR=['Zoki, daj ','Zorane, daj ','Zoranče, daj ','Ej, Zoki, daj ','Zoki, brate, daj ','Zokili, daj '];
 function orderText(g){var o=guestOrders(g);
-  if(g.addr===undefined)g.addr=Math.random()<.4?ADDR[Math.floor(Math.random()*ADDR.length)]:'';      // some of them call the owner by name (or shout for the waiter) when they order
+  if(g.addr===undefined)g.addr=Math.random()<.4?(g.ch===4?'Konobar! Daj ':ADDR[Math.floor(Math.random()*ADDR.length)]):'';      // only the big bearded Stojan says "konobar" (he and Zoran cannot stand each other)      // some of them call the owner by name (or shout for the waiter) when they order
   var nm=o.map(function(x){return x.name}).join(' + ');
   if(g.addr){nm=g.addr+((g.rounds||0)>0?'još ':'')+nm.charAt(0).toLowerCase()+nm.slice(1)}
   return{l1:nm,l2:o.map(function(x){return x.extra}).filter(Boolean).join(' · ')}}
@@ -829,7 +954,7 @@ function stepWaiter(dt){
     if(!tgt){
       if(w.k1!=null)w.kNow=w.k1;      // he has arrived: the size of the place where he stands
       if(w.mode==='go'&&w.carry){w.mode='give';w.t=0;var sg=waiterSpot(w.table),fg=dirFace(sg?sg.dir:90);w.flip=fg.flip;w.set=carrySet(w)}
-      else if(w.mode==='go'){w.mode='serve';w.t=0;var sp=waiterSpot(w.table),fs=dirFace(sp?sp.dir:90);w.set=fs.set;w.flip=fs.flip}
+      else if(w.mode==='go'){w.mode='serve';w.t=0;waiterGreet(w.table);var sp=waiterSpot(w.table),fs=dirFace(sp?sp.dir:90);w.set=fs.set;w.flip=fs.flip}
       else{w.mode='idle'}
     }else{
       var dx=tgt.x-w.x,dy=tgt.y-w.y,d=Math.hypot(dx,dy),spd=WSPEED*wScale(w.y)/.34*dt;
@@ -891,15 +1016,34 @@ function stepWaiter(dt){
   }
 }
 // what the guest says to the waiter: the dish he orders
+// the speech bubbles: long text is broken into several lines (the bubble grows upwards), and bubbles never lie one over another (the later one is pushed up)
+var bubbleRects=[];
+function wrapText(ctx,text,maxW){
+  var words=String(text||'').split(' '),lines=[],cur='';
+  words.forEach(function(w){var t=cur?cur+' '+w:w;if(cur&&ctx.measureText(t).width>maxW){lines.push(cur);cur=w}else cur=t});
+  if(cur)lines.push(cur);return lines;
+}
 function drawBubble(ctx,x,y,l1,l2,tint){
-  ctx.save();ctx.font='700 17px system-ui,sans-serif';
-  var w=Math.max(ctx.measureText(l1).width,(ctx.font='600 13px system-ui,sans-serif',ctx.measureText(l2).width))+26,h=l2?50:32,bx=x-w/2,by=y-h-12;
+  ctx.save();
+  var MAXW=250;
+  ctx.font='700 17px system-ui,sans-serif';var A=wrapText(ctx,l1,MAXW);
+  ctx.font='600 13px system-ui,sans-serif';var B=l2?wrapText(ctx,l2,MAXW):[];
+  var w=26,i;
+  ctx.font='700 17px system-ui,sans-serif';for(i=0;i<A.length;i++)w=Math.max(w,ctx.measureText(A[i]).width+26);
+  ctx.font='600 13px system-ui,sans-serif';for(i=0;i<B.length;i++)w=Math.max(w,ctx.measureText(B[i]).width+26);
+  var h=12+A.length*21+B.length*17,bx=Math.max(4,Math.min(W-w-4,x-w/2)),by=y-h-12,y0=by,moved=0;
+  for(var n=0;n<8;n++){                                 // not over another bubble: push up
+    var hit=null;for(i=0;i<bubbleRects.length;i++){var r=bubbleRects[i];if(bx<r.x+r.w+4&&bx+w>r.x-4&&by<r.y+r.h+4&&by+h>r.y-4){hit=r;break}}
+    if(!hit)break;by=hit.y-h-6;moved=1;
+  }
+  if(by<4)by=4;bubbleRects.push({x:bx,y:by,w:w,h:h});
   ctx.fillStyle=tint==='owner'?'rgba(214,232,246,.97)':'rgba(250,238,206,.96)';ctx.strokeStyle=tint==='owner'?'#27425e':'#5b3d1e';ctx.lineWidth=2;
   ctx.beginPath();ctx.roundRect?ctx.roundRect(bx,by,w,h,10):ctx.rect(bx,by,w,h);ctx.fill();ctx.stroke();
-  ctx.beginPath();ctx.moveTo(x-8,by+h);ctx.lineTo(x,by+h+12);ctx.lineTo(x+8,by+h);ctx.closePath();ctx.fill();ctx.stroke();
+  var tx=Math.max(bx+12,Math.min(bx+w-12,x));
+  if(!moved){ctx.beginPath();ctx.moveTo(tx-8,by+h);ctx.lineTo(x,by+h+12);ctx.lineTo(tx+8,by+h);ctx.closePath();ctx.fill();ctx.stroke()}
   ctx.fillStyle='#3a2410';ctx.textAlign='center';
-  ctx.font='700 17px system-ui,sans-serif';ctx.fillText(l1,x,by+(l2?21:21));
-  if(l2){ctx.font='600 13px system-ui,sans-serif';ctx.fillText(l2,x,by+40)}
+  ctx.font='700 17px system-ui,sans-serif';for(i=0;i<A.length;i++)ctx.fillText(A[i],bx+w/2,by+21+i*21);
+  ctx.font='600 13px system-ui,sans-serif';for(i=0;i<B.length;i++)ctx.fillText(B[i],bx+w/2,by+12+A.length*21+13+i*17-2);
   ctx.restore();
 }
 // where a dish / drink goes (marked in the tool "Kalibracija kafane", layer "Posluženje"): the spot of the guest who sits there, or the table's common spot
@@ -1064,6 +1208,7 @@ function eatingGuest(g){
 }
 // the guest tells what he thinks of the dish: too little / too much / something that should not be there (see js/quality.js)
 function drawReactions(ctx,dt){
+  bubbleRects.length=0;
   for(var i=reactions.length-1;i>=0;i--){
     var r=reactions[i];r.t+=dt;
     if(r.t>(r.life?r.life+1.4:7)){reactions.splice(i,1);continue}
@@ -1073,7 +1218,7 @@ function drawReactions(ctx,dt){
     if(r.gid){guests.forEach(function(o){if(o.id===r.gid)g=o})}
     else guests.forEach(function(o){if(!g&&o.seat.table===r.table&&(o.mode==='seated'||o.ordered))g=o});
     if(!g)continue;
-    var walking=g.mode==='out'||g.mode==='in',sp=walking?{x:g.x,y:g.y}:seatPos(g),im=imgs[chKey(g,sitPose(g))],hh=walking?250*scaleAt(g.y)/.34:(im?im.naturalHeight*scaleAt(sp.y)*SIT_K:300);
+    var walking=g.mode==='out'||g.mode==='in'||g.mode==='go'||g.mode==='stand',sp=walking?{x:g.x,y:g.y}:seatPos(g),im=imgs[chKey(g,sitPose(g))],hh=walking?250*scaleAt(g.y)/.34:(im?im.naturalHeight*scaleAt(sp.y)*SIT_K:300);
     var iss=r.ev?r.ev.issues:[],l1=iss.length?iss[0]:'Odlično! Baš kako treba.',l2=iss.length>1?iss[1]:(r.delta>0?'Ugled kafane +'+r.delta:(r.delta<0?'Ugled kafane '+r.delta:''));
     if(r.text){drawBubble(ctx,sp.x,sp.y-hh,r.text,'','');continue}
     drawBubble(ctx,sp.x,sp.y-hh,l1,l2);
@@ -1337,7 +1482,7 @@ function drawGuest(ctx,g){
 }
 function drawGuestBody(ctx,g){
   if(g._coHide&&g.mode==='seated')return;                  // he is in the film of the company just now
-  var walk=(g.mode==='in'||g.mode==='out');
+  var walk=(g.mode==='in'||g.mode==='out'||g.mode==='go'||g.mode==='stand');
   if(walk){
     var sc=scaleAt(g.y),ph=Math.abs(Math.sin(g.phase*Math.PI)),bob=ph*3.2*sc/.3;
     drawShadow(ctx,g.x,g.y,sc);
@@ -1521,7 +1666,7 @@ window.CooksterTavern={
   isOpenForGuests:function(){return openForGuests},setOpenForGuests:setOpenForGuests,say:function(i,t,d){var g=guests.filter(function(o){return o.id===i})[0];if(g)gsay(g,t,d)},
   waiterSteps:{get:wsData,set:function(d){WSD=d;try{localStorage.setItem(WS_KEY,JSON.stringify(WSD))}catch(e){}},reset:function(){WSD=null;try{localStorage.removeItem(WS_KEY)}catch(e){}wsData()},count:function(k){return WD_N[k]||0},url:function(k,i){return WAITER+k+'24/f'+(i<10?'0':'')+i+'.webp?v=6'},play:wsPlay,stepClips:16},
   tableItems:{get:function(){return TI},set:function(d){tiApply(d);try{localStorage.setItem(TI_KEY,JSON.stringify(TI))}catch(e){}},base:tiBase,src:tiSrc,filter:tiFilter,img:tiImg,pose:tiPose,draw:tiDraw,shadow:tiShadow,shDef:TI_SH,cal:tiCal},
-  get isOpen(){return state==='tavern'},get busy(){return busy},guestCount:function(){return guests.length},
+  charNames:CH_FULL,makeVisitor:makeVisitor,waiterGreetText:waiterGreetText,get isOpen(){return state==='tavern'},get busy(){return busy},guestCount:function(){return guests.length},
   debug:function(){return{dishes:dishes.map(function(d){return d.phase+':'+d.table+':'+Math.round(d.t)+':'+Math.round(d.eatT)+':'+d.kind+':'+(d.im?d.im.naturalWidth:'-')}),deliveries:deliveries.length,waiter:waiter&&{mode:waiter.mode,x:Math.round(waiter.x),y:Math.round(waiter.y),set:waiter.set,table:waiter.table},guests:guests.map(function(g){return{id:g.id,ch:g.ch,held:!!g.held,an:g.an?g.an.name:'',pose:g.seat.pose,mode:g.mode,x:Math.round(g.x),y:Math.round(g.y),seat:g.seat.id}}),seats:SEATS.length,free:SEATS.filter(function(s){return !s.taken}).length}},
   seats:SEATS,tables:TABLES,door:DOOR,roomSrc:ROOM,size:{w:W,h:H},
   seatReach:function(){return SEATS.map(seatReachable)},poseFromDir:poseFromDir,seatScale:function(y){return scaleAt(y)*SIT_K},
