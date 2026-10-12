@@ -13,7 +13,7 @@ var DR={
 var GRILL={l:225,t:20,r:760,b:235},ZOOM_SRC='assets/grill_zoom.webp?v=1';
 var imgs={};
 function load(src){var im=imgs[src];if(!im){im=imgs[src]=new Image();im.src=src}return im}
-Object.keys(DR).forEach(function(k){for(var i=1;i<=N;i++)DR[k].ims[i]=load('assets/drawers/'+k+'_'+i+'.webp?v=4')});
+Object.keys(DR).forEach(function(k){for(var i=1;i<=N;i++)DR[k].ims[i]=load('assets/drawers/'+k+'_'+i+'.webp?v=5')});
 // the open drawer is a small picture (a frame of the video, with its shadow on the floor) over the kitchen: above the occluders of the table, below all the things of the player
 function ensureEl(d){
   if(d.el&&d.el.isConnected)return true;
