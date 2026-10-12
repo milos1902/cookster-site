@@ -571,9 +571,18 @@ var OPEN_KEY='cookster.tavern-open.v1',openForGuests=true;
 try{openForGuests=localStorage.getItem(OPEN_KEY)!=='closed'}catch(e){}
 function setOpenForGuests(v){openForGuests=!!v;try{localStorage.setItem(OPEN_KEY,v?'open':'closed')}catch(e){}}
 // --- the guest says something and the reputation changes: a speech bubble over his head (also used for the complaints and the praise)
-function gsay(g,text,delta){
+function gsay(g,text,delta,kind){
   var rep=null;try{if(delta&&window.CooksterQuality)rep=window.CooksterQuality.addReputation(delta)}catch(e){}
-  reactions.push({table:g.seat.table,gid:g.id,t:1.4,ev:{issues:[text]},rep:rep,delta:delta||0,life:5});
+  say2(g,[text,delta||0,rep,kind]);
+}
+// the speech bubble comes out only when the film of the speaking guest starts (he talks / drinks: kind 'pij', he calls the waiter: kind 'doziv');
+// if the guest is in the middle of another film, the words wait until it is over
+function say2(g,it){
+  if(g.mode==='seated'&&!g.visit&&state==='tavern'){
+    if(g.an){g.sayQ=(g.sayQ||[]);g.sayQ.push(it);if(g.sayQ.length>3)g.sayQ.shift();return}
+    startAnim(g,it[3]||'pij');
+  }
+  reactions.push({table:g.seat.table,gid:g.id,t:1.4,ev:{issues:[it[0]]},rep:it[2],delta:it[1],life:5});
 }
 // patience: waiting too long for the waiter, or for the food and drinks, he gets up and leaves (and the reputation falls)
 // how long a table waits for what it ordered (seconds, times the patience of the guest .85-1.35): only drinks 80 s + 30 s for every other guest (1 guest: ~70-110 s, 4 guests: ~150-240 s);
@@ -595,11 +604,12 @@ function zokiText(g,t){                              // nobody calls the waiter 
 function checkPatience(g){
   if(g.leftAngry)return;
   var wait=g.ordered?(g.waitFoodSince!=null?clock-g.waitFoodSince:0):(g.sitT>g.orderDelay?g.sitT-g.orderDelay:0),lim=g.ordered?waitLimit(g)*g.patK:PAT_ORDER*g.patK;
-  if(wait>lim*.6&&!g.warned&&wait>20){g.warned=true;g.an=null;startAnim(g,'doziv');gsay(g,zokiText(g,pick(g.ordered?SAY.waitFood:SAY.waitOrder)),0)}
+  if(wait>lim*.6&&!g.warned&&wait>20){g.warned=true;g.an=null;gsay(g,zokiText(g,pick(g.ordered?SAY.waitFood:SAY.waitOrder)),0,'doziv')}
   // too long a wait: the guest does NOT leave (he has to wait for his food); he only complains, and every complaint lowers the reputation (the first -4, then -2 every 45 s, at most 6 times)
   if(wait>lim&&(g.nextCompl==null||clock>=g.nextCompl)&&(g.complaints||0)<6){
-    gsay(g,zokiText(g,pick(g.ordered?SAY.waitFood:SAY.waitOrder)),(g.complaints||0)?-2:-4);
-    g.complaints=(g.complaints||0)+1;g.nextCompl=clock+45;g.an=null;startAnim(g,'doziv');
+    var cd=(g.complaints||0)?-2:-4;g.an=null;g.sayQ=null;
+    gsay(g,zokiText(g,pick(g.ordered?SAY.waitFood:SAY.waitOrder)),cd,'doziv');
+    g.complaints=(g.complaints||0)+1;g.nextCompl=clock+45;
   }
 }
 function chKey(g,pose){return 'g'+(g.ch<10?'0':'')+g.ch+'_'+pose}
@@ -643,6 +653,7 @@ function step(dt){
       if(g.fade>=1){g.mode='seated';g.sitT=0}
     }else if(g.mode==='seated'){
       g.sitT+=dt;
+      if(!g.an&&g.sayQ&&g.sayQ.length)say2(g,g.sayQ.shift());
       if(g.reorderAt&&g.sitT>g.reorderAt){g.reorderAt=0;g.ordered=false;g.orders=null;g.warned=false;g.orderDelay=g.sitT}      // a long company orders again
       if(GUESTS_ON)checkPatience(g);
       // nobody gets up and leaves while he is still waiting for his food or drink (he may complain, see checkPatience, but he has to wait)
@@ -763,8 +774,8 @@ function tickZokiChat(){
   if(!guest.length)return;
   var r=Math.random();
   if(r<.35&&st){gsay(st,'Stojan: Taj Zoran, kolomar jedan, ne podnosim ga, bre!',0);return}
-  if(r<.7){var g=pick(guest),c=pick(ZOKI_CHAT);reactions.push({table:g.seat.table,t:1.4,life:3.6,text:'Zoki: '+c[0],owner:1});reactions.push({table:g.seat.table,gid:g.id,t:4.2,life:3.6,ev:{issues:[CH_NAME[g.ch]+': '+c[1]]}});return}
-  if(r<.85){var g2=pick(guest);gsay(g2,CH_NAME[g2.ch]+': '+pick(['Zoki, more, dojdi na jedno piće!','Zorane, sedi s nas malo!','Zoranče, šta ima, bre?','Zokili, kaži ti nama kako je?']),0)}
+  if(r<.7){var g=pick(guest),c=pick(ZOKI_CHAT);reactions.push({table:g.seat.table,t:1.4,life:3.6,text:'Zoki: '+c[0],owner:1});if(!g.an)startAnim(g,'pij');reactions.push({table:g.seat.table,gid:g.id,t:4.2,life:3.6,ev:{issues:[CH_NAME[g.ch]+': '+c[1]]}});return}
+  if(r<.85){var g2=pick(guest);gsay(g2,CH_NAME[g2.ch]+': '+pick(['Zoki, more, dojdi na jedno piće!','Zorane, sedi s nas malo!','Zoranče, šta ima, bre?','Zokili, kaži ti nama kako je?']),0,'doziv')}
 }
 var storyT=22;
 function tickStory(dt){
