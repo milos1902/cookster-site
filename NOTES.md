@@ -344,3 +344,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Ulaz (`zoomDoor`, kitchen-fixtures.js): isti živi zum cele scene kao ka roštilju, od prvog kadra kuhinje do vrata (K=3.3, gornja ivica slike na vrhu ekrana), DZ=620 ms (`window.__dzMul` ga razvlači za testiranje). Vrata se otvaraju filmom frejmova `assets/doors/d_N.webp` (isti kao kad konobar ulazi; `swingDoors(DZ+300)`), koji se zumira zajedno sa scenom. Iza vrata, već od ~90 ms, raste slika kafane (`tavernAt`: mala, mekih ivica, iz otvora vrata do punog ekrana), jedan zum prati drugi.
 - Izlaz (`leaveTavern`, dugme „Kuhinja →“ / Esc): isto unazad: kafana se smanjuje u otvor vrata, kamera se odzumira iz vrata, vrata se zatvaraju (`swingDoors(DZ+300,.3)` kreće od otvorenih), pa je kuhinja. `CooksterTavern.close({instant:true})` zatvara kafanu bez okretanja kamere.
 - Videi `dolazak.mp4`/`odlazak.mp4` su obrisani; ostali su samo frejmovi vrata (`d_1..60`).
+
+## Ispravke posle ulaza u kafanu
+- Zum na roštilj se kočio posle prelaza: `ZIN` (trajanje zuma na roštilj) je slučajno obrisan zajedno sa starim kodom vrata → `runLive` bacao grešku, `view` ostajao zauzet i sve se smrzavalo. `var ZIN=330` vraćen.
+- Na početku zuma ka vratima bljesnuo je kadar kafane: `T.open({instant:true})` odmah prikaže punu kafanu pre prve transformacije. Sada se kafana otvara tek na ~30% zuma, skrivena (`visibility:hidden`), i izlazi iz ništa (opacity od 0) tek kad dobije prvu transformaciju.

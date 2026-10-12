@@ -162,6 +162,7 @@ var DOOR={l:795,t:5,r:1145,b:145};
 // The way back is the same thing the other way round: the tavern shrinks into the doorway, the camera zooms out of the doors, which close.
 var view=null;
 function DZf(){return 620*(window.__dzMul||1)}      // (the length of the zoom can be stretched for testing: window.__dzMul)
+var ZIN=330;                                                       // (the length of the zoom to the grill, ms)
 var DZ=620;                                                        // the length of the zoom (ms), about the same as the zoom to the grill
 function doorGeom(){
   var sc=scale||1,tx0=offsetX-cameraX*sc,ty0=offsetY,K=3.3,G={x:970,y:75},S1=sc*K;
@@ -176,7 +177,7 @@ function tavernAt(room,c,p){
   var e=Math.pow(p,1.5),W=innerWidth,H=innerHeight;
   room.style.transformOrigin='50% 50%';
   room.style.transform='translate('+((c.x-W/2)*(1-e))+'px,'+((c.y-H/2)*(1-e))+'px) scale('+lerp(.16,1,e)+')';
-  room.style.opacity=String(Math.min(1,.4+e*1.3));
+  room.style.opacity=String(Math.min(1,e*2.2));      // it comes out of nothing (no frame of it before the zoom has started)
   var inner=lerp(4,146,e),outer=inner+lerp(40,8,e),m='radial-gradient(ellipse closest-side at 50% 50%,#000 '+inner+'%,rgba(0,0,0,0) '+outer+'%)';
   room.style.webkitMaskImage=m;room.style.maskImage=m;
 }
@@ -192,10 +193,10 @@ function zoomDoor(){
   var t0=performance.now(),opened=false,ready=false;
   (function step(now){
     var el=now-t0,u=Math.min(1,el/DZ_),S=g.sc*Math.pow(g.S1/g.sc,ease(u)),c=doorFrame(g,scn,S);
-    if(!opened&&el>=90){opened=true;Promise.resolve(T.open({instant:true})).then(function(){try{vp.style.visibility='visible'}catch(e2){}room.style.willChange='transform,opacity';ready=true},function(){ready=true})}      // the tavern is opened behind the doors, the kitchen stays on the screen under it
-    if(ready){tavernAt(room,c,ease(Math.min(1,Math.max(0,(el-90)/(DZ_-90)))))}
+    if(!opened&&el>=DZ_*.3){opened=true;room.style.visibility='hidden';Promise.resolve(T.open({instant:true})).then(function(){try{vp.style.visibility='visible'}catch(e2){}room.style.willChange='transform,opacity';ready=true},function(){ready=true})}      // the tavern is opened behind the doors, the kitchen stays on the screen under it
+    if(ready){tavernAt(room,c,ease(Math.min(1,Math.max(0,(el-DZ_*.3)/(DZ_*.7)))));if(room.style.visibility)room.style.visibility=''}
     if(u<1||!ready){requestAnimationFrame(step);return}
-    tavernClear(room);try{vp.style.visibility='hidden'}catch(e3){}
+    tavernClear(room);room.style.visibility='';try{vp.style.visibility='hidden'}catch(e3){}
     try{applyCamera()}catch(e4){}scn.style.willChange='';requestAnimationFrame(function(){scn.style.transition=''});
     view=null;
   })(t0);
