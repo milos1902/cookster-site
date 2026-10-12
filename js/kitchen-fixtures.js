@@ -201,7 +201,9 @@ function runLive(v,back,done){
   var P=v._P,gi=v.querySelector('.gz-grill'),ZM=ZIN,total=ZM,t0=performance.now();
   var Kz=P.S1/P.sc,Tl={x:870*P.sc,y:470*P.sc};
   (function step(now){
-    var e=Math.max(0,Math.min(total,now-t0)),t=Math.min(1,e/ZM),u=back?1-t*t:t*t;
+    var e=Math.max(0,Math.min(total,now-t0)),t=Math.min(1,e/ZM),u;
+    // going in: slow start, fast end. Going out the same shape, but measured in the size of the picture (not in its logarithm): otherwise the last part of the zoom out crawls (a small change of the size) and it seems longer than the zoom in
+    if(!back)u=t*t;else{var wb=1-t*t;u=Math.log(1+wb*(Kz-1))/Math.log(Kz)}
     setLive(P,u);
     // the picture of the grill zooms in together with the scene: when the scene is at the zoom u, the picture is at the scale Kz^(u-1) of its final size, with its point T on the place where the scene puts the grill
     var S=P.sc*Math.pow(Kz,u),w=(S-P.sc)/(P.S1-P.sc),px=P.p0.x+(P.p1.x-P.p0.x)*w-P.tx0,py=P.p0.y+(P.p1.y-P.p0.y)*w-P.ty0,r=Math.pow(Kz,u-1);
