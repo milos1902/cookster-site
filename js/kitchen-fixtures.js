@@ -309,7 +309,7 @@ function liveAt(u){                                              // (for testing
 var dEl=null,dBusy=false,dImgs=null;
 function swingDoors(dur){
   var sc=document.getElementById('scene');if(!sc||dBusy)return;dBusy=true;
-  if(!dImgs){dImgs=[];for(var i=1;i<=60;i++){var m=new Image();m.src='assets/doors/d_'+i+'.webp?v=1';dImgs.push(m)}}
+  if(!dImgs){dImgs=[];for(var i=1;i<=60;i++){(function(i){var m=new Image(),t=0;m.onerror=function(){if(++t<4)setTimeout(function(){m.src='assets/doors/d_'+i+'.webp?v=1&r='+t},300*t)};m.src='assets/doors/d_'+i+'.webp?v=1';dImgs.push(m)})(i)}}
   if(!dEl||!dEl.isConnected){dEl=document.createElement('img');dEl.draggable=false;dEl.style.cssText='position:absolute;left:765px;top:0;width:400px;height:185px;z-index:26;pointer-events:none;display:none';sc.appendChild(dEl)}
   var t0=performance.now(),DUR=dur||1300,last=-1;
   (function f(now){var k=Math.min(59,Math.floor((now-t0)/DUR*60));

@@ -85,8 +85,10 @@ document.head.appendChild(css);
 var cv=mk('canvas');cv.id='kitchenWaiter';cv.width=W;cv.height=H;scene.appendChild(cv);
 var X=cv.getContext('2d');
 for(var i=1;i<=3;i++){var im=new Image();im.src=WAITER+i+'.webp?v=4';imgs[i]=im}
-var W24D=[],W24U=[];for(var i=1;i<=23;i++){var a=new Image();a.src='assets/tavern/waiter/walkd24/f'+(i<10?'0':'')+i+'.webp?v=6';W24D[i]=a}
-for(var i=1;i<=30;i++){var a=new Image();a.src='assets/tavern/waiter/walku24/f'+(i<10?'0':'')+i+'.webp?v=6';W24U[i]=a}
+// the whole walks of the waiter (23 + 30 pictures) are loaded a little after the start, one after the other, and a picture that fails is asked for again
+var W24D=[],W24U=[];
+function lazy(arr,dir,n){var i=1;(function next(){if(i>n)return;var k=i++,t=0;(function go(){var a=new Image();a.onload=function(){arr[k]=a;next()};a.onerror=function(){if(++t<4)setTimeout(go,400*t);else next()};a.src='assets/tavern/waiter/'+dir+'/f'+(k<10?'0':'')+k+'.webp?v=6'+(t?'&r='+t:'')})()})()}
+setTimeout(function(){lazy(W24D,'walkd24',23);lazy(W24U,'walku24',30)},4000);
 var imgD=[],imgU=[];for(var i=1;i<=3;i++){var a=new Image();a.src='assets/tavern/waiter/waiter_walkd'+i+'.webp';imgD[i]=a;var c=new Image();c.src='assets/tavern/waiter/waiter_walku'+i+'.webp';imgU[i]=c}
 var foodImg=new Image();foodImg.src='assets/tavern/waiter/waiter_foods2.webp?v=2';
 var drinkImg=new Image(),drinkOk=false;drinkImg.onload=function(){drinkOk=true};drinkImg.src='assets/tavern/waiter/waiter_drinks2.webp?v=2';
@@ -348,7 +350,7 @@ function spotFor(i){return{x:Math.round(700+(i%4)*118+Math.random()*16),y:Math.r
 // ---------- the waiter walks in ----------
 function kitchenVisible(){return !document.body.classList.contains('pantry-open')}
 function drawWaiter(x,y,frame,flip,lean,food,set,sc,clipY){
-  var im=food==='drink'&&drinkOk?drinkImg:food?foodImg:(set||imgs)[frame];if(!im||!im.complete||!im.naturalWidth)return;
+  var im=food==='drink'&&drinkOk?drinkImg:food?foodImg:(set||imgs)[frame];if((!im||!im.complete||!im.naturalWidth)&&set)im=(set===W24U?imgU:imgD)[2];if(!im||!im.complete||!im.naturalWidth)return;
   var w=im.naturalWidth,h=im.naturalHeight;
   X.save();
   if(clipY!=null){X.beginPath();X.rect(0,0,W,clipY);X.clip()}      // he stands behind the table: only what is above its far edge shows
