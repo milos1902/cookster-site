@@ -2232,6 +2232,12 @@ function openWoodBasketActionMenu(basket,x,y){
  });
  button.addEventListener('click',e=>{e.stopPropagation();requestWoodBasketFill(basket);});
  menu.appendChild(button);
+ const moveBtn=document.createElement('button');
+ moveBtn.type='button';
+ moveBtn.textContent='Pomeri korpu';
+ Object.assign(moveBtn.style,{border:'0',borderRadius:'5px',padding:'7px 10px',cursor:'pointer',background:'#e8d9b8',color:'#2a1a0e',font:'700 13px system-ui'});
+ moveBtn.addEventListener('click',e=>{e.stopPropagation();closeWoodBasketActionMenu();startHolding(basket,null);});
+ menu.appendChild(moveBtn);
  document.body.appendChild(menu);
  woodBasketActionMenu=menu;
  const mw=menu.offsetWidth||160,mh=menu.offsetHeight||60;
@@ -14574,7 +14580,7 @@ function updateHover(){
  if(faucetHit(mouse.x,mouse.y)){clearHover();label.textContent=faucetOn?'slavina — klik za zatvaranje vode':'slavina — klik za puštanje vode';label.style.left=mouse.x+'px';label.style.top=(mouse.y-12)+'px';label.style.display='block';return;}
  const lh=lidAt(mouse.x,mouse.y);
  if(lh){if(hoverItem!==lh.item){clearHover();hoverItem=lh.item}lh.lid.classList.add('hover-lid');hoverItem.classList.remove('hovered');label.textContent='poklopac — '+lh.item.dataset.label}
-  else{const it=itemAt(mouse.x,mouse.y);if(it!==hoverItem){clearHover();hoverItem=it;if(it){it.classList.add('hovered')}}if(it)label.textContent=isWoodBasket(it)?(woodBasketRemaining(it)>0?'Korpa sa drvima · L: uzmi cjepanicu · fiksirana pozicija':'Prazna korpa · D: Napuni korpu · fiksirana pozicija'):it.dataset.crate==='1'?it.dataset.label+' · L: 1 komad · D: cela gajba':(it.dataset.detachedLid==='1'?'poklopac':it.dataset.label)}
+  else{const it=itemAt(mouse.x,mouse.y);if(it!==hoverItem){clearHover();hoverItem=it;if(it){it.classList.add('hovered')}}if(it)label.textContent=isWoodBasket(it)?(woodBasketRemaining(it)>0?'Korpa sa drvima · L: uzmi cjepanicu · D: podigni korpu':'Prazna korpa · D: Napuni korpu · fiksirana pozicija'):it.dataset.crate==='1'?it.dataset.label+' · L: 1 komad · D: cela gajba':(it.dataset.detachedLid==='1'?'poklopac':it.dataset.label)}
  if(hoverItem){label.style.left=mouse.x+'px';label.style.top=(mouse.y-12)+'px';label.style.display='block'}
  resetBagPickIfTargetChanged();
  updateBagQtyBadge();
@@ -14617,7 +14623,6 @@ function trySnapLid(detached){
 
 function startHolding(el,pointerEvent=null){
  if(el?.dataset?.itemId==='noz'&&getBoardEl())el=getBoardEl();
- if(isWoodBasket(el))return;
  if(!el||picking||placing||pouring)return;
 
  // Capture the pickup relation before any held-state mutation.
@@ -15198,7 +15203,7 @@ window.addEventListener('pointerdown',e=>{
     const basketAtPointer=itemAt(e.clientX,e.clientY);
     if(isWoodBasket(basketAtPointer)){
       if(woodBasketRemaining(basketAtPointer)>0)spawnHeldWoodBasketLog(basketAtPointer,e);
-      else showToast('Korpa je fiksirana. Desni klik za punjenje.');
+      else showToast('Korpa je prazna. Desni klik za meni.');
       return;
     }
   }
@@ -15226,7 +15231,7 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
     if(it&&isWoodBasket(it)){
       e.preventDefault();
       if(woodBasketRemaining(it)<=0)openWoodBasketActionMenu(it,e.clientX,e.clientY);
-      else showToast('Korpa je fiksirana. Levi klik za cjepanicu.');
+      else{startHolding(it,e);showToast('Korpa je u ruci. Desni klik ponovo da je spustiš.');}   // right click lifts the whole basket (like a crate); left click still takes one log
       return;
     }
     if(it&&isPaprikaSteamBag(it)){e.preventDefault();openPaprikaBagActionMenu(it,e.clientX,e.clientY);return}
@@ -15266,7 +15271,7 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
  if(!holding){
     if(it&&isWoodBasket(it)){
       if(woodBasketRemaining(it)>0)spawnHeldWoodBasketLog(it,e);
-      else showToast('Korpa je fiksirana. Desni klik za punjenje.');
+      else showToast('Korpa je prazna. Desni klik za meni.');
       return;
     }
    const pepperVessel=roastedPepperVesselAt(e.clientX,e.clientY);
