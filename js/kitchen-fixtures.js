@@ -297,8 +297,8 @@ function swingDoors(dur,from){
   if(!dEl||!dEl.isConnected){dEl=document.createElement('img');dEl.draggable=false;dEl.style.cssText='position:absolute;left:765px;top:0;width:400px;height:185px;z-index:26;pointer-events:none;display:none';sc.appendChild(dEl)}
   var t0=performance.now(),DUR=dur||1300,last=-1;
   var f0=Math.max(0,Math.min(.95,from||0));      // from: the part of the film where it starts (0.3: the doors are already wide open)
-  (function f(now){var k=Math.min(59,Math.floor((f0+(1-f0)*Math.min(1,(now-t0)/DUR))*60));
-    if(k!==last&&dImgs[k].complete&&dImgs[k].naturalWidth){dEl.src=dImgs[k].src;dEl.style.display='';last=k}
+  (function f(now){var k=Math.max(0,Math.min(59,Math.floor((f0+(1-f0)*Math.max(0,Math.min(1,(now-t0)/DUR)))*60)));      // (the frame time of requestAnimationFrame can be a little before t0: without the max(0) k was -1, the loop crashed and the doors never opened again)
+    if(k!==last&&dImgs[k]&&dImgs[k].complete&&dImgs[k].naturalWidth){dEl.src=dImgs[k].src;dEl.style.display='';last=k}
     if(now-t0<DUR)requestAnimationFrame(f);else{dEl.style.display='none';dBusy=false}})(t0);
 }
 window.CooksterKitchenFx={leaveTavern:leaveTavern,swingDoors:swingDoors,liveAt:liveAt,compose:function(src){return src},hit:hit,click:click,tryDrop:tryDrop,updateJars:updateJars,zoomGrill:zoomGrill,closeGrill:closeGrill,

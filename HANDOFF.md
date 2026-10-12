@@ -9,6 +9,7 @@ Poslednje ažuriranje: oktobar 2026 (posle PR-ova do #262).
 - Radi samo na grani koju sesija dodeli (do sada `claude/modest-wright-6dlgd4`). Ako je prethodni PR već spojen, prebaci granu na svež `main` i prenesi svoj commit:
   `git fetch origin main; git checkout -B <grana> origin/main; git cherry-pick <commit>; git merge -X ours origin/<grana> -m "Merge remote branch (already merged into main)"; git push -f -u origin <grana>`, pa napravi novi PR. Ako je prethodni PR još otvoren, samo pushuj u njega i reci to.
 - Commit poruke završi sa `Co-Authored-By: ...` i `Claude-Session: ...` (tačne linije su u uputstvu sesije). PR opis završi sa `🤖 Generated with [Claude Code](https://claude.com/claude-code)` i linkom sesije. Ime modela ne upisuj u fajlove.
+- **Uz svaku izmenu pošalji Milošu slike (screenshotove) da vidi šta si promenio** (pre/posle kad ima smisla; za animacije više uzastopnih slika, usporeno npr. `window.__dzMul`; `SendUserFile`). Slike ne mogu da pokažu zvuk ni brzinu: to reci.
 - Povećaj `?v=` broj izmenjene skripte u `index.html` (keš).
 - **Nikad ne tvrdi da si čuo zvuk ili video animaciju uživo.** Testiraj Playwright-om (Chromium je već instaliran, ne instaliraj ga), a stvarni osećaj i brzinu procenjuje Miloš.
 - **Pitaj Miloša PRE nego što potrošiš Higgsfield kredite** (obećao sam to posle dva neželjena videa).
