@@ -571,9 +571,18 @@ var OPEN_KEY='cookster.tavern-open.v1',openForGuests=true;
 try{openForGuests=localStorage.getItem(OPEN_KEY)!=='closed'}catch(e){}
 function setOpenForGuests(v){openForGuests=!!v;try{localStorage.setItem(OPEN_KEY,v?'open':'closed')}catch(e){}}
 // --- the guest says something and the reputation changes: a speech bubble over his head (also used for the complaints and the praise)
-function gsay(g,text,delta){
+function gsay(g,text,delta,kind){
   var rep=null;try{if(delta&&window.CooksterQuality)rep=window.CooksterQuality.addReputation(delta)}catch(e){}
-  reactions.push({table:g.seat.table,gid:g.id,t:1.4,ev:{issues:[text]},rep:rep,delta:delta||0,life:5});
+  say2(g,[text,delta||0,rep,kind]);
+}
+// the speech bubble comes out only when the film of the speaking guest starts (he talks / drinks: kind 'pij', he calls the waiter: kind 'doziv');
+// if the guest is in the middle of another film, the words wait until it is over
+function say2(g,it){
+  if(g.mode==='seated'&&!g.visit&&state==='tavern'){
+    if(g.an){g.sayQ=(g.sayQ||[]);g.sayQ.push(it);if(g.sayQ.length>3)g.sayQ.shift();return}
+    startAnim(g,it[3]||'pij');
+  }
+  reactions.push({table:g.seat.table,gid:g.id,t:1.4,ev:{issues:[it[0]]},rep:it[2],delta:it[1],life:5});
 }
 // patience: waiting too long for the waiter, or for the food and drinks, he gets up and leaves (and the reputation falls)
 // how long a table waits for what it ordered (seconds, times the patience of the guest .85-1.35): only drinks 80 s + 30 s for every other guest (1 guest: ~70-110 s, 4 guests: ~150-240 s);
@@ -595,11 +604,12 @@ function zokiText(g,t){                              // nobody calls the waiter 
 function checkPatience(g){
   if(g.leftAngry)return;
   var wait=g.ordered?(g.waitFoodSince!=null?clock-g.waitFoodSince:0):(g.sitT>g.orderDelay?g.sitT-g.orderDelay:0),lim=g.ordered?waitLimit(g)*g.patK:PAT_ORDER*g.patK;
-  if(wait>lim*.6&&!g.warned&&wait>20){g.warned=true;g.an=null;startAnim(g,'doziv');gsay(g,zokiText(g,pick(g.ordered?SAY.waitFood:SAY.waitOrder)),0)}
+  if(wait>lim*.6&&!g.warned&&wait>20){g.warned=true;g.an=null;gsay(g,zokiText(g,pick(g.ordered?SAY.waitFood:SAY.waitOrder)),0,'doziv')}
   // too long a wait: the guest does NOT leave (he has to wait for his food); he only complains, and every complaint lowers the reputation (the first -4, then -2 every 45 s, at most 6 times)
   if(wait>lim&&(g.nextCompl==null||clock>=g.nextCompl)&&(g.complaints||0)<6){
-    gsay(g,zokiText(g,pick(g.ordered?SAY.waitFood:SAY.waitOrder)),(g.complaints||0)?-2:-4);
-    g.complaints=(g.complaints||0)+1;g.nextCompl=clock+45;g.an=null;startAnim(g,'doziv');
+    var cd=(g.complaints||0)?-2:-4;g.an=null;g.sayQ=null;
+    gsay(g,zokiText(g,pick(g.ordered?SAY.waitFood:SAY.waitOrder)),cd,'doziv');
+    g.complaints=(g.complaints||0)+1;g.nextCompl=clock+45;
   }
 }
 function chKey(g,pose){return 'g'+(g.ch<10?'0':'')+g.ch+'_'+pose}
@@ -643,6 +653,7 @@ function step(dt){
       if(g.fade>=1){g.mode='seated';g.sitT=0}
     }else if(g.mode==='seated'){
       g.sitT+=dt;
+      if(!g.an&&g.sayQ&&g.sayQ.length)say2(g,g.sayQ.shift());
       if(g.reorderAt&&g.sitT>g.reorderAt){g.reorderAt=0;g.ordered=false;g.orders=null;g.warned=false;g.orderDelay=g.sitT}      // a long company orders again
       if(GUESTS_ON)checkPatience(g);
       // nobody gets up and leaves while he is still waiting for his food or drink (he may complain, see checkPatience, but he has to wait)
@@ -698,14 +709,14 @@ var CH_NAME={1:'Dragoslav',2:'Stana',3:'Mića',4:'Stojan',5:'Ljubica',6:'Radovan
 var CH_FULL={1:'Dragoslav',2:'baba Stana Jovanović',3:'Mića',4:'Stojan',5:'Ljubica',6:'deda Radovan Jovanović',7:'kovač Mirko',8:'Mileva Jakšić',9:'gospodin Vukašin',10:'Smilja'};
 var STORY_LINES={
   9:{any:['Samo ja sam dorastao gospođi Milevi, bre, to svi znaju.','Nijedan od ovih nije ni do kolena gospođi Milevi. Samo ja, more.','Ja i Mileva, bre, bi bili savršen par. Ne ću da kažem više.','Ovi ovde ne znaju šta je dama. Ja znam, bre.','Kaj će ti drugi, mori, kad imaš mene, gospođo Mileva.']},
-  7:{any:['Juče iskovah potkovicu, dva sata na žaru, bre!','Gvožđe je k’o čoek: mora da ga zagreješ pa da ga savijaš.','Bez čekića nema ni leba, more.','Nakovanj je teži nego što misliš, majstore.','Ne mi pričaj ti o ženama, ja imam posla do guše.','Dede, mori, daj mi čekić, ne vidiš da radim!','Kaj ćeš, be, kovač sam, ne mogu da stojim bez posla.']},
+  7:{any:['Juče iskovah potkovicu, dva sata na žaru, bre!','Gvožđe je k’o čoek: mora da ga zagreješ pa da ga savijaš.','Bez čekića nema ni leba, more.','Nakovanj je teži nego što misliš, majstore.','Kaj ćeš, be, kovač sam, ne mogu da stojim bez posla.'],mates:['Ne mi pričaj ti o ženama, ja imam posla do guše.','Dede, mori, daj mi čekić, ne vidiš da radim!','Slušaj ti mene, bre, kad kujem gvožđe, nema greške.']},
   4:{any:['U Nemačku sam video mašinu koja sama pere sudove, bre!','Kad bejah u Nemačku, tamo su ulice čiste k’o sto.','Ja sam u Nemačku video svašta, ne ćete da verujete.','Taj Zoran, kolomar jedan, ne podnosim ga, bre!','Konobar! Da li će neko da me usluži večeras?','Ovaj Zoran ništa ne zna, a ja sam Nemce video.','Ne ćemo mi, mori, kao u Nemačku, nema reda ovde!']},
-  8:{any:['Molim vas, ne prilazite.','Ostavite me da popijem čašu u miru.'],with7:['Ah... taj kovač, ni da me pogleda.','Mirko... zar nikad ne će da me primeti?']},
+  8:{any:['Samo da popijem čašu vina u miru.','Dođoh da odmorim dušu.'],alone:['Ah, kakva je večeras gužva...','Sama sa svojim mislima, kao uvek.'],with7:['Ah... taj kovač, ni da me pogleda.','Mirko... zar nikad ne će da me primeti?']},
   3:{any:['Gde li je Smilja danas...'],with10:['Smiljo, danas ti je kosa baš lepa.','Smiljo, oćeš li da ti naručim nešto?','Smiljo, ti si najlepša u celu kafanu, bre.']},
   10:{any:['Će li Mića da dođe danas...'],with3:['Ma pusti me, Mićo, šta ti je bre...','Ih, Mićo, ne zbijaj šale sa mene!'],with5:['Ljubice, samo da znaš... sviđa mi se Mića.','Ne govori nikom, Ljubice, ali Mića mi je drag.']},
   5:{with10:['Znala sam ja! Treba da mu kažeš, Smiljo, bre!','Pa kaži mu, more, ako ti se sviđa!']},
-  2:{any:['Radovane, jesi li popio lekove, bre?','Gde si, Radovane, more?','Celog života ga učim, a on ništa ne nauči!','Kad dojde kući, ima da čuje on!','Da nije mene, ne bi imao ni čistu košulju.','Radovane, bez gluposti, more!'],with6:['Radovane, sedi pravo, bre, nisi više mlad!','Radovane, ne pij više!','Radovane, jesi li ti normalan, čoveče?','Opet si zaboravio šta sam ti rekla!','Radovane, ti mene uopšte ne slušaš, bre!','Ma ne znam šta ću s tebe, čoveče!','Ko te je naučio da tako sediš, more?'],far:['Radovane! Čujem te odavde, bre!','Radovane, ne zaboravi lekove!','Čekaj da dođemo kući, Radovane!']},
-  6:{any:['Gde je ta moja Stana...','Ženo, ostavi me na miru bar na jedno piće.','Samo mir ja hoću, bre.','Pa dobro, Stano, ne vikaj.'],with2:['Stano, ne zanovetaj, ženo.','Pa evo, Stano, sedim.','Stano, ja samo jedno popih!','Ne vičeš ti na mene, ja sam glava kuće, bre!','Dobro, dobro, ništa nisam rekao.','Stano, ćuti malo, pobogu!','Ti si najgora žena na svet... i najbolja.'],far:['Stano, ne čujem te!','Eno je, opet viče.','Evo, evo, dolazim, Stano!']}
+  2:{any:['Gde li je taj moj Radovan, more?','Celog života ga učim, a on ništa ne nauči!','Kad dojde kući, ima da čuje on!','Da nije mene, ne bi imao ni čistu košulju.'],with6:['Radovane, sedi pravo, bre, nisi više mlad!','Radovane, ne pij više!','Radovane, jesi li ti normalan, čoveče?','Opet si zaboravio šta sam ti rekla!','Radovane, ti mene uopšte ne slušaš, bre!','Ma ne znam šta ću s tebe, čoveče!','Ko te je naučio da tako sediš, more?'],far:['Radovane! Čujem te odavde, bre!','Radovane, ne zaboravi lekove!','Čekaj da dođemo kući, Radovane!']},
+  6:{any:['Gde je ta moja Stana...','Samo mir ja hoću, bre.','Ma žena mi je dobra... kad ćuti.'],with2:['Stano, ne zanovetaj, ženo.','Pa evo, Stano, sedim.','Stano, ja samo jedno popih!','Ne vičeš ti na mene, ja sam glava kuće, bre!','Dobro, dobro, ništa nisam rekao.','Stano, ćuti malo, pobogu!','Ti si najgora žena na svet... i najbolja.'],far:['Stano, ne čujem te!','Eno je, opet viče.','Evo, evo, dolazim, Stano!']}
 };
 // ---------- visitors: guests who do not sit down, they come to somebody (Vukašin to Mileva, Stana to her Radovan) ----------
 var VIS={
@@ -763,18 +774,65 @@ function tickZokiChat(){
   if(!guest.length)return;
   var r=Math.random();
   if(r<.35&&st){gsay(st,'Stojan: Taj Zoran, kolomar jedan, ne podnosim ga, bre!',0);return}
-  if(r<.7){var g=pick(guest),c=pick(ZOKI_CHAT);reactions.push({table:g.seat.table,t:1.4,life:3.6,text:'Zoki: '+c[0],owner:1});reactions.push({table:g.seat.table,gid:g.id,t:4.2,life:3.6,ev:{issues:[CH_NAME[g.ch]+': '+c[1]]}});return}
-  if(r<.85){var g2=pick(guest);gsay(g2,CH_NAME[g2.ch]+': '+pick(['Zoki, more, dojdi na jedno piće!','Zorane, sedi s nas malo!','Zoranče, šta ima, bre?','Zokili, kaži ti nama kako je?']),0)}
+  if(r<.7){var g=pick(guest),c=pick(ZOKI_CHAT);reactions.push({table:g.seat.table,t:1.4,life:3.6,text:'Zoki: '+c[0],owner:1});if(!g.an)startAnim(g,'pij');reactions.push({table:g.seat.table,gid:g.id,t:4.2,life:3.6,ev:{issues:[CH_NAME[g.ch]+': '+c[1]]}});return}
+  if(r<.85){var g2=pick(guest);gsay(g2,CH_NAME[g2.ch]+': '+pick(['Zoki, more, dojdi na jedno piće!','Zorane, sedi s nas malo!','Zoranče, šta ima, bre?','Zokili, kaži ti nama kako je?']),0,'doziv')}
+}
+// ---------- conversations: guests who sit at the same table know who sits with them and talk to each other, one line after the other ----------
+// key "a-b" = the two characters (a < b); every line: [who speaks (the number of the character), what he says]
+var PAIR={
+  '2-6':[[2,'Radovane, jesi li popio lekove?'],[6,'Jesam, ženo.'],[2,'Lažeš, bre, vidim ti oči.'],[6,'Pa što pitaš, kad sve znaš?']],
+  '6-9':[[6,'Vukašine, brate, žena mi ne da mira...'],[9,'Ja se, bre, ne žanim dok ne dojde prava dama, Mileva.'],[6,'Mileva? Pa ona te ni ne gleda, more.'],[9,'Gleda, gleda, samo kriomice, Radovane.']],
+  '4-6':[[4,'U Nemačku su žene tihe, Radovane.'],[6,'Eh, da su i ovde, more!'],[4,'Ja sam video, bre, ni da pisne ne smeju.'],[6,'Da znaš moju Stanu, ne bi tako pričao.']],
+  '4-9':[[4,'Vukašine, u Nemačku sam video odela kao tvoje, ali jeftinija.'],[9,'Stojane, ja ovo nosim za Milevu, ne za Nemce.'],[4,'Mileva, Mileva... kao da si jedini.'],[9,'Jedini sam, bre, koji joj je dorastao.']],
+  '3-4':[[3,'Stojane, kakva je ta Nemačka, ima li tamo devojaka?'],[4,'Ima, bre, ali nijedna kao naša Smilja.'],[3,'Pssst, ne tako glasno, bre!']],
+  '6-7':[[6,'Mirko, iskuj mi jedan lanac za Stanu.'],[7,'Za Stanu ni gvožđe ne bi izdržalo, bre.'],[6,'Pa jeste, ni ja.']],
+  '4-7':[[7,'Stojane, Nemci znaju da kuju, ali moj čekić kuje bolje.'],[4,'Ma ne znaš ti, mori, kakvu sam mašinu video!'],[7,'Mašina ne zna ono što ruka zna.']],
+  '7-9':[[9,'Mirko, ti kovaču, ženiš li se nekad?'],[7,'Ja? Imam posla, bre.'],[9,'A ona dama u crveno...'],[7,'Koja dama? Daj još jedno vino.']],
+  '3-6':[[3,'Dedo Radovane, kako ste vi osvojili baba Stanu?'],[6,'Ja? Ona mene, bre, osvoji, pa me ni ne pusti.'],[3,'Ha ha, tako i ja Smilju.']],
+  '3-9':[[9,'Mićo, dete, ti si mlad, ne znaš ti šta je ljubav.'],[3,'Znam ja, bre, sve znam.'],[9,'Znaš ti... pa vidi ti Milevu.'],[3,'Ja? Ja gledam samo Smilju.']],
+  '5-10':[[5,'Smiljo, vidim te, gledaš onog Mićka.'],[10,'Ne gledam, bre!'],[5,'Gledaš, gledaš, crveniš se.'],[10,'Dobro, malo gledam...']],
+  '3-10':[[3,'Smiljo, oćeš li da te ispratim večeras?'],[10,'Ma pusti me, Mićo...'],[3,'Ja ću ipak doći, bre.'],[10,'Kako hoćeš.']]
+};
+var REACT={1:['Ma da, da...','Tako je, bre.'],2:['Aaa, tako li?','Ne znam ja, bre, ali šta ću.'],3:['Ma jeste, bre!','Pa kako da ne.'],4:['Ma to je ništa prema Nemačku!','Ja sam u Nemačku video i gore.'],5:['Joj, ne mogu da verujem!','Ma šta kažeš!'],6:['Eh, kad bih ja to znao, more.','Pa dobro, dobro.'],7:['Mhm. A ja kujem gvožđe.','Je l’ tako? Ja imam posla.'],9:['Ja to bolje znam, bre.','Slažem se, naravno, ja sam uvek u pravu.'],10:['Jao, stvarno?','Ih, nemoj da me nasmevaš!']};
+var convs=[];
+function convScript(a,b){
+  var key=Math.min(a.ch,b.ch)+'-'+Math.max(a.ch,b.ch);
+  if(PAIR[key])return PAIR[key];
+  function topic(g){var sl=STORY_LINES[g.ch];return sl&&sl.any&&sl.any.length?pick(sl.any):'Eh, bre...'}
+  return[[a.ch,topic(a)],[b.ch,pick(REACT[b.ch]||['Aha.'])],[b.ch,topic(b)],[a.ch,pick(REACT[a.ch]||['Aha.'])]];
+}
+function startConv(a,b){convs.push({a:a,b:b,lines:convScript(a,b),i:0,t:0,wait:.6})}
+function inConv(g){return convs.some(function(c){return c.a===g||c.b===g})}
+function tickConv(dt){
+  for(var i=convs.length-1;i>=0;i--){
+    var c=convs[i];
+    if(c.a.mode!=='seated'||c.b.mode!=='seated'||c.i>=c.lines.length&&c.t>=c.wait){convs.splice(i,1);continue}
+    c.t+=dt;if(c.t<c.wait||c.i>=c.lines.length)continue;
+    var l=c.lines[c.i++],sp=l[0]===c.a.ch?c.a:c.b;
+    gsay(sp,CH_NAME[sp.ch]+': '+l[1],0);c.t=0;c.wait=3.2+l[1].length*.035;
+  }
+}
+// two or more at a table: a conversation (if they do not talk already)
+function tryConv(){
+  var seated=guests.filter(function(g){return g.mode==='seated'&&!g.leftAngry&&!g.visit&&g.sitT>6&&!inConv(g)&&STORY_LINES[g.ch]});
+  var tabs={};seated.forEach(function(g){(tabs[g.seat.table]=tabs[g.seat.table]||[]).push(g)});
+  var ks=Object.keys(tabs).filter(function(k){return tabs[k].length>=2});if(!ks.length)return false;
+  var t=tabs[pick(ks)].slice().sort(function(){return Math.random()-.5});
+  startConv(t[0],t[1]);return true;
 }
 var storyT=22;
 function tickStory(dt){
   storyT-=dt;if(storyT>0)return;storyT=14+Math.random()*16;
   if(state!=='tavern')return;
-  var seated=guests.filter(function(g){return g.mode==='seated'&&!g.leftAngry&&g.sitT>6&&STORY_LINES[g.ch]});if(!seated.length)return;
+  var seated=guests.filter(function(g){return g.mode==='seated'&&!g.leftAngry&&g.sitT>6&&STORY_LINES[g.ch]&&!inConv(g)});if(!seated.length)return;
   if(Math.random()<.2)tickZokiChat();
+  if(Math.random()<.6&&tryConv())return;      // those who sit together talk to each other
   var sr=seated.filter(function(o){return o.ch===2||o.ch===6}),g=(sr.length&&Math.random()<.5)?pick(sr):pick(seated),sl=STORY_LINES[g.ch],lines=(sl.any||[]).slice(),m=false;
+  // he knows who he sits with: lines for a certain table mate (withN), lines for any company (mates) or lines for sitting alone (alone)
+  var mates=guests.filter(function(o){return o!==g&&!o.visit&&(o.mode==='seated'||o.mode==='sitting')&&o.seat.table===g.seat.table});
   Object.keys(sl).forEach(function(k){if(k.indexOf('with')===0){var c=+k.slice(4);
-    if(guests.some(function(o){return o!==g&&o.ch===c&&o.mode==='seated'&&o.seat.table===g.seat.table})){lines=sl[k].slice();m=true}}});
+    if(mates.some(function(o){return o.ch===c})){lines=sl[k].slice();m=true}}});
+  if(!m){if(mates.length&&sl.mates)lines=lines.concat(sl.mates);if(!mates.length&&sl.alone)lines=lines.concat(sl.alone)}
   if(!m&&sl.far&&guests.some(function(o){return o.ch===(g.ch===2?6:2)&&o.mode==='seated'&&o.seat.table!==g.seat.table}))lines=lines.concat(sl.far);
   if(!m&&g.ch===8&&guests.some(function(o){return o.ch===7&&o.mode==='seated'}))lines=lines.concat(sl.with7);      // Mileva sighs when the blacksmith is somewhere in the room
   if(!lines.length)return;
@@ -822,7 +880,7 @@ function tickRemarks(dt){                             // now and then a guest sa
   if(opts.length)pick(opts)();
 }
 function tickMess(dt){
-  tickRemarks(dt);tickStory(dt);tickScenes(dt);
+  tickRemarks(dt);tickStory(dt);tickScenes(dt);tickConv(dt);
   try{if(window.CooksterAshtrays)window.CooksterAshtrays.tick(dt)}catch(e){}
   var seatedAt=[0,0,0],cl=cleanTables();
   guests.forEach(function(g){if(g.mode==='seated')seatedAt[g.seat.table]=(seatedAt[g.seat.table]||0)+1});
