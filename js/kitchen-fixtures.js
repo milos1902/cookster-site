@@ -7,13 +7,13 @@ if(window.CooksterKitchenFx)return;
 var W=1672,H=941;
 var N=15;                                                       // the drawer is drawn in (20 steps (frames of the animation: assets/drawers/<left|right>_<1..15>.webp, 0 = closed)
 var DR={
-  left:{x:380,y:585,p:0,idx:0,to:0,label:'leva fioka',x0:485,x1:825,dx0:-31,dx1:-6,dy:108,el:null,ims:[]},
-  right:{x:828,y:585,p:0,idx:0,to:0,label:'desna fioka',x0:835,x1:1170,dx0:-8,dx1:31,dy:118,el:null,ims:[]}
+  left:{x:380,y:585,p:0,idx:0,to:0,label:'leva fioka',x0:485,x1:825,dx0:-33,dx1:-6,dy:131,el:null,ims:[]},
+  right:{x:828,y:585,p:0,idx:0,to:0,label:'desna fioka',x0:835,x1:1170,dx0:-8,dx1:31,dy:124,el:null,ims:[]}
 };
 var GRILL={l:225,t:20,r:760,b:235},ZOOM_SRC='assets/grill_zoom.webp?v=1';
 var imgs={};
 function load(src){var im=imgs[src];if(!im){im=imgs[src]=new Image();im.src=src}return im}
-Object.keys(DR).forEach(function(k){for(var i=1;i<=N;i++)DR[k].ims[i]=load('assets/drawers/'+k+'_'+i+'.webp?v=9')});
+Object.keys(DR).forEach(function(k){for(var i=1;i<=N;i++)DR[k].ims[i]=load('assets/drawers/'+k+'_'+i+'.webp?v=10')});
 // the open drawer is a small picture (a frame of the video, with its shadow on the floor) over the kitchen: above the occluders of the table, below all the things of the player
 function ensureEl(d){
   if(d.el&&d.el.isConnected)return true;
