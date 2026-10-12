@@ -1543,12 +1543,20 @@ function farMaskY(t){          // the y of the mask of a table (the table 1 has 
   if(my==null){var tb=TABLES[t];MASKS.forEach(function(m){if(pip(m.poly,tb.x,tb.y))my=Math.max(my==null?-1e9:my,m.y)})}
   return my==null?TABLES[t].y+90:my;
 }
+// the beam (post) next to the table 1: it is a part of the mask of the table 1 (so that who walks behind it is covered), but a guest who SITS beside it sits in front of it:
+// his picture is drawn over the beam (the same entry as the hands, clipped to the beam too)
+var BEAM_T=0,BEAM=[[434,1],[505,1],[507,136],[522,406],[463,370],[456,365]];
 function drawHands(ctx,g){
   var P=HANDS[g.ch];if(!P)return;
   var key=chKey(g,'sedi_lice'),im=timgs[key]||imgs[key];if(!im)return;
   var sp=seatPos(g),ssc=scaleAt(sp.y)*SIT_K,w=(im.naturalWidth||im.width)*ssc,h=(im.naturalHeight||im.height)*ssc,x0=sp.x-w/2,y0=sp.y-h;
+  function add(pts){      // (all polygons the same way round, so that the overlapping ones add up in the clip instead of cutting holes)
+    var ar=0;pts.forEach(function(q,i){var r=pts[(i+1)%pts.length];ar+=q[0]*r[1]-r[0]*q[1]});
+    var o=ar<0?pts.slice().reverse():pts;o.forEach(function(q,i){if(i)ctx.lineTo(q[0],q[1]);else ctx.moveTo(q[0],q[1])});ctx.closePath();
+  }
   ctx.save();ctx.beginPath();
-  P.forEach(function(poly){poly.forEach(function(q,i){var X=x0+q[0]*w,Y=y0+q[1]*h;if(i)ctx.lineTo(X,Y);else ctx.moveTo(X,Y)});ctx.closePath()});
+  P.forEach(function(poly){add(poly.map(function(q){return[x0+q[0]*w,y0+q[1]*h]}))});
+  if(g.seat.table===BEAM_T)add(BEAM);
   ctx.clip();drawGuestBody(ctx,g);ctx.restore();
 }
 function guestSortY(g){
