@@ -275,3 +275,9 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Fioke: klik na levu ili desnu fioku (kad ne držiš ništa i nema predmeta preko) otvara / zatvara. Otvorena fioka je mali isečak slike (`assets/drawers/left_open.webp`, `right_open.webp`, sa providnom pozadinom, na `x,y` iz `js/kitchen-fixtures.js`) koji se crta preko pozadine; spojena pozadina se pravi jednom (canvas) i kešira, pa rade sva stanja šporeta i zaklanjanje stola. Leva fioka ima pregrade (za začine), desna je prazna. Stanje fioka se ne pamti posle osvežavanja.
 - Roštilj: klik na roštilj (`GRILL` zona) otvara sliku `assets/grill_zoom.webp` preko cele scene sa kratkom animacijom zuma; dugme „nazad u kuhinju" ili Esc zatvara.
 - Još nije urađeno: začini u fioci, vuča miša za otvaranje fioke (čeka frejmove animacije), zvuk fioke, pečenje na roštilju.
+
+### Fioke se vuku mišem (js/kitchen-fixtures.js)
+- Kad je miš iznad ručice fioke, tačka miša postaje mala ruka (`#cursor.fx-hand`); kad se klikne i drži, postaje šaka (`fx-grab`). Povlačenjem na dole fioka se otvara, na gore zatvara, koliko se povuče toliko je otvorena (`DR[k].p` 0..1). Običan klik na ručicu otvara do kraja / zatvara do kraja (kratka animacija).
+- Slike: 15 koraka po fioci, `assets/drawers/<left|right>_<1..15>.webp` (1-14 su frejmovi iz Higgsfield videa — Seedance 2.0 Mini, 4 s, 720p, start = zatvoreno, kraj = otvoreno; frejmovi izabrani po „stepenu otvorenosti"; 15 je originalna oštra slika). Korak 0 je zatvorena fioka na pozadini. Isečak je providan, preko iste pozadine; spojene slike se keširaju.
+- Senka fioke na podu se crta u kodu (`shade()`), jača što je fioka otvorenija.
+- Pozicija ručice po koraku je interpolacija između zatvorene i otvorene (`h0`,`h1`). Stanje fioka se ne pamti posle osvežavanja.
