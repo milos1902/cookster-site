@@ -580,11 +580,16 @@ function leaveAngry(g,text,delta){
   try{if(window.CooksterOrders&&window.CooksterOrders.cancelSeat)window.CooksterOrders.cancelSeat(g.seat.table+1,g.seat.id)}catch(e){}
   for(var i=deliveries.length-1;i>=0;i--)if(deliveries[i].seatId===g.seat.id)deliveries[i].seatId=-2;          // what is already on its way is still brought to the table (nobody eats it)
 }
+function stillWaiting(g){return !g.leftAngry&&(!g.ordered||(g.need||0)>0)}      // he has not ordered yet or has not got all that he ordered
 function checkPatience(g){
   if(g.leftAngry)return;
   var wait=g.ordered?(g.waitFoodSince!=null?clock-g.waitFoodSince:0):(g.sitT>g.orderDelay?g.sitT-g.orderDelay:0),lim=g.ordered?waitLimit(g)*g.patK:PAT_ORDER*g.patK;
   if(wait>lim*.6&&!g.warned&&wait>20){g.warned=true;g.an=null;startAnim(g,'doziv');gsay(g,pick(g.ordered?SAY.waitFood:SAY.waitOrder),0)}
-  if(wait>lim)leaveAngry(g,pick(g.ordered?SAY.leaveFood:SAY.leaveOrder),-4);
+  // too long a wait: the guest does NOT leave (he has to wait for his food); he only complains, and every complaint lowers the reputation (the first -4, then -2 every 45 s, at most 6 times)
+  if(wait>lim&&(g.nextCompl==null||clock>=g.nextCompl)&&(g.complaints||0)<6){
+    gsay(g,pick(g.ordered?SAY.waitFood:SAY.waitOrder),(g.complaints||0)?-2:-4);
+    g.complaints=(g.complaints||0)+1;g.nextCompl=clock+45;g.an=null;startAnim(g,'doziv');
+  }
 }
 function chKey(g,pose){return 'g'+(g.ch<10?'0':'')+g.ch+'_'+pose}
 function step(dt){
@@ -626,8 +631,9 @@ function step(dt){
       g.sitT+=dt;
       if(g.reorderAt&&g.sitT>g.reorderAt){g.reorderAt=0;g.ordered=false;g.orders=null;g.warned=false;g.orderDelay=g.sitT}      // a long company orders again
       if(GUESTS_ON)checkPatience(g);
-      if(g.grp){if(!g.grp.until)g.grp.until=clock+g.grp.sitFor;if(clock>g.grp.until){g.mode='rising';g.fade=0}}
-      else if(g.sitT>g.sitFor){g.mode='rising';g.fade=0}
+      // nobody gets up and leaves while he is still waiting for his food or drink (he may complain, see checkPatience, but he has to wait)
+      if(g.grp){if(!g.grp.until)g.grp.until=clock+g.grp.sitFor;if(clock>g.grp.until&&!guests.some(function(o){return o.grp===g.grp&&stillWaiting(o)})){g.mode='rising';g.fade=0}}
+      else if(g.sitT>g.sitFor&&!stillWaiting(g)){g.mode='rising';g.fade=0}
     }else if(g.mode==='rising'){
       g.fade=Math.min(1,g.fade+dt/.55);
       if(g.fade>=1){g.x=g.seat.ax;g.y=g.seat.ay;g.mode='out';g.path=findPath({x:g.x,y:g.y},DOOR);g.pi=1}
