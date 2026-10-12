@@ -44,7 +44,10 @@ css.textContent=`
 #menuBook .mb-leaf{transform-origin:left center;transform-style:preserve-3d;transition:transform .95s cubic-bezier(.5,.05,.25,1)}
 #menuBook .mb-leaf.turned{transform:rotateY(-180deg)}
 #menuBook .mb-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
-#menuBook .mb-back{transform:rotateY(180deg)}
+#menuBook .mb-face:not(.mb-cover){transform:translateX(-8%);-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 9%);mask-image:linear-gradient(90deg,transparent 0,#000 9%)}      /* the picture of a page has a ragged edge of about 5%: both pages are moved to the middle so that the paper of the left and of the right page touch at the fold */
+#menuBook .mb-back{transform:translateX(-8%) rotateY(180deg)!important}
+#menuBook .mb-fold{position:absolute;left:50%;top:1.5%;bottom:1.5%;width:9%;margin-left:-4.5%;pointer-events:none;z-index:60;opacity:0;transition:opacity .5s ease;background:linear-gradient(90deg,rgba(30,12,2,0) 0,rgba(30,12,2,.28) 38%,rgba(30,12,2,.55) 50%,rgba(30,12,2,.28) 62%,rgba(30,12,2,0) 100%)}
+#menuBook .mb-fold.on{opacity:1}
 #menuBook .mb-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;user-select:none}
 #menuBook .mb-cover .mb-bg{filter:drop-shadow(0 14px 22px rgba(0,0,0,.65))}
 #menuBook .mb-cover{cursor:pointer}
@@ -123,6 +126,7 @@ function buildBook(){
     const lf=el('div','mb-leaf');lf.appendChild(makeFace(L.front,'front'));lf.appendChild(makeFace(L.back,'back'));
     bookEl.appendChild(lf);leafEls.push(lf);
   });
+  const fold=el('div','mb-fold');bookEl.appendChild(fold);
   renderEntries();layout(true);
 }
 function layout(now){
@@ -130,6 +134,7 @@ function layout(now){
     const turned=i<t;lf.classList.toggle('turned',turned);
     if(now)lf.style.zIndex=turned?10+i:20-i;
   });
+  const fd=bookEl.querySelector('.mb-fold');if(fd)fd.classList.toggle('on',t>0);
   const bs=bookEl.querySelector('.mb-base');if(bs)bs.classList.toggle('closed',t===0);
   const pw=bookEl.offsetWidth/2;bookEl.style.transform='translateX('+(t===0?-pw/2:0)+'px)';
   navL.disabled=t<=0;navR.disabled=t>=LEAVES.length;
