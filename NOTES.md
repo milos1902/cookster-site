@@ -316,3 +316,10 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Učitavanje slika: tavern-scene.js loadImg sada učitava max 10 odjednom i ponovi do 4 puta ako slika ne stigne (inače gost/konobar ostane nevidljiv, vidi se samo senka); kuhinjski hod konobara (53 sličice) i frejmovi vrata se učitavaju lenjo uz ponovni pokušaj; ako sličica fali, koristi se stojeća.
 - Memorija ('Aw, Snap! Out of Memory'): keš ugrađenih/obojenih slika likova u tavern-scene.js (grCache) je ograničen na 240 (starija polovina se briše); kuhinjski hod konobara učitava svaku drugu sličicu (pola memorije).
 - Gosti NE odlaze dok ne dobiju poručeno (stillWaiting u tavern-scene.js): kad predugo čekaju, samo se žale (prvi put ugled -4, pa -2 na svakih 45 s, najviše 6 žalbi) i čekaju dalje; odlaze tek kad dobiju sve i istekne vreme sedenja.
+
+## Priča i imena likova (kafana)
+- Imena (`CH_NAME`, `CH_FULL` u tavern-scene.js): 1 Dragoslav, 2 baba Stana Jovanović, 3 Mića, 4 Stojan, 5 Ljubica, 6 deda Radovan Jovanović (Stana i Radovan su muž i žena), 7 kovač Mirko, 8 Mileva Jakšić (dama u crvenom), 9 gospodin Vukašin, 10 Smilja. Pozdrav gosta koristi njegovo ime.
+- Priča: svi muškarci kriomice vole Milevu, ali niko ne sme da joj priđe; Vukašin svima priča da je samo on njoj dorastao; Mileva je zaljubljena u kovača Mirka, a on priča samo o poslu; Stojan se hvali Nemačkom; Mića voli Smilju, a ona njega (za stolom sa Mićom se pravi nevešta, sa Ljubicom prizna).
+- `STORY_LINES` + `tickStory`: svakih ~24–50 s neki sedeći lik kaže repliku (ime: tekst), zavisno ko sedi za istim stolom (`withN`).
+- Oblačići: dugi tekst se lomi u više redova (do 250 px) i raste naviše; oblačići se više ne preklapaju (kasniji se gurne gore, `bubbleRects`).
+- Još nije urađeno: da Mileva uvek sedi sama, da Stana i Radovan dolaze zajedno, dnevni događaji priče.
