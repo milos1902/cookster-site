@@ -36,7 +36,7 @@ function makeOrder(key,woman){
   return o;
 }
 var TRIP_MS=3500;                                                      // how long the waiter needs from the tavern to the kitchen
-var FLOOR_Y=335,STOP_X=985,DOOR_X=985,DOOR_Y=150,CLIP_Y=235,PATH_S=.3,PATH_E=.66,SPEED=230,STAGE=120;                         // where he walks in the kitchen (scene pixels), how fast, the length of a step
+var FLOOR_Y=335,STOP_X=985,DOOR_X=985,DOOR_Y=150,CLIP_Y=235,PATH_S=.55,PATH_E=.66,SPEED=185,STAGE=120;                         // where he walks in the kitchen (scene pixels), how fast, the length of a step
 var pending=[],notes=[],anim=null,uid=0,imgs=[];
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify({pending:pending,notes:notes,uid:uid}))}catch(_){}}
@@ -85,6 +85,8 @@ document.head.appendChild(css);
 var cv=mk('canvas');cv.id='kitchenWaiter';cv.width=W;cv.height=H;scene.appendChild(cv);
 var X=cv.getContext('2d');
 for(var i=1;i<=3;i++){var im=new Image();im.src=WAITER+i+'.webp?v=4';imgs[i]=im}
+var W24D=[],W24U=[];for(var i=1;i<=23;i++){var a=new Image();a.src='assets/tavern/waiter/walkd24/f'+(i<10?'0':'')+i+'.webp?v=6';W24D[i]=a}
+for(var i=1;i<=30;i++){var a=new Image();a.src='assets/tavern/waiter/walku24/f'+(i<10?'0':'')+i+'.webp?v=6';W24U[i]=a}
 var imgD=[],imgU=[];for(var i=1;i<=3;i++){var a=new Image();a.src='assets/tavern/waiter/waiter_walkd'+i+'.webp';imgD[i]=a;var c=new Image();c.src='assets/tavern/waiter/waiter_walku'+i+'.webp';imgU[i]=c}
 var foodImg=new Image();foodImg.src='assets/tavern/waiter/waiter_foods2.webp?v=2';
 var drinkImg=new Image(),drinkOk=false;drinkImg.onload=function(){drinkOk=true};drinkImg.src='assets/tavern/waiter/waiter_drinks2.webp?v=2';
@@ -485,7 +487,10 @@ function speech(text,x,y){
 // his way: from the doors along the back wall to the left of the table (B), then down to the orange spot (C), so he never walks over the table
 var PATH_LEN=FLOOR_Y-DOOR_Y;   // he walks straight down from the doors and stops BEHIND the table (the table hides his legs)
 // p=0 at the doors, p=1 behind the table: he grows as he comes closer; 'd' = toward the viewer, 'u' = away
-function pathPos(p,dir){anim.x=DOOR_X;anim.y=DOOR_Y+PATH_LEN*p;anim.sc=PATH_S+(PATH_E-PATH_S)*p;anim.set=dir==='d'?imgD:imgU;anim.clip=CLIP_Y;anim.pdir=dir}
+function pathPos(p,dir){anim.x=DOOR_X;anim.y=DOOR_Y+PATH_LEN*p;
+  anim.sc=PATH_S+(PATH_E-PATH_S)*p;      // he starts small at the doors, grows by 20% to the table and shrinks back to that size on the way out
+  anim.wt=(anim.wt||0)+anim.dtw;anim.set=dir==='d'?W24D:W24U;anim.clip=CLIP_Y;anim.pdir=dir;
+  return 1+Math.floor((anim.wt%1)*(dir==='d'?23:30))}      // one whole walk (all the pictures of the step) takes one second
 function tick(now){
   if(!anim)return;
   var dt=Math.min(.05,(now-anim.last)/1000);anim.last=now;anim.t+=dt;
@@ -494,8 +499,8 @@ function tick(now){
   var alpha=1;
   if(anim.phase==='in'){
     // the doors swing open and he walks out of the dark toward the viewer to the orange spot (legs first, the head shows as he comes closer)
-    if(anim.t>.3){anim.p=Math.min(1,(anim.p||0)+SPEED*dt/PATH_LEN);frame=SEQ[Math.floor(anim.p*PATH_LEN/STAGE)%4];pathPos(anim.p,'d')}else{alpha=0;pathPos(0,'d')}
-    if((anim.p||0)>=1){anim.phase=anim.call?'listen':'wait';anim.t=0;anim.x=STOP_X;anim.y=FLOOR_Y;anim.set=imgD;anim.sc=PATH_E;anim.clip=CLIP_Y;frame=2}
+    if(anim.t>.3){anim.p=Math.min(1,(anim.p||0)+SPEED*dt/PATH_LEN);anim.dtw=dt;frame=pathPos(anim.p,'d')}else{alpha=0;anim.dtw=0;frame=pathPos(0,'d')}
+    if((anim.p||0)>=1){anim.phase=anim.call?'listen':'wait';anim.t=0;anim.x=STOP_X;anim.y=FLOOR_Y;anim.set=imgD;anim.sc=PATH_E;anim.clip=CLIP_Y;frame=2;anim.wt=0}
   }else if(anim.phase==='listen'){
     if(!anim.checked&&anim.t>.6){
       anim.checked=true;var tk=takeOrders();
@@ -519,7 +524,7 @@ function tick(now){
     if(!anim.outInit){anim.outInit=1;anim.p=1}
     if(!anim.opened&&anim.t>=.35){anim.opened=true;if(window.CooksterKitchenFx&&CooksterKitchenFx.swingDoors)CooksterKitchenFx.swingDoors()}   // he turns, and the doors open at the moment he starts to walk (like when he comes in)
     if(anim.t<.35){anim.set=imgU;frame=2;anim.sc=PATH_E;anim.clip=CLIP_Y}   // he turns his back and goes up again
-    else anim.p=Math.max(0,anim.p-SPEED*dt/PATH_LEN);if(anim.t>=.35)frame=SEQ[Math.floor(anim.p*PATH_LEN/STAGE)%4];pathPos(anim.p,'u');
+    else{anim.p=Math.max(0,anim.p-SPEED*dt/PATH_LEN);anim.dtw=dt;frame=pathPos(anim.p,'u')}
     if(anim.p<=0){
       if(!anim.call){pending.shift();save()}
       if(anim.carry&&window.CooksterTavern&&window.CooksterTavern.deliver)(anim.carry.all||[anim.carry]).forEach(function(d){window.CooksterTavern.deliver((d.table||anim.carry.table)-1,d.kind,d.ev,d.seatId,d.items||null,d.img||null)});

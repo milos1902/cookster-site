@@ -312,3 +312,4 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - IZMENA: konobar ide ravno dole od vrata i staje IZA stola (x=985, stopala y=335, razmera 0.45→0.62). Isečen je na y=235 (zadnja ivica stola), pa sto "sakriva" noge – bez ručne maske. Okrene leđa (waiter_walku2) pa ode nazad gore. Parametri: `FLOOR_Y, CLIP_Y, PATH_S, PATH_E`.
 - Odlazak: vrata se otvore PRVO (1.0 s animacija), konobar se okrene 0.6 s pa tek onda krene; `swingDoors(dur)`.
 - Konobar raste 0.3→0.66 dok prilazi stolu (i smanjuje se pri odlasku), brzina 230. Odlazak: okrene se 0.35 s, pa u trenutku kad krene otvore se vrata (isto kao pri ulasku, swingDoors()), on ide ka njima.
+- Hod konobara: koristi 24-frejmovne cikluse `walkd24`/`walku24` (ceo korak = 1 s), brzina 185. Veličina: kod vrata 0.55, raste 20% do 0.66 kod stola, pri odlasku se vraća na 0.55 (PATH_S, PATH_E). Okvir 'broken image' oko vrata ispravljen (img se sakriva sa display:none umesto uklanjanja src).
