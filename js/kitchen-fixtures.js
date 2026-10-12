@@ -71,7 +71,7 @@ var JARS=[
 var SLOTS=[{cx:540,b:680},{cx:612,b:680},{cx:686,b:680},{cx:759,b:680},{cx:525,b:751},{cx:604,b:751},{cx:683,b:751},{cx:762,b:751}];
 var slotJar=[];                                                  // slotJar[i] = id of the jar that stands in the compartment i (or null)
 for(var si=0;si<SLOTS.length;si++)slotJar[si]=null;
-JARS.forEach(function(j){j.im=load('assets/drawers/jar_'+j.id+'.webp?v=1');j.el=null;j.slot=-1;j.cx0=(j.box.l+j.box.r)/2;j.b0=j.box.b});
+JARS.forEach(function(j){j.im=load('assets/drawers/jar_'+j.id+'.webp?v=2');j.el=null;j.slot=-1;j.cx0=(j.box.l+j.box.r)/2;j.b0=j.box.b});
 (function(){var def=['paprika','tucana','biber','so','secer','lovor'];def.forEach(function(id,i){JARS.forEach(function(j){if(j.id===id){j.slot=i;slotJar[i]=id}})})})();
 var DRAWER_IN={l:462,t:603,r:818,b:756};                        // the inside of the open left drawer
 var jarClip=null;
