@@ -5901,7 +5901,7 @@ function tableDepthT(y){const b=tableSurfaceBounds();return Math.max(0,Math.min(
 function lerp(a,b,t){return a+(b-a)*t}
 function snapProfileFor(el){return SNAP_PROFILES[el?.dataset?.snapProfile]||null}
 function surfaceFlattenFor(el,zone,by){
- if(el?.dataset?.itemId==='kanta_set_zatvorena')return 1;      // the wicker basket is never squashed (not on the floor, not anywhere)
+ try{if(kitchenDefForId(el?.dataset?.itemId||'')?.noFlatten)return 1;}catch(_){}      // an item with noFlatten in the catalog (the wicker basket) is never squashed by the surface; its tilt is calibrated in the tool "предмети"
  const pr=snapProfileFor(el);
 
  // Table / board / stove keep their existing work-surface perspective.
@@ -8183,7 +8183,6 @@ function clampItemTilt(v){
  return Math.max(-60,Math.min(60,n));
 }
 function itemTiltValue(el,v){
- if(el?.dataset?.itemId==='kanta_set_zatvorena')return 0;       // the wicker basket stands as it is drawn: no tilt (no flattening) on the floor
  const n=Number.isFinite(+v)?+v:0;
  return el?.dataset?.calibrationCopy==='1'?n:clampItemTilt(n);
 }
