@@ -151,10 +151,11 @@ function hit(x,y){
   for(var k in DR){var d=DR[k],t=Math.min(1,gOf(d));
     if(inR(p,{l:d.x0+d.dx0*t,r:d.x1+d.dx1*t,t:603,b:680+d.dy*t+4}))return{kind:'drawer',key:k,label:d.label+(d.to?' — klik za zatvaranje':' — klik za otvaranje')}}
   if(inR(p,GRILL))return{kind:'grill',label:'roštilj — klik za zumiranje'};
-  if(inR(p,DOOR))return{kind:'door',label:'kafana — klik za ulazak'};
+  if(inR(p,DOOR)){try{if(!warmed&&window.CooksterTavern&&window.CooksterTavern.preload){warmed=true;window.CooksterTavern.preload()}}catch(e){}return{kind:'door',label:'kafana — klik za ulazak'}}      // the pictures of the tavern are fetched as soon as the mouse comes to the doors
   return null;
 }
 // ---------- the saloon doors (the way to the tavern): the camera zooms into them, the screen goes dark, and the tavern lights up ----------
+var warmed=false;
 var DOOR={l:795,t:5,r:1145,b:145};
 try{setTimeout(function(){var pv=document.createElement('video');pv.preload='auto';pv.muted=true;pv.src='assets/doors/dolazak.mp4?v=1'},4000)}catch(e){}      // the film of the doors is fetched in good time
 function zoomDoor(){
@@ -171,13 +172,17 @@ function zoomDoor(){
   vid.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .12s ease;transform-origin:50% 36.7%;will-change:transform';
   var vok=true;vid.onerror=function(){vok=false};vid.src='assets/doors/dolazak.mp4?v=1';
   vo.appendChild(vid);document.body.appendChild(vo);document.body.appendChild(dark);view={_busy:true,remove:function(){}};
-  var T=window.CooksterTavern,ZM=1100,HOLD=500;
+  var T=window.CooksterTavern,PLAY=950,ZM=380,HOLD=100;      // first the doors swing open (PLAY), then a sudden zoom through them (ZM), the tavern follows at once
+  try{if(T&&T.preload)T.preload()}catch(e){}                  // the pictures of the tavern are fetched while the film runs
   var after=function(){
     view=null;
+    // the tavern grows out of the middle of the black screen (as if the camera flew through the doors): from a small picture in the centre to the whole screen
     var room=document.getElementById('tavernScene');
-    if(room&&room.animate)room.animate([{transform:'translateY(-9%) scale(1.7)',transformOrigin:'50% 40%'},{transform:'none',transformOrigin:'50% 40%'}],{duration:1050,easing:'cubic-bezier(.16,.7,.2,1)'});
-    dark.style.transition='opacity .55s ease';dark.style.opacity='0';
-    setTimeout(function(){dark.remove()},650);
+    var rz=1;try{rz=parseInt(getComputedStyle(room).zIndex,10)||1}catch(e5){}
+    dark.style.zIndex=String(Math.max(0,rz-1));                  // the black stays behind the tavern, around the small picture
+    var DUR=800;
+    if(room&&room.animate)room.animate([{transform:'scale(.06)',opacity:.85,transformOrigin:'50% 42%'},{transform:'scale(1)',opacity:1,transformOrigin:'50% 42%'}],{duration:DUR,easing:'cubic-bezier(.5,0,.2,1)'});
+    setTimeout(function(){dark.remove()},DUR+60);
   };
   var go=function(){
     var started=false;
@@ -187,10 +192,10 @@ function zoomDoor(){
       if(vok)vid.style.opacity='1';
       var t0=performance.now();
       (function step(now){
-        var k=Math.min(1,(now-t0)/ZM);
-        if(vok)vid.style.transform='scale('+(1+6.5*Math.pow(k,2.2))+')';        // into the dark behind the doors
-        dark.style.opacity=vok?(k>.72?(k-.72)/.28:0):k;                           // (without the film the screen just goes dark)
-        if(k<1){requestAnimationFrame(step);return}
+        var el=now-t0,k=Math.max(0,Math.min(1,(el-PLAY)/ZM));
+        if(vok)vid.style.transform='scale('+(1+8*Math.pow(k,2.4))+')';        // a sudden zoom into the dark behind the open doors
+        dark.style.opacity=vok?(k>.6?(k-.6)/.4:0):Math.min(1,el/(PLAY*.5));       // (without the film the screen just goes dark)
+        if(el<PLAY+ZM){requestAnimationFrame(step);return}
         dark.style.opacity='1';
         setTimeout(function(){try{vid.pause()}catch(e4){}vo.remove();Promise.resolve(T&&T.open?T.open({instant:true}):false).then(after,after)},HOLD);      // half a second of black
       })(t0);

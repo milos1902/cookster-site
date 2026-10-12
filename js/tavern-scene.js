@@ -1723,7 +1723,7 @@ function onKey(e){
 }
 window.addEventListener('keydown',onKey,true);window.addEventListener('keyup',onKey,true);window.addEventListener('keypress',onKey,true);
 
-window.CooksterTavern={
+window.CooksterTavern={preload:function(){return preload()},
   say:gsay,guestsList:function(){return guests},scaleAt:scaleAt,clockNow:function(){return clock},  tableReport:tableReport,waiterSize:{get:function(){return WSIZE},set:function(d){WSIZE=d;try{localStorage.setItem(WSIZE_KEY,JSON.stringify(d))}catch(e){}},scaleAt:wScale},open:open,close:close,spawn:spawn,spawnCompany:spawnCompany,companyOk:companyOk,companyTable:function(){return COMPANY.table},
   deliver:function(table,kind,ev,seatId,items,img){deliveries.push({table:table,kind:kind||'plain',ev:ev||null,seatId:seatId==null?-1:seatId,items:items||null,img:img||null})},
   reactions:function(){return reactions.slice()},serveSpot:serveSpot,dirtyDishAt:dirtyDishAt,
