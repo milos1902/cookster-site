@@ -2398,6 +2398,10 @@ buttonSoundTarget.dataset.soundActions='click,hover';
 const firewoodSoundTarget=makeSoundTarget('__firewood_insert','Cepanica — ubacivanje u šporet','insert');
 const bookSoundTarget=makeSoundTarget('__recipe_book','Bakina knjiga — otvaranje/zatvaranje','');
 bookSoundTarget.dataset.soundActions='open,close,pageTurn';
+const drawerLeftSoundTarget=makeSoundTarget('__drawer_left','Leva fioka stola — otvaranje/zatvaranje','');
+drawerLeftSoundTarget.dataset.soundActions='open,close';
+const drawerRightSoundTarget=makeSoundTarget('__drawer_right','Desna fioka stola — otvaranje/zatvaranje','');
+drawerRightSoundTarget.dataset.soundActions='open,close';
 const faucetSoundTarget=makeSoundTarget('__faucet','Česma — voda','water');
 const peelSoundTarget=makeSoundTarget('__peel_button','Dugme „Očisti luk“ — čišćenje','peel');
 peelSoundTarget.dataset.soundActions='peel';
@@ -2811,7 +2815,7 @@ function ssSceneItems(){
   for(const [key,def] of Object.entries(VEGETABLES))produce.push(produceSoundTarget(false,key,def.label));
   for(const [key,def] of Object.entries(CooksterCatalog.FRUITS||{}))produce.push(produceSoundTarget(true,key,def.label));
  }catch(_){}
- return [buttonSoundTarget,firewoodSoundTarget,bookSoundTarget,faucetSoundTarget,peelSoundTarget,doorSoundTarget,doorGuestSoundTarget,spongeSoundTarget,orderNoteSoundTarget,waiterServeSoundTarget,tavernAmbientTarget,kitchenAmbientTarget,...items,...catalogProps,...hotspots,...produce];
+ return [buttonSoundTarget,firewoodSoundTarget,bookSoundTarget,drawerLeftSoundTarget,drawerRightSoundTarget,faucetSoundTarget,peelSoundTarget,doorSoundTarget,doorGuestSoundTarget,spongeSoundTarget,orderNoteSoundTarget,waiterServeSoundTarget,tavernAmbientTarget,kitchenAmbientTarget,...items,...catalogProps,...hotspots,...produce];
 }
 const ssCatalogTargets={};
 
