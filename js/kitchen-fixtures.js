@@ -1,19 +1,19 @@
 /* Cookster — the fixtures of the kitchen picture that can be clicked: the two drawers of the table (click = the drawer opens / closes in 0.3 s) and the stone grill (click = zoom).
    The kitchen picture itself does not change: an open drawer is a small cut-out picture (a frame of the Higgsfield video, with its shadow on the floor; assets/drawers/*.webp)
-   that is shown over it, 15 steps from closed to open. */
+   that is shown over it, (20 steps from closed to open. */
 (function(){
 'use strict';
 if(window.CooksterKitchenFx)return;
 var W=1672,H=941;
-var N=15;                                                       // the drawer is drawn in 15 steps (frames of the animation: assets/drawers/<left|right>_<1..15>.webp, 0 = closed)
+var N=15;                                                       // the drawer is drawn in (20 steps (frames of the animation: assets/drawers/<left|right>_<1..15>.webp, 0 = closed)
 var DR={
-  left:{x:405,y:588,p:0,idx:0,to:0,label:'leva fioka',x0:485,x1:825,dx0:-31,dx1:-6,dy:93,el:null,ims:[]},
-  right:{x:818,y:599,p:0,idx:0,to:0,label:'desna fioka',x0:835,x1:1170,dx0:-8,dx1:31,dy:118,el:null,ims:[]}
+  left:{x:380,y:585,p:0,idx:0,to:0,label:'leva fioka',x0:485,x1:825,dx0:-31,dx1:-6,dy:108,el:null,ims:[]},
+  right:{x:828,y:585,p:0,idx:0,to:0,label:'desna fioka',x0:835,x1:1170,dx0:-8,dx1:31,dy:118,el:null,ims:[]}
 };
 var GRILL={l:225,t:20,r:760,b:235},ZOOM_SRC='assets/grill_zoom.webp?v=1';
 var imgs={};
 function load(src){var im=imgs[src];if(!im){im=imgs[src]=new Image();im.src=src}return im}
-Object.keys(DR).forEach(function(k){for(var i=1;i<=N;i++)DR[k].ims[i]=load('assets/drawers/'+k+'_'+i+'.webp?v=5')});
+Object.keys(DR).forEach(function(k){for(var i=1;i<=N;i++)DR[k].ims[i]=load('assets/drawers/'+k+'_'+i+'.webp?v=9')});
 // the open drawer is a small picture (a frame of the video, with its shadow on the floor) over the kitchen: above the occluders of the table, below all the things of the player
 function ensureEl(d){
   if(d.el&&d.el.isConnected)return true;
@@ -22,8 +22,22 @@ function ensureEl(d){
   d.el.style.cssText='position:absolute;z-index:26;pointer-events:none;display:none;left:'+d.x+'px;top:'+d.y+'px';
   sc.appendChild(d.el);return true;
 }
+// the shadow of a pulled-out drawer on the floor below it (the light comes from the window on the left, so it falls a little to the right); drawn in a canvas under the drawer
+var shc=null;
+function shadows(){
+  var sc=document.getElementById('scene');if(!sc)return;
+  if(!shc||!shc.isConnected){shc=document.createElement('canvas');shc.width=W;shc.height=H;shc.style.cssText='position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;z-index:25;pointer-events:none';sc.appendChild(shc)}
+  var g=shc.getContext('2d');g.clearRect(0,0,W,H);
+  Object.keys(DR).forEach(function(k){
+    var d=DR[k];if(!d.idx)return;var t=d.idx/N,yb=680+d.dy*t,x0=d.x0+d.dx0*t,x1=d.x1+d.dx1*t;
+    g.save();g.beginPath();g.rect(0,yb-1,W,70);g.clip();
+    g.filter='blur(8px)';g.fillStyle='rgba(38,18,6,'+(0.52*Math.pow(t,.6)).toFixed(3)+')';
+    g.beginPath();g.ellipse((x0+x1)/2+22,yb+9,(x1-x0)/2+2,19,0,0,Math.PI*2);g.fill();g.restore();
+  });
+}
 function paint(k){
   var d=DR[k];if(!ensureEl(d))return;
+  shadows();
   if(!d.idx){d.el.style.display='none';return}
   d.el.src=d.ims[d.idx].src;d.el.style.display='block';
 }
