@@ -155,29 +155,47 @@ function hit(x,y){
 }
 // ---------- the grill: the camera comes close ----------
 var view=null;
+// the camera zooms in on the grill (frames of a Higgsfield video: assets/grillzoom/z_1..25.webp, from the whole kitchen to the grill) in about half a second,
+// then the picture of the grill (the same one) takes over; the zoom out is the same frames the other way round
+var ZN=25,ZMS=520,FADE=140,zimgs=[];
+for(var zi=1;zi<=ZN;zi++){zimgs[zi]=new Image();zimgs[zi].src='assets/grillzoom/z_'+zi+'.webp?v=1'}
+var zoomImg=new Image();zoomImg.src=ZOOM_SRC;
+function zoomReady(){for(var i=1;i<=ZN;i++)if(!zimgs[i].complete||!zimgs[i].naturalWidth)return false;return zoomImg.complete}
+function animateZoom(v,back,done){
+  var fr=v.querySelector('.gz-frame'),gi=v.querySelector('.gz-grill'),t0=performance.now(),total=ZMS+FADE;
+  (function step(now){
+    var e=Math.min(total,now-t0),u=back?total-e:e;
+    // forward: frames for 0..ZMS, then the grill picture fades in over them; backward: the reverse
+    var f=Math.max(0,Math.min(1,u/ZMS)),idx=1+Math.round(f*(ZN-1));
+    fr.src=zimgs[idx].src;
+    var g=u<=ZMS?0:Math.min(1,(u-ZMS)/FADE);gi.style.opacity=g;
+    if(e<total)requestAnimationFrame(step);else done();
+  })(t0);
+}
 function zoomGrill(){
   if(view)return;
   var sc=document.getElementById('scene');if(!sc)return;
   var v=document.createElement('div');v.id='grillZoom';v.setAttribute('data-tool-ui','1');
   v.style.cssText='position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;z-index:30000;overflow:hidden;background:#1a0d05;cursor:default';
-  var im=document.createElement('img');im.src=ZOOM_SRC;im.draggable=false;
-  im.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none';
+  var css='position:absolute;left:0;top:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none';
+  var fr=document.createElement('img');fr.className='gz-frame';fr.draggable=false;fr.style.cssText=css;fr.src=zimgs[1].src;
+  var gi=document.createElement('img');gi.className='gz-grill';gi.draggable=false;gi.style.cssText=css+';opacity:0';gi.src=ZOOM_SRC;
   var back=document.createElement('button');back.type='button';back.textContent='← nazad u kuhinju';
-  back.style.cssText='position:absolute;right:24px;top:72px;padding:10px 18px;font:700 16px system-ui,sans-serif;color:#fff;background:rgba(44,20,8,.92);border:2px solid #f1af33;border-radius:10px;cursor:pointer';
-  v.appendChild(im);v.appendChild(back);sc.appendChild(v);view=v;
-  var from=[(GRILL.l+GRILL.r)/2-W/2,(GRILL.t+GRILL.b)/2-H/2];            // the picture starts small over the grill and grows to the whole screen
-  if(v.animate)im.animate([{transform:'translate('+from[0]+'px,'+from[1]+'px) scale(.4)',opacity:.0},{opacity:1,offset:.35},{transform:'none',opacity:1}],{duration:650,easing:'cubic-bezier(.22,.72,.22,1)',fill:'both'});
+  back.style.cssText='position:absolute;right:24px;top:72px;padding:10px 18px;font:700 16px system-ui,sans-serif;color:#fff;background:rgba(44,20,8,.92);border:2px solid #f1af33;border-radius:10px;cursor:pointer;opacity:0;transition:opacity .2s';
+  v.appendChild(fr);v.appendChild(gi);v.appendChild(back);sc.appendChild(v);view=v;
   ['pointerdown','pointerup','mousedown','mouseup','click','dblclick','contextmenu','wheel'].forEach(function(n){v.addEventListener(n,function(e){e.stopPropagation()})});
   back.addEventListener('click',closeGrill);
+  v.addEventListener('click',function(){closeGrill()});                 // a click anywhere on the zoomed picture zooms out
   addEventListener('keydown',onKey,true);
+  v._busy=true;
+  var go=function(){animateZoom(v,false,function(){v._busy=false;back.style.opacity='1'})};
+  if(zoomReady())go();else{gi.style.opacity='1';fr.style.display='none';v._busy=false;back.style.opacity='1'}   // the frames are not loaded yet: just the picture
 }
 function onKey(e){if(e.key==='Escape'){e.stopPropagation();closeGrill()}}
 function closeGrill(){
-  if(!view)return;var v=view;view=null;removeEventListener('keydown',onKey,true);
-  var im=v.querySelector('img'),from=[(GRILL.l+GRILL.r)/2-W/2,(GRILL.t+GRILL.b)/2-H/2];
-  var done=function(){v.remove()};
-  if(im&&im.animate){var a=im.animate([{transform:'none',opacity:1},{opacity:.0,offset:.8},{transform:'translate('+from[0]+'px,'+from[1]+'px) scale(.4)',opacity:0}],{duration:450,easing:'ease-in',fill:'both'});a.onfinish=done}else done();
-  var bb=v.querySelector('button');if(bb)bb.style.display='none';
+  if(!view||view._busy)return;var v=view;view=null;removeEventListener('keydown',onKey,true);
+  var bb=v.querySelector('button');if(bb)bb.style.opacity='0';
+  if(zoomReady()&&v.querySelector('.gz-frame').style.display!=='none'){v._busy=true;animateZoom(v,true,function(){v.remove()})}else v.remove();
 }
 function click(h){
   if(!h)return false;
