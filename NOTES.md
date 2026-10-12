@@ -1,5 +1,7 @@
 # Cookster – beleške za rad (čitaj prvo)
 
+> **Za novi chat: pročitaj prvo `HANDOFF.md`** (kratak pregled šta je urađeno, pravila rada sa Milošem i šta je otvoreno). Ovaj fajl su detalji po funkcijama.
+
 Vlasnik: Miloš. Govori srpski, nov je na GitHub-u. **Odgovaraj na srpskom, jednostavnim jezikom** i objasni korake kad treba nešto da uradi.
 
 ## Projekat
