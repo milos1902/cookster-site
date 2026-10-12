@@ -36,7 +36,7 @@ function makeOrder(key,woman){
   return o;
 }
 var TRIP_MS=3500;                                                      // how long the waiter needs from the tavern to the kitchen
-var FLOOR_Y=335,STOP_X=985,DOOR_X=985,DOOR_Y=150,CLIP_Y=235,PATH_E=.66,SPEED=185,STAGE=120;                         // where he walks in the kitchen (scene pixels), how fast, the length of a step
+var FLOOR_Y=335,STOP_X=985,DOOR_X=985,DOOR_Y=150,CLIP_Y=235,PATH_S=.55,PATH_E=.66,SPEED=185,STAGE=120;                         // where he walks in the kitchen (scene pixels), how fast, the length of a step
 var pending=[],notes=[],anim=null,uid=0,imgs=[];
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify({pending:pending,notes:notes,uid:uid}))}catch(_){}}
@@ -488,7 +488,7 @@ function speech(text,x,y){
 var PATH_LEN=FLOOR_Y-DOOR_Y;   // he walks straight down from the doors and stops BEHIND the table (the table hides his legs)
 // p=0 at the doors, p=1 behind the table: he grows as he comes closer; 'd' = toward the viewer, 'u' = away
 function pathPos(p,dir){anim.x=DOOR_X;anim.y=DOOR_Y+PATH_LEN*p;
-  anim.sc=dir==='d'?PATH_E/1.1+(PATH_E-PATH_E/1.1)*p:PATH_E*(.8+.2*p);      // coming in he grows by about 10%, going out he shrinks by 20%
+  anim.sc=PATH_S+(PATH_E-PATH_S)*p;      // he starts small at the doors, grows by 20% to the table and shrinks back to that size on the way out
   anim.wt=(anim.wt||0)+anim.dtw;anim.set=dir==='d'?W24D:W24U;anim.clip=CLIP_Y;anim.pdir=dir;
   return 1+Math.floor((anim.wt%1)*(dir==='d'?23:30))}      // one whole walk (all the pictures of the step) takes one second
 function tick(now){
