@@ -24,6 +24,7 @@
     const front=ellipse(cx,cy,rx,ry,10,0,Math.PI);          // right -> bottom -> left (the front rim line)
     const mask=front.concat([[Math.max(0,cx-rx*1.02),Math.min(wallBottom,cy+ry+(wallBottom-cy-ry)*.5)],[Math.max(0,cx-rx*.7),wallBottom],[Math.min(100,cx+rx*.7),wallBottom],[Math.min(100,cx+rx*1.02),Math.min(wallBottom,cy+ry+(wallBottom-cy-ry)*.5)]]);
     return {
+      guess:true,
       mask:mask.map(p=>[+p[0].toFixed(2),+p[1].toFixed(2)]),
       foodVisible:upper.concat(lower.slice().reverse().map(p=>[p[0],p[1]])).map(p=>[+p[0].toFixed(2),+p[1].toFixed(2)]),
       bottom:ellipse(cx,cy+ry*.15,rx*.6,ry*.5,12),
@@ -156,8 +157,20 @@
     const id=typeof vesselOrId==='string'
       ?vesselOrId
       :(vesselOrId?.dataset?.itemId||'');
-    return PROFILES[id]||null;
+    const pr=PROFILES[id]||null;
+    // a vessel whose profile is only a guess, but which Miloš calibrated in the tool "Maska hrane u posudi" (js/data/vessel-food-zones.js, loaded later: it is read here, when it is needed),
+    // uses his area of the food: otherwise the pieces of the hand cut (js/piece-sim.js) are crowded into a small guessed ellipse and look tiny and dark
+    if(pr&&pr.guess){
+      const z=window.__COOKSTER_VESSEL_FOOD_ZONES__&&window.__COOKSTER_VESSEL_FOOD_ZONES__[id];
+      if(z&&Array.isArray(z.foodVisible)&&z.foodVisible.length>=3&&z.depth&&z.depth.bottom&&z.depth.foodTop){
+        const c=zoneCache[id];if(c&&c.z===z)return c.p;
+        const p={mask:pr.mask,foodVisible:z.foodVisible,bottom:Array.isArray(z.bottom)&&z.bottom.length>=3?z.bottom:pr.bottom,depth:{bottom:z.depth.bottom,foodTop:z.depth.foodTop}};
+        zoneCache[id]={z,p};return p;
+      }
+    }
+    return pr;
   }
+  const zoneCache={};
   function applyToVessel(vessel,wrap,front,preset){
     const profile=get(vessel);
     if(!profile||!vessel)return false;
