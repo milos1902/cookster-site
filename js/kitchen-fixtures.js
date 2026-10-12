@@ -186,8 +186,46 @@ function animateZoom(v,back,done){
     if(e<total)requestAnimationFrame(step);else done();
   })(t0);
 }
+// ---------- the other way (for trying: add ?zoom=live to the address): the live scene itself is zoomed toward the grill, with everything that stands on the table, then the picture of the grill takes over ----------
+var LIVE=/[?&]zoom=live/.test(location.search);
+function liveParams(){
+  var sc=scale||1,tx0=offsetX-cameraX*sc,ty0=offsetY,K=2.52,G={x:492,y:125},T={x:870,y:470};
+  var p0={x:tx0+G.x*sc,y:ty0+G.y*sc},p1={x:tx0+T.x*sc,y:ty0+T.y*sc},S1=sc*K;
+  return{sc:sc,tx0:tx0,ty0:ty0,G:G,p0:p0,p1:p1,S1:S1};
+}
+function setLive(P,u){
+  var S=P.sc*Math.pow(P.S1/P.sc,u),w=(S-P.sc)/(P.S1-P.sc),px=P.p0.x+(P.p1.x-P.p0.x)*w,py=P.p0.y+(P.p1.y-P.p0.y)*w;
+  var sc=document.getElementById('scene');sc.style.transform='translate('+(px-P.G.x*S)+'px,'+(py-P.G.y*S)+'px) scale('+S+')';
+}
+function runLive(v,back,done){
+  var P=v._P,gi=v.querySelector('.gz-grill'),ZM=back?ZMS:ZIN,total=ZM+FADE,t0=performance.now();
+  (function step(now){
+    var e=Math.max(0,Math.min(total,now-t0)),u,g;
+    if(!back){var t=Math.min(1,e/ZM);u=t*t;g=e>ZM?(e-ZM)/FADE:0}else{var t2=Math.max(0,Math.min(1,(e-FADE)/ZM));u=1-t2*t2;g=e<FADE?1-e/FADE:0}
+    setLive(P,u);gi.style.opacity=Math.max(0,Math.min(1,g));
+    if(e<total)requestAnimationFrame(step);else done();
+  })(t0);
+}
+function zoomLive(){
+  var P=liveParams(),v=document.createElement('div');v.id='grillZoom';v.setAttribute('data-tool-ui','1');v._live=true;v._P=P;
+  v.style.cssText='position:fixed;left:'+P.tx0+'px;top:'+P.ty0+'px;width:'+(W*P.sc)+'px;height:'+(H*P.sc)+'px;z-index:30000;overflow:hidden;cursor:default';
+  var gi=document.createElement('img');gi.className='gz-grill';gi.draggable=false;gi.src=ZOOM_SRC;gi.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;display:block';
+  var back=document.createElement('button');back.type='button';back.textContent='← nazad u kuhinju';
+  back.style.cssText='position:absolute;right:24px;top:72px;padding:10px 18px;font:700 16px system-ui,sans-serif;color:#fff;background:rgba(44,20,8,.92);border:2px solid #f1af33;border-radius:10px;cursor:pointer;opacity:0;transition:opacity .2s';
+  v.appendChild(gi);v.appendChild(back);document.body.appendChild(v);view=v;
+  ['pointerdown','pointerup','mousedown','mouseup','click','dblclick','contextmenu','wheel'].forEach(function(n){v.addEventListener(n,function(e){e.stopPropagation()})});
+  back.addEventListener('click',closeGrill);v.addEventListener('click',function(){closeGrill()});
+  addEventListener('keydown',onKey,true);v._busy=true;
+  runLive(v,false,function(){v._busy=false;back.style.opacity='1'});
+}
+function closeLive(){
+  var v=view;if(!v||v._busy)return;view=null;removeEventListener('keydown',onKey,true);
+  var bb=v.querySelector('button');if(bb)bb.style.opacity='0';v._busy=true;
+  runLive(v,true,function(){v.remove();try{applyCamera()}catch(e){}});
+}
 function zoomGrill(){
   if(view)return;
+  if(LIVE){zoomLive();return}
   var sc=document.getElementById('scene');if(!sc)return;
   var v=document.createElement('div');v.id='grillZoom';v.setAttribute('data-tool-ui','1');
   v.style.cssText='position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;z-index:30000;overflow:hidden;cursor:default';
@@ -208,6 +246,7 @@ function zoomGrill(){
 }
 function onKey(e){if(e.key==='Escape'){e.stopPropagation();closeGrill()}}
 function closeGrill(){
+  if(view&&view._live){closeLive();return}
   if(!view||view._busy)return;var v=view;view=null;removeEventListener('keydown',onKey,true);
   var bb=v.querySelector('button');if(bb)bb.style.opacity='0';
   if(zoomReady()&&v.querySelector('.gz-frame').style.display!=='none'){v._busy=true;animateZoom(v,true,function(){v.remove()})}else v.remove();
