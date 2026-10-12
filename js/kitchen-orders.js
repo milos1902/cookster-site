@@ -517,9 +517,9 @@ function tick(now){
     if(anim.t>.9){anim.phase='out';anim.t=0}
   }else if(anim.phase==='out'){
     if(!anim.outInit){anim.outInit=1;anim.p=1}
-    if(anim.t<.35){anim.set=imgU;frame=2;anim.sc=PATH_E;anim.clip=CLIP_Y}   // he turns his back and goes up again
-    else anim.p=Math.max(0,anim.p-SPEED*dt/PATH_LEN);if(anim.t>=.35)frame=SEQ[Math.floor(anim.p*PATH_LEN/STAGE)%4];pathPos(anim.p,'u');
-    if(!anim.opened&&anim.p<.3){anim.opened=true;if(window.CooksterKitchenFx&&CooksterKitchenFx.swingDoors)CooksterKitchenFx.swingDoors()}
+    if(!anim.opened){anim.opened=true;if(window.CooksterKitchenFx&&CooksterKitchenFx.swingDoors)CooksterKitchenFx.swingDoors(1000)}   // the doors open first,
+    if(anim.t<.6){anim.set=imgU;frame=2;anim.sc=PATH_E;anim.clip=CLIP_Y}   // he turns his back and goes up again
+    else anim.p=Math.max(0,anim.p-SPEED*dt/PATH_LEN);if(anim.t>=.6)frame=SEQ[Math.floor(anim.p*PATH_LEN/STAGE)%4];pathPos(anim.p,'u');
     if(anim.p<=0){
       if(!anim.call){pending.shift();save()}
       if(anim.carry&&window.CooksterTavern&&window.CooksterTavern.deliver)(anim.carry.all||[anim.carry]).forEach(function(d){window.CooksterTavern.deliver((d.table||anim.carry.table)-1,d.kind,d.ev,d.seatId,d.items||null,d.img||null)});
