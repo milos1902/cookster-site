@@ -151,7 +151,40 @@ function hit(x,y){
   for(var k in DR){var d=DR[k],t=Math.min(1,gOf(d));
     if(inR(p,{l:d.x0+d.dx0*t,r:d.x1+d.dx1*t,t:603,b:680+d.dy*t+4}))return{kind:'drawer',key:k,label:d.label+(d.to?' — klik za zatvaranje':' — klik za otvaranje')}}
   if(inR(p,GRILL))return{kind:'grill',label:'roštilj — klik za zumiranje'};
+  if(inR(p,DOOR))return{kind:'door',label:'kafana — klik za ulazak'};
   return null;
+}
+// ---------- the saloon doors (the way to the tavern): the camera zooms into them, the screen goes dark, and the tavern lights up ----------
+var DOOR={l:795,t:5,r:1145,b:145};
+function zoomDoor(){
+  if(view||(window.CooksterTavern&&(window.CooksterTavern.busy||window.CooksterTavern.isOpen)))return;
+  try{if(typeof holding!=='undefined'&&holding){showToast('Prvo spusti predmet iz ruke.');return}}catch(e){}
+  var scn=document.getElementById('scene');if(!scn)return;
+  var sc=scale||1,tx0=offsetX-cameraX*sc,ty0=offsetY,K=2.4,G={x:970,y:75},T={x:W/2,y:H/2-40};
+  var p0={x:tx0+G.x*sc,y:ty0+G.y*sc},p1={x:innerWidth/2,y:innerHeight/2-40*sc},S1=sc*K;
+  var dark=document.createElement('div');dark.setAttribute('data-tool-ui','1');
+  dark.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;z-index:30000;background:#0b0502;opacity:0;pointer-events:all';
+  ['pointerdown','pointerup','mousedown','mouseup','click','dblclick','contextmenu','wheel'].forEach(function(n){dark.addEventListener(n,function(e){e.stopPropagation()})});
+  document.body.appendChild(dark);view={_busy:true,remove:function(){}};
+  scn.style.transition='none';scn.style.willChange='transform';
+  var ZM=ZIN,DK=170,t0=performance.now();
+  (function step(now){
+    var e=Math.max(0,Math.min(ZM+DK,now-t0)),t=Math.min(1,e/ZM),S=sc*Math.pow(S1/sc,t*t),w=(S-sc)/(S1-sc),px=p0.x+(p1.x-p0.x)*w,py=p0.y+(p1.y-p0.y)*w;
+    scn.style.transform='translate('+(px-G.x*S)+'px,'+(py-G.y*S)+'px) scale('+S+')';
+    dark.style.opacity=e<=ZM*.6?0:Math.min(1,(e-ZM*.6)/(ZM*.4+DK));       // goes dark while the camera arrives at the doors
+    if(e<ZM+DK){requestAnimationFrame(step);return}
+    var T=window.CooksterTavern;
+    var after=function(){
+      try{applyCamera()}catch(e2){}scn.style.willChange='';requestAnimationFrame(function(){scn.style.transition=''});
+      view=null;
+      // the tavern lights up and the camera flies out: like a drone that has gone through the doors, it pulls back and rises (the picture grows smaller and moves down)
+      var room=document.getElementById('tavernScene');
+      if(room&&room.animate)room.animate([{transform:'translateY(-9%) scale(1.7)',transformOrigin:'50% 40%'},{transform:'none',transformOrigin:'50% 40%'}],{duration:1050,easing:'cubic-bezier(.16,.7,.2,1)'});
+      dark.style.transition='opacity .55s ease';dark.style.opacity='0';
+      setTimeout(function(){dark.remove()},650);
+    };
+    Promise.resolve(T&&T.open?T.open({instant:true}):false).then(after,after);
+  })(t0);
 }
 // ---------- the grill: the camera comes close ----------
 var view=null;
@@ -263,7 +296,7 @@ function closeGrill(){
 }
 function click(h){
   if(!h)return false;
-  if(h.kind==='drawer')toggle(h.key);else if(h.kind==='grill')zoomGrill();else if(h.kind==='jar'){for(var i=0;i<JARS.length;i++)if(JARS[i].id===h.id)takeJar(JARS[i])}
+  if(h.kind==='drawer')toggle(h.key);else if(h.kind==='grill')zoomGrill();else if(h.kind==='door')zoomDoor();else if(h.kind==='jar'){for(var i=0;i<JARS.length;i++)if(JARS[i].id===h.id)takeJar(JARS[i])}
   return true;
 }
 function liveAt(u){                                              // (for testing) the live zoom frozen at the zoom u (0..1)
