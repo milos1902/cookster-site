@@ -269,3 +269,9 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Napravljena su tako što je nova slika uzeta kao osnova, a samo mesto gde se stanje šporeta razlikuje (prozorčić ložišta, vratanca ložišta, rerna) je preuzeto iz starih slika (`assets/stove_states/`, stara slika se poklapa sa novom na piksel). Vratanca ložišta (`firebox_door_*.png`) ostaju iz stare fascikle.
 - Mesta kuhinjskih stvari (začini, šiljak, kanta…) nisu menjana; neka su sada ispred roštilja umesto ispred stare police.
 - Stari prozor/peć i polica više ne postoje u pozadini, pa više nema starog ložišta levo.
+
+### Nova oštrija slika kuhinje, fioke stola, zum na roštilj (js/kitchen-fixtures.js)
+- Pozadina kuhinje je nova oštrija slika sa stolom koji ima dve fioke (zatvorene). Stanja šporeta su ponovo napravljena na njoj: `assets/stove_states_v3/*.webp` (stara `assets/stove_states/` služi samo za vratanca ložišta i kao izvor za izradu).
+- Fioke: klik na levu ili desnu fioku (kad ne držiš ništa i nema predmeta preko) otvara / zatvara. Otvorena fioka je mali isečak slike (`assets/drawers/left_open.webp`, `right_open.webp`, sa providnom pozadinom, na `x,y` iz `js/kitchen-fixtures.js`) koji se crta preko pozadine; spojena pozadina se pravi jednom (canvas) i kešira, pa rade sva stanja šporeta i zaklanjanje stola. Leva fioka ima pregrade (za začine), desna je prazna. Stanje fioka se ne pamti posle osvežavanja.
+- Roštilj: klik na roštilj (`GRILL` zona) otvara sliku `assets/grill_zoom.webp` preko cele scene sa kratkom animacijom zuma; dugme „nazad u kuhinju" ili Esc zatvara.
+- Još nije urađeno: začini u fioci, vuča miša za otvaranje fioke (čeka frejmove animacije), zvuk fioke, pečenje na roštilju.

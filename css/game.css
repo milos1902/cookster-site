@@ -1,4 +1,4 @@
-:root{--bg:#1d0e04;--gold:#f1af33;--deep:#2c1408;--scene-bg:url('../assets/stove_states_v2/fire_off_closed.webp')}
+:root{--bg:#1d0e04;--gold:#f1af33;--deep:#2c1408;--scene-bg:url('../assets/stove_states_v3/fire_off_closed.webp')}
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#140b05;font-family:Arial,sans-serif}
 #viewport{position:fixed;inset:0;overflow:hidden;background:#1a0c04;cursor:none}
