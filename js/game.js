@@ -5704,7 +5704,7 @@ function updateStirring(e){
  const moveX=e.clientX-stirLastX,moveY=e.clientY-stirLastY;
  stirLastX=e.clientX;stirLastY=e.clientY;
  const moveLen=Math.hypot(moveX,moveY);
- if(moveLen>0)window.CooksterPieceSim?.stir(stirVessel,e.clientX,e.clientY,moveX,moveY);
+ if(moveLen>0){window.CooksterPieceSim?.stir(stirVessel,e.clientX,e.clientY,moveX,moveY);window.CooksterEggSim?.stir(stirVessel,e.clientX,e.clientY,moveX,moveY);}
  const angleNow=Math.atan2(ry,rx);
  window.CooksterCanvasMesh?.setGesture?.({x:e.clientX,y:e.clientY,speed:moveLen,angle:angleNow,radius,active:true});
  let angleDelta=angleNow-stirLastAngle;
@@ -10468,7 +10468,7 @@ function makeItem(d){
  const ch=document.createElement('div');ch.className='contact-shadow-sprite '+(d.contactMode||((d.id||'')==='daska'?'front-edge':'silhouette'));scene.appendChild(ch);
  ch.style.setProperty('position','absolute','important');
  const chImg=document.createElement('img');chImg.src=d.src;chImg.alt='';ch.appendChild(chImg);
- const el=document.createElement('div');el.className='item';el.dataset.itemId=d.id||'';el.dataset.instanceId=d.instanceId||nextItemInstanceId(d.id||'item');el.dataset.label=d.label;el.dataset.baseW=d.w;el.dataset.baseH=d.h;el.dataset.zBase=d.z||1;el.dataset.angle=d.angle||0;el.dataset.tilt=String(clampItemTilt(d.tilt||0));el.dataset.shadowProfile=d.shadowProfile||'';el.dataset.snapProfile=d.snapProfile||'';if(d.staple){el.dataset.staple='1';el.dataset.stapleKey=d.staple;el.dataset.uses=String(d.uses||1);}el._contactShadow=ch;el._lidMeta=d.lid||null;el._parentVessel=d.parentVessel||null;
+ const el=document.createElement('div');el.className='item';el.dataset.itemId=d.id||'';el.dataset.instanceId=d.instanceId||nextItemInstanceId(d.id||'item');el.dataset.label=d.label;el.dataset.baseW=d.w;el.dataset.baseH=d.h;el.dataset.zBase=d.z||1;el.dataset.angle=d.angle||0;el.dataset.tilt=String(clampItemTilt(d.tilt||0));el.dataset.shadowProfile=d.shadowProfile||'';el.dataset.snapProfile=d.snapProfile||'';if(d.staple){el.dataset.staple='1';el.dataset.stapleKey=d.staple;el.dataset.uses=String(d.uses||1);}if(d.ingredientKey){el.dataset.ingredient='1';el.dataset.ingredientKey=d.ingredientKey;}el._contactShadow=ch;el._lidMeta=d.lid||null;el._parentVessel=d.parentVessel||null;
  const body=document.createElement('img');body.className='body';body.src=d.src;body.alt=d.label;el.appendChild(body);
  prepareContactShadowAlphaBounds(ch,chImg);
  ch._onAlphaBoundsReady=()=>{
@@ -10539,7 +10539,7 @@ function kitchenEquipmentDef(id){
 function ownedKitchenEquipment(){
  if(OBJECT_CALIBRATION_MODE)return KITCHEN_EQUIPMENT.map(def=>def.id);
  const owned=CooksterState.progression.kitchenEquipment;
-  return Array.from(new Set([...(Array.isArray(owned)?owned:[]),'mlin_za_mesо',PAPRIKA_STEAM_BAG_ID,'kaca_prazna','kaca_poklopac',...KITCHEN_EQUIPMENT.filter(d=>d.category==='drink').map(d=>d.id)]));
+  return Array.from(new Set([...(Array.isArray(owned)?owned:[]),'mlin_za_mesо','kal_01_jaje',PAPRIKA_STEAM_BAG_ID,'kaca_prazna','kaca_poklopac',...KITCHEN_EQUIPMENT.filter(d=>d.category==='drink').map(d=>d.id)]));
 }
 function equipmentCountInKitchen(id){
  return items.filter(el=>el.dataset.itemId===id).length+
@@ -10550,7 +10550,7 @@ function equipmentIsInKitchen(id){return equipmentCountInKitchen(id)>0;}
 function spawnKitchenEquipment(id,hold=true,slotOverride=null){
  const def=kitchenEquipmentDef(id);
  if(!def||(!OBJECT_CALIBRATION_MODE&&!ownedKitchenEquipment().includes(id)))return false;
- if(!OBJECT_CALIBRATION_MODE&&equipmentIsInKitchen(id)){
+ if(!OBJECT_CALIBRATION_MODE&&!def.infinite&&equipmentIsInKitchen(id)){
    showToast(def.label+' je već u kuhinji.');
    return false;
  }
@@ -10628,7 +10628,7 @@ function kitchenEquipmentCard(def,mode){
  const button=document.createElement('button');
  button.type='button';
  button.className='ke-card';
- const onTable=equipmentIsInKitchen(def.id);
+ const onTable=def.infinite?false:equipmentIsInKitchen(def.id);
  const owned=ownedKitchenEquipment().includes(def.id);
  const img=document.createElement('img');img.src=def.src;img.alt='';
  const text=document.createElement('div');
@@ -10644,8 +10644,8 @@ function kitchenEquipmentCard(def,mode){
      state.textContent='∞ NEOGRANIČENO';
      button.classList.add('calibration-template-card');
    }else{
-     info.textContent=onTable?'Već je na radnoj površini':'Klikni da ga izvučeš iz elemenata';
-     state.textContent=onTable?'NA STOLU':'U ELEMENTIMA';
+     info.textContent=def.infinite?'Klik = jedno jaje na stolu':(onTable?'Već je na radnoj površini':'Klikni da ga izvučeš iz elemenata');
+     state.textContent=def.infinite?'NEOGRANIČENO':(onTable?'NA STOLU':'U ELEMENTIMA');
      if(onTable){
        button.disabled=true;
        button.classList.add('owned-on-table');
@@ -10775,7 +10775,7 @@ function openKitchenElements(mode){
 
 function serializeWorldItem(el){
  const body=el.querySelector('.body');
-  const keep=['trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','cutStyle','ovalN','ovalItems','ovalOil','ovalParsley','ovalSeed','ovalExtras','srvItems','srvOil','srvParsley','srvSeed','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
+  const keep=['ingredient','ingredientKey','trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','cutStyle','ovalN','ovalItems','ovalOil','ovalParsley','ovalSeed','ovalExtras','srvItems','srvOil','srvParsley','srvSeed','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
  const data={};
  for(const k of keep)if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
  for(const k of ['ajvarMl','ajvarBatchMl'])if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
@@ -13305,6 +13305,7 @@ function buildFoodStageLayer(counts,stage,metaItems={},batches=[],heat=0,mixLeve
     appendCenteredChoppedStack(layer,allMix,stage,fillState,vessel,batches);
   }
   if(simParts.length&&window.CooksterPieceSim)CooksterPieceSim.append(layer,simParts,stage,vessel,fillState);
+  if((+counts?.jaje||0)>0&&window.CooksterEggSim)CooksterEggSim.append(layer,vessel,stage);
 
   // Ground vegetables use their own complete transparent PNG and the same
   // vessel geometry. Keep them separate from sliced/whole produce rendering.
@@ -13320,6 +13321,7 @@ function buildFoodStageLayer(counts,stage,metaItems={},batches=[],heat=0,mixLeve
     if(GROUND_VEGETABLE_BY_KEY[key]||key.endsWith('_celo')||key.endsWith('_diced')||metaItems?.[key]?.form==='whole'
       ||key.startsWith('paprika_pecena')||isRoastedUnpeeledEggplantKey(key))continue;
     if(allMix.some(p=>p.storageKey===key))continue;
+    if(key==='jaje')continue;   // the egg is drawn by js/egg-sim.js
     const meta=metaItems?.[key];
     if(!meta?.src)continue;
     const n=Math.min(8,Math.max(1,Math.round(count)));

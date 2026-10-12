@@ -43,7 +43,7 @@
     if(!Array.isArray(records))fail(path);
     records.forEach((record,i)=>{
       const p=path+'.'+i;
-      fields(record,p,['count','doneness','overcook','cookSpeed','burnSpeed'],['id','key','state'],['burnt']);
+      fields(record,p,['count','doneness','overcook','cookSpeed','burnSpeed','curd'],['id','key','state'],['burnt']);
       if(typeof record.key!=='string'||!record.key||typeof record.count!=='number')fail(p);
     });
   }
