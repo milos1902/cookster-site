@@ -174,19 +174,26 @@
 
   // what Miloš draws in the tool "Maska posude" is used by the game at once (and every time the game starts, from the same browser memory):
   // LIVE[id] = {mask,foodVisible,bottom,depth:{bottom,foodTop}} in [x,y] pairs; every part that is drawn (a polygon of 3+ points, a point) replaces that part of the built-in profile
-  const LIVE={},liveCache={};
+  const LIVE={},DEF={},liveCache={};
   const pair=p=>Array.isArray(p)?[+p[0],+p[1]]:(p&&Number.isFinite(+p.x)?[+p.x,+p.y]:null);
-  const poly3=l=>Array.isArray(l)&&l.length>=3?l.map(pair).filter(Boolean):null;
+  const area2=pl=>{let a=0;for(let i=0;i<pl.length;i++){const p=pl[i],q=pl[(i+1)%pl.length];a+=p[0]*q[1]-q[0]*p[1];}return Math.abs(a)/2;};
+  const poly3=(l,min)=>{const r=Array.isArray(l)&&l.length>=3?l.map(pair).filter(Boolean):null;return r&&r.length>=3&&area2(r)>=min?r:null;};      // (a polygon of 3 points that is a tiny sliver is not a drawing)
+  function convert(shape){
+    const o={};if(!shape)return o;
+    const m=poly3(shape.mask,150),f=poly3(shape.foodVisible,100),b=poly3(shape.bottom,50),db=pair(shape.depth&&shape.depth.bottom),dt=pair(shape.depth&&shape.depth.foodTop);
+    if(m)o.mask=m;if(f)o.foodVisible=f;if(b)o.bottom=b;
+    if(db||dt)o.depth={bottom:db,foodTop:dt};
+    return o;
+  }
   function setLive(id,shape){
     if(!id)return;
-    const o={};
-    if(shape){
-      const m=poly3(shape.mask),f=poly3(shape.foodVisible),b=poly3(shape.bottom),db=pair(shape.depth&&shape.depth.bottom),dt=pair(shape.depth&&shape.depth.foodTop);
-      if(m&&m.length>=3)o.mask=m;if(f&&f.length>=3)o.foodVisible=f;if(b&&b.length>=3)o.bottom=b;
-      if(db||dt)o.depth={bottom:db,foodTop:dt};
-    }
+    const o=convert(shape);
     if(Object.keys(o).length)LIVE[id]=o;else delete LIVE[id];
     delete liveCache[id];
+  }
+  function importDefaults(){
+    const e=window.__COOKSTER_VESSEL_FOOD_CAL_EXPORT__;
+    if(e)Object.keys(e).forEach(id=>{const o=convert(e[id]);if(Object.keys(o).length)DEF[id]=o;});
   }
   function importSaved(){
     try{
@@ -196,11 +203,12 @@
   }
   function get(vesselOrId){
     const id=typeof vesselOrId==='string'?vesselOrId:(vesselOrId?.dataset?.itemId||'');
-    const base=baseGet(id),lv=LIVE[id];
-    if(!lv)return base;
+    const base=baseGet(id),lv=LIVE[id],df=DEF[id];
+    if(!lv&&!df)return base;
     const c=liveCache[id];if(c&&c.base===base)return c.p;
-    const p={mask:lv.mask||(base&&base.mask)||null,foodVisible:lv.foodVisible||(base&&base.foodVisible)||null,bottom:lv.bottom||(base&&base.bottom)||null,
-      depth:{bottom:(lv.depth&&lv.depth.bottom)||(base&&base.depth&&base.depth.bottom)||null,foodTop:(lv.depth&&lv.depth.foodTop)||(base&&base.depth&&base.depth.foodTop)||null}};
+    const pick=k=>(lv&&lv[k])||(df&&df[k])||(base&&base[k])||null;
+    const dep=k=>(lv&&lv.depth&&lv.depth[k])||(df&&df.depth&&df.depth[k])||(base&&base.depth&&base.depth[k])||null;
+    const p={mask:pick('mask'),foodVisible:pick('foodVisible'),bottom:pick('bottom'),depth:{bottom:dep('bottom'),foodTop:dep('foodTop')}};
     // a profile that is not complete cannot be used (the game then keeps what it had)
     const ok=p.foodVisible&&p.depth.bottom&&p.depth.foodTop;
     if(ok&&!p.mask)p.mask=p.foodVisible;
@@ -325,7 +333,7 @@
     }
     return slots;
   }
-  importSaved();
+  importDefaults();importSaved();
   window.CooksterVesselFoodCalibration={
     setLive,
     get:v=>copy(get(v)),
