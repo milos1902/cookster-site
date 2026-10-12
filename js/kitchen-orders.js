@@ -87,7 +87,7 @@ var X=cv.getContext('2d');
 for(var i=1;i<=3;i++){var im=new Image();im.src=WAITER+i+'.webp?v=4';imgs[i]=im}
 // the whole walks of the waiter (23 + 30 pictures) are loaded a little after the start, one after the other, and a picture that fails is asked for again
 var W24D=[],W24U=[];
-function lazy(arr,dir,n){var i=1;(function next(){if(i>n)return;var k=i++,t=0;(function go(){var a=new Image();a.onload=function(){arr[k]=a;next()};a.onerror=function(){if(++t<4)setTimeout(go,400*t);else next()};a.src='assets/tavern/waiter/'+dir+'/f'+(k<10?'0':'')+k+'.webp?v=6'+(t?'&r='+t:'')})()})()}
+function lazy(arr,dir,n){var i=1;(function next(){if(i>n)return;var k=i;i+=2;var t=0;(function go(){var a=new Image();a.onload=function(){arr[k]=a;if(k+1<=n)arr[k+1]=a;next()};a.onerror=function(){if(++t<4)setTimeout(go,400*t);else next()};a.src='assets/tavern/waiter/'+dir+'/f'+(k<10?'0':'')+k+'.webp?v=6'+(t?'&r='+t:'')})()})()}      // every second picture is enough (half the memory)
 setTimeout(function(){lazy(W24D,'walkd24',23);lazy(W24U,'walku24',30)},4000);
 var imgD=[],imgU=[];for(var i=1;i<=3;i++){var a=new Image();a.src='assets/tavern/waiter/waiter_walkd'+i+'.webp';imgD[i]=a;var c=new Image();c.src='assets/tavern/waiter/waiter_walku'+i+'.webp';imgU[i]=c}
 var foodImg=new Image();foodImg.src='assets/tavern/waiter/waiter_foods2.webp?v=2';
