@@ -157,13 +157,18 @@ function hit(x,y){
 var view=null;
 // the camera zooms in on the grill (frames of a Higgsfield video: assets/grillzoom/z_1..41.webp, from the whole kitchen to the grill) in about half a second,
 // then the picture of the grill (the same one) takes over; the zoom out is the same frames the other way round
-var ZN=41,ZMS=400,FADE=110,zimgs=[];
-for(var zi=1;zi<=ZN;zi++){zimgs[zi]=new Image();zimgs[zi].src='assets/grillzoom/z_'+zi+'.webp?v=4'}
-var zoomImg=new Image();zoomImg.src=ZOOM_SRC;
-function zoomReady(){for(var i=1;i<=ZN;i++)if(!zimgs[i].complete||!zimgs[i].naturalWidth)return false;return zoomImg.complete}
+var ZN=44,ZMS=400,FADE=110,zimgs=[],zbit=[];
+// the frames are decoded once into bitmaps (createImageBitmap) and drawn on a canvas: setting img.src for every frame made the first frames come too late (the zoom seemed to start from the middle)
+for(var zi=1;zi<=ZN;zi++){(function(i){
+  var im=new Image();im.src='assets/grillzoom/z_'+i+'.webp?v=5';zimgs[i]=im;
+  var go=function(){if(window.createImageBitmap)createImageBitmap(im).then(function(b){zbit[i]=b}).catch(function(){})};
+  if(im.decode)im.decode().then(go).catch(function(){}) ;else im.onload=go;
+})(zi)}
+var zoomImg=new Image();zoomImg.src=ZOOM_SRC;if(zoomImg.decode)zoomImg.decode().catch(function(){});
+function zoomReady(){for(var i=1;i<=ZN;i++)if(!zbit[i]&&!(zimgs[i].complete&&zimgs[i].naturalWidth))return false;return zoomImg.complete}
+function drawFrame(cv,i){var g=cv.getContext('2d');g.drawImage(zbit[i]||zimgs[i],0,0,cv.width,cv.height)}
 function animateZoom(v,back,done){
-  var fr=v.querySelector('.gz-frame'),gi=v.querySelector('.gz-grill'),vg=v.querySelector('.gz-vig'),t0=performance.now(),total=ZMS+FADE;
-  vg.style.opacity=0;
+  var fr=v.querySelector('.gz-frame'),gi=v.querySelector('.gz-grill'),t0=performance.now(),total=ZMS+FADE,last=-1;
   (function step(now){
     var e=Math.min(total,now-t0),f,g;
     // the camera starts slowly and gets faster (ease-in) both ways
@@ -172,7 +177,8 @@ function animateZoom(v,back,done){
     }else{                                                        // the grill -> the kitchen: the grill picture fades out, then the frames the other way round
       var t2=Math.max(0,(e-FADE)/ZMS);f=1-t2*t2;g=e<FADE?1-e/FADE:0;
     }
-    fr.src=zimgs[1+Math.round(Math.max(0,Math.min(1,f))*(ZN-1))].src;
+    var idx=1+Math.round(Math.max(0,Math.min(1,f))*(ZN-1));
+    if(idx!==last){drawFrame(fr,idx);last=idx}
     gi.style.opacity=Math.max(0,Math.min(1,g));
     if(e<total)requestAnimationFrame(step);else done();
   })(t0);
@@ -183,7 +189,7 @@ function zoomGrill(){
   var v=document.createElement('div');v.id='grillZoom';v.setAttribute('data-tool-ui','1');
   v.style.cssText='position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;z-index:30000;overflow:hidden;background:#1a0d05;cursor:default';
   var css='position:absolute;left:0;top:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none';
-  var fr=document.createElement('img');fr.className='gz-frame';fr.draggable=false;fr.style.cssText=css;fr.src=zimgs[1].src;
+  var fr=document.createElement('canvas');fr.className='gz-frame';fr.width=1280;fr.height=720;fr.style.cssText=css;if(zoomReady())drawFrame(fr,1);
   var gi=document.createElement('img');gi.className='gz-grill';gi.draggable=false;gi.style.cssText=css+';opacity:0';gi.src=ZOOM_SRC;
   var vg=document.createElement('div');vg.className='gz-vig';vg.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;opacity:0;background:linear-gradient(90deg,rgba(24,12,4,.94) 0%,rgba(24,12,4,.82) 7%,rgba(24,12,4,.45) 13%,rgba(24,12,4,0) 22%)';
   var back=document.createElement('button');back.type='button';back.textContent='← nazad u kuhinju';
