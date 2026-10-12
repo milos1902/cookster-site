@@ -698,14 +698,14 @@ var CH_NAME={1:'Dragoslav',2:'Stana',3:'Mića',4:'Stojan',5:'Ljubica',6:'Radovan
 var CH_FULL={1:'Dragoslav',2:'baba Stana Jovanović',3:'Mića',4:'Stojan',5:'Ljubica',6:'deda Radovan Jovanović',7:'kovač Mirko',8:'Mileva Jakšić',9:'gospodin Vukašin',10:'Smilja'};
 var STORY_LINES={
   9:{any:['Samo ja sam dorastao gospođi Milevi, bre, to svi znaju.','Nijedan od ovih nije ni do kolena gospođi Milevi. Samo ja, more.','Ja i Mileva, bre, bi bili savršen par. Ne ću da kažem više.','Ovi ovde ne znaju šta je dama. Ja znam, bre.','Kaj će ti drugi, mori, kad imaš mene, gospođo Mileva.']},
-  7:{any:['Juče iskovah potkovicu, dva sata na žaru, bre!','Gvožđe je k’o čoek: mora da ga zagreješ pa da ga savijaš.','Bez čekića nema ni leba, more.','Nakovanj je teži nego što misliš, majstore.','Ne mi pričaj ti o ženama, ja imam posla do guše.','Dede, mori, daj mi čekić, ne vidiš da radim!','Kaj ćeš, be, kovač sam, ne mogu da stojim bez posla.']},
+  7:{any:['Juče iskovah potkovicu, dva sata na žaru, bre!','Gvožđe je k’o čoek: mora da ga zagreješ pa da ga savijaš.','Bez čekića nema ni leba, more.','Nakovanj je teži nego što misliš, majstore.','Kaj ćeš, be, kovač sam, ne mogu da stojim bez posla.'],mates:['Ne mi pričaj ti o ženama, ja imam posla do guše.','Dede, mori, daj mi čekić, ne vidiš da radim!','Slušaj ti mene, bre, kad kujem gvožđe, nema greške.']},
   4:{any:['U Nemačku sam video mašinu koja sama pere sudove, bre!','Kad bejah u Nemačku, tamo su ulice čiste k’o sto.','Ja sam u Nemačku video svašta, ne ćete da verujete.','Taj Zoran, kolomar jedan, ne podnosim ga, bre!','Konobar! Da li će neko da me usluži večeras?','Ovaj Zoran ništa ne zna, a ja sam Nemce video.','Ne ćemo mi, mori, kao u Nemačku, nema reda ovde!']},
-  8:{any:['Molim vas, ne prilazite.','Ostavite me da popijem čašu u miru.'],with7:['Ah... taj kovač, ni da me pogleda.','Mirko... zar nikad ne će da me primeti?']},
+  8:{any:['Samo da popijem čašu vina u miru.','Dođoh da odmorim dušu.'],alone:['Ah, kakva je večeras gužva...','Sama sa svojim mislima, kao uvek.'],with7:['Ah... taj kovač, ni da me pogleda.','Mirko... zar nikad ne će da me primeti?']},
   3:{any:['Gde li je Smilja danas...'],with10:['Smiljo, danas ti je kosa baš lepa.','Smiljo, oćeš li da ti naručim nešto?','Smiljo, ti si najlepša u celu kafanu, bre.']},
   10:{any:['Će li Mića da dođe danas...'],with3:['Ma pusti me, Mićo, šta ti je bre...','Ih, Mićo, ne zbijaj šale sa mene!'],with5:['Ljubice, samo da znaš... sviđa mi se Mića.','Ne govori nikom, Ljubice, ali Mića mi je drag.']},
   5:{with10:['Znala sam ja! Treba da mu kažeš, Smiljo, bre!','Pa kaži mu, more, ako ti se sviđa!']},
-  2:{any:['Radovane, jesi li popio lekove, bre?','Gde si, Radovane, more?','Celog života ga učim, a on ništa ne nauči!','Kad dojde kući, ima da čuje on!','Da nije mene, ne bi imao ni čistu košulju.','Radovane, bez gluposti, more!'],with6:['Radovane, sedi pravo, bre, nisi više mlad!','Radovane, ne pij više!','Radovane, jesi li ti normalan, čoveče?','Opet si zaboravio šta sam ti rekla!','Radovane, ti mene uopšte ne slušaš, bre!','Ma ne znam šta ću s tebe, čoveče!','Ko te je naučio da tako sediš, more?'],far:['Radovane! Čujem te odavde, bre!','Radovane, ne zaboravi lekove!','Čekaj da dođemo kući, Radovane!']},
-  6:{any:['Gde je ta moja Stana...','Ženo, ostavi me na miru bar na jedno piće.','Samo mir ja hoću, bre.','Pa dobro, Stano, ne vikaj.'],with2:['Stano, ne zanovetaj, ženo.','Pa evo, Stano, sedim.','Stano, ja samo jedno popih!','Ne vičeš ti na mene, ja sam glava kuće, bre!','Dobro, dobro, ništa nisam rekao.','Stano, ćuti malo, pobogu!','Ti si najgora žena na svet... i najbolja.'],far:['Stano, ne čujem te!','Eno je, opet viče.','Evo, evo, dolazim, Stano!']}
+  2:{any:['Gde li je taj moj Radovan, more?','Celog života ga učim, a on ništa ne nauči!','Kad dojde kući, ima da čuje on!','Da nije mene, ne bi imao ni čistu košulju.'],with6:['Radovane, sedi pravo, bre, nisi više mlad!','Radovane, ne pij više!','Radovane, jesi li ti normalan, čoveče?','Opet si zaboravio šta sam ti rekla!','Radovane, ti mene uopšte ne slušaš, bre!','Ma ne znam šta ću s tebe, čoveče!','Ko te je naučio da tako sediš, more?'],far:['Radovane! Čujem te odavde, bre!','Radovane, ne zaboravi lekove!','Čekaj da dođemo kući, Radovane!']},
+  6:{any:['Gde je ta moja Stana...','Samo mir ja hoću, bre.','Ma žena mi je dobra... kad ćuti.'],with2:['Stano, ne zanovetaj, ženo.','Pa evo, Stano, sedim.','Stano, ja samo jedno popih!','Ne vičeš ti na mene, ja sam glava kuće, bre!','Dobro, dobro, ništa nisam rekao.','Stano, ćuti malo, pobogu!','Ti si najgora žena na svet... i najbolja.'],far:['Stano, ne čujem te!','Eno je, opet viče.','Evo, evo, dolazim, Stano!']}
 };
 // ---------- visitors: guests who do not sit down, they come to somebody (Vukašin to Mileva, Stana to her Radovan) ----------
 var VIS={
@@ -773,8 +773,11 @@ function tickStory(dt){
   var seated=guests.filter(function(g){return g.mode==='seated'&&!g.leftAngry&&g.sitT>6&&STORY_LINES[g.ch]});if(!seated.length)return;
   if(Math.random()<.2)tickZokiChat();
   var sr=seated.filter(function(o){return o.ch===2||o.ch===6}),g=(sr.length&&Math.random()<.5)?pick(sr):pick(seated),sl=STORY_LINES[g.ch],lines=(sl.any||[]).slice(),m=false;
+  // he knows who he sits with: lines for a certain table mate (withN), lines for any company (mates) or lines for sitting alone (alone)
+  var mates=guests.filter(function(o){return o!==g&&!o.visit&&(o.mode==='seated'||o.mode==='sitting')&&o.seat.table===g.seat.table});
   Object.keys(sl).forEach(function(k){if(k.indexOf('with')===0){var c=+k.slice(4);
-    if(guests.some(function(o){return o!==g&&o.ch===c&&o.mode==='seated'&&o.seat.table===g.seat.table})){lines=sl[k].slice();m=true}}});
+    if(mates.some(function(o){return o.ch===c})){lines=sl[k].slice();m=true}}});
+  if(!m){if(mates.length&&sl.mates)lines=lines.concat(sl.mates);if(!mates.length&&sl.alone)lines=lines.concat(sl.alone)}
   if(!m&&sl.far&&guests.some(function(o){return o.ch===(g.ch===2?6:2)&&o.mode==='seated'&&o.seat.table!==g.seat.table}))lines=lines.concat(sl.far);
   if(!m&&g.ch===8&&guests.some(function(o){return o.ch===7&&o.mode==='seated'}))lines=lines.concat(sl.with7);      // Mileva sighs when the blacksmith is somewhere in the room
   if(!lines.length)return;
