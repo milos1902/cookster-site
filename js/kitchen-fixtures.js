@@ -180,9 +180,8 @@ function animateZoom(v,back,done){
     var idx=1+Math.round(Math.max(0,Math.min(1,f))*(ZN-1));
     if(idx!==last){drawFrame(fr,idx);last=idx}
     gi.style.opacity=Math.max(0,Math.min(1,g));
-    // the things on the table (they are behind the frames, which show the empty kitchen) fade out while the camera starts and fade back in while it comes back, so they do not just pop
-    var live=!back?Math.min(1,e/FADE):(1-Math.max(0,Math.min(1,(f<.45?(.45-f)/.45:0))));
-    fr.style.opacity=back?Math.max(0,Math.min(1,f<.45?f/.45:1)):live;
+    // the things on the table (they are behind the frames, which show the empty kitchen) stay while the camera is still standing, melt away when it starts, and fade back in while it comes back, so they do not just pop
+    fr.style.opacity=back?Math.max(0,Math.min(1,f<.45?f/.45:1)):Math.max(0,Math.min(1,(e-FADE)/(ZMS*.3)));       // forward: the things stay during the stop and melt away only when the camera starts to move
     if(e<total)requestAnimationFrame(step);else done();
   })(t0);
 }
