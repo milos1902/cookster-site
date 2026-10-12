@@ -180,6 +180,9 @@ function animateZoom(v,back,done){
     var idx=1+Math.round(Math.max(0,Math.min(1,f))*(ZN-1));
     if(idx!==last){drawFrame(fr,idx);last=idx}
     gi.style.opacity=Math.max(0,Math.min(1,g));
+    // the things on the table (they are behind the frames, which show the empty kitchen) fade out while the camera starts and fade back in while it comes back, so they do not just pop
+    var live=!back?Math.min(1,e/FADE):(1-Math.max(0,Math.min(1,(f<.45?(.45-f)/.45:0))));
+    fr.style.opacity=back?Math.max(0,Math.min(1,f<.45?f/.45:1)):live;
     if(e<total)requestAnimationFrame(step);else done();
   })(t0);
 }
@@ -187,7 +190,7 @@ function zoomGrill(){
   if(view)return;
   var sc=document.getElementById('scene');if(!sc)return;
   var v=document.createElement('div');v.id='grillZoom';v.setAttribute('data-tool-ui','1');
-  v.style.cssText='position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;z-index:30000;overflow:hidden;background:#1a0d05;cursor:default';
+  v.style.cssText='position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;z-index:30000;overflow:hidden;cursor:default';
   var css='position:absolute;left:0;top:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none';
   var fr=document.createElement('canvas');fr.className='gz-frame';fr.width=1280;fr.height=720;fr.style.cssText=css;if(zoomReady())drawFrame(fr,1);
   var gi=document.createElement('img');gi.className='gz-grill';gi.draggable=false;gi.style.cssText=css+';opacity:0';gi.src=ZOOM_SRC;
