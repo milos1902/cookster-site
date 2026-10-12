@@ -208,7 +208,10 @@
     const c=liveCache[id];if(c&&c.base===base)return c.p;
     const pick=k=>(lv&&lv[k])||(df&&df[k])||(base&&base[k])||null;
     const dep=k=>(lv&&lv.depth&&lv.depth[k])||(df&&df.depth&&df.depth[k])||(base&&base.depth&&base.depth[k])||null;
-    const p={mask:pick('mask'),foodVisible:pick('foodVisible'),bottom:pick('bottom'),depth:{bottom:dep('bottom'),foodTop:dep('foodTop')}};
+    // a vessel that has only a GUESSED profile but whose area of the food was drawn by Miloš: the guessed front mask (made for the guessed area) is dropped, otherwise it cuts off the lower part of his area (a notch under the food)
+    const ownFood=(lv&&lv.foodVisible)||(df&&df.foodVisible);
+    const mask=(lv&&lv.mask)||(df&&df.mask)||((base&&base.guess&&ownFood)?null:(base&&base.mask))||null;
+    const p={mask,foodVisible:pick('foodVisible'),bottom:pick('bottom'),depth:{bottom:dep('bottom'),foodTop:dep('foodTop')}};
     // a profile that is not complete cannot be used (the game then keeps what it had)
     const ok=p.foodVisible&&p.depth.bottom&&p.depth.foodTop;
     if(ok&&!p.mask)p.mask=p.foodVisible;
