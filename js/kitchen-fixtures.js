@@ -157,7 +157,7 @@ function hit(x,y){
 var view=null;
 // the camera zooms in on the grill (frames of a Higgsfield video: assets/grillzoom/z_1..41.webp, from the whole kitchen to the grill) in about half a second,
 // then the picture of the grill (the same one) takes over; the zoom out is the same frames the other way round
-var ZN=44,ZMS=400,FADE=110,zimgs=[],zbit=[];
+var ZN=44,ZMS=400,FADE=110,DEBLUR=240,BLUR=11,zimgs=[],zbit=[];
 // the frames are decoded once into bitmaps (createImageBitmap) and drawn on a canvas: setting img.src for every frame made the first frames come too late (the zoom seemed to start from the middle)
 for(var zi=1;zi<=ZN;zi++){(function(i){
   var im=new Image();im.src='assets/grillzoom/z_'+i+'.webp?v=5';zimgs[i]=im;
@@ -168,19 +168,22 @@ var zoomImg=new Image();zoomImg.src=ZOOM_SRC;if(zoomImg.decode)zoomImg.decode().
 function zoomReady(){for(var i=1;i<=ZN;i++)if(!zbit[i]&&!(zimgs[i].complete&&zimgs[i].naturalWidth))return false;return zoomImg.complete}
 function drawFrame(cv,i){var g=cv.getContext('2d');g.drawImage(zbit[i]||zimgs[i],0,0,cv.width,cv.height)}
 function animateZoom(v,back,done){
-  var fr=v.querySelector('.gz-frame'),gi=v.querySelector('.gz-grill'),t0=performance.now(),total=ZMS+FADE,last=-1;
+  var st=v.querySelector('.gz-stage'),fr=v.querySelector('.gz-frame'),gi=v.querySelector('.gz-grill'),total=ZMS+(back?FADE:DEBLUR),t0=performance.now(),last=-1;
   (function step(now){
-    var e=Math.min(total,now-t0),f,g;
+    var e=Math.max(0,Math.min(total,now-t0)),f,g,bl=0;
     // the camera starts slowly and gets faster (ease-in) both ways
-    if(!back){                                                    // the kitchen -> the grill: the frames, then the grill picture fades in over the last frame
-      var t=Math.min(1,e/ZMS);f=t*t;g=e>ZMS?(e-ZMS)/FADE:0;
+    if(!back){                                                    // the kitchen -> the grill: the frames; the picture gets more and more blurred (zoom blur) until the camera stops on the grill, then it sharpens
+      var t=Math.min(1,e/ZMS);f=Math.pow(t,2.4);
+      g=e>ZMS?Math.min(1,(e-ZMS)/FADE):0;
+      bl=e<=ZMS?BLUR*Math.pow(t,1.6):BLUR*Math.pow(1-(e-ZMS)/DEBLUR,2);
     }else{                                                        // the grill -> the kitchen: the grill picture fades out, then the frames the other way round
       var t2=Math.max(0,(e-FADE)/ZMS);f=1-t2*t2;g=e<FADE?1-e/FADE:0;
     }
     var idx=1+Math.round(Math.max(0,Math.min(1,f))*(ZN-1));
     if(idx!==last){drawFrame(fr,idx);last=idx}
     gi.style.opacity=Math.max(0,Math.min(1,g));
-    if(e<total)requestAnimationFrame(step);else done();
+    st.style.filter=bl>0.2?'blur('+bl.toFixed(1)+'px)':'none';
+    if(e<total)requestAnimationFrame(step);else{st.style.filter='none';done()}
   })(t0);
 }
 function zoomGrill(){
@@ -194,7 +197,7 @@ function zoomGrill(){
   var vg=document.createElement('div');vg.className='gz-vig';vg.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;opacity:0;background:linear-gradient(90deg,rgba(24,12,4,.94) 0%,rgba(24,12,4,.82) 7%,rgba(24,12,4,.45) 13%,rgba(24,12,4,0) 22%)';
   var back=document.createElement('button');back.type='button';back.textContent='← nazad u kuhinju';
   back.style.cssText='position:absolute;right:24px;top:72px;padding:10px 18px;font:700 16px system-ui,sans-serif;color:#fff;background:rgba(44,20,8,.92);border:2px solid #f1af33;border-radius:10px;cursor:pointer;opacity:0;transition:opacity .2s';
-  v.appendChild(fr);v.appendChild(gi);v.appendChild(vg);v.appendChild(back);sc.appendChild(v);view=v;
+  var stg=document.createElement('div');stg.className='gz-stage';stg.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;will-change:filter';stg.appendChild(fr);stg.appendChild(gi);v.appendChild(stg);v.appendChild(vg);v.appendChild(back);sc.appendChild(v);view=v;
   ['pointerdown','pointerup','mousedown','mouseup','click','dblclick','contextmenu','wheel'].forEach(function(n){v.addEventListener(n,function(e){e.stopPropagation()})});
   back.addEventListener('click',closeGrill);
   v.addEventListener('click',function(){closeGrill()});                 // a click anywhere on the zoomed picture zooms out
