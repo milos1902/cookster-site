@@ -23,11 +23,9 @@ function navBtn(label,dir){
   return b;
 }
 
-// the button in the kitchen, on the left edge
+// the button "kafana" on the left edge of the kitchen was removed (the way to the tavern is the saloon doors): the element is kept only for the code that uses it, it is not in the scene
 var openBtn=navBtn('kafana','l');openBtn.id='tavernOpenBtn';
-openBtn.style.left='14px';openBtn.style.top='530px';
 openBtn.setAttribute('aria-label','Kafana, levo');
-scene.appendChild(openBtn);
 
 // the tavern: backdrop, the picture, the canvas with the guests, the way back
 var room=mk('div');room.id='tavernScene';
