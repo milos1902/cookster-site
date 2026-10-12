@@ -66,7 +66,17 @@ function tint(im){
   }catch(_){return null}
 }
 function store(key,im){imgs[key]=im;if(im)timgs[key]=tint(im)}
-function loadImg(src){return new Promise(function(res){var im=new Image();im.onload=function(){res(im)};im.onerror=function(){res(null)};im.src=src})}
+// hundreds of pictures are asked for at once and the server sometimes drops some of them (then a guest or the waiter would stay invisible, only the shadow shows):
+// so only a few are loaded at a time and a picture that failed is asked for again (up to 4 times)
+var LQ=[],LRUN=0,LMAX=10;
+function loadNext(){while(LRUN<LMAX&&LQ.length){var j=LQ.shift();LRUN++;j()}}
+function loadImg(src){return new Promise(function(res){
+  var tries=0;
+  function go(){var im=new Image();
+    im.onload=function(){LRUN--;res(im);loadNext()};
+    im.onerror=function(){LRUN--;if(++tries<4){setTimeout(function(){LQ.push(go);loadNext()},300*tries)}else res(null);loadNext()};
+    im.src=src+(tries?(src.indexOf('?')<0?'?':'&')+'r='+tries:'')}
+  LQ.push(go);loadNext()})}
 function preload(){
   if(loaded)return Promise.resolve(true);
   if(loading)return loading;
