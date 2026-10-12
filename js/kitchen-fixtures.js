@@ -151,7 +151,7 @@ function hit(x,y){
   for(var k in DR){var d=DR[k],t=Math.min(1,gOf(d));
     if(inR(p,{l:d.x0+d.dx0*t,r:d.x1+d.dx1*t,t:603,b:680+d.dy*t+4}))return{kind:'drawer',key:k,label:d.label+(d.to?' — klik za zatvaranje':' — klik za otvaranje')}}
   if(inR(p,GRILL))return{kind:'grill',label:'roštilj — klik za zumiranje'};
-  if(inR(p,DOOR)){try{doorFilm('z');if(!warmed&&window.CooksterTavern&&window.CooksterTavern.preload){warmed=true;window.CooksterTavern.preload()}}catch(e){}return{kind:'door',label:'kafana — klik za ulazak'}}      // the pictures of the tavern are fetched as soon as the mouse comes to the doors
+  if(inR(p,DOOR)){try{if(!warmed&&window.CooksterTavern&&window.CooksterTavern.preload){warmed=true;window.CooksterTavern.preload()}}catch(e){}return{kind:'door',label:'kafana — klik za ulazak'}}      // the pictures of the tavern are fetched as soon as the mouse comes to the doors
   return null;
 }
 // ---------- the saloon doors (the way to the tavern): the camera zooms into them, the screen goes dark, and the tavern lights up ----------
@@ -189,7 +189,7 @@ function zoomDoor(){
   var DZ_=DZf(),g=doorGeom();view={_busy:true,remove:function(){}};
   scn.style.transition='none';scn.style.willChange='transform';
   try{if(T.preload)T.preload()}catch(e){}
-  swingDoors(DZ_+300,0,'z');
+  swingDoors(DZ_+300);
   var t0=performance.now(),opened=false,ready=false;
   (function step(now){
     var el=now-t0,u=Math.min(1,el/DZ_),S=g.sc*Math.pow(g.S1/g.sc,ease(u)),c=doorFrame(g,scn,S);
@@ -209,7 +209,7 @@ function leaveTavern(restore){
   var DZ_=DZf(),g=doorGeom();
   scn.style.transition='none';scn.style.willChange='transform';doorFrame(g,scn,g.S1);
   try{vp.style.visibility='visible'}catch(e){}room.style.willChange='transform,opacity';
-  swingDoors(DZ_+300,.3,'z');                                               // the doors are open and close while the camera zooms out
+  swingDoors(DZ_+300,.3);                                               // the doors are open and close while the camera zooms out
   return new Promise(function(done){
     var t0=performance.now();
     (function step(now){
@@ -290,16 +290,10 @@ function liveAt(u){                                              // (for testing
   gi.style.transformOrigin=Tl.x+'px '+Tl.y+'px';gi.style.transform='translate('+(px-Tl.x)+'px,'+(py-Tl.y)+'px) scale('+r+')';gi.style.opacity=Math.max(0,Math.min(1,(u-.28)/.42));
 }
 // ---------- the saloon doors swing when the waiter comes in: only the door frames (cut out of the video) over the untouched kitchen ----------
-var dEl=null,dBusy=false,dSets={};
-// two films of the doors, both 60 frames on the same place: 'd' = the waiter comes in (assets/doors), 'z' = the camera zooms through the doors into the tavern (assets/doors2, the doors open all the way)
-function doorFilm(k){
-  if(dSets[k])return dSets[k];var dir=k==='z'?'doors2/z_':'doors/d_',a=dSets[k]=[];
-  for(var i=1;i<=60;i++){(function(i){var m=new Image(),t=0;m.onerror=function(){if(++t<4)setTimeout(function(){m.src='assets/'+dir+i+'.webp?v=1&r='+t},300*t)};m.src='assets/'+dir+i+'.webp?v=1';a.push(m)})(i)}
-  return a;
-}
-function swingDoors(dur,from,film){
+var dEl=null,dBusy=false,dImgs=null;
+function swingDoors(dur,from){
   var sc=document.getElementById('scene');if(!sc||dBusy)return;dBusy=true;
-  var dImgs=doorFilm(film==='z'?'z':'d');
+  if(!dImgs){dImgs=[];for(var i=1;i<=60;i++){(function(i){var m=new Image(),t=0;m.onerror=function(){if(++t<4)setTimeout(function(){m.src='assets/doors/d_'+i+'.webp?v=1&r='+t},300*t)};m.src='assets/doors/d_'+i+'.webp?v=1';dImgs.push(m)})(i)}}
   if(!dEl||!dEl.isConnected){dEl=document.createElement('img');dEl.draggable=false;dEl.style.cssText='position:absolute;left:765px;top:0;width:400px;height:185px;z-index:26;pointer-events:none;display:none';sc.appendChild(dEl)}
   var t0=performance.now(),DUR=dur||1300,last=-1;
   var f0=Math.max(0,Math.min(.95,from||0));      // from: the part of the film where it starts (0.3: the doors are already wide open)
