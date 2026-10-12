@@ -291,16 +291,19 @@ function liveAt(u){                                              // (for testing
 }
 // ---------- the saloon doors swing when the waiter comes in: only the door frames (cut out of the video) over the untouched kitchen ----------
 var dEl=null,dBusy=false,dSets={};
-// two films of the doors, both 60 frames on the same place: 'd' = the waiter comes in (assets/doors), 'z' = the camera zooms through the doors into the tavern (assets/doors2, the doors open all the way)
+// two films of the doors (60 frames each): 'd' = the waiter comes in (assets/doors, a cut-out 400x185 at 765,0); 'z' = the camera zooms through the doors into the tavern
+// (assets/doors3, cut from the video of the whole kitchen: 440x250 at 745,0, so the open leaves are seen whole, down to the floor in front of the table)
+var DFILM={d:{dir:'doors/d_',x:765,y:0,w:400,h:185},z:{dir:'doors3/z_',x:745,y:0,w:440,h:250}};
 function doorFilm(k){
-  if(dSets[k])return dSets[k];var dir=k==='z'?'doors2/z_':'doors/d_',a=dSets[k]=[];
+  if(dSets[k])return dSets[k];var dir=DFILM[k].dir,a=dSets[k]=[];
   for(var i=1;i<=60;i++){(function(i){var m=new Image(),t=0;m.onerror=function(){if(++t<4)setTimeout(function(){m.src='assets/'+dir+i+'.webp?v=1&r='+t},300*t)};m.src='assets/'+dir+i+'.webp?v=1';a.push(m)})(i)}
   return a;
 }
 function swingDoors(dur,from,film){
   var sc=document.getElementById('scene');if(!sc||dBusy)return;dBusy=true;
-  var dImgs=doorFilm(film==='z'?'z':'d');
-  if(!dEl||!dEl.isConnected){dEl=document.createElement('img');dEl.draggable=false;dEl.style.cssText='position:absolute;left:765px;top:0;width:400px;height:185px;z-index:26;pointer-events:none;display:none';sc.appendChild(dEl)}
+  var fk=film==='z'?'z':'d',G=DFILM[fk],dImgs=doorFilm(fk);
+  if(!dEl||!dEl.isConnected){dEl=document.createElement('img');dEl.draggable=false;dEl.style.cssText='position:absolute;z-index:26;pointer-events:none;display:none';sc.appendChild(dEl)}
+  dEl.style.left=G.x+'px';dEl.style.top=G.y+'px';dEl.style.width=G.w+'px';dEl.style.height=G.h+'px';dEl.style.display='none';
   var t0=performance.now(),DUR=dur||1300,last=-1;
   var f0=Math.max(0,Math.min(.95,from||0));      // from: the part of the film where it starts (0.3: the doors are already wide open)
   (function f(now){var k=Math.max(0,Math.min(59,Math.floor((f0+(1-f0)*Math.max(0,Math.min(1,(now-t0)/DUR)))*60)));      // (the frame time of requestAnimationFrame can be a little before t0: without the max(0) k was -1, the loop crashed and the doors never opened again)
