@@ -119,15 +119,7 @@
   const SPOTS={paprika:[470,262],tucana:[540,262],biber:[610,262],so:[680,262],secer:[750,262],lovor:[820,262]};
   function ensureJars(){
     try{
-      for(const k of SPICE_IDS){
-        const id='zacin_'+k;
-        if((window.items||items).some(i=>i.dataset.itemId===id))continue;
-        const def=kitchenEquipmentDef(id);if(!def)continue;
-        const el=makeItem({...def,instanceId:nextItemInstanceId(id),x:SPOTS[k][0]-def.w/2,y:SPOTS[k][1]-def.h,z:++zCounter});
-        if(!el)continue;
-        el.dataset.surfaceZone='table';
-        setPose(el,SPOTS[k][0],SPOTS[k][1],surfaceScaleFor(el,'table',SPOTS[k][1]));
-      }
+      // the jars are not put on the table any more: they stand in the left drawer of the table (js/kitchen-fixtures.js); the ones that are already on the table (old saves) stay there
       // jars saved with another scale are brought to the scale the game itself uses for their place
       for(const el of (window.items||items)){
         if(!spiceOf(el)||!+el.dataset.cx)continue;
