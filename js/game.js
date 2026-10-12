@@ -9483,10 +9483,24 @@ function canPourInto(source,target){
   const payload=vesselTransferPayload(source);
   const incomingFood=Math.max(0,+payload?.foodCount||0);
   const room=Math.max(0,containerCapacity(target)-containerTotal(target));
-  if(incomingFood>room)
-    return {ok:false,reason:`Нема места за све — слободно је још ${Math.floor(room)}.`};
+  // every vessel can be poured into every vessel: if the one that receives is too small for everything, it receives what fits and the rest stays in the vessel that was poured from
+  if(incomingFood>room+1e-6){
+    if(room<.2)return {ok:false,reason:'Посуда у коју пресипаш је пуна.'};
+    const f=room/incomingFood;
+    return {ok:true,payload:scalePourPayload(payload,f),partial:true,fraction:f};
+  }
 
   return {ok:true,payload};
+}
+// a part (f 0..1) of what a vessel holds: the amounts of the ingredients, of the oil and salt and of the batches (what is cooked) are multiplied, the state (heat, mix) stays
+function scalePourPayload(payload,f){
+  const p=JSON.parse(JSON.stringify(payload));
+  for(const e of Object.values(p.items||{}))e.count=(+e.count||0)*f;
+  if(p.staples){p.staples.oil=(+p.staples.oil||0)*f;p.staples.salt=(+p.staples.salt||0)*f;}
+  p.batches=(p.batches||[]).map(b=>({...b,count:(+b.count||0)*f}));
+  p.foodCount=(+p.foodCount||0)*f;
+  p.fraction=f;
+  return p;
 }
 function pourCandidateAt(x,y,source=holding){
   if(!source||!isContainerItem(source)||vesselTransferAmount(source)<=0)return null;
@@ -9610,12 +9624,31 @@ function clearVesselAfterPour(source){
     CooksterContainer.write(source,CooksterContainer.empty());
   }
 }
+// only a part was poured: the rest stays in the source (the amounts are multiplied by what is left)
+function keepRestAfterPour(source,f){
+  const keep=1-f,eps=.02,fix=n=>{n=(+n||0)*keep;return n<eps?0:n;};
+  if(isHeatableCookwareItem(source)){
+    const m=CooksterPan.read(source);
+    for(const k of Object.keys(m.ingredients||{})){const n=fix(m.ingredients[k]);if(n>0)m.ingredients[k]=n;else delete m.ingredients[k];}
+    m.staples??={oil:0,salt:0};m.staples.oil=fix(m.staples.oil);m.staples.salt=fix(m.staples.salt);
+    m.batches=(m.batches||[]).map(b=>({...b,count:fix(b.count)})).filter(b=>b.count>0);
+    CooksterPan.write(source,m);
+  }else{
+    const m=CooksterContainer.read(source);
+    for(const k of Object.keys(m.items||{})){const n=fix(m.items[k].count);if(n>0)m.items[k].count=n;else delete m.items[k];}
+    m.transfer??={mix:0,heat:0,staples:{oil:0,salt:0},batches:[]};
+    if(m.transfer.staples){m.transfer.staples.oil=fix(m.transfer.staples.oil);m.transfer.staples.salt=fix(m.transfer.staples.salt);}
+    m.transfer.batches=(m.transfer.batches||[]).map(b=>({...b,count:fix(b.count)})).filter(b=>b.count>0);
+    CooksterContainer.write(source,m);
+  }
+}
 function applyVesselTransfer(source,target,payload){
   if(!source||!target||!payload)return false;
   if(isHeatableCookwareItem(target))mergePayloadIntoHeatable(target,payload);
   else mergePayloadIntoContainer(target,payload);
 
-  clearVesselAfterPour(source);
+  if(payload.fraction&&payload.fraction<.999)keepRestAfterPour(source,payload.fraction);
+  else clearVesselAfterPour(source);
   renderCookwareContents(source);
   renderCookwareContents(target);
   if(isHeatableCookwareItem(source))updateCookingStatus(source);
@@ -9772,7 +9805,7 @@ function beginPourTransfer(source,target){
 
     updatePourTarget();
     updateHover();
-    showToast(`Пресипано у: ${target.dataset.label||'посуду'}.`);
+    showToast(payload&&payload.fraction&&payload.fraction<.999?`Пресипано део у: ${target.dataset.label||'посуду'} — није стало све, остало је у првој посуди.`:`Пресипано у: ${target.dataset.label||'посуду'}.`);
   },910);
   return true;
 }
