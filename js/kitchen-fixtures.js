@@ -155,21 +155,25 @@ function hit(x,y){
 }
 // ---------- the grill: the camera comes close ----------
 var view=null;
-// the camera zooms in on the grill (frames of a Higgsfield video: assets/grillzoom/z_1..22.webp, from the whole kitchen to the grill) in about half a second,
+// the camera zooms in on the grill (frames of a Higgsfield video: assets/grillzoom/z_1..41.webp, from the whole kitchen to the grill) in about half a second,
 // then the picture of the grill (the same one) takes over; the zoom out is the same frames the other way round
-var ZN=22,ZMS=300,FADE=110,HOLD=140,zimgs=[];             // HOLD: a short stop on the first picture before the camera starts (and after it ends on the way back)
-for(var zi=1;zi<=ZN;zi++){zimgs[zi]=new Image();zimgs[zi].src='assets/grillzoom/z_'+zi+'.webp?v=3'}
+var ZN=41,ZMS=400,FADE=110,zimgs=[];
+for(var zi=1;zi<=ZN;zi++){zimgs[zi]=new Image();zimgs[zi].src='assets/grillzoom/z_'+zi+'.webp?v=4'}
 var zoomImg=new Image();zoomImg.src=ZOOM_SRC;
 function zoomReady(){for(var i=1;i<=ZN;i++)if(!zimgs[i].complete||!zimgs[i].naturalWidth)return false;return zoomImg.complete}
 function animateZoom(v,back,done){
-  var fr=v.querySelector('.gz-frame'),gi=v.querySelector('.gz-grill'),vg=v.querySelector('.gz-vig'),t0=performance.now(),total=HOLD+ZMS+FADE;
+  var fr=v.querySelector('.gz-frame'),gi=v.querySelector('.gz-grill'),vg=v.querySelector('.gz-vig'),t0=performance.now(),total=ZMS+FADE;
+  vg.style.opacity=0;
   (function step(now){
-    var e=Math.min(total,now-t0),u=(back?total-e:e)-HOLD;
-    // forward: frames for 0..ZMS, then the grill picture fades in over them; backward: the reverse
-    var f=Math.max(0,Math.min(1,u/ZMS)),idx=1+Math.round(f*(ZN-1));
-    fr.src=zimgs[idx].src;
-    var g=u<=ZMS?0:Math.min(1,(u-ZMS)/FADE);gi.style.opacity=g;
-    vg.style.opacity=0;                                                         // (the dark edge on the left is not needed any more: the new picture of the grill has the firewood on its left)
+    var e=Math.min(total,now-t0),f,g;
+    // the camera starts slowly and gets faster (ease-in) both ways
+    if(!back){                                                    // the kitchen -> the grill: the frames, then the grill picture fades in over the last frame
+      var t=Math.min(1,e/ZMS);f=t*t;g=e>ZMS?(e-ZMS)/FADE:0;
+    }else{                                                        // the grill -> the kitchen: the grill picture fades out, then the frames the other way round
+      var t2=Math.max(0,(e-FADE)/ZMS);f=1-t2*t2;g=e<FADE?1-e/FADE:0;
+    }
+    fr.src=zimgs[1+Math.round(Math.max(0,Math.min(1,f))*(ZN-1))].src;
+    gi.style.opacity=Math.max(0,Math.min(1,g));
     if(e<total)requestAnimationFrame(step);else done();
   })(t0);
 }
