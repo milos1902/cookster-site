@@ -1552,9 +1552,9 @@ try{COVR=JSON.parse(localStorage.getItem(CUT_KEY2)||'{}')||{};Object.keys(COVR).
 function cutSave(){try{localStorage.setItem(CUT_KEY2,JSON.stringify(COVR))}catch(e){}}
 // the shapes can change while a film plays (the arm is down on the table: one shape; the arm goes up: the body under it needs a new one): CUTF[ch][film] = [{f: first frame, s: shapes}, ...] (keyframes:
 // from the frame f on, until the next keyframe, these shapes are used). A film without keyframes uses the shapes of the still picture (CUT).
-var CUTF={},CUTF_KEY='cookster.guest-cutf.v1';
-try{CUTF=JSON.parse(localStorage.getItem(CUTF_KEY)||'{}')||{}}catch(e){CUTF={}}
-function cutFSave(){try{localStorage.setItem(CUTF_KEY,JSON.stringify(CUTF))}catch(e){}}
+var CUTF_DEF=window.__COOKSTER_GUEST_CUTF_DEF__||{},CUTF=JSON.parse(JSON.stringify(CUTF_DEF)),COVF={},CUTF_KEY='cookster.guest-cutf.v1';      // (CUTF_DEF: js/data/guest-cut-def.js; COVF: what Miloš cut in the tool, it wins)
+try{COVF=JSON.parse(localStorage.getItem(CUTF_KEY)||'{}')||{};Object.keys(COVF).forEach(function(c){Object.keys(COVF[c]||{}).forEach(function(f){(CUTF[c]=CUTF[c]||{})[f]=COVF[c][f]})})}catch(e){COVF={}}
+function cutFSave(){try{localStorage.setItem(CUTF_KEY,JSON.stringify(COVF))}catch(e){}}
 function cutShapes(g){
   var L=g._fn&&CUTF[g.ch]&&CUTF[g.ch][g._fn];
   if(L&&L.length){var k=L[0];for(var i=0;i<L.length;i++)if(L[i].f<=g._fi)k=L[i];return k.s}
@@ -1811,9 +1811,9 @@ window.CooksterTavern={preload:function(){return preload()},
   cut:{key:CUT_KEY2,get:function(ch){return JSON.parse(JSON.stringify(CUT[ch]||[]))},def:function(ch){return JSON.parse(JSON.stringify(CUT_DEF[ch]||[]))},
     set:function(ch,polys){CUT[ch]=polys;COVR[ch]=polys;cutSave()},reset:function(ch){CUT[ch]=JSON.parse(JSON.stringify(CUT_DEF[ch]||[]));delete COVR[ch];cutSave()},
     getF:function(ch,name){return JSON.parse(JSON.stringify((CUTF[ch]&&CUTF[ch][name])||[]))},
-    setF:function(ch,name,list){(CUTF[ch]=CUTF[ch]||{})[name]=list;cutFSave()},
-    resetF:function(ch,name){if(CUTF[ch]){delete CUTF[ch][name];cutFSave()}},
-    allF:function(){return JSON.parse(JSON.stringify(CUTF))},setAllF:function(o){Object.keys(o||{}).forEach(function(k){CUTF[k]=o[k]});cutFSave()},
+    setF:function(ch,name,list){(CUTF[ch]=CUTF[ch]||{})[name]=list;(COVF[ch]=COVF[ch]||{})[name]=list;cutFSave()},
+    resetF:function(ch,name){if(COVF[ch])delete COVF[ch][name];var d=CUTF_DEF[ch]&&CUTF_DEF[ch][name];if(d)(CUTF[ch]=CUTF[ch]||{})[name]=JSON.parse(JSON.stringify(d));else if(CUTF[ch])delete CUTF[ch][name];cutFSave()},
+    allF:function(){return JSON.parse(JSON.stringify(CUTF))},setAllF:function(o){Object.keys(o||{}).forEach(function(c){Object.keys(o[c]||{}).forEach(function(f){(CUTF[c]=CUTF[c]||{})[f]=o[c][f];(COVF[c]=COVF[c]||{})[f]=o[c][f]})});cutFSave()},
     all:function(){return JSON.parse(JSON.stringify(COVR))},setAll:function(o){Object.keys(o||{}).forEach(function(k){if(Array.isArray(o[k])){CUT[k]=o[k];COVR[k]=o[k]}});cutSave()}},
   // for the tool "Ruke gostiju": seat a guest on every free seat at once (each one a different character), and take them away again
   seatTest:function(){var chs=[1,2,3,4,5,6,7,9,10,1,3,4];SEATS.forEach(function(s,i){if(s.taken)return;var g=makeGuest(s,null,0,chs[i%chs.length]);g.mode='seated';g.held=false;g.fade=1;g.sitT=0;g.sitFor=1e9;g.orderDelay=1e9;g.x=s.ax;g.y=s.ay;g.testGuest=true})},
