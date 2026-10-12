@@ -332,3 +332,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Ulaz u kafanu: film vrata, nagli zum kroz vrata, kafana raste iz sredine
 - Klik na vrata u kuhinji: odmah počinje `assets/doors/dolazak.mp4` (PLAY=950 ms: vrata se otvore), pa nagli zum kroz vrata u tamu (ZM=380 ms, scale do 9x), čim je crno odmah (HOLD=100 ms) se otvara kafana: ona raste iz sredine crnog ekrana (scale .06→1, 800 ms) do punog ekrana (crno ostaje iza kafane dok raste). Kuhinja se ne zumira. Slike kafane se učitavaju čim miš dođe na vrata (hover) i čim počne film (`CooksterTavern.preload()`), a video 4 s posle starta. Ako se video ne učita, samo se zatamni. Povratak u kuhinju je kao ranije.
+
+## Zum na roštilj: samo živi zum (video verzija obrisana)
+- Zum na roštilj je sada SAMO živi zum scene (`zoomLive/closeLive`, bez `?zoom=live`). Verzija sa frejmovima videa (assets/grillzoom, ARC, canvas, ?zoom=video) je obrisana; time je i 2.7 MB slika manje i 64 slike manje u memoriji.
