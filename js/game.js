@@ -3516,6 +3516,12 @@ for(const [id,cfg] of Object.entries(perspectiveMasterDefaults)){
 }
 try{
  const saved=JSON.parse(localStorage.getItem(PERSPECTIVE_MASTER_KEY)||'null');
+ // One-time reset (the trash basket must not be pulled by any calibration point): drop the saved points of the basket, once per browser.
+ if(saved?.items&&localStorage.getItem('cookster.trash-points-reset.v1')!=='1'){
+  delete saved.items.kanta_set_zatvorena;
+  localStorage.setItem(PERSPECTIVE_MASTER_KEY,JSON.stringify(saved));
+  localStorage.setItem('cookster.trash-points-reset.v1','1');
+ }
  if(saved?.items&&typeof saved.items==='object'){
   for(const [id,entry] of Object.entries(saved.items)){
    if(!id||!entry||typeof entry!=='object')continue;
