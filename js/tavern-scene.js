@@ -1524,9 +1524,11 @@ function drawSprite(ctx,key,x,y,sc,flip,rot,alpha,sway){
 function drawShadow(ctx,x,y,sc){
   ctx.save();ctx.fillStyle='rgba(20,8,2,.32)';ctx.beginPath();ctx.ellipse(x,y+2,34*sc/.3,9*sc/.3,0,0,Math.PI*2);ctx.fill();ctx.restore();
 }
-// the hands of a guest at the far side of a table (and what he holds): the part of his picture that stays ABOVE the cloth, while the rest of him is covered by the mask of the table
-// (his chest goes behind the far edge of the table, his forearms and the mug lie on it). Polygons in the picture of the guest (u = 0..1 from the left, v = 0..1 from the top), measured by eye, for each character (the far guests all sit 'lice')
-var HANDS={        // (the whole arms from the shoulder to the hand and what he holds; only the middle of the body between the arms is left to the mask. Outside the picture (u<0, u>1) is empty.)
+// A guest at the far side of a table sits BEHIND it: his picture is drawn above the mask of the table, and then the part of him that is hidden by the table (his chest and belly below the far edge of the table)
+// is covered again with the picture of the table top. CUT[ch] = shapes in the picture of the guest (u = 0..1 from the left, v = 0..1 from the top; outside the picture is empty) that must be COVERED;
+// they are cut with the table top, so only what lies on the table top is hidden: a hand that is lifted above the table is never touched, and the same shapes work for every frame of every film of the guest.
+// The first shapes are made from the arms (ARMS: everything that is NOT the body between the arms); Miloš cuts them better in the tool "Ruke gostiju" (js/guest-hands-tool.js).
+var ARMS={        // (the whole arms from the shoulder to the hand and what he holds; only the middle of the body between the arms is left to the mask. Outside the picture (u<0, u>1) is empty.)
   1:[[[-.05,.5],[.20,.5],[.22,.62],[.52,.62],[.54,.80],[.50,.92],[.40,.95],[.30,1.05],[-.05,1.05]],[[1.05,.5],[.80,.5],[.80,.65],[.76,.74],[.66,.84],[.56,.86],[.52,.95],[.54,1.05],[1.05,1.05]]],
   2:[[[-.05,.45],[.22,.45],[.24,.66],[.30,.64],[.40,.72],[.42,.8],[.38,1.05],[-.05,1.05]],[[1.05,.45],[.78,.45],[.78,.66],[.74,.74],[.70,.80],[.66,.9],[.66,1.05],[1.05,1.05]],[[.34,.74],[.72,.74],[.72,1.05],[.34,1.05]]],
   3:[[[-.05,.45],[.22,.45],[.25,.66],[.31,.74],[.40,.72],[.62,.72],[.62,1.05],[-.05,1.05]],[[1.05,.45],[.80,.45],[.80,.68],[.74,.76],[.66,.84],[.62,.92],[.62,1.05],[1.05,1.05]]],
@@ -1538,27 +1540,58 @@ var HANDS={        // (the whole arms from the shoulder to the hand and what he 
   9:[[[-.05,.45],[.26,.45],[.28,.64],[.48,.64],[.50,.92],[.30,.95],[-.05,1.05]],[[1.05,.45],[.78,.45],[.78,.76],[.70,.82],[.58,.86],[.56,.98],[.60,1.05],[1.05,1.05]]],
   10:[[[-.05,.45],[.22,.45],[.24,.70],[.30,.72],[.40,.78],[.42,1.05],[-.05,1.05]],[[1.05,.30],[.70,.30],[.74,.5],[.76,.72],[.70,.78],[.46,.78],[.44,1.05],[1.05,1.05]]]
 };
+function torsoFromArms(P){
+  var L=P[0],R=P[1];if(!L||!R)return[];
+  return [L.slice(1,-1).concat(R.slice(1,-1).reverse())];      // between the inner edges of the two arms
+}
+var CUT_DEF={};for(var _c=1;_c<=10;_c++)CUT_DEF[_c]=torsoFromArms(ARMS[_c]||[]);
+CUT_DEF[2]=[[[.22,.45],[.78,.45],[.78,.66],[.72,.74],[.34,.74],[.30,.64],[.24,.66]]];      // (the bowl lies in front of her belly)
+var CUT=JSON.parse(JSON.stringify(CUT_DEF)),CUT_KEY2='cookster.guest-cut.v1',COVR={};      // (COVR: what Miloš cut in the tool; it wins over the built-in shapes)
+try{COVR=JSON.parse(localStorage.getItem(CUT_KEY2)||'{}')||{};Object.keys(COVR).forEach(function(k){if(Array.isArray(COVR[k]))CUT[k]=COVR[k]})}catch(e){COVR={}}
+function cutSave(){try{localStorage.setItem(CUT_KEY2,JSON.stringify(COVR))}catch(e){}}
 function farMaskY(t){          // the y of the mask of a table (the table 1 has no match in TABLEMASKY: its mask is the one that contains the middle of the table)
   var my=TABLEMASKY[t];
   if(my==null){var tb=TABLES[t];MASKS.forEach(function(m){if(pip(m.poly,tb.x,tb.y))my=Math.max(my==null?-1e9:my,m.y)})}
   return my==null?TABLES[t].y+90:my;
 }
-function drawHands(ctx,g){
-  var P=HANDS[g.ch];if(!P)return;
+// the top of a table (the cloth): the mask of the table that contains its middle; the mask of the table 1 is a big untidy shape (it holds the beam and the lamp too), so only its points near the table are used (their convex hull)
+function hull(pts){
+  pts=pts.slice().sort(function(a,b){return a[0]-b[0]||a[1]-b[1]});
+  function cr(o,a,b){return (a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0])}
+  var lo=[],up=[],i;
+  for(i=0;i<pts.length;i++){while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],pts[i])<=0)lo.pop();lo.push(pts[i])}
+  for(i=pts.length-1;i>=0;i--){while(up.length>=2&&cr(up[up.length-2],up[up.length-1],pts[i])<=0)up.pop();up.push(pts[i])}
+  lo.pop();up.pop();return lo.concat(up);
+}
+var TTOP={};
+function tableTop(t){
+  if(TTOP[t]&&TTOP[t].v===CAL)return TTOP[t].p;
+  var tb=TABLES[t],best=null;MASKS.forEach(function(m){if(pip(m.poly,tb.x,tb.y)&&(!best||m.poly.length<best.poly.length))best=m});
+  var poly=best?best.poly:[];
+  if(poly.length>12)poly=hull(poly.filter(function(q){return q[1]>tb.y-70&&Math.hypot(q[0]-tb.x,q[1]-tb.y)<340}));
+  TTOP[t]={v:CAL,p:poly};return poly;
+}
+function cutBody(ctx,g){
+  var P=CUT[g.ch],tt=tableTop(g.seat.table);if(!P||!P.length||tt.length<3)return;
   var key=chKey(g,'sedi_lice'),im=timgs[key]||imgs[key];if(!im)return;
   var sp=seatPos(g),ssc=scaleAt(sp.y)*SIT_K,w=(im.naturalWidth||im.width)*ssc,h=(im.naturalHeight||im.height)*ssc,x0=sp.x-w/2,y0=sp.y-h;
   ctx.save();ctx.beginPath();
-  P.forEach(function(poly){poly.forEach(function(q,i){var X=x0+q[0]*w,Y=y0+q[1]*h;if(i)ctx.lineTo(X,Y);else ctx.moveTo(X,Y)});ctx.closePath()});
-  ctx.clip();drawGuestBody(ctx,g);ctx.restore();
+  P.forEach(function(poly){      // (all shapes the same way round, so that overlapping ones add up in the clip instead of cutting holes)
+    var pts=poly.map(function(q){return[x0+q[0]*w,y0+q[1]*h]}),ar=0;
+    pts.forEach(function(q,i){var r=pts[(i+1)%pts.length];ar+=q[0]*r[1]-r[0]*q[1]});if(ar<0)pts.reverse();
+    pts.forEach(function(q,i){if(i)ctx.lineTo(q[0],q[1]);else ctx.moveTo(q[0],q[1])});ctx.closePath();
+  });
+  ctx.clip();drawPolyFromPicture(ctx,tt);ctx.restore();
 }
+function farSeated(g){return g.seat.k==='back'&&g.mode==='seated'&&!!CUT[g.ch]}
 function guestSortY(g){
   if(g.mode!=='seated'&&g.mode!=='sitting'&&g.mode!=='rising')return g.y;
-  // a guest at the far side of the table sits BEHIND it: the mask of the table (its far edge) covers him, the same at all three tables
-  // (before, the guests at the far side of tables 2 and 3 were drawn above the cloth and showed over the far edge; table 1 only worked because its mask has no match in TABLEMASKY)
+  if(farSeated(g))return farMaskY(g.seat.table)+.003;      // above the mask of his table (then cutBody covers what the table hides)
   return seatPos(g).y;
 }
 function drawGuest(ctx,g){
   drawGuestBody(ctx,g);
+  if(farSeated(g)&&!g._coHide)cutBody(ctx,g);
   if(g.mode==='seated'||g.mode==='sitting'||g.mode==='rising'){
     var cm=CAL.chairMask[g.seat.id];
     if(cm)cm.forEach(function(p){drawPolyFromPicture(ctx,p)});
@@ -1616,7 +1649,6 @@ function draw(){
   var cm=companyGuests(),cs=cm?companyStep(cm):null,coY=-1e9;
   guests.forEach(function(g){g._coHide=false});
   if(cs){coY=Math.max.apply(null,cm.map(guestSortY))+.001;list.push({y:coY,co:cs});if(cs.al>=1)cm.forEach(function(g){g._coHide=true})}
-  guests.forEach(function(g){if(g.mode==='seated'&&g.seat.k==='back'&&!g.held&&!g._coHide&&HANDS[g.ch])list.push({y:farMaskY(g.seat.table)+.005,h:g})});      // the hands of the guests at the far side lie on the table: right above its cloth (a dish on the table is still above them)
   for(var at=0;at<TABLES.length;at++)(function(t){var my=TABLEMASKY[t],a0=ASH[t],my2=-1e9;if(a0)MASKS.forEach(function(m){if(pip(m.poly,a0.x,a0.y-4))my2=Math.max(my2,m.y)});if(my2>-1e8)my=my2;list.push({y:Math.max((my!=null?my:TABLES[t].y)+.02,t===COMPANY.table?coY+.0001:-1e9),ash:t})})(at);
   MASKS.forEach(function(m){list.push({y:m.y,m:m})});
   list.push({y:238,bar:true});                       // the ashtrays on the bar (js/ashtrays.js)
@@ -1634,7 +1666,7 @@ function draw(){
     if(!busy)list.push({y:m.y,m:m});
   });
   list.sort(function(a,b){return a.y-b.y});
-  list.forEach(function(o){if(o.co){ctx.save();ctx.globalAlpha=o.co.al;ctx.drawImage(coImgs.fr[o.co.i],COFILM.ox,COFILM.oy,COFILM.w,COFILM.h);ctx.restore()}else if(o.g)drawGuest(ctx,o.g);else if(o.h)drawHands(ctx,o.h);else if(o.w)drawWaiter(ctx);else if(o.dish)drawDish(ctx,o.dish);else if(o.ash!==undefined)drawAsh(ctx,o.ash);else if(o.bar){try{if(window.CooksterAshtrays)window.CooksterAshtrays.drawBar(ctx)}catch(e){}}else drawPolyFromPicture(ctx,o.m.poly)});
+  list.forEach(function(o){if(o.co){ctx.save();ctx.globalAlpha=o.co.al;ctx.drawImage(coImgs.fr[o.co.i],COFILM.ox,COFILM.oy,COFILM.w,COFILM.h);ctx.restore()}else if(o.g)drawGuest(ctx,o.g);else if(o.w)drawWaiter(ctx);else if(o.dish)drawDish(ctx,o.dish);else if(o.ash!==undefined)drawAsh(ctx,o.ash);else if(o.bar){try{if(window.CooksterAshtrays)window.CooksterAshtrays.drawBar(ctx)}catch(e){}}else drawPolyFromPicture(ctx,o.m.poly)});
   drawReactions(ctx,.016);drawOrderBubble(ctx);
 }
 
@@ -1763,6 +1795,12 @@ window.CooksterTavern={preload:function(){return preload()},
   seatReach:function(){return SEATS.map(seatReachable)},poseFromDir:poseFromDir,seatScale:function(y){return scaleAt(y)*SIT_K},
   poseInfo:function(pose){var im=imgs['g01_sedi_'+pose];return im?{src:im.src,w:im.naturalWidth,h:im.naturalHeight}:null},
   defaults:fileCal,spongeAt:spongeAt,idw:idw,spongeImg:SPONGE_IMG,spongeRadius:SPONGE_RADIUS,calibration:function(){return CAL},applyCalibration:function(c){applyCal(c)},calKey:CAL_KEY,waiterPath:waiterPath,waiterAutoRoute:waiterAutoRoute,waiterSpot:waiterSpot,waiterWalkable:waiterWalkable,
-  fit:function(){fit();draw()},isOpenScene:function(){return state!=='kitchen'}
+  fit:function(){fit();draw()},isOpenScene:function(){return state!=='kitchen'},
+  cut:{key:CUT_KEY2,get:function(ch){return JSON.parse(JSON.stringify(CUT[ch]||[]))},def:function(ch){return JSON.parse(JSON.stringify(CUT_DEF[ch]||[]))},
+    set:function(ch,polys){CUT[ch]=polys;COVR[ch]=polys;cutSave()},reset:function(ch){CUT[ch]=JSON.parse(JSON.stringify(CUT_DEF[ch]||[]));delete COVR[ch];cutSave()},
+    all:function(){return JSON.parse(JSON.stringify(COVR))},setAll:function(o){Object.keys(o||{}).forEach(function(k){if(Array.isArray(o[k])){CUT[k]=o[k];COVR[k]=o[k]}});cutSave()}},
+  // for the tool "Ruke gostiju": seat a guest on every free seat at once (each one a different character), and take them away again
+  seatTest:function(){var chs=[1,2,3,4,5,6,7,9,10,1,3,4];SEATS.forEach(function(s,i){if(s.taken)return;var g=makeGuest(s,null,0,chs[i%chs.length]);g.mode='seated';g.held=false;g.fade=1;g.sitT=0;g.sitFor=1e9;g.orderDelay=1e9;g.x=s.ax;g.y=s.ay;g.testGuest=true})},
+  clearTest:function(){for(var i=guests.length-1;i>=0;i--)if(guests[i].testGuest){guests[i].seat.taken=false;guests.splice(i,1)}}
 };
 })();
