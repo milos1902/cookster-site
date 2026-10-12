@@ -198,7 +198,7 @@ function setLive(P,u){
   var sc=document.getElementById('scene');sc.style.transform='translate('+(px-P.G.x*S)+'px,'+(py-P.G.y*S)+'px) scale('+S+')';
 }
 function runLive(v,back,done){
-  var P=v._P,gi=v.querySelector('.gz-grill'),ZM=back?ZMS:ZIN,total=ZM,t0=performance.now();
+  var P=v._P,gi=v.querySelector('.gz-grill'),ZM=ZIN,total=ZM,t0=performance.now();
   var Kz=P.S1/P.sc,Tl={x:870*P.sc,y:470*P.sc};
   (function step(now){
     var e=Math.max(0,Math.min(total,now-t0)),t=Math.min(1,e/ZM),u=back?1-t*t:t*t;
