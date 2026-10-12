@@ -335,3 +335,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Zum na roštilj: samo živi zum (video verzija obrisana)
 - Zum na roštilj je sada SAMO živi zum scene (`zoomLive/closeLive`, bez `?zoom=live`). Verzija sa frejmovima videa (assets/grillzoom, ARC, canvas, ?zoom=video) je obrisana; time je i 2.7 MB slika manje i 64 slike manje u memoriji.
+
+## Ulaz u kafanu: brže, kafana raste iz centra sa mekim ivicama
+- Kočenje posle crnog je bilo čekanje na učitavanje svih slika kafane (preload je čekao ~400 slika). Sada `preload()` čeka samo sliku sale + 18 slika konobara; slike gostiju i dugi hodovi konobara stižu u pozadini (hladno ~170 ms umesto ~1.7 s lokalno).
+- Kafana se otvara već dok traje nagli zum kroz vrata (k≥0.7), raste iz centra (scale .2→1, 850 ms) sa mekim (feather) ivicama: radial-gradient maska `closest-side` koja se širi do punog ekrana; crno ostaje iza nje (`reveal()` u `zoomDoor`).

@@ -80,24 +80,24 @@ function loadImg(src){return new Promise(function(res){
 function preload(){
   if(loaded)return Promise.resolve(true);
   if(loading)return loading;
-  var jobs=[];
+  // the tavern opens as soon as the picture of the hall and the waiter are there (they are asked for first); the pictures of the guests and the long walks follow in the background
+  var crit=[],rest=[];
+  crit.push(loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im}));
+  ['walkd','walku','walks','writes','foods','drinks'].forEach(function(w){for(var f2=1;f2<=3;f2++)(function(key){
+    crit.push(loadImg(WAITER+'waiter_'+key+'.webp?v=7').then(function(im){store('w_'+key,im)}));
+  })(w+f2)});
   for(var c=1;c<=CHARS;c++)POSES.forEach(function(p){
     var key='g'+(c<10?'0':'')+c+'_'+p;
-    jobs.push(loadImg(GUESTS+key+'.webp?v='+IMGV).then(function(im){store(key,im)}));
+    rest.push(loadImg(GUESTS+key+'.webp?v='+IMGV).then(function(im){store(key,im)}));
   });
   // walking toward the camera: right leg forward, legs together, left leg forward (then together again)
   // (the same three pictures seen from behind, 'walku', when walking away from the camera)
   for(var c2=1;c2<=CHARS;c2++)for(var f=1;f<=3;f++)['walkd','walku'].forEach(function(w){(function(key){
-    jobs.push(loadImg(GUESTS+key+'.webp?v='+IMGV).then(function(im){store(key,im)}));
+    rest.push(loadImg(GUESTS+key+'.webp?v='+IMGV).then(function(im){store(key,im)}));
   })('g'+(c2<10?'0':'')+c2+'_'+w+f)});
-  // the waiter: three pictures of a step toward the camera (walkd), away from it (walku) and from the side (walks, looking right)
-  ['walkd','walku','walks','writes','foods','drinks'].forEach(function(w){for(var f2=1;f2<=3;f2++)(function(key){
-    jobs.push(loadImg(WAITER+'waiter_'+key+'.webp?v=7').then(function(im){store('w_'+key,im)}));
-  })(w+f2)});
   // walking toward the camera: 16 pictures of a whole walk (two steps), made from the three old ones with frame interpolation
-  [['walkd','wd'],['walku','wu'],['walks','ws']].forEach(function(pr){for(var wf=1;wf<=WD_N[pr[0]];wf++)(function(n){jobs.push(loadImg(WAITER+pr[0]+'24/f'+(n<10?'0':'')+n+'.webp?v=6').then(function(im){store('w_'+pr[1]+n,im)}))})(wf)});
-  var roomJob=loadImg(ROOM).then(function(im){if(im){art.src=ROOM;backdrop.style.backgroundImage='url("'+ROOM+'")'}return !!im});
-  loading=Promise.all([roomJob].concat(jobs)).then(function(r){loaded=!!r[0];loading=null;return loaded});
+  [['walkd','wd'],['walku','wu'],['walks','ws']].forEach(function(pr){for(var wf=1;wf<=WD_N[pr[0]];wf++)(function(n){rest.push(loadImg(WAITER+pr[0]+'24/f'+(n<10?'0':'')+n+'.webp?v=6').then(function(im){store('w_'+pr[1]+n,im)}))})(wf)});
+  loading=Promise.all(crit).then(function(r){loaded=!!r[0];loading=null;return loaded});
   return loading;
 }
 
