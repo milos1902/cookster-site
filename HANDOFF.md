@@ -5,7 +5,7 @@ Poslednje ažuriranje: oktobar 2026 (posle PR-ova do #262).
 
 ## Ko je Miloš i kako se radi sa njim
 - Miloš govori srpski, nov je na GitHub-u. **Odgovaraj na srpskom, jednostavnim jezikom.** Uvek reci šta je urađeno, šta NIJE testirano i šta on treba da uradi.
-- Svaku izmenu stavljaj u **novi PR**. PR spaja Miloš, ne ti. Posle svakog PR-a daj mu 3 koraka: 1) spoji PR, 2) sačekaj zelenu kvačicu na https://github.com/milos1902/cookster-site/actions, 3) Ctrl+F5 na https://milos1902.github.io/cookster-site/ .
+- Svaku izmenu stavljaj u **novi PR**. PR spaja Miloš, ne ti. Posle svakog PR-a daj mu SAMO link/broj PR-a na koji klikne (bez 3 koraka, spajanja, zelene kvačice i Ctrl+F5: on to već zna).
 - Radi samo na grani koju sesija dodeli (do sada `claude/modest-wright-6dlgd4`). Ako je prethodni PR već spojen, prebaci granu na svež `main` i prenesi svoj commit:
   `git fetch origin main; git checkout -B <grana> origin/main; git cherry-pick <commit>; git merge -X ours origin/<grana> -m "Merge remote branch (already merged into main)"; git push -f -u origin <grana>`, pa napravi novi PR. Ako je prethodni PR još otvoren, samo pushuj u njega i reci to.
 - Commit poruke završi sa `Co-Authored-By: ...` i `Claude-Session: ...` (tačne linije su u uputstvu sesije). PR opis završi sa `🤖 Generated with [Claude Code](https://claude.com/claude-code)` i linkom sesije. Ime modela ne upisuj u fajlove.
