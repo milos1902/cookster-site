@@ -43,7 +43,7 @@ function paint(k){
 }
 function setP(k,v){
   var d=DR[k];d.p=Math.max(0,Math.min(1,v));var i=Math.round(d.p*d.N);
-  if(i!==d.idx){d.idx=i;paint(k);if(k==='left')updateJars()}
+  if(i!==d.idx){d.idx=i;paint(k);if(k==='left')updateJars();else updateTools()}
 }
 // a click on the drawer: it opens (or closes) in 0.3 s
 function toggle(k){
@@ -112,6 +112,52 @@ function updateJars(){
   });
 }
 setInterval(updateJars,150);
+// ---------- the wooden spoon and the ladle lie in the right drawer (pictures, like the jars of the left drawer): the front of the drawer hides their lower part; a click on one takes the real item, and an item put down over the open drawer goes back ----------
+var TOOLS=[
+  {id:'kasika_mesanje',src:'assets/new_props/kasika_1.png',cx:935,cy:662,w:58,h:142,rot:90,k:.82,label:'drvena kašika'},
+  {id:'kutlaca_ajvar',src:'assets/calibration_props/ajvar_jars/kutlaca_ajvar.png',cx:1075,cy:664,w:112,h:112,rot:0,k:.9,label:'drvena kutlača'}
+];
+var TOOL_IN={l:860,t:605,r:1165,b:712},toolClip=null;
+function toolOut(t){try{
+  if((window.items||items).some(function(el){return el.dataset&&el.dataset.itemId===t.id}))return true;
+  if(typeof backpackContents!=='undefined'&&backpackContents.some(function(el){return el&&el.dataset&&el.dataset.itemId===t.id}))return true;
+}catch(e){}return false}
+function updateTools(){
+  var sc=document.getElementById('scene');if(!sc)return;
+  var d=DR.right,t=d.idx>=d.N?1:gOf(d),shown=d.idx>0,frontTop=605+107*t;
+  if(!toolClip||!toolClip.isConnected){toolClip=document.createElement('div');toolClip.style.cssText='position:absolute;z-index:27;pointer-events:none;overflow:hidden;left:840px;top:603px;width:330px;height:0px';sc.appendChild(toolClip)}
+  var L=Math.round(d.x0+d.dx0*t)+8,R=Math.round(d.x1+d.dx1*t)-8;
+  toolClip.style.left=L+'px';toolClip.style.width=Math.max(0,R-L)+'px';toolClip.style.height=Math.max(0,Math.round(frontTop-603))+'px';toolClip.style.display=shown?'block':'none';
+  TOOLS.forEach(function(o){
+    if(!o.el||!o.el.isConnected){o.el=document.createElement('img');o.el.draggable=false;o.el.src=o.src;o.el.style.cssText='position:absolute;pointer-events:none;display:none;filter:drop-shadow(2px 3px 2px rgba(20,8,0,.45))';toolClip.appendChild(o.el)}
+    var show=shown&&!toolOut(o);
+    if(show){
+      var w=o.w*o.k,h=o.h*o.k,y=o.cy-107*(1-t);
+      o.el.style.width=w+'px';o.el.style.height=h+'px';
+      o.el.style.left=Math.round(o.cx-w/2-L)+'px';o.el.style.top=Math.round(y-h/2-603)+'px';
+      o.el.style.transform='rotate('+o.rot+'deg)';
+    }
+    o.el.style.display=show?'block':'none';
+  });
+}
+setInterval(updateTools,150);
+function toolBox(o){var w=o.rot?o.h*o.k:o.w*o.k,h=o.rot?o.w*o.k:o.h*o.k;return{l:o.cx-w/2,r:o.cx+w/2,t:o.cy-h/2,b:Math.min(o.cy+h/2,TOOL_IN.b)}}
+function toolAt(p){
+  if(DR.right.idx!==DR.right.N)return null;
+  for(var i=0;i<TOOLS.length;i++){var o=TOOLS[i];if(!toolOut(o)&&inR(p,toolBox(o)))return o}
+  return null;
+}
+function takeTool(o){
+  try{
+    var def=null;(CooksterCatalog.ITEMS||[]).forEach(function(d){if(d.id===o.id)def=d});
+    var sp=screenToScene(mouse.x,mouse.y);if(!def||toolOut(o))return;
+    var el=makeItem(Object.assign({},def,{instanceId:nextItemInstanceId(o.id),x:sp.x-def.w/2,y:sp.y-def.h,z:++zCounter}));
+    if(!el)return;el.dataset.surfaceZone='table';
+    setPose(el,sp.x,sp.y,surfaceScaleFor(el,'table',sp.y));
+    startHolding(el);updateTools();
+    try{CooksterSave.schedule()}catch(e){}
+  }catch(e){}
+}
 function jarAt(p){
   if(DR.left.idx!==DR.left.N)return null;
   for(var i=0;i<JARS.length;i++){var j=JARS[i];if(j.slot>=0&&!jarOut(j)&&inR(p,slotBox(j)))return j}
@@ -131,6 +177,15 @@ function takeJar(j){
 // a jar that is put down over the open drawer goes into the compartment that is the nearest to the place (a free one)
 function tryDrop(item){
   try{
+    if(item&&item.dataset&&DR.right.idx===DR.right.N){
+      var to=null;TOOLS.forEach(function(o){if(o.id===item.dataset.itemId)to=o});
+      if(to&&inR(screenToScene(mouse.x,mouse.y),TOOL_IN)){
+        removeItem(item);holding=null;
+        try{hidePlacementGhost();hideOriginGhost();clearPanTargets();updateHover()}catch(e){}
+        updateTools();try{showToast(to.label+' je u fioci.')}catch(e){}try{CooksterSave.schedule()}catch(e){}
+        return true;
+      }
+    }
     if(!item||!item.dataset||DR.left.idx!==DR.left.N)return false;
     var m=/^zacin_(paprika|tucana|biber|so|secer|lovor)$/.exec(item.dataset.itemId||'');if(!m)return false;
     var p=screenToScene(mouse.x,mouse.y);if(!inR(p,DRAWER_IN))return false;
@@ -148,6 +203,7 @@ function hit(x,y){
   var p=screenToScene(x,y);
   try{if(typeof itemAt==='function'&&itemAt(x,y))return null}catch(e){}
   var jr=jarAt(p);if(jr){var jd=null;try{jd=kitchenEquipmentDef('zacin_'+jr.id)}catch(e){}return{kind:'jar',id:jr.id,label:((jd&&jd.label)||jr.id)+' — klik da uzmeš'}}
+  var tl=toolAt(p);if(tl)return{kind:'tool',id:tl.id,label:tl.label+' — klik da uzmeš'};
   for(var k in DR){var d=DR[k],t=Math.min(1,gOf(d));
     if(inR(p,{l:d.x0+d.dx0*t,r:d.x1+d.dx1*t,t:603,b:680+d.dy*t+4}))return{kind:'drawer',key:k,label:d.label+(d.to?' — klik za zatvaranje':' — klik za otvaranje')}}
   if(inR(p,GRILL))return{kind:'grill',label:'roštilj — klik za zumiranje'};
@@ -280,7 +336,7 @@ function closeGrill(){
 }
 function click(h){
   if(!h)return false;
-  if(h.kind==='drawer')toggle(h.key);else if(h.kind==='grill')zoomGrill();else if(h.kind==='door')zoomDoor();else if(h.kind==='jar'){for(var i=0;i<JARS.length;i++)if(JARS[i].id===h.id)takeJar(JARS[i])}
+  if(h.kind==='drawer')toggle(h.key);else if(h.kind==='grill')zoomGrill();else if(h.kind==='door')zoomDoor();else if(h.kind==='tool'){for(var ti=0;ti<TOOLS.length;ti++)if(TOOLS[ti].id===h.id)takeTool(TOOLS[ti])}else if(h.kind==='jar'){for(var i=0;i<JARS.length;i++)if(JARS[i].id===h.id)takeJar(JARS[i])}
   return true;
 }
 function liveAt(u){                                              // (for testing) the live zoom frozen at the zoom u (0..1)
@@ -310,6 +366,6 @@ function swingDoors(dur,from){
     if(k!==last&&imgs[k]&&imgs[k].complete&&imgs[k].naturalWidth){dEl.src=imgs[k].src;dEl.style.display='';last=k}
     if(now-t0<DUR)requestAnimationFrame(f);else{dEl.style.display='none';dBusy=false}})(t0);
 }
-window.CooksterKitchenFx={leaveTavern:leaveTavern,swingDoors:swingDoors,liveAt:liveAt,compose:function(src){return src},hit:hit,click:click,tryDrop:tryDrop,updateJars:updateJars,zoomGrill:zoomGrill,closeGrill:closeGrill,
+window.CooksterKitchenFx={leaveTavern:leaveTavern,swingDoors:swingDoors,liveAt:liveAt,compose:function(src){return src},hit:hit,click:click,tryDrop:tryDrop,updateJars:updateJars,updateTools:updateTools,zoomGrill:zoomGrill,closeGrill:closeGrill,
   drawer:function(k){return DR[k]?DR[k].p:0},setDrawer:function(k,v){if(DR[k])setP(k,v)},isZoomed:function(){return !!view}};
 })();

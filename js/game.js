@@ -2232,12 +2232,6 @@ function openWoodBasketActionMenu(basket,x,y){
  });
  button.addEventListener('click',e=>{e.stopPropagation();requestWoodBasketFill(basket);});
  menu.appendChild(button);
- const moveBtn=document.createElement('button');
- moveBtn.type='button';
- moveBtn.textContent='Pomeri korpu';
- Object.assign(moveBtn.style,{border:'0',borderRadius:'5px',padding:'7px 10px',cursor:'pointer',background:'#e8d9b8',color:'#2a1a0e',font:'700 13px system-ui'});
- moveBtn.addEventListener('click',e=>{e.stopPropagation();closeWoodBasketActionMenu();startHolding(basket,null);});
- menu.appendChild(moveBtn);
  document.body.appendChild(menu);
  woodBasketActionMenu=menu;
  const mw=menu.offsetWidth||160,mh=menu.offsetHeight||60;
@@ -8211,6 +8205,7 @@ function setPose(el,cx,by,vis){
  if(hasPerspectiveCalibrationPoints(el,surfaceZone)){
    vis=surfaceScaleFor(el,surfaceZone,by);
  }
+ if(el.dataset.fixedVis&&!el.classList.contains('held'))vis=+el.dataset.fixedVis;   // a locked prop keeps exactly the size the owner gave it
  const bw=+el.dataset.baseW,bh=+el.dataset.baseH,w=bw*vis,h=bh*vis;
  el.dataset.vis=vis;
  el.style.width=w+'px';el.style.height=h+'px';el.style.left=(cx-w/2)+'px';el.style.top=(by-h)+'px';
@@ -14586,7 +14581,7 @@ function updateHover(){
  if(faucetHit(mouse.x,mouse.y)){clearHover();label.textContent=faucetOn?'slavina — klik za zatvaranje vode':'slavina — klik za puštanje vode';label.style.left=mouse.x+'px';label.style.top=(mouse.y-12)+'px';label.style.display='block';return;}
  const lh=lidAt(mouse.x,mouse.y);
  if(lh){if(hoverItem!==lh.item){clearHover();hoverItem=lh.item}lh.lid.classList.add('hover-lid');hoverItem.classList.remove('hovered');label.textContent='poklopac — '+lh.item.dataset.label}
-  else{const it=itemAt(mouse.x,mouse.y);if(it!==hoverItem){clearHover();hoverItem=it;if(it){it.classList.add('hovered')}}if(it)label.textContent=isWoodBasket(it)?(woodBasketRemaining(it)>0?'Korpa sa drvima · L: uzmi cjepanicu · D: podigni korpu':'Prazna korpa · D: Napuni korpu · fiksirana pozicija'):it.dataset.crate==='1'?it.dataset.label+' · L: 1 komad · D: cela gajba':(it.dataset.detachedLid==='1'?'poklopac':it.dataset.label)}
+  else{const it=itemAt(mouse.x,mouse.y);if(it!==hoverItem){clearHover();hoverItem=it;if(it){it.classList.add('hovered')}}if(it)label.textContent=isWoodBasket(it)?(woodBasketRemaining(it)>0?'Korpa sa drvima · L: uzmi cjepanicu · korpa je zaključana':'Prazna korpa · D: Napuni korpu · fiksirana pozicija'):it.dataset.crate==='1'?it.dataset.label+' · L: 1 komad · D: cela gajba':(it.dataset.detachedLid==='1'?'poklopac':it.dataset.label)}
  if(hoverItem){label.style.left=mouse.x+'px';label.style.top=(mouse.y-12)+'px';label.style.display='block'}
  resetBagPickIfTargetChanged();
  updateBagQtyBadge();
@@ -14630,6 +14625,7 @@ function trySnapLid(detached){
 function startHolding(el,pointerEvent=null){
  if(el?.dataset?.itemId==='noz'&&getBoardEl())el=getBoardEl();
  if(!el||picking||placing||pouring)return;
+ if(el.dataset.locked==='1'){showToast('Ovaj predmet je zaključan na svom mestu.');return;}
 
  // Capture the pickup relation before any held-state mutation.
  // This guarantees zero visual displacement at the instant of left click.
@@ -15237,7 +15233,7 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
     if(it&&isWoodBasket(it)){
       e.preventDefault();
       if(woodBasketRemaining(it)<=0)openWoodBasketActionMenu(it,e.clientX,e.clientY);
-      else{startHolding(it,e);showToast('Korpa je u ruci. Desni klik ponovo da je spustiš.');}   // right click lifts the whole basket (like a crate); left click still takes one log
+      else showToast('Korpa za drva je zaključana na svom mestu. Levi klik uzima cepanicu.');
       return;
     }
     if(it&&isPaprikaSteamBag(it)){e.preventDefault();openPaprikaBagActionMenu(it,e.clientX,e.clientY);return}
@@ -15258,8 +15254,8 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
      return;
    }
     if(shouldOpenQuickToolWheel(e,it)){e.preventDefault();openQuickToolWheel(e.clientX,e.clientY);return;}
-   // Other placed items retain right-drag angle/tilt adjustment.
-   if(it){
+   // Other placed items retain right-drag angle/tilt adjustment (a locked item stays as it is).
+   if(it&&it.dataset.locked!=='1'){
      rotating=it;
      rotateStartX=e.clientX;rotateStartY=e.clientY;
      rotateStartAngle=+(it.dataset.angle||0);
@@ -15410,7 +15406,7 @@ ensureWoodBasket();
 // saves could be missing it, so restore one only when there is no scene instance.
 let __starterSpoon=items.find(el=>el.dataset.itemId==='kasika_mesanje')||
  backpackContents.find(el=>el?.dataset?.itemId==='kasika_mesanje')||null;
-if(!__starterSpoon){
+if(false&&!__starterSpoon){   // (the spoon now lives in the right drawer: js/kitchen-fixtures.js)
  const __stirSpoonDef=itemsData.find(def=>def.id==='kasika_mesanje');
  if(__stirSpoonDef){
   __starterSpoon=makeItem(__stirSpoonDef);
@@ -15443,6 +15439,40 @@ if(!__hasSavedWorld){
   }catch(err){console.warn('[Cookster] start prop failed',p.id,err);}
  });
 }
+// Props placed by the owner (measured from his save, 2026-10-12): they stand exactly here at the start of every game and cannot be moved (dataset.locked).
+const FIXED_PROPS=[
+ {id:'daska',cx:839.1996770721205,by:484.8223259742607,vis:0.9826182397886274,zone:'table'},
+ {id:'korpa_drva',cx:1355.6103336921421,by:848.0204520990312,vis:1.165,zone:'floor'},
+ {id:'kanta_set_zatvorena',cx:1574.4822389666308,by:944.109900380681,vis:1.463239401919793,zone:'floor'},
+ {id:'zvonce_konobar',cx:1176.064585575888,by:309.2766415500538,vis:0.73,zone:'table'},
+ {id:'ticket_rail',cx:1028.599569429494,by:273.2301932949392,vis:0.8748773233935208,zone:'table'}
+];
+function lockFixedProps(){
+ for(const p of FIXED_PROPS){
+  try{
+   let el=items.find(e=>e.dataset.calibrationCopy!=='1'&&(p.id==='korpa_drva'?isWoodBasket(e):e.dataset.itemId===p.id));
+   if(!el){
+    const def=kitchenEquipmentDef(p.id)||itemsData.find(d=>d.id===p.id);if(!def)continue;
+    el=makeItem({...def,instanceId:nextItemInstanceId(def.id),x:p.cx-def.w/2-CENTER_OFFSET,y:p.by-def.h,z:++zCounter});
+   }
+   if(!el||el===holding)continue;
+   el.dataset.surfaceZone=p.zone;el.dataset.angle='0';el.dataset.tilt='0';
+   setPose(el,p.cx,p.by,p.vis);
+   el.dataset.fixedVis=String(p.vis);
+   setPose(el,p.cx,p.by,p.vis);
+   el.dataset.locked='1';
+   if(p.id==='daska')syncBoardAttachments(el);
+  }catch(err){console.warn('[Cookster] fixed prop failed',p.id,err);}
+ }
+}
+lockFixedProps();
+// The wooden spoon and the ladle live in the right drawer of the table (js/kitchen-fixtures.js). Once per browser they are taken off the table of an old save.
+try{
+ if(!__hasSavedWorld||localStorage.getItem('cookster.tools-in-drawer.v1')!=='1'){
+  for(const el of [...items])if((el.dataset.itemId==='kasika_mesanje'||el.dataset.itemId==='kutlaca_ajvar')&&el!==holding&&['','table','decor','floor'].includes(el.dataset.surfaceZone||''))removeItem(el);
+  localStorage.setItem('cookster.tools-in-drawer.v1','1');
+ }
+}catch(_){}
 cleanupQuickToolSceneClutter();
 setTimeout(cleanupQuickToolSceneClutter,50);
 setTimeout(cleanupQuickToolSceneClutter,350);
