@@ -36,7 +36,7 @@ function makeOrder(key,woman){
   return o;
 }
 var TRIP_MS=3500;                                                      // how long the waiter needs from the tavern to the kitchen
-var FLOOR_Y=335,STOP_X=985,DOOR_X=985,DOOR_Y=150,CLIP_Y=235,PATH_S=.45,PATH_E=.62,SPEED=330,STAGE=120;                         // where he walks in the kitchen (scene pixels), how fast, the length of a step
+var FLOOR_Y=335,STOP_X=985,DOOR_X=985,DOOR_Y=150,CLIP_Y=235,PATH_S=.3,PATH_E=.66,SPEED=230,STAGE=120;                         // where he walks in the kitchen (scene pixels), how fast, the length of a step
 var pending=[],notes=[],anim=null,uid=0,imgs=[];
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify({pending:pending,notes:notes,uid:uid}))}catch(_){}}
@@ -517,9 +517,9 @@ function tick(now){
     if(anim.t>.9){anim.phase='out';anim.t=0}
   }else if(anim.phase==='out'){
     if(!anim.outInit){anim.outInit=1;anim.p=1}
-    if(!anim.opened){anim.opened=true;if(window.CooksterKitchenFx&&CooksterKitchenFx.swingDoors)CooksterKitchenFx.swingDoors(1000)}   // the doors open first,
-    if(anim.t<.6){anim.set=imgU;frame=2;anim.sc=PATH_E;anim.clip=CLIP_Y}   // he turns his back and goes up again
-    else anim.p=Math.max(0,anim.p-SPEED*dt/PATH_LEN);if(anim.t>=.6)frame=SEQ[Math.floor(anim.p*PATH_LEN/STAGE)%4];pathPos(anim.p,'u');
+    if(!anim.opened){anim.opened=true;if(window.CooksterKitchenFx&&CooksterKitchenFx.swingDoors)CooksterKitchenFx.swingDoors(2200)}   // the doors open first,
+    if(anim.t<1){anim.set=imgU;frame=2;anim.sc=PATH_E;anim.clip=CLIP_Y}   // he turns his back and goes up again
+    else anim.p=Math.max(0,anim.p-SPEED*dt/PATH_LEN);if(anim.t>=1)frame=SEQ[Math.floor(anim.p*PATH_LEN/STAGE)%4];pathPos(anim.p,'u');
     if(anim.p<=0){
       if(!anim.call){pending.shift();save()}
       if(anim.carry&&window.CooksterTavern&&window.CooksterTavern.deliver)(anim.carry.all||[anim.carry]).forEach(function(d){window.CooksterTavern.deliver((d.table||anim.carry.table)-1,d.kind,d.ev,d.seatId,d.items||null,d.img||null)});
