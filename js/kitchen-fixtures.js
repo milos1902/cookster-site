@@ -209,11 +209,14 @@ function runLive(v,back,done){
     var S=P.sc*Math.pow(Kz,u),w=(S-P.sc)/(P.S1-P.sc),px=P.p0.x+(P.p1.x-P.p0.x)*w-P.tx0,py=P.p0.y+(P.p1.y-P.p0.y)*w-P.ty0,r=Math.pow(Kz,u-1);
     gi.style.transformOrigin=Tl.x+'px '+Tl.y+'px';
     gi.style.transform='translate('+(px-Tl.x)+'px,'+(py-Tl.y)+'px) scale('+r+')';
+    var fw=Math.max(0,Math.round(150*(1-Math.min(1,u/.97)))),mk='linear-gradient(90deg,transparent 0,#000 '+fw+'px,#000 calc(100% - '+fw+'px),transparent 100%),linear-gradient(180deg,transparent 0,#000 '+fw+'px,#000 calc(100% - '+fw+'px),transparent 100%)';
+    gi.style.webkitMaskImage=mk;gi.style.maskImage=mk;gi.style.webkitMaskComposite='source-in';gi.style.maskComposite='intersect';
     gi.style.opacity=back?Math.max(0,Math.min(1,u/.55)):Math.max(0,Math.min(1,(u-.28)/.42));          // it melts in while both are zooming; on the way back it melts out only at the very end, so the zoom out stops exactly when the whole scene has taken over
     if(e<total)requestAnimationFrame(step);else done();
   })(t0);
 }
 function zoomLive(){
+  var scn=document.getElementById('scene');if(scn){scn.style.transition='none';scn.style.willChange='transform'}
   var P=liveParams(),v=document.createElement('div');v.id='grillZoom';v.setAttribute('data-tool-ui','1');v._live=true;v._P=P;
   v.style.cssText='position:fixed;left:'+P.tx0+'px;top:'+P.ty0+'px;width:'+(W*P.sc)+'px;height:'+(H*P.sc)+'px;z-index:30000;overflow:hidden;cursor:default';
   var gi=document.createElement('img');gi.className='gz-grill';gi.draggable=false;gi.src=ZOOM_SRC;gi.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;display:block;will-change:transform,opacity';
@@ -228,7 +231,7 @@ function zoomLive(){
 function closeLive(){
   var v=view;if(!v||v._busy)return;view=null;removeEventListener('keydown',onKey,true);
   var bb=v.querySelector('button');if(bb)bb.style.opacity='0';v._busy=true;
-  runLive(v,true,function(){v.remove();try{applyCamera()}catch(e){}});
+  runLive(v,true,function(){v.remove();var scn=document.getElementById('scene');try{applyCamera()}catch(e){}if(scn){scn.style.willChange='';requestAnimationFrame(function(){scn.style.transition=''})}});
 }
 function zoomGrill(){
   if(view)return;
