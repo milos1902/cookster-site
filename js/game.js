@@ -1647,14 +1647,14 @@ purgeLegacyCloudLighting();
 new MutationObserver(purgeLegacyCloudLighting).observe(document.documentElement,{childList:true,subtree:true});
 
 const SCENE_BACKGROUNDS={
- fireOnClosed:'assets/stove_states_v2/fire_on_closed.webp',
- fireboxOpenOff:'assets/stove_states_v2/firebox_open_off.webp',
- fireboxOpenFire:'assets/stove_states_v2/firebox_open_fire.webp',
- ovenOpen:'assets/stove_states_v2/oven_open.webp',
- fireOffClosed:'assets/stove_states_v2/fire_off_closed.webp'
+ fireOnClosed:'assets/stove_states_v3/fire_on_closed.webp',
+ fireboxOpenOff:'assets/stove_states_v3/firebox_open_off.webp',
+ fireboxOpenFire:'assets/stove_states_v3/firebox_open_fire.webp',
+ ovenOpen:'assets/stove_states_v3/oven_open.webp',
+ fireOffClosed:'assets/stove_states_v3/fire_off_closed.webp'
 };
 const DOOR_OVERLAYS={open:'assets/stove_states/firebox_door_open.png',close:'assets/stove_states/firebox_door_closed.png'};
-const FIREBOX_BASE_NO_DOOR='assets/stove_states_v2/firebox_base_no_door.webp';
+const FIREBOX_BASE_NO_DOOR='assets/stove_states_v3/firebox_base_no_door.webp';
 // Decode door layers before the first click so the old frame never lingers
 // while the browser fetches the PNG.
 Object.values({...SCENE_BACKGROUNDS,...DOOR_OVERLAYS}).forEach(src=>{const im=new Image();im.src=src;});
@@ -1743,6 +1743,7 @@ function syncFireboxDoorLayer(open,visible=true){
  layer.style.transformOrigin=`${FIREBOX_HINGE_ORIGIN.x}px ${FIREBOX_HINGE_ORIGIN.y}px`;
 }
 function applySceneBackground(src,transition='none'){
+ if(window.CooksterKitchenFx)src=CooksterKitchenFx.compose(src);
  const resolved=new URL(src,document.baseURI).href;
  const previous=sceneBackgroundSrc||getComputedStyle(scene).backgroundImage;
  sceneBackgroundSrc=resolved;
@@ -1822,7 +1823,7 @@ function applySceneBackground(src,transition='none'){
 function applyFireboxDoorTransition(opening){
  const layer=ensureFireboxDoorLayer();
  layer.getAnimations?.().forEach(a=>a.cancel());
- scene.style.backgroundImage=`url("${new URL(FIREBOX_BASE_NO_DOOR,document.baseURI).href}")`;
+ scene.style.backgroundImage=`url("${new URL(window.CooksterKitchenFx?CooksterKitchenFx.compose(FIREBOX_BASE_NO_DOOR):FIREBOX_BASE_NO_DOOR,document.baseURI).href}")`;
  layer.style.backgroundImage=`url("${new URL(DOOR_OVERLAYS[opening?'open':'close'],document.baseURI).href}")`;
  layer.style.display='block';layer.style.opacity='1';layer.style.transform='none';
  layer.style.transformOrigin=`${FIREBOX_HINGE_ORIGIN.x}px ${FIREBOX_HINGE_ORIGIN.y}px`;
@@ -14514,6 +14515,8 @@ function updateHover(){
     label.textContent=cookstoveHot==='firebox'?(stoveState.fireboxOpen?'ložište — klik za zatvaranje':'ložište — klik za otvaranje'):(stoveState.ovenOpen?'rerna — klik za zatvaranje':'rerna — klik za otvaranje');
    label.style.left=mouse.x+'px';label.style.top=(mouse.y-12)+'px';label.style.display='block';return;
  }
+ const kfx=window.CooksterKitchenFx&&!CooksterKitchenFx.isZoomed()?CooksterKitchenFx.hit(mouse.x,mouse.y):null;
+ if(kfx){clearHover();label.textContent=kfx.label;label.style.left=mouse.x+'px';label.style.top=(mouse.y-12)+'px';label.style.display='block';return;}
  if(faucetHit(mouse.x,mouse.y)){clearHover();label.textContent=faucetOn?'slavina — klik za zatvaranje vode':'slavina — klik za puštanje vode';label.style.left=mouse.x+'px';label.style.top=(mouse.y-12)+'px';label.style.display='block';return;}
  const lh=lidAt(mouse.x,mouse.y);
  if(lh){if(hoverItem!==lh.item){clearHover();hoverItem=lh.item}lh.lid.classList.add('hover-lid');hoverItem.classList.remove('hovered');label.textContent='poklopac — '+lh.item.dataset.label}
@@ -15132,7 +15135,7 @@ window.addEventListener('pointerdown',e=>{
   const placingIngredient=!!holding&&isIngredientItem(holding);
  if(isCutting)return;
  if(e.button===1){e.preventDefault();if(toggleQuickToolHand())return;}
-  if(e.target.closest('#savkaBookRoot')||e.target.closest('#gardenScene')||e.target.closest('.garden-window-hotspot')||e.target.closest('#marketScene')||e.target.closest('#kitchenElementsScene')||e.target.closest('#hud')||e.target.closest('#modal')||e.target.closest('.edge-arrow'))return;
+  if(e.target.closest('#grillZoom')||e.target.closest('#savkaBookRoot')||e.target.closest('#gardenScene')||e.target.closest('.garden-window-hotspot')||e.target.closest('#marketScene')||e.target.closest('#kitchenElementsScene')||e.target.closest('#hud')||e.target.closest('#modal')||e.target.closest('.edge-arrow'))return;
   // The basket occupies part of the oven hotspot visually. Resolve its visible
   // top layer first so taking a log never toggles the oven underneath it.
   if(e.button===0&&!holding){
@@ -15148,6 +15151,7 @@ window.addEventListener('pointerdown',e=>{
  if(e.button===0&&holding&&isDisposableMarketPackaging(holding)&&cookstoveHot==='firebox'){if(insertHeldPackagingIntoFirebox())return;}
 if(e.button===0&&!holding&&cookstoveHot==='firebox'){const action=stoveState.fireboxOpen?'close':'open';toggleCookstoveFirebox();playImpactSound(fireboxHotspot,action);return;}
 if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOpen?'close':'open';toggleCookstoveOven();playImpactSound(ovenHotspot,action);return;}
+ if(e.button===0&&!holding&&window.CooksterKitchenFx&&!CooksterKitchenFx.isZoomed()){const kfx=CooksterKitchenFx.hit(e.clientX,e.clientY);if(kfx){CooksterKitchenFx.click(kfx);return;}}
  if(e.button===0&&faucetHit(e.clientX,e.clientY)){setFaucet(!faucetOn);return;}
  if(e.button===0&&holding&&isHeatableCookwareItem(holding)&&sinkHit(e.clientX,e.clientY)){if(beginPanWashing(holding,e))return;}
  if(e.button===0&&holding&&isStirSpoon(holding)){
