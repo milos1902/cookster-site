@@ -1216,9 +1216,11 @@ function graded(key,im){
   c=document.createElement('canvas');c.width=w;c.height=h;var x=c.getContext('2d');
   x.filter='contrast('+GR.c+') brightness('+GR.b+') saturate('+GR.s+')';x.drawImage(im,0,0);x.filter='none';
   if(GR.w>0){x.globalCompositeOperation='source-atop';x.fillStyle='rgba(255,185,60,'+(GR.w*.45).toFixed(3)+')';x.fillRect(0,0,w,h)}
-  return grCache[key]=c;
+  grCache[key]=c;if(++grN>GR_MAX){var ks=Object.keys(grCache);for(var q=0;q<ks.length/2;q++)delete grCache[ks[q]];grN=Object.keys(grCache).length}      // the cache of the toned pictures must not grow without end (the page ran out of memory): the older half goes
+  return c;
 }
-window.CooksterGrade={get:function(){return Object.assign({},GR)},set:function(p){GR=Object.assign({},GR,p);grCache={}},reset:function(){GR=Object.assign({},GR_DEF);grCache={}}};
+var grN=0,GR_MAX=240;
+window.CooksterGrade={get:function(){return Object.assign({},GR)},set:function(p){GR=Object.assign({},GR,p);grCache={};grN=0},reset:function(){GR=Object.assign({},GR_DEF);grCache={};grN=0}};
 // the seated guests move: short films (frames cut from videos, tools/make_guest_anims.py) of a guest who drinks and talks ("pij") and who calls the waiter ("doziv").
 // The film starts and ends with the picture of the still guest; only for the guests that face us (the pose "lice") and only for the guests that have been made so far.
 var ANIM=null,animImgs={},ANIM_IN=.35,ANIM_OUT=.7;
