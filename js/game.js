@@ -10795,6 +10795,8 @@ function restoreWorldItem(saved){
  if(saved?.id==='kamera_stativ')return null;
  // the blue pot with a lid was removed from the game; old saves may still contain it
  if(saved?.id==='serpa_plava')return null;
+ // the spike for the orders was removed (the orders will be marked with a paper next to the prepared food)
+ if(saved?.id==='siljak_narudzbine')return null;
  // The knife is now a physical item and can live in the backpack.
  // Only the remaining legacy quick-wheel tools must be skipped.
  if(saved?.id==='sundjer'||saved?.id==='metla')return null;
@@ -15427,7 +15429,6 @@ if(!__hasSavedWorld&&__starterSpoon){
 const KITCHEN_FIXED_START=[
  {id:'kanta_set_zatvorena',cx:1223,by:232,zone:'floor'},
  {id:'zvonce_konobar',cx:1171,by:366,zone:'table'},
- {id:'siljak_narudzbine',cx:994,by:275,zone:'table'},
  {id:'ticket_rail',cx:1060,by:215,zone:'decor'}
 ];
 if(!__hasSavedWorld){
