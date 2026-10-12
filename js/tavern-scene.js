@@ -777,12 +777,56 @@ function tickZokiChat(){
   if(r<.7){var g=pick(guest),c=pick(ZOKI_CHAT);reactions.push({table:g.seat.table,t:1.4,life:3.6,text:'Zoki: '+c[0],owner:1});if(!g.an)startAnim(g,'pij');reactions.push({table:g.seat.table,gid:g.id,t:4.2,life:3.6,ev:{issues:[CH_NAME[g.ch]+': '+c[1]]}});return}
   if(r<.85){var g2=pick(guest);gsay(g2,CH_NAME[g2.ch]+': '+pick(['Zoki, more, dojdi na jedno piće!','Zorane, sedi s nas malo!','Zoranče, šta ima, bre?','Zokili, kaži ti nama kako je?']),0,'doziv')}
 }
+// ---------- conversations: guests who sit at the same table know who sits with them and talk to each other, one line after the other ----------
+// key "a-b" = the two characters (a < b); every line: [who speaks (the number of the character), what he says]
+var PAIR={
+  '2-6':[[2,'Radovane, jesi li popio lekove?'],[6,'Jesam, ženo.'],[2,'Lažeš, bre, vidim ti oči.'],[6,'Pa što pitaš, kad sve znaš?']],
+  '6-9':[[6,'Vukašine, brate, žena mi ne da mira...'],[9,'Ja se, bre, ne žanim dok ne dojde prava dama, Mileva.'],[6,'Mileva? Pa ona te ni ne gleda, more.'],[9,'Gleda, gleda, samo kriomice, Radovane.']],
+  '4-6':[[4,'U Nemačku su žene tihe, Radovane.'],[6,'Eh, da su i ovde, more!'],[4,'Ja sam video, bre, ni da pisne ne smeju.'],[6,'Da znaš moju Stanu, ne bi tako pričao.']],
+  '4-9':[[4,'Vukašine, u Nemačku sam video odela kao tvoje, ali jeftinija.'],[9,'Stojane, ja ovo nosim za Milevu, ne za Nemce.'],[4,'Mileva, Mileva... kao da si jedini.'],[9,'Jedini sam, bre, koji joj je dorastao.']],
+  '3-4':[[3,'Stojane, kakva je ta Nemačka, ima li tamo devojaka?'],[4,'Ima, bre, ali nijedna kao naša Smilja.'],[3,'Pssst, ne tako glasno, bre!']],
+  '6-7':[[6,'Mirko, iskuj mi jedan lanac za Stanu.'],[7,'Za Stanu ni gvožđe ne bi izdržalo, bre.'],[6,'Pa jeste, ni ja.']],
+  '4-7':[[7,'Stojane, Nemci znaju da kuju, ali moj čekić kuje bolje.'],[4,'Ma ne znaš ti, mori, kakvu sam mašinu video!'],[7,'Mašina ne zna ono što ruka zna.']],
+  '7-9':[[9,'Mirko, ti kovaču, ženiš li se nekad?'],[7,'Ja? Imam posla, bre.'],[9,'A ona dama u crveno...'],[7,'Koja dama? Daj još jedno vino.']],
+  '3-6':[[3,'Dedo Radovane, kako ste vi osvojili baba Stanu?'],[6,'Ja? Ona mene, bre, osvoji, pa me ni ne pusti.'],[3,'Ha ha, tako i ja Smilju.']],
+  '3-9':[[9,'Mićo, dete, ti si mlad, ne znaš ti šta je ljubav.'],[3,'Znam ja, bre, sve znam.'],[9,'Znaš ti... pa vidi ti Milevu.'],[3,'Ja? Ja gledam samo Smilju.']],
+  '5-10':[[5,'Smiljo, vidim te, gledaš onog Mićka.'],[10,'Ne gledam, bre!'],[5,'Gledaš, gledaš, crveniš se.'],[10,'Dobro, malo gledam...']],
+  '3-10':[[3,'Smiljo, oćeš li da te ispratim večeras?'],[10,'Ma pusti me, Mićo...'],[3,'Ja ću ipak doći, bre.'],[10,'Kako hoćeš.']]
+};
+var REACT={1:['Ma da, da...','Tako je, bre.'],2:['Aaa, tako li?','Ne znam ja, bre, ali šta ću.'],3:['Ma jeste, bre!','Pa kako da ne.'],4:['Ma to je ništa prema Nemačku!','Ja sam u Nemačku video i gore.'],5:['Joj, ne mogu da verujem!','Ma šta kažeš!'],6:['Eh, kad bih ja to znao, more.','Pa dobro, dobro.'],7:['Mhm. A ja kujem gvožđe.','Je l’ tako? Ja imam posla.'],9:['Ja to bolje znam, bre.','Slažem se, naravno, ja sam uvek u pravu.'],10:['Jao, stvarno?','Ih, nemoj da me nasmevaš!']};
+var convs=[];
+function convScript(a,b){
+  var key=Math.min(a.ch,b.ch)+'-'+Math.max(a.ch,b.ch);
+  if(PAIR[key])return PAIR[key];
+  function topic(g){var sl=STORY_LINES[g.ch];return sl&&sl.any&&sl.any.length?pick(sl.any):'Eh, bre...'}
+  return[[a.ch,topic(a)],[b.ch,pick(REACT[b.ch]||['Aha.'])],[b.ch,topic(b)],[a.ch,pick(REACT[a.ch]||['Aha.'])]];
+}
+function startConv(a,b){convs.push({a:a,b:b,lines:convScript(a,b),i:0,t:0,wait:.6})}
+function inConv(g){return convs.some(function(c){return c.a===g||c.b===g})}
+function tickConv(dt){
+  for(var i=convs.length-1;i>=0;i--){
+    var c=convs[i];
+    if(c.a.mode!=='seated'||c.b.mode!=='seated'||c.i>=c.lines.length&&c.t>=c.wait){convs.splice(i,1);continue}
+    c.t+=dt;if(c.t<c.wait||c.i>=c.lines.length)continue;
+    var l=c.lines[c.i++],sp=l[0]===c.a.ch?c.a:c.b;
+    gsay(sp,CH_NAME[sp.ch]+': '+l[1],0);c.t=0;c.wait=3.2+l[1].length*.035;
+  }
+}
+// two or more at a table: a conversation (if they do not talk already)
+function tryConv(){
+  var seated=guests.filter(function(g){return g.mode==='seated'&&!g.leftAngry&&!g.visit&&g.sitT>6&&!inConv(g)&&STORY_LINES[g.ch]});
+  var tabs={};seated.forEach(function(g){(tabs[g.seat.table]=tabs[g.seat.table]||[]).push(g)});
+  var ks=Object.keys(tabs).filter(function(k){return tabs[k].length>=2});if(!ks.length)return false;
+  var t=tabs[pick(ks)].slice().sort(function(){return Math.random()-.5});
+  startConv(t[0],t[1]);return true;
+}
 var storyT=22;
 function tickStory(dt){
   storyT-=dt;if(storyT>0)return;storyT=14+Math.random()*16;
   if(state!=='tavern')return;
-  var seated=guests.filter(function(g){return g.mode==='seated'&&!g.leftAngry&&g.sitT>6&&STORY_LINES[g.ch]});if(!seated.length)return;
+  var seated=guests.filter(function(g){return g.mode==='seated'&&!g.leftAngry&&g.sitT>6&&STORY_LINES[g.ch]&&!inConv(g)});if(!seated.length)return;
   if(Math.random()<.2)tickZokiChat();
+  if(Math.random()<.6&&tryConv())return;      // those who sit together talk to each other
   var sr=seated.filter(function(o){return o.ch===2||o.ch===6}),g=(sr.length&&Math.random()<.5)?pick(sr):pick(seated),sl=STORY_LINES[g.ch],lines=(sl.any||[]).slice(),m=false;
   // he knows who he sits with: lines for a certain table mate (withN), lines for any company (mates) or lines for sitting alone (alone)
   var mates=guests.filter(function(o){return o!==g&&!o.visit&&(o.mode==='seated'||o.mode==='sitting')&&o.seat.table===g.seat.table});
@@ -836,7 +880,7 @@ function tickRemarks(dt){                             // now and then a guest sa
   if(opts.length)pick(opts)();
 }
 function tickMess(dt){
-  tickRemarks(dt);tickStory(dt);tickScenes(dt);
+  tickRemarks(dt);tickStory(dt);tickScenes(dt);tickConv(dt);
   try{if(window.CooksterAshtrays)window.CooksterAshtrays.tick(dt)}catch(e){}
   var seatedAt=[0,0,0],cl=cleanTables();
   guests.forEach(function(g){if(g.mode==='seated')seatedAt[g.seat.table]=(seatedAt[g.seat.table]||0)+1});
