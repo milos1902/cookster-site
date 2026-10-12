@@ -207,7 +207,7 @@ function runLive(v,back,done){
     var S=P.sc*Math.pow(Kz,u),w=(S-P.sc)/(P.S1-P.sc),px=P.p0.x+(P.p1.x-P.p0.x)*w-P.tx0,py=P.p0.y+(P.p1.y-P.p0.y)*w-P.ty0,r=Math.pow(Kz,u-1);
     gi.style.transformOrigin=Tl.x+'px '+Tl.y+'px';
     gi.style.transform='translate('+(px-Tl.x)+'px,'+(py-Tl.y)+'px) scale('+r+')';
-    gi.style.opacity=Math.max(0,Math.min(1,(u-.28)/.42));          // it melts in while both are zooming
+    gi.style.opacity=back?Math.max(0,Math.min(1,u/.55)):Math.max(0,Math.min(1,(u-.28)/.42));          // it melts in while both are zooming; on the way back it melts out only at the very end, so the zoom out stops exactly when the whole scene has taken over
     if(e<total)requestAnimationFrame(step);else done();
   })(t0);
 }
