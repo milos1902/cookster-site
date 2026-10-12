@@ -303,3 +303,10 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ### Ulazak u kafanu kroz kafanska vrata (js/kitchen-fixtures.js, js/tavern-scene.js)
 - Klik na kafanska vrata u kuhinji (`DOOR`, gore u sredini; kad ništa nije u ruci): kamera zumira živu scenu ka vratima (isto kao zum na roštilj, `ZIN` ms, kriva `t^2`), pri kraju ekran tamni (`#0b0502`), pa se poziva `CooksterTavern.open({instant:true})` (otvaranje kafane bez panoramskog okretanja) i dok se svetlo vraća, kafana „odleti dronom": `#tavernScene` se animira od `translateY(-9%) scale(1.7)` do normalne veličine za ~1 s (odzumira i spusti sliku). Prvi put kafana učitava slike pa tamni ekran traje dok se ne učitaju. Dugme „kafana" na levoj ivici radi kao pre (panoramski prelaz).
+
+## Kafanska vrata – konobar ulazi (samo frejmovi vrata)
+- `assets/doors/d_1..d_60.webp`: isečeni samo delovi vrata (400×185 na x=765,y=0) iz Wan 2.7 videa cele kuhinje; sve ostalo je providno, pozadina kuhinje se ne dira.
+- `CooksterKitchenFx.swingDoors()` (kitchen-fixtures.js) prikazuje frejmove ~1.3 s preko slike; zove se iz `start()` i `startCall()` u kitchen-orders.js kad konobar uđe.
+- Ograničenje: zatvaranje je sporije, bez opruge (kako je u videu). Nije testirano uz zvuk niti uz stvarnog konobara u igri, samo sam pozvao `swingDoors()` direktno.
+- Konobar sada izlazi iz vrata: staza vrata (985,150) → duž zadnjeg zida do levo od stola (281,235) → dole do narandžastog mesta (281,585). Koristi `waiter_walkd*` (ulazak) i `waiter_walku*` (odlazak), raste od 0.55 do 1, a isečen je linijom y=110 pa se prvo vide noge, a glava tek kad priđe. Pri odlasku se vrata ponovo otvore. Parametri: `DOOR_X, DOOR_Y, CLIP_Y, PATH_S` u kitchen-orders.js.
+- IZMENA: konobar ide ravno dole od vrata i staje IZA stola (x=985, stopala y=335, razmera 0.45→0.62). Isečen je na y=235 (zadnja ivica stola), pa sto "sakriva" noge – bez ručne maske. Okrene leđa (waiter_walku2) pa ode nazad gore. Parametri: `FLOOR_Y, CLIP_Y, PATH_S, PATH_E`.

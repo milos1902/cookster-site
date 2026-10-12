@@ -36,7 +36,7 @@ function makeOrder(key,woman){
   return o;
 }
 var TRIP_MS=3500;                                                      // how long the waiter needs from the tavern to the kitchen
-var FLOOR_Y=585,STOP_X=281,SPEED=250,STAGE=120;                         // where he walks in the kitchen (scene pixels), how fast, the length of a step
+var FLOOR_Y=335,STOP_X=985,DOOR_X=985,DOOR_Y=150,CLIP_Y=235,PATH_S=.45,PATH_E=.62,SPEED=330,STAGE=120;                         // where he walks in the kitchen (scene pixels), how fast, the length of a step
 var pending=[],notes=[],anim=null,uid=0,imgs=[];
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify({pending:pending,notes:notes,uid:uid}))}catch(_){}}
@@ -85,6 +85,7 @@ document.head.appendChild(css);
 var cv=mk('canvas');cv.id='kitchenWaiter';cv.width=W;cv.height=H;scene.appendChild(cv);
 var X=cv.getContext('2d');
 for(var i=1;i<=3;i++){var im=new Image();im.src=WAITER+i+'.webp?v=4';imgs[i]=im}
+var imgD=[],imgU=[];for(var i=1;i<=3;i++){var a=new Image();a.src='assets/tavern/waiter/waiter_walkd'+i+'.webp';imgD[i]=a;var c=new Image();c.src='assets/tavern/waiter/waiter_walku'+i+'.webp';imgU[i]=c}
 var foodImg=new Image();foodImg.src='assets/tavern/waiter/waiter_foods2.webp?v=2';
 var drinkImg=new Image(),drinkOk=false;drinkImg.onload=function(){drinkOk=true};drinkImg.src='assets/tavern/waiter/waiter_drinks2.webp?v=2';
 
@@ -344,12 +345,14 @@ function spotFor(i){return{x:Math.round(700+(i%4)*118+Math.random()*16),y:Math.r
 
 // ---------- the waiter walks in ----------
 function kitchenVisible(){return !document.body.classList.contains('pantry-open')}
-function drawWaiter(x,y,frame,flip,lean,food){
-  var im=food==='drink'&&drinkOk?drinkImg:food?foodImg:imgs[frame];if(!im||!im.complete||!im.naturalWidth)return;
+function drawWaiter(x,y,frame,flip,lean,food,set,sc,clipY){
+  var im=food==='drink'&&drinkOk?drinkImg:food?foodImg:(set||imgs)[frame];if(!im||!im.complete||!im.naturalWidth)return;
   var w=im.naturalWidth,h=im.naturalHeight;
   X.save();
-  X.fillStyle='rgba(20,8,2,.3)';X.beginPath();X.ellipse(x,y+3,95,18,0,0,Math.PI*2);X.fill();
-  X.translate(x,y);if(lean)X.rotate(lean);if(flip)X.scale(-1,1);
+  if(clipY!=null){X.beginPath();X.rect(0,0,W,clipY);X.clip()}      // he stands behind the table: only what is above its far edge shows
+  if(!sc)sc=1;
+  X.fillStyle='rgba(20,8,2,.3)';X.beginPath();X.ellipse(x,y+3,95*sc,18*sc,0,0,Math.PI*2);X.fill();
+  X.translate(x,y);if(sc!==1)X.scale(sc,sc);if(lean)X.rotate(lean);if(flip)X.scale(-1,1);
   X.drawImage(im,-w/2,-h,w,h);
   X.restore();
 }
@@ -456,7 +459,8 @@ function refreshPapers(){
 }
 function start(){
   var o=pending[0];if(!o)return;
-  anim={o:o,t:0,x:STOP_X,phase:'in',dropped:false,last:performance.now()};snd('waiter','appear');
+  anim={o:o,t:0,x:DOOR_X,phase:'in',dropped:false,last:performance.now()};snd('waiter','appear');
+  if(window.CooksterKitchenFx&&CooksterKitchenFx.swingDoors)CooksterKitchenFx.swingDoors();
   requestAnimationFrame(tick);
 }
 // the bell: the waiter comes into the kitchen and waits for a moment (what he takes away comes later)
@@ -465,7 +469,8 @@ var calledAt=0;
 function callWaiter(){called=true;calledAt=Date.now()+3000+Math.random()*2000}   // he comes 3-5 seconds after the bell
 function startCall(){
   called=false;
-  anim={o:null,call:true,t:0,x:STOP_X,phase:'in',last:performance.now()};snd('waiter','appear');
+  anim={o:null,call:true,t:0,x:DOOR_X,phase:'in',last:performance.now()};snd('waiter','appear');
+  if(window.CooksterKitchenFx&&CooksterKitchenFx.swingDoors)CooksterKitchenFx.swingDoors();
   requestAnimationFrame(tick);
 }
 function speech(text,x,y){
@@ -477,6 +482,10 @@ function speech(text,x,y){
   X.fillStyle='#3a2410';X.textAlign='center';X.fillText(text,x,by+28);
   X.restore();
 }
+// his way: from the doors along the back wall to the left of the table (B), then down to the orange spot (C), so he never walks over the table
+var PATH_LEN=FLOOR_Y-DOOR_Y;   // he walks straight down from the doors and stops BEHIND the table (the table hides his legs)
+// p=0 at the doors, p=1 behind the table: he grows as he comes closer; 'd' = toward the viewer, 'u' = away
+function pathPos(p,dir){anim.x=DOOR_X;anim.y=DOOR_Y+PATH_LEN*p;anim.sc=PATH_S+(PATH_E-PATH_S)*p;anim.set=dir==='d'?imgD:imgU;anim.clip=CLIP_Y;anim.pdir=dir}
 function tick(now){
   if(!anim)return;
   var dt=Math.min(.05,(now-anim.last)/1000);anim.last=now;anim.t+=dt;
@@ -484,9 +493,9 @@ function tick(now){
   var frame=2,flip=false,lean=0,SEQ=[1,2,3,2];
   var alpha=1;
   if(anim.phase==='in'){
-    // he just appears on the orange spot on the floor, with a quick fade (0.2 s)
-    alpha=Math.min(1,anim.t/.2);
-    if(anim.t>=.2){anim.phase=anim.call?'listen':'wait';anim.t=0}
+    // the doors swing open and he walks out of the dark toward the viewer to the orange spot (legs first, the head shows as he comes closer)
+    if(anim.t>.3){anim.p=Math.min(1,(anim.p||0)+SPEED*dt/PATH_LEN);frame=SEQ[Math.floor(anim.p*PATH_LEN/STAGE)%4];pathPos(anim.p,'d')}else{alpha=0;pathPos(0,'d')}
+    if((anim.p||0)>=1){anim.phase=anim.call?'listen':'wait';anim.t=0;anim.x=STOP_X;anim.y=FLOOR_Y;anim.set=imgD;anim.sc=PATH_E;anim.clip=CLIP_Y;frame=2}
   }else if(anim.phase==='listen'){
     if(!anim.checked&&anim.t>.6){
       anim.checked=true;var tk=takeOrders();
@@ -507,16 +516,19 @@ function tick(now){
     }
     if(anim.t>.9){anim.phase='out';anim.t=0}
   }else if(anim.phase==='out'){
-    alpha=Math.max(0,1-anim.t/.2);
-    if(anim.t>=.2){
+    if(!anim.outInit){anim.outInit=1;anim.p=1}
+    if(anim.t<.35){anim.set=imgU;frame=2;anim.sc=PATH_E;anim.clip=CLIP_Y}   // he turns his back and goes up again
+    else anim.p=Math.max(0,anim.p-SPEED*dt/PATH_LEN);if(anim.t>=.35)frame=SEQ[Math.floor(anim.p*PATH_LEN/STAGE)%4];pathPos(anim.p,'u');
+    if(!anim.opened&&anim.p<.3){anim.opened=true;if(window.CooksterKitchenFx&&CooksterKitchenFx.swingDoors)CooksterKitchenFx.swingDoors()}
+    if(anim.p<=0){
       if(!anim.call){pending.shift();save()}
       if(anim.carry&&window.CooksterTavern&&window.CooksterTavern.deliver)(anim.carry.all||[anim.carry]).forEach(function(d){window.CooksterTavern.deliver((d.table||anim.carry.table)-1,d.kind,d.ev,d.seatId,d.items||null,d.img||null)});
       anim=null;X.clearRect(0,0,W,H);return;
     }
   }
   X.globalAlpha=alpha;
-  drawWaiter(anim.x,FLOOR_Y,frame,flip,lean,anim.carry?(anim.carry.kind==='drink'?'drink':'food'):false);X.globalAlpha=1;
-  if(anim.phase==='listen'&&anim.checked&&(anim.carry||anim.say))speech(anim.carry?((anim.carry.all&&anim.carry.all.length>1?'Odnosim sve ('+anim.carry.all.length+')!':(anim.carry.kind==='drink'?'Odnosim piće!':'Odnosim kupus!'))+(anim.say?' '+anim.say:'')):anim.say,anim.x,FLOOR_Y-440);
+  drawWaiter(anim.x,anim.y||FLOOR_Y,frame,flip,lean,anim.carry?(anim.carry.kind==='drink'?'drink':'food'):false,anim.set,anim.sc,anim.clip);X.globalAlpha=1;
+  if(anim.phase==='listen'&&anim.checked&&(anim.carry||anim.say))speech(anim.carry?((anim.carry.all&&anim.carry.all.length>1?'Odnosim sve ('+anim.carry.all.length+')!':(anim.carry.kind==='drink'?'Odnosim piće!':'Odnosim kupus!'))+(anim.say?' '+anim.say:'')):anim.say,anim.x+190,115);
   requestAnimationFrame(tick);
 }
 setInterval(function(){
