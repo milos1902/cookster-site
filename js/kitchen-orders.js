@@ -36,6 +36,7 @@ function makeOrder(key,woman){
   return o;
 }
 var TRIP_MS=3500;                                                      // how long the waiter needs from the tavern to the kitchen
+var DOOR_OUT_MS=2000;      // the doors film when he leaves: the leaves start to close at 34/60 of it (= 1.13 s), he is at the doors 1 s after he starts to walk
 var FLOOR_Y=335,STOP_X=985,DOOR_X=985,DOOR_Y=150,CLIP_Y=235,PATH_S=.55,PATH_E=.66,SPEED=185,STAGE=120;                         // where he walks in the kitchen (scene pixels), how fast, the length of a step
 var pending=[],notes=[],anim=null,uid=0,imgs=[];
 
@@ -464,7 +465,7 @@ function refreshPapers(){
 function start(){
   var o=pending[0];if(!o)return;
   anim={o:o,t:0,x:DOOR_X,phase:'in',dropped:false,last:performance.now()};snd('waiter','appear');
-  if(window.CooksterKitchenFx&&CooksterKitchenFx.swingDoors)CooksterKitchenFx.swingDoors();
+  if(window.CooksterKitchenFx&&CooksterKitchenFx.swingDoors)CooksterKitchenFx.swingDoors(1700);
   requestAnimationFrame(tick);
 }
 // the bell: the waiter comes into the kitchen and waits for a moment (what he takes away comes later)
@@ -474,7 +475,7 @@ function callWaiter(){called=true;calledAt=Date.now()+3000+Math.random()*2000}  
 function startCall(){
   called=false;
   anim={o:null,call:true,t:0,x:DOOR_X,phase:'in',last:performance.now()};snd('waiter','appear');
-  if(window.CooksterKitchenFx&&CooksterKitchenFx.swingDoors)CooksterKitchenFx.swingDoors();
+  if(window.CooksterKitchenFx&&CooksterKitchenFx.swingDoors)CooksterKitchenFx.swingDoors(1700);
   requestAnimationFrame(tick);
 }
 function speech(text,x,y){
@@ -524,7 +525,7 @@ function tick(now){
     if(anim.t>.9){anim.phase='out';anim.t=0}
   }else if(anim.phase==='out'){
     if(!anim.outInit){anim.outInit=1;anim.p=1}
-    if(!anim.opened&&anim.t>=.35){anim.opened=true;if(window.CooksterKitchenFx&&CooksterKitchenFx.swingDoors)CooksterKitchenFx.swingDoors()}   // he turns, and the doors open at the moment he starts to walk (like when he comes in)
+    if(!anim.opened&&anim.t>=.35){anim.opened=true;if(window.CooksterKitchenFx&&CooksterKitchenFx.swingDoors)CooksterKitchenFx.swingDoors(DOOR_OUT_MS)}   // he turns, and the doors open at the moment he starts to walk (like when he comes in)
     if(anim.t<.35){anim.set=imgU;frame=2;anim.sc=PATH_E;anim.clip=CLIP_Y}   // he turns his back and goes up again
     else{anim.p=Math.max(0,anim.p-SPEED*dt/PATH_LEN);anim.dtw=dt;frame=pathPos(anim.p,'u')}
     if(anim.p<=0){
