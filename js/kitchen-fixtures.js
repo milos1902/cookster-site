@@ -48,6 +48,7 @@ function setP(k,v){
 // a click on the drawer: it opens (or closes) in 0.3 s
 function toggle(k){
   var d=DR[k];d.to=d.to?0:1;
+  try{playImpactSound(k==='left'?drawerLeftSoundTarget:drawerRightSoundTarget,d.to?'open':'close')}catch(e){}   // the sounds are chosen in the sound tool ("Leva fioka stola", "Desna fioka stola": open / close)
   var from=d.p,to=d.to,t0=performance.now(),dur=300,token=d.tok=(d.tok||0)+1;
   (function step(now){
     if(d.tok!==token)return;
