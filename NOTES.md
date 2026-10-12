@@ -282,3 +282,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ### Zvuk fioka (alat „Zvuk")
 - U alatu za zvuk (isti kao za rernu i knjigu) postoje dve stavke: „Leva fioka stola — otvaranje/zatvaranje" (`__drawer_left`) i „Desna fioka stola — otvaranje/zatvaranje" (`__drawer_right`), sa akcijama Otvaranje i Zatvaranje. `js/kitchen-fixtures.js` poziva `playImpactSound(...,'open'|'close')` na početku animacije fioke. Dok se zvuk ne izabere u alatu, fioka je tiha.
+
+### Tegle sa začinima u levoj fioci (js/kitchen-fixtures.js)
+- Šest tegli (paprika, tucana, biber, so, šećer, lovor) stoje u odeljcima leve fioke i NE stavljaju se više na sto (`ensureJars` u `js/spices.js` ih ne pravi). Stare sačuvane igre koje već imaju tegle na stolu zadržavaju ih tamo (tada tegla nije u fioci dok postoji kao predmet).
+- Leva fioka ima 16 koraka: 1-15 su frejmovi iz videa, 16 je prazna fioka koju je nacrtao ChatGPT (`assets/drawers/left_16.webp`, malo dublja od videa). Tegle su isečci iz ChatGPT slike sa teglama (razlika prema praznoj slici): `assets/drawers/jar_<ime>.webp`, postavljeni na tačne koordinate u `JARS`.
+- Tegla je u fioci dok ne postoji predmet `zacin_<ime>` (izvedeno stanje, proverava se na 150 ms): klik na teglu u otvorenoj fioci pravi pravi predmet u ruci (`takeJar`); kad se tegla spusti iznad otvorene fioke (`tryDrop`, kuka u `dropHolding`) predmet nestaje i slika se vraća u svoj odeljak. Zatvorena fioka sakriva tegle.

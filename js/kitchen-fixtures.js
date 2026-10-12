@@ -7,13 +7,13 @@ if(window.CooksterKitchenFx)return;
 var W=1672,H=941;
 var N=15;                                                       // the drawer is drawn in (20 steps (frames of the animation: assets/drawers/<left|right>_<1..15>.webp, 0 = closed)
 var DR={
-  left:{x:380,y:585,p:0,idx:0,to:0,label:'leva fioka',x0:485,x1:825,dx0:-33,dx1:-6,dy:131,el:null,ims:[]},
-  right:{x:828,y:585,p:0,idx:0,to:0,label:'desna fioka',x0:835,x1:1170,dx0:-8,dx1:31,dy:124,el:null,ims:[]}
+  left:{x:380,y:585,N:16,p:0,idx:0,to:0,label:'leva fioka',x0:485,x1:825,dx0:-39,dx1:-3,dy:153,el:null,ims:[]},
+  right:{x:828,y:585,N:15,p:0,idx:0,to:0,label:'desna fioka',x0:835,x1:1170,dx0:-8,dx1:31,dy:124,el:null,ims:[]}
 };
 var GRILL={l:225,t:20,r:760,b:235},ZOOM_SRC='assets/grill_zoom.webp?v=1';
 var imgs={};
 function load(src){var im=imgs[src];if(!im){im=imgs[src]=new Image();im.src=src}return im}
-Object.keys(DR).forEach(function(k){for(var i=1;i<=N;i++)DR[k].ims[i]=load('assets/drawers/'+k+'_'+i+'.webp?v=10')});
+Object.keys(DR).forEach(function(k){for(var i=1;i<=DR[k].N;i++)DR[k].ims[i]=load('assets/drawers/'+k+'_'+i+'.webp?v=11')});
 // the open drawer is a small picture (a frame of the video, with its shadow on the floor) over the kitchen: above the occluders of the table, below all the things of the player
 function ensureEl(d){
   if(d.el&&d.el.isConnected)return true;
@@ -29,7 +29,7 @@ function shadows(){
   if(!shc||!shc.isConnected){shc=document.createElement('canvas');shc.width=W;shc.height=H;shc.style.cssText='position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;z-index:25;pointer-events:none';sc.appendChild(shc)}
   var g=shc.getContext('2d');g.clearRect(0,0,W,H);
   Object.keys(DR).forEach(function(k){
-    var d=DR[k];if(!d.idx)return;var t=d.idx/N,yb=680+d.dy*t,x0=d.x0+d.dx0*t,x1=d.x1+d.dx1*t;
+    var d=DR[k];if(!d.idx)return;var t=d.idx/d.N,yb=680+d.dy*t,x0=d.x0+d.dx0*t,x1=d.x1+d.dx1*t;
     g.save();g.beginPath();g.rect(0,yb-1,W,70);g.clip();
     g.filter='blur(8px)';g.fillStyle='rgba(38,18,6,'+(0.52*Math.pow(t,.6)).toFixed(3)+')';
     g.beginPath();g.ellipse((x0+x1)/2+22,yb+9,(x1-x0)/2+2,19,0,0,Math.PI*2);g.fill();g.restore();
@@ -42,7 +42,7 @@ function paint(k){
   d.el.src=d.ims[d.idx].src;d.el.style.display='block';
 }
 function setP(k,v){
-  var d=DR[k];d.p=Math.max(0,Math.min(1,v));var i=Math.round(d.p*N);
+  var d=DR[k];d.p=Math.max(0,Math.min(1,v));var i=Math.round(d.p*d.N);
   if(i!==d.idx){d.idx=i;paint(k)}
 }
 // a click on the drawer: it opens (or closes) in 0.3 s
@@ -56,11 +56,64 @@ function toggle(k){
     setP(k,from+(to-from)*e);if(t<1)requestAnimationFrame(step);
   })(t0);
 }
+// ---------- the spice jars stand in the compartments of the left drawer (the pictures are cut out of the picture of the drawer with the jars) ----------
+// a jar that is in the drawer is only a picture; when it is taken a real jar (the item zacin_<name>) is in the hand, and when it is put back over the open drawer the item goes away and the picture is shown again
+var JARS=[
+  {id:'paprika',x:506,y:596,box:{l:512,t:602,r:568,b:680}},
+  {id:'tucana',x:579,y:595,box:{l:585,t:601,r:639,b:680}},
+  {id:'biber',x:654,y:595,box:{l:660,t:601,r:711,b:680}},
+  {id:'so',x:726,y:595,box:{l:732,t:601,r:785,b:680}},
+  {id:'secer',x:490,y:675,box:{l:496,t:681,r:555,b:751}},
+  {id:'lovor',x:570,y:676,box:{l:576,t:682,r:632,b:751}}
+];
+var DRAWER_IN={l:462,t:603,r:818,b:756};                        // the inside of the open left drawer
+JARS.forEach(function(j){j.im=load('assets/drawers/jar_'+j.id+'.webp?v=1');j.el=null});
+function jarOut(j){try{return(window.items||items).some(function(el){return el.dataset&&el.dataset.itemId==='zacin_'+j.id})}catch(e){return false}}
+function updateJars(){
+  var sc=document.getElementById('scene');if(!sc)return;
+  var open=DR.left.idx===DR.left.N;
+  JARS.forEach(function(j){
+    if(!j.el||!j.el.isConnected){j.el=document.createElement('img');j.el.draggable=false;j.el.style.cssText='position:absolute;z-index:27;pointer-events:none;display:none;left:'+j.x+'px;top:'+j.y+'px';sc.appendChild(j.el)}
+    var show=open&&!jarOut(j);
+    if(show&&!j.el.src)j.el.src=j.im.src;
+    j.el.style.display=show?'block':'none';
+  });
+}
+setInterval(updateJars,150);
+function jarAt(p){
+  if(DR.left.idx!==DR.left.N)return null;
+  for(var i=0;i<JARS.length;i++){var j=JARS[i];if(!jarOut(j)&&inR(p,j.box))return j}
+  return null;
+}
+function takeJar(j){
+  try{
+    var id='zacin_'+j.id,def=kitchenEquipmentDef(id),sp=screenToScene(mouse.x,mouse.y);
+    if(!def||jarOut(j))return;
+    var el=makeItem(Object.assign({},def,{instanceId:nextItemInstanceId(id),x:sp.x-def.w/2,y:sp.y-def.h,z:++zCounter}));
+    if(!el)return;el.dataset.surfaceZone='table';
+    setPose(el,sp.x,sp.y,surfaceScaleFor(el,'table',sp.y));
+    startHolding(el);updateJars();
+    try{CooksterSave.schedule()}catch(e){}
+  }catch(e){}
+}
+// a jar that is put down over the open drawer goes back into its compartment
+function tryDrop(item){
+  try{
+    if(!item||!item.dataset||DR.left.idx!==DR.left.N)return false;
+    if(!/^zacin_(paprika|tucana|biber|so|secer|lovor)$/.test(item.dataset.itemId||''))return false;
+    var p=screenToScene(mouse.x,mouse.y);if(!inR(p,DRAWER_IN))return false;
+    removeItem(item);holding=null;
+    try{hidePlacementGhost();hideOriginGhost();clearPanTargets();updateHover()}catch(e){}
+    updateJars();try{showToast('Tegla je vraćena u fioku.')}catch(e){}try{CooksterSave.schedule()}catch(e){}
+    return true;
+  }catch(e){return false}
+}
 function inR(p,r){return p.x>=r.l&&p.x<=r.r&&p.y>=r.t&&p.y<=r.b}
 // what lies under the mouse (client coordinates); an item that stands over it has the priority
 function hit(x,y){
   var p=screenToScene(x,y);
   try{if(typeof itemAt==='function'&&itemAt(x,y))return null}catch(e){}
+  var jr=jarAt(p);if(jr){var jd=null;try{jd=kitchenEquipmentDef('zacin_'+jr.id)}catch(e){}return{kind:'jar',id:jr.id,label:((jd&&jd.label)||jr.id)+' — klik da uzmeš'}}
   for(var k in DR){var d=DR[k],t=d.p;
     if(inR(p,{l:d.x0+d.dx0*t,r:d.x1+d.dx1*t,t:603,b:680+d.dy*t+4}))return{kind:'drawer',key:k,label:d.label+(d.to?' — klik za zatvaranje':' — klik za otvaranje')}}
   if(inR(p,GRILL))return{kind:'grill',label:'roštilj — klik za zumiranje'};
@@ -94,9 +147,9 @@ function closeGrill(){
 }
 function click(h){
   if(!h)return false;
-  if(h.kind==='drawer')toggle(h.key);else if(h.kind==='grill')zoomGrill();
+  if(h.kind==='drawer')toggle(h.key);else if(h.kind==='grill')zoomGrill();else if(h.kind==='jar'){for(var i=0;i<JARS.length;i++)if(JARS[i].id===h.id)takeJar(JARS[i])}
   return true;
 }
-window.CooksterKitchenFx={compose:function(src){return src},hit:hit,click:click,zoomGrill:zoomGrill,closeGrill:closeGrill,
+window.CooksterKitchenFx={compose:function(src){return src},hit:hit,click:click,tryDrop:tryDrop,updateJars:updateJars,zoomGrill:zoomGrill,closeGrill:closeGrill,
   drawer:function(k){return DR[k]?DR[k].p:0},setDrawer:function(k,v){if(DR[k])setP(k,v)},isZoomed:function(){return !!view}};
 })();

@@ -14731,6 +14731,8 @@ function dropHolding(){
 
  // The sauerkraut barrel takes whole cabbages and its own lid.
  if(window.CooksterKaca&&CooksterKaca.tryDrop(holding))return;
+ // a spice jar put down over the open left drawer of the table goes back into it (js/kitchen-fixtures.js)
+ if(window.CooksterKitchenFx&&CooksterKitchenFx.tryDrop(holding))return;
  // every ingredient can be put into every vessel that is not for cooking (js/serving.js)
  if(window.CooksterServe&&CooksterServe.tryDrop(holding))return;
  // One authoritative ingredient -> vessel path.
