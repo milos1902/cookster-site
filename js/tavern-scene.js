@@ -68,7 +68,7 @@ function tint(im){
 function store(key,im){imgs[key]=im;if(im)timgs[key]=tint(im)}
 // hundreds of pictures are asked for at once and the server sometimes drops some of them (then a guest or the waiter would stay invisible, only the shadow shows):
 // so only a few are loaded at a time and a picture that failed is asked for again (up to 4 times)
-var LQ=[],LRUN=0,LMAX=10;
+var LQ=[],LRUN=0,LMAX=24;
 function loadNext(){while(LRUN<LMAX&&LQ.length){var j=LQ.shift();LRUN++;j()}}
 function loadImg(src){return new Promise(function(res){
   var tries=0;
@@ -1692,8 +1692,13 @@ function open(opt){
     });
   }).catch(function(){restoreKitchen();say('Prelaz nije uspeo. Pokušaj ponovo.');return false});
 }
-function close(){
+function close(opt){
   if(busy||state!=='tavern')return Promise.resolve(false);
+  if(opt&&opt.instant){                                 // the way through the saloon doors (see CooksterKitchenFx.enterKitchen): the kitchen is simply there again, no camera turn
+    busy=true;state='closing';restoreKitchen();
+    var f0=lastFocus&&document.contains(lastFocus)?lastFocus:openBtn;try{f0.focus({preventScroll:true})}catch(_){}
+    return Promise.resolve(true);
+  }
   busy=true;state='closing';
   viewport.style.visibility=saved?saved.vis:'';
   var movement;
@@ -1706,11 +1711,12 @@ function close(){
   }).catch(function(){restoreKitchen();say('Prelaz je prekinut. Kuhinja je ponovo dostupna.');return false});
 }
 openBtn.addEventListener('click',function(e){e.stopPropagation();open()});
-backBtn.addEventListener('click',function(e){e.stopPropagation();close()});
+function leaveToKitchen(){var K=window.CooksterKitchenFx;if(K&&K.enterKitchen&&!busy&&state==='tavern')return K.enterKitchen(function(){return close({instant:true})});return close()}
+backBtn.addEventListener('click',function(e){e.stopPropagation();leaveToKitchen()});
 function onKey(e){
   if(state==='kitchen'||window.__tavernEditor)return;
   if(e.type==='keydown'){
-    if(e.key==='Escape'){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();close();return}
+    if(e.key==='Escape'){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();leaveToKitchen();return}
     if(e.key==='Tab'){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();if(state==='tavern')backBtn.focus({preventScroll:true});return}
   }
   e.stopPropagation();e.stopImmediatePropagation();
