@@ -1450,7 +1450,8 @@ function restoreKitchen(){
   document.body.classList.remove('pantry-open');
   saved=null;state='kitchen';busy=false;cancelAnimations();
 }
-function open(){
+function open(opt){
+  var instant=!!(opt&&opt.instant);                 // instant: the kitchen has already gone dark (the zoom into the saloon doors), so there is no camera turn: the tavern is simply there
   if(busy||state==='tavern')return Promise.resolve(false);
   if(held()){say('Prvo spusti predmet iz ruke.');return Promise.resolve(false)}
   if(window.CooksterPantry&&window.CooksterPantry.isOpen)return Promise.resolve(false);
@@ -1465,10 +1466,10 @@ function open(){
     if(cur)cur.style.display='none';if(lab)lab.style.display='none';
     viewport.style.pointerEvents='none';setInert(viewport,true);
     document.body.classList.add('pantry-open');
-    room.classList.add('is-active');room.setAttribute('aria-hidden','false');room.style.opacity='0';
+    room.classList.add('is-active');room.setAttribute('aria-hidden','false');room.style.opacity=instant?'':'0';
     fit();draw();
     state='opening';
-    return turnCamera(1).then(function(){
+    return (instant?Promise.resolve():turnCamera(1)).then(function(){
       viewport.style.visibility='hidden';room.style.opacity='';
       state='tavern';busy=false;cancelAnimations();
       backBtn.focus({preventScroll:true});startLoop();
