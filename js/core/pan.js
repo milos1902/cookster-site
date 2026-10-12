@@ -74,6 +74,7 @@
       overcook:Math.max(0,+seed.overcook||0),
       burnt:!!seed.burnt,
       state:String(seed.state||'raw'),
+      curd:Math.max(0,Math.min(1,+seed.curd||0)),   // egg only: 0 = raw, loose; 1 = set white curds (rises with stirring)
       cookSpeed:Math.max(.1,+seed.cookSpeed||speeds.cookSpeed),
       burnSpeed:Math.max(.1,+seed.burnSpeed||speeds.burnSpeed)
     };
@@ -249,6 +250,8 @@
         }
       }
     }
+    // an egg left in a hot pan sets very slowly even without stirring (about 90 s)
+    if(heating&&d.heat>=.5)for(const b of d.batches)if(b.key==='jaje'&&(+b.curd||0)<1)b.curd=Math.min(1,(+b.curd||0)+dt/90);
     // Cooling lowers heat, but it must NOT erase already-earned browning.
     // `overcook` is a cooked-state history value, not a transient temperature.
     // Stirring may still reduce local overcook intentionally before burning.
@@ -277,6 +280,11 @@
     else d.mix=Math.min(1,d.mix+effort/(Math.PI*2*1.55)); // legacy fallback
 
     for(const b of active){
+      // an egg turns from loose and raw into white curds while it is stirred in a hot pan (about 6 s of stirring); a cold pan does it very slowly
+      if(b.key==='jaje'){
+        const secs=mixDt>0?mixDt:effort*.06;
+        b.curd=Math.min(1,(+b.curd||0)+secs/6*(d.heat>=.3?1:.12));
+      }
       // Stirring blends the contents but never rewinds cooking progress.
       // Doneness/overcook are advanced only by the cooking simulation.
       if(window.CooksterFoodStateMachine?.transitionBatch)
