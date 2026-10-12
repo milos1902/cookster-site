@@ -9370,11 +9370,13 @@ function transferMetaForPanKey(key,rememberedMeta=null){
   const base=whole?key.slice(0,-5):(diced?key.slice(0,-6):key);
   const def=VEGETABLES[base]||CooksterCatalog.FRUITS?.[base]||{};
   const form=whole?'whole':(diced?'diced':'sliced');
+  // what the player cut by hand (key C): the pieces of that cut (an atlas, every piece moves on its own) travel with the food, so the bowl shows the same pieces as the pan did
+  const ownCut=diced&&CooksterPiles.is(rememberedMeta?.src)?rememberedMeta.src:'';
   return {
     count:0,
     type:CooksterCatalog.FRUITS?.[base]?'fruit':'vegetable',
     label:diced?(def.dicedLabel||def.label||base):(def.label||base),
-    src:whole?(def.src||''):(diced?(def.dicedSrc||def.slicedSrc||def.src||''):(def.slicedSrc||def.src||'')),
+    src:ownCut||(whole?(def.src||''):(diced?(def.dicedSrc||def.slicedSrc||def.src||''):(def.slicedSrc||def.src||''))),
     form,baseKey:base,cutState:form
   };
 }
@@ -9524,6 +9526,7 @@ function mergePayloadIntoHeatable(target,payload){
     if(entry?.type==='staple')continue;
     const count=Math.max(0,+entry?.count||0);if(count<=0)continue;
     dest.ingredients[key]=Math.max(0,(+dest.ingredients[key]||0)+count);
+    if(CooksterPiles.is(entry?.src))rememberPanIngredientMeta(target,{key,baseKey:entry.baseKey,type:entry.type,form:entry.form,cutState:entry.cutState,label:entry.label,src:entry.src});
   }
   dest.staples??={oil:0,salt:0};
   dest.staples.oil=Math.max(0,(+dest.staples.oil||0)+Math.max(0,+payload.staples?.oil||0));
@@ -9561,7 +9564,7 @@ function mergePayloadIntoContainer(target,payload){
       count:(+prev.count||0)+count,
       type:String(entry.type||prev.type||'ingredient'),
       label:String(entry.label||prev.label||key),
-      src:String(entry.src||prev.src||''),
+      src:(CooksterPiles.is(entry.src)||CooksterPiles.is(prev.src))?CooksterPiles.join(prev.src,entry.src):String(entry.src||prev.src||''),
       form:String(entry.form||prev.form||''),
       baseKey:String(entry.baseKey||prev.baseKey||''),
       cutState:String(entry.cutState||prev.cutState||'')
@@ -9616,7 +9619,10 @@ function pourParticleSources(payload){
     if(entry?.type==='staple')continue;
     const count=Math.max(0,+entry?.count||0);if(count<=0||!entry.src)continue;
     const n=Math.max(1,Math.min(5,Math.round(Math.sqrt(count)+1)));
-    for(let i=0;i<n;i++)list.push({src:entry.src,key});
+    // the pieces cut by hand are one sheet of many pieces: the falling bits use the stock picture of that food
+    const psrc=CooksterPiles.is(entry.src)?((VEGETABLES[entry.baseKey]||CooksterCatalog.FRUITS?.[entry.baseKey]||{}).dicedSrc||''):entry.src;
+    if(!psrc)continue;
+    for(let i=0;i<n;i++)list.push({src:psrc,key});
   }
   return list;
 }
