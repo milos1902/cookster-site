@@ -14779,6 +14779,7 @@ function updateHover(){
  }
  const kfx=window.CooksterKitchenFx&&!CooksterKitchenFx.isZoomed()?CooksterKitchenFx.hit(mouse.x,mouse.y):null;
  if(kfx){clearHover();label.textContent=kfx.label;label.style.left=mouse.x+'px';label.style.top=(mouse.y-12)+'px';label.style.display='block';return;}
+ if(!holding&&sinkHit(mouse.x,mouse.y)&&!faucetHit(mouse.x,mouse.y)&&window.CooksterSinkZoom){clearHover();label.textContent='sudopera — klik za krupan plan';label.style.left=mouse.x+'px';label.style.top=(mouse.y-12)+'px';label.style.display='block';return;}
  if(faucetHit(mouse.x,mouse.y)){clearHover();label.textContent=faucetOn?'slavina — klik za zatvaranje vode':'slavina — klik za puštanje vode';label.style.left=mouse.x+'px';label.style.top=(mouse.y-12)+'px';label.style.display='block';return;}
  const lh=lidAt(mouse.x,mouse.y);
  if(lh){if(hoverItem!==lh.item){clearHover();hoverItem=lh.item}lh.lid.classList.add('hover-lid');hoverItem.classList.remove('hovered');label.textContent='poklopac — '+lh.item.dataset.label}
@@ -15417,6 +15418,7 @@ if(e.button===0&&!holding&&cookstoveHot==='firebox'){const action=stoveState.fir
 if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOpen?'close':'open';toggleCookstoveOven();playImpactSound(ovenHotspot,action);return;}
  if(e.button===0&&!holding&&window.CooksterKitchenFx&&!CooksterKitchenFx.isZoomed()){const kfx=CooksterKitchenFx.hit(e.clientX,e.clientY);if(kfx){CooksterKitchenFx.click(kfx,e);return;}}
  if(e.button===0&&faucetHit(e.clientX,e.clientY)){setFaucet(!faucetOn);return;}
+ if(e.button===0&&!holding&&!window.CooksterSinkZoom?.isOpen()&&sinkHit(e.clientX,e.clientY)){window.CooksterSinkZoom?.open();return;}
  if(e.button===0&&holding&&isHeatableCookwareItem(holding)&&sinkHit(e.clientX,e.clientY)){if(beginPanWashing(holding,e))return;}
  if(e.button===0&&holding&&isStirSpoon(holding)){
    const stirTarget=stirReadyVessel||stirVesselAt(e.clientX,e.clientY,true);
