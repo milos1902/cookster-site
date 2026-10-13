@@ -719,7 +719,7 @@
       for(const s of sprites)s.rot=(Math.random()-.5)*1.4;
       let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
       for(const s of sprites){x0=Math.min(x0,s.x-s.r*1.2);y0=Math.min(y0,s.y-s.r*1.2);x1=Math.max(x1,s.x+s.r*1.2);y1=Math.max(y1,s.y+s.r*1.2);}
-      const bw=x1-x0,bh=y1-y0,s=Math.min(SNAP.w/bw,SNAP.h/bh)*.94,mx=(x0+x1)/2,my=(y0+y1)/2;
+      const avgMax=sprites.reduce((t,q)=>t+Math.max(q.w,q.h),0)/Math.max(1,sprites.length),bw=x1-x0,bh=y1-y0,s=Math.min(SNAP.w/bw,SNAP.h/bh,38/Math.max(1,avgMax))*.94,mx=(x0+x1)/2,my=(y0+y1)/2;
       // heap picture
       const hc=document.createElement('canvas');hc.width=SNAP.w;hc.height=SNAP.h;const hg=hc.getContext('2d');
       for(const sp of [...sprites].sort((a,b)=>a.y-b.y)){
