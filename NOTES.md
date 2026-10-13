@@ -431,3 +431,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Voda: plavija za svetla dna (2026-10-13, vessel-water.js?v=7)
 - `bottomLum` meri svetlinu dna posude (slika oko sredine oblika dna); ako je svetlo, voda dobija klasu `vw-light`.
 - Za sada je `vw-light` samo plavlji ton iste teksture (CSS filter). Kad stigne korisnikova plavija slika, ide kao `assets/water/plava.webp` u `.vw-light`.
+
+## Kalibracija pljuska u sudoperi (2026-10-13, sink-zoom.js?v=18)
+- U alatu sudopere (režim slavina) roze tačka = mesto pljuska (prevlači se bilo gde), klizač veličine i klizač "nagib napred-nazad" (vertikalno spljoštavanje, kao nagib vode).
+- Sačuvano u `cal.tap.sp = {pos,size,tilt}`; ako ga nema, pljusak je na žutoj tački kao do sada.
