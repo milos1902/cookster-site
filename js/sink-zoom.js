@@ -60,10 +60,13 @@ window.addEventListener('keydown',function(e){if(opened&&e.key==='Escape'){e.sto
      mask  = the part of the picture where vessels are seen (the front rim of the sink hides what is below it)
    Vessels: pick one, put it into the sink, drag it and set its size; the size is saved for every vessel. */
 var CAL_KEY='cookster.sink-zoom-cal.v1';
-var CAL_DEF={rim:[[29.3,27.1],[68.8,27.1],[72.2,70.7],[26.9,70.7]],floor:[[32.2,43.2],[66.6,43.2],[67.3,70.2],[31.6,70.2]],mask:[[26,18],[74,18],[74,72.5],[26,72.5]],vessels:{}};
+// Miloš's own calibration of 2026-10-13 (rim, floor, mask and the size and height of every vessel) is built in; what is changed in the tool in the browser wins over it
+var CAL_DEF={rim:[[29.3, 27.1], [68.8, 27.1], [72.2, 70.7], [26.08, 70.72]],floor:[[32.8, 41.66], [65.38, 41.98], [67.56, 70.4], [30.56, 72.55]],mask:[[21.0, 17.55], [76.7, 17.33], [84.15, 79.55], [12.7, 80.52]],vessels:{"serpa_velika": {"x": 49.08, "y": 63.01, "w": 18.6, "h": -5.8}, "tiganj_veliki": {"x": 49.08, "y": 63.01, "w": 16.4, "h": -7.6}, "tiganj_mali": {"x": 49.08, "y": 63.01, "w": 14, "h": -7.8}, "vangla_srednja": {"x": 49.08, "y": 63.01, "w": 12.6, "h": -2}, "vangla_mala": {"x": 49.08, "y": 63.01, "w": 10.2, "h": -1}, "lavor_emajl_veliki": {"x": 49.08, "y": 63.01, "w": 23.8, "h": -7.4}, "vangla_velika": {"x": 49.08, "y": 63.01, "w": 15.6, "h": -2.4}, "kal_01_okrugli_pleh": {"x": 49.08, "y": 63.01, "w": 19, "h": -5}, "kal_01_pravougaoni_pleh": {"x": 49.08, "y": 63.01, "w": 18.6, "h": -3.6}, "kal_02_cinija_mala": {"x": 49.08, "y": 63.01, "w": 10.6, "h": 0}, "kal_02_cinija_velika": {"x": 49.08, "y": 63.01, "w": 14.6, "h": -2.6}, "posuda_za_kupus": {"x": 49.08, "y": 63.01, "w": 11.2, "h": 0}, "kal_02_duboki_tanjir": {"x": 49.08, "y": 63.01, "w": 13.2, "h": 0}, "kal_02_tanjir_ravni": {"x": 49.08, "y": 63.01, "w": 13, "h": 0}},
+  // the faucet: where the water comes out (spout), where it lands, the two valves (cross handles) and their size
+  tap:{spout:[49.5,30.2],land:[49.4,56],left:[42.2,15.4],right:[56.2,15.4],r:2.7,squash:.55}};
 var cal=null;
 function loadCal(){
-  try{var d=JSON.parse(localStorage.getItem(CAL_KEY)||'null');if(d&&d.rim&&d.floor&&d.mask){d.vessels=d.vessels||{};return d;}}catch(e){}
+  try{var d=JSON.parse(localStorage.getItem(CAL_KEY)||'null');if(d&&d.rim&&d.floor&&d.mask){d.vessels=d.vessels||{};d.tap=Object.assign({},CAL_DEF.tap,d.tap||{});return d;}}catch(e){}
   return JSON.parse(JSON.stringify(CAL_DEF));
 }
 cal=loadCal();
@@ -72,7 +75,8 @@ var NS='http://www.w3.org/2000/svg';
 function se(tag,a){var e=document.createElementNS(NS,tag);for(var k in a)e.setAttribute(k,a[k]);return e;}
 var ed=document.createElement('div');ed.className='sz-edit';ed.setAttribute('data-tool-ui','1');ed.style.display='none';
 ed.innerHTML='<b>Kalibracija sudopere (krupan plan)</b>'+
- '<div class="sz-row"><button data-m="rim" class="on">Otvor (gore)</button><button data-m="floor">Dno</button><button data-m="mask">Gde se posude vide</button></div>'+
+ '<div class="sz-row"><button data-m="rim" class="on">Otvor (gore)</button><button data-m="floor">Dno</button><button data-m="mask">Gde se posude vide</button><button data-m="tap">Slavina</button></div>'+
+ '<div id="szTapBox" style="display:none"><small class="sz-help">Slavina: <b style="display:inline;color:#7fe3ff">plavo</b> = vrh slavine (odakle teče voda), <b style="display:inline;color:#ffe27a">žuto</b> = gde voda pada, <b style="display:inline;color:#7aff9a">zeleno</b> = levi i desni ventil (centar glave). Prevuci tačke.</small><label>Veličina ventila <input id="szTapR" type="range" min="1" max="7" step="0.1" value="2.6"><b id="szTapRN">2.6</b></label><label>Nagib (spljoštenost) ventila <input id="szTapSq" type="range" min="0.25" max="1" step="0.01" value="0.55"><b id="szTapSqN">0.55</b></label><div class="sz-row"><button id="szTapTest">Probaj: odvrni / zavrni</button></div></div>'+
  '<small class="sz-help">Prevuci belu tačku da je pomeriš. Klik na liniju ubacuje novu tačku tačno tu. Dvoklik na tačku je briše (najmanje 3).</small>'+
  '<div class="sz-info" id="szDepth"></div><hr>'+
  '<label>Posuda <select id="szVessel"></select></label>'+
@@ -122,6 +126,13 @@ function draw(){
       var cc=se('circle',{cx:p[0],cy:p[1],r:.7,fill:'#fff',stroke:c,'stroke-width':'.25','vector-effect':'non-scaling-stroke'});cc.setAttribute('transform','');cc.dataset.k=k;cc.dataset.i=i;svg.appendChild(cc);
     });
   });
+  if(mode==='tap'){
+    var T=cal.tap,pts=[['spout','#42d6e8'],['land','#ffe27a'],['left','#7aff9a'],['right','#7aff9a']];
+    pts.forEach(function(q){var pp=T[q[0]];
+      var cc=se('circle',{cx:pp[0],cy:pp[1],r:q[0]==='left'||q[0]==='right'?T.r:.8,fill:q[0]==='left'||q[0]==='right'?'rgba(122,255,154,.18)':'#fff',stroke:q[1],'stroke-width':'.3','vector-effect':'non-scaling-stroke'});
+      cc.dataset.t=q[0];svg.appendChild(cc);});
+    svg.appendChild(se('line',{x1:T.spout[0],y1:T.spout[1],x2:T.land[0],y2:T.land[1],stroke:'#42d6e8','stroke-width':'.3','stroke-dasharray':'1 1','vector-effect':'non-scaling-stroke','pointer-events':'none'}));
+  }
   info();
 }
 function pct(e){var r=stage.getBoundingClientRect();return [Math.max(0,Math.min(100,(e.clientX-r.left)/r.width*100)),Math.max(0,Math.min(100,(e.clientY-r.top)/r.height*100))];}
@@ -129,13 +140,14 @@ var drag=null;
 svg.addEventListener('pointerdown',function(e){
   if(!root.classList.contains('editing')||e.button!==0)return;
   var t=e.target;e.stopPropagation();
+  if(t.tagName==='circle'&&t.dataset.t){drag={t:t.dataset.t};svg.setPointerCapture(e.pointerId);e.preventDefault();return;}
   if(t.tagName==='circle'){drag={k:t.dataset.k,i:+t.dataset.i};svg.setPointerCapture(e.pointerId);e.preventDefault();return;}
   if(t.tagName==='line'&&t.dataset.edge!==undefined){var k=t.dataset.k,i=+t.dataset.edge;cal[k].splice(i+1,0,pct(e));saveCal();draw();drag={k:k,i:i+1};svg.setPointerCapture(e.pointerId);e.preventDefault();}
 });
-svg.addEventListener('pointermove',function(e){if(!drag)return;cal[drag.k][drag.i]=pct(e);saveCal();draw();});
+svg.addEventListener('pointermove',function(e){if(!drag)return;if(drag.t){cal.tap[drag.t]=pct(e);saveCal();draw();return;}cal[drag.k][drag.i]=pct(e);saveCal();draw();});
 svg.addEventListener('pointerup',function(){drag=null;});
 svg.addEventListener('dblclick',function(e){var t=e.target;if(t.tagName==='circle'&&cal[t.dataset.k].length>3){cal[t.dataset.k].splice(+t.dataset.i,1);saveCal();draw();}});
-ed.querySelectorAll('[data-m]').forEach(function(b){b.addEventListener('click',function(){mode=b.dataset.m;ed.querySelectorAll('[data-m]').forEach(function(x){x.classList.toggle('on',x===b)});draw();});});
+ed.querySelectorAll('[data-m]').forEach(function(b){b.addEventListener('click',function(){mode=b.dataset.m;ed.querySelector('#szTapBox').style.display=mode==='tap'?'block':'none';ed.querySelectorAll('[data-m]').forEach(function(x){x.classList.toggle('on',x===b)});draw();});});
 // the vessel in the sink
 function ensureVes(){
   var v=equipment().find(function(x){return x.id===vesId});if(!v)return null;
@@ -180,7 +192,103 @@ ed.querySelector('#szCopy').addEventListener('click',function(){
 ed.querySelector('#szReset').addEventListener('click',function(){cal=JSON.parse(JSON.stringify(CAL_DEF));saveCal();fillSelect();draw();status('Vraćeno na početne oblike.');});
 function calActive(){return document.body.classList.contains('scene-zone-calibration-active')||(function(){var p=document.getElementById('sceneZoneCalibration');return !!p&&p.offsetParent!==null;})();}
 function syncEditing(){var on=opened&&root.classList.contains('ready')&&calActive();root.classList.toggle('editing',on);ed.style.display=on?'block':'none';if(on){if(!selEl.options.length)fillSelect();draw();}else if(ves&&!opened)ves.style.display='none';}
-setInterval(syncEditing,500);
+
+/* ---------- the faucet in the close-up: two valves that unscrew, and the water ----------
+   Click on a valve (cross handle): it turns (unscrews) and water starts to run from the spout; click again: it screws back and the water stops.
+   The left and the right valve each give half of the flow; both open = a strong stream. The water of the kitchen (sound, state of the tap) follows. */
+var fx=document.createElement('canvas');fx.className='sz-fx';fx.style.cssText='position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none';
+stage.insertBefore(fx,svg);
+var valve={left:{open:0,target:0,ang:0},right:{open:0,target:0,ang:0}};
+var fxRun=false,tLast=0,flow=0,streamLen=0,ripT=0,drops=[];
+var hit=se('g',{});svg.appendChild(hit);
+function layoutHits(){
+  while(hit.firstChild)hit.removeChild(hit.firstChild);
+  ['left','right'].forEach(function(k){
+    var c=se('circle',{cx:cal.tap[k][0],cy:cal.tap[k][1],r:cal.tap.r*1.15,fill:'transparent','pointer-events':opened&&!root.classList.contains('editing')?'all':'none',cursor:'pointer'});
+    c.style.cursor='pointer';c.addEventListener('pointerdown',function(e){e.stopPropagation();toggleValve(k);});hit.appendChild(c);
+  });
+}
+function toggleValve(k){valve[k].target=valve[k].target?0:1;syncGame();kickFx();}
+function totalFlow(){return Math.min(1,(valve.left.open+valve.right.open)*.6);}
+function syncGame(){
+  try{var on=valve.left.target||valve.right.target;if(typeof faucetOn!=='undefined'&&!!faucetOn!==!!on&&typeof setFaucet==='function')setFaucet(!!on);}catch(e){}
+}
+function kickFx(){if(!fxRun){fxRun=true;tLast=performance.now();requestAnimationFrame(frame);}}
+function px(n){return n/100;}
+function frame(now){
+  var dt=Math.min(.05,(now-tLast)/1000);tLast=now;
+  var w=stage.clientWidth,h=stage.clientHeight;
+  if(fx.width!==w*2||fx.height!==h*2){fx.width=w*2;fx.height=h*2;}
+  var g=fx.getContext('2d');g.setTransform(2,0,0,2,0,0);g.clearRect(0,0,w,h);
+  var moving=false;
+  ['left','right'].forEach(function(k,idx){
+    var v=valve[k],d=v.target-v.open;
+    if(Math.abs(d)>.002){v.open+=Math.sign(d)*Math.min(Math.abs(d),dt*2.2);moving=true;}else v.open=v.target;
+    v.ang=v.open*Math.PI*1.5*(idx?-1:1);
+    if(v.open>0.003||v.target){drawHead(g,k,v,w,h);}
+  });
+  flow+=(totalFlow()-flow)*Math.min(1,dt*7);
+  var on=flow>.02;
+  streamLen+=((on?1:0)-streamLen)*Math.min(1,dt*(on?9:14));
+  if(streamLen>.01&&flow>.01)drawWater(g,w,h,now);
+  else if(streamLen>.01){streamLen*=.8;}
+  g.setTransform(1,0,0,1,0,0);
+  if(moving||streamLen>.02||flow>.02||drops.length)requestAnimationFrame(frame);else fxRun=false;
+}
+// the head of a valve: a piece of the picture (a disc around its centre) turned like the cross of a real valve, seen from above at an angle
+function patch(cx,cy,R,feather){
+  // a round piece of the picture with a soft edge (cx,cy,R in pixels of the picture)
+  var S=Math.max(4,Math.round(R*2)),c=document.createElement('canvas');c.width=c.height=S;var g=c.getContext('2d');
+  g.drawImage(img,cx-R,cy-R,R*2,R*2,0,0,S,S);
+  var gr=g.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);gr.addColorStop(0,'#000');gr.addColorStop(Math.max(0,1-feather),'#000');gr.addColorStop(1,'rgba(0,0,0,0)');
+  g.globalCompositeOperation='destination-in';g.fillStyle=gr;g.fillRect(0,0,S,S);return c;
+}
+function drawHead(g,k,v,w,h){
+  var T=cal.tap,c=T[k],cx=c[0]/100*w,cy=c[1]/100*h,R=T.r/100*w,q=T.squash;
+  var iw=img.naturalWidth||1,ih=img.naturalHeight||1,sx=c[0]/100*iw,sy=c[1]/100*ih,sr=T.r/100*iw*1.12,side=k==='left'?-1:1;
+  // 1. hide the head that is in the picture: a piece of the wall and the rim of the sink from the side of the valve is laid over it
+  g.drawImage(patch(sx+side*sr*2.7,sy,sr,.35),cx-R*1.12,cy-R*1.12,R*2.24,R*2.24);
+  // 2. the head turns: a flat disc, seen from above at an angle, turns round its middle (a little motion blur while it moves)
+  var spinning=Math.abs(v.target-v.open)>.01,n=spinning?4:1,lift=Math.sin(Math.min(1,v.open)*Math.PI)*0.0025*w,pc=patch(sx,sy,sr,.3);
+  for(var i=0;i<n;i++){
+    g.save();g.globalAlpha=spinning?(i===n-1?1:.3):1;g.translate(cx,cy-lift);
+    g.scale(1,q);g.rotate(v.ang-(n-1-i)*.14*Math.sign(v.target-v.open||1)*(k==='left'?1:-1));g.scale(1,1/q);
+    g.drawImage(pc,-R*1.12,-R*1.12,R*2.24,R*2.24);g.restore();
+  }
+}
+function drawWater(g,w,h,now){
+  var T=cal.tap,sx=T.spout[0]/100*w,sy=T.spout[1]/100*h,lx=T.land[0]/100*w,ly=T.land[1]/100*h;
+  var len=ly-sy,ey=sy+len*streamLen,t=now/1000,wid=(w*.0035)*(.5+flow*1.3);
+  // the stream: a smooth bright ribbon with moving highlights
+  g.save();
+  var gr=g.createLinearGradient(0,sy,0,ey);gr.addColorStop(0,'rgba(215,240,255,.92)');gr.addColorStop(1,'rgba(160,215,245,.8)');
+  g.fillStyle=gr;g.beginPath();
+  var N=14;
+  for(var i=0;i<=N;i++){var f=i/N,y=sy+(ey-sy)*f,ww=wid*(1-.3*f)*(1+.1*Math.sin(t*22+f*9));g.lineTo(sx-ww+Math.sin(t*7+f*5)*wid*.12,y);}
+  for(var j=N;j>=0;j--){var f2=j/N,y2=sy+(ey-sy)*f2,w2=wid*(1-.3*f2)*(1+.1*Math.sin(t*22+f2*9));g.lineTo(sx+w2+Math.sin(t*7+f2*5)*wid*.12,y2);}
+  g.closePath();g.fill();
+  g.globalAlpha=.7;g.strokeStyle='#fff';g.lineWidth=Math.max(1,wid*.28);
+  for(var k=0;k<3;k++){var off=((t*(2.4+k*.6)+k*.33)%1);g.beginPath();g.moveTo(sx-wid*.25+k*wid*.2,sy+(ey-sy)*off*.9);g.lineTo(sx-wid*.25+k*wid*.2,sy+(ey-sy)*Math.min(1,off*.9+.12));g.stroke();}
+  g.restore();
+  // where it lands: rings and drops
+  if(streamLen>.9){
+    g.save();g.lineWidth=Math.max(1,w*.0014);
+    for(var r=0;r<3;r++){var ph=((t*1.3+r/3)%1);g.globalAlpha=.55*(1-ph)*flow;g.strokeStyle='#eaf7ff';g.beginPath();g.ellipse(lx,ly,w*(.012+.05*ph)*(.6+flow*.6),w*(.012+.05*ph)*.33*(.6+flow*.6),0,0,Math.PI*2);g.stroke();}
+    g.restore();
+    if(Math.random()<flow*.7)drops.push({x:lx+(Math.random()-.5)*w*.014,y:ly,vx:(Math.random()-.5)*w*.12,vy:-w*(.08+Math.random()*.12),life:0});
+  }
+  for(var d=drops.length-1;d>=0;d--){var p=drops[d];p.life+=1/60;p.vy+=w*.5/60;p.x+=p.vx/60;p.y+=p.vy/60;
+    if(p.life>.5){drops.splice(d,1);continue;}
+    g.fillStyle='rgba(230,246,255,'+(.8*(1-p.life*2))+')';g.beginPath();g.arc(p.x,p.y,Math.max(1,w*.0016),0,Math.PI*2);g.fill();}
+}
+// when the close-up opens: if the water of the kitchen is already running, the left valve is open
+var openBase=open;open=function(){openBase();layoutHits();try{if(typeof faucetOn!=='undefined'&&faucetOn){valve.left.open=valve.left.target=1;kickFx();}}catch(e){}};
+var closeBase=close;close=function(){closeBase();};
+ed.querySelector('#szTapR').addEventListener('input',function(e){cal.tap.r=+e.target.value;ed.querySelector('#szTapRN').textContent=cal.tap.r.toFixed(1);saveCal();draw();layoutHits();});
+ed.querySelector('#szTapSq').addEventListener('input',function(e){cal.tap.squash=+e.target.value;ed.querySelector('#szTapSqN').textContent=cal.tap.squash.toFixed(2);saveCal();});
+ed.querySelector('#szTapTest').addEventListener('click',function(){var on=!(valve.left.target||valve.right.target);valve.left.target=on?1:0;valve.right.target=on?1:0;syncGame();kickFx();});
+
+setInterval(function(){syncEditing();layoutHits();},500);
 // a button that opens the sink close-up while the scene calibration is on (the calibration layer covers the sink, so a click on it cannot open it)
 var calBtn=document.createElement('button');calBtn.type='button';calBtn.textContent='🚰 Sudopera krupno (kalibracija)';calBtn.setAttribute('data-tool-ui','1');
 calBtn.style.cssText='position:fixed;right:14px;bottom:70px;z-index:19990;display:none;border:2px solid #351b0d;border-radius:9px;background:#e8c27a;color:#351b0d;font:700 13px/1 system-ui,sans-serif;padding:9px 12px;cursor:pointer';
