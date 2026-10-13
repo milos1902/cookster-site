@@ -53,9 +53,46 @@
   // how much of each look is shown at a visual stage (1 raw .. 7 burnt)
   const BLEND=[[0,0],[.12,0],[.45,0],[.8,0],[1,0],[1,.85],[1,1]];
 
+  // The picture of the quick cut (key E) is a ready heap of cubes. In a vessel it becomes single pieces like the hand cut (key C): the picture is cut into a grid of small
+  // rounded squares (one per cube), laid out exactly as in the heap, so that every piece moves on its own and takes its colours from the cooked art at the same place.
+  const SNAP_W=300;                         // the size of the baked heap of the hand cut: 300 atlas pixels = the width of the diced picture on the board
+  function stockAtlas(str){
+    const src=str.slice(6);
+    const e={img:null,meta:null,ready:false,parts:[]};
+    loadImg(src,im=>{
+      const q=SNAP_W/im.width,PAD=10;
+      const cv0=document.createElement('canvas');cv0.width=im.width;cv0.height=im.height;const g0=cv0.getContext('2d');g0.drawImage(im,0,0);
+      let d;try{d=g0.getImageData(0,0,im.width,im.height).data;}catch(_){return;}
+      let x0=im.width,y0=im.height,x1=-1,y1=-1;
+      for(let y=0;y<im.height;y+=2)for(let x=0;x<im.width;x+=2)if(d[(y*im.width+x)*4+3]>40){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
+      if(x1<0)return;
+      const cell=Math.round(32/q),cells=[];            // a piece is about as big as a piece of the hand cut (about 32 atlas pixels)
+      for(let cy=y0;cy<y1;cy+=cell)for(let cx=x0;cx<x1;cx+=cell){
+        let a=0,n=0;for(let y=cy;y<Math.min(y1,cy+cell);y+=3)for(let x=cx;x<Math.min(x1,cx+cell);x+=3){n++;if(d[(y*im.width+x)*4+3]>120)a++;}
+        if(n&&a/n>.55)cells.push({cx,cy,w:Math.min(cell,x1-cx),h:Math.min(cell,y1-cy)});
+      }
+      if(!cells.length)return;
+      const mx=(x0+x1)/2,my=(y0+y1)/2;
+      const cw=Math.ceil(cell*q+PAD*2),chh=Math.ceil(cell*q+PAD*2),perRow=Math.max(1,Math.floor(480/cw));
+      const rows=Math.ceil(cells.length/perRow);
+      const cv=document.createElement('canvas');cv.width=perRow*cw;cv.height=rows*chh;const g=cv.getContext('2d');
+      const meta={W:Math.round((x1-x0)*q*10)/10,H:Math.round((y1-y0)*q*10)/10,p:[]};
+      cells.forEach((c,i)=>{
+        const sx=(i%perRow)*cw,sy=Math.floor(i/perRow)*chh,w=c.w*q,h=c.h*q,ox=sx+PAD+(cell*q-w)/2,oy=sy+PAD+(cell*q-h)/2;
+        g.save();g.beginPath();
+        const r=Math.min(w,h)*.22;if(g.roundRect)g.roundRect(ox,oy,w,h,r);else g.rect(ox,oy,w,h);
+        g.clip();g.drawImage(im,c.cx,c.cy,c.w,c.h,ox,oy,w,h);g.restore();
+        meta.p.push([sx,sy,cw,chh,Math.round(cw/2*10)/10,Math.round(chh/2*10)/10,Math.round(((c.cx+c.w/2)-mx)*q*10)/10,Math.round(((c.cy+c.h/2)-my)*q*10)/10,Math.round((Math.random()-.5)*600)/1000]);
+      });
+      e.img=cv;e.meta=meta;e.ready=true;
+      for(const sm of live){if(sm.parts)sm.sync(sm.parts);sm.dirty=true;}kick();
+    });
+    return e;
+  }
   function loadAtlas(str){
     let e=atlasCache.get(str);
     if(e)return e;
+    if(str.startsWith('stock:')){e=stockAtlas(str);atlasCache.set(str,e);return e;}
     const hash=str.indexOf('#');
     let meta=null;
     try{meta=JSON.parse(str.slice(hash+1));}catch(_){}
@@ -150,11 +187,11 @@
         for(let u=0;u<units;u++){
           const entry=loadAtlas(part.atlas[u%part.atlas.length]);
           entry.part=part;
-          const m=entry.meta;if(!m||!Array.isArray(m.p))continue;
+          const m=entry.meta;if(!m||!Array.isArray(m.p))continue;      // (a picture that is still loading has no pieces yet: they appear when it is ready)
           // the pieces keep the size they had on the board: one cut vegetable is a heap as wide as the diced picture is on the board (def.dicedW at the scale of the vessel)
           const wr=this.wrapOf(),wrapW=wr&&wr.clientWidth>4?wr.clientWidth:0,pw=((part.def&&(part.def.dicedW||part.def.w))||96)*(+this.vessel.dataset.vis||1);
           const heapUnits=wrapW?Math.max(10,Math.min(120,pw*SIM_W/wrapW)):PIECE_SCALE*HEAP_W;
-          const k=heapUnits/Math.max(20,m.W||100);
+          const k=heapUnits/SNAP_W;           // 300 atlas pixels = the width of the diced picture on the board
           const off=UNIT_OFFSETS[u%UNIT_OFFSETS.length];
           m.p.forEach((q,i)=>{
             const id=`${part.storageKey}|${u}|${i}`;

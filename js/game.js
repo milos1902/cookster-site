@@ -12371,7 +12371,11 @@ function allSlicedIngredientMix(counts,metaItems={}){
     const def=VEGETABLES[base]||CooksterCatalog.FRUITS?.[base];
     if(!def?.slicedSrc&&!def?.dicedSrc)continue;
     const allPiles=(diced&&!roastedEggplant)?CooksterPiles.split(metaItems?.[key]?.src):[];   // a roasted pepper that was cut by hand keeps its own pieces too
-    const atlas=allPiles.filter(x=>x.includes('#'));   // per-piece atlases are drawn by CooksterPieceSim
+    let atlas=allPiles.filter(x=>x.includes('#'));   // per-piece atlases are drawn by CooksterPieceSim
+    // the E-cut stock pile stays a picture on the board, but inside a vessel it becomes single pieces like the C-cut
+    if(!atlas.length&&allPiles.length)atlas=allPiles.map(x=>'stock:'+x);
+    else if(!atlas.length&&roastedPepper)atlas=['stock:'+roastedChoppedPepperSrc(key)];
+    else if(!atlas.length&&diced&&!roastedEggplant&&def.dicedSrc)atlas=['stock:'+def.dicedSrc];
     const piles=atlas.length?[]:allPiles;
     entries.push({
       kind:base,
