@@ -14312,6 +14312,46 @@ function spawnSourHalf(target){
  }catch(_){}
 }
 // E: the quick cut (the knife chops by itself) -> chopped small; C: the cut with the mouse (the board comes close, the knife is dragged over the vegetable) -> rounds / slices
+// Peeling: the steamed (or roasted) peppers / eggplants lie on the board and the player holds E: a ring fills above them and when it is full all of them are peeled
+let peelHold=null;
+function peelTargetsOnBoard(){return items.filter(el=>el.dataset.attachedToBoard==='1'&&el.dataset.readyToPeel==='1'&&el.dataset.peeled!=='1');}
+function cancelPeelHold(){
+  if(!peelHold)return;
+  cancelAnimationFrame(peelHold.raf);peelHold=null;destroyCutProgress();
+}
+function finishPeelHold(){
+  const h=peelHold;if(!h)return;
+  cancelAnimationFrame(h.raf);peelHold=null;destroyCutProgress();
+  let n=0;
+  for(const el of h.ts){
+    if(!el.isConnected||el.dataset.peeled==='1')continue;
+    el.dataset.peeled='1';el.dataset.readyToPeel='0';el.dataset.peelHits='2';
+    try{renderPaprikaPeelState(el);}catch(_){}
+    n++;
+  }
+  if(n){playImpactSound(peelSoundTarget,'peel');showToast(n===1?'Oljušteno — spremno za seckanje.':`Oljušteno: ${n} — spremno za seckanje.`);CooksterSave.schedule();updateHover();}
+}
+function startPeelHold(){
+  if(peelHold||isCutting||paprikaPeelGame)return false;
+  const ts=peelTargetsOnBoard();if(!ts.length)return false;
+  const spot=()=>{const t=ts.filter(el=>el.isConnected);if(!t.length)return null;const cx=t.reduce((s,el)=>s+(+el.dataset.cx||0),0)/t.length;const top=Math.min(...t.map(el=>parseFloat(el.style.top)||0));return {cx,y:top-46*(+t[0].dataset.vis||1)};};
+  const p0=spot();if(!p0)return false;
+  const ring=ensureCutProgress(p0.cx,p0.y);const txt=ring.querySelector('.txt');if(txt)txt.textContent='LJUŠTENJE';
+  const DUR=1800,start=performance.now();
+  peelHold={ts,raf:0};
+  const step=now=>{
+    if(!peelHold)return;
+    const p=Math.min(1,(now-start)/DUR),sp=spot();
+    if(!sp){cancelPeelHold();return;}
+    updateCutProgress(p,sp.cx,sp.y);
+    if(p>=1){finishPeelHold();return;}
+    peelHold.raf=requestAnimationFrame(step);
+  };
+  peelHold.raf=requestAnimationFrame(step);
+  return true;
+}
+window.addEventListener('keyup',e=>{if(e.key==='e'||e.key==='E')cancelPeelHold();});
+window.addEventListener('blur',cancelPeelHold);
 function beginCutAction(mode='dice'){
  if(isCutting)return;
  const board=getBoardEl();
@@ -15390,6 +15430,7 @@ window.addEventListener('keydown',e=>{
  if((e.key==='q'||e.key==='Q')&&!e.repeat){if(toggleQuickToolHand()){e.preventDefault();return;}}
  if((e.key==='e'||e.key==='E')&&!e.repeat){
    if(isCutting){e.preventDefault();return;}
+   if(startPeelHold()){e.preventDefault();return;}     // roasted peppers on the board: holding E peels all of them
    const target=findCutTargetOnBoard();
    if(target){e.preventDefault();beginCutAction('dice');}
  }
