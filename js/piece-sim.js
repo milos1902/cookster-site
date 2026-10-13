@@ -9,6 +9,10 @@
   const HEAP_W=62;                       // one ingredient unit's heap is this wide (units)
   const PIECE_SCALE=1.6;                 // pieces are drawn a little larger, so a few additions are enough to fill a vessel
   const LEVEL_FULL=4;                    // the food reaches the top line after about 3 additions (fill measured in floor areas)
+  // how much of the floor of a vessel ONE unit of a vegetable covers: big vegetables (a head of cabbage, a zucchini, an eggplant) cover (almost) the whole floor,
+  // small ones (radish, garlic) only a little. The number of pieces of a unit is multiplied by this factor (the pieces keep their own size).
+  const FOOT={kupus:1.7,tikvice:1.5,patlidzan:1.55,zelena_salata:1.35,paprika:1.35,paradajz:1.05,krastavac:1.4,luk:.9,paprika_zelena:.9,sargarepa:.7,persun:.55,beli_luk:.32,rotkvice:.34};
+  const hashFrac=(a,b,c)=>{let h=(a*73856093)^(b*19349663)^(c*83492791);h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967296;};
   const MAX_UNITS=6;                     // units of one ingredient drawn as pieces
   const UNIT_OFFSETS=[[0,0],[-16,5],[16,-5],[-6,-14],[8,13],[-21,-8],[21,10]];
   // cooking tint per visual stage (1 raw .. 7 burnt), painted over the pieces only
@@ -175,7 +179,7 @@
       // The food starts as a small heap around the "bottom point" the player marked in the tool (the yellow point; the middle of the area if there is none)
       // and grows from there (the same shape, larger) up to the whole calibrated area when the vessel is full.
       const full=this.fullPoly;
-      const lvl=(this.fill||1)/LEVEL_FULL;   // 0 = one small heap, 1 = the whole area
+      const lvl=Math.min(1,this.fill||1);   // 1 = the floor is covered (then the food only gets higher): one small heap at the start, the whole area when the floor is covered
       const hx=this.homeX!=null?this.homeX:this.fullCx,hy=this.homeY!=null?this.homeY:this.fullCy;
       const sc=lvl>=1?1:Math.sqrt(Math.max(.16,lvl));
       const poly=sc>=1?full:full.map(q=>({x:hx+(q.x-hx)*sc,y:hy+(q.y-hy)*sc}));
@@ -206,11 +210,14 @@
           const heapUnits=wrapW?Math.max(10,Math.min(120,pw*SIM_W/wrapW)):PIECE_SCALE*HEAP_W;
           const k=heapUnits/SNAP_W;           // 300 atlas pixels = the width of the diced picture on the board
           const off=UNIT_OFFSETS[u%UNIT_OFFSETS.length];
-          m.p.forEach((q,i)=>{
-            const id=`${part.storageKey}|${u}|${i}`;
+          const mult=FOOT[part.kind]||1,copies=Math.ceil(mult);
+          for(let cp=0;cp<copies;cp++)m.p.forEach((q,i)=>{
+            const wgt=Math.min(1,mult-cp);
+            if(wgt<1&&hashFrac(i+1,u+1,cp+1)>=wgt)return;   // a unit of a small vegetable keeps only part of its pieces
+            const id=`${part.storageKey}|${u}|${i}${cp?'|'+cp:''}`;
             want.add(id);
             if(this.pieces.has(id))return;
-            const [sx,sy,sw,sh,ax,ay,x,y,rot]=q;
+            const [sx,sy,sw,sh,ax,ay,x,y,rot0]=q;const rot=(rot0||0)+cp*1.7;
             const piece={id,entry,k,sx,sy,sw,sh,ax,ay,rot:rot||0,vx:0,vy:0,mass:.8+Math.random()*.9,
               x:0,y:0,
               k0:k,r:Math.max(4,(Math.max(sw,sh)-PAD*2)/2*k)};
@@ -226,6 +233,7 @@
       const sig=this.poly.map(q=>q.x.toFixed(1)+','+q.y.toFixed(1)).join(';');          // the area of the food has changed (the vessel was calibrated again): the pieces that lie outside are pulled in
       const moved=this._sig!==undefined&&this._sig!==sig;this._sig=sig;
       for(const p of created)this.scatter(p);
+      if(created.length&&this.pieces.size>created.length){this.activeUntil=performance.now()+900;kick();}   // earlier pieces spread out gently over the larger area
       if(created.length)this.relax(60);else if(moved){for(const p of this.pieces.values())if(!this.inside(p.x,p.y))this.scatter(p);this.relax(40);}
       this.dirty=true;
     }
