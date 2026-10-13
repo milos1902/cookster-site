@@ -14347,7 +14347,7 @@ function startPeelHold(){
   const ts=peelTargetsOnBoard();if(!ts.length)return false;
   const spot=()=>{const t=ts.filter(el=>el.isConnected);if(!t.length)return null;const cx=t.reduce((s,el)=>s+(+el.dataset.cx||0),0)/t.length;const top=Math.min(...t.map(el=>parseFloat(el.style.top)||0));return {cx,y:top-46*(+t[0].dataset.vis||1)};};
   const p0=spot();if(!p0)return false;
-  const ring=ensureCutProgress(p0.cx,p0.y);const txt=ring.querySelector('.txt');if(txt)txt.textContent='LJUŠTENJE';
+  const ring=ensureCutProgress(p0.cx,p0.y);ring.classList.add('peel');
   const DUR=1800,start=performance.now();
   peelHold={ts,raf:0};
   const step=now=>{
