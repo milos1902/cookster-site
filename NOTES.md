@@ -427,3 +427,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Nova tekstura vode `assets/water/tamna.webp` (korisnikova, tamna, sivo-zelena); plavi slojevi uklonjeni, ivica tamnija.
 - Dva koncentrična prstena (`.vw-ring`) se šire i nestaju u vodi, uz blagi sjaj talasa.
 - Stara `povrsina.webp` se više ne koristi u vodi.
+
+## Voda: plavija za svetla dna (2026-10-13, vessel-water.js?v=7)
+- `bottomLum` meri svetlinu dna posude (slika oko sredine oblika dna); ako je svetlo, voda dobija klasu `vw-light`.
+- Za sada je `vw-light` samo plavlji ton iste teksture (CSS filter). Kad stigne korisnikova plavija slika, ide kao `assets/water/plava.webp` u `.vw-light`.

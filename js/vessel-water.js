@@ -16,6 +16,7 @@ css.textContent='@keyframes vwDrift{from{background-position:0 0,0 0}to{backgrou
  '.vessel-water-ov .vw-surf{position:absolute;inset:0;opacity:.78;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 45%,rgba(0,0,0,.35) 100%),linear-gradient(rgba(255,255,255,.1),rgba(255,255,255,0) 40%),url('+TEX+');background-size:100% 100%,100% 100%,42% auto;animation:vwSlosh 5s ease-in-out infinite alternate}'+
  '.vessel-water-ov .vw-wave{position:absolute;top:0;bottom:0;left:0;width:28%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.16),rgba(255,255,255,0));mix-blend-mode:screen;animation:vwWave 2.7s ease-in-out infinite alternate}'+
  '.vessel-water-ov .vw-wave.b{width:20%;animation-duration:3.9s;animation-direction:alternate-reverse;opacity:.7}'+
+ '.vessel-water-ov.vw-light .vw-surf,.vessel-water-ov.vw-light .vw-fill{filter:hue-rotate(45deg) saturate(1.5) brightness(1.15)}'+
  '@keyframes vwRing{0%{transform:translate(-50%,-50%) scale(.05);opacity:0}12%{opacity:.85}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}'+
  '.vessel-water-ov .vw-ring{position:absolute;width:90%;aspect-ratio:1;border-radius:50%;pointer-events:none;background:repeating-radial-gradient(circle,rgba(255,255,255,0) 0,rgba(255,255,255,0) 9%,rgba(235,245,240,.5) 10.5%,rgba(255,255,255,0) 12%);-webkit-mask-image:radial-gradient(circle,#000 30%,transparent 70%);mask-image:radial-gradient(circle,#000 30%,transparent 70%);animation:vwRing 5.2s ease-out infinite}';
 document.head.appendChild(css);
@@ -76,8 +77,23 @@ function overlay(id,f,src,withFront,pOverride){
   d.appendChild(fill);d.appendChild(top);
   return finish(d,p,src,withFront);
 }
+var LUM={};
+// brightness of the bottom of the vessel (picture around the middle of the bottom shape): light bottom gets the bluer water, dark bottom the grey one
+function bottomLum(src,p,cb){
+  if(LUM[src]!==undefined)return cb(LUM[src]);
+  var P=(p.bottomPoly&&p.bottomPoly.length>=3?p.bottomPoly:p.foodVisible),cx=0,cy=0;
+  P.forEach(function(q){cx+=q[0];cy+=q[1];});cx/=P.length;cy/=P.length;
+  var im=new Image();im.onload=function(){
+    var v=.5;try{var W=64,H=64,c=document.createElement('canvas');c.width=W;c.height=H;var g=c.getContext('2d');g.drawImage(im,0,0,W,H);
+      var x=Math.round(cx/100*W),y=Math.round(cy/100*H),r=4,sum=0,n=0,a=g.getImageData(Math.max(0,x-r),Math.max(0,y-r),2*r,2*r).data;
+      for(var i=0;i<a.length;i+=4){if(a[i+3]<128)continue;sum+=(a[i]*.3+a[i+1]*.59+a[i+2]*.11)/255;n++;}
+      if(n)v=sum/n;}catch(e){}
+    LUM[src]=v;cb(v);};
+  im.onerror=function(){LUM[src]=.5;cb(.5);};im.src=src;
+}
 function finish(d,p,src,withFront){
   if(src){
+    bottomLum(src,p,function(v){if(v>.38)d.classList.add('vw-light');});
     // the water never leaves the outline of the vessel (the picture of the vessel is the mask), and where the front wall of the vessel is drawn over the food, it is over the water too
     var m='url("'+src+'")';d.style.webkitMaskImage=m;d.style.maskImage=m;d.style.webkitMaskSize='100% 100%';d.style.maskSize='100% 100%';
     if(withFront&&p.mask&&p.mask.length>=3){
