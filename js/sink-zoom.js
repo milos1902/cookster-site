@@ -312,5 +312,70 @@ document.body.appendChild(calBtn);
 calBtn.addEventListener('click',function(e){e.stopPropagation();open();});
 setInterval(function(){calBtn.style.display=(calActive()&&!opened)?'block':'none';},600);
 
-window.CooksterSinkZoom={open:open,close:close,isOpen:function(){return opened;},cal:function(){return cal;}};
+
+/* ---------- things lying in the sink ----------
+   1. A vessel from the hand: a click on the sink with a vessel in the hand puts it into the sink and opens the close-up, where it stands where you calibrated it.
+      A click on it in the close-up takes it back into the hand. (They are kept in this browser: cookster.sink-items.v1)
+   2. The dirty bowls from the tavern ("Pranje"): they lie in the sink too (and the running tap washes them one by one, like in the kitchen). */
+var ITEMS_KEY='cookster.sink-items.v1',sunk=[];
+try{sunk=JSON.parse(localStorage.getItem(ITEMS_KEY)||'[]')||[];}catch(e){sunk=[];}
+function saveSunk(){try{localStorage.setItem(ITEMS_KEY,JSON.stringify(sunk.slice(0,8)));}catch(e){}}
+var layer=document.createElement('div');layer.className='sz-sink';layer.style.cssText='position:absolute;inset:0;z-index:2;pointer-events:none';stage.insertBefore(layer,fx);
+var ICSS=document.createElement('style');ICSS.textContent='#sinkZoom .sz-it{position:absolute;transform:translate(-50%,-100%);height:auto;-webkit-user-drag:none;user-select:none}#sinkZoom:not(.editing) .sz-it.take{pointer-events:auto;cursor:grab}#sinkZoom:not(.editing) .sz-it.take:hover{filter:brightness(1.12)}';
+document.head.appendChild(ICSS);
+function clipFor(el,x,yy,w){
+  var ratio=el.naturalHeight/Math.max(1,el.naturalWidth)*16/9,hh=w*ratio;
+  return 'polygon('+cal.mask.map(function(p){return ((p[0]-x)/w*100+50).toFixed(2)+'% '+(((p[1]-yy)/hh)*100+100).toFixed(2)+'%'}).join(',')+')';
+}
+function slotX(i,n,w){var f=cal.floor,l=Math.min.apply(null,f.map(function(p){return p[0]})),r=Math.max.apply(null,f.map(function(p){return p[0]}));
+  var cx=(l+r)/2,step=Math.min(w*.95,(r-l-w)/Math.max(1,n-1));return cx+(i-(n-1)/2)*step;}
+function itemGeom(id,def){
+  var v=cal.vessels[id],f=cal.floor,cy=f.reduce(function(s,p){return s+p[1]},0)/f.length;
+  return {w:v?v.w:def,y:v?v.y:cy+6,h:v?(v.h||0):0};
+}
+var dishCount=-1,sig='';
+function srcOf(saved){
+  var D=window.CooksterVesselDirt;
+  if(saved.data&&saved.data.dirt==='1'&&D&&D.has&&D.has(saved.id))return D.has(saved.id).replace(/\?v=\d+$/,'');
+  return saved.src;
+}
+function renderSink(force){
+  var dishes=0;try{dishes=window.CooksterSinkDishes?CooksterSinkDishes.count():0;}catch(e){}
+  var s2=sunk.map(function(x){return x.id+(x.data&&x.data.dirt||'')}).join('|')+'#'+dishes;
+  if(!force&&s2===sig)return;sig=s2;
+  layer.innerHTML='';
+  var total=sunk.length+Math.min(dishes,6),k=0;
+  sunk.forEach(function(sv,i){
+    var g=itemGeom(sv.id,14),im=document.createElement('img');im.className='sz-it take';im.draggable=false;im.title='klik: uzmi posudu';
+    var x=slotX(k++,total,g.w);
+    im.onload=function(){place(im,x,g)};im.src=srcOf(sv);if(im.complete&&im.naturalWidth)place(im,x,g);
+    im.addEventListener('pointerdown',function(e){e.stopPropagation();e.preventDefault();takeOut(i);});
+    layer.appendChild(im);
+  });
+  var gd=itemGeom('posuda_za_kupus',11);
+  for(var d=0;d<Math.min(dishes,6);d++){
+    var im2=document.createElement('img');im2.className='sz-it';im2.draggable=false;(function(im2,x){im2.onload=function(){place(im2,x,gd)};im2.src='assets/calibration_props/posuda_za_kupus/posuda_prljava.webp';if(im2.complete&&im2.naturalWidth)place(im2,x,gd);})(im2,slotX(k++,total,gd.w));
+    layer.appendChild(im2);
+  }
+}
+function place(im,x,g){var yy=g.y-g.h;im.style.left=x+'%';im.style.top=yy+'%';im.style.width=g.w+'%';im.style.clipPath=clipFor(im,x,yy,g.w);}
+function takeOut(i){
+  var sv=sunk[i];if(!sv)return;
+  var bridge=window.CooksterPantryBridge;if(!bridge||bridge.heldItem&&bridge.heldItem()){return;}
+  sunk.splice(i,1);saveSunk();close();
+  setTimeout(function(){try{bridge.take(sv);}catch(e){}renderSink(true);},DUR*.8);
+}
+// a vessel from the hand goes into the sink and the close-up opens
+function putHeld(){
+  var bridge=window.CooksterPantryBridge;if(!bridge||!bridge.heldItem)return false;
+  var el=bridge.heldItem();if(!el)return false;
+  if(sunk.length>=6){try{showToast('Sudopera je puna.');}catch(e){}return false;}
+  var saved=bridge.detachHeld();if(!saved)return false;
+  sunk.push(saved);saveSunk();renderSink(true);open();return true;
+}
+setInterval(function(){if(opened)renderSink(false);},500);
+var openBase2=open;open=function(){renderSink(true);openBase2();};
+window.CooksterSinkZoom_putHeld=putHeld;
+
+window.CooksterSinkZoom={open:open,close:close,isOpen:function(){return opened;},cal:function(){return cal;},putHeld:putHeld};
 })();
