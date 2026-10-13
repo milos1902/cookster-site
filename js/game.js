@@ -15419,6 +15419,7 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
  if(e.button===0&&!holding&&window.CooksterKitchenFx&&!CooksterKitchenFx.isZoomed()){const kfx=CooksterKitchenFx.hit(e.clientX,e.clientY);if(kfx){CooksterKitchenFx.click(kfx,e);return;}}
  if(e.button===0&&faucetHit(e.clientX,e.clientY)){setFaucet(!faucetOn);return;}
  if(e.button===0&&!holding&&!window.CooksterSinkZoom?.isOpen()&&sinkHit(e.clientX,e.clientY)){window.CooksterSinkZoom?.open();return;}
+ if(e.button===0&&holding&&isContainerItem(holding)&&sinkHit(e.clientX,e.clientY)&&!faucetHit(e.clientX,e.clientY)&&window.CooksterSinkZoom?.putHeld?.())return;   // a vessel from the hand goes into the sink and the close-up opens
  if(e.button===0&&holding&&isHeatableCookwareItem(holding)&&sinkHit(e.clientX,e.clientY)){if(beginPanWashing(holding,e))return;}
  if(e.button===0&&holding&&isStirSpoon(holding)){
    const stirTarget=stirReadyVessel||stirVesselAt(e.clientX,e.clientY,true);

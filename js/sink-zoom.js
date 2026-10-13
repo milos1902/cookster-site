@@ -63,7 +63,7 @@ var CAL_KEY='cookster.sink-zoom-cal.v1';
 // Miloš's own calibration of 2026-10-13 (rim, floor, mask and the size and height of every vessel) is built in; what is changed in the tool in the browser wins over it
 var CAL_DEF={rim:[[29.3, 27.1], [68.8, 27.1], [72.2, 70.7], [26.08, 70.72]],floor:[[32.8, 41.66], [65.38, 41.98], [67.56, 70.4], [30.56, 72.55]],mask:[[21.0, 17.55], [76.7, 17.33], [84.15, 79.55], [12.7, 80.52]],vessels:{"serpa_velika": {"x": 49.08, "y": 63.01, "w": 18.6, "h": -5.8}, "tiganj_veliki": {"x": 49.08, "y": 63.01, "w": 16.4, "h": -7.6}, "tiganj_mali": {"x": 49.08, "y": 63.01, "w": 14, "h": -7.8}, "vangla_srednja": {"x": 49.08, "y": 63.01, "w": 12.6, "h": -2}, "vangla_mala": {"x": 49.08, "y": 63.01, "w": 10.2, "h": -1}, "lavor_emajl_veliki": {"x": 49.08, "y": 63.01, "w": 23.8, "h": -7.4}, "vangla_velika": {"x": 49.08, "y": 63.01, "w": 15.6, "h": -2.4}, "kal_01_okrugli_pleh": {"x": 49.08, "y": 63.01, "w": 19, "h": -5}, "kal_01_pravougaoni_pleh": {"x": 49.08, "y": 63.01, "w": 18.6, "h": -3.6}, "kal_02_cinija_mala": {"x": 49.08, "y": 63.01, "w": 10.6, "h": 0}, "kal_02_cinija_velika": {"x": 49.08, "y": 63.01, "w": 14.6, "h": -2.6}, "posuda_za_kupus": {"x": 49.08, "y": 63.01, "w": 11.2, "h": 0}, "kal_02_duboki_tanjir": {"x": 49.08, "y": 63.01, "w": 13.2, "h": 0}, "kal_02_tanjir_ravni": {"x": 49.08, "y": 63.01, "w": 13, "h": 0}},
   // the faucet: where the water comes out (spout), where it lands, the two valves (cross handles) and their size
-  tap:{spout:[49.5,30.2],land:[49.4,56],left:[42.2,15.4],right:[56.2,15.4],r:2.9,squash:.72,bell:24.8,v:3}};
+  tap:{spout:[49.52,30.79],land:[49.52,59.42],left:[42.2,15.4],right:[56.2,15.4],r:4.2,squash:.9,bell:25.9,v:3}};
 var cal=null;
 function loadCal(){
   try{var d=JSON.parse(localStorage.getItem(CAL_KEY)||'null');if(d&&d.rim&&d.floor&&d.mask){d.vessels=d.vessels||{};var oldV=d.tap&&d.tap.v||0;d.tap=Object.assign({},CAL_DEF.tap,d.tap||{});if(oldV<3){d.tap=JSON.parse(JSON.stringify(CAL_DEF.tap));}/* the first positions of the valves were a guess: new pictures need the new centres */return d;}}catch(e){}
@@ -312,5 +312,70 @@ document.body.appendChild(calBtn);
 calBtn.addEventListener('click',function(e){e.stopPropagation();open();});
 setInterval(function(){calBtn.style.display=(calActive()&&!opened)?'block':'none';},600);
 
-window.CooksterSinkZoom={open:open,close:close,isOpen:function(){return opened;},cal:function(){return cal;}};
+
+/* ---------- things lying in the sink ----------
+   1. A vessel from the hand: a click on the sink with a vessel in the hand puts it into the sink and opens the close-up, where it stands where you calibrated it.
+      A click on it in the close-up takes it back into the hand. (They are kept in this browser: cookster.sink-items.v1)
+   2. The dirty bowls from the tavern ("Pranje"): they lie in the sink too (and the running tap washes them one by one, like in the kitchen). */
+var ITEMS_KEY='cookster.sink-items.v1',sunk=[];
+try{sunk=JSON.parse(localStorage.getItem(ITEMS_KEY)||'[]')||[];}catch(e){sunk=[];}
+function saveSunk(){try{localStorage.setItem(ITEMS_KEY,JSON.stringify(sunk.slice(0,8)));}catch(e){}}
+var layer=document.createElement('div');layer.className='sz-sink';layer.style.cssText='position:absolute;inset:0;z-index:2;pointer-events:none';stage.insertBefore(layer,fx);
+var ICSS=document.createElement('style');ICSS.textContent='#sinkZoom .sz-it{position:absolute;transform:translate(-50%,-100%);height:auto;-webkit-user-drag:none;user-select:none}#sinkZoom:not(.editing) .sz-it.take{pointer-events:auto;cursor:grab}#sinkZoom:not(.editing) .sz-it.take:hover{filter:brightness(1.12)}';
+document.head.appendChild(ICSS);
+function clipFor(el,x,yy,w){
+  var ratio=el.naturalHeight/Math.max(1,el.naturalWidth)*16/9,hh=w*ratio;
+  return 'polygon('+cal.mask.map(function(p){return ((p[0]-x)/w*100+50).toFixed(2)+'% '+(((p[1]-yy)/hh)*100+100).toFixed(2)+'%'}).join(',')+')';
+}
+function slotX(i,n,w){var f=cal.floor,l=Math.min.apply(null,f.map(function(p){return p[0]})),r=Math.max.apply(null,f.map(function(p){return p[0]}));
+  var cx=(l+r)/2,step=Math.min(w*.95,(r-l-w)/Math.max(1,n-1));return cx+(i-(n-1)/2)*step;}
+function itemGeom(id,def){
+  var v=cal.vessels[id],f=cal.floor,cy=f.reduce(function(s,p){return s+p[1]},0)/f.length;
+  return {w:v?v.w:def,y:v?v.y:cy+6,h:v?(v.h||0):0};
+}
+var dishCount=-1,sig='';
+function srcOf(saved){
+  var D=window.CooksterVesselDirt;
+  if(saved.data&&saved.data.dirt==='1'&&D&&D.has&&D.has(saved.id))return D.has(saved.id).replace(/\?v=\d+$/,'');
+  return saved.src;
+}
+function renderSink(force){
+  var dishes=0;try{dishes=window.CooksterSinkDishes?CooksterSinkDishes.count():0;}catch(e){}
+  var s2=sunk.map(function(x){return x.id+(x.data&&x.data.dirt||'')}).join('|')+'#'+dishes;
+  if(!force&&s2===sig)return;sig=s2;
+  layer.innerHTML='';
+  var total=sunk.length+Math.min(dishes,6),k=0;
+  sunk.forEach(function(sv,i){
+    var g=itemGeom(sv.id,14),im=document.createElement('img');im.className='sz-it take';im.draggable=false;im.title='klik: uzmi posudu';
+    var x=slotX(k++,total,g.w);
+    im.onload=function(){place(im,x,g)};im.src=srcOf(sv);if(im.complete&&im.naturalWidth)place(im,x,g);
+    im.addEventListener('pointerdown',function(e){e.stopPropagation();e.preventDefault();takeOut(i);});
+    layer.appendChild(im);
+  });
+  var gd=itemGeom('posuda_za_kupus',11);
+  for(var d=0;d<Math.min(dishes,6);d++){
+    var im2=document.createElement('img');im2.className='sz-it';im2.draggable=false;(function(im2,x){im2.onload=function(){place(im2,x,gd)};im2.src='assets/calibration_props/posuda_za_kupus/posuda_prljava.webp';if(im2.complete&&im2.naturalWidth)place(im2,x,gd);})(im2,slotX(k++,total,gd.w));
+    layer.appendChild(im2);
+  }
+}
+function place(im,x,g){var yy=g.y-g.h;im.style.left=x+'%';im.style.top=yy+'%';im.style.width=g.w+'%';im.style.clipPath=clipFor(im,x,yy,g.w);}
+function takeOut(i){
+  var sv=sunk[i];if(!sv)return;
+  var bridge=window.CooksterPantryBridge;if(!bridge||bridge.heldItem&&bridge.heldItem()){return;}
+  sunk.splice(i,1);saveSunk();close();
+  setTimeout(function(){try{bridge.take(sv);}catch(e){}renderSink(true);},DUR*.8);
+}
+// a vessel from the hand goes into the sink and the close-up opens
+function putHeld(){
+  var bridge=window.CooksterPantryBridge;if(!bridge||!bridge.heldItem)return false;
+  var el=bridge.heldItem();if(!el)return false;
+  if(sunk.length>=6){try{showToast('Sudopera je puna.');}catch(e){}return false;}
+  var saved=bridge.detachHeld();if(!saved)return false;
+  sunk.push(saved);saveSunk();renderSink(true);open();return true;
+}
+setInterval(function(){if(opened)renderSink(false);},500);
+var openBase2=open;open=function(){renderSink(true);openBase2();};
+window.CooksterSinkZoom_putHeld=putHeld;
+
+window.CooksterSinkZoom={open:open,close:close,isOpen:function(){return opened;},cal:function(){return cal;},putHeld:putHeld};
 })();
