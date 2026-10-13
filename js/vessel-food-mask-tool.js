@@ -174,7 +174,18 @@
     if(DEPTH_MODES[mode]){
       current().depth[DEPTH_MODES[mode].key]=p;
     }else{
-      current()[mode].push(p);
+      // a click on a line of the polygon puts the new point right there (between the two points of that line); elsewhere the point is added at the end
+      const pts=current()[mode],n=pts.length;let at=-1;
+      if(n>=3){
+        const lim=2.2/Math.pow(zoom,.85);let best=lim;
+        for(let i=0;i<n;i++){
+          const a=pts[i],b=pts[(i+1)%n],dx=b.x-a.x,dy=b.y-a.y,l2=dx*dx+dy*dy;
+          const t=l2?Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/l2)):0;
+          const d=Math.hypot(p.x-(a.x+dx*t),p.y-(a.y+dy*t));
+          if(d<best){best=d;at=i+1;}
+        }
+      }
+      if(at>0&&at<n)pts.splice(at,0,p);else pts.push(p);
     }
     persist();draw();
     e.preventDefault();
