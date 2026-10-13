@@ -59,10 +59,19 @@
   function stockAtlas(str){
     const src=str.slice(6);
     const e={img:null,meta:null,ready:false,parts:[]};
-    loadImg(src,im=>{
+    loadImg(src,im0=>{
+      let im=im0;
       const q=SNAP_W/im.width,PAD=10;
       const cv0=document.createElement('canvas');cv0.width=im.width;cv0.height=im.height;const g0=cv0.getContext('2d');g0.drawImage(im,0,0);
       let d;try{d=g0.getImageData(0,0,im.width,im.height).data;}catch(_){return;}
+      // the soft grey shadow that the picture of the heap throws on the board is not food: it would become dark squares in the vessel
+      for(let i=0;i<d.length;i+=4){
+        const a=d[i+3];if(a>=240||!a)continue;
+        const r=d[i],g=d[i+1],b=d[i+2],mxc=Math.max(r,g,b),mnc=Math.min(r,g,b);
+        if(mxc<150&&mxc-mnc<60)d[i+3]=0;
+      }
+      g0.putImageData(new ImageData(d,im.width,im.height),0,0);
+      im=cv0;
       let x0=im.width,y0=im.height,x1=-1,y1=-1;
       for(let y=0;y<im.height;y+=2)for(let x=0;x<im.width;x+=2)if(d[(y*im.width+x)*4+3]>40){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
       if(x1<0)return;
@@ -138,6 +147,8 @@
         ar+=cr;cx+=(a.x+b.x)*cr;cy+=(a.y+b.y)*cr;
       }
       ar/=2;this.cx=cx/(6*ar||1);this.cy=cy/(6*ar||1);this.area=Math.abs(ar);this.poly=poly;
+      // the food may cover 10% more of the vessel than the drawn area (the area grows by the square root of that in every direction)
+      {const k=Math.sqrt(1.1);for(const q of poly){q.x=this.cx+(q.x-this.cx)*k;q.y=this.cy+(q.y-this.cy)*k;}this.area*=1.1;}
       this.fullPoly=poly;this.fullArea=this.area;this.fullCx=this.cx;this.fullCy=this.cy;
       this.homeX=this.homeY=null;
       const hb=prof?.depth?.bottom;
@@ -413,7 +424,7 @@
           const lift=p.layer*1.7+(1-rho*rho)*1.6*(this.layers-1)/4;
           g.translate(p.x*sc,(p.y-lift)*sc);g.rotate(p.rot);
           // a cheap soft shadow under pieces lying on others (a blurred shadow per piece is far too slow)
-          if(p.layer>0){g.fillStyle='rgba(20,8,0,.2)';g.beginPath();g.ellipse(0,1.2*sc,p.r*.8*sc,p.r*.6*sc,0,0,6.2832);g.fill();}
+          // (no shadow under the pieces: with many pieces the little shadows added up to a dark see-through patch under the whole heap)
           const dx=-p.ax*p.k*sc,dy=-p.ay*p.k*sc,dw=p.sw*p.k*sc,dh=p.sh*p.k*sc;
           const bl=BLEND[Math.max(1,Math.min(7,c.stage))-1];
           if(e.part)ensureCooked(e,e.part);
