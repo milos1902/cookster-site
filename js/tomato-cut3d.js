@@ -295,7 +295,11 @@
       if(cfg.skinPlanar){
         const c=document.createElement('canvas');c.width=c.height=1024;const g=c.getContext('2d');
         g.fillStyle=cfg.fill;g.fillRect(0,0,1024,1024);
-        if(skinImg){const k=Math.max(1024/skinImg.naturalWidth,1024/skinImg.naturalHeight)*1.0;g.drawImage(skinImg,0,0,1024,1024);}
+        if(skinImg){
+          // the picture of the whole head is enlarged so that its visible leaves cover the whole canvas (a little more than the ball needs): no flat colour and no black rim of the picture shows on the ball
+          const bx=alphaBox(skinImg)||{x0:0,x1:1,y0:0,y1:1},sw=1024*1.08/(bx.x1-bx.x0),sh=1024*1.08/(bx.y1-bx.y0);
+          g.drawImage(skinImg,-bx.x0*sw-1024*.04,-bx.y0*sh-1024*.04,sw,sh);
+        }
         const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;return t;
       }
       const c=document.createElement('canvas');c.width=1024;c.height=512;const g=c.getContext('2d');
