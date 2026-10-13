@@ -6654,6 +6654,7 @@ function ghostKeyFor(el){
    el.querySelector('.body')?.getAttribute('src')||'',
    el.dataset.cutState||'',
    el.dataset.count||'',
+   el.dataset.water||'',el.dataset.dirt||'',
    renderedContents??(el.dataset.panContents||''),
    renderedContents??(el.dataset.containerContents||''),
    el.classList.contains('open')?'open':'closed'
@@ -9143,6 +9144,7 @@ window.addEventListener('cookster:vessel-calibration',e=>{
 });
 function updateVesselDirtState(el){
  try{window.CooksterVesselDirt?.update(el,containerTotal(el),isHeatableCookwareItem(el)&&!!CooksterPan.read(el).burnt);}catch(_){}
+ try{window.CooksterVesselWater?.sync(el);}catch(_){}
 }
 function renderCookwareContents(el,modelOverride=null,stateOverride=null){
  if(!el||!isContainerItem(el))return;
@@ -9512,7 +9514,13 @@ function sourceIngredientKeys(payload){
 function canPourInto(source,target){
   if(!source||!target||source===target||!isContainerItem(source)||!isContainerItem(target))
     return {ok:false,reason:'invalid'};
-  if(vesselTransferAmount(source)<=0)return {ok:false,reason:'empty'};
+  if(vesselTransferAmount(source)<=0){
+    // a vessel that holds only water can be poured out too: the water goes into the other vessel (as much as fits)
+    if((+source.dataset.water||0)>.02&&window.CooksterVesselWater?.has?.(target.dataset.itemId)){
+      return {ok:true,payload:{items:{},batches:[],staples:{oil:0,salt:0},foodCount:0,fraction:1,waterOnly:true}};
+    }
+    return {ok:false,reason:'empty'};
+  }
   if(vesselHasClosedLid(source))
     return {ok:false,reason:'Скини поклопац са посуде коју пресипаш.'};
   if(vesselHasClosedLid(target))
@@ -9682,8 +9690,18 @@ function keepRestAfterPour(source,f){
     CooksterContainer.write(source,m);
   }
 }
+function pourWaterBetween(source,target,fraction){
+  const W=window.CooksterVesselWater;if(!W)return;
+  const ws=W.get(source);if(ws<=.004)return;
+  const capS=Math.max(1,containerCapacity(source)),capT=Math.max(1,containerCapacity(target));
+  const move=Math.min(ws*capS*(fraction||1),(1-W.get(target))*capT);          // in the units of the capacity of the vessels
+  if(move<=0)return;
+  W.set(source,ws-move/capS);W.set(target,W.get(target)+move/capT);
+}
 function applyVesselTransfer(source,target,payload){
   if(!source||!target||!payload)return false;
+  try{pourWaterBetween(source,target,payload.fraction);}catch(_){}
+  if(payload.waterOnly){renderCookwareContents(source);renderCookwareContents(target);CooksterSave.schedule();return true;}
   if(isHeatableCookwareItem(target))mergePayloadIntoHeatable(target,payload);
   else mergePayloadIntoContainer(target,payload);
 
@@ -10808,7 +10826,7 @@ function openKitchenElements(mode){
 
 function serializeWorldItem(el){
  const body=el.querySelector('.body');
-  const keep=['dirt','hadFood','ingredient','ingredientKey','trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','cutStyle','ovalN','ovalItems','ovalOil','ovalParsley','ovalSeed','ovalExtras','srvItems','srvOil','srvParsley','srvSeed','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
+  const keep=['water','soak','dirt','hadFood','ingredient','ingredientKey','trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','cutStyle','ovalN','ovalItems','ovalOil','ovalParsley','ovalSeed','ovalExtras','srvItems','srvOil','srvParsley','srvSeed','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
  const data={};
  for(const k of keep)if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
  for(const k of ['ajvarMl','ajvarBatchMl'])if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
@@ -10858,6 +10876,7 @@ function restoreWorldItem(saved){
  if(saved.calibrationCopy)el.dataset.calibrationCopy='1';
  if(saved.calibrationTemplate)el.dataset.calibrationTemplate=String(saved.calibrationTemplate);
  Object.entries(saved.data||{}).forEach(([k,v])=>el.dataset[k]=String(v));
+ try{window.CooksterVesselWater?.sync(el);if(el.dataset.dirt==='1')window.CooksterVesselDirt?.update(el,1,false);}catch(_){}
   if(el.dataset.itemId==='kaca_prazna'&&window.CooksterKaca)CooksterKaca.refresh(el);
   if(isAjvarJar(el))renderAjvarJar(el);
   if(isAjvarLadle(el))renderAjvarLadle(el);

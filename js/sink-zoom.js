@@ -284,12 +284,10 @@ function drawWater(g,w,h,now){
   g.globalAlpha=.7;g.strokeStyle='#fff';g.lineWidth=Math.max(1,wid*.28);
   for(var k=0;k<3;k++){var off=((t*(2.4+k*.6)+k*.33)%1);g.beginPath();g.moveTo(sx-wid*.25+k*wid*.2,sy+(ey-sy)*off*.9);g.lineTo(sx-wid*.25+k*wid*.2,sy+(ey-sy)*Math.min(1,off*.9+.12));g.stroke();}
   g.restore();
-  // where it lands: rings and drops
-  if(streamLen>.9){
-    g.save();g.lineWidth=Math.max(1,w*.0014);
-    for(var r=0;r<3;r++){var ph=((t*1.3+r/3)%1);g.globalAlpha=.55*(1-ph)*flow;g.strokeStyle='#eaf7ff';g.beginPath();g.ellipse(lx,ly,w*(.012+.05*ph)*(.6+flow*.6),w*(.012+.05*ph)*.33*(.6+flow*.6),0,0,Math.PI*2);g.stroke();}
-    g.restore();
-    if(Math.random()<flow*.7)drops.push({x:lx+(Math.random()-.5)*w*.014,y:ly,vx:(Math.random()-.5)*w*.12,vy:-w*(.08+Math.random()*.12),life:0});
+  // where it lands: the splash (a row of 8 pictures: the pictures 3 to 8 are repeated)
+  if(streamLen>.9&&SPLASH.complete&&SPLASH.naturalWidth){
+    var fw=SPLASH.naturalWidth/8,fh=SPLASH.naturalHeight,fi=2+Math.floor(t*13)%6,sw=w*.115*(.7+flow*.5),shh=sw*fh/fw;
+    g.save();g.globalAlpha=Math.min(1,flow*1.6);g.drawImage(SPLASH,fi*fw,0,fw,fh,lx-sw/2,ly-shh*.63,sw,shh);g.restore();
   }
   for(var d=drops.length-1;d>=0;d--){var p=drops[d];p.life+=1/60;p.vy+=w*.5/60;p.x+=p.vx/60;p.y+=p.vy/60;
     if(p.life>.5){drops.splice(d,1);continue;}
@@ -339,26 +337,31 @@ function srcOf(saved){
   if(saved.data&&saved.data.dirt==='1'&&D&&D.has&&D.has(saved.id))return D.has(saved.id).replace(/\?v=\d+$/,'');
   return saved.src;
 }
+function waterOf(sv){return window.CooksterVesselWater?CooksterVesselWater.clamp(sv.data&&sv.data.water):0;}
 function renderSink(force){
   var dishes=0;try{dishes=window.CooksterSinkDishes?CooksterSinkDishes.count():0;}catch(e){}
-  var s2=sunk.map(function(x){return x.id+(x.data&&x.data.dirt||'')}).join('|')+'#'+dishes;
+  var s2=sunk.map(function(x){return x.id+(x.data&&x.data.dirt||'')+Math.round(waterOf(x)*50)}).join('|')+'#'+dishes;
   if(!force&&s2===sig)return;sig=s2;
   layer.innerHTML='';
   var total=sunk.length+Math.min(dishes,6),k=0;
   sunk.forEach(function(sv,i){
-    var g=itemGeom(sv.id,14),im=document.createElement('img');im.className='sz-it take';im.draggable=false;im.title='klik: uzmi posudu';
-    var x=slotX(k++,total,g.w);
-    im.onload=function(){place(im,x,g)};im.src=srcOf(sv);if(im.complete&&im.naturalWidth)place(im,x,g);
-    im.addEventListener('pointerdown',function(e){e.stopPropagation();e.preventDefault();takeOut(i);});
-    layer.appendChild(im);
+    var g=itemGeom(sv.id,14),w=document.createElement('div');w.className='sz-it take';w.title='klik: uzmi posudu · desni klik: isprazni vodu';
+    var im=document.createElement('img');im.draggable=false;im.style.cssText='display:block;width:100%;height:auto;-webkit-user-drag:none';w.appendChild(im);
+    var x=slotX(k++,total,g.w);w._x=x;sv._x=x;sv._g=g;
+    var wf=waterOf(sv);if(wf>.004){var ov=CooksterVesselWater.overlay(sv.id,wf,srcOf(sv),true);if(ov)w.appendChild(ov);}
+    im.onload=function(){place(w,im,x,g)};im.src=srcOf(sv);if(im.complete&&im.naturalWidth)place(w,im,x,g);
+    w.addEventListener('pointerdown',function(e){e.stopPropagation();e.preventDefault();if(e.button===2)return;takeOut(i);});
+    w.addEventListener('contextmenu',function(e){e.preventDefault();e.stopPropagation();if(sv.data&&sv.data.water){delete sv.data.water;saveSunk();renderSink(true);}});
+    layer.appendChild(w);
   });
   var gd=itemGeom('posuda_za_kupus',11);
   for(var d=0;d<Math.min(dishes,6);d++){
-    var im2=document.createElement('img');im2.className='sz-it';im2.draggable=false;(function(im2,x){im2.onload=function(){place(im2,x,gd)};im2.src='assets/calibration_props/posuda_za_kupus/posuda_prljava.webp';if(im2.complete&&im2.naturalWidth)place(im2,x,gd);})(im2,slotX(k++,total,gd.w));
-    layer.appendChild(im2);
+    var w2=document.createElement('div');w2.className='sz-it';var im2=document.createElement('img');im2.draggable=false;im2.style.cssText='display:block;width:100%;height:auto';w2.appendChild(im2);
+    (function(w2,im2,x){im2.onload=function(){place(w2,im2,x,gd)};im2.src='assets/calibration_props/posuda_za_kupus/posuda_prljava.webp';if(im2.complete&&im2.naturalWidth)place(w2,im2,x,gd);})(w2,im2,slotX(k++,total,gd.w));
+    layer.appendChild(w2);
   }
 }
-function place(im,x,g){var yy=g.y-g.h;im.style.left=x+'%';im.style.top=yy+'%';im.style.width=g.w+'%';im.style.clipPath=clipFor(im,x,yy,g.w);}
+function place(w,im,x,g){var yy=g.y-g.h;w.style.left=x+'%';w.style.top=yy+'%';w.style.width=g.w+'%';w.style.clipPath=clipFor(im,x,yy,g.w);}
 function takeOut(i){
   var sv=sunk[i];if(!sv)return;
   var bridge=window.CooksterPantryBridge;if(!bridge||bridge.heldItem&&bridge.heldItem()){return;}
@@ -376,6 +379,32 @@ function putHeld(){
 setInterval(function(){if(opened)renderSink(false);},500);
 var openBase2=open;open=function(){renderSink(true);openBase2();};
 window.CooksterSinkZoom_putHeld=putHeld;
+
+/* the sink fills the vessels that stand under the stream, and washes (soaks) the dirty ones that have water in them */
+var SPLASH=new Image();SPLASH.src='assets/water/pljusak.webp?v=1';
+var lastSave=0;
+function fillTick(){
+  if(!opened||!window.CooksterVesselWater)return;
+  var Wt=CooksterVesselWater,changed=false,dt=.1;
+  if(flow>.05){
+    var lx=cal.tap.land[0];
+    sunk.forEach(function(sv){
+      if(!Wt.has(sv.id))return;var g=sv._g||itemGeom(sv.id,14),x=sv._x;if(x==null)return;
+      if(Math.abs(x-lx)>g.w*.6)return;                               // only a vessel under the stream
+      sv.data=sv.data||{};var f=Wt.clamp(sv.data.water)+dt*.09*flow;f=Math.min(1,f);
+      if(Math.abs(f-Wt.clamp(sv.data.water))>.0005){sv.data.water=f.toFixed(3);changed=true;}
+    });
+  }
+  sunk.forEach(function(sv){
+    if(!sv.data||sv.data.dirt!=='1'||Wt.clamp(sv.data.water)<.25)return;
+    var rate=flow>.05?dt/12:dt/45;                                   // a dirty vessel with water in it is washed: faster under the running tap
+    sv.data.soak=(+sv.data.soak||0)+rate;changed=true;
+    if(sv.data.soak>=1){delete sv.data.dirt;delete sv.data.hadFood;delete sv.data.soak;try{showToast('Posuda je oprana.');}catch(e){}}
+  });
+  if(changed){renderSink(false);var now=performance.now();if(now-lastSave>1000){lastSave=now;saveSunk();}}
+}
+setInterval(fillTick,100);
+
 
 window.CooksterSinkZoom={open:open,close:close,isOpen:function(){return opened;},cal:function(){return cal;},putHeld:putHeld};
 })();
