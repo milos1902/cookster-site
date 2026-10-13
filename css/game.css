@@ -3457,10 +3457,7 @@ body.depth-zone-editing .food-calibration-target{
 
 /* The imported JSON polygon is the only food boundary for the large pot.
    Retired ellipse masks and feathered alpha layers must not participate. */
-.item[data-item-id="serpa_velika"] .vessel-content{
-  -webkit-mask-image:none!important;
-  mask-image:none!important;
-}
+/* (the old rule that forbade any mask on the big pot is gone: the soft edge of the food area is a mask) */
 .item[data-item-id="serpa_velika"] .vessel-content .exact-chopped-stack,
 .item[data-item-id="serpa_velika"] .vessel-content .stir-pile-layer,
 .item[data-item-id="serpa_velika"] .vessel-content .stir-old-mix-layer,

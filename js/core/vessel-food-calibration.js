@@ -48,27 +48,36 @@
   const copy=v=>JSON.parse(JSON.stringify(v));
   const polygon=points=>`polygon(${points.map(p=>`${p[0]}% ${p[1]}%`).join(',')})`;
   // the edge of a drawn area fades softly (a blurred white polygon as the mask) instead of a sharp cut; the picture has 10% of room around, so the blur is not cut at the border
-  const SOFT=1.5,softCache=new Map();
+  const SOFT=1.5,softCache=new Map(),softReady=new Set();
   function softMask(points,sd){
     const key=points.map(p=>p[0]+','+p[1]).join(' ')+'|'+sd;
     let u=softCache.get(key);
     if(!u){
       const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 120 120" preserveAspectRatio="none"><filter id="b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${sd}"/></filter><polygon filter="url(#b)" fill="#fff" points="${key.split('|')[0]}"/></svg>`;
-      u=`url("data:image/svg+xml,${encodeURIComponent(svg)}")`;softCache.set(key,u);
+      u={raw:`data:image/svg+xml,${encodeURIComponent(svg)}`};u.css=`url("${u.raw}")`;softCache.set(key,u);
     }
     return u;
   }
+  function setMaskCss(el,css){
+    for(const pre of ['','webkit']){
+      const k=n=>pre?pre+n[0].toUpperCase()+n.slice(1):n;
+      el.style[k('maskImage')]=css;el.style[k('maskSize')]='120% 120%';el.style[k('maskPosition')]='50% 50%';el.style[k('maskRepeat')]='no-repeat';
+    }
+  }
   function applySoft(el,points,sd){
-    if(!(sd>0)){el.style.clipPath=polygon(points);el.style.webkitClipPath=el.style.clipPath;for(const k of ['maskImage','webkitMaskImage'])el.style[k]='none';return;}
+    if(!(sd>0)){el._softWant=null;el.style.clipPath=polygon(points);el.style.webkitClipPath=el.style.clipPath;for(const k of ['maskImage','webkitMaskImage'])el.style[k]='none';return;}
     const u=softMask(points,sd);
-    // a hard clip a little wider than the area stays as a safety: if a browser does not paint the soft mask, the whole picture must still never show
+    // a hard clip a little wider than the area stays as a safety: the whole picture must never show (also while the soft mask picture is still loading)
     let cx=0,cy=0;points.forEach(q=>{cx+=q[0];cy+=q[1];});cx/=points.length;cy/=points.length;
     const wide=polygon(points.map(q=>[+(cx+(q[0]-cx)*1.12).toFixed(2),+(cy+(q[1]-cy)*1.12).toFixed(2)]));
     el.style.clipPath=wide;el.style.webkitClipPath=wide;
-    for(const pre of ['','webkit']){
-      const k=n=>pre?pre+n[0].toUpperCase()+n.slice(1):n;
-      el.style[k('maskImage')]=u;el.style[k('maskSize')]='120% 120%';el.style[k('maskPosition')]='50% 50%';el.style[k('maskRepeat')]='no-repeat';
-    }
+    el._softWant=u;
+    if(softReady.has(u.raw)){setMaskCss(el,u.css);return;}
+    // the mask picture is put on only when it is loaded (a browser shows the element without any mask until a new picture is ready, and that was the square)
+    if(!el.style.maskImage||el.style.maskImage==='none')setMaskCss(el,'linear-gradient(#fff,#fff)');
+    const im=new Image();
+    im.onload=()=>{softReady.add(u.raw);if(el._softWant===u)setMaskCss(el,u.css);};
+    im.src=u.raw;
   }
   function frameFor(vesselOrId){
     const profile=get(vesselOrId);
