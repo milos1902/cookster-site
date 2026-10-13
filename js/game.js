@@ -12109,9 +12109,22 @@ function trayPepperLayout(n,vessel,pieceW){
   const W=(wrap&&wrap.clientWidth)||vessel?.offsetWidth||190;
   const vis=+vessel?.dataset?.vis||1,wPct=Math.min(70,(pieceW||70)*vis/W*100);
   const out=[];
+  // the area of the food that Miloš drew for this vessel (tool "Maska posude"): the heap lies inside of it, in percent of the food layer
+  let poly=null,cx=50,cy=54,rx=47-wPct*.18,ry=35-wPct*.1;
+  try{
+    const cal=window.CooksterVesselFoodCalibration,prof=cal?.get?.(vessel),fr=cal?.frame?.(vessel);
+    if(prof?.foodVisible?.length>=3&&fr?.width&&fr?.height){
+      poly=prof.foodVisible.map(([x,y])=>[(x-fr.left)/fr.width*100,(y-fr.top)/fr.height*100]);
+      const xs=poly.map(q=>q[0]),ys=poly.map(q=>q[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+      cx=(x0+x1)/2;cy=(y0+y1)/2;rx=Math.max(4,(x1-x0)/2-wPct*.28);ry=Math.max(4,(y1-y0)/2-wPct*.1);
+    }
+  }catch(_){poly=null;}
+  const inside=(x,y)=>{if(!poly)return true;let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])c=!c;}return c;};
   for(let i=0;i<n;i++){
-    const r=Math.sqrt((i+.5)/n),a=i*2.39996;
-    out.push({x:50+Math.cos(a)*r*(47-wPct*.18),y:54+Math.sin(a)*r*(35-wPct*.1),rot:((i*53)%23)-11,w:wPct});
+    const r0=Math.sqrt((i+.5)/n),a=i*2.39996;
+    let x=cx+Math.cos(a)*r0*rx,y=cy+Math.sin(a)*r0*ry;
+    for(let k=0;k<12&&!inside(x,y);k++){x=cx+(x-cx)*.88;y=cy+(y-cy)*.88;}
+    out.push({x,y,rot:((i*53)%23)-11,w:wPct});
   }
   out.sort((a,b)=>a.y-b.y);        // the lower ones lie over the upper ones
   return out;
