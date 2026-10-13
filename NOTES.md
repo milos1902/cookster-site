@@ -438,3 +438,9 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Pljusak ugrađen (2026-10-13, sink-zoom.js?v=19)
 - Korisnikova kalibracija sudopere ugrađena u `CAL_DEF`: pljusak na [49.46,59.31], veličina 7, nagib 1.6; postolje ventila 25.3. Ostalo (rim, floor, mask, posude) isto kao pre.
+
+## Zum u alatu "Voda u posudi" (2026-10-13, vessel-water.js?v=8)
+- Točak miša uveličava sliku posude (1x do 8x, oko pokazivača), desni/srednji taster pomera sliku; tačke se crtaju i dalje tačno (pct koristi stvarnu veličinu).
+
+## Njihanje vode umesto krugova (2026-10-13, vessel-water.js?v=9)
+- Prstenovi uklonjeni. Ivica površine vode se njiše: priđe jednom zidu posude, odbije se, pa druga strana (dve sporе oscilacije u različitim pravcima) uz sitne talase po ivici. Radi `requestAnimationFrame` petlja (`sway`), zid posude seče vodu maskom.
