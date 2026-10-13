@@ -8523,7 +8523,7 @@ function vesselOilSurfacePreset(el){
  window.CooksterVesselFoodCalibration?.applyToVessel?.(el,null,el._vesselFrontMask,p);
 }
 function ensureVesselFrontMask(el,src){
- if(!el||isPanItem(el)||!isContainerItem(el))return null;
+ if(!el||!isContainerItem(el))return null;
  if(el._vesselFrontMask)return el._vesselFrontMask;
  const img=document.createElement('img');
  img.className='vessel-front-mask';
@@ -8536,6 +8536,17 @@ function ensureVesselFrontMask(el,src){
  return img;
 }
 
+// the front wall of a vessel is drawn above the food only where there is a reason: the old vessels always had it, the others (frying pans, the blue pot, the small tub) only when a mask was drawn for them in the tool "Maska posude"
+function wantsFrontMask(el,defId){
+ const id=defId||el?.dataset?.itemId||'';
+ if(!['serpa_plava','vangla_mala','tiganj_veliki','tiganj_mali'].includes(id))return true;
+ return !!window.CooksterVesselFoodCalibration?.hasOwnMask?.(id);
+}
+function syncFrontMask(el,defId){
+ if(!el||!isContainerItem(el))return;
+ if(wantsFrontMask(el,defId)){const fm=ensureVesselFrontMask(el,el.querySelector('.body')?.getAttribute('src')||'');if(fm){fm.style.display='';window.CooksterVesselFoodCalibration?.applyToVessel?.(el,null,fm,vesselVisualPreset(el));}}
+ else if(el._vesselFrontMask)el._vesselFrontMask.style.display='none';
+}
 function ensureVesselContent(el){
  if(!el||isPanItem(el)||!isContainerItem(el))return null;
  if(el._vesselContent)return el._vesselContent;
@@ -9124,7 +9135,8 @@ window.addEventListener('cookster:vessel-calibration',e=>{
   const id=e&&e.detail&&e.detail.id;if(!id)return;
   (window.items||[]).filter(it=>it&&it.dataset&&it.dataset.itemId===id&&isContainerItem(it)).forEach(it=>{
     try{applyVesselVisualPreset(it);}catch(_){}
-    try{const fm=it._vesselFrontMask;if(fm)window.CooksterVesselFoodCalibration?.applyToVessel?.(it,it._vesselContent,fm,vesselVisualPreset(it));}catch(_){}
+    try{syncFrontMask(it);}catch(_){}
+    try{const fm=it._vesselFrontMask;if(fm&&fm.style.display!=='none')window.CooksterVesselFoodCalibration?.applyToVessel?.(it,it._vesselContent,fm,vesselVisualPreset(it));}catch(_){}
     try{renderCookwareContents(it);}catch(_){}
     try{window.CooksterServe&&window.CooksterServe.render(it);}catch(_){}
   });
@@ -10536,7 +10548,8 @@ function makeItem(d){
    const interior=makeInterior(d);el.appendChild(interior);el._interior=interior;
    const lid=makeCrop(d.src,d.lid);el.appendChild(lid);el._lidHit=lid;
  }
- if(isContainerDef(d)&&!(d.id||'').startsWith('tiganj_')){ensureVesselContent(el);if(!['serpa_plava','vangla_mala'].includes(d.id))ensureVesselFrontMask(el,d.src);}
+ if(isContainerDef(d)&&!(d.id||'').startsWith('tiganj_')){ensureVesselContent(el);}
+  if(isContainerDef(d)&&!(d.id||'').startsWith('tiganj_'))syncFrontMask(el,d.id);
   const by=d.y+d.h;el.dataset.basePerspective=perspectiveAt(by);setPose(el,(d.x+d.w/2)+CENTER_OFFSET,by,1);scene.appendChild(el);items.push(el);
   if(isPaprikaSteamBag(el))renderPaprikaSteamBag(el);
   if(d.id==='kaca_prazna'&&window.CooksterKaca)CooksterKaca.attach(el);
@@ -10887,10 +10900,9 @@ function restoreWorldItem(saved){
    if(!el.dataset.collisionProfile||el.dataset.collisionProfile==='marketBag')el.dataset.collisionProfile='flat';
    renderMarketBag(el);
  }
- if(isPanItem(el)){CooksterPan.write(el,CooksterPan.read(el));ensureCookingEffects(el);renderPanTomatoes(el);updateCookingStatus(el);}
+ if(isPanItem(el)){CooksterPan.write(el,CooksterPan.read(el));ensureCookingEffects(el);renderPanTomatoes(el);updateCookingStatus(el);syncFrontMask(el);}
  if(isContainerItem(el)&&!isPanItem(el)){
-   el.dataset.container='1';applyVesselVisualPreset(el);ensureVesselContent(el);
-   if(!['serpa_plava','vangla_mala'].includes(el.dataset.itemId))ensureVesselFrontMask(el,el.querySelector('.body')?.getAttribute('src')||'');
+   el.dataset.container='1';applyVesselVisualPreset(el);ensureVesselContent(el);syncFrontMask(el);
    if(isHeatableCookwareItem(el)){CooksterPan.write(el,CooksterPan.read(el));ensureCookingEffects(el);}
    renderVesselContents(el);
    if(isHeatableCookwareItem(el))updateCookingStatus(el);

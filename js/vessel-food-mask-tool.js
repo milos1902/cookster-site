@@ -44,7 +44,7 @@
   let root=null,stage=null,img=null,svg=null,select=null,statusEl=null,card=null;
 
   function clone(value){return JSON.parse(JSON.stringify(value));}
-  function emptyShape(){return {mask:[],foodVisible:[],bottom:[],depth:{bottom:null,foodTop:null}};}
+  function emptyShape(){return {soft:1.5,mask:[],foodVisible:[],bottom:[],depth:{bottom:null,foodTop:null}};}
   function normalizePoint(p){
     return {
       x:+Math.max(0,Math.min(100,+p?.x||0)).toFixed(3),
@@ -61,6 +61,7 @@
         if(!Array.isArray(data.vessels[v.id][k]))data.vessels[v.id][k]=[];
         data.vessels[v.id][k]=data.vessels[v.id][k].map(normalizePoint);
       });
+      {const sv=data.vessels[v.id].soft;data.vessels[v.id].soft=Number.isFinite(+sv)&&sv!==null?Math.max(0,Math.min(6,+sv)):1.5;}
       if(!data.vessels[v.id].depth||typeof data.vessels[v.id].depth!=='object')
         data.vessels[v.id].depth={bottom:null,foodTop:null};
       ['bottom','foodTop'].forEach(k=>{
@@ -90,13 +91,19 @@
       const C=window.CooksterVesselFoodCalibration;if(!C||!C.setLive)return;
       const c=data.vessels&&data.vessels[currentId];if(!c)return;
       const xy=l=>(l||[]).map(p=>[p.x,p.y]),pt=p=>p?[p.x,p.y]:null;
-      C.setLive(currentId,{mask:xy(c.mask),foodVisible:xy(c.foodVisible),bottom:xy(c.bottom),depth:{bottom:pt(c.depth&&c.depth.bottom),foodTop:pt(c.depth&&c.depth.foodTop)}});
+      C.setLive(currentId,{soft:c.soft,mask:xy(c.mask),foodVisible:xy(c.foodVisible),bottom:xy(c.bottom),depth:{bottom:pt(c.depth&&c.depth.bottom),foodTop:pt(c.depth&&c.depth.foodTop)}});
       window.dispatchEvent(new CustomEvent('cookster:vessel-calibration',{detail:{id:currentId}}));
     });
   }
   function current(){
     if(!data.vessels[currentId])data.vessels[currentId]=emptyShape();
     return data.vessels[currentId];
+  }
+  function fillSelect(){
+    if(!select)return;select.innerHTML='';
+    VESSELS.forEach(v=>{const o=document.createElement('option');o.value=v.id;const sv=!!(data.vessels&&data.vessels[v.id]&&data.vessels[v.id].saved);o.textContent=(sv?'✔ ':'')+v.label;o.style.fontWeight=sv?'800':'400';o.dataset.saved=sv?'1':'';select.appendChild(o);});
+    select.value=currentId;
+    const b=root&&root.querySelector('#vfmmSave');if(b){const sv=!!current().saved;b.textContent=sv?'✔ Sačuvano (klikni da poništiš)':'💾 Sačuvaj ovu posudu';b.classList.toggle('vfmm-saved',sv);}
   }
   function setStatus(message){
     if(statusEl)statusEl.textContent=message;
@@ -195,6 +202,7 @@
   function renderVessel(){
     const vessel=VESSELS.find(v=>v.id===currentId)||VESSELS[0];
     if(select)select.value=vessel.id;
+    fillSelect();
     if(img){
       img.alt=vessel.label;
       img.src=vessel.src;
@@ -202,6 +210,7 @@
         if(img.naturalWidth&&img.naturalHeight)stage.style.aspectRatio=`${img.naturalWidth}/${img.naturalHeight}`;
       };
     }
+    const sf=root&&root.querySelector('#vfmmSoft');if(sf){sf.value=current().soft;root.querySelector('#vfmmSoftN').textContent=(+current().soft).toFixed(1);}
     draw();
   }
   function setMode(next){
@@ -355,6 +364,8 @@
           <div class="vfmm-row"><button id="vfmmFillStock" type="button">🥕 Seckano (slike)</button><button id="vfmmFillPieces" type="button">🔪 Komadići (C rez)</button><button id="vfmmFillServe" type="button">🍽 Složeno na tanjir</button></div>
           <small>Svaka tačka koju staviš ili pomeriš se odmah primeni na posudu na stolu.</small></div>
         <div class="vfmm-zoomrow"><span class="vfmm-label">Zum slike</span><button id="vfmmZoomOut" type="button">−</button><b id="vfmmZoomN">100%</b><button id="vfmmZoomIn" type="button">+</button><button id="vfmmZoomReset" type="button">⌂</button><small>točkić miša = zum, desni/srednji taster = pomeranje</small></div>
+        <button id="vfmmSave" type="button" class="vfmm-wide">💾 Sačuvaj ovu posudu</button>
+        <label class="vfmm-qty">Meki rub zona: <input id="vfmmSoft" type="range" min="0" max="6" step="0.1" value="1.5"><b id="vfmmSoftN">1.5</b></label>
         <div><span class="vfmm-label">Šta trenutno crtaš?</span><div class="vfmm-mode-list">
           <button class="vfmm-mode active" data-mode="mask" type="button">🔴 Maska koja prekriva hranu<small>Deo slike koji treba da bude iznad hrane.</small></button>
           <button class="vfmm-mode" data-mode="foodVisible" type="button">🟢 Deo gde se hrana vidi<small>Unutrašnji prostor u kom hrana sme da bude vidljiva.</small></button>
@@ -371,8 +382,8 @@
     </div>`;
     document.body.appendChild(root);
     stage=root.querySelector('#vesselFoodMaskStage');img=root.querySelector('#vesselFoodMaskImage');svg=root.querySelector('#vesselFoodMaskSvg');select=root.querySelector('#vesselFoodMaskVessel');statusEl=root.querySelector('#vesselFoodMaskStatus');
-    VESSELS.forEach(v=>{const o=document.createElement('option');o.value=v.id;o.textContent=v.label;select.appendChild(o);});
-    button.addEventListener('click',()=>{syncVessels();load();select.innerHTML='';VESSELS.forEach(v=>{const o=document.createElement('option');o.value=v.id;o.textContent=v.label;select.appendChild(o);});root.classList.add('open');button.classList.add('active');if(!root.dataset.sized){root.dataset.sized='1';root.classList.add('vfmm-dock');}setDockText();renderVessel();});
+    fillSelect();
+    button.addEventListener('click',()=>{syncVessels();load();fillSelect();root.classList.add('open');button.classList.add('active');if(!root.dataset.sized){root.dataset.sized='1';root.classList.add('vfmm-dock');}setDockText();renderVessel();});
     root.querySelector('#vesselFoodMaskClose').addEventListener('click',()=>{root.classList.remove('open');button.classList.remove('active');});
     select.addEventListener('change',e=>{currentId=e.target.value;renderVessel();});
     root.querySelectorAll('.vfmm-mode').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
@@ -388,6 +399,8 @@
     card=root.querySelector('.vfmm-card');card.setAttribute('data-tool-ui','1');
     const q=sel=>root.querySelector(sel);
     q('#vfmmDock').addEventListener('click',()=>{root.classList.toggle('vfmm-dock');setDockText();});
+    q('#vfmmSoft').addEventListener('input',e=>{current().soft=+e.target.value;q('#vfmmSoftN').textContent=(+e.target.value).toFixed(1);persist();});
+    q('#vfmmSave').addEventListener('click',()=>{current().saved=!current().saved;persist();fillSelect();say(current().saved?'Posuda je sačuvana (u listi je podebljana).':'Oznaka „sačuvano“ je skinuta.');});
     q('#vfmmQty').addEventListener('input',e=>{q('#vfmmQtyN').textContent=e.target.value;});
     q('#vfmmPlace').addEventListener('click',placeVessel);
     q('#vfmmEmpty').addEventListener('click',emptyVessel);

@@ -120,6 +120,26 @@
   };
   const copy=v=>JSON.parse(JSON.stringify(v));
   const polygon=points=>`polygon(${points.map(p=>`${p[0]}% ${p[1]}%`).join(',')})`;
+  // the edge of a drawn area fades softly (a blurred white polygon as the mask) instead of a sharp cut; the picture has 10% of room around, so the blur is not cut at the border
+  const SOFT=1.5,softCache=new Map();
+  function softMask(points,sd){
+    const key=points.map(p=>p[0]+','+p[1]).join(' ')+'|'+sd;
+    let u=softCache.get(key);
+    if(!u){
+      const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 120 120" preserveAspectRatio="none"><filter id="b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${sd}"/></filter><polygon filter="url(#b)" fill="#fff" points="${key.split('|')[0]}"/></svg>`;
+      u=`url("data:image/svg+xml,${encodeURIComponent(svg)}")`;softCache.set(key,u);
+    }
+    return u;
+  }
+  function applySoft(el,points,sd){
+    if(!(sd>0)){el.style.clipPath=polygon(points);el.style.webkitClipPath=el.style.clipPath;for(const k of ['maskImage','webkitMaskImage'])el.style[k]='none';return;}
+    const u=softMask(points,sd);
+    el.style.clipPath='none';el.style.webkitClipPath='none';
+    for(const pre of ['','webkit']){
+      const k=n=>pre?pre+n[0].toUpperCase()+n.slice(1):n;
+      el.style[k('maskImage')]=u;el.style[k('maskSize')]='120% 120%';el.style[k('maskPosition')]='50% 50%';el.style[k('maskRepeat')]='no-repeat';
+    }
+  }
   function frameFor(vesselOrId){
     const profile=get(vesselOrId);
     if(!profile?.foodVisible?.length)return null;
@@ -183,6 +203,7 @@
     const m=poly3(shape.mask,150),f=poly3(shape.foodVisible,100),b=poly3(shape.bottom,50),db=pair(shape.depth&&shape.depth.bottom),dt=pair(shape.depth&&shape.depth.foodTop);
     if(m)o.mask=m;if(f)o.foodVisible=f;if(b)o.bottom=b;
     if(db||dt)o.depth={bottom:db,foodTop:dt};
+    if(shape.soft!=null&&Number.isFinite(+shape.soft))o.soft=Math.max(0,Math.min(6,+shape.soft));
     return o;
   }
   function setLive(id,shape){
@@ -204,14 +225,15 @@
   function get(vesselOrId){
     const id=typeof vesselOrId==='string'?vesselOrId:(vesselOrId?.dataset?.itemId||'');
     const base=baseGet(id),lv=LIVE[id],df=DEF[id];
-    if(!lv&&!df)return base;
+    if(!lv&&!df)return base&&base.soft==null?{...base,soft:SOFT}:base;
     const c=liveCache[id];if(c&&c.base===base)return c.p;
     const pick=k=>(lv&&lv[k])||(df&&df[k])||(base&&base[k])||null;
     const dep=k=>(lv&&lv.depth&&lv.depth[k])||(df&&df.depth&&df.depth[k])||(base&&base.depth&&base.depth[k])||null;
     // a vessel that has only a GUESSED profile but whose area of the food was drawn by Miloš: the guessed front mask (made for the guessed area) is dropped, otherwise it cuts off the lower part of his area (a notch under the food)
     const ownFood=(lv&&lv.foodVisible)||(df&&df.foodVisible);
     const mask=(lv&&lv.mask)||(df&&df.mask)||((base&&base.guess&&ownFood)?null:(base&&base.mask))||null;
-    const p={mask,foodVisible:pick('foodVisible'),bottom:pick('bottom'),depth:{bottom:dep('bottom'),foodTop:dep('foodTop')}};
+    const soft=(lv&&lv.soft!=null)?lv.soft:(df&&df.soft!=null)?df.soft:SOFT;
+    const p={mask,foodVisible:pick('foodVisible'),bottom:pick('bottom'),soft,depth:{bottom:dep('bottom'),foodTop:dep('foodTop')}};
     // a profile that is not complete cannot be used (the game then keeps what it had)
     const ok=p.foodVisible&&p.depth.bottom&&p.depth.foodTop;
     if(ok&&!p.mask)p.mask=p.foodVisible;
@@ -226,9 +248,8 @@
     vessel.dataset.foodDepthTop=`${profile.depth.foodTop[0]},${profile.depth.foodTop[1]}`;
 
     if(front){
-      const mask=polygon(profile.mask);
-      front.style.clipPath=mask;
-      front.style.webkitClipPath=mask;
+      applySoft(front,profile.mask,profile.soft);
+      front.style.display='';
       front.dataset.foodVisibilityMask='imported';
     }
     if(wrap&&frame?.width&&frame?.height){
@@ -236,11 +257,7 @@
         +(((x-frame.left)/frame.width)*100).toFixed(3),
         +(((y-frame.top)/frame.height)*100).toFixed(3)
       ]);
-      const visible=polygon(local);
-      wrap.style.clipPath=visible;
-      wrap.style.webkitClipPath=visible;
-      wrap.style.maskImage='none';
-      wrap.style.webkitMaskImage='none';
+      applySoft(wrap,local,profile.soft);
       wrap.dataset.foodVisibilityArea='imported';
     }
     return true;
@@ -339,6 +356,7 @@
   importDefaults();importSaved();
   window.CooksterVesselFoodCalibration={
     setLive,
+    hasOwnMask:id=>!!((LIVE[id]&&LIVE[id].mask)||(DEF[id]&&DEF[id].mask)),
     get:v=>copy(get(v)),
     frame:v=>copy(frameFor(v)),
     applyToVessel,
