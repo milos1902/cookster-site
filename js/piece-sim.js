@@ -151,7 +151,10 @@
           const entry=loadAtlas(part.atlas[u%part.atlas.length]);
           entry.part=part;
           const m=entry.meta;if(!m||!Array.isArray(m.p))continue;
-          const k=PIECE_SCALE*HEAP_W/Math.max(20,m.W||100);
+          // the pieces keep the size they had on the board: one cut vegetable is a heap as wide as the diced picture is on the board (def.dicedW at the scale of the vessel)
+          const wr=this.wrapOf(),wrapW=wr&&wr.clientWidth>4?wr.clientWidth:0,pw=((part.def&&(part.def.dicedW||part.def.w))||96)*(+this.vessel.dataset.vis||1);
+          const heapUnits=wrapW?Math.max(10,Math.min(120,pw*SIM_W/wrapW)):PIECE_SCALE*HEAP_W;
+          const k=heapUnits/Math.max(20,m.W||100);
           const off=UNIT_OFFSETS[u%UNIT_OFFSETS.length];
           m.p.forEach((q,i)=>{
             const id=`${part.storageKey}|${u}|${i}`;

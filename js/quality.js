@@ -26,7 +26,7 @@
       out.paprika=(+sp.tucana||0)+(+sp.paprika||0);
       for(const k of ['biber','so','secer','lovor'])out[k]=+sp[k]||0;
     }catch(_){}
-    try{out.ulje=+(CooksterContainer.read(bowl).items?.ulje?.count)||0;}catch(_){}
+    try{out.ulje=(typeof isHeatableCookwareItem==='function'&&isHeatableCookwareItem(bowl))?(+CooksterPan.read(bowl).staples?.oil||0):(+(CooksterContainer.read(bowl).items?.ulje?.count)||0);}catch(_){}
     return out;
   }
   function judge(ing,part,v){
