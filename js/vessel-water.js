@@ -54,6 +54,24 @@ function surfacePoly(p,f){
   if(k!==1)out=out.map(function(q){return [q[0],cy+(q[1]-cy)*k];});
   return out;
 }
+// the water rocks: the edge of the surface goes toward the wall, bounces back and the other side follows (a slow slosh + small ripples along the edge)
+var SW=[],swRun=false;
+function swayFrame(now){
+  var t=now/1000,live=[];
+  SW.forEach(function(o){
+    if(!o.d.isConnected&&now-o.born>400)return;live.push(o);
+    var P=o.pts,n=P.length,cx=0,cy=0,i;for(i=0;i<n;i++){cx+=P[i][0];cy+=P[i][1];}cx/=n;cy/=n;
+    var a1=Math.sin(t*1.7+o.ph)*.11,a2=Math.sin(t*1.15+o.ph*1.7+1.3)*.07,out=[];
+    for(i=0;i<n;i++){
+      var q=P[i],dx=q[0]-cx,dy=q[1]-cy,an=Math.atan2(dy,dx);
+      var k=1+a1*Math.cos(an-.5)+a2*Math.cos(an-2.2)+.014*Math.sin(an*5+t*3.1+o.ph)+.01*Math.sin(an*8-t*4.3);
+      out.push((cx+dx*k+Math.sin(t*1.7+o.ph)*dx*0+a1*6).toFixed(2)+'% '+(cy+dy*k+a2*3).toFixed(2)+'%');
+    }
+    var c='polygon('+out.join(',')+')';o.d.style.clipPath=c;o.d.style.webkitClipPath=c;
+  });
+  SW=live;if(live.length)requestAnimationFrame(swayFrame);else swRun=false;
+}
+function sway(d,pts){SW.push({d:d,pts:pts,ph:Math.random()*6.28,born:performance.now()});if(!swRun){swRun=true;requestAnimationFrame(swayFrame);}}
 function overlay(id,f,src,withFront,pOverride){
   var p=pOverride||prof(id);f=clamp(f);if(!p||f<=.004)return null;
   var d=document.createElement('div');d.className='vessel-water-ov';
@@ -63,7 +81,7 @@ function overlay(id,f,src,withFront,pOverride){
   if(morph){
     var sf=document.createElement('div');sf.className='vw-surf';d.appendChild(sf);
     ['','b'].forEach(function(c){var w=document.createElement('div');w.className='vw-wave '+c;w.style.animationDelay=c?'-1.1s':'0s';d.appendChild(w);});
-    [[34,42,0],[66,60,-2.6]].forEach(function(r){var g=document.createElement('div');g.className='vw-ring';g.style.left=r[0]+'%';g.style.top=r[1]+'%';g.style.animationDelay=r[2]+'s';d.appendChild(g);});
+    sway(d,surfacePoly(p,f));
     return finish(d,p,src,withFront);
   }
   var by=p.depth.bottom[1],ty=p.depth.foodTop[1],y=by+(ty-by)*f;      // the surface of the water (percent of the height of the picture)
@@ -157,7 +175,7 @@ function buildTool(){
   root.innerHTML='<div class="vw-card"><div class="vw-side"><b style="font-size:15px">💧 Voda u posudi</b><button id="vwClose" style="float:right">×</button>'+
    '<label>Posuda <select id="vwSel"></select></label>'+
    '<div><button data-m="poly" class="on">Gore (puna posuda)</button><button data-m="bottom">Dno posude</button><button data-m="front">Prednja ivica</button></div>'+
-   '<small><b style="color:#7fe3ff">Gore</b>: oblik (krug) površine vode kad je posuda PUNA. <b style="color:#ffe27a">Dno</b>: oblik (krug) dna posude. Voda raste od oblika dna do oblika gore (uvek kao ceo krug). Prevuci tačke; klik na liniju ubacuje tačku, dvoklik briše. <b style="color:#ef5350">Prednja ivica</b> (nije obavezno): deo zida posude koji treba da bude IZNAD vode.</small>'+
+   '<small><b>Točak miša</b> uveličava posudu, <b>desni ili srednji taster</b> pomera sliku. <b style="color:#7fe3ff">Gore</b>: oblik (krug) površine vode kad je posuda PUNA. <b style="color:#ffe27a">Dno</b>: oblik (krug) dna posude. Voda raste od oblika dna do oblika gore (uvek kao ceo krug). Prevuci tačke; klik na liniju ubacuje tačku, dvoklik briše. <b style="color:#ef5350">Prednja ivica</b> (nije obavezno): deo zida posude koji treba da bude IZNAD vode.</small>'+
    '<label>Probni nivo vode <input id="vwLvl" type="range" min="0" max="100" value="60"><b id="vwLvlN">60%</b></label><label>Nagib napred-nazad (kako se vidi površina) <input id="vwTilt" type="range" min="-40" max="40" step="0.5" value="0"><b id="vwTiltN">0</b></label>'+
    '<div><button id="vwSave">💾 Sačuvaj ovu posudu</button><button id="vwReset">↺ Početno</button><button id="vwCopy">Kopiraj sve (JSON)</button></div><small id="vwStatus"></small></div>'+
    '<div class="vw-main"><div class="vw-stage" id="vwStage"><img class="vw-pic" id="vwPic" alt=""><div id="vwOv" style="position:absolute;inset:0;pointer-events:none"></div><svg id="vwSvg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg></div></div></div>';
@@ -190,6 +208,19 @@ function buildTool(){
   svg.addEventListener('pointerup',function(){drag=null;});
   svg.addEventListener('dblclick',function(e){var t=e.target;if(t.tagName==='circle'&&t.dataset.i!==undefined&&work[t.dataset.k].length>(t.dataset.k==='front'?0:3)){work[t.dataset.k].splice(+t.dataset.i,1);draw();}});
   root.querySelectorAll('[data-m]').forEach(function(b){b.addEventListener('click',function(){mode=b.dataset.m;root.querySelectorAll('[data-m]').forEach(function(x){x.classList.toggle('on',x===b)});draw();});});
+  // zoom with the wheel (round the cursor), the picture is moved with the right or middle mouse button
+  var main=root.querySelector('.vw-main'),Z={s:1,x:0,y:0},pan=null;
+  function applyZ(){stage.style.transform='translate('+Z.x+'px,'+Z.y+'px) scale('+Z.s+')';}
+  main.addEventListener('wheel',function(e){
+    e.preventDefault();var r=main.getBoundingClientRect(),vx=e.clientX-(r.left+r.width/2),vy=e.clientY-(r.top+r.height/2);
+    var ns=Math.max(1,Math.min(8,Z.s*(e.deltaY<0?1.15:1/1.15)));
+    Z.x=vx-(vx-Z.x)*ns/Z.s;Z.y=vy-(vy-Z.y)*ns/Z.s;Z.s=ns;if(ns===1){Z.x=0;Z.y=0;}applyZ();
+  },{passive:false});
+  main.addEventListener('contextmenu',function(e){e.preventDefault();});
+  main.addEventListener('pointerdown',function(e){if(e.button===0)return;pan={x:e.clientX,y:e.clientY,ox:Z.x,oy:Z.y};main.setPointerCapture(e.pointerId);e.preventDefault();});
+  main.addEventListener('pointermove',function(e){if(!pan)return;Z.x=pan.ox+e.clientX-pan.x;Z.y=pan.oy+e.clientY-pan.y;applyZ();});
+  main.addEventListener('pointerup',function(){pan=null;});
+  main.addEventListener('pointercancel',function(){pan=null;});
   lvl.addEventListener('input',draw);
   tiltEl.addEventListener('input',function(){work.tilt=+tiltEl.value;draw();});
   sel.addEventListener('change',function(){load(sel.value);});
