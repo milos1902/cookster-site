@@ -348,7 +348,7 @@ function renderSink(force){
     var g=itemGeom(sv.id,14),w=document.createElement('div');w.className='sz-it take';w.title='klik: uzmi posudu · desni klik: isprazni vodu';
     var im=document.createElement('img');im.draggable=false;im.style.cssText='display:block;width:100%;height:auto;-webkit-user-drag:none';w.appendChild(im);
     var x=slotX(k++,total,g.w);w._x=x;sv._x=x;sv._g=g;
-    var wf=waterOf(sv);if(wf>.004){var ov=CooksterVesselWater.overlay(sv.id,wf);if(ov)w.appendChild(ov);}
+    var wf=waterOf(sv);if(wf>.004){var ov=CooksterVesselWater.overlay(sv.id,wf,srcOf(sv),true);if(ov)w.appendChild(ov);}
     im.onload=function(){place(w,im,x,g)};im.src=srcOf(sv);if(im.complete&&im.naturalWidth)place(w,im,x,g);
     w.addEventListener('pointerdown',function(e){e.stopPropagation();e.preventDefault();if(e.button===2)return;takeOut(i);});
     w.addEventListener('contextmenu',function(e){e.preventDefault();e.stopPropagation();if(sv.data&&sv.data.water){delete sv.data.water;saveSunk();renderSink(true);}});
