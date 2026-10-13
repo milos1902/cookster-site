@@ -262,6 +262,26 @@
         for(const p of ps)this.wall(p);
       }
     }
+    // the nearest point of the outline of the food area
+    nearEdge(x,y){
+      const poly=this.poly;let bx=x,by=y,bd=1e9;
+      for(let i=0;i<poly.length;i++){
+        const a=poly[i],b=poly[(i+1)%poly.length],ex=b.x-a.x,ey=b.y-a.y,l2=ex*ex+ey*ey||1;
+        const tt=Math.max(0,Math.min(1,((x-a.x)*ex+(y-a.y)*ey)/l2)),qx=a.x+ex*tt,qy=a.y+ey*tt,d=(x-qx)**2+(y-qy)**2;
+        if(d<bd){bd=d;bx=qx;by=qy;}
+      }
+      return {x:bx,y:by,d:Math.sqrt(bd)};
+    }
+    // a soft edge: a moving piece that comes near the outline is turned along it and pushed gently back, like a spring, instead of hitting a wall
+    softEdge(p){
+      const sp=Math.abs(p.vx)+Math.abs(p.vy);if(sp<.004)return;
+      const e=this.nearEdge(p.x,p.y),m=Math.max(5,p.r*1.1);
+      if(e.d>=m||!this.inside(p.x,p.y))return;
+      let nx=this.cx-e.x,ny=this.cy-e.y;const nl=Math.hypot(nx,ny)||1;nx/=nl;ny/=nl;   // inwards
+      const t=1-e.d/m,vn=p.vx*nx+p.vy*ny;
+      if(vn<0){const k=.55*t;p.vx-=nx*vn*k;p.vy-=ny*vn*k;}   // only the part of the speed that goes towards the edge is taken away; the part along the edge stays
+      p.vx+=nx*.012*t*t;p.vy+=ny*.012*t*t;
+    }
     wall(p){
       if(this.inside(p.x,p.y)){
         // keep clear of the edge by about the piece's own radius
@@ -275,7 +295,7 @@
         if(d<bd){bd=d;bx=qx;by=qy;}
       }
       const dx=this.cx-bx,dy=this.cy-by,dl=Math.hypot(dx,dy)||1,inset=Math.min(p.r*.35,3);
-      p.x=bx+dx/dl*inset;p.y=by+dy/dl*inset;p.vx*=.5;p.vy*=.5;
+      p.x=bx+dx/dl*inset;p.y=by+dy/dl*inset;{const nx=dx/dl,ny=dy/dl,vn=p.vx*nx+p.vy*ny;if(vn<0){p.vx-=nx*vn;p.vy-=ny*vn;}p.vx*=.9;p.vy*=.9;}
     }
     collide(ps,push,range){
       // spatial hash (numeric keys, buckets reused between calls) so ~150 pieces stay cheap and nothing is allocated per frame
@@ -331,6 +351,7 @@
           if(a!==b&&a.layer!==b.layer&&Math.hypot(a.x-b.x,a.y-b.y)<9){const l=a.layer;a.layer=b.layer;b.layer=l;}
         }
       }
+      {const target=dir*Math.min(.03,speed*.004);this.swirlW=Math.max(-.03,Math.min(.03,(this.swirlW||0)*.8+target*.6));}
       this.activeUntil=performance.now()+500;
       this.dirty=true;kick();
     }
@@ -341,6 +362,17 @@
       const crowd=this.crowd();
       const settling=now<this.activeUntil+1400;   // the evening-out only acts while and shortly after stirring
       let energy=0;
+      // the circling of the spoon is remembered: after letting go the whole mixture keeps turning the same way and slowly stops
+      const sw=this.swirlW||0;
+      if(Math.abs(sw)>.003){
+        const cx0=this.cx,cy0=this.cy;
+        for(const p of ps){
+          const ox=p.x-cx0,oy=p.y-cy0,ol=Math.hypot(ox,oy)||1,k=sw/(p.mass*Math.sqrt(crowd))*Math.min(1,ol/20);
+          p.vx+=-oy/ol*k;p.vy+=ox/ol*k;
+        }
+        this.swirlW=sw*.965;
+        energy=Math.max(energy,Math.abs(sw)*2);
+      }else this.swirlW=0;
       for(const p of ps){
         // food settles back towards the middle of the vessel, so stirring never leaves it piled against one wall
         p.x+=p.vx;p.y+=p.vy;
@@ -349,7 +381,8 @@
         // cap the speed and add drag: a thick, heavy mixture, never a quick stream
         const sp=Math.hypot(p.vx,p.vy),cap=.27/(p.mass*Math.sqrt(crowd));
         if(sp>cap){p.vx*=cap/sp;p.vy*=cap/sp;}
-        p.vx*=.83;p.vy*=.83;
+        this.softEdge(p);
+        p.vx*=.945;p.vy*=.945;   // a thick mixture keeps gliding for a moment after the spoon is let go
         if(Math.abs(p.vx)<.001)p.vx=0;
         if(Math.abs(p.vy)<.001)p.vy=0;
       }
