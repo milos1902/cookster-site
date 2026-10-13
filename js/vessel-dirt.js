@@ -10,6 +10,8 @@ var DIRTY_ART={
   /* every new dirty picture (same size and shape as the clean one): 'vessel_id':'assets/new_props/...webp' */
 };
 var W=512,imgCache={};
+// the dirty picture is a hair smaller than the clean one (it was a millimetre too big): 1 = same size
+var SHRINK={def:.988};
 function art(id){return DIRTY_ART[id]||null;}
 function loadArt(src,cb){
   var e=imgCache[src];
@@ -28,7 +30,7 @@ function ensureCanvas(el){
   var c=el._dirtCanvas;
   if(c&&c.isConnected)return c;
   c=document.createElement('canvas');c.className='vessel-dirt';c._ready=false;
-  c.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3';
+  c.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3;transform:scale('+(SHRINK[id]||SHRINK.def)+');transform-origin:50% 50%';
   el.appendChild(c);el._dirtCanvas=c;
   loadArt(src,function(img){
     if(!c.isConnected)return;
@@ -74,9 +76,10 @@ function at(x,y,items){
 function local(c,e){var r=c.getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*c._w,y:(e.clientY-r.top)/r.height*c._h};}
 // the sponge takes off the dirt much faster than in the tavern: a big brush and a strong touch
 function erase(c,px,py){
-  var g=c.getContext('2d'),R=Math.round(c._w*.115);
+  // GRADUALLY: every touch takes off only a little (like in the tavern, but a bit stronger), so one pass leaves a thin film and a few passes are needed
+  var g=c.getContext('2d'),R=Math.round(c._w*.115),A=.045;
   g.save();g.globalCompositeOperation='destination-out';
-  var gr=g.createRadialGradient(px,py,0,px,py,R);gr.addColorStop(0,'rgba(0,0,0,1)');gr.addColorStop(.75,'rgba(0,0,0,.9)');gr.addColorStop(1,'rgba(0,0,0,0)');
+  var gr=g.createRadialGradient(px,py,0,px,py,R);gr.addColorStop(0,'rgba(0,0,0,'+A+')');gr.addColorStop(.75,'rgba(0,0,0,'+(A*.8)+')');gr.addColorStop(1,'rgba(0,0,0,0)');
   g.fillStyle=gr;g.beginPath();g.arc(px,py,R,0,Math.PI*2);g.fill();g.restore();
 }
 window.CooksterVesselDirt={update:update,at:at,local:local,erase:erase,remaining:remaining,clean:clean,makeDirty:makeDirty,has:art,ensureCanvas:ensureCanvas};
