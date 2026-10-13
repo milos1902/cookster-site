@@ -435,3 +435,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Kalibracija pljuska u sudoperi (2026-10-13, sink-zoom.js?v=18)
 - U alatu sudopere (režim slavina) roze tačka = mesto pljuska (prevlači se bilo gde), klizač veličine i klizač "nagib napred-nazad" (vertikalno spljoštavanje, kao nagib vode).
 - Sačuvano u `cal.tap.sp = {pos,size,tilt}`; ako ga nema, pljusak je na žutoj tački kao do sada.
+
+## Pljusak ugrađen (2026-10-13, sink-zoom.js?v=19)
+- Korisnikova kalibracija sudopere ugrađena u `CAL_DEF`: pljusak na [49.46,59.31], veličina 7, nagib 1.6; postolje ventila 25.3. Ostalo (rim, floor, mask, posude) isto kao pre.
