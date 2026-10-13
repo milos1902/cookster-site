@@ -92,7 +92,7 @@
   }
   // grid cuts, so we get cubes instead of slivers
   function diceGrid(frags){
-    const th=rnd(0,Math.PI/2),size=34*K;
+    const th=rnd(0,Math.PI/2),size=16*K;     // small cubes: a hand cut (key C) gives pieces of about the size of the cubes of the quick cut (key E)
     for(const ang of [th,th+Math.PI/2]){
       const n={x:Math.cos(ang),y:Math.sin(ang)},base=rnd(0,size);
       for(let c=-1400+base;c<1800;c+=size+rnd(-4,4)*K){
@@ -104,14 +104,14 @@
         frags=next;
       }
     }
-    frags=frags.filter(f=>f.a>240*K*K);
+    frags=frags.filter(f=>f.a>60*K*K);
     for(const f of frags)f.rot+=rnd(-.15,.15);
     return frags;
   }
 
   // dice only the pieces that are still too big, keep the small ones as they are
   function diceBig(frags){
-    const big=frags.filter(f=>f.r>26*K),small=frags.filter(f=>f.r<=26*K);
+    const big=frags.filter(f=>f.r>13*K),small=frags.filter(f=>f.r<=13*K);
     return small.concat(big.length?diceGrid(big):[]);
   }
 
