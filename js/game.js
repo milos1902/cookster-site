@@ -9908,7 +9908,7 @@ function addIngredientToContainer(item,vessel){
    return true;
  }
 
- if(meta.type!=='staple'&&containerTotal(vessel)>=containerCapacity(vessel)){
+ if(meta.type!=='staple'&&meta.key!=='jaje'&&containerTotal(vessel)>=containerCapacity(vessel)){   // eggs do not take room: they are mixed into the dish
    showToast(`${vessel.dataset.label} je pun — kapacitet je ${containerCapacity(vessel)}.`);
    return true;
  }
@@ -10456,7 +10456,7 @@ function openPaprikaBagActionMenu(target,x,y){
       const count=paprikaSteamBagCount(target);
       addAction('Zatvori kesu',count<=0,()=>{target.dataset.bagClosed='1';target.dataset.bagClosedAt=String(Date.now());renderPaprikaSteamBag(target);CooksterSave.schedule();showToast('Kesa je zatvorena. Paprike se pare 10 sekundi.');});
     }
-  }else if(target.dataset.readyToPeel==='1'&&target.dataset.peeled!=='1')addAction(isWholePatlidzan(target)?'Oljušti patlidžan':'Oljušti papriku',false,()=>peelSteamedPepper(target));
+  }
   document.body.appendChild(menu);paprikaBagActionMenu=menu;
   const mw=menu.offsetWidth||180,mh=menu.offsetHeight||60;
   menu.style.left=Math.max(8,Math.min(innerWidth-mw-8,x+4))+'px';menu.style.top=Math.max(8,Math.min(innerHeight-mh-8,y+4))+'px';
@@ -12086,15 +12086,42 @@ function wholeProduceSource(baseKey,meta=null){
   const fruit=CooksterCatalog.FRUITS?.[baseKey];
   return veg?.src||fruit?.src||'';
 }
-function appendWholeProduce(layer,entries,stage=1,fillState=null){
+// The big round tray (capacity 20+) shows whole peppers at the size they have on the board and fills the whole tray with a heap of them:
+// pieces keep their real size (no shrinking), more of them just lie over each other (a sunflower pattern, the lower ones drawn on top).
+function bigTrayVessel(v){try{return !!v&&!isPanItem(v)&&containerCapacity(v)>=20;}catch(_){return false;}}
+function trayPepperLayout(n,vessel,pieceW){
+  const wrap=vessel?._vesselContent||vessel?._panContent||null;
+  const W=(wrap&&wrap.clientWidth)||vessel?.offsetWidth||190;
+  const vis=+vessel?.dataset?.vis||1,wPct=Math.min(70,(pieceW||70)*vis/W*100);
+  const out=[];
+  for(let i=0;i<n;i++){
+    const r=Math.sqrt((i+.5)/n),a=i*2.39996;
+    out.push({x:50+Math.cos(a)*r*(47-wPct*.18),y:54+Math.sin(a)*r*(35-wPct*.1),rot:((i*53)%23)-11,w:wPct});
+  }
+  out.sort((a,b)=>a.y-b.y);        // the lower ones lie over the upper ones
+  return out;
+}
+function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
   if(!layer||!entries?.length)return;
   const fs=fillState||{ratio:0,scaleX:1,scaleY:1,rise:0,layers:1,stackGap:3};
   const expanded=[];
   for(const entry of entries){
-    const n=Math.max(0,Math.min(10,Math.round(+entry.count||0)));
+    const n=Math.max(0,Math.min(bigTrayVessel(vessel)?40:10,Math.round(+entry.count||0)));
     for(let i=0;i<n;i++)expanded.push(entry);
   }
   if(!expanded.length)return;
+  if(bigTrayVessel(vessel)){
+    const lay=trayPepperLayout(expanded.length,vessel,Math.max(...expanded.map(e=>+VEGETABLES[e.baseKey]?.w||70)));
+    expanded.forEach((entry,i)=>{
+      const src=wholeProduceSource(entry.baseKey,entry.meta);if(!src)return;
+      const L=lay[i],img=document.createElement('img');
+      img.className='whole-produce-piece';img.dataset.entryKey=entry.key;img.src=src;img.alt='';img.draggable=false;
+      img.style.left=L.x.toFixed(2)+'%';img.style.top=L.y.toFixed(2)+'%';img.style.width=L.w.toFixed(2)+'%';
+      img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String(22+i);
+      layer.appendChild(img);
+    });
+    return;
+  }
 
   const layouts={
     1:[[50,50,-3,62]],
@@ -12154,9 +12181,20 @@ function wholeProduceEntries(counts,metaItems={}){
   }
   return out;
 }
-function appendWholeRoastedPeppers(layer,count,phase=4){
- const n=Math.max(0,Math.min(8,Math.round(+count||0)));
+function appendWholeRoastedPeppers(layer,count,phase=4,vessel=null){
+ const n=Math.max(0,Math.min(40,Math.round(+count||0)));
  if(!layer||n<=0)return;
+ if(bigTrayVessel(vessel)){
+   const lay=trayPepperLayout(n,vessel,+VEGETABLES.paprika?.w||70);
+   lay.forEach((L,i)=>{
+     const img=document.createElement('img');img.className='whole-roasted-pepper';
+     img.src=PAPRIKA_ROAST_ASSETS[Math.max(1,Math.min(4,+phase||4))-1];img.alt='';img.draggable=false;
+     img.style.left=L.x.toFixed(2)+'%';img.style.top=L.y.toFixed(2)+'%';img.style.width=L.w.toFixed(2)+'%';
+     img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String(30+i);
+     layer.appendChild(img);
+   });
+   return;
+ }
 
  // v174: roasted peppers follow the same centered composition logic as chopped food:
  // first piece appears in the middle of the calibrated food zone, then the group
@@ -12171,7 +12209,18 @@ function appendWholeRoastedPeppers(layer,count,phase=4){
    7:[[50,35,-4,38],[35,42,-10,38],[65,42,8,38],[29,56,-7,37],[71,56,7,37],[40,68,6,37],[60,68,-6,37]],
    8:[[39,35,-10,36],[61,35,8,36],[28,47,-7,36],[72,47,7,36],[31,62,5,35],[69,62,-5,35],[43,69,6,35],[57,69,-6,35]]
  };
- const pose=layouts[n]||layouts[8];
+ let pose=layouts[n];
+ if(!pose){
+   // 9..20 peppers (the big round tray): rows of overlapping peppers that fill the whole food area, smaller the more there are
+   const cols=n<=12?4:5,rows=Math.ceil(n/cols),w=Math.max(23,Math.round(31-(n-8)*.65));
+   pose=[];
+   for(let i=0;i<n;i++){
+     const r=Math.floor(i/cols),c=i%cols,inRow=Math.min(cols,n-r*cols);
+     const x=50+(c-(inRow-1)/2)*(w*.88)+(r%2?w*.22:-w*.22)*(inRow<cols?0:1);
+     const y=rows===1?50:30+r*(44/(rows-1))+((c%2)?3:-3);
+     pose.push([x,y,((i*37)%17)-8,w]);
+   }
+ }
 
  for(let i=0;i<pose.length;i++){
    const [x,y,rot,w]=pose[i];
@@ -13345,12 +13394,12 @@ function buildFoodStageLayer(counts,stage,metaItems={},batches=[],heat=0,mixLeve
   }
 
   // Whole raw produce remains whole in every pan/pot/bowl.
-  appendWholeProduce(layer,wholeProduceEntries(counts,metaItems),stage,fillState);
+  appendWholeProduce(layer,wholeProduceEntries(counts,metaItems),stage,fillState,vessel);
 
   // Whole roasted peppers retain their dedicated phase art.
-  appendWholeRoastedPeppers(layer,roastedByPhase[2],2);
-  appendWholeRoastedPeppers(layer,roastedByPhase[3],3);
-  appendWholeRoastedPeppers(layer,roastedByPhase[4],4);
+  appendWholeRoastedPeppers(layer,roastedByPhase[2],2,vessel);
+  appendWholeRoastedPeppers(layer,roastedByPhase[3],3,vessel);
+  appendWholeRoastedPeppers(layer,roastedByPhase[4],4,vessel);
   return layer;
 }
 
@@ -13425,7 +13474,7 @@ function renderFoodContents(wrap,counts,stage=1,metaItems={},batches=[],heat=0,m
   const count=keys.reduce((sum,key)=>sum+(+counts[key]||0),0);
   const foodCount=keys.reduce((sum,key)=>{
     const meta=metaItems?.[key];
-    return meta?.type==='staple'?sum:sum+(+counts[key]||0);
+    return (meta?.type==='staple'||key==='jaje')?sum:sum+(+counts[key]||0);
   },0);
   const vessel=vesselArg||wrap.closest?.('.item')||null;
   const fillState=vesselFillState(vessel,foodCount);
@@ -14312,6 +14361,46 @@ function spawnSourHalf(target){
  }catch(_){}
 }
 // E: the quick cut (the knife chops by itself) -> chopped small; C: the cut with the mouse (the board comes close, the knife is dragged over the vegetable) -> rounds / slices
+// Peeling: the steamed (or roasted) peppers / eggplants lie on the board and the player holds E: a ring fills above them and when it is full all of them are peeled
+let peelHold=null;
+function peelTargetsOnBoard(){return items.filter(el=>el.dataset.attachedToBoard==='1'&&el.dataset.readyToPeel==='1'&&el.dataset.peeled!=='1');}
+function cancelPeelHold(){
+  if(!peelHold)return;
+  cancelAnimationFrame(peelHold.raf);peelHold=null;destroyCutProgress();
+}
+function finishPeelHold(){
+  const h=peelHold;if(!h)return;
+  cancelAnimationFrame(h.raf);peelHold=null;destroyCutProgress();
+  let n=0;
+  for(const el of h.ts){
+    if(!el.isConnected||el.dataset.peeled==='1')continue;
+    el.dataset.peeled='1';el.dataset.readyToPeel='0';el.dataset.peelHits='2';
+    try{renderPaprikaPeelState(el);}catch(_){}
+    n++;
+  }
+  if(n){playImpactSound(peelSoundTarget,'peel');showToast(n===1?'Oljušteno — spremno za seckanje.':`Oljušteno: ${n} — spremno za seckanje.`);CooksterSave.schedule();updateHover();}
+}
+function startPeelHold(){
+  if(peelHold||isCutting||paprikaPeelGame)return false;
+  const ts=peelTargetsOnBoard();if(!ts.length)return false;
+  const spot=()=>{const t=ts.filter(el=>el.isConnected);if(!t.length)return null;const cx=t.reduce((s,el)=>s+(+el.dataset.cx||0),0)/t.length;const top=Math.min(...t.map(el=>parseFloat(el.style.top)||0));return {cx,y:top-46*(+t[0].dataset.vis||1)};};
+  const p0=spot();if(!p0)return false;
+  const ring=ensureCutProgress(p0.cx,p0.y);ring.classList.add('peel');
+  const DUR=1800,start=performance.now();
+  peelHold={ts,raf:0};
+  const step=now=>{
+    if(!peelHold)return;
+    const p=Math.min(1,(now-start)/DUR),sp=spot();
+    if(!sp){cancelPeelHold();return;}
+    updateCutProgress(p,sp.cx,sp.y);
+    if(p>=1){finishPeelHold();return;}
+    peelHold.raf=requestAnimationFrame(step);
+  };
+  peelHold.raf=requestAnimationFrame(step);
+  return true;
+}
+window.addEventListener('keyup',e=>{if(e.key==='e'||e.key==='E')cancelPeelHold();});
+window.addEventListener('blur',cancelPeelHold);
 function beginCutAction(mode='dice'){
  if(isCutting)return;
  const board=getBoardEl();
@@ -15241,7 +15330,7 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
       return;
     }
     if(it&&isPaprikaSteamBag(it)){e.preventDefault();openPaprikaBagActionMenu(it,e.clientX,e.clientY);return}
-    if(it&&it.dataset.readyToPeel==='1'&&it.dataset.peeled!=='1'){e.preventDefault();openPaprikaBagActionMenu(it,e.clientX,e.clientY);return}
+    if(it&&it.dataset.readyToPeel==='1'&&it.dataset.peeled!=='1'){e.preventDefault();showToast(it.dataset.attachedToBoard==='1'?'Drži slovo E da oljušti.':'Stavi na dasku i drži slovo E da oljušti.');return}
    // Market paper bags use the same physical right-click pickup/drop language as crates.
    if(holding&&holding.dataset.marketBag==='1'){dropHolding();return}
    if(it&&it.dataset.marketBag==='1'){
@@ -15390,6 +15479,7 @@ window.addEventListener('keydown',e=>{
  if((e.key==='q'||e.key==='Q')&&!e.repeat){if(toggleQuickToolHand()){e.preventDefault();return;}}
  if((e.key==='e'||e.key==='E')&&!e.repeat){
    if(isCutting){e.preventDefault();return;}
+   if(startPeelHold()){e.preventDefault();return;}     // roasted peppers on the board: holding E peels all of them
    const target=findCutTargetOnBoard();
    if(target){e.preventDefault();beginCutAction('dice');}
  }
