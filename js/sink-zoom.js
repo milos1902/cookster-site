@@ -4,7 +4,7 @@
 (function(){
 'use strict';
 if(window.CooksterSinkZoom)return;
-var SRC='assets/sink/sudopera_krupno.webp?v=1',DUR=900;
+var SRC='assets/sink/sudopera_krupno.webp?v=2',DUR=900;
 var css=document.createElement('style');
 css.textContent=
 '#sinkZoom{position:fixed;inset:0;z-index:20000;display:none;background:rgba(10,6,3,0);transition:background .5s ease;touch-action:none}'+
@@ -63,10 +63,10 @@ var CAL_KEY='cookster.sink-zoom-cal.v1';
 // Miloš's own calibration of 2026-10-13 (rim, floor, mask and the size and height of every vessel) is built in; what is changed in the tool in the browser wins over it
 var CAL_DEF={rim:[[29.3, 27.1], [68.8, 27.1], [72.2, 70.7], [26.08, 70.72]],floor:[[32.8, 41.66], [65.38, 41.98], [67.56, 70.4], [30.56, 72.55]],mask:[[21.0, 17.55], [76.7, 17.33], [84.15, 79.55], [12.7, 80.52]],vessels:{"serpa_velika": {"x": 49.08, "y": 63.01, "w": 18.6, "h": -5.8}, "tiganj_veliki": {"x": 49.08, "y": 63.01, "w": 16.4, "h": -7.6}, "tiganj_mali": {"x": 49.08, "y": 63.01, "w": 14, "h": -7.8}, "vangla_srednja": {"x": 49.08, "y": 63.01, "w": 12.6, "h": -2}, "vangla_mala": {"x": 49.08, "y": 63.01, "w": 10.2, "h": -1}, "lavor_emajl_veliki": {"x": 49.08, "y": 63.01, "w": 23.8, "h": -7.4}, "vangla_velika": {"x": 49.08, "y": 63.01, "w": 15.6, "h": -2.4}, "kal_01_okrugli_pleh": {"x": 49.08, "y": 63.01, "w": 19, "h": -5}, "kal_01_pravougaoni_pleh": {"x": 49.08, "y": 63.01, "w": 18.6, "h": -3.6}, "kal_02_cinija_mala": {"x": 49.08, "y": 63.01, "w": 10.6, "h": 0}, "kal_02_cinija_velika": {"x": 49.08, "y": 63.01, "w": 14.6, "h": -2.6}, "posuda_za_kupus": {"x": 49.08, "y": 63.01, "w": 11.2, "h": 0}, "kal_02_duboki_tanjir": {"x": 49.08, "y": 63.01, "w": 13.2, "h": 0}, "kal_02_tanjir_ravni": {"x": 49.08, "y": 63.01, "w": 13, "h": 0}},
   // the faucet: where the water comes out (spout), where it lands, the two valves (cross handles) and their size
-  tap:{spout:[49.5,30.2],land:[49.4,56],left:[42.2,15.4],right:[56.2,15.4],r:2.9,squash:.72,bell:24.8,v:2}};
+  tap:{spout:[49.5,30.2],land:[49.4,56],left:[42.2,15.4],right:[56.2,15.4],r:2.9,squash:.72,bell:24.8,v:3}};
 var cal=null;
 function loadCal(){
-  try{var d=JSON.parse(localStorage.getItem(CAL_KEY)||'null');if(d&&d.rim&&d.floor&&d.mask){d.vessels=d.vessels||{};d.tap=Object.assign({},CAL_DEF.tap,d.tap||{});if(!d.tap.v||d.tap.v<2){d.tap.squash=CAL_DEF.tap.squash;d.tap.bell=CAL_DEF.tap.bell;d.tap.r=CAL_DEF.tap.r;d.tap.v=2;}return d;}}catch(e){}
+  try{var d=JSON.parse(localStorage.getItem(CAL_KEY)||'null');if(d&&d.rim&&d.floor&&d.mask){d.vessels=d.vessels||{};var oldV=d.tap&&d.tap.v||0;d.tap=Object.assign({},CAL_DEF.tap,d.tap||{});if(oldV<3){d.tap=JSON.parse(JSON.stringify(CAL_DEF.tap));}/* the first positions of the valves were a guess: new pictures need the new centres */return d;}}catch(e){}
   return JSON.parse(JSON.stringify(CAL_DEF));
 }
 cal=loadCal();
@@ -236,7 +236,7 @@ function frame(now){
   if(moving||streamLen>.02||flow>.02||drops.length)requestAnimationFrame(frame);else fxRun=false;
 }
 // the head of a valve: a piece of the picture (a disc around its centre) turned like the cross of a real valve, seen from above at an angle
-var SPR={};
+var SPR={},NO_COVER=true;
 ['glava_levo','glava_desno','postolje_levo','postolje_desno'].forEach(function(n){var i=new Image();i.onload=function(){kickFx();};i.src='assets/sink/ventil_'+n+'.webp?v=1';SPR[n]=i;});
 var patchCache={};
 // a piece of the picture with soft edges (all in pixels of the picture): used to wipe the old valve out of the picture (the wall and the rim of the sink beside it are copied over it)
@@ -258,7 +258,7 @@ function drawHead(g,k,v,w,h){
   // 1. wipe the old valve out of the picture: the strip of the wall and the sink beside it is laid over it
   var cw=Math.max(R*1.25,bw*.62)*2,top=cy-hh*.75,bot=bellB+h*.012,ch=bot-top;
   var src=softPatch((cx+side*cw*1.25-cw/2)*sc,top*sc,cw*sc,ch*sc,Math.round(cw*sc*.12));
-  g.drawImage(src,cx-cw/2,top,cw,ch);
+  if(!NO_COVER)g.drawImage(src,cx-cw/2,top,cw,ch);   // (the new picture of the sink has no valves: nothing to wipe)
   // 2. the base (the bell) and, on it, the head; the head turns and rises a little while it is unscrewed
   g.drawImage(bs,cx-bw/2,bellB-bh,bw,bh);
   var spinning=Math.abs(v.target-v.open)>.01,n=spinning?4:1,lift=Math.sin(Math.min(1,v.open)*Math.PI*.5)*h*.014,dir=Math.sign(v.target-v.open||1)*(side<0?1:-1);
