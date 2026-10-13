@@ -11,7 +11,8 @@
   // per-vegetable settings: shape, textures, the pictures of the inside, and (onion) the peeling step
   const VEG={
     paradajz:{shape:'tomato',label:'paradaja',skin:'assets/market_veg/paradajz_koza.webp',caps:['paradajz_presek_1','paradajz_presek_2','paradajz_presek_3'],calyx:true,fill:'#d9301c',capFill:'#c9281a',tile:2,rough:.45,clear:.3},
-    patlidzan:{shape:'eggplant',label:'patlidžana',skin:'assets/market_veg/patlidzan_koza.webp',caps:['patlidzan_presek_1','patlidzan_presek_2','patlidzan_presek_3','patlidzan_presek_4','patlidzan_presek_5'],calyx:false,fill:'#efe6c4',capFill:'#ece3c0',tile:2,rough:.32,clear:.5},
+    patlidzan:{shape:'eggplant',label:'patlidžana',skin:'assets/market_veg/patlidzan_koza.webp',caps:['patlidzan_presek_1','patlidzan_presek_2','patlidzan_presek_3','patlidzan_presek_4','patlidzan_presek_5'],calyx:true,calyxImg:'assets/market_veg/patlidzan_casica.webp',calyxAt:[-1.1,.06,0],fill:'#efe6c4',capFill:'#ece3c0',tile:2,rough:.32,clear:.5},
+    krastavac:{shape:'cucumber',label:'krastavca',skin:'assets/market_veg/krastavac_koza.webp',caps:['krastavac_presek_1','krastavac_presek_2','krastavac_presek_3','krastavac_presek_4','krastavac_presek_5','krastavac_presek_uzduz'],longCap:true,calyx:false,fill:'#d8ebc3',capFill:'#d6e9c0',tile:2,rough:.3,clear:.45},
     luk:{shape:'onion',label:'luka',skin:'assets/market_veg/luk_koza.webp',caps:['luk_presek_1','luk_presek_2'],calyx:false,fill:'#f3e3b4',capFill:'#f0e0b0',tile:2,rough:.5,clear:.2,mirror:true,peel:true,peelPile:['luk_kora_1','luk_kora_2','luk_kora_3']}
   };
 
@@ -50,6 +51,12 @@
         const rs=.62*(1-.42*Math.pow(sm(-.1,1,y),1.25))*(r>1e-5?Math.pow(r,-.55):0);   // r^.45 instead of r: the ends are round, not pointed
         const len=y*1.4;
         pos.setXYZ(i,-len*.8,x*rs*.8,z*rs*.8);
+        continue;
+      }
+      if(shape==='cucumber'){
+        // a cucumber lies on the board along x: a long, almost cylindrical body with round ends and a gentle bend
+        const rs=.36*(1-.07*y)*(r>1e-5?Math.pow(r,-.6):0);   // r^.4 instead of r: straight sides, round ends
+        pos.setXYZ(i,-y*1.7,x*rs,z*rs+.14*(1-y*y));
         continue;
       }
       const lobe=1+.022*Math.cos(ang*5+.4)*Math.sin(Math.min(1,Math.abs(y)*1.1+.15)*Math.PI*.9)*(1-.5*Math.abs(y));
@@ -112,6 +119,7 @@
 
   // cap polygon of a cut: points sorted round their centre; returns triangles for the two sides
   let capId=1;
+  const LONG={idx:-1,n:1};   // the lengthwise cut picture (last of the cut faces) and the number of pictures
   function makeCaps(pts,n){
     const seen=new Map(),P=[];
     for(const p of pts){const k=Math.round(p[0]*5000)+','+Math.round(p[1]*5000)+','+Math.round(p[2]*5000);if(!seen.has(k)){seen.set(k,1);P.push(p);}}
@@ -127,7 +135,22 @@
       return {p,a:Math.atan2(dx*e2[0]+dy*e2[1]+dz*e2[2],dx*e1[0]+dy*e1[1]+dz*e1[2]),
         u:dx*e1[0]+dy*e1[1]+dz*e1[2],w:dx*e2[0]+dy*e2[1]+dz*e2[2]};}).sort((a,b)=>a.a-b.a);
     const rot=Math.random()*Math.PI*2,cr=Math.cos(rot),sr=Math.sin(rot);
-    const id=capId++;
+    // a cut along a long vegetable is a long strip: it takes the lengthwise picture, laid on the strip by its principal axes
+    let longMap=null;
+    if(LONG.idx>=0&&ang.length>=6){
+      let suu=0,sww=0,suw=0;for(const q of ang){suu+=q.u*q.u;sww+=q.w*q.w;suw+=q.u*q.w;}
+      const th=.5*Math.atan2(2*suw,suu-sww),ct=Math.cos(th),st=Math.sin(th);
+      let a0=1e9,a1=-1e9,b0=1e9,b1=-1e9;
+      for(const q of ang){q.pa=q.u*ct+q.w*st;q.pb=-q.u*st+q.w*ct;a0=Math.min(a0,q.pa);a1=Math.max(a1,q.pa);b0=Math.min(b0,q.pb);b1=Math.max(b1,q.pb);}
+      const A=a1-a0,B=b1-b0;
+      if(Math.max(A,B)>=1.9*Math.min(A,B)){
+        const swap=B>A,fx=Math.random()<.5?1:-1,fy=Math.random()<.5?1:-1;
+        longMap=(pa,pb)=>{const la=swap?pb:pa,lb=swap?pa:pb,L0=swap?b0:a0,L1=swap?b1:a1,M0=swap?a0:b0,M1=swap?a1:b1;
+          let x=(la-L0)/(L1-L0||1),y=(lb-M0)/(M1-M0||1);if(fx<0)x=1-x;if(fy<0)y=1-y;return [.003+x*.994,.003+y*.994];};
+      }
+    }
+    const base=capId++;
+    const id=LONG.idx<0?base:(longMap?base*LONG.n+LONG.idx:base*LONG.n+(base%LONG.idx));   // cap % n picks the picture
     // the rim of a cut face leans a little towards the skin's normal, so the edge reads as very slightly rounded
     const ROUND=.3;
     const mk=(p,uu,vv,sg,rim)=>{
@@ -138,12 +161,14 @@
     const centre=[cx,cy,cz];
     const posSide=[],negSide=[];
     // the round cross-section picture is stretched radially so that its skin ring lies exactly on the outline of the cut
-    for(const q of ang){const t=q.a+rot;q.tu=.5+Math.cos(t)*.497;q.tv=.5+Math.sin(t)*.497;}
+    let cuv=[.5,.5];
+    if(longMap){for(const q of ang){const m=longMap(q.pa,q.pb);q.tu=m[0];q.tv=m[1];}cuv=longMap(0,0);}
+    else for(const q of ang){const t=q.a+rot;q.tu=.5+Math.cos(t)*.497;q.tv=.5+Math.sin(t)*.497;}
     for(let i=0;i<ang.length;i++){
       const a=ang[i],b=ang[(i+1)%ang.length];
       // neg piece: outward normal +n, counter clockwise seen from +n; pos piece: outward -n
-      negSide.push({v:[mk(centre,.5,.5,1,false),mk(a.p,a.tu,a.tv,1,true),mk(b.p,b.tu,b.tv,1,true)],cap:id});
-      posSide.push({v:[mk(centre,.5,.5,-1,false),mk(b.p,b.tu,b.tv,-1,true),mk(a.p,a.tu,a.tv,-1,true)],cap:id});
+      negSide.push({v:[mk(centre,cuv[0],cuv[1],1,false),mk(a.p,a.tu,a.tv,1,true),mk(b.p,b.tu,b.tv,1,true)],cap:id});
+      posSide.push({v:[mk(centre,cuv[0],cuv[1],-1,false),mk(b.p,b.tu,b.tv,-1,true),mk(a.p,a.tu,a.tv,-1,true)],cap:id});
     }
     return {posSide,negSide};
   }
@@ -178,6 +203,7 @@
         if(x1<0)return null;return {x0:x0/W,x1:(x1+1)/W,y0:y0/H,y1:(y1+1)/H};
       }catch(_){return null;}
     };
+    const calyxPic=cfg.calyxImg?await loadImg(cfg.calyxImg).catch(()=>null):null;
     const peelPic=cfg.peel?await loadImg(peelSrc).catch(()=>null):null;
     const peelBox=peelPic?alphaBox(peelPic):null;
     // the peel that falls off: three pictures (ring round the onion / bunches left and right / a pile), one at random
@@ -253,10 +279,12 @@
       const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=THREE.RepeatWrapping;t.anisotropy=8;return t;})();
     const skinMat=new THREE.MeshPhysicalMaterial({map:skinTex,roughness:cfg.rough,clearcoat:cfg.clear,clearcoatRoughness:.3});
     // inside: one of your three cross-section pictures per cut (skin ring on the edge, flesh and seeds inside)
+    LONG.n=capImgs.length;LONG.idx=cfg.longCap&&capImgs.length>1?capImgs.length-1:-1;
     const capMats=capImgs.map((_,i)=>{
-      const c=document.createElement('canvas');c.width=c.height=512;const g=c.getContext('2d');
-      g.fillStyle=cfg.capFill;g.fillRect(0,0,512,512);
-      const im=capImgs[i];if(im)g.drawImage(im,0,0,512,512);
+      const wide=i===LONG.idx,CW=wide?1024:512,CH=wide?384:512;
+      const c=document.createElement('canvas');c.width=CW;c.height=CH;const g=c.getContext('2d');
+      g.fillStyle=cfg.capFill;g.fillRect(0,0,CW,CH);
+      const im=capImgs[i];if(im)g.drawImage(im,0,0,CW,CH);
       const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;
       return new THREE.MeshPhysicalMaterial({map:t,roughness:.45,clearcoat:.35,clearcoatRoughness:.3});
     });
@@ -283,6 +311,13 @@
     }
     function makeCalyx(){
       const grp=new THREE.Group(),topY=.64;
+      if(cfg.calyxImg&&calyxPic){
+        // the painted star of leaves lies on the neck end of the eggplant, tilted up and outwards so it is seen from above
+        const tex=new THREE.Texture(calyxPic);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=8;tex.needsUpdate=true;
+        const m=new THREE.Mesh(new THREE.PlaneGeometry(.98,.98),new THREE.MeshStandardMaterial({map:tex,transparent:true,alphaTest:.45,side:THREE.DoubleSide,roughness:.45}));
+        m.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(-.45,.89,0).normalize());
+        m.castShadow=true;grp.add(m);grp.userData.base=[0,topY,0];return grp;
+      }
       for(let i=0;i<5;i++){const s=sepal((.72+(i%2)*.12)*.8,.3,1+(i%3)*.8,1+(i%2)*.4);s.rotation.y=i/5*Math.PI*2+.3;s.position.y=.03;grp.add(s);}
       const disc=new THREE.Mesh(new THREE.CylinderGeometry(.22,.3,.07,24),new THREE.MeshStandardMaterial({color:0x547424,roughness:.6}));disc.position.y=.01;disc.castShadow=true;grp.add(disc);
       const stem=new THREE.Mesh(new THREE.CylinderGeometry(.06,.085,.3,16),stemMat);stem.position.y=.17;stem.rotation.z=.12;stem.castShadow=true;grp.add(stem);
@@ -349,7 +384,7 @@
       }
       const tris=vegTris(cfg.shape,scale);
       let low=1e9;for(const t of tris)for(const v of t.v)low=Math.min(low,v[1]);
-      addPiece(tris,new THREE.Vector3(0,0,0),new THREE.Quaternion(),new THREE.Vector3(),new THREE.Vector3(),cfg.calyx?[0,.64*scale,0]:null);
+      addPiece(tris,new THREE.Vector3(0,0,0),new THREE.Quaternion(),new THREE.Vector3(),new THREE.Vector3(),cfg.calyx?(cfg.calyxAt?cfg.calyxAt.map(v=>v*scale):[0,.64*scale,0]):null);
       const b=pieces[pieces.length-1];
       let wx=0,wz=0;
       if(target){
@@ -608,6 +643,19 @@
     // does the knife line (screen space) pass right through this piece, from one side to the other?
     const toScreen=v=>{const q=v.clone().project(camera);return {x:(q.x+1)/2*innerWidth,y:(1-q.y)/2*innerHeight};};
     function crosses(p,a,b){
+      if(cfg.shape==='eggplant'||cfg.shape==='cucumber'){
+        // a long vegetable: its bounding sphere is much bigger than the vegetable, so look at the real shape on the screen:
+        // the knife line must pass through it (points of the piece on both sides of the line) and start and end outside of it
+        const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L;
+        let pos=false,neg=false,da=1e9,db=1e9;
+        for(const smp of p.samples){
+          const q=toScreen(smp.clone().applyQuaternion(p.quat).add(p.pos));
+          const t=(q.x-a.x)*ux+(q.y-a.y)*uy,sd=-(q.x-a.x)*uy+(q.y-a.y)*ux;
+          if(t>0&&t<L){if(sd>3)pos=true;else if(sd<-3)neg=true;}
+          da=Math.min(da,Math.hypot(q.x-a.x,q.y-a.y));db=Math.min(db,Math.hypot(q.x-b.x,q.y-b.y));
+        }
+        return pos&&neg&&da>10&&db>10;
+      }
       const c=toScreen(p.pos),right=new V3().setFromMatrixColumn(camera.matrixWorld,0).multiplyScalar(p.radius*.9).add(p.pos),rs=Math.hypot(toScreen(right).x-c.x,toScreen(right).y-c.y);
       const dx=b.x-a.x,dy=b.y-a.y,l2=dx*dx+dy*dy||1;
       const t=Math.max(0,Math.min(1,((c.x-a.x)*dx+(c.y-a.y)*dy)/l2)),qx=a.x+dx*t,qy=a.y+dy*t;
