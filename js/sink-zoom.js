@@ -63,10 +63,10 @@ var CAL_KEY='cookster.sink-zoom-cal.v1';
 // Miloš's own calibration of 2026-10-13 (rim, floor, mask and the size and height of every vessel) is built in; what is changed in the tool in the browser wins over it
 var CAL_DEF={rim:[[29.3, 27.1], [68.8, 27.1], [72.2, 70.7], [26.08, 70.72]],floor:[[32.8, 41.66], [65.38, 41.98], [67.56, 70.4], [30.56, 72.55]],mask:[[21.0, 17.55], [76.7, 17.33], [84.15, 79.55], [12.7, 80.52]],vessels:{"serpa_velika": {"x": 49.08, "y": 63.01, "w": 18.6, "h": -5.8}, "tiganj_veliki": {"x": 49.08, "y": 63.01, "w": 16.4, "h": -7.6}, "tiganj_mali": {"x": 49.08, "y": 63.01, "w": 14, "h": -7.8}, "vangla_srednja": {"x": 49.08, "y": 63.01, "w": 12.6, "h": -2}, "vangla_mala": {"x": 49.08, "y": 63.01, "w": 10.2, "h": -1}, "lavor_emajl_veliki": {"x": 49.08, "y": 63.01, "w": 23.8, "h": -7.4}, "vangla_velika": {"x": 49.08, "y": 63.01, "w": 15.6, "h": -2.4}, "kal_01_okrugli_pleh": {"x": 49.08, "y": 63.01, "w": 19, "h": -5}, "kal_01_pravougaoni_pleh": {"x": 49.08, "y": 63.01, "w": 18.6, "h": -3.6}, "kal_02_cinija_mala": {"x": 49.08, "y": 63.01, "w": 10.6, "h": 0}, "kal_02_cinija_velika": {"x": 49.08, "y": 63.01, "w": 14.6, "h": -2.6}, "posuda_za_kupus": {"x": 49.08, "y": 63.01, "w": 11.2, "h": 0}, "kal_02_duboki_tanjir": {"x": 49.08, "y": 63.01, "w": 13.2, "h": 0}, "kal_02_tanjir_ravni": {"x": 49.08, "y": 63.01, "w": 13, "h": 0}},
   // the faucet: where the water comes out (spout), where it lands, the two valves (cross handles) and their size
-  tap:{spout:[49.5,30.2],land:[49.4,56],left:[42.2,15.4],right:[56.2,15.4],r:2.7,squash:.55}};
+  tap:{spout:[49.5,30.2],land:[49.4,56],left:[42.2,15.4],right:[56.2,15.4],r:2.9,squash:.72,bell:24.8,v:2}};
 var cal=null;
 function loadCal(){
-  try{var d=JSON.parse(localStorage.getItem(CAL_KEY)||'null');if(d&&d.rim&&d.floor&&d.mask){d.vessels=d.vessels||{};d.tap=Object.assign({},CAL_DEF.tap,d.tap||{});return d;}}catch(e){}
+  try{var d=JSON.parse(localStorage.getItem(CAL_KEY)||'null');if(d&&d.rim&&d.floor&&d.mask){d.vessels=d.vessels||{};d.tap=Object.assign({},CAL_DEF.tap,d.tap||{});if(!d.tap.v||d.tap.v<2){d.tap.squash=CAL_DEF.tap.squash;d.tap.bell=CAL_DEF.tap.bell;d.tap.r=CAL_DEF.tap.r;d.tap.v=2;}return d;}}catch(e){}
   return JSON.parse(JSON.stringify(CAL_DEF));
 }
 cal=loadCal();
@@ -76,7 +76,7 @@ function se(tag,a){var e=document.createElementNS(NS,tag);for(var k in a)e.setAt
 var ed=document.createElement('div');ed.className='sz-edit';ed.setAttribute('data-tool-ui','1');ed.style.display='none';
 ed.innerHTML='<b>Kalibracija sudopere (krupan plan)</b>'+
  '<div class="sz-row"><button data-m="rim" class="on">Otvor (gore)</button><button data-m="floor">Dno</button><button data-m="mask">Gde se posude vide</button><button data-m="tap">Slavina</button></div>'+
- '<div id="szTapBox" style="display:none"><small class="sz-help">Slavina: <b style="display:inline;color:#7fe3ff">plavo</b> = vrh slavine (odakle teče voda), <b style="display:inline;color:#ffe27a">žuto</b> = gde voda pada, <b style="display:inline;color:#7aff9a">zeleno</b> = levi i desni ventil (centar glave). Prevuci tačke.</small><label>Veličina ventila <input id="szTapR" type="range" min="1" max="7" step="0.1" value="2.6"><b id="szTapRN">2.6</b></label><label>Nagib (spljoštenost) ventila <input id="szTapSq" type="range" min="0.25" max="1" step="0.01" value="0.55"><b id="szTapSqN">0.55</b></label><div class="sz-row"><button id="szTapTest">Probaj: odvrni / zavrni</button></div></div>'+
+ '<div id="szTapBox" style="display:none"><small class="sz-help">Slavina: <b style="display:inline;color:#7fe3ff">plavo</b> = vrh slavine (odakle teče voda), <b style="display:inline;color:#ffe27a">žuto</b> = gde voda pada, <b style="display:inline;color:#7aff9a">zeleno</b> = levi i desni ventil (centar glave). Prevuci tačke.</small><label>Veličina ventila <input id="szTapR" type="range" min="1" max="7" step="0.1" value="2.6"><b id="szTapRN">2.6</b></label><label>Nagib (spljoštenost) ventila <input id="szTapSq" type="range" min="0.25" max="1" step="0.01" value="0.55"><b id="szTapSqN">0.55</b></label><label>Visina postolja (dno, % slike) <input id="szTapBell" type="range" min="18" max="34" step="0.1" value="24.8"><b id="szTapBellN">24.8</b></label><label>Probni ugao glave <input id="szTapAng" type="range" min="0" max="360" step="1" value="0"><b id="szTapAngN">0</b></label><div class="sz-row"><button id="szTapTest">Probaj: odvrni / zavrni</button></div></div>'+
  '<small class="sz-help">Prevuci belu tačku da je pomeriš. Klik na liniju ubacuje novu tačku tačno tu. Dvoklik na tačku je briše (najmanje 3).</small>'+
  '<div class="sz-info" id="szDepth"></div><hr>'+
  '<label>Posuda <select id="szVessel"></select></label>'+
@@ -225,7 +225,7 @@ function frame(now){
     var v=valve[k],d=v.target-v.open;
     if(Math.abs(d)>.002){v.open+=Math.sign(d)*Math.min(Math.abs(d),dt*2.2);moving=true;}else v.open=v.target;
     v.ang=v.open*Math.PI*1.5*(idx?-1:1);
-    if(v.open>0.003||v.target){drawHead(g,k,v,w,h);}
+    drawHead(g,k,v,w,h);
   });
   flow+=(totalFlow()-flow)*Math.min(1,dt*7);
   var on=flow>.02;
@@ -236,26 +236,40 @@ function frame(now){
   if(moving||streamLen>.02||flow>.02||drops.length)requestAnimationFrame(frame);else fxRun=false;
 }
 // the head of a valve: a piece of the picture (a disc around its centre) turned like the cross of a real valve, seen from above at an angle
-function patch(cx,cy,R,feather){
-  // a round piece of the picture with a soft edge (cx,cy,R in pixels of the picture)
-  var S=Math.max(4,Math.round(R*2)),c=document.createElement('canvas');c.width=c.height=S;var g=c.getContext('2d');
-  g.drawImage(img,cx-R,cy-R,R*2,R*2,0,0,S,S);
-  var gr=g.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);gr.addColorStop(0,'#000');gr.addColorStop(Math.max(0,1-feather),'#000');gr.addColorStop(1,'rgba(0,0,0,0)');
-  g.globalCompositeOperation='destination-in';g.fillStyle=gr;g.fillRect(0,0,S,S);return c;
+var SPR={};
+['glava_levo','glava_desno','postolje_levo','postolje_desno'].forEach(function(n){var i=new Image();i.onload=function(){kickFx();};i.src='assets/sink/ventil_'+n+'.webp?v=1';SPR[n]=i;});
+var patchCache={};
+// a piece of the picture with soft edges (all in pixels of the picture): used to wipe the old valve out of the picture (the wall and the rim of the sink beside it are copied over it)
+function softPatch(sx,sy,sw,sh,feather){
+  var key=[sx|0,sy|0,sw|0,sh|0,feather|0].join(',');if(patchCache[key]&&patchCache[key].src===img.src)return patchCache[key].c;
+  var c=document.createElement('canvas');c.width=Math.max(4,sw|0);c.height=Math.max(4,sh|0);var g=c.getContext('2d');
+  g.drawImage(img,sx,sy,sw,sh,0,0,c.width,c.height);
+  var m=document.createElement('canvas');m.width=c.width;m.height=c.height;var mg=m.getContext('2d');
+  mg.shadowColor='#000';mg.shadowBlur=feather;mg.shadowOffsetX=10000;mg.fillStyle='#000';mg.fillRect(feather-10000,feather-10000+0,c.width-feather*2,c.height-feather*2);
+  g.globalCompositeOperation='destination-in';g.drawImage(m,0,0);
+  patchCache[key]={src:img.src,c:c};return c;
 }
 function drawHead(g,k,v,w,h){
-  var T=cal.tap,c=T[k],cx=c[0]/100*w,cy=c[1]/100*h,R=T.r/100*w,q=T.squash;
-  var iw=img.naturalWidth||1,ih=img.naturalHeight||1,sx=c[0]/100*iw,sy=c[1]/100*ih,sr=T.r/100*iw*1.12,side=k==='left'?-1:1;
-  // 1. hide the head that is in the picture: a piece of the wall and the rim of the sink from the side of the valve is laid over it
-  g.drawImage(patch(sx+side*sr*2.7,sy,sr,.35),cx-R*1.12,cy-R*1.12,R*2.24,R*2.24);
-  // 2. the head turns: a flat disc, seen from above at an angle, turns round its middle (a little motion blur while it moves)
-  var spinning=Math.abs(v.target-v.open)>.01,n=spinning?4:1,lift=Math.sin(Math.min(1,v.open)*Math.PI)*0.0025*w,pc=patch(sx,sy,sr,.3);
+  var T=cal.tap,c=T[k],cx=c[0]/100*w,cy=c[1]/100*h,R=T.r/100*w,q=T.squash,side=k==='left'?-1:1;
+  var iw=img.naturalWidth||1,ih=img.naturalHeight||1,sc=iw/w,bellB=T.bell/100*h;
+  var hs=SPR['glava_'+(k==='left'?'levo':'desno')],bs=SPR['postolje_'+(k==='left'?'levo':'desno')];
+  if(!hs||!hs.complete||!hs.naturalWidth||!bs||!bs.complete||!bs.naturalWidth)return;
+  var hh=2*R*hs.naturalHeight/hs.naturalWidth,bh=bellB-(cy+R*.3),bw=bh*bs.naturalWidth/bs.naturalHeight;
+  // 1. wipe the old valve out of the picture: the strip of the wall and the sink beside it is laid over it
+  var cw=Math.max(R*1.25,bw*.62)*2,top=cy-hh*.75,bot=bellB+h*.012,ch=bot-top;
+  var src=softPatch((cx+side*cw*1.25-cw/2)*sc,top*sc,cw*sc,ch*sc,Math.round(cw*sc*.12));
+  g.drawImage(src,cx-cw/2,top,cw,ch);
+  // 2. the base (the bell) and, on it, the head; the head turns and rises a little while it is unscrewed
+  g.drawImage(bs,cx-bw/2,bellB-bh,bw,bh);
+  var spinning=Math.abs(v.target-v.open)>.01,n=spinning?4:1,lift=Math.sin(Math.min(1,v.open)*Math.PI*.5)*h*.014,dir=Math.sign(v.target-v.open||1)*(side<0?1:-1);
   for(var i=0;i<n;i++){
     g.save();g.globalAlpha=spinning?(i===n-1?1:.3):1;g.translate(cx,cy-lift);
-    g.scale(1,q);g.rotate(v.ang-(n-1-i)*.14*Math.sign(v.target-v.open||1)*(k==='left'?1:-1));g.scale(1,1/q);
-    g.drawImage(pc,-R*1.12,-R*1.12,R*2.24,R*2.24);g.restore();
+    g.scale(1,q);g.rotate(v.ang+prevAng(k)-(n-1-i)*.16*dir);g.scale(1,1/q);
+    g.drawImage(hs,-R,-hh/2,R*2,hh);g.restore();
   }
 }
+function prevAng(k){return (previewAng||0)*Math.PI/180*(k==='left'?1:-1);}
+var previewAng=0;
 function drawWater(g,w,h,now){
   var T=cal.tap,sx=T.spout[0]/100*w,sy=T.spout[1]/100*h,lx=T.land[0]/100*w,ly=T.land[1]/100*h;
   var len=ly-sy,ey=sy+len*streamLen,t=now/1000,wid=(w*.0035)*(.5+flow*1.3);
@@ -282,10 +296,12 @@ function drawWater(g,w,h,now){
     g.fillStyle='rgba(230,246,255,'+(.8*(1-p.life*2))+')';g.beginPath();g.arc(p.x,p.y,Math.max(1,w*.0016),0,Math.PI*2);g.fill();}
 }
 // when the close-up opens: if the water of the kitchen is already running, the left valve is open
-var openBase=open;open=function(){openBase();layoutHits();try{if(typeof faucetOn!=='undefined'&&faucetOn){valve.left.open=valve.left.target=1;kickFx();}}catch(e){}};
+var openBase=open;open=function(){openBase();layoutHits();setTimeout(kickFx,50);try{if(typeof faucetOn!=='undefined'&&faucetOn){valve.left.open=valve.left.target=1;kickFx();}}catch(e){}};
 var closeBase=close;close=function(){closeBase();};
-ed.querySelector('#szTapR').addEventListener('input',function(e){cal.tap.r=+e.target.value;ed.querySelector('#szTapRN').textContent=cal.tap.r.toFixed(1);saveCal();draw();layoutHits();});
-ed.querySelector('#szTapSq').addEventListener('input',function(e){cal.tap.squash=+e.target.value;ed.querySelector('#szTapSqN').textContent=cal.tap.squash.toFixed(2);saveCal();});
+ed.querySelector('#szTapR').addEventListener('input',function(e){cal.tap.r=+e.target.value;ed.querySelector('#szTapRN').textContent=cal.tap.r.toFixed(1);saveCal();draw();layoutHits();kickFx();});
+ed.querySelector('#szTapSq').addEventListener('input',function(e){cal.tap.squash=+e.target.value;ed.querySelector('#szTapSqN').textContent=cal.tap.squash.toFixed(2);saveCal();kickFx();});
+ed.querySelector('#szTapBell').addEventListener('input',function(e){cal.tap.bell=+e.target.value;ed.querySelector('#szTapBellN').textContent=cal.tap.bell.toFixed(1);saveCal();kickFx();});
+ed.querySelector('#szTapAng').addEventListener('input',function(e){previewAng=+e.target.value;ed.querySelector('#szTapAngN').textContent=previewAng;kickFx();});
 ed.querySelector('#szTapTest').addEventListener('click',function(){var on=!(valve.left.target||valve.right.target);valve.left.target=on?1:0;valve.right.target=on?1:0;syncGame();kickFx();});
 
 setInterval(function(){syncEditing();layoutHits();},500);
