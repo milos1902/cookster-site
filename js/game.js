@@ -9141,15 +9141,20 @@ window.addEventListener('cookster:vessel-calibration',e=>{
     try{window.CooksterServe&&window.CooksterServe.render(it);}catch(_){}
   });
 });
+function updateVesselDirtState(el){
+ try{window.CooksterVesselDirt?.update(el,containerTotal(el),isHeatableCookwareItem(el)&&!!CooksterPan.read(el).burnt);}catch(_){}
+}
 function renderCookwareContents(el,modelOverride=null,stateOverride=null){
  if(!el||!isContainerItem(el))return;
  if(isPanItem(el)){
    renderPanTomatoes(el,modelOverride,stateOverride);
    updateVesselOilVisual(el);
+   updateVesselDirtState(el);
    return;
  }
  renderVesselContents(el,modelOverride,stateOverride);
  updateVesselOilVisual(el);
+ updateVesselDirtState(el);
 }
 
 function renderVesselContents(el,modelOverride=null,stateOverride=null){
@@ -10803,7 +10808,7 @@ function openKitchenElements(mode){
 
 function serializeWorldItem(el){
  const body=el.querySelector('.body');
-  const keep=['ingredient','ingredientKey','trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','cutStyle','ovalN','ovalItems','ovalOil','ovalParsley','ovalSeed','ovalExtras','srvItems','srvOil','srvParsley','srvSeed','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
+  const keep=['dirt','hadFood','ingredient','ingredientKey','trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','cutStyle','ovalN','ovalItems','ovalOil','ovalParsley','ovalSeed','ovalExtras','srvItems','srvOil','srvParsley','srvSeed','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
  const data={};
  for(const k of keep)if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
  for(const k of ['ajvarMl','ajvarBatchMl'])if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
@@ -13740,6 +13745,7 @@ function resetPanToClean(pan){
  pan._terminalBurntRaw='';pan._terminalBurntModel=null;pan._terminalBurntState=null;pan._terminalBurntCount=0;
  pan._cookUiKey='';pan._cookProgressBucket=-1;
  CooksterPan.reset(pan);
+ try{window.CooksterVesselDirt?.clean(pan);}catch(_){}
  if(pan._panContent){pan._panContent.style.opacity='1';pan._panContent.style.filter='';}
  if(pan._washFoam)pan._washFoam.style.opacity='0';
  pan.classList.remove('pan-washing','sizzling','stirring-vessel','food-burnt');
@@ -13811,7 +13817,8 @@ function endPanWashing(finished=false){
  updateHover();
 }
 function stainAt(x,y){
- for(const n of document.elementsFromPoint(x,y)){const st=n.closest?.('.spill-stain,.floor-stain');if(st)return st;}return null;
+ for(const n of document.elementsFromPoint(x,y)){const st=n.closest?.('.spill-stain,.floor-stain');if(st)return st;}
+ return window.CooksterVesselDirt?.at(x,y,items)||null;   // a dirty vessel (the dirt is a canvas on the vessel)
 }
 function isSponge(el){return !!el&&el.dataset.itemId==='sundjer'}
 // v198.5.127 — mop for floor stains, separate tool from the counter sponge.
@@ -13824,6 +13831,7 @@ function toolMatchesStain(tool,stain){
  if(!tool||!stain)return false;
  if(stain.classList.contains('floor-stain'))return isMop(tool);
  if(stain.classList.contains('spill-stain'))return isSponge(tool);
+ if(stain.classList.contains('vessel-dirt'))return isSponge(tool);
  return false;
 }
 let lastFloorSpillAt=0;
@@ -14098,7 +14106,7 @@ function beginCleaning(stain,e){
  if(!isCleaningTool(holding)||!stain||!toolMatchesStain(holding,stain))return false;
  cleaning=true;cleanStainEl=stain;cleanPointerId=e.pointerId;cleanLastX=e.clientX;cleanLastY=e.clientY;
  const p=screenToScene(e.clientX,e.clientY);
- stain._lastLocal=stainLocalPoint(stain,p.x,p.y);
+ stain._lastLocal=stain.classList.contains('vessel-dirt')?window.CooksterVesselDirt.local(stain,e):stainLocalPoint(stain,p.x,p.y);
  stain.classList.add('scrubbing');holding.classList.add('cleaning-tool');hidePlacementGhost();hideOriginGhost();
  positionCleaningSponge(e);
  showToast(isMop(holding)?'Drži levi klik i gura džoger preko mrlje.':'Drži levi klik i trljaj sunđerom preko mrlje.');
@@ -14122,6 +14130,21 @@ function updateCleaning(e){
  if(!cleanStainEl.isConnected){endCleaning();return;}
  const stain=cleanStainEl;
  const p=screenToScene(e.clientX,e.clientY);
+ if(stain.classList.contains('vessel-dirt')){
+   // a dirty vessel: the dirt is rubbed off fast (a big brush); the rest of the picture of the vessel is the clean one under it
+   const VD=window.CooksterVesselDirt,lc=VD.local(stain,e),prev=stain._lastLocal||lc;
+   const dist=Math.hypot(lc.x-prev.x,lc.y-prev.y),steps=Math.max(1,Math.ceil(dist/8));
+   for(let i=1;i<=steps;i++){const t=i/steps;VD.erase(stain,prev.x+(lc.x-prev.x)*t,prev.y+(lc.y-prev.y)*t);}
+   stain._lastLocal=lc;
+   stain._chk=(stain._chk||0)+1;
+   if(stain._chk%3===0&&VD.remaining(stain)<=.1){
+     const vessel=stain.parentElement;
+     VD.clean(vessel);endCleaning(true);
+     playSfxVariant('woodDrop',.10);showToast('Posuda je čista.');
+     try{CooksterSave.schedule();}catch(_){}
+   }
+   return;
+ }
  const local=stainLocalPoint(stain,p.x,p.y);
  // Only erase while the tool is actually reasonably over the stain's own
  // canvas area (a little slop beyond the edge so grazing strokes still count).
