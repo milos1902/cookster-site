@@ -276,7 +276,7 @@
   function emptyVessel(){
     const el=gameItem();if(!el)return;
     try{
-      if(isPanItem(el)){CooksterPan.reset(el);delete el.dataset.panIngredientMeta;}
+      if(isHeatableCookwareItem(el)){CooksterPan.reset(el);delete el.dataset.panIngredientMeta;}
       else{CooksterContainer.write(el,CooksterContainer.empty());el.dataset.srvItems='[]';el.dataset.srvOil='0';el.dataset.srvParsley='0';}
       renderCookwareContents(el);window.CooksterServe&&window.CooksterServe.render(el);
     }catch(e){say('Ne mogu da ispraznim: '+e.message);}
@@ -291,7 +291,7 @@
         el.dataset.srvItems=JSON.stringify(l);el.dataset.srvSeed=el.dataset.srvSeed||'7';window.CooksterServe.render(el);return;
       }
       const keys=['paradajz_diced','paprika_diced'];
-      if(isPanItem(el)){
+      if(isHeatableCookwareItem(el)){
         const m=CooksterPan.read(el);m.ingredients={};keys.forEach(k=>m.ingredients[k]=n);CooksterPan.write(el,m);
         if(kind==='pieces')keys.forEach((k,i)=>rememberPanIngredientMeta(el,{key:k,baseKey:k.replace('_diced',''),type:'vegetable',form:'diced',cutState:'diced',label:k,src:sampleAtlas(i*3,i?'#6a3':'#c33')}));
         else el.dataset.panIngredientMeta='{}';

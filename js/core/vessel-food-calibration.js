@@ -118,6 +118,7 @@
     return pr;
   }
   const zoneCache={};
+  let GENERIC=null;
 
   // what Miloš draws in the tool "Maska posude" is used by the game at once (and every time the game starts, from the same browser memory):
   // LIVE[id] = {mask,foodVisible,bottom,depth:{bottom,foodTop}} in [x,y] pairs; every part that is drawn (a polygon of 3+ points, a point) replaces that part of the built-in profile
@@ -161,7 +162,9 @@
   }
   function get(vesselOrId){
     const id=typeof vesselOrId==='string'?vesselOrId:(vesselOrId?.dataset?.itemId||'');
-    const base=baseGet(id),lv=LIVE[id],df=DEF[id];
+    const lv=LIVE[id],df=DEF[id];
+    // a vessel without any older profile that the player starts to draw in the tool: what is not drawn yet is a rough guess, so every drawn part works at once
+    const base=baseGet(id)||((lv||df)?(GENERIC||(GENERIC=guessProfile(50,45,40,25,10,100))):null);
     if(!lv&&!df)return base&&base.soft==null?{...base,soft:SOFT}:base;
     const c=liveCache[id];if(c&&c.base===base)return c.p;
     const pick=k=>(lv&&lv[k])||(df&&df[k])||(base&&base[k])||null;
@@ -173,7 +176,6 @@
     const p={mask,foodVisible:pick('foodVisible'),bottom:pick('bottom'),soft,depth:{bottom:dep('bottom'),foodTop:dep('foodTop')}};
     // a profile that is not complete cannot be used (the game then keeps what it had)
     const ok=p.foodVisible&&p.depth.bottom&&p.depth.foodTop;
-    if(ok&&!p.mask)p.mask=p.foodVisible;
     liveCache[id]={base,p:ok?p:base};return liveCache[id].p;
   }
   function applyToVessel(vessel,wrap,front,preset){
@@ -184,7 +186,10 @@
     vessel.dataset.foodDepthBottom=`${profile.depth.bottom[0]},${profile.depth.bottom[1]}`;
     vessel.dataset.foodDepthTop=`${profile.depth.foodTop[0]},${profile.depth.foodTop[1]}`;
 
-    if(front){
+    if(front&&!(profile.mask&&profile.mask.length>=3)){
+      // no mask drawn for this vessel: the front wall is not drawn over the food at all
+      front.style.display='none';front.dataset.foodVisibilityMask='none';
+    }else if(front){
       applySoft(front,profile.mask,profile.soft);
       front.style.display='';
       front.dataset.foodVisibilityMask='imported';
