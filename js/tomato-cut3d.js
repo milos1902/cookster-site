@@ -11,8 +11,8 @@
   // per-vegetable settings: shape, textures, the pictures of the inside, and (onion) the peeling step
   const VEG={
     paradajz:{shape:'tomato',label:'paradaja',skin:'assets/market_veg/paradajz_koza.webp',caps:['paradajz_presek_1','paradajz_presek_2','paradajz_presek_3'],calyx:true,fill:'#d9301c',capFill:'#c9281a',tile:2,rough:.45,clear:.3},
-    patlidzan:{shape:'eggplant',label:'patlidžana',skin:'assets/market_veg/patlidzan_koza.webp',caps:['patlidzan_presek_1','patlidzan_presek_2','patlidzan_presek_3','patlidzan_presek_4','patlidzan_presek_5'],calyx:true,calyxImg:'assets/market_veg/patlidzan_casica.webp',calyxAt:[-1.1,.06,0],fill:'#efe6c4',capFill:'#ece3c0',tile:2,rough:.32,clear:.5},
-    krastavac:{shape:'cucumber',label:'krastavca',skin:'assets/market_veg/krastavac_koza.webp',caps:['krastavac_presek_1','krastavac_presek_2','krastavac_presek_3','krastavac_presek_4','krastavac_presek_5','krastavac_presek_uzduz'],longCap:true,calyx:false,fill:'#d8ebc3',capFill:'#d6e9c0',tile:2,rough:.3,clear:.45},
+    patlidzan:{shape:'eggplant',label:'patlidžana',skin:'assets/market_veg/patlidzan_koza.webp',caps:['patlidzan_presek_1','patlidzan_presek_2','patlidzan_presek_3','patlidzan_presek_4','patlidzan_presek_5'],refD:1,calyx:true,calyxImg:'assets/market_veg/patlidzan_casica.webp',calyxAt:[-1.1,.06,0],fill:'#efe6c4',capFill:'#ece3c0',tile:2,rough:.32,clear:.5},
+    krastavac:{shape:'cucumber',label:'krastavca',skin:'assets/market_veg/krastavac_koza.webp',caps:['krastavac_presek_1','krastavac_presek_2','krastavac_presek_3','krastavac_presek_4','krastavac_presek_5','krastavac_presek_uzduz'],longCap:true,refD:.72,calyx:false,fill:'#d8ebc3',capFill:'#d6e9c0',tile:2,rough:.3,clear:.45},
     luk:{shape:'onion',label:'luka',skin:'assets/market_veg/luk_koza.webp',caps:['luk_presek_1','luk_presek_2'],calyx:false,fill:'#f3e3b4',capFill:'#f0e0b0',tile:2,rough:.5,clear:.2,mirror:true,peel:true,peelPile:['luk_kora_1','luk_kora_2','luk_kora_3']}
   };
 
@@ -775,7 +775,7 @@
       for(const s of sprites)s.rot=(Math.random()-.5)*1.4;
       let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
       for(const s of sprites){x0=Math.min(x0,s.x-s.r*1.2);y0=Math.min(y0,s.y-s.r*1.2);x1=Math.max(x1,s.x+s.r*1.2);y1=Math.max(y1,s.y+s.r*1.2);}
-      const avgMax=sprites.reduce((t,q)=>t+Math.max(q.w,q.h),0)/Math.max(1,sprites.length),bw=x1-x0,bh=y1-y0,s=Math.min(SNAP.w/bw,SNAP.h/bh,38/Math.max(1,avgMax))*.94,mx=(x0+x1)/2,my=(y0+y1)/2;
+      const avgMax=sprites.reduce((t,q)=>t+Math.max(q.w,q.h),0)/Math.max(1,sprites.length),bw=x1-x0,bh=y1-y0,s=Math.min(SNAP.w/bw,SNAP.h/bh,38/Math.max(1,cfg.refD?cfg.refD*PU:avgMax))*.94,mx=(x0+x1)/2,my=(y0+y1)/2;
       // heap picture
       const hc=document.createElement('canvas');hc.width=SNAP.w;hc.height=SNAP.h;const hg=hc.getContext('2d');
       for(const sp of [...sprites].sort((a,b)=>a.y-b.y)){
