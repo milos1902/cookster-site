@@ -120,6 +120,25 @@
   };
   const copy=v=>JSON.parse(JSON.stringify(v));
   const polygon=points=>`polygon(${points.map(p=>`${p[0]}% ${p[1]}%`).join(',')})`;
+  // the edge of a drawn area fades softly (a blurred white polygon as the mask) instead of a sharp cut; the picture has 10% of room around, so the blur is not cut at the border
+  const SOFT=1.5,softCache=new Map();
+  function softMask(points){
+    const key=points.map(p=>p[0]+','+p[1]).join(' ');
+    let u=softCache.get(key);
+    if(!u){
+      const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 120 120" preserveAspectRatio="none"><filter id="b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${SOFT}"/></filter><polygon filter="url(#b)" fill="#fff" points="${key}"/></svg>`;
+      u=`url("data:image/svg+xml,${encodeURIComponent(svg)}")`;softCache.set(key,u);
+    }
+    return u;
+  }
+  function applySoft(el,points){
+    const u=softMask(points);
+    el.style.clipPath='none';el.style.webkitClipPath='none';
+    for(const pre of ['','webkit']){
+      const k=n=>pre?pre+n[0].toUpperCase()+n.slice(1):n;
+      el.style[k('maskImage')]=u;el.style[k('maskSize')]='120% 120%';el.style[k('maskPosition')]='50% 50%';el.style[k('maskRepeat')]='no-repeat';
+    }
+  }
   function frameFor(vesselOrId){
     const profile=get(vesselOrId);
     if(!profile?.foodVisible?.length)return null;
@@ -226,9 +245,8 @@
     vessel.dataset.foodDepthTop=`${profile.depth.foodTop[0]},${profile.depth.foodTop[1]}`;
 
     if(front){
-      const mask=polygon(profile.mask);
-      front.style.clipPath=mask;
-      front.style.webkitClipPath=mask;
+      applySoft(front,profile.mask);
+      front.style.display='';
       front.dataset.foodVisibilityMask='imported';
     }
     if(wrap&&frame?.width&&frame?.height){
@@ -236,11 +254,7 @@
         +(((x-frame.left)/frame.width)*100).toFixed(3),
         +(((y-frame.top)/frame.height)*100).toFixed(3)
       ]);
-      const visible=polygon(local);
-      wrap.style.clipPath=visible;
-      wrap.style.webkitClipPath=visible;
-      wrap.style.maskImage='none';
-      wrap.style.webkitMaskImage='none';
+      applySoft(wrap,local);
       wrap.dataset.foodVisibilityArea='imported';
     }
     return true;
@@ -339,6 +353,7 @@
   importDefaults();importSaved();
   window.CooksterVesselFoodCalibration={
     setLive,
+    hasOwnMask:id=>!!((LIVE[id]&&LIVE[id].mask)||(DEF[id]&&DEF[id].mask)),
     get:v=>copy(get(v)),
     frame:v=>copy(frameFor(v)),
     applyToVessel,
