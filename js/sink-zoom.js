@@ -4,7 +4,7 @@
 (function(){
 'use strict';
 if(window.CooksterSinkZoom)return;
-var SRC='assets/sink/sudopera_krupno.webp?v=1',DUR=900;
+var SRC='assets/sink/sudopera_krupno.webp?v=2',DUR=900;
 var css=document.createElement('style');
 css.textContent=
 '#sinkZoom{position:fixed;inset:0;z-index:20000;display:none;background:rgba(10,6,3,0);transition:background .5s ease;touch-action:none}'+
@@ -236,7 +236,7 @@ function frame(now){
   if(moving||streamLen>.02||flow>.02||drops.length)requestAnimationFrame(frame);else fxRun=false;
 }
 // the head of a valve: a piece of the picture (a disc around its centre) turned like the cross of a real valve, seen from above at an angle
-var SPR={};
+var SPR={},NO_COVER=true;
 ['glava_levo','glava_desno','postolje_levo','postolje_desno'].forEach(function(n){var i=new Image();i.onload=function(){kickFx();};i.src='assets/sink/ventil_'+n+'.webp?v=1';SPR[n]=i;});
 var patchCache={};
 // a piece of the picture with soft edges (all in pixels of the picture): used to wipe the old valve out of the picture (the wall and the rim of the sink beside it are copied over it)
@@ -258,7 +258,7 @@ function drawHead(g,k,v,w,h){
   // 1. wipe the old valve out of the picture: the strip of the wall and the sink beside it is laid over it
   var cw=Math.max(R*1.25,bw*.62)*2,top=cy-hh*.75,bot=bellB+h*.012,ch=bot-top;
   var src=softPatch((cx+side*cw*1.25-cw/2)*sc,top*sc,cw*sc,ch*sc,Math.round(cw*sc*.12));
-  g.drawImage(src,cx-cw/2,top,cw,ch);
+  if(!NO_COVER)g.drawImage(src,cx-cw/2,top,cw,ch);   // (the new picture of the sink has no valves: nothing to wipe)
   // 2. the base (the bell) and, on it, the head; the head turns and rises a little while it is unscrewed
   g.drawImage(bs,cx-bw/2,bellB-bh,bw,bh);
   var spinning=Math.abs(v.target-v.open)>.01,n=spinning?4:1,lift=Math.sin(Math.min(1,v.open)*Math.PI*.5)*h*.014,dir=Math.sign(v.target-v.open||1)*(side<0?1:-1);
