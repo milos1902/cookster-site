@@ -12086,15 +12086,42 @@ function wholeProduceSource(baseKey,meta=null){
   const fruit=CooksterCatalog.FRUITS?.[baseKey];
   return veg?.src||fruit?.src||'';
 }
-function appendWholeProduce(layer,entries,stage=1,fillState=null){
+// The big round tray (capacity 20+) shows whole peppers at the size they have on the board and fills the whole tray with a heap of them:
+// pieces keep their real size (no shrinking), more of them just lie over each other (a sunflower pattern, the lower ones drawn on top).
+function bigTrayVessel(v){try{return !!v&&!isPanItem(v)&&containerCapacity(v)>=20;}catch(_){return false;}}
+function trayPepperLayout(n,vessel,pieceW){
+  const wrap=vessel?._vesselContent||vessel?._panContent||null;
+  const W=(wrap&&wrap.clientWidth)||vessel?.offsetWidth||190;
+  const vis=+vessel?.dataset?.vis||1,wPct=Math.min(70,(pieceW||70)*vis/W*100);
+  const out=[];
+  for(let i=0;i<n;i++){
+    const r=Math.sqrt((i+.5)/n),a=i*2.39996;
+    out.push({x:50+Math.cos(a)*r*(47-wPct*.18),y:54+Math.sin(a)*r*(35-wPct*.1),rot:((i*53)%23)-11,w:wPct});
+  }
+  out.sort((a,b)=>a.y-b.y);        // the lower ones lie over the upper ones
+  return out;
+}
+function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
   if(!layer||!entries?.length)return;
   const fs=fillState||{ratio:0,scaleX:1,scaleY:1,rise:0,layers:1,stackGap:3};
   const expanded=[];
   for(const entry of entries){
-    const n=Math.max(0,Math.min(10,Math.round(+entry.count||0)));
+    const n=Math.max(0,Math.min(bigTrayVessel(vessel)?40:10,Math.round(+entry.count||0)));
     for(let i=0;i<n;i++)expanded.push(entry);
   }
   if(!expanded.length)return;
+  if(bigTrayVessel(vessel)){
+    const lay=trayPepperLayout(expanded.length,vessel,Math.max(...expanded.map(e=>+VEGETABLES[e.baseKey]?.w||70)));
+    expanded.forEach((entry,i)=>{
+      const src=wholeProduceSource(entry.baseKey,entry.meta);if(!src)return;
+      const L=lay[i],img=document.createElement('img');
+      img.className='whole-produce-piece';img.dataset.entryKey=entry.key;img.src=src;img.alt='';img.draggable=false;
+      img.style.left=L.x.toFixed(2)+'%';img.style.top=L.y.toFixed(2)+'%';img.style.width=L.w.toFixed(2)+'%';
+      img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String(22+i);
+      layer.appendChild(img);
+    });
+    return;
+  }
 
   const layouts={
     1:[[50,50,-3,62]],
@@ -12154,9 +12181,20 @@ function wholeProduceEntries(counts,metaItems={}){
   }
   return out;
 }
-function appendWholeRoastedPeppers(layer,count,phase=4){
- const n=Math.max(0,Math.min(20,Math.round(+count||0)));
+function appendWholeRoastedPeppers(layer,count,phase=4,vessel=null){
+ const n=Math.max(0,Math.min(40,Math.round(+count||0)));
  if(!layer||n<=0)return;
+ if(bigTrayVessel(vessel)){
+   const lay=trayPepperLayout(n,vessel,+VEGETABLES.paprika?.w||70);
+   lay.forEach((L,i)=>{
+     const img=document.createElement('img');img.className='whole-roasted-pepper';
+     img.src=PAPRIKA_ROAST_ASSETS[Math.max(1,Math.min(4,+phase||4))-1];img.alt='';img.draggable=false;
+     img.style.left=L.x.toFixed(2)+'%';img.style.top=L.y.toFixed(2)+'%';img.style.width=L.w.toFixed(2)+'%';
+     img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String(30+i);
+     layer.appendChild(img);
+   });
+   return;
+ }
 
  // v174: roasted peppers follow the same centered composition logic as chopped food:
  // first piece appears in the middle of the calibrated food zone, then the group
@@ -13356,12 +13394,12 @@ function buildFoodStageLayer(counts,stage,metaItems={},batches=[],heat=0,mixLeve
   }
 
   // Whole raw produce remains whole in every pan/pot/bowl.
-  appendWholeProduce(layer,wholeProduceEntries(counts,metaItems),stage,fillState);
+  appendWholeProduce(layer,wholeProduceEntries(counts,metaItems),stage,fillState,vessel);
 
   // Whole roasted peppers retain their dedicated phase art.
-  appendWholeRoastedPeppers(layer,roastedByPhase[2],2);
-  appendWholeRoastedPeppers(layer,roastedByPhase[3],3);
-  appendWholeRoastedPeppers(layer,roastedByPhase[4],4);
+  appendWholeRoastedPeppers(layer,roastedByPhase[2],2,vessel);
+  appendWholeRoastedPeppers(layer,roastedByPhase[3],3,vessel);
+  appendWholeRoastedPeppers(layer,roastedByPhase[4],4,vessel);
   return layer;
 }
 
