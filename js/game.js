@@ -12103,7 +12103,7 @@ function wholeProduceSource(baseKey,meta=null){
 }
 // The big round tray (capacity 20+) shows whole peppers at the size they have on the board and fills the whole tray with a heap of them:
 // pieces keep their real size (no shrinking), more of them just lie over each other (a sunflower pattern, the lower ones drawn on top).
-function bigTrayVessel(v){try{return !!v&&!isPanItem(v)&&containerCapacity(v)>=20;}catch(_){return false;}}
+function bigTrayVessel(v){return !!v;}   // (every vessel now: whole vegetables keep the size they have on the board)
 function trayPepperLayout(n,vessel,pieceW){
   const wrap=vessel?._vesselContent||vessel?._panContent||null;
   const W=(wrap&&wrap.clientWidth)||vessel?.offsetWidth||190;
@@ -12212,19 +12212,20 @@ function wholeProduceEntries(counts,metaItems={}){
 // every whole roasted pepper of the big tray (red unpeeled phases, red peeled, green unpeeled / peeled) in ONE heap
 function appendRoastedPepperHeap(layer,vessel,counts,metaItems){
   const list=[];
-  const push=(n,src)=>{for(let i=0;i<Math.min(40,Math.round(+n||0));i++)list.push(src);};
-  push(counts.paprika_pecena_2,PAPRIKA_ROAST_ASSETS[1]);push(counts.paprika_pecena_3,PAPRIKA_ROAST_ASSETS[2]);
-  push((+counts.paprika_pecena_4||0)+(+counts.paprika_pecena||0),PAPRIKA_ROAST_ASSETS[3]);
-  push(counts.paprika_zelena_pecena_neoljustena,metaItems?.paprika_zelena_pecena_neoljustena?.src||ZELENA_ROAST_ASSETS[2]);
-  push(counts.paprika_pecena_oljustena,PAPRIKA_PEEL_ASSETS.peeled);
-  push(counts.paprika_zelena_pecena_oljustena,ZELENA_PEEL_ASSETS.peeled);
+  const push=(n,src,key)=>{for(let i=0;i<Math.min(40,Math.round(+n||0));i++)list.push({src,key});};
+  push(counts.paprika_pecena_2,PAPRIKA_ROAST_ASSETS[1],'paprika_pecena_2');push(counts.paprika_pecena_3,PAPRIKA_ROAST_ASSETS[2],'paprika_pecena_3');
+  push(counts.paprika_pecena_4,PAPRIKA_ROAST_ASSETS[3],'paprika_pecena_4');push(counts.paprika_pecena,PAPRIKA_ROAST_ASSETS[3],'paprika_pecena');
+  push(counts.paprika_zelena_pecena_neoljustena,metaItems?.paprika_zelena_pecena_neoljustena?.src||ZELENA_ROAST_ASSETS[2],'paprika_zelena_pecena_neoljustena');
+  push(counts.paprika_pecena_oljustena,PAPRIKA_PEEL_ASSETS.peeled,'paprika_pecena_oljustena');
+  push(counts.paprika_zelena_pecena_oljustena,ZELENA_PEEL_ASSETS.peeled,'paprika_zelena_pecena_oljustena');
   if(!list.length)return;
   const lay=trayPepperLayout(list.length,vessel,+VEGETABLES.paprika?.w||70);
   // the kinds are mixed over the heap (the same arrangement every time: a fixed shuffle)
   for(let i=list.length-1;i>0;i--){const j=(i*7919+13)%(i+1);const t=list[i];list[i]=list[j];list[j]=t;}
-  list.forEach((src,i)=>{
+  list.forEach((entry,i)=>{
     const L=lay[i],img=document.createElement('img');img.className='whole-roasted-pepper';
-    img.src=src;img.alt='';img.draggable=false;
+    img.dataset.entryKey=entry.key;      // a click on it takes this pepper out of the vessel (js/vessel-take.js)
+    img.src=entry.src;img.alt='';img.draggable=false;
     img.style.left=L.x.toFixed(2)+'%';img.style.top=L.y.toFixed(2)+'%';img.style.width=L.w.toFixed(2)+'%';
     img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String(30+i);
     layer.appendChild(img);
@@ -12369,7 +12370,7 @@ function allSlicedIngredientMix(counts,metaItems={}){
     const base=roastedPepper?'paprika':(roastedEggplant?'patlidzan':(diced?key.slice(0,-6):key));
     const def=VEGETABLES[base]||CooksterCatalog.FRUITS?.[base];
     if(!def?.slicedSrc&&!def?.dicedSrc)continue;
-    const allPiles=(diced&&!roastedChopped)?CooksterPiles.split(metaItems?.[key]?.src):[];
+    const allPiles=(diced&&!roastedEggplant)?CooksterPiles.split(metaItems?.[key]?.src):[];   // a roasted pepper that was cut by hand keeps its own pieces too
     const atlas=allPiles.filter(x=>x.includes('#'));   // per-piece atlases are drawn by CooksterPieceSim
     const piles=atlas.length?[]:allPiles;
     entries.push({
@@ -12378,7 +12379,7 @@ function allSlicedIngredientMix(counts,metaItems={}){
       cutState:diced?'diced':'sliced',
       count,
       // a player-cut pile replaces the stock diced art (and its fried variants, so the generic cook tint applies)
-      def:piles.length?{...def,dicedSrc:piles[0],friedDicedSrc:undefined,wellDoneDicedSrc:undefined}:def,
+      def:(piles.length||(atlas.length&&roastedChopped))?(piles.length?{...def,dicedSrc:piles[0],friedDicedSrc:undefined,wellDoneDicedSrc:undefined}:{...def,friedDicedSrc:undefined,wellDoneDicedSrc:undefined}):def,   // (a roasted pepper is not tinted with the art of a fresh one)
       piles:piles.length?piles:null,
       atlas:atlas.length?atlas:null,
       src:atlas.length?(def.dicedSrc||def.slicedSrc||def.src):piles.length?piles[0]:roastedPepper
@@ -12826,11 +12827,19 @@ function appendCenteredChoppedStack(layer,mix,stage,fillState=null,vessel=null,b
    const fitVessel=vesselId==='serpa_velika'
      || vesselSubtypeFor(vessel)==='pot'
      || !!PAN_SLOTS[vesselId];
-   const renderUnits=fitVessel
+   // Every pile of cut vegetable keeps the size it has on the board (the heap grows by number, never by size) and lies inside the food area of the vessel
+  const wrapForSize=vessel?._panContent||vessel?._vesselContent||null;
+  const wrapWpx=(wrapForSize&&wrapForSize.clientWidth)||vessel?.offsetWidth||0;
+  const vesselVis=+vessel?.dataset?.vis||1;
+  const pilePx=part=>((part?.cutState==='diced'||part?.roastedChopped)?(+part?.def?.dicedW||96):(+part?.def?.slicedW||+part?.def?.w||92))*vesselVis;
+  const pileLay=wrapWpx?trayPepperLayout(orderedUnits.length,vessel,Math.max(...orderedUnits.map(pilePx))/vesselVis):null;
+  if(pileLay)for(let i=pileLay.length-1;i>0;i--){const j=(i*7919+13)%(i+1);const t=pileLay[i];pileLay[i]=pileLay[j];pileLay[j]=t;}   // the kinds are mixed over the heap (a fixed shuffle)
+  if(wrapWpx)bed.style.display='none';
+  const renderUnits=(fitVessel||wrapWpx)
     ? orderedUnits
     : orderedUnits.slice(1);
   renderUnits.forEach((part,index)=>{
-    const renderIndex=index+((vesselId==='serpa_velika'||PAN_SLOTS[vesselId])?0:1);
+    const renderIndex=index+((vesselId==='serpa_velika'||PAN_SLOTS[vesselId]||wrapWpx)?0:1);
     const insertionIndex=Math.max(1,+part.insertionIndex||renderIndex+1);
     const depth=geometryProgressForInsertion(insertionIndex,vessel);
     const img=appendExactChoppedSprite(
@@ -12886,6 +12895,12 @@ function appendCenteredChoppedStack(layer,mix,stage,fillState=null,vessel=null,b
         if(Number.isFinite(curLeft))img.style.left=(curLeft+nx).toFixed(3)+'%';
         if(Number.isFinite(curTop))img.style.top=(curTop+ny).toFixed(3)+'%';
       }
+       if(pileLay&&pileLay[index]){
+         const L=pileLay[index];
+         img.style.left=L.x.toFixed(3)+'%';img.style.top=L.y.toFixed(3)+'%';
+         img.style.width=(pilePx(part)/wrapWpx*100).toFixed(3)+'%';img.style.height='auto';img.style.objectFit='contain';
+         img.style.zIndex=String(30+Math.round(L.y));
+       }
        // The final fitted/calibrated position is the spring's rest anchor.
        // Capturing earlier made pieces jump back to a pre-layout position as
        // soon as stirring began.

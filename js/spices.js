@@ -15,7 +15,18 @@
   const spiceOf=el=>{const m=/^zacin_(.+)$/.exec(el?.dataset?.itemId||'');return m&&COLORS[m[1]]?m[1]:null;};
 
   // ---------- picture of the bowl ----------
-  function readItems(el){try{return CooksterContainer.read(el).items||{};}catch(_){return {};}}
+  // what a vessel holds, from whichever model it uses (a vessel that can be heated keeps its food in the cooking model)
+  function readItems(el){
+    try{
+      if(typeof isHeatableCookwareItem==='function'&&isHeatableCookwareItem(el)){
+        const m=CooksterPan.read(el),o={};
+        for(const [k,n] of Object.entries(m.ingredients||{}))o[k]={count:+n||0};
+        if((+m.staples?.oil||0)>0)o.ulje={count:+m.staples.oil};
+        return o;
+      }
+      return CooksterContainer.read(el).items||{};
+    }catch(_){return {};}
+  }
   function applyLook(el){
     if(!el||el.dataset?.itemId!==BOWL_ID)return;
     const body=el.querySelector('.body');if(!body)return;
