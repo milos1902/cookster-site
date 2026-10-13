@@ -5,17 +5,20 @@
 (function(){
 'use strict';
 if(window.CooksterVesselWater)return;
-var TEX='assets/water/povrsina.webp?v=1';
+var TEX='assets/water/tamna.webp?v=1';
 var css=document.createElement('style');
 css.textContent='@keyframes vwDrift{from{background-position:0 0,0 0}to{background-position:0 0,768px 384px}}'+
  '@keyframes vwSlosh{from{background-position:0 0,0 0,0 0,-26px -10px}to{background-position:0 0,0 0,0 0,30px 12px}}'+
  '@keyframes vwWave{from{transform:translateX(-35%)}to{transform:translateX(335%)}}'+
  '.vessel-water-ov{position:absolute;inset:0;pointer-events:none;overflow:hidden}'+
- '.vessel-water-ov .vw-fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(rgba(60,150,190,.30),rgba(20,80,120,.52)),url('+TEX+');background-size:100% 100%,46% auto;opacity:.78;animation:vwDrift 26s linear infinite}'+
- '.vessel-water-ov .vw-top{position:absolute;left:0;right:0;height:3.2%;background:linear-gradient(rgba(255,255,255,.62),rgba(255,255,255,0));mix-blend-mode:screen}'+
- '.vessel-water-ov .vw-surf{position:absolute;inset:0;opacity:.84;background:radial-gradient(ellipse at 50% 50%,rgba(255,255,255,0) 38%,rgba(8,55,95,.45) 100%),linear-gradient(rgba(70,160,200,.26),rgba(20,85,125,.42)),linear-gradient(rgba(255,255,255,.14),rgba(255,255,255,0) 40%),url('+TEX+');background-size:100% 100%,100% 100%,100% 100%,42% auto;animation:vwSlosh 3.4s ease-in-out infinite alternate}'+
- '.vessel-water-ov .vw-wave{position:absolute;top:0;bottom:0;left:0;width:28%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.34),rgba(255,255,255,0));mix-blend-mode:screen;animation:vwWave 2.7s ease-in-out infinite alternate}'+
- '.vessel-water-ov .vw-wave.b{width:20%;animation-duration:3.9s;animation-direction:alternate-reverse;opacity:.7}';
+ '.vessel-water-ov .vw-fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(rgba(30,38,36,.25),rgba(10,14,13,.5)),url('+TEX+');background-size:100% 100%,46% auto;opacity:.78;animation:vwDrift 26s linear infinite}'+
+ '.vessel-water-ov .vw-top{position:absolute;left:0;right:0;height:3.2%;background:linear-gradient(rgba(255,255,255,.4),rgba(255,255,255,0));mix-blend-mode:screen}'+
+ '.vessel-water-ov .vw-surf{position:absolute;inset:0;opacity:.78;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 45%,rgba(0,0,0,.35) 100%),linear-gradient(rgba(255,255,255,.1),rgba(255,255,255,0) 40%),url('+TEX+');background-size:100% 100%,100% 100%,42% auto;animation:vwSlosh 5s ease-in-out infinite alternate}'+
+ '.vessel-water-ov .vw-wave{position:absolute;top:0;bottom:0;left:0;width:28%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.16),rgba(255,255,255,0));mix-blend-mode:screen;animation:vwWave 2.7s ease-in-out infinite alternate}'+
+ '.vessel-water-ov .vw-wave.b{width:20%;animation-duration:3.9s;animation-direction:alternate-reverse;opacity:.7}'+
+ '.vessel-water-ov.vw-light .vw-surf,.vessel-water-ov.vw-light .vw-fill{filter:hue-rotate(45deg) saturate(1.5) brightness(1.15)}'+
+ '@keyframes vwRing{0%{transform:translate(-50%,-50%) scale(.05);opacity:0}12%{opacity:.85}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}'+
+ '.vessel-water-ov .vw-ring{position:absolute;width:90%;aspect-ratio:1;border-radius:50%;pointer-events:none;background:repeating-radial-gradient(circle,rgba(255,255,255,0) 0,rgba(255,255,255,0) 9%,rgba(235,245,240,.5) 10.5%,rgba(255,255,255,0) 12%);-webkit-mask-image:radial-gradient(circle,#000 30%,transparent 70%);mask-image:radial-gradient(circle,#000 30%,transparent 70%);animation:vwRing 5.2s ease-out infinite}';
 document.head.appendChild(css);
 var WKEY='cookster.vessel-water-cal.v1',WCAL={};
 try{WCAL=JSON.parse(localStorage.getItem(WKEY)||'{}')||{};}catch(e){WCAL={};}
@@ -60,6 +63,7 @@ function overlay(id,f,src,withFront,pOverride){
   if(morph){
     var sf=document.createElement('div');sf.className='vw-surf';d.appendChild(sf);
     ['','b'].forEach(function(c){var w=document.createElement('div');w.className='vw-wave '+c;w.style.animationDelay=c?'-1.1s':'0s';d.appendChild(w);});
+    [[34,42,0],[66,60,-2.6]].forEach(function(r){var g=document.createElement('div');g.className='vw-ring';g.style.left=r[0]+'%';g.style.top=r[1]+'%';g.style.animationDelay=r[2]+'s';d.appendChild(g);});
     return finish(d,p,src,withFront);
   }
   var by=p.depth.bottom[1],ty=p.depth.foodTop[1],y=by+(ty-by)*f;      // the surface of the water (percent of the height of the picture)
@@ -73,8 +77,23 @@ function overlay(id,f,src,withFront,pOverride){
   d.appendChild(fill);d.appendChild(top);
   return finish(d,p,src,withFront);
 }
+var LUM={};
+// brightness of the bottom of the vessel (picture around the middle of the bottom shape): light bottom gets the bluer water, dark bottom the grey one
+function bottomLum(src,p,cb){
+  if(LUM[src]!==undefined)return cb(LUM[src]);
+  var P=(p.bottomPoly&&p.bottomPoly.length>=3?p.bottomPoly:p.foodVisible),cx=0,cy=0;
+  P.forEach(function(q){cx+=q[0];cy+=q[1];});cx/=P.length;cy/=P.length;
+  var im=new Image();im.onload=function(){
+    var v=.5;try{var W=64,H=64,c=document.createElement('canvas');c.width=W;c.height=H;var g=c.getContext('2d');g.drawImage(im,0,0,W,H);
+      var x=Math.round(cx/100*W),y=Math.round(cy/100*H),r=4,sum=0,n=0,a=g.getImageData(Math.max(0,x-r),Math.max(0,y-r),2*r,2*r).data;
+      for(var i=0;i<a.length;i+=4){if(a[i+3]<128)continue;sum+=(a[i]*.3+a[i+1]*.59+a[i+2]*.11)/255;n++;}
+      if(n)v=sum/n;}catch(e){}
+    LUM[src]=v;cb(v);};
+  im.onerror=function(){LUM[src]=.5;cb(.5);};im.src=src;
+}
 function finish(d,p,src,withFront){
   if(src){
+    bottomLum(src,p,function(v){if(v>.38)d.classList.add('vw-light');});
     // the water never leaves the outline of the vessel (the picture of the vessel is the mask), and where the front wall of the vessel is drawn over the food, it is over the water too
     var m='url("'+src+'")';d.style.webkitMaskImage=m;d.style.maskImage=m;d.style.webkitMaskSize='100% 100%';d.style.maskSize='100% 100%';
     if(withFront&&p.mask&&p.mask.length>=3){

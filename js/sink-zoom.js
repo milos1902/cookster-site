@@ -76,7 +76,7 @@ function se(tag,a){var e=document.createElementNS(NS,tag);for(var k in a)e.setAt
 var ed=document.createElement('div');ed.className='sz-edit';ed.setAttribute('data-tool-ui','1');ed.style.display='none';
 ed.innerHTML='<b>Kalibracija sudopere (krupan plan)</b>'+
  '<div class="sz-row"><button data-m="rim" class="on">Otvor (gore)</button><button data-m="floor">Dno</button><button data-m="mask">Gde se posude vide</button><button data-m="tap">Slavina</button></div>'+
- '<div id="szTapBox" style="display:none"><small class="sz-help">Slavina: <b style="display:inline;color:#7fe3ff">plavo</b> = vrh slavine (odakle teče voda), <b style="display:inline;color:#ffe27a">žuto</b> = gde voda pada, <b style="display:inline;color:#7aff9a">zeleno</b> = levi i desni ventil (centar glave). Prevuci tačke.</small><label>Veličina ventila <input id="szTapR" type="range" min="1" max="7" step="0.1" value="2.6"><b id="szTapRN">2.6</b></label><label>Nagib (spljoštenost) ventila <input id="szTapSq" type="range" min="0.25" max="1" step="0.01" value="0.55"><b id="szTapSqN">0.55</b></label><label>Visina postolja (dno, % slike) <input id="szTapBell" type="range" min="18" max="34" step="0.1" value="24.8"><b id="szTapBellN">24.8</b></label><label>Probni ugao glave <input id="szTapAng" type="range" min="0" max="360" step="1" value="0"><b id="szTapAngN">0</b></label><div class="sz-row"><button id="szTapTest">Probaj: odvrni / zavrni</button></div></div>'+
+ '<div id="szTapBox" style="display:none"><small class="sz-help">Slavina: <b style="display:inline;color:#7fe3ff">plavo</b> = vrh slavine (odakle teče voda), <b style="display:inline;color:#ffe27a">žuto</b> = gde voda pada, <b style="display:inline;color:#7aff9a">zeleno</b> = levi i desni ventil (centar glave). Prevuci tačke.</small><label>Veličina ventila <input id="szTapR" type="range" min="1" max="7" step="0.1" value="2.6"><b id="szTapRN">2.6</b></label><label>Nagib (spljoštenost) ventila <input id="szTapSq" type="range" min="0.25" max="1" step="0.01" value="0.55"><b id="szTapSqN">0.55</b></label><label>Visina postolja (dno, % slike) <input id="szTapBell" type="range" min="18" max="34" step="0.1" value="24.8"><b id="szTapBellN">24.8</b></label><label>Pljusak: veličina <input id="szSpS" type="range" min="3" max="30" step="0.1" value="11.5"><b id="szSpSN">11.5</b></label><label>Pljusak: nagib napred-nazad <input id="szSpT" type="range" min="0.2" max="1.6" step="0.01" value="1"><b id="szSpTN">1.00</b></label><small class="sz-help"><b style="display:inline;color:#ff8ad8">Roze</b> tačka = gde je pljusak (prevuci gde hoćeš).</small><label>Probni ugao glave <input id="szTapAng" type="range" min="0" max="360" step="1" value="0"><b id="szTapAngN">0</b></label><div class="sz-row"><button id="szTapTest">Probaj: odvrni / zavrni</button></div></div>'+
  '<small class="sz-help">Prevuci belu tačku da je pomeriš. Klik na liniju ubacuje novu tačku tačno tu. Dvoklik na tačku je briše (najmanje 3).</small>'+
  '<div class="sz-info" id="szDepth"></div><hr>'+
  '<label>Posuda <select id="szVessel"></select></label>'+
@@ -127,8 +127,8 @@ function draw(){
     });
   });
   if(mode==='tap'){
-    var T=cal.tap,pts=[['spout','#42d6e8'],['land','#ffe27a'],['left','#7aff9a'],['right','#7aff9a']];
-    pts.forEach(function(q){var pp=T[q[0]];
+    var T=cal.tap,pts=[['spout','#42d6e8'],['land','#ffe27a'],['splash','#ff8ad8'],['left','#7aff9a'],['right','#7aff9a']];
+    pts.forEach(function(q){var pp=q[0]==='splash'?splashCfg().pos:T[q[0]];
       var cc=se('circle',{cx:pp[0],cy:pp[1],r:q[0]==='left'||q[0]==='right'?T.r:.8,fill:q[0]==='left'||q[0]==='right'?'rgba(122,255,154,.18)':'#fff',stroke:q[1],'stroke-width':'.3','vector-effect':'non-scaling-stroke'});
       cc.dataset.t=q[0];svg.appendChild(cc);});
     svg.appendChild(se('line',{x1:T.spout[0],y1:T.spout[1],x2:T.land[0],y2:T.land[1],stroke:'#42d6e8','stroke-width':'.3','stroke-dasharray':'1 1','vector-effect':'non-scaling-stroke','pointer-events':'none'}));
@@ -144,10 +144,10 @@ svg.addEventListener('pointerdown',function(e){
   if(t.tagName==='circle'){drag={k:t.dataset.k,i:+t.dataset.i};svg.setPointerCapture(e.pointerId);e.preventDefault();return;}
   if(t.tagName==='line'&&t.dataset.edge!==undefined){var k=t.dataset.k,i=+t.dataset.edge;cal[k].splice(i+1,0,pct(e));saveCal();draw();drag={k:k,i:i+1};svg.setPointerCapture(e.pointerId);e.preventDefault();}
 });
-svg.addEventListener('pointermove',function(e){if(!drag)return;if(drag.t){cal.tap[drag.t]=pct(e);saveCal();draw();return;}cal[drag.k][drag.i]=pct(e);saveCal();draw();});
+svg.addEventListener('pointermove',function(e){if(!drag)return;if(drag.t){if(drag.t==='splash')setSp('pos',pct(e));else cal.tap[drag.t]=pct(e);saveCal();draw();kickFx();return;}cal[drag.k][drag.i]=pct(e);saveCal();draw();});
 svg.addEventListener('pointerup',function(){drag=null;});
 svg.addEventListener('dblclick',function(e){var t=e.target;if(t.tagName==='circle'&&cal[t.dataset.k].length>3){cal[t.dataset.k].splice(+t.dataset.i,1);saveCal();draw();}});
-ed.querySelectorAll('[data-m]').forEach(function(b){b.addEventListener('click',function(){mode=b.dataset.m;ed.querySelector('#szTapBox').style.display=mode==='tap'?'block':'none';ed.querySelectorAll('[data-m]').forEach(function(x){x.classList.toggle('on',x===b)});draw();});});
+ed.querySelectorAll('[data-m]').forEach(function(b){b.addEventListener('click',function(){mode=b.dataset.m;if(mode==='tap'){var sc=splashCfg();ed.querySelector('#szSpS').value=sc.size;ed.querySelector('#szSpSN').textContent=sc.size.toFixed(1);ed.querySelector('#szSpT').value=sc.tilt;ed.querySelector('#szSpTN').textContent=sc.tilt.toFixed(2);}ed.querySelector('#szTapBox').style.display=mode==='tap'?'block':'none';ed.querySelectorAll('[data-m]').forEach(function(x){x.classList.toggle('on',x===b)});draw();});});
 // the vessel in the sink
 function ensureVes(){
   var v=equipment().find(function(x){return x.id===vesId});if(!v)return null;
@@ -268,6 +268,8 @@ function drawHead(g,k,v,w,h){
     g.drawImage(hs,-R,-hh/2,R*2,hh);g.restore();
   }
 }
+function splashCfg(){var T=cal.tap;return {pos:T.sp&&T.sp.pos||T.land,size:T.sp&&T.sp.size||11.5,tilt:T.sp&&T.sp.tilt||1};}
+function setSp(k,v){var T=cal.tap;T.sp=Object.assign({},T.sp||{},splashCfg(),{});T.sp.pos=T.sp.pos.slice();T.sp[k]=v;}
 function prevAng(k){return (previewAng||0)*Math.PI/180*(k==='left'?1:-1);}
 var previewAng=0;
 function drawWater(g,w,h,now){
@@ -286,8 +288,8 @@ function drawWater(g,w,h,now){
   g.restore();
   // where it lands: the splash (a row of 8 pictures: the pictures 3 to 8 are repeated)
   if(streamLen>.9&&SPLASH.complete&&SPLASH.naturalWidth){
-    var fw=SPLASH.naturalWidth/8,fh=SPLASH.naturalHeight,fi=2+Math.floor(t*13)%6,sw=w*.115*(.7+flow*.5),shh=sw*fh/fw;
-    g.save();g.globalAlpha=Math.min(1,flow*1.6);g.drawImage(SPLASH,fi*fw,0,fw,fh,lx-sw/2,ly-shh*.63,sw,shh);g.restore();
+    var fw=SPLASH.naturalWidth/8,fh=SPLASH.naturalHeight,fi=2+Math.floor(t*13)%6,sc=splashCfg(),sw=w*sc.size/100*(.7+flow*.5),shh=sw*fh/fw;
+    g.save();g.globalAlpha=Math.min(1,flow*1.6);g.translate(sc.pos[0]/100*w,sc.pos[1]/100*h);g.scale(1,sc.tilt);g.drawImage(SPLASH,fi*fw,0,fw,fh,-sw/2,-shh*.63,sw,shh);g.restore();
   }
   for(var d=drops.length-1;d>=0;d--){var p=drops[d];p.life+=1/60;p.vy+=w*.5/60;p.x+=p.vx/60;p.y+=p.vy/60;
     if(p.life>.5){drops.splice(d,1);continue;}
@@ -299,6 +301,8 @@ var closeBase=close;close=function(){closeBase();};
 ed.querySelector('#szTapR').addEventListener('input',function(e){cal.tap.r=+e.target.value;ed.querySelector('#szTapRN').textContent=cal.tap.r.toFixed(1);saveCal();draw();layoutHits();kickFx();});
 ed.querySelector('#szTapSq').addEventListener('input',function(e){cal.tap.squash=+e.target.value;ed.querySelector('#szTapSqN').textContent=cal.tap.squash.toFixed(2);saveCal();kickFx();});
 ed.querySelector('#szTapBell').addEventListener('input',function(e){cal.tap.bell=+e.target.value;ed.querySelector('#szTapBellN').textContent=cal.tap.bell.toFixed(1);saveCal();kickFx();});
+ed.querySelector('#szSpS').addEventListener('input',function(e){setSp('size',+e.target.value);ed.querySelector('#szSpSN').textContent=(+e.target.value).toFixed(1);saveCal();kickFx();});
+ed.querySelector('#szSpT').addEventListener('input',function(e){setSp('tilt',+e.target.value);ed.querySelector('#szSpTN').textContent=(+e.target.value).toFixed(2);saveCal();kickFx();});
 ed.querySelector('#szTapAng').addEventListener('input',function(e){previewAng=+e.target.value;ed.querySelector('#szTapAngN').textContent=previewAng;kickFx();});
 ed.querySelector('#szTapTest').addEventListener('click',function(){var on=!(valve.left.target||valve.right.target);valve.left.target=on?1:0;valve.right.target=on?1:0;syncGame();kickFx();});
 
