@@ -78,6 +78,7 @@ ed.innerHTML='<b>Kalibracija sudopere (krupan plan)</b>'+
  '<label>Posuda <select id="szVessel"></select></label>'+
  '<div class="sz-row"><button id="szPut">Postavi u sudoperu</button><button id="szRemove">Skloni</button></div>'+
  '<label>Veličina posude <input id="szScale" type="range" min="4" max="60" step="0.2" value="20"><b id="szScaleN">20</b></label>'+
+ '<label>Visina posude (gore / dole u dubinu) <input id="szLift" type="range" min="-30" max="30" step="0.2" value="0"><b id="szLiftN">0</b></label>'+
  '<div class="sz-row"><button id="szSaveV">Sačuvaj ovu posudu</button><button id="szCopy">Kopiraj sve (JSON)</button><button id="szReset">Vrati početno</button></div>'+
  '<div class="sz-info" id="szStatus"></div>';
 var ecss=document.createElement('style');
@@ -140,36 +141,36 @@ function ensureVes(){
   var v=equipment().find(function(x){return x.id===vesId});if(!v)return null;
   if(!ves){ves=document.createElement('img');ves.className='sz-ves';ves.draggable=false;stage.appendChild(ves);
     ves.addEventListener('pointerdown',function(e){if(!root.classList.contains('editing'))return;e.stopPropagation();e.preventDefault();ves.setPointerCapture(e.pointerId);ves._drag=true;});
-    ves.addEventListener('pointermove',function(e){if(!ves._drag)return;var p=pct(e);ves._x=p[0];ves._y=p[1];placeVes();});
+    ves.addEventListener('pointermove',function(e){if(!ves._drag)return;var p=pct(e);ves._x=p[0];ves._y=p[1]+(+ed.querySelector('#szLift').value);placeVes();});
     ves.addEventListener('pointerup',function(){ves._drag=false;});}
   if(ves.getAttribute('src')!==v.src)ves.src=v.src;
   return v;
 }
 function placeVes(){
   if(!ves)return;
-  var w=+ed.querySelector('#szScale').value;
-  ves.style.left=ves._x+'%';ves.style.top=ves._y+'%';ves.style.width=w+'%';
+  var w=+ed.querySelector('#szScale').value,lift=+ed.querySelector('#szLift').value,yy=ves._y-lift;   // the height: a vessel lifted up goes up on the picture, a negative value sinks it down into the sink
+  ves.style.left=ves._x+'%';ves.style.top=yy+'%';ves.style.width=w+'%';
   // only what is inside the mask is seen
   var m=cal.mask;ves.style.clipPath='none';
-  var pts=m.map(function(p){return (p[0]-ves._x)/w*100+50+'% '+((p[1]-ves._y)/(w*(ves.naturalHeight/Math.max(1,ves.naturalWidth))*16/9)*100+100)+'%'}).join(',');
+  var pts=m.map(function(p){return (p[0]-ves._x)/w*100+50+'% '+((p[1]-yy)/(w*(ves.naturalHeight/Math.max(1,ves.naturalWidth))*16/9)*100+100)+'%'}).join(',');
   ves.style.clipPath='polygon('+pts+')';
-  ed.querySelector('#szScaleN').textContent=w.toFixed(1)+'%';
+  ed.querySelector('#szScaleN').textContent=w.toFixed(1)+'%';ed.querySelector('#szLiftN').textContent=(lift>0?'+':'')+lift.toFixed(1);
 }
 function showVes(){
   var v=ensureVes();if(!v)return;
   var sv=cal.vessels[vesId],f=cal.floor,cx=f.reduce(function(s,p){return s+p[0]},0)/f.length,cy=f.reduce(function(s,p){return s+p[1]},0)/f.length;
   ves._x=sv?sv.x:cx;ves._y=sv?sv.y:cy+(f.reduce(function(s,p){return Math.max(s,p[1])},0)-cy)*.4;
-  ed.querySelector('#szScale').value=sv?sv.w:Math.max(8,Math.min(50,v.w/1672*100*1.2));
+  ed.querySelector('#szLift').value=sv&&sv.h?sv.h:0;ed.querySelector('#szScale').value=sv?sv.w:Math.max(8,Math.min(50,v.w/1672*100*1.2));
   ves.style.display='block';ves.onload=placeVes;placeVes();
 }
 selEl.addEventListener('change',function(){vesId=selEl.value;if(ves&&ves.style.display!=='none')showVes();});
 ed.querySelector('#szPut').addEventListener('click',function(){vesId=selEl.value;showVes();});
 ed.querySelector('#szRemove').addEventListener('click',function(){if(ves)ves.style.display='none';});
-ed.querySelector('#szScale').addEventListener('input',placeVes);
+ed.querySelector('#szScale').addEventListener('input',placeVes);ed.querySelector('#szLift').addEventListener('input',placeVes);
 function status(t){ed.querySelector('#szStatus').textContent=t;}
 ed.querySelector('#szSaveV').addEventListener('click',function(){
   if(!ves||ves.style.display==='none'){status('Prvo postavi posudu u sudoperu.');return;}
-  cal.vessels[vesId]={x:+ves._x.toFixed(2),y:+ves._y.toFixed(2),w:+(+ed.querySelector('#szScale').value).toFixed(2)};saveCal();fillSelect();status('Sačuvano za ovu posudu (u listi je podebljana sa ✔).');
+  cal.vessels[vesId]={x:+ves._x.toFixed(2),y:+ves._y.toFixed(2),w:+(+ed.querySelector('#szScale').value).toFixed(2),h:+(+ed.querySelector('#szLift').value).toFixed(2)};saveCal();fillSelect();status('Sačuvano za ovu posudu (u listi je podebljana sa ✔).');
 });
 ed.querySelector('#szCopy').addEventListener('click',function(){
   var txt=JSON.stringify(cal,null,2);
