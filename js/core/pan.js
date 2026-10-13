@@ -51,7 +51,8 @@
     if(key.endsWith('_celo'))return key.slice(0,-5);
     if(key.endsWith('_diced'))return key.slice(0,-6);
     if(/^paprika_pecena_seckana_(?:oljustena|neoljustena)$/.test(key))return 'paprika';
-    if(/^paprika_pecena(?:_\d+)?$/.test(key))return 'paprika';
+    if(/^paprika_pecena(?:_\d+|_oljustena)?$/.test(key))return 'paprika';
+    if(/^paprika_zelena_pecena_(?:oljustena|neoljustena)$/.test(key))return 'paprika_zelena';
     return key;
   }
 

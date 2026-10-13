@@ -8354,6 +8354,16 @@ function ingredientVisualMeta(item){
         src:PATLIDZAN_ROAST_ASSETS[Math.min(3,roastPhase)-1]
       };
     }
+    // a peeled roasted pepper is another ingredient than an unpeeled one (the tray shows each as it is)
+    if(!isFruit&&key==='paprika'&&cutState==='whole'&&roastPhase>=2&&item.dataset.peeled==='1'){
+      return {key:'paprika_pecena_oljustena',baseKey:key,type:'vegetable',form:'whole_roasted',cutState:'whole',label:'Pečena oljuštena paprika',src:PAPRIKA_PEEL_ASSETS.peeled};
+    }
+    if(!isFruit&&key==='paprika_zelena'&&cutState==='whole'&&((+item.dataset.roastProgress||0)>0||(+item.dataset.roastPhase||0)>=2||item.dataset.peeled==='1')){
+      const peeled=item.dataset.peeled==='1';
+      return {key:peeled?'paprika_zelena_pecena_oljustena':'paprika_zelena_pecena_neoljustena',baseKey:key,type:'vegetable',form:'whole_roasted',cutState:'whole',
+        label:peeled?'Pečena oljuštena zelena paprika':'Pečena zelena paprika',
+        src:peeled?ZELENA_PEEL_ASSETS.peeled:(item.querySelector('.body')?.getAttribute('src')||ZELENA_ROAST_ASSETS[2])};
+    }
     if(!isFruit&&key==='paprika'&&cutState==='whole'&&roastPhase>=2){
       return {
         key:`paprika_pecena_${roastPhase}`,
@@ -9374,6 +9384,11 @@ function transferMetaForPanKey(key,rememberedMeta=null){
       src:roastedChoppedPepperSrc(key),
       form:'diced',baseKey:'paprika',cutState:'diced'
     };
+  }
+  if(key==='paprika_pecena_oljustena')return {count:0,type:'vegetable',label:'Pečena oljuštena paprika',src:PAPRIKA_PEEL_ASSETS.peeled,form:'whole_roasted',baseKey:'paprika',cutState:'whole'};
+  if(key==='paprika_zelena_pecena_oljustena'||key==='paprika_zelena_pecena_neoljustena'){
+    const peeled=key.endsWith('_oljustena')&&!key.endsWith('_neoljustena');
+    return {count:0,type:'vegetable',label:peeled?'Pečena oljuštena zelena paprika':'Pečena zelena paprika',src:rememberedMeta?.src||(peeled?ZELENA_PEEL_ASSETS.peeled:ZELENA_ROAST_ASSETS[2]),form:'whole_roasted',baseKey:'paprika_zelena',cutState:'whole'};
   }
   if(key.startsWith('paprika_pecena')){
     const phase=Math.max(2,Math.min(4,+(key.match(/_(\d+)$/)?.[1]||4)));
@@ -12194,14 +12209,35 @@ function wholeProduceEntries(counts,metaItems={}){
   }
   return out;
 }
-function appendWholeRoastedPeppers(layer,count,phase=4,vessel=null){
+// every whole roasted pepper of the big tray (red unpeeled phases, red peeled, green unpeeled / peeled) in ONE heap
+function appendRoastedPepperHeap(layer,vessel,counts,metaItems){
+  const list=[];
+  const push=(n,src)=>{for(let i=0;i<Math.min(40,Math.round(+n||0));i++)list.push(src);};
+  push(counts.paprika_pecena_2,PAPRIKA_ROAST_ASSETS[1]);push(counts.paprika_pecena_3,PAPRIKA_ROAST_ASSETS[2]);
+  push((+counts.paprika_pecena_4||0)+(+counts.paprika_pecena||0),PAPRIKA_ROAST_ASSETS[3]);
+  push(counts.paprika_zelena_pecena_neoljustena,metaItems?.paprika_zelena_pecena_neoljustena?.src||ZELENA_ROAST_ASSETS[2]);
+  push(counts.paprika_pecena_oljustena,PAPRIKA_PEEL_ASSETS.peeled);
+  push(counts.paprika_zelena_pecena_oljustena,ZELENA_PEEL_ASSETS.peeled);
+  if(!list.length)return;
+  const lay=trayPepperLayout(list.length,vessel,+VEGETABLES.paprika?.w||70);
+  // the kinds are mixed over the heap (the same arrangement every time: a fixed shuffle)
+  for(let i=list.length-1;i>0;i--){const j=(i*7919+13)%(i+1);const t=list[i];list[i]=list[j];list[j]=t;}
+  list.forEach((src,i)=>{
+    const L=lay[i],img=document.createElement('img');img.className='whole-roasted-pepper';
+    img.src=src;img.alt='';img.draggable=false;
+    img.style.left=L.x.toFixed(2)+'%';img.style.top=L.y.toFixed(2)+'%';img.style.width=L.w.toFixed(2)+'%';
+    img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String(30+i);
+    layer.appendChild(img);
+  });
+}
+function appendWholeRoastedPeppers(layer,count,phase=4,vessel=null,srcOverride=''){
  const n=Math.max(0,Math.min(40,Math.round(+count||0)));
  if(!layer||n<=0)return;
  if(bigTrayVessel(vessel)){
    const lay=trayPepperLayout(n,vessel,+VEGETABLES.paprika?.w||70);
    lay.forEach((L,i)=>{
      const img=document.createElement('img');img.className='whole-roasted-pepper';
-     img.src=PAPRIKA_ROAST_ASSETS[Math.max(1,Math.min(4,+phase||4))-1];img.alt='';img.draggable=false;
+     img.src=srcOverride||PAPRIKA_ROAST_ASSETS[Math.max(1,Math.min(4,+phase||4))-1];img.alt='';img.draggable=false;
      img.style.left=L.x.toFixed(2)+'%';img.style.top=L.y.toFixed(2)+'%';img.style.width=L.w.toFixed(2)+'%';
      img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String(30+i);
      layer.appendChild(img);
@@ -12239,7 +12275,7 @@ function appendWholeRoastedPeppers(layer,count,phase=4,vessel=null){
    const [x,y,rot,w]=pose[i];
    const img=document.createElement('img');
    img.className='whole-roasted-pepper';
-   img.src=PAPRIKA_ROAST_ASSETS[Math.max(1,Math.min(4,+phase||4))-1];
+   img.src=srcOverride||PAPRIKA_ROAST_ASSETS[Math.max(1,Math.min(4,+phase||4))-1];
    img.alt='';
    img.draggable=false;
    img.style.left=x+'%';
@@ -13384,6 +13420,7 @@ function buildFoodStageLayer(counts,stage,metaItems={},batches=[],heat=0,mixLeve
       ||key.startsWith('paprika_pecena')||isRoastedUnpeeledEggplantKey(key))continue;
     if(allMix.some(p=>p.storageKey===key))continue;
     if(key==='jaje')continue;   // the egg is drawn by js/egg-sim.js
+    if(bigTrayVessel(vessel)&&key.startsWith('paprika_zelena_pecena'))continue;   // drawn in the heap of peppers
     const meta=metaItems?.[key];
     if(!meta?.src)continue;
     const n=Math.min(8,Math.max(1,Math.round(count)));
@@ -13410,9 +13447,13 @@ function buildFoodStageLayer(counts,stage,metaItems={},batches=[],heat=0,mixLeve
   appendWholeProduce(layer,wholeProduceEntries(counts,metaItems),stage,fillState,vessel);
 
   // Whole roasted peppers retain their dedicated phase art.
-  appendWholeRoastedPeppers(layer,roastedByPhase[2],2,vessel);
-  appendWholeRoastedPeppers(layer,roastedByPhase[3],3,vessel);
-  appendWholeRoastedPeppers(layer,roastedByPhase[4],4,vessel);
+  if(bigTrayVessel(vessel))appendRoastedPepperHeap(layer,vessel,counts,metaItems);
+  else{
+    appendWholeRoastedPeppers(layer,roastedByPhase[2],2,vessel);
+    appendWholeRoastedPeppers(layer,roastedByPhase[3],3,vessel);
+    appendWholeRoastedPeppers(layer,roastedByPhase[4],4,vessel);
+    appendWholeRoastedPeppers(layer,counts.paprika_pecena_oljustena,4,vessel,PAPRIKA_PEEL_ASSETS.peeled);
+  }
   return layer;
 }
 
