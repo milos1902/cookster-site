@@ -122,7 +122,7 @@
 
   // what Miloš draws in the tool "Maska posude" is used by the game at once (and every time the game starts, from the same browser memory):
   // LIVE[id] = {mask,foodVisible,bottom,depth:{bottom,foodTop}} in [x,y] pairs; every part that is drawn (a polygon of 3+ points, a point) replaces that part of the built-in profile
-  const LIVE={},DEF={},liveCache={};
+  const LIVE={},DEF={},liveCache={},SOFTV={};
   const pair=p=>Array.isArray(p)?[+p[0],+p[1]]:(p&&Number.isFinite(+p.x)?[+p.x,+p.y]:null);
   const area2=pl=>{let a=0;for(let i=0;i<pl.length;i++){const p=pl[i],q=pl[(i+1)%pl.length];a+=p[0]*q[1]-q[0]*p[1];}return Math.abs(a)/2;};
   const poly3=(l,min)=>{const r=Array.isArray(l)&&l.length>=3?l.map(pair).filter(Boolean):null;return r&&r.length>=3&&area2(r)>=min?r:null;};      // (a polygon of 3 points that is a tiny sliver is not a drawing)
@@ -131,12 +131,13 @@
     const m=poly3(shape.mask,150),f=poly3(shape.foodVisible,100),b=poly3(shape.bottom,50),db=pair(shape.depth&&shape.depth.bottom),dt=pair(shape.depth&&shape.depth.foodTop);
     if(m)o.mask=m;if(f)o.foodVisible=f;if(b)o.bottom=b;
     if(db||dt)o.depth={bottom:db,foodTop:dt};
-    if(shape.soft!=null&&Number.isFinite(+shape.soft))o.soft=Math.max(0,Math.min(6,+shape.soft));
     return o;
   }
   function setLive(id,shape){
     if(!id)return;
     const o=convert(shape);
+    // the softness of the edge is kept apart: it is not a calibration, it applies to any vessel (also to the ones that have only the built-in profile)
+    if(shape&&shape.soft!=null&&Number.isFinite(+shape.soft))SOFTV[id]=Math.max(0,Math.min(6,+shape.soft));else delete SOFTV[id];
     if(Object.keys(o).length)LIVE[id]=o;else delete LIVE[id];
     delete liveCache[id];
   }
@@ -161,19 +162,25 @@
     }catch(_){}
   }
   function get(vesselOrId){
+    const p=get0(vesselOrId);
+    if(!p)return p;
+    const id=typeof vesselOrId==='string'?vesselOrId:(vesselOrId?.dataset?.itemId||'');
+    const sv=SOFTV[id]!=null?SOFTV[id]:SOFT;
+    return p.soft===sv?p:{...p,soft:sv};
+  }
+  function get0(vesselOrId){
     const id=typeof vesselOrId==='string'?vesselOrId:(vesselOrId?.dataset?.itemId||'');
     const lv=LIVE[id],df=DEF[id];
     // a vessel without any older profile that the player starts to draw in the tool: what is not drawn yet is a rough guess, so every drawn part works at once
     const base=baseGet(id)||((lv||df)?(GENERIC||(GENERIC=guessProfile(50,45,40,25,10,100))):null);
-    if(!lv&&!df)return base&&base.soft==null?{...base,soft:SOFT}:base;
+    if(!lv&&!df)return base;
     const c=liveCache[id];if(c&&c.base===base)return c.p;
     const pick=k=>(lv&&lv[k])||(df&&df[k])||(base&&base[k])||null;
     const dep=k=>(lv&&lv.depth&&lv.depth[k])||(df&&df.depth&&df.depth[k])||(base&&base.depth&&base.depth[k])||null;
     // a vessel that has only a GUESSED profile but whose area of the food was drawn by Miloš: the guessed front mask (made for the guessed area) is dropped, otherwise it cuts off the lower part of his area (a notch under the food)
     const ownFood=(lv&&lv.foodVisible)||(df&&df.foodVisible);
     const mask=(lv&&lv.mask)||(df&&df.mask)||((base&&base.guess&&ownFood)?null:(base&&base.mask))||null;
-    const soft=(lv&&lv.soft!=null)?lv.soft:(df&&df.soft!=null)?df.soft:SOFT;
-    const p={mask,foodVisible:pick('foodVisible'),bottom:pick('bottom'),soft,depth:{bottom:dep('bottom'),foodTop:dep('foodTop')}};
+    const p={mask,foodVisible:pick('foodVisible'),bottom:pick('bottom'),depth:{bottom:dep('bottom'),foodTop:dep('foodTop')}};
     // a profile that is not complete cannot be used (the game then keeps what it had)
     const ok=p.foodVisible&&p.depth.bottom&&p.depth.foodTop;
     liveCache[id]={base,p:ok?p:base};return liveCache[id].p;
