@@ -11,6 +11,7 @@
   // per-vegetable settings: shape, textures, the pictures of the inside, and (onion) the peeling step
   const VEG={
     paradajz:{shape:'tomato',label:'paradaja',skin:'assets/market_veg/paradajz_koza.webp',caps:['paradajz_presek_1','paradajz_presek_2','paradajz_presek_3'],calyx:true,fill:'#d9301c',capFill:'#c9281a',tile:2,rough:.45,clear:.3},
+    patlidzan:{shape:'eggplant',label:'patlidžana',skin:'assets/market_veg/patlidzan_koza.webp',caps:['patlidzan_presek_1','patlidzan_presek_2','patlidzan_presek_3','patlidzan_presek_4','patlidzan_presek_5'],calyx:false,fill:'#efe6c4',capFill:'#ece3c0',tile:2,rough:.32,clear:.5},
     luk:{shape:'onion',label:'luka',skin:'assets/market_veg/luk_koza.webp',caps:['luk_presek_1','luk_presek_2'],calyx:false,fill:'#f3e3b4',capFill:'#f0e0b0',tile:2,rough:.5,clear:.2,mirror:true,peel:true,peelPile:['luk_kora_1','luk_kora_2','luk_kora_3']}
   };
 
@@ -42,6 +43,13 @@
         let yy=y>0?y*.82+.2*Math.pow(sm(.5,1,y),2):y*.76;
         if(y<-.8)yy+=.04*sm(-.8,-1,y);
         pos.setXYZ(i,x,yy,z);
+        continue;
+      }
+      if(shape==='eggplant'){
+        // an eggplant lies on the board along x: a long slim body, round at the blossom end and narrowing to the neck
+        const rs=.62*(1-.42*Math.pow(sm(-.1,1,y),1.25))*(r>1e-5?Math.pow(r,-.55):0);   // r^.45 instead of r: the ends are round, not pointed
+        const len=y*1.4;
+        pos.setXYZ(i,-len*.8,x*rs*.8,z*rs*.8);
         continue;
       }
       const lobe=1+.022*Math.cos(ang*5+.4)*Math.sin(Math.min(1,Math.abs(y)*1.1+.15)*Math.PI*.9)*(1-.5*Math.abs(y));
