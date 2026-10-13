@@ -13,6 +13,7 @@
     paradajz:{shape:'tomato',label:'paradaja',skin:'assets/market_veg/paradajz_koza.webp',caps:['paradajz_presek_1','paradajz_presek_2','paradajz_presek_3'],calyx:true,fill:'#d9301c',capFill:'#c9281a',tile:2,rough:.45,clear:.3},
     patlidzan:{shape:'eggplant',label:'patlidžana',skin:'assets/market_veg/patlidzan_koza.webp',caps:['patlidzan_presek_1','patlidzan_presek_2','patlidzan_presek_3','patlidzan_presek_4','patlidzan_presek_5'],refD:1,calyx:true,calyxImg:'assets/market_veg/patlidzan_casica.webp',calyxAt:[-1.1,.06,0],fill:'#efe6c4',capFill:'#ece3c0',tile:2,rough:.32,clear:.5},
     krastavac:{shape:'cucumber',label:'krastavca',skin:'assets/market_veg/krastavac_koza.webp',caps:['krastavac_presek_1','krastavac_presek_2','krastavac_presek_3','krastavac_presek_4','krastavac_presek_5','krastavac_presek_uzduz'],longCap:true,refD:.72,calyx:false,fill:'#d8ebc3',capFill:'#d6e9c0',tile:2,rough:.3,clear:.45},
+    kupus:{shape:'cabbage',label:'kupusa',skin:'assets/market_veg/kupus.png',skinPlanar:true,caps:['kupus_sv_presek_1','kupus_sv_presek_2','kupus_sv_presek_3','kupus_sv_presek_4','kupus_sv_presek_5','kupus_sv_srz'],coreCap:true,calyx:false,fill:'#8fbd45',capFill:'#e3edbd',tile:1,rough:.5,clear:.15},
     luk:{shape:'onion',label:'luka',skin:'assets/market_veg/luk_koza.webp',caps:['luk_presek_1','luk_presek_2'],calyx:false,fill:'#f3e3b4',capFill:'#f0e0b0',tile:2,rough:.5,clear:.2,mirror:true,peel:true,peelPile:['luk_kora_1','luk_kora_2','luk_kora_3']}
   };
 
@@ -57,6 +58,13 @@
         // a cucumber lies on the board along x: a long, almost cylindrical body with round ends and a gentle bend
         const rs=.36*(1-.07*y)*(r>1e-5?Math.pow(r,-.6):0);   // r^.4 instead of r: straight sides, round ends
         pos.setXYZ(i,-y*1.7,x*rs,z*rs+.14*(1-y*y));
+        continue;
+      }
+      if(shape==='cabbage'){
+        // a head of cabbage: a slightly flattened ball; the picture of the whole head is laid on it from above (the same picture on the underside), so it reads as one head with a few big leaves
+        const uvA=geo.attributes.uv;
+        uvA.setXY(i,.5+x*.49,.5-z*.49);
+        pos.setXYZ(i,x,y*(y<0?.82:.9),z);
         continue;
       }
       const lobe=1+.022*Math.cos(ang*5+.4)*Math.sin(Math.min(1,Math.abs(y)*1.1+.15)*Math.PI*.9)*(1-.5*Math.abs(y));
@@ -119,7 +127,7 @@
 
   // cap polygon of a cut: points sorted round their centre; returns triangles for the two sides
   let capId=1;
-  const LONG={idx:-1,n:1};   // the lengthwise cut picture (last of the cut faces) and the number of pictures
+  const LONG={idx:-1,n:1,mode:'long',R:1};   // the lengthwise cut picture (last of the cut faces) and the number of pictures
   function makeCaps(pts,n){
     const seen=new Map(),P=[];
     for(const p of pts){const k=Math.round(p[0]*5000)+','+Math.round(p[1]*5000)+','+Math.round(p[2]*5000);if(!seen.has(k)){seen.set(k,1);P.push(p);}}
@@ -136,8 +144,22 @@
         u:dx*e1[0]+dy*e1[1]+dz*e1[2],w:dx*e2[0]+dy*e2[1]+dz*e2[2]};}).sort((a,b)=>a.a-b.a);
     const rot=Math.random()*Math.PI*2,cr=Math.cos(rot),sr=Math.sin(rot);
     // a cut along a long vegetable is a long strip: it takes the lengthwise picture, laid on the strip by its principal axes
-    let longMap=null;
-    if(LONG.idx>=0&&ang.length>=6){
+    let longMap=null,coreMap=false;
+    if(LONG.idx>=0&&LONG.mode==='core'&&ang.length>=6){
+      // a cut that goes close to the middle of a round head shows the core: the picture is turned so that its core points to the stalk end (down)
+      const d0=Math.abs(n[0]*cx+n[1]*cy+n[2]*cz);
+      if(d0<.26*LONG.R){
+        let D=[-n[1]*n[0],-1-n[1]*n[1],-n[1]*n[2]];let dl=Math.hypot(...D);
+        if(dl<.2){D=e1.slice();dl=Math.hypot(...D);}
+        D=D.map(v=>v/dl);
+        const Bv=[n[1]*D[2]-n[2]*D[1],n[2]*D[0]-n[0]*D[2],n[0]*D[1]-n[1]*D[0]];
+        for(const q of ang){const dx=q.p[0]-cx,dy=q.p[1]-cy,dz=q.p[2]-cz;q.pa=dx*D[0]+dy*D[1]+dz*D[2];q.pb=dx*Bv[0]+dy*Bv[1]+dz*Bv[2];}
+        longMap=null;
+        const flip=Math.random()<.5?1:-1;
+        for(const q of ang){const th=Math.atan2(q.pb*flip,q.pa);q.cu=.5+Math.sin(th)*.497;q.cv=.5+Math.cos(th)*.497;}
+        coreMap=true;
+      }
+    }else if(LONG.idx>=0&&ang.length>=6){
       let suu=0,sww=0,suw=0;for(const q of ang){suu+=q.u*q.u;sww+=q.w*q.w;suw+=q.u*q.w;}
       const th=.5*Math.atan2(2*suw,suu-sww),ct=Math.cos(th),st=Math.sin(th);
       let a0=1e9,a1=-1e9,b0=1e9,b1=-1e9;
@@ -150,7 +172,7 @@
       }
     }
     const base=capId++;
-    const id=LONG.idx<0?base:(longMap?base*LONG.n+LONG.idx:base*LONG.n+(base%LONG.idx));   // cap % n picks the picture
+    const id=LONG.idx<0?base:((longMap||coreMap)?base*LONG.n+LONG.idx:base*LONG.n+(base%LONG.idx));   // cap % n picks the picture
     // the rim of a cut face leans a little towards the skin's normal, so the edge reads as very slightly rounded
     const ROUND=.3;
     const mk=(p,uu,vv,sg,rim)=>{
@@ -162,7 +184,8 @@
     const posSide=[],negSide=[];
     // the round cross-section picture is stretched radially so that its skin ring lies exactly on the outline of the cut
     let cuv=[.5,.5];
-    if(longMap){for(const q of ang){const m=longMap(q.pa,q.pb);q.tu=m[0];q.tv=m[1];}cuv=longMap(0,0);}
+    if(coreMap){for(const q of ang){q.tu=q.cu;q.tv=q.cv;}}
+    else if(longMap){for(const q of ang){const m=longMap(q.pa,q.pb);q.tu=m[0];q.tv=m[1];}cuv=longMap(0,0);}
     else for(const q of ang){const t=q.a+rot;q.tu=.5+Math.cos(t)*.497;q.tv=.5+Math.sin(t)*.497;}
     for(let i=0;i<ang.length;i++){
       const a=ang[i],b=ang[(i+1)%ang.length];
@@ -269,6 +292,16 @@
     // ---------- materials ----------
     // skin: the painted skin texture you made, wrapped round the tomato
     const skinTex=(()=>{
+      if(cfg.skinPlanar){
+        const c=document.createElement('canvas');c.width=c.height=1024;const g=c.getContext('2d');
+        g.fillStyle=cfg.fill;g.fillRect(0,0,1024,1024);
+        if(skinImg){
+          // the picture of the whole head is enlarged so that its visible leaves cover the whole canvas (a little more than the ball needs): no flat colour and no black rim of the picture shows on the ball
+          const bx=alphaBox(skinImg)||{x0:0,x1:1,y0:0,y1:1},sw=1024*1.08/(bx.x1-bx.x0),sh=1024*1.08/(bx.y1-bx.y0);
+          g.drawImage(skinImg,-bx.x0*sw-1024*.04,-bx.y0*sh-1024*.04,sw,sh);
+        }
+        const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;return t;
+      }
       const c=document.createElement('canvas');c.width=1024;c.height=512;const g=c.getContext('2d');
       g.fillStyle=cfg.fill;g.fillRect(0,0,1024,512);
       if(skinImg){
@@ -279,7 +312,7 @@
       const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=THREE.RepeatWrapping;t.anisotropy=8;return t;})();
     const skinMat=new THREE.MeshPhysicalMaterial({map:skinTex,roughness:cfg.rough,clearcoat:cfg.clear,clearcoatRoughness:.3});
     // inside: one of your three cross-section pictures per cut (skin ring on the edge, flesh and seeds inside)
-    LONG.n=capImgs.length;LONG.idx=cfg.longCap&&capImgs.length>1?capImgs.length-1:-1;
+    LONG.n=capImgs.length;LONG.idx=(cfg.longCap||cfg.coreCap)&&capImgs.length>1?capImgs.length-1:-1;LONG.mode=cfg.coreCap?'core':'long';LONG.R=cfg.coreCap?1:0;
     const capMats=capImgs.map((_,i)=>{
       const wide=i===LONG.idx,CW=wide?1024:512,CH=wide?384:512;
       const c=document.createElement('canvas');c.width=CW;c.height=CH;const g=c.getContext('2d');
@@ -827,7 +860,7 @@
   }
 
   window.CooksterTomatoCut3D={
-    supports(el){return !!el&&!!VEG[el.dataset.vegKey||'']&&(el.dataset.cutState||'whole')==='whole'&&webglOK();},
+    supports(el){if(el&&el.dataset.vegKey==='kupus'&&el.dataset.fermentPhase==='3')return false;return !!el&&!!VEG[el.dataset.vegKey||'']&&(el.dataset.cutState||'whole')==='whole'&&webglOK();},
     start
   };
 })();
