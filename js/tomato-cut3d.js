@@ -11,7 +11,7 @@
   // per-vegetable settings: shape, textures, the pictures of the inside, and (onion) the peeling step
   const VEG={
     paradajz:{shape:'tomato',label:'paradaja',skin:'assets/market_veg/paradajz_koza.webp',caps:['paradajz_presek_1','paradajz_presek_2','paradajz_presek_3'],calyx:true,fill:'#d9301c',capFill:'#c9281a',tile:2,rough:.45,clear:.3},
-    patlidzan:{shape:'eggplant',label:'patlidžana',skin:'assets/market_veg/patlidzan_koza.webp',caps:['patlidzan_presek_1','patlidzan_presek_2','patlidzan_presek_3','patlidzan_presek_4','patlidzan_presek_5'],calyx:false,fill:'#efe6c4',capFill:'#ece3c0',tile:2,rough:.32,clear:.5},
+    patlidzan:{shape:'eggplant',label:'patlidžana',skin:'assets/market_veg/patlidzan_koza.webp',caps:['patlidzan_presek_1','patlidzan_presek_2','patlidzan_presek_3','patlidzan_presek_4','patlidzan_presek_5'],calyx:true,calyxImg:'assets/market_veg/patlidzan_casica.webp',calyxAt:[-1.1,.06,0],fill:'#efe6c4',capFill:'#ece3c0',tile:2,rough:.32,clear:.5},
     luk:{shape:'onion',label:'luka',skin:'assets/market_veg/luk_koza.webp',caps:['luk_presek_1','luk_presek_2'],calyx:false,fill:'#f3e3b4',capFill:'#f0e0b0',tile:2,rough:.5,clear:.2,mirror:true,peel:true,peelPile:['luk_kora_1','luk_kora_2','luk_kora_3']}
   };
 
@@ -178,6 +178,7 @@
         if(x1<0)return null;return {x0:x0/W,x1:(x1+1)/W,y0:y0/H,y1:(y1+1)/H};
       }catch(_){return null;}
     };
+    const calyxPic=cfg.calyxImg?await loadImg(cfg.calyxImg).catch(()=>null):null;
     const peelPic=cfg.peel?await loadImg(peelSrc).catch(()=>null):null;
     const peelBox=peelPic?alphaBox(peelPic):null;
     // the peel that falls off: three pictures (ring round the onion / bunches left and right / a pile), one at random
@@ -283,6 +284,13 @@
     }
     function makeCalyx(){
       const grp=new THREE.Group(),topY=.64;
+      if(cfg.calyxImg&&calyxPic){
+        // the painted star of leaves lies on the neck end of the eggplant, tilted up and outwards so it is seen from above
+        const tex=new THREE.Texture(calyxPic);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=8;tex.needsUpdate=true;
+        const m=new THREE.Mesh(new THREE.PlaneGeometry(.98,.98),new THREE.MeshStandardMaterial({map:tex,transparent:true,alphaTest:.45,side:THREE.DoubleSide,roughness:.45}));
+        m.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(-.45,.89,0).normalize());
+        m.castShadow=true;grp.add(m);grp.userData.base=[0,topY,0];return grp;
+      }
       for(let i=0;i<5;i++){const s=sepal((.72+(i%2)*.12)*.8,.3,1+(i%3)*.8,1+(i%2)*.4);s.rotation.y=i/5*Math.PI*2+.3;s.position.y=.03;grp.add(s);}
       const disc=new THREE.Mesh(new THREE.CylinderGeometry(.22,.3,.07,24),new THREE.MeshStandardMaterial({color:0x547424,roughness:.6}));disc.position.y=.01;disc.castShadow=true;grp.add(disc);
       const stem=new THREE.Mesh(new THREE.CylinderGeometry(.06,.085,.3,16),stemMat);stem.position.y=.17;stem.rotation.z=.12;stem.castShadow=true;grp.add(stem);
@@ -349,7 +357,7 @@
       }
       const tris=vegTris(cfg.shape,scale);
       let low=1e9;for(const t of tris)for(const v of t.v)low=Math.min(low,v[1]);
-      addPiece(tris,new THREE.Vector3(0,0,0),new THREE.Quaternion(),new THREE.Vector3(),new THREE.Vector3(),cfg.calyx?[0,.64*scale,0]:null);
+      addPiece(tris,new THREE.Vector3(0,0,0),new THREE.Quaternion(),new THREE.Vector3(),new THREE.Vector3(),cfg.calyx?(cfg.calyxAt?cfg.calyxAt.map(v=>v*scale):[0,.64*scale,0]):null);
       const b=pieces[pieces.length-1];
       let wx=0,wz=0;
       if(target){
