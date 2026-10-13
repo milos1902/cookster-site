@@ -139,6 +139,9 @@
       }
       ar/=2;this.cx=cx/(6*ar||1);this.cy=cy/(6*ar||1);this.area=Math.abs(ar);this.poly=poly;
       this.fullPoly=poly;this.fullArea=this.area;this.fullCx=this.cx;this.fullCy=this.cy;
+      this.homeX=this.homeY=null;
+      const hb=prof?.depth?.bottom;
+      if(hb&&frame?.width&&frame?.height){const hx=((hb[0]-frame.left)/frame.width)*SIM_W,hy=((hb[1]-frame.top)/frame.height)*this.H;if(Sim.pointIn(poly,hx,hy)){this.homeX=hx;this.homeY=hy;}}
     }
     static clip(poly,yL){
       const out=[];
@@ -149,6 +152,7 @@
       }
       return out;
     }
+    static pointIn(poly,x,y){let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)c=!c;}return c;}
     static measure(poly){
       let ar=0,cx=0,cy=0;
       for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length],cr=a.x*b.y-b.x*a.y;ar+=cr;cx+=(a.x+b.x)*cr;cy+=(a.y+b.y)*cr;}
@@ -157,15 +161,13 @@
     // The food lies on the floor of the vessel and rises with every addition: the area it may occupy is the part of the
     // calibrated "food visible" area below a level line, which climbs from the bottom up to the top (the calibrated food top).
     applyLevel(){
-      const full=this.fullPoly,ys=full.map(q=>q.y),yMin=Math.min(...ys),yMax=Math.max(...ys);
-      const lvl=(this.fill||1)/LEVEL_FULL;   // how high the food stands: 0 = on the floor, 1 = up to the top line
-      const target=Math.max(.16,Math.min(1,lvl))*this.fullArea;
-      let lo=yMin,hi=yMax;   // bisection: higher level line = smaller area
-      for(let i=0;i<22;i++){
-        const mid=(lo+hi)/2,m=Sim.measure(Sim.clip(full,mid));
-        if(m.area>target)lo=mid;else hi=mid;
-      }
-      const poly=lvl>=1?full:Sim.clip(full,(lo+hi)/2);
+      // The food starts as a small heap around the "bottom point" the player marked in the tool (the yellow point; the middle of the area if there is none)
+      // and grows from there (the same shape, larger) up to the whole calibrated area when the vessel is full.
+      const full=this.fullPoly;
+      const lvl=(this.fill||1)/LEVEL_FULL;   // 0 = one small heap, 1 = the whole area
+      const hx=this.homeX!=null?this.homeX:this.fullCx,hy=this.homeY!=null?this.homeY:this.fullCy;
+      const sc=lvl>=1?1:Math.sqrt(Math.max(.16,lvl));
+      const poly=sc>=1?full:full.map(q=>({x:hx+(q.x-hx)*sc,y:hy+(q.y-hy)*sc}));
       if(poly.length<3)return;
       const m=Sim.measure(poly);
       this.poly=poly;this.cx=m.cx;this.cy=m.cy;this.area=m.area;this.bedSpots=null;
