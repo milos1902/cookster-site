@@ -61,7 +61,10 @@
   function applySoft(el,points,sd){
     if(!(sd>0)){el.style.clipPath=polygon(points);el.style.webkitClipPath=el.style.clipPath;for(const k of ['maskImage','webkitMaskImage'])el.style[k]='none';return;}
     const u=softMask(points,sd);
-    el.style.clipPath='none';el.style.webkitClipPath='none';
+    // a hard clip a little wider than the area stays as a safety: if a browser does not paint the soft mask, the whole picture must still never show
+    let cx=0,cy=0;points.forEach(q=>{cx+=q[0];cy+=q[1];});cx/=points.length;cy/=points.length;
+    const wide=polygon(points.map(q=>[+(cx+(q[0]-cx)*1.12).toFixed(2),+(cy+(q[1]-cy)*1.12).toFixed(2)]));
+    el.style.clipPath=wide;el.style.webkitClipPath=wide;
     for(const pre of ['','webkit']){
       const k=n=>pre?pre+n[0].toUpperCase()+n.slice(1):n;
       el.style[k('maskImage')]=u;el.style[k('maskSize')]='120% 120%';el.style[k('maskPosition')]='50% 50%';el.style[k('maskRepeat')]='no-repeat';
