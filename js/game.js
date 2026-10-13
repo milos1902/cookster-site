@@ -10456,7 +10456,7 @@ function openPaprikaBagActionMenu(target,x,y){
       const count=paprikaSteamBagCount(target);
       addAction('Zatvori kesu',count<=0,()=>{target.dataset.bagClosed='1';target.dataset.bagClosedAt=String(Date.now());renderPaprikaSteamBag(target);CooksterSave.schedule();showToast('Kesa je zatvorena. Paprike se pare 10 sekundi.');});
     }
-  }else if(target.dataset.readyToPeel==='1'&&target.dataset.peeled!=='1')addAction(isWholePatlidzan(target)?'Oljušti patlidžan':'Oljušti papriku',false,()=>peelSteamedPepper(target));
+  }
   document.body.appendChild(menu);paprikaBagActionMenu=menu;
   const mw=menu.offsetWidth||180,mh=menu.offsetHeight||60;
   menu.style.left=Math.max(8,Math.min(innerWidth-mw-8,x+4))+'px';menu.style.top=Math.max(8,Math.min(innerHeight-mh-8,y+4))+'px';
@@ -12155,7 +12155,7 @@ function wholeProduceEntries(counts,metaItems={}){
   return out;
 }
 function appendWholeRoastedPeppers(layer,count,phase=4){
- const n=Math.max(0,Math.min(8,Math.round(+count||0)));
+ const n=Math.max(0,Math.min(20,Math.round(+count||0)));
  if(!layer||n<=0)return;
 
  // v174: roasted peppers follow the same centered composition logic as chopped food:
@@ -12171,7 +12171,18 @@ function appendWholeRoastedPeppers(layer,count,phase=4){
    7:[[50,35,-4,38],[35,42,-10,38],[65,42,8,38],[29,56,-7,37],[71,56,7,37],[40,68,6,37],[60,68,-6,37]],
    8:[[39,35,-10,36],[61,35,8,36],[28,47,-7,36],[72,47,7,36],[31,62,5,35],[69,62,-5,35],[43,69,6,35],[57,69,-6,35]]
  };
- const pose=layouts[n]||layouts[8];
+ let pose=layouts[n];
+ if(!pose){
+   // 9..20 peppers (the big round tray): rows of overlapping peppers that fill the whole food area, smaller the more there are
+   const cols=n<=12?4:5,rows=Math.ceil(n/cols),w=Math.max(23,Math.round(31-(n-8)*.65));
+   pose=[];
+   for(let i=0;i<n;i++){
+     const r=Math.floor(i/cols),c=i%cols,inRow=Math.min(cols,n-r*cols);
+     const x=50+(c-(inRow-1)/2)*(w*.88)+(r%2?w*.22:-w*.22)*(inRow<cols?0:1);
+     const y=rows===1?50:30+r*(44/(rows-1))+((c%2)?3:-3);
+     pose.push([x,y,((i*37)%17)-8,w]);
+   }
+ }
 
  for(let i=0;i<pose.length;i++){
    const [x,y,rot,w]=pose[i];
@@ -15281,7 +15292,7 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
       return;
     }
     if(it&&isPaprikaSteamBag(it)){e.preventDefault();openPaprikaBagActionMenu(it,e.clientX,e.clientY);return}
-    if(it&&it.dataset.readyToPeel==='1'&&it.dataset.peeled!=='1'){e.preventDefault();openPaprikaBagActionMenu(it,e.clientX,e.clientY);return}
+    if(it&&it.dataset.readyToPeel==='1'&&it.dataset.peeled!=='1'){e.preventDefault();showToast(it.dataset.attachedToBoard==='1'?'Drži slovo E da oljušti.':'Stavi na dasku i drži slovo E da oljušti.');return}
    // Market paper bags use the same physical right-click pickup/drop language as crates.
    if(holding&&holding.dataset.marketBag==='1'){dropHolding();return}
    if(it&&it.dataset.marketBag==='1'){
