@@ -207,7 +207,7 @@ function set(el,f){
    (its pose, or the mouse if there is none): a damped spring driven by the acceleration, like the water in a real pot. It does not depend on anything else of this file. */
 (function(){
   var H={px:null,py:null,vx:0,vy:0,sx:0,sy:0,svx:0,svy:0,lt:0,id:null},hud=null,DBG=false;
-  try{DBG=localStorage.getItem('cookster.waterdebug')==='1';}catch(e){}   /* a small status text for finding faults: localStorage.setItem('cookster.waterdebug','1') */
+  try{DBG=localStorage.getItem('cookster.waterdebug')!=='0';}catch(e){DBG=true;}   /* a small status text for finding faults: localStorage.setItem('cookster.waterdebug','1') */
   function hudSet(t){
     if(!DBG)return;
     if(!hud){hud=document.createElement('div');hud.style.cssText='position:fixed;left:8px;bottom:56px;z-index:2147483600;background:rgba(0,0,0,.72);color:#9ff;font:11px/1.3 monospace;padding:4px 7px;border-radius:5px;pointer-events:none;white-space:pre';hud.setAttribute('data-tool-ui','1');document.body.appendChild(hud);}
@@ -237,7 +237,12 @@ function set(el,f){
     if(gg)gg.style.transform='translate('+(PX*7).toFixed(2)+'%,'+(PY*4).toFixed(2)+'%) rotate('+(PX*3).toFixed(2)+'deg)';
     if(gs)gs.style.transform='translate('+(PX*9).toFixed(2)+'%,'+(PY*6).toFixed(2)+'%) rotate('+(PX*4).toFixed(2)+'deg) scale(1.2)';
     if(gh){gh.style.left=(50+PX*34).toFixed(1)+'%';gh.style.top=(45+PY*24).toFixed(1)+'%';}
-    hudSet('voda u ruci: '+(h.dataset.itemId||'?')+'  nivo '+water.toFixed(2)+'\nkopija: '+(gg?'ima vodu':'NEMA vode u kopiji')+'  izvor pokreta: '+srcName+'\nbrzina '+Math.round(H.vx)+' px/s   njihanje sx '+PX.toFixed(2));
+    var pr0=null;try{pr0=prof(h.dataset.itemId);}catch(e){}
+    var ov=h._waterOv,srcState=h._vw||{};
+    hudSet('DIJAGNOSTIKA vode (privremeno)\n'+(h.dataset.itemId||'?')+'  nivo '+water.toFixed(2)+'  kalibracija: '+(!pr0?'NEMA':(pr0.bottomPoly?'dno+vrh (morph)':'stara (bez dna)'))+(pr0&&pr0.soft?'  meki rub '+pr0.soft:'')+'\n'+
+      'kopija: '+(gg?'ima vodu':'NEMA vode u kopiji')+(gs?' | surf':' | NEMA surf')+'  izvor pokreta: '+srcName+'\n'+
+      'original: sloj '+(ov?(ov.isConnected?'u stranici':'VAN stranice'):'nema')+'  petlja '+(swRun?'radi':'STOJI')+' ('+SW.length+')  S.sx '+(+srcState.sx||0).toFixed(2)+'\n'+
+      'brzina '+Math.round(H.vx)+' px/s   njihanje kopije sx '+PX.toFixed(2));
   }
   requestAnimationFrame(frame);
 })();
