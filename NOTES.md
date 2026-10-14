@@ -471,3 +471,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Vraćeno staro kretanje vode (2026-10-14, vessel-water.js?v=17)
 - Posle skidanja svetlih prelaza tekstura je počela da klizi levo-desno (animacija `vwSlosh` je prešla na pravi sloj teksture, ranije je zbog broja slojeva nije pomerala). Animacija teksture uklonjena: kretanje daju iskrivljavanje (`#vwDist`) i njihanje ivice, kao pre.
+
+## Voda se vidi u ruci, brže njihanje (2026-10-14, vessel-water.js?v=19)
+- Uzrok nestajanja vode dok je posuda u ruci: SVG `<mask>` za meki rub nije radio na uzetoj posudi. Meki rub je sada filter (`feGaussianBlur` na alfi + `feComposite in`), jačina je u pikselima širine posude.
+- Njihanje: uzimanje u ruku = brzo 5 s, spuštanje (sto, šporet, sudopera) i sipanje = brzo 7 s, pa mirno (ostaje malo kretanja). Što je jače, brža je i brzina kretanja (faze se sabiraju po posudi).
