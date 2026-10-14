@@ -26,7 +26,7 @@ var css=document.createElement('style');
 css.textContent='.cookster-sign{position:absolute;pointer-events:none;transform-origin:50% 50%;-webkit-user-drag:none;user-select:none}'+
  '.cookster-sign img{display:block;width:100%;height:auto;pointer-events:none;-webkit-user-drag:none}'+
  '.cookster-sign.go{pointer-events:auto;cursor:pointer;transition:scale .15s ease,filter .15s ease}body:not(.sign-tool) .cookster-sign.go:hover{scale:1.09;filter:brightness(1.16) saturate(1.12) drop-shadow(0 0 8px rgba(255,226,140,.85))}body:not(.sign-tool) .cookster-sign.go:active{scale:1.03}body.sign-tool .cookster-sign{pointer-events:auto;cursor:move}body.sign-tool .cookster-sign.sel{outline:2px dashed #42d6e8;outline-offset:2px}'+
- 'body.sign-tool .cookster-mirror{pointer-events:none}.sign-host{position:absolute;pointer-events:none;z-index:4}'+
+ 'body.sign-tool .cookster-mirror{pointer-events:auto;cursor:move;outline:1px dashed #ffad42;outline-offset:2px}.sign-host{position:absolute;pointer-events:none;z-index:4}'+
  '#signToolBtn2{position:fixed;right:12px;bottom:12px;z-index:2147483500;display:none;border:2px solid #351b0d;border-radius:9px;background:#e8c27a;color:#351b0d;font:700 13px/1 system-ui,sans-serif;padding:9px 12px;cursor:pointer}'+
  '#signTool{position:fixed;right:12px;top:60px;z-index:2147483600;width:280px;max-height:calc(100vh - 80px);overflow:auto;display:none;background:rgba(36,22,10,.94);border:2px solid #7a5428;border-radius:10px;color:#f3e3c2;font:13px/1.35 system-ui,sans-serif;padding:10px}#signTool.open{display:block}'+
  '#signTool button,#signTool select{border:1px solid #351b0d;border-radius:7px;background:#e8c27a;color:#351b0d;font:700 12px/1 system-ui,sans-serif;padding:7px 9px;margin:2px 4px 2px 0;cursor:pointer}#signTool select{width:100%;font-weight:600}'+
@@ -116,12 +116,25 @@ function mirror(s){
   var sc=document.getElementById('scene');if(!sc)return;
   if(!s._m||s._m.parentNode!==sc){
     if(s._m)s._m.remove();
-    var el=document.createElement('div');el.className='cookster-sign cookster-mirror go';el.title=TYPES[s.type]||'';el.addEventListener('pointerdown',function(e){if(!open)e.stopPropagation();});['click','dblclick','contextmenu','mousedown','mouseup','pointerup'].forEach(function(n){el.addEventListener(n,function(e){if(open)return;e.stopPropagation();if(n==='click'){e.preventDefault();go(s.type);}});});
+    var el=document.createElement('div');el.className='cookster-sign cookster-mirror go';el.title=TYPES[s.type]||'';el.addEventListener('pointerdown',function(e){
+      e.stopPropagation();if(!open||e.button!==0)return;e.preventDefault();
+      // tool open: a small sign of the grill on the kitchen picture can be moved by hand (it keeps this place; double click = back to the automatic place)
+      var r=el.parentNode.getBoundingClientRect(),cur=s.k||{x:parseFloat(el.style.left),y:parseFloat(el.style.top),w:parseFloat(el.style.width)};s.k={x:cur.x,y:cur.y,w:cur.w};
+      var sx=e.clientX,sy=e.clientY,ox=s.k.x,oy=s.k.y;el.setPointerCapture(e.pointerId);
+      function mv(ev){s.k.x=+(ox+(ev.clientX-sx)/r.width*100).toFixed(2);s.k.y=+(oy+(ev.clientY-sy)/r.height*100).toFixed(2);mirror(s);}
+      function up(){el.removeEventListener('pointermove',mv);el.removeEventListener('pointerup',up);save();}
+      el.addEventListener('pointermove',mv);el.addEventListener('pointerup',up);});
+    el.addEventListener('wheel',function(e){if(!open)return;e.preventDefault();e.stopPropagation();var cur=s.k||{x:parseFloat(el.style.left),y:parseFloat(el.style.top),w:parseFloat(el.style.width)};s.k={x:cur.x,y:cur.y,w:+Math.max(.5,Math.min(30,cur.w*(e.deltaY<0?1.06:1/1.06))).toFixed(2)};mirror(s);save();},{passive:false});
+    el.addEventListener('dblclick',function(e){if(!open)return;e.stopPropagation();delete s.k;mirror(s);save();});
+    ['click','contextmenu','mousedown','mouseup','pointerup'].forEach(function(n){el.addEventListener(n,function(e){e.stopPropagation();if(open)return;if(n==='click'){e.preventDefault();go(s.type);}});});
     var im=document.createElement('img');im.alt='';im.draggable=false;el.appendChild(im);sc.appendChild(el);s._m=el;s._mt=null;
   }
   var im2=s._m.firstChild;if(s._mt!==s.type){im2.src=pic(s.type);s._mt=s.type;}
   var kx=GG.x+(s.x/100*1672-GT.x)/GK,ky=GG.y+(s.y/100*941-GT.y)/GK,e=s._m;
-  e.style.left=(kx/1672*100)+'%';e.style.top=(ky/941*100)+'%';e.style.width=(s.w/GK)+'%';e.style.containerType='inline-size';e.style.zIndex=s.front?'9000':'3';
+  var mx=kx/1672*100,my=ky/941*100,mw=s.w/GK;
+  if(s.k){mx=s.k.x;my=s.k.y;mw=s.k.w;}                      /* placed by hand in the kitchen (the close-up shows more than the kitchen picture) */
+  e.style.display=(!s.k&&(mx<0||mx>100||my<0||my>100))?'none':'';   /* a sign outside the picture of the kitchen (it is on the part that only the close-up shows) is not drawn there */
+  e.style.left=mx+'%';e.style.top=my+'%';e.style.width=mw+'%';e.style.containerType='inline-size';e.style.zIndex=s.front?'9000':'3';
   im2.style.filter=s.sh>0?'drop-shadow('+(s.shx||0)+'cqw '+(s.shy==null?3:s.shy)+'cqw '+(s.shb==null?3:s.shb)+'cqw rgba(15,6,0,'+s.sh+'))':'none';
   e.style.transform='translate(-50%,-50%) perspective('+(s.p||900)+'px) rotateX('+(s.rx||0)+'deg) rotateY('+(s.ry||0)+'deg) rotateZ('+(s.rz||0)+'deg) scaleX('+(s.flip?-1:1)+')';
 }
