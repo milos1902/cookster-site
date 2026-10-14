@@ -14313,8 +14313,11 @@ function simulateCookingVessel(vessel,dt,now){
    showToast(`${vessel.dataset.label||'Jelo'} je gotovo — skloni posuđe sa vatre!`);
  }
  if(thermal.becameBurnt){
-   showToast(`${vessel.dataset.label||'Jelo'} je ostalo predugo na vatri i deo hrane je zagoreo!`);
+   showToast(model.scorched?`${vessel.dataset.label||'Jelo'}: nije bilo ulja i niko nije mešao, hrana se zalepila i zagorela!`:`${vessel.dataset.label||'Jelo'} je ostalo predugo na vatri i deo hrane je zagoreo!`);
  }
+ // a warning before it burns: hot and dry (no oil), and nobody stirs
+ if((+model.dry||0)>=4&&vessel.dataset.dryWarned!=='1'&&!model.burnt){vessel.dataset.dryWarned='1';showToast('Nema ulja i niko ne meša — hrana će se zalepiti i zagoreti! Mešaj ili dodaj ulje.');}
+ if((+model.dry||0)<1)delete vessel.dataset.dryWarned;
  if(count<=0)delete vessel.dataset.readyAnnounced;
 
  const counts=model.ingredients||{};
