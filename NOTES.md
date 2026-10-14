@@ -480,3 +480,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Novi alat "🪧 Putokazi" (dugme u HUD-u, panel `data-tool-ui`): dodaj koliko hoćeš putokaza (Kuhinja, Kafana, Sudopera, Roštilj), prevuci ih u sceni, točak miša = veličina; rotacija, nagib napred-nazad (`rotateX`), nagib levo-desno (`rotateY`), jačina perspektive, ogledalo, ispred/iza predmeta, duplikat, obriši.
 - Slike: `assets/signs/{kuhinja,kafana,sudopera,rostilj}.webp` (prozirna pozadina). Čuva se u `cookster.signposts.v1`; "Kopiraj sve (JSON)" daje listu za ugradnju u `SIGN_DEF` (sada prazna).
 - Putokazi su u `#scene` (koordinate scene), pa prate kameru; ne zavise od toga koja soba je u pogledu.
+
+## Putokazi u svim pogledima (2026-10-14, signposts.js?v=2)
+- Putokaz pripada pogledu u kome je postavljen: kuhinja, sudopera (krupan plan), roštilj (krupan plan), kafana. Alat prikazuje putokaze trenutnog pogleda; van kuhinje je dugme "🪧 Putokazi" dole desno.
+- Položaj i širina su sada u procentima slike pogleda (`u:1`); stari putokazi u pikselima kuhinje se pretvaraju pri učitavanju. Svakih 250 ms putokazi se vezuju za stranicu svog pogleda (krupan plan roštilja se pravi iznova pri svakom otvaranju).
