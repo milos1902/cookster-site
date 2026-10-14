@@ -29,6 +29,31 @@ function addFlour(x,y,n){
 piles.forEach(function(p){setTimeout(function(){drawPile(p);},0);});
 setInterval(function(){piles.forEach(function(p){if(p.el&&!p.el.isConnected)p.el=null;if(!p.el)drawPile(p);});},1500);
 
+// ---- the kneading trough (nacve): flour that falls into it stays inside (a pile in the opening of the trough, under its front rim) ----
+var TR='nacve',INNER={l:13,r:89,t:10,b:81};   // the opening of the trough, percents of its picture
+function troughAt(x,y){
+  var list=typeof items!=='undefined'?items:[],i;
+  for(i=list.length-1;i>=0;i--){
+    var e=list[i];if(!e||!e.dataset||e.dataset.itemId!==TR||!e.isConnected)continue;
+    var r=e.getBoundingClientRect(),a=screenToScene(r.left,r.top),b=screenToScene(r.right,r.bottom),w=b.x-a.x,h=b.y-a.y;
+    if(x>=a.x+w*INNER.l/100&&x<=a.x+w*INNER.r/100&&y>=a.y+h*INNER.t/100&&y<=a.y+h*(INNER.b+14)/100)return e;
+  }
+  return null;
+}
+function drawTrough(e){
+  var n=+e.dataset.inFlour||0;
+  if(n<=0){if(e._fl){e._fl.remove();e._fl=null;}return;}
+  if(!e._fl||!e._fl.isConnected){
+    var clip=document.createElement('div');clip.className='flour-in';
+    clip.style.cssText='position:absolute;left:'+INNER.l+'%;top:'+INNER.t+'%;width:'+(INNER.r-INNER.l)+'%;height:'+(INNER.b-INNER.t)+'%;border-radius:38% / 18%;overflow:hidden;pointer-events:none;z-index:3';
+    var im=document.createElement('img');im.src=IMG.pile;im.draggable=false;im.style.cssText='position:absolute;left:50%;top:62%;transform:translate(-50%,-62%);user-select:none';
+    clip.appendChild(im);e.appendChild(clip);e._fl=clip;e._flImg=im;
+  }
+  var st=n<35?'pile':(n<110?'pile2':'pile3');
+  if(e._flSt!==st){e._flSt=st;e._flImg.src=IMG[st];}
+  e._flImg.style.width=Math.min(96,24+Math.pow(Math.min(n,300),.6)*7.6)+'%';
+}
+setInterval(function(){(typeof items!=='undefined'?items:[]).forEach(function(e){if(e&&e.dataset&&e.dataset.itemId===TR&&((+e.dataset.inFlour||0)>0||e._fl))drawTrough(e);});},700);
 function isSack(el){return !!el&&el.dataset&&el.dataset.itemId===SACK;}
 function bodies(){
   var out=[],h=typeof holding!=='undefined'?holding:null;
@@ -107,8 +132,13 @@ function frame(now){
   if(c&&pour.t>.35){
     var n=Math.min(left,RATE*dt);
     var w=c.w||140,hh=c.h||110;
-    var p=addFlour(c.cx+w*.34,c.by-hh*.04,n);   // the stream lands at the lower right of the tilted sack
-    var land={x:p.x,y:p.y},m=mouthPoint();
+    var lx=c.cx+w*.34,ly=c.by-hh*.04,tr=troughAt(lx,ly),p,land;
+    if(tr){                                       // into the trough
+      tr.dataset.inFlour=String(Math.min(300,(+tr.dataset.inFlour||0)+n));drawTrough(tr);
+      var tb=tr.getBoundingClientRect(),tp=screenToScene(tb.left+tb.width*.5,tb.top+tb.height*.5);
+      p={x:tp.x,y:tp.y};land={x:lx,y:ly};
+    }else{p=addFlour(lx,ly,n);land={x:p.x,y:p.y};}
+    var m=mouthPoint();
     if(m){spawnGrains(m,land,3);if(now-puffAt>150){puffAt=now;puff(land,pour.t<1);}}
     h.dataset.flour=String(left-n);
     pour.pile=p;
