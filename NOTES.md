@@ -465,3 +465,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Pljusak iza prednjeg zida, bez svetlih prelaza (2026-10-14, sink-zoom.js?v=20, vessel-water.js?v=15)
 - Sudopera: mlaz i pljusak se brišu (`destination-out`) gde je nacrtana prednja ivica posude (crvena u alatu "Voda u posudi", ili iz kalibracije hrane): zid posude je iznad vode.
 - Uklonjeni svetli prelazi (`vw-wave`) i svetli gradijent preko vode.
+
+## Meki rub samo na liniji ivice (2026-10-14, vessel-water.js?v=16)
+- Meki rub vode više ne zamućuje celu površinu: oblik površine seče SVG maska (`<mask>` sa zamućenim poligonom, `feGaussianBlur` u jedinicama širine vode), a slojevi vode ostaju oštri. Maska se osvežava u istoj petlji kao njihanje.
