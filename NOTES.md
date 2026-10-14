@@ -565,3 +565,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Fioka i teglice sinhronizovane, dekodiranje slike u ruci (2026-10-14, kitchen-fixtures.js?v=69, game.js?v=3.121)
 - Posle duže igre pregledač izbacuje dekodirane slike: kadar fioke kasni, a teglice (druge slike) se već pokažu/sakriju. Sada se kadar fioke prikaže tek kad je dekodiran (`decode()`), `d.vis` je stvarno prikazani kadar, a teglice/alati se crtaju samo uz njega (i kod otvaranja i kod zatvaranja).
 - Isto za predmet u ruci: kopija se dekodira pre nego što se pravi predmet sakrije (nema "samo senka").
+
+## Starinski bokal u sudoperi sa vodom i procentima (2026-10-14, vessel-water.js?v=32, sink-zoom.js?v=21, game.js?v=3.123)
+- `bokal_stari` je sada posuda (`type:'container'`, `vessel:true`, kapacitet 6, 160x160, dozvoljen u sudoperi), pa se puni/prazni kao ostale (slavina, presipanje).
+- Voda je samo u ustima bokala (ugrađeni `WDEF.bokal_stari` u vessel-water.js; raste od male mrlje pozadi do celih usta); telo bokala je prednja maska koja pokriva vodu, zadnji zid ne. Može se doterati u alatu "Voda u posudi" (ima prednost nad `WDEF`).
+- Sa strane sitan natpis procenata (`.vw-pct`, `CooksterVesselWater.label`) koji brzo trči gore dok se puni i dole dok se sipa; i u kuhinji i u sudoperi. Uključeno za ID-jeve u `PCT`.
