@@ -18,6 +18,7 @@ signs.forEach(function(s){
   delete s._el;
   if(!s.view)s.view='kitchen';
   if(!s.u){s.u=1;if(s.view==='kitchen'){s.x=+(s.x/1672*100).toFixed(2);s.y=+(s.y/941*100).toFixed(2);s.w=+(s.w/1672*100).toFixed(2);}}   /* the first version stored pixels of the kitchen picture */
+  if(s.k){var kk=s.k;delete s.k;if(s.view==='grill'){s.x=+((870+(kk.x/100*1672-492)*2.52)/1672*100).toFixed(2);s.y=+((470+(kk.y/100*941-125)*2.52)/941*100).toFixed(2);s.w=+(kk.w*2.52).toFixed(2);}}   /* an earlier version kept a separate place for the kitchen */
   s.id=s.id||('s'+(++uid));var n=+String(s.id).slice(1);if(n>uid)uid=n;
 });
 function save(){try{localStorage.setItem(KEY,JSON.stringify(signs,function(k,v){return k==='_el'||k==='_m'||k==='_mt'?undefined:v;}));}catch(e){}}
@@ -112,28 +113,32 @@ function build(s,host){
 /* the signs of the grill close-up are also on the grill in the kitchen (small, because the grill is far): the close-up is the kitchen picture zoomed K times
    (see liveParams in kitchen-fixtures.js: the kitchen point G=(492,125) lies on the close-up point T=(870,470)), so the zoom carries the signs together with the grill */
 var GK=2.52,GG={x:492,y:125},GT={x:870,y:470};
+function setFromKitchen(s,mx,my,mw){   // the place on the kitchen picture (percents) -> the place in the close-up (percents)
+  if(mx!=null)s.x=+((GT.x+(mx/100*1672-GG.x)*GK)/1672*100).toFixed(2);
+  if(my!=null)s.y=+((GT.y+(my/100*941-GG.y)*GK)/941*100).toFixed(2);
+  if(mw!=null)s.w=+(mw*GK).toFixed(2);
+}
 function mirror(s){
   var sc=document.getElementById('scene');if(!sc)return;
   if(!s._m||s._m.parentNode!==sc){
     if(s._m)s._m.remove();
     var el=document.createElement('div');el.className='cookster-sign cookster-mirror go';el.title=TYPES[s.type]||'';el.addEventListener('pointerdown',function(e){
       e.stopPropagation();if(!open||e.button!==0)return;e.preventDefault();
-      // tool open: a small sign of the grill on the kitchen picture can be moved by hand (it keeps this place; double click = back to the automatic place)
-      var r=el.parentNode.getBoundingClientRect(),cur=s.k||{x:parseFloat(el.style.left),y:parseFloat(el.style.top),w:parseFloat(el.style.width)};s.k={x:cur.x,y:cur.y,w:cur.w};
-      var sx=e.clientX,sy=e.clientY,ox=s.k.x,oy=s.k.y;el.setPointerCapture(e.pointerId);
-      function mv(ev){s.k.x=+(ox+(ev.clientX-sx)/r.width*100).toFixed(2);s.k.y=+(oy+(ev.clientY-sy)/r.height*100).toFixed(2);mirror(s);}
+      // tool open (in the kitchen): the small sign is moved by hand; the place in the close-up of the grill follows (it is always the same place of the same picture, so the zoom carries it)
+      var r=el.parentNode.getBoundingClientRect(),sx=e.clientX,sy=e.clientY,m0={x:parseFloat(el.style.left),y:parseFloat(el.style.top)};el.setPointerCapture(e.pointerId);
+      function mv(ev){setFromKitchen(s,m0.x+(ev.clientX-sx)/r.width*100,m0.y+(ev.clientY-sy)/r.height*100,null);mirror(s);}
       function up(){el.removeEventListener('pointermove',mv);el.removeEventListener('pointerup',up);save();}
       el.addEventListener('pointermove',mv);el.addEventListener('pointerup',up);});
-    el.addEventListener('wheel',function(e){if(!open)return;e.preventDefault();e.stopPropagation();var cur=s.k||{x:parseFloat(el.style.left),y:parseFloat(el.style.top),w:parseFloat(el.style.width)};s.k={x:cur.x,y:cur.y,w:+Math.max(.5,Math.min(30,cur.w*(e.deltaY<0?1.06:1/1.06))).toFixed(2)};mirror(s);save();},{passive:false});
-    el.addEventListener('dblclick',function(e){if(!open)return;e.stopPropagation();delete s.k;mirror(s);save();});
+    el.addEventListener('wheel',function(e){if(!open)return;e.preventDefault();e.stopPropagation();setFromKitchen(s,null,null,Math.max(.5,Math.min(30,(s.w/GK)*(e.deltaY<0?1.06:1/1.06))));mirror(s);save();},{passive:false});
     ['click','contextmenu','mousedown','mouseup','pointerup'].forEach(function(n){el.addEventListener(n,function(e){e.stopPropagation();if(open)return;if(n==='click'){e.preventDefault();go(s.type);}});});
     var im=document.createElement('img');im.alt='';im.draggable=false;el.appendChild(im);sc.appendChild(el);s._m=el;s._mt=null;
   }
   var im2=s._m.firstChild;if(s._mt!==s.type){im2.src=pic(s.type);s._mt=s.type;}
   var kx=GG.x+(s.x/100*1672-GT.x)/GK,ky=GG.y+(s.y/100*941-GT.y)/GK,e=s._m;
   var mx=kx/1672*100,my=ky/941*100,mw=s.w/GK;
-  if(s.k){mx=s.k.x;my=s.k.y;mw=s.k.w;}                      /* placed by hand in the kitchen (the close-up shows more than the kitchen picture) */
-  e.style.display=(!s.k&&(mx<0||mx>100||my<0||my>100))?'none':'';   /* a sign outside the picture of the kitchen (it is on the part that only the close-up shows) is not drawn there */
+  var outside=mx<0||mx>100||my<0||my>100;
+  if(open&&outside){mx=Math.max(4,Math.min(96,mx));my=Math.max(5,Math.min(95,my));}   /* tool open: a sign that lies outside the picture waits at its edge, so it can be taken and pulled into the picture */
+  e.style.display=(!open&&outside)?'none':'';   /* a sign outside the picture of the kitchen (it is on the part that only the close-up shows) is not drawn there; with the tool open it is shown so it can be pulled into the picture */
   e.style.left=mx+'%';e.style.top=my+'%';e.style.width=mw+'%';e.style.containerType='inline-size';e.style.zIndex=s.front?'9000':'3';
   im2.style.filter=s.sh>0?'drop-shadow('+(s.shx||0)+'cqw '+(s.shy==null?3:s.shy)+'cqw '+(s.shb==null?3:s.shb)+'cqw rgba(15,6,0,'+s.sh+'))':'none';
   e.style.transform='translate(-50%,-50%) perspective('+(s.p||900)+'px) rotateX('+(s.rx||0)+'deg) rotateY('+(s.ry||0)+'deg) rotateZ('+(s.rz||0)+'deg) scaleX('+(s.flip?-1:1)+')';
