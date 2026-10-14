@@ -498,3 +498,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Putokazi ugrađeni u igru (2026-10-14, signposts.js?v=6)
 - Vlasnikov JSON (8 putokaza: 4 roštilj, 2 sudopera, 2 kuhinja) je u `SIGN_DEF`; svi igrači ih imaju. Ključ čuvanja je sada `cookster.signposts.v2` (stara probna lista v1 se ne koristi); izmene u alatu se čuvaju lokalno i imaju prednost nad `SIGN_DEF`. Za novi izvoz: zameniti `SIGN_DEF` i podići ključ (v3).
+
+## Putokazi vode na mesta + hover (2026-10-14, signposts.js?v=7, kitchen-fixtures.js?v=68)
+- Klik na putokaz (alat zatvoren): kuhinja → nazad u kuhinju, sudopera → krupan plan sudopere, roštilj → krupan plan roštilja, kafana → kafana (kroz vrata), bašta → bašta, špajz → špajz. Iz drugog pogleda prvo izađe iz trenutnog, pa uđe. Radi i na malim putokazima roštilja u kuhinji (preslikanim). Klik ne prolazi na sliku ispod.
+- Hover: putokaz se poveća, posvetli i dobije žut sjaj; tooltip sa imenom. `CooksterKitchenFx.zoomDoor` je sada izložen.

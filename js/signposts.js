@@ -25,14 +25,39 @@ function pic(t){return 'assets/signs/'+t+'.webp?v=2';}
 var css=document.createElement('style');
 css.textContent='.cookster-sign{position:absolute;pointer-events:none;transform-origin:50% 50%;-webkit-user-drag:none;user-select:none}'+
  '.cookster-sign img{display:block;width:100%;height:auto;pointer-events:none;-webkit-user-drag:none}'+
- 'body.sign-tool .cookster-sign{pointer-events:auto;cursor:move}body.sign-tool .cookster-sign.sel{outline:2px dashed #42d6e8;outline-offset:2px}'+
- '.sign-host{position:absolute;pointer-events:none;z-index:4}'+
+ '.cookster-sign.go{pointer-events:auto;cursor:pointer;transition:scale .15s ease,filter .15s ease}body:not(.sign-tool) .cookster-sign.go:hover{scale:1.09;filter:brightness(1.16) saturate(1.12) drop-shadow(0 0 8px rgba(255,226,140,.85))}body:not(.sign-tool) .cookster-sign.go:active{scale:1.03}body.sign-tool .cookster-sign{pointer-events:auto;cursor:move}body.sign-tool .cookster-sign.sel{outline:2px dashed #42d6e8;outline-offset:2px}'+
+ 'body.sign-tool .cookster-mirror{pointer-events:none}.sign-host{position:absolute;pointer-events:none;z-index:4}'+
  '#signToolBtn2{position:fixed;right:12px;bottom:12px;z-index:2147483500;display:none;border:2px solid #351b0d;border-radius:9px;background:#e8c27a;color:#351b0d;font:700 13px/1 system-ui,sans-serif;padding:9px 12px;cursor:pointer}'+
  '#signTool{position:fixed;right:12px;top:60px;z-index:2147483600;width:280px;max-height:calc(100vh - 80px);overflow:auto;display:none;background:rgba(36,22,10,.94);border:2px solid #7a5428;border-radius:10px;color:#f3e3c2;font:13px/1.35 system-ui,sans-serif;padding:10px}#signTool.open{display:block}'+
  '#signTool button,#signTool select{border:1px solid #351b0d;border-radius:7px;background:#e8c27a;color:#351b0d;font:700 12px/1 system-ui,sans-serif;padding:7px 9px;margin:2px 4px 2px 0;cursor:pointer}#signTool select{width:100%;font-weight:600}'+
  '#signTool label{display:block;margin:7px 0}#signTool input[type=range]{width:100%}#signTool label b{display:inline;margin-left:6px}#signTool small{display:block;color:#d9c69c;margin:5px 0}#signTool hr{border:0;border-top:1px solid #7a5428;margin:8px 0}';
 document.head.appendChild(css);
 
+/* a click on a sign takes the player to the place on it */
+var DEST={kuhinja:'kitchen',sudopera:'sink',rostilj:'grill',rostilj_l:'grill',kafana:'tavern',kafana_l:'tavern',basta:'garden',spajz:'pantry'};
+function leave(v){
+  try{
+    if(v==='sink'){window.CooksterSinkZoom&&CooksterSinkZoom.close();}
+    else if(v==='grill'){window.CooksterKitchenFx&&CooksterKitchenFx.closeGrill();}
+    else if(v==='tavern'){var b=[].slice.call(document.querySelectorAll('#tavernScene button')).filter(function(x){return /Kuhinja/.test(x.textContent);})[0];if(b)b.click();}
+  }catch(e){}
+}
+function enter(d){
+  try{
+    if(d==='sink')CooksterSinkZoom.open();
+    else if(d==='grill')CooksterKitchenFx.zoomGrill();
+    else if(d==='tavern')CooksterKitchenFx.zoomDoor();
+    else if(d==='garden')CooksterGarden.open();
+    else if(d==='pantry')CooksterPantry.open();
+  }catch(e){}
+}
+function go(type){
+  var d=DEST[type],v=activeView();if(!d||d===v)return;
+  if(v!=='kitchen')leave(v);
+  if(d==='kitchen')return;
+  var t0=performance.now();
+  (function wait(){if(activeView()==='kitchen'&&!document.querySelector('.sink-busy')){setTimeout(function(){enter(d);},v==='kitchen'?0:250);return;}if(performance.now()-t0<6000)setTimeout(wait,120);})();
+}
 /* the views: where the signs of a view live */
 function activeView(){
   var t=document.getElementById('tavernScene');if(t&&t.classList.contains('is-active'))return 'tavern';
@@ -69,9 +94,11 @@ function apply(s){
 }
 function build(s,host){
   if(s._el)s._el.remove();
-  var el=document.createElement('div');el.className='cookster-sign';el.dataset.signId=s.id;
+  var el=document.createElement('div');el.className='cookster-sign go';el.dataset.signId=s.id;el.title=TYPES[s.type]||'';
   var im=document.createElement('img');im.alt='';im.draggable=false;im.src=pic(s.type);el.appendChild(im);
-  ['click','dblclick','contextmenu','mousedown','mouseup'].forEach(function(n){el.addEventListener(n,function(e){if(open)e.stopPropagation();});});
+  // tool closed: a click on the sign goes to the place on it; the click does not reach the picture below (grill, doors...)
+  ['click','dblclick','contextmenu','mousedown','mouseup','pointerup'].forEach(function(n){el.addEventListener(n,function(e){e.stopPropagation();if(n==='click'&&!open){e.preventDefault();go(s.type);}});});
+  el.addEventListener('pointerdown',function(e){if(!open)e.stopPropagation();});
   el.addEventListener('pointerdown',function(e){
     if(!open||e.button!==0)return;e.stopPropagation();e.preventDefault();select(s);
     var hr=el.parentNode.getBoundingClientRect(),sx=e.clientX,sy=e.clientY,ox=s.x,oy=s.y;el.setPointerCapture(e.pointerId);
@@ -89,7 +116,7 @@ function mirror(s){
   var sc=document.getElementById('scene');if(!sc)return;
   if(!s._m||s._m.parentNode!==sc){
     if(s._m)s._m.remove();
-    var el=document.createElement('div');el.className='cookster-sign cookster-mirror';el.style.pointerEvents='none';
+    var el=document.createElement('div');el.className='cookster-sign cookster-mirror go';el.title=TYPES[s.type]||'';el.addEventListener('pointerdown',function(e){if(!open)e.stopPropagation();});['click','dblclick','contextmenu','mousedown','mouseup','pointerup'].forEach(function(n){el.addEventListener(n,function(e){if(open)return;e.stopPropagation();if(n==='click'){e.preventDefault();go(s.type);}});});
     var im=document.createElement('img');im.alt='';im.draggable=false;el.appendChild(im);sc.appendChild(el);s._m=el;s._mt=null;
   }
   var im2=s._m.firstChild;if(s._mt!==s.type){im2.src=pic(s.type);s._mt=s.type;}
