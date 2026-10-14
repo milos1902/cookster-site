@@ -50,6 +50,49 @@ function tableSpot(){
   if(!c||c.inSurface===false||c.zone==='outside'||!isFinite(c.cx)||!isFinite(c.by))return null;
   return c;
 }
+// ---- the animation of the pouring: grains fall from the mouth of the sack to the table, and where they land a little cloud of flour dust rises ----
+var grains=[],layer=null,puffAt=0;
+function fxLayer(){
+  var sc=scn();if(!sc)return null;
+  if(!layer||!layer.isConnected){layer=document.createElement('div');layer.style.cssText='position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:9500';sc.appendChild(layer);}
+  return layer;
+}
+function mouthPoint(){
+  var g=typeof placementGhost!=='undefined'?placementGhost:null,b=g&&g.querySelector('.ghost-item-copy .body');
+  if(!b||typeof screenToScene!=='function')return null;
+  var r=b.getBoundingClientRect();if(!r.width)return null;
+  return screenToScene(r.left+r.width*.60,r.top+r.height*.52);
+}
+function spawnGrains(m,land,k){
+  var L=fxLayer();if(!L)return;
+  for(var i=0;i<k&&grains.length<110;i++){
+    var d=document.createElement('i'),sz=2+Math.random()*3.2;
+    d.style.cssText='position:absolute;border-radius:50%;background:#f7f0e2;box-shadow:0 0 2px rgba(255,255,255,.8);width:'+sz+'px;height:'+sz+'px;opacity:.95';
+    L.appendChild(d);
+    var dx=land.x-m.x,dy=land.y-m.y,T=.34+Math.random()*.16;
+    grains.push({el:d,x:m.x+(Math.random()-.5)*14,y:m.y+(Math.random()-.5)*8,vx:dx/T+(Math.random()-.5)*26,vy:(dy-.5*620*T*T)/T,ly:land.y+(Math.random()-.5)*8,sz:sz});
+  }
+}
+function puff(land,big){
+  var L=fxLayer();if(!L)return;
+  var n=big?3:2;
+  for(var i=0;i<n;i++){
+    var e=document.createElement('div'),w=34+Math.random()*34+(big?18:0);
+    e.style.cssText='position:absolute;left:'+(land.x+(Math.random()-.5)*46)+'px;top:'+(land.y-4-Math.random()*8)+'px;width:'+w+'px;height:'+(w*.72)+'px;margin:'+(-w*.36)+'px 0 0 '+(-w/2)+'px;border-radius:50%;background:radial-gradient(ellipse at 50% 55%,rgba(255,252,244,.62),rgba(255,250,240,.28) 55%,rgba(255,250,240,0) 74%);filter:blur(1.2px)';
+    L.appendChild(e);
+    var dx=(Math.random()-.5)*70,dy=-(26+Math.random()*34);
+    var a=e.animate([{transform:'translate(0,0) scale(.35)',opacity:0},{transform:'translate('+dx*.35+'px,'+dy*.4+'px) scale(1)',opacity:.85,offset:.28},{transform:'translate('+dx+'px,'+dy+'px) scale(1.9)',opacity:0}],{duration:900+Math.random()*500,easing:'cubic-bezier(.2,.6,.3,1)',fill:'forwards'});
+    a.onfinish=function(ev){return function(){ev.remove();};}(e);
+  }
+}
+function stepGrains(dt,land){
+  grains=grains.filter(function(g){
+    g.vy+=620*dt;g.x+=g.vx*dt;g.y+=g.vy*dt;
+    if(g.y>=g.ly){g.el.remove();
+      if(Math.random()<.5&&land){var s2=document.createElement('i');s2.style.cssText='position:absolute;border-radius:50%;background:#f7f0e2;width:2px;height:2px;left:'+g.x+'px;top:'+g.y+'px';var L=fxLayer();if(L){L.appendChild(s2);var a=s2.animate([{transform:'translate(0,0)',opacity:.9},{transform:'translate('+((Math.random()-.5)*46)+'px,'+(-8-Math.random()*14)+'px)',opacity:0}],{duration:420,fill:'forwards'});a.onfinish=function(){s2.remove();};}}
+      return false;}
+    g.el.style.transform='translate('+g.x+'px,'+g.y+'px)';return true;});
+}
 function frame(now){
   if(!pour)return;
   var h=typeof holding!=='undefined'?holding:null;
@@ -63,9 +106,12 @@ function frame(now){
     var n=Math.min(left,RATE*dt);
     var w=c.w||140,hh=c.h||110;
     var p=addFlour(c.cx+w*.34,c.by-hh*.04,n);   // the stream lands at the lower right of the tilted sack
+    var land={x:p.x,y:p.y},m=mouthPoint();
+    if(m){spawnGrains(m,land,3);if(now-puffAt>150){puffAt=now;puff(land,pour.t<1);}}
     h.dataset.flour=String(left-n);
     pour.pile=p;
   }
+  stepGrains(dt,pour.pile?{x:pour.pile.x,y:pour.pile.y}:null);
   requestAnimationFrame(frame);
 }
 function start(el){
@@ -76,6 +122,7 @@ function start(el){
 }
 function stop(){
   if(!pour)return;pour=null;setPic(null);
+  (function drain(){var t0=performance.now();(function f(n){stepGrains(Math.min(.05,(n-t0)/1000>.05?.016:.016),null);if(grains.length&&n-t0<900)requestAnimationFrame(f);else{grains.forEach(function(g){g.el.remove();});grains=[];}})(t0);})();
   bodies().forEach(function(b){delete b._orig;});
   save();try{CooksterSave.schedule();}catch(e){}
 }

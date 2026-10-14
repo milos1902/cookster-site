@@ -575,3 +575,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Džak brašna (`kal_01_dzak_brasna`) u ruci: LEVI taster držan iznad stola = džak se nagne (slike `assets/flour/dzak_nagnut1/2.webp`, prvih 0.35 s prva) i brašno pada kao gomila (`assets/flour/gomila.webp`) na mestu gde mlaz sleće (desno dole od džaka); DESNI taster spusti džak. Brzina 9 jedinica/s, džak ima 300; gomila raste (širina ~ n^0.62), spaja se sa obližnjom (60 px). Gomile se čuvaju (`cookster.flour-piles.v1`).
 - Senka i mali "backpack" prikaz džaka prate sliku (senka se menja, prikaz se sakriva dok se sipa).
 - Sledeće: voda + kvasac + mešanje u testo.
+
+## Animacija sipanja brašna i oblačić (2026-10-14, flour.js?v=3)
+- Zrnca brašna padaju iz usta džaka do mesta pada (fizika: brzina + gravitacija, do ~110 zrnaca), pri udaru odskoče sitna zrnca, a svakih 150 ms se podigne oblačić prašine brašna (zamućeni radijalni gradijent koji raste, diže se i bledi 0.9–1.4 s; na početku veći). Sve je procedura, bez novih slika.
