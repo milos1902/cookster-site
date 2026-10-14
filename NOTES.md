@@ -511,3 +511,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Namešta se u kuhinji, u zumu je isto (2026-10-14, signposts.js?v=9)
 - Putokaz roštilja namešten u kuhinji (alat otvoren, prevuci / točak) upisuje mesto i u krupan plan (`setFromKitchen`: inverzno preslikavanje), pa je zum nosi tačno tamo gde stoji. Nema više odvojenog mesta `k` (stare sačuvane vrednosti se pretvaraju pri učitavanju).
 - Putokaz koji pada van slike kuhinje (Sudopera na zidu iznad roštilja): sa zatvorenim alatom se ne crta; sa otvorenim čeka na ivici slike da ga uvučeš.
+
+## Predmet u ruci vidi se samo kao senka: čuvar (2026-10-14, game.js?v=3.115)
+- Uzrok (po kodu): uzeti predmet je sakriven, a vidi se njegova kopija u boji (placement ghost); ako kopija ne iskrsne (greška u `updatePlacementGhost`, zaglavljeno stanje, loša poza), ostaje samo senka. Uzrok se nije mogao ponoviti u probi (daska i začini, po 6 uzimanja, bez grešaka).
+- Čuvar (svakih 250 ms): ako kopija nije vidljiva, posle ~0.5 s pokuša da je nacrta ponovo, a posle ~1 s prikaže sam predmet (opet ga sakrije čim se kopija vrati). Greška ide u konzolu (`[held] ...`) i u `window.__heldGhostLog`.

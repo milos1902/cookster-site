@@ -7992,6 +7992,25 @@ const ghost=ensurePlacementGhostFor(holding);
 }
 
 
+// Watchdog: a carried object is hidden while its true-colour copy (the placement ghost) is shown. If the copy does not appear (an error, a stuck state), the
+// player would see only the shadow. After about 1 second the watchdog tries to draw the copy again, and if that fails too, it shows the object itself.
+(function(){
+ let bad=0,forced=null;
+ setInterval(()=>{
+  try{
+   const h=holding;
+   if(forced&&forced!==h){forced=null;}
+   if(!h||placing||pouring||oilPouring||rotating||isCutting||h.dataset.fixedGrinder==='1'||isQuickToolItem(h)||!h.classList.contains('held')){bad=0;if(forced&&forced===h){h.style.visibility='hidden';forced=null;}return;}
+   const g=placementGhost,ok=!!g&&g.style.display==='block'&&g.getBoundingClientRect().width>4&&parseFloat(getComputedStyle(g).opacity)>.05;
+   if(ok){bad=0;if(forced===h){h.style.visibility='hidden';forced=null;}return;}
+   if(h.style.visibility!=='hidden'&&forced!==h){bad=0;return;}
+   bad++;
+   if(bad===2){try{updatePlacementGhost();}catch(e){console.warn('[held] updatePlacementGhost failed for',h.dataset.itemId,e);}}
+   if(bad>=4&&forced!==h){h.style.visibility='';forced=h;(window.__heldGhostLog=window.__heldGhostLog||[]).push({id:h.dataset.itemId,t:Date.now()});console.warn('[held] the copy of the carried object did not appear; showing the object itself:',h.dataset.itemId);}
+  }catch(e){}
+ },250);
+})();
+
 function tryPlaceHeldAtCandidate(el){
  let cand=(placementState&&holding===el?placementState.candidate:null)||placementCandidate(el);
  if(!cand)return false;
