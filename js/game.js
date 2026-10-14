@@ -8001,11 +8001,13 @@ const ghost=ensurePlacementGhostFor(holding);
    const h=holding;
    if(forced&&forced!==h){forced=null;}
    if(!h||placing||pouring||oilPouring||rotating||isCutting||h.dataset.fixedGrinder==='1'||isQuickToolItem(h)||!h.classList.contains('held')){bad=0;if(forced&&forced===h){h.style.visibility='hidden';forced=null;}return;}
-   const g=placementGhost,ok=!!g&&g.style.display==='block'&&g.getBoundingClientRect().width>4&&parseFloat(getComputedStyle(g).opacity)>.05;
+   const g=placementGhost,gr=g&&g.getBoundingClientRect(),cp=g&&g.querySelector('.ghost-item-copy'),bd=cp&&cp.querySelector('.body');
+   // the copy must really be there: displayed, with a picture that is decoded, on the screen
+   const ok=!!g&&g.style.display==='block'&&gr.width>4&&gr.right>0&&gr.bottom>0&&gr.left<innerWidth&&gr.top<innerHeight&&parseFloat(getComputedStyle(g).opacity)>.05&&!!cp&&(!bd||bd.tagName!=='IMG'||(bd.complete&&bd.naturalWidth>0));
    if(ok){bad=0;if(forced===h){h.style.visibility='hidden';forced=null;}return;}
    if(h.style.visibility!=='hidden'&&forced!==h){bad=0;return;}
    bad++;
-   if(bad===2){try{updatePlacementGhost();}catch(e){console.warn('[held] updatePlacementGhost failed for',h.dataset.itemId,e);}}
+   if(bad===2){try{if(placementGhost)placementGhost._key=null;updatePlacementGhost();}catch(e){console.warn('[held] updatePlacementGhost failed for',h.dataset.itemId,e);}}   // build the copy again from scratch
    if(bad>=4&&forced!==h){h.style.visibility='';forced=h;(window.__heldGhostLog=window.__heldGhostLog||[]).push({id:h.dataset.itemId,t:Date.now()});console.warn('[held] the copy of the carried object did not appear; showing the object itself:',h.dataset.itemId);}
   }catch(e){}
  },250);

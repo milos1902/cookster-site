@@ -16,7 +16,7 @@ css.textContent='@keyframes vwDrift{from{background-position:0 0,0 0}to{backgrou
  '.vessel-water-ov .vw-surf{filter:url(#vwDist);position:absolute;inset:0;opacity:.78;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 45%,rgba(0,0,0,.35) 100%),url('+TEX+');background-size:100% 100%,42% auto}'+
  '.vessel-water-ov .vw-wave{position:absolute;top:0;bottom:0;left:0;width:28%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.16),rgba(255,255,255,0));mix-blend-mode:screen;animation:vwWave 2.7s ease-in-out infinite alternate}'+
  '.vessel-water-ov .vw-wave.b{width:20%;animation-duration:3.9s;animation-direction:alternate-reverse;opacity:.7}'+
- '.vessel-water-ov.vw-light .vw-surf,.vessel-water-ov.vw-light .vw-fill{filter:hue-rotate(45deg) saturate(1.5) brightness(1.15)}'+
+ '.vessel-water-ov.vw-light .vw-surf,.vessel-water-ov.vw-light .vw-fill{filter:url(#vwDist) hue-rotate(45deg) saturate(1.5) brightness(1.15)}'+
  '@keyframes vwRg{0%{transform:scale(.06);opacity:0}15%{opacity:.9}100%{transform:scale(1);opacity:0}}'+
  '.vessel-water-ov .vw-rgw{position:absolute;pointer-events:none}.vessel-water-ov .vw-rgw i{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(230,242,238,.85);box-shadow:0 0 6px rgba(255,255,255,.35);opacity:0;animation:vwRg 2.4s ease-out both}'+
  '@keyframes vwRing{0%{transform:translate(-50%,-50%) scale(.05);opacity:0}12%{opacity:.85}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}'+
@@ -84,8 +84,8 @@ function swayFrame(now){
         var lp=Math.min(1,dt/.045),pvx=S.vx||0,pvy=S.vy||0;S.vx=pvx+(tvx-pvx)*lp;S.vy=pvy+(tvy-pvy)*lp;
         var ax=(S.vx-pvx)/dt,ay=(S.vy-pvy)/dt,W2=36,ZW=2*.16*6;   /* omega^2 (period about 1 s), damping */
         S.sx=S.sx||0;S.sy=S.sy||0;S.svx=S.svx||0;S.svy=S.svy||0;
-        var fx=-ax*W2/9000,fy=-ay*W2/9000,n=3,h=dt/n;
-        for(var q=0;q<n;q++){S.svx+=(-W2*S.sx-ZW*S.svx+fx)*h;S.svy+=(-W2*S.sy-ZW*S.svy+fy)*h;S.sx+=S.svx*h;S.sy+=S.svy*h;}
+        var fx=-ax*W2/9000,fy=-ay*W2/9000,nSub=3,h=dt/nSub;
+        for(var q=0;q<nSub;q++){S.svx+=(-W2*S.sx-ZW*S.svx+fx)*h;S.svy+=(-W2*S.sy-ZW*S.svy+fy)*h;S.sx+=S.svx*h;S.sy+=S.svy*h;}
         S.sx=Math.max(-1.5,Math.min(1.5,S.sx));S.sy=Math.max(-1.5,Math.min(1.5,S.sy));
       }
       S.p[0]+=dt*1.7*sp;S.p[1]+=dt*1.15*sp;S.p[2]+=dt*3.1*sp;S.p[3]+=dt*4.3*sp;}
