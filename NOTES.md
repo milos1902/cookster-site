@@ -435,3 +435,21 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Kalibracija pljuska u sudoperi (2026-10-13, sink-zoom.js?v=18)
 - U alatu sudopere (režim slavina) roze tačka = mesto pljuska (prevlači se bilo gde), klizač veličine i klizač "nagib napred-nazad" (vertikalno spljoštavanje, kao nagib vode).
 - Sačuvano u `cal.tap.sp = {pos,size,tilt}`; ako ga nema, pljusak je na žutoj tački kao do sada.
+
+## Pljusak ugrađen (2026-10-13, sink-zoom.js?v=19)
+- Korisnikova kalibracija sudopere ugrađena u `CAL_DEF`: pljusak na [49.46,59.31], veličina 7, nagib 1.6; postolje ventila 25.3. Ostalo (rim, floor, mask, posude) isto kao pre.
+
+## Zum u alatu "Voda u posudi" (2026-10-13, vessel-water.js?v=8)
+- Točak miša uveličava sliku posude (1x do 8x, oko pokazivača), desni/srednji taster pomera sliku; tačke se crtaju i dalje tačno (pct koristi stvarnu veličinu).
+
+## Njihanje vode umesto krugova (2026-10-13, vessel-water.js?v=9)
+- Prstenovi uklonjeni. Ivica površine vode se njiše: priđe jednom zidu posude, odbije se, pa druga strana (dve sporе oscilacije u različitim pravcima) uz sitne talase po ivici. Radi `requestAnimationFrame` petlja (`sway`), zid posude seče vodu maskom.
+
+## Iskrivljavanje teksture vode (2026-10-13, vessel-water.js?v=10)
+- SVG filter `#vwDist` (feTurbulence + feDisplacementMap, šum se sporo menja) krivi teksturu vode, pa se odsjaji pomeraju bez vidljivog ponavljanja. Uz to ostaje spori pomak teksture i njihanje ivice.
+- Kružni talasi (ripple) nisu vraćeni: korisniku se nisu svideli.
+
+## Krugovi samo pri prvom udaru vode, sa podesivom perspektivom (2026-10-14, vessel-water.js?v=11)
+- Tri kruga krenu od sredine površine kad voda počne da pada u (praznu ili posle pauze od 1.5 s) posudu; ne dok se voda stalno puni.
+- U alatu "Voda u posudi": klizači "nagib perspektive" (vertikalno spljoštavanje, 0.15 do 1) i "veličina", dugme "Probaj prvi udar". Čuva se u `ring` uz posudu (`cookster.vessel-water-cal.v1`).
+- Bez kalibracije: nagib 0.5, veličina 70% širine vode.
