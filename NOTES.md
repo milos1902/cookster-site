@@ -515,3 +515,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Predmet u ruci vidi se samo kao senka: čuvar (2026-10-14, game.js?v=3.115)
 - Uzrok (po kodu): uzeti predmet je sakriven, a vidi se njegova kopija u boji (placement ghost); ako kopija ne iskrsne (greška u `updatePlacementGhost`, zaglavljeno stanje, loša poza), ostaje samo senka. Uzrok se nije mogao ponoviti u probi (daska i začini, po 6 uzimanja, bez grešaka).
 - Čuvar (svakih 250 ms): ako kopija nije vidljiva, posle ~0.5 s pokuša da je nacrta ponovo, a posle ~1 s prikaže sam predmet (opet ga sakrije čim se kopija vrati). Greška ide u konzolu (`[held] ...`) i u `window.__heldGhostLog`.
+
+## Zagorevanje bez ulja i bez mešanja (2026-10-14, pan.js?v=5, cooking-system.js?v=2, game.js?v=3.116)
+- Model tiganja/šerpe ima `dry` (sekunde suve vrućine), `idle` (sekunde od poslednjeg mešanja) i `scorched`. Ako se posuda greje (toplota ≥ 0.4), u njoj nema ulja (`staples.oil` = 0), nema vode (`dataset.water` ≤ 0.03) i niko ne meša duže od 2.5 s, `dry` raste; pri 9 s hrana se zalepi i zagori (sve serije `burnt`, vizuelno izgorelo + crni dim kao i inače). Mešanje resetuje `idle` i `dry` opada.
+- Upozorenje (toast) pri `dry` ≥ 4 s: "Nema ulja i niko ne meša". Poruka pri izgaranju kaže uzrok (`scorched`).
+- Izmereno u modelu na jakoj vatri: bez ulja i bez mešanja zagori za ~12 s; sa uljem ili mešanjem na svakih 1 s i 5 s ne zagori ranije nego inače (~54 s).

@@ -12,7 +12,7 @@
   function step(vessel,{dt=0,fireLevel=1,heating=false}={}){
     if(!vessel||!window.CooksterPan)return null;
     const before=CooksterPan.read(vessel);
-    const model=CooksterPan.simulate(before,dt,fireLevel,heating);
+    const model=CooksterPan.simulate(before,dt,fireLevel,heating,{wet:(+vessel.dataset.water||0)>.03});
     CooksterPan.write(vessel,model);
     const active=(model.batches||[]).filter(b=>(+b.count||0)>0);
     const machine=window.CooksterFoodStateMachine;

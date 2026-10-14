@@ -24,7 +24,8 @@
       overcook:+src.overcook||0,
       mix:+src.mix||0,
       burnt:!!src.burnt,
-      served:!!src.served
+      served:!!src.served,
+      dry:+src.dry||0,idle:+src.idle||0,scorched:!!src.scorched
     };
   }
   function empty(){
@@ -37,7 +38,8 @@
       overcook:0,
       mix:0,
       burnt:false,
-      served:false
+      served:false,
+      dry:0,idle:0,scorched:false
     };
   }
 
@@ -85,7 +87,7 @@
     const active=(d.batches||[]).filter(b=>(+b.count||0)>0);
     const total=active.reduce((s,b)=>s+(+b.count||0),0);
     if(total<=0){
-      d.doneness=0;d.overcook=0;d.burnt=false;
+      d.doneness=0;d.overcook=0;d.burnt=false;d.dry=0;d.idle=0;d.scorched=false;
       return d;
     }
     d.doneness=active.reduce((s,b)=>s+(+b.doneness||0)*(+b.count||0),0)/total;
@@ -134,6 +136,7 @@
     d.heat=Math.max(0,+src.heat||0);
     d.mix=Math.max(0,Math.min(1,+src.mix||0));
     d.served=!!src.served;
+    d.dry=Math.max(0,+src.dry||0);d.idle=Math.max(0,+src.idle||0);d.scorched=!!src.scorched;
 
     const legacySeed={
       doneness:Math.max(0,+((src.doneness!==undefined)?src.doneness:src.cook)||0),
@@ -230,7 +233,10 @@
     return mutate(pan,d=>{d.staples[key]=Math.max(0,(+d.staples[key]||0)+amount);});
   }
 
-  function simulate(data,dt,fireLevel=1,heating=false){
+  // Dry scorching: food in a hot pan with NO oil that nobody stirs sticks and burns quickly (about 9 s of dry heat), and the black smoke starts.
+  // Stirring keeps it from sticking (a stir resets the idle timer); oil in the vessel or water in it switches the rule off.
+  const DRY_IDLE_FREE=2.5,DRY_BURN_SECONDS=9;
+  function simulate(data,dt,fireLevel=1,heating=false,opts=null){
     const d=normalize(data);
     dt=Math.max(0,Math.min(.25,+dt||0));
     fireLevel=Math.max(1,Math.min(3,+fireLevel||1));
@@ -249,6 +255,19 @@
           b.overcook+=dt*b.burnSpeed*.35;   // and it takes about three times as long to burn after it is done
           if(b.overcook>=2)b.burnt=true;
         }
+      }
+    }
+    {
+      const live=d.batches.filter(b=>!b.burnt&&b.count>0);
+      const dryHeat=heating&&d.heat>=.4&&(+d.staples.oil||0)<=0&&!(opts&&opts.wet)&&live.length>0;
+      if(dryHeat){
+        d.idle=(+d.idle||0)+dt;
+        if(d.idle>DRY_IDLE_FREE)d.dry=(+d.dry||0)+dt*d.heat;
+        else d.dry=Math.max(0,(+d.dry||0)-dt*2);
+        if(d.dry>=DRY_BURN_SECONDS){for(const b of live){b.doneness=1;b.overcook=2;b.burnt=true;}d.scorched=true;}
+      }else{
+        d.dry=Math.max(0,(+d.dry||0)-dt);
+        if(!heating)d.idle=0;
       }
     }
     // an egg left in a hot pan sets very slowly even without stirring (about 90 s)
@@ -274,6 +293,7 @@
     const d=read(pan);
     const active=(d.batches||[]).filter(b=>(+b.count||0)>0&&!b.burnt);
     if(!active.length)return d;
+    d.idle=0;   // stirring: nothing sticks to the pan
 
     // v198.5.10: two seconds of VALID stirring motion fully blends the dish.
     const mixDt=Math.max(0,Math.min(.12,+activeSeconds||0));
