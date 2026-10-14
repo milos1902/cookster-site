@@ -63,7 +63,20 @@ function drawTrough(e){
   // the picture of the trough itself shows the flour (the pictures drawn by the owner)
   var tb=e.querySelector('.body');
   if(tb){var want=n<=0?'assets/flour/nacve.webp':(n<120?'assets/flour/nacve_brasno1.webp':'assets/flour/nacve_brasno2.webp');
-    if(tb.getAttribute('src')!==want){tb.setAttribute('src',want);}}
+    if(tb.getAttribute('src')!==want){
+      var old=tb.getAttribute('src');
+      // the new picture does not jump in: the old one melts away behind a cloud of flour dust
+      var ov=document.createElement('img');ov.src=old;ov.draggable=false;ov.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:4';
+      e.appendChild(ov);var oa=ov.animate([{opacity:1},{opacity:1,offset:.35},{opacity:0}],{duration:1500,fill:'forwards'});oa.onfinish=function(){ov.remove();};
+      tb.setAttribute('src',want);
+      for(var k=0;k<7;k++){
+        var c=document.createElement('div'),w=34+Math.random()*30;
+        c.style.cssText='position:absolute;left:'+(26+Math.random()*48)+'%;top:'+(22+Math.random()*58)+'%;width:'+w+'%;height:'+(w*.55)+'%;margin:'+(-w*.28)+'% 0 0 '+(-w/2)+'%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,252,244,.9),rgba(255,250,240,.5) 55%,rgba(255,250,240,0) 75%);filter:blur(3px);pointer-events:none;z-index:5;opacity:0';
+        e.appendChild(c);
+        var ca=c.animate([{opacity:0,transform:'scale(.4)'},{opacity:.95,transform:'scale(1.1)',offset:.3},{opacity:.7,transform:'translateY(-12%) scale(1.5)',offset:.65},{opacity:0,transform:'translateY(-30%) scale(1.9)'}],{duration:1500+Math.random()*500,delay:Math.random()*200,fill:'forwards'});
+        ca.onfinish=function(x){return function(){x.remove();};}(c);
+      }
+    }}
   if(e._fl){e._fl.remove();e._fl=null;}
   return;
   if(!e._fl||!e._fl.isConnected){

@@ -591,3 +591,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Naćve: slike sa brašnom (2026-10-14, flour.js?v=7)
 - Slika naćvi se menja prema količini brašna: prazna / manje (<120) / više brašna (`assets/flour/nacve_brasno1/2.webp`). Slike sa vodom (brašno+voda) još nisu stigle kao fajlovi.
+
+## Naćve: slika se pojavljuje iza oblaka brašna (2026-10-14, flour.js?v=8)
+- Pri promeni slike naćvi stara se otapa 1.5 s iza 7 oblačića prašine brašna, pa se pojavi nova (nema naglog skoka). Stigla je i slika mesa/testa (mešano testo), još nije ubačena (nije stigla kao fajl).
