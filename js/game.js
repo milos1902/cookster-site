@@ -6687,7 +6687,7 @@ function fillGhostContainer(container,el){
   copy.style.visibility='visible';copy.style.opacity='1';
   copy.style.transform='none';copy.style.transformOrigin='50% 90%';
   copy.style.zIndex='1';copy.style.pointerEvents='none';
-  copy.querySelectorAll('.pan-status,.wash-foam,.pan-smoke,.lid-hit').forEach(n=>n.remove());
+  copy.querySelectorAll('.pan-status,.wash-foam,.pan-smoke,.lid-hit,.vw-rgw').forEach(n=>n.remove());
   container.appendChild(copy);
   // The copy is a new picture element: until its picture is loaded and decoded (it can take half a second) only the shadow would be seen.
   // So the real object stays visible until the copy is ready, then it is hidden again.

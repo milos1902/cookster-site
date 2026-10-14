@@ -537,3 +537,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Predmet se uzima bez "praznog" trenutka + jače njihanje u ruci (2026-10-14, game.js?v=3.119, vessel-water.js?v=24)
 - Snimak ekrana korisnika: kad se tegla uzme, ~0.5 s se vidi samo senka. Uzrok: kopija predmeta u ruci (`placementGhost`) je nov `<img>` čija slika se još učitava/dekodira. Sada `fillGhostContainer` drži pravi predmet vidljivim dok slika kopije nije spremna, pa ga sakrije (proveren i sa veštački usporenom slikom: vidljivo → kopija spremna → sakriveno, bez rupe).
 - Njihanje vode u ruci pojačano (sila /4200 umesto /9000, pomak i izduženje veći): obično pomeranje ruke od 400 px za 0.4 s daje pomak vode ~0.7, nagla promena pravca do ~1.5 (gornja granica), i njihanje posle zaustavljanja.
+
+## Voda u ruci: još jače, nagib površine, bez ponovnih krugova u kopiji (2026-10-14, vessel-water.js?v=25, game.js?v=3.120)
+- Snimak korisnika (voda u ruci "kamen"): merenjem sa snimka pomak vode ne prati kretanje posude. U probi sve radi (ceo tok: ruka, sačuvana/obnovljena posuda, sa prednjom ivicom i mekim rubom), pa je verovatno bila uključena starija/slabija verzija (snimak odmah po spajanju prethodnog PR-a). Sila pojačana još 1.6x (/2600), pomak 10 i izduženje 0.5; površina se nagne ka zidu na koji voda trči (`-PX*dx*.28`). Blag pokret ruke od 150 px daje pomak ~0.4, nagla promena pravca ~1.
+- Kopija predmeta u ruci više ne ponavlja prstenove (`.vw-rgw` se uklanja iz kopije).
+- Dijagnostika: `CooksterVesselWater.debug()` u konzoli vraća `sx/sy/vx` svake posude (i da li je u ruci).
