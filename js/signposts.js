@@ -58,6 +58,8 @@ function apply(s){
   var el=s._el;if(!el)return;
   el.style.left=s.x+'%';el.style.top=s.y+'%';el.style.width=s.w+'%';
   el.style.zIndex=s.view==='kitchen'?(s.front?'9000':'3'):(s.front?'9000':'3');
+  el.style.containerType='inline-size';
+  var im=el.firstChild;if(im&&im.style)im.style.filter=s.sh>0?'drop-shadow('+(s.shx||0)+'cqw '+(s.shy==null?3:s.shy)+'cqw '+(s.shb==null?3:s.shb)+'cqw rgba(15,6,0,'+s.sh+'))':'none';
   el.style.transform='translate(-50%,-50%) perspective('+(s.p||900)+'px) rotateX('+(s.rx||0)+'deg) rotateY('+(s.ry||0)+'deg) rotateZ('+(s.rz||0)+'deg) scaleX('+(s.flip?-1:1)+')';
   el.classList.toggle('sel',s===sel);
 }
@@ -115,6 +117,7 @@ function refresh(){
 function fillSliders(){
   var on=!!sel;panel.querySelector('#sgBox').style.display=on?'block':'none';if(!on)return;
   [['w','sgW',0],['rz','sgRz',0],['rx','sgRx',0],['ry','sgRy',0],['p','sgP',900]].forEach(function(r){var v=sel[r[0]]!=null?sel[r[0]]:r[2];panel.querySelector('#'+r[1]).value=v;panel.querySelector('#'+r[1]+'N').textContent=r[0]==='w'?(+v).toFixed(1)+'%':Math.round(v);});
+  [['sh','sgSh',0],['shb','sgShb',3],['shx','sgShx',0],['shy','sgShy',3]].forEach(function(r){var v=sel[r[0]]!=null?sel[r[0]]:r[2];panel.querySelector('#'+r[1]).value=v;panel.querySelector('#'+r[1]+'N').textContent=(+v).toFixed(2).replace(/\.?0+$/,'')||'0';});
   panel.querySelector('#sgFlip').checked=!!sel.flip;panel.querySelector('#sgFront').checked=!!sel.front;
 }
 function setOpen(on){open=on;document.body.classList.toggle('sign-tool',on);panel.classList.toggle('open',on);if(!on){sel=null;}refresh();}
@@ -124,7 +127,7 @@ function tool(){
   btn2=document.createElement('button');btn2.id='signToolBtn2';btn2.type='button';btn2.textContent='🪧 Putokazi';btn2.setAttribute('data-tool-ui','1');document.body.appendChild(btn2);
   panel=document.createElement('div');panel.id='signTool';panel.setAttribute('data-tool-ui','1');
   var add4=Object.keys(TYPES).map(function(t){return '<button data-add="'+t+'">+ '+TYPES[t]+'</button>';}).join('');
-  panel.innerHTML='<b style="font-size:15px">🪧 Putokazi</b><button id="sgClose" style="float:right">×</button>'+
+  panel.innerHTML='<b id="sgHead" title="Prevuci da pomeriš alat" style="font-size:15px;cursor:move;user-select:none">⠿ 🪧 Putokazi</b><button id="sgSide" title="Prebaci alat na drugu stranu ekrana" style="float:right">⇄</button><button id="sgClose" style="float:right">×</button>'+
    '<small id="sgView"></small><small>Dodaj koliko hoćeš. Prevuci putokaz da ga pomeriš; točak miša na njemu menja veličinu. Radi u kuhinji, sudoperi, na roštilju i u kafani.</small><div>'+add4+'</div><hr>'+
    '<label>Putokaz <select id="sgList"></select></label>'+
    '<div id="sgBox"><label>Veličina <input id="sgW" type="range" min="2" max="80" step="0.1"><b id="sgWN"></b></label>'+
@@ -132,6 +135,10 @@ function tool(){
    '<label>Nagib napred-nazad <input id="sgRx" type="range" min="-80" max="80" step="1"><b id="sgRxN"></b></label>'+
    '<label>Nagib levo-desno <input id="sgRy" type="range" min="-80" max="80" step="1"><b id="sgRyN"></b></label>'+
    '<label>Jačina perspektive (manje = jače) <input id="sgP" type="range" min="250" max="2500" step="10"><b id="sgPN"></b></label>'+
+   '<label>Senka: jačina <input id="sgSh" type="range" min="0" max="1" step="0.02"><b id="sgShN"></b></label>'+
+   '<label>Senka: razmazanost <input id="sgShb" type="range" min="0" max="15" step="0.2"><b id="sgShbN"></b></label>'+
+   '<label>Senka: pomak levo-desno <input id="sgShx" type="range" min="-15" max="15" step="0.2"><b id="sgShxN"></b></label>'+
+   '<label>Senka: pomak gore-dole <input id="sgShy" type="range" min="-15" max="15" step="0.2"><b id="sgShyN"></b></label>'+
    '<label><input id="sgFlip" type="checkbox"> Okreni strelicu na drugu stranu (ogledalo)</label>'+
    '<label><input id="sgFront" type="checkbox"> Ispred predmeta (inače je iza njih)</label>'+
    '<div><button id="sgDup">Duplikat</button><button id="sgDel">Obriši</button></div></div><hr>'+
@@ -140,10 +147,23 @@ function tool(){
   function toggle(){setOpen(!open);}
   btn.addEventListener('click',toggle);btn2.addEventListener('click',toggle);
   ['pointerdown','mousedown','click','wheel','contextmenu'].forEach(function(n){panel.addEventListener(n,function(e){e.stopPropagation();});btn2.addEventListener(n,function(e){e.stopPropagation();});});
+  // the tool can be moved over the screen (by its title) or thrown to the other side (⇄), so it does not cover what is being placed
+  var PK='cookster.signtool-pos.v1';
+  function place(x,y){x=Math.max(0,Math.min(innerWidth-120,x));y=Math.max(0,Math.min(innerHeight-60,y));panel.style.left=x+'px';panel.style.top=y+'px';panel.style.right='auto';}
+  try{var pp=JSON.parse(localStorage.getItem(PK)||'null');if(pp)place(pp.x,pp.y);}catch(e){}
+  function savePos(){try{localStorage.setItem(PK,JSON.stringify({x:panel.offsetLeft,y:panel.offsetTop}));}catch(e){}}
+  panel.querySelector('#sgHead').addEventListener('pointerdown',function(e){
+    if(e.button!==0)return;e.preventDefault();var h=e.currentTarget,ox=e.clientX-panel.offsetLeft,oy=e.clientY-panel.offsetTop;h.setPointerCapture(e.pointerId);
+    function mv(ev){place(ev.clientX-ox,ev.clientY-oy);}
+    function up(){h.removeEventListener('pointermove',mv);h.removeEventListener('pointerup',up);savePos();}
+    h.addEventListener('pointermove',mv);h.addEventListener('pointerup',up);
+  });
+  panel.querySelector('#sgSide').addEventListener('click',function(){place(panel.offsetLeft<innerWidth/2?innerWidth-panel.offsetWidth-12:12,panel.offsetTop);savePos();});
   panel.querySelector('#sgClose').addEventListener('click',function(){setOpen(false);});
   panel.querySelectorAll('[data-add]').forEach(function(b){b.addEventListener('click',function(){add(b.dataset.add);});});
   listEl.addEventListener('change',function(){var s=signs.find(function(x){return x.id===listEl.value;});if(s)select(s);});
   [['w','sgW'],['rz','sgRz'],['rx','sgRx'],['ry','sgRy'],['p','sgP']].forEach(function(r){panel.querySelector('#'+r[1]).addEventListener('input',function(e){if(!sel)return;sel[r[0]]=+e.target.value;panel.querySelector('#'+r[1]+'N').textContent=r[0]==='w'?(+e.target.value).toFixed(1)+'%':Math.round(+e.target.value);apply(sel);save();});});
+  [['sh','sgSh'],['shb','sgShb'],['shx','sgShx'],['shy','sgShy']].forEach(function(r){panel.querySelector('#'+r[1]).addEventListener('input',function(e){if(!sel)return;sel[r[0]]=+e.target.value;panel.querySelector('#'+r[1]+'N').textContent=String(+e.target.value);apply(sel);save();});});
   panel.querySelector('#sgFlip').addEventListener('change',function(e){if(sel){sel.flip=e.target.checked?1:0;apply(sel);save();}});
   panel.querySelector('#sgFront').addEventListener('change',function(e){if(sel){sel.front=e.target.checked?1:0;apply(sel);save();}});
   panel.querySelector('#sgDup').addEventListener('click',function(){if(sel)add(sel.type,sel);});
