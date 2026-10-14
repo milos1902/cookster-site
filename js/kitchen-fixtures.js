@@ -38,12 +38,18 @@ function shadows(){
 function paint(k){
   var d=DR[k];if(!ensureEl(d))return;
   shadows();
-  if(!d.idx){d.el.style.display='none';return}
-  d.el.src=d.ims[d.idx].src;d.el.style.display='block';
+  if(!d.idx){d.el.style.display='none';d.vis=0;return}
+  // the things in the drawer (jars, tools) follow the picture that is REALLY shown: a frame is shown only when it is decoded, and then the things are redrawn with it
+  var idx=d.idx,im=d.ims[idx],done=function(){
+    if(d.idx!==idx)return;
+    d.el.src=im.src;d.el.style.display='block';d.vis=idx;
+    if(k==='left')updateJars();else updateTools();
+  };
+  if(im.decode)im.decode().then(done,done);else done();
 }
 function setP(k,v){
   var d=DR[k];d.p=Math.max(0,Math.min(1,v));var i=Math.round(d.p*d.N);
-  if(i!==d.idx){d.idx=i;paint(k);if(k==='left')updateJars();else updateTools()}
+  if(i!==d.idx){d.idx=i;paint(k);if(!i){if(k==='left')updateJars();else updateTools()}}
 }
 // a click on the drawer: it opens (or closes) in 0.3 s
 function toggle(k){
@@ -92,7 +98,7 @@ function updateJars(){
     if(jarOut(j)){if(j.slot>=0){slotJar[j.slot]=null;j.slot=-1}}
     else if(j.slot<0){var f=freeSlotNear(660,700);if(f>=0){j.slot=f;slotJar[f]=j.id}}
   });
-  var shown=d.idx>0;
+  var shown=d.idx>0&&d.vis>0;
   var L=Math.round(d.x0+d.dx0*t)+6,R=Math.round(d.x1+d.dx1*t)-6;                // the jars can be seen only inside of the drawer (between its walls)
   jarClip.style.left=L+'px';jarClip.style.width=Math.max(0,R-L)+'px';
   jarClip.style.height=Math.max(0,Math.round(frontTop-603))+'px';jarClip.style.display=shown?'block':'none';
@@ -124,7 +130,7 @@ function toolOut(t){try{
 }catch(e){}return false}
 function updateTools(){
   var sc=document.getElementById('scene');if(!sc)return;
-  var d=DR.right,t=d.idx>=d.N?1:gOf(d),shown=d.idx>0,frontTop=605+107*t;
+  var d=DR.right,t=d.idx>=d.N?1:gOf(d),shown=d.idx>0&&d.vis>0,frontTop=605+107*t;
   if(!toolClip||!toolClip.isConnected){toolClip=document.createElement('div');toolClip.style.cssText='position:absolute;z-index:27;pointer-events:none;overflow:hidden;left:840px;top:603px;width:330px;height:0px';sc.appendChild(toolClip)}
   var L=Math.round(d.x0+d.dx0*t)+8,R=Math.round(d.x1+d.dx1*t)-8;
   toolClip.style.left=L+'px';toolClip.style.width=Math.max(0,R-L)+'px';toolClip.style.height=Math.max(0,Math.round(frontTop-603))+'px';toolClip.style.display=shown?'block':'none';

@@ -6693,10 +6693,12 @@ function fillGhostContainer(container,el){
   // So the real object stays visible until the copy is ready, then it is hidden again.
   try{
     const wait=[...copy.querySelectorAll('img')].filter(i=>!(i.complete&&i.naturalWidth>0));
+    // a picture that is loaded may still be undecoded (after a long game the browser throws decoded pictures away): decode it before the real object is hidden
+    const dec=[...copy.querySelectorAll('img')].filter(i=>i.complete&&i.naturalWidth>0&&i.decode).map(i=>i.decode().catch(()=>{}));
     container._pendingN=(container._pendingN||0)+1;const tok=container._pendingN;
-    if(wait.length&&container===placementGhost&&el===holding&&el.dataset.fixedGrinder!=='1'&&!isQuickToolItem(el)){
+    if((wait.length||dec.length)&&container===placementGhost&&el===holding&&el.dataset.fixedGrinder!=='1'&&!isQuickToolItem(el)){
       el.style.visibility='';
-      Promise.all(wait.map(i=>new Promise(r=>{i.addEventListener('load',r,{once:true});i.addEventListener('error',r,{once:true});setTimeout(r,2000);}))).then(()=>{
+      Promise.all([...dec,...wait.map(i=>new Promise(r=>{i.addEventListener('load',r,{once:true});i.addEventListener('error',r,{once:true});setTimeout(r,2000);}))]).then(()=>{
         if(container._pendingN===tok&&holding===el)el.style.visibility='hidden';
       });
     }
