@@ -545,3 +545,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Voda u ruci: vidljiv pokret i kad je posuda puna (2026-10-14, vessel-water.js?v=26)
 - Na snimku korisnika se pomak ivice površine nije video (voda puna, ivicu skriva posuda). Zato se sada pomera cela slika vode: `.vw-surf` klizi/naginje (`translate`, `rotate`, `scale(1.2)`), a svetao odsjaj (`.vw-hl`) trči na stranu na koju voda trči. Isto se prenosi na kopiju u ruci (`placementGhost`).
+
+## Voda u ruci: zasebna petlja za kopiju + ne zaboravljati vodu predmeta u ruci (2026-10-14, vessel-water.js?v=28)
+- Verovatan uzrok "zaleđene" vode (korisnik: stoji, ponekad zaglavljena uz levu/desnu ivicu, jak udar tek po spuštanju): petlja njihanja je odbacivala vodu čiji je sloj (`d`) 400 ms posle nastanka bio van stranice (`!isConnected`), što se dešava predmetu u ruci; kopija (ghost) je ostajala na poslednjem obliku. Sada se predmet u ruci ne odbacuje.
+- Nova nezavisna petlja za kopiju u ruci: pokret računa iz stvarnog kretanja kopije (`placementGhostMotion.pose`, inače miš), prigušena opruga, i pomera `.vw-g` (translate/rotate), `.vw-surf` (translate/rotate/scale) i odsjaj `.vw-hl` u kopiji; ne zavisi od ostatka fajla.
+- Dijagnostika (isključena): `localStorage.setItem('cookster.waterdebug','1')` pokazuje malu statusnu liniju dok je posuda sa vodom u ruci.
