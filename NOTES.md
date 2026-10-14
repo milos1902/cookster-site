@@ -491,3 +491,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Alat Putokazi: pomeranje i senke (2026-10-14, signposts.js?v=4)
 - Alat se hvata za naslov ("⠿ Putokazi") i prevlači bilo gde po ekranu; dugme ⇄ ga baci na drugu stranu. Položaj se pamti (`cookster.signtool-pos.v1`).
 - Senka putokaza: jačina, razmazanost, pomak levo-desno i gore-dole (`sh`, `shb`, `shx`, `shy`, u % širine putokaza; CSS `drop-shadow` sa `cqw`). Podrazumevano bez senke.
+
+## Putokazi roštilja i u kuhinji (2026-10-14, signposts.js?v=5, kitchen-fixtures.js?v=67)
+- Putokazi postavljeni u krupnom planu roštilja (`view:'grill'`) vide se i u kuhinji, malo, na roštilju (preslikano: krupan plan = kuhinja uvećana K=2.52 oko tačke G=(492,125) → T=(870,470), kao u `liveParams`). Klik na roštilj ih zumira zajedno sa slikom roštilja: sloj `.gz-signs` u `#grillZoom` dobija isti transform i providnost kao slika roštilja u `runLive`.
+- Za "uvek tu" za sve igrače: JSON iz "Kopiraj sve (JSON)" ide u `SIGN_DEF` (sada prazno); na korisnikovom računaru treba obrisati `cookster.signposts.v1`, inače lokalna lista ima prednost.

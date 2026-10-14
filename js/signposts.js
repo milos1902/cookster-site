@@ -19,7 +19,7 @@ signs.forEach(function(s){
   if(!s.u){s.u=1;if(s.view==='kitchen'){s.x=+(s.x/1672*100).toFixed(2);s.y=+(s.y/941*100).toFixed(2);s.w=+(s.w/1672*100).toFixed(2);}}   /* the first version stored pixels of the kitchen picture */
   s.id=s.id||('s'+(++uid));var n=+String(s.id).slice(1);if(n>uid)uid=n;
 });
-function save(){try{localStorage.setItem(KEY,JSON.stringify(signs,function(k,v){return k==='_el'?undefined:v;}));}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(signs,function(k,v){return k==='_el'||k==='_m'||k==='_mt'?undefined:v;}));}catch(e){}}
 function pic(t){return 'assets/signs/'+t+'.webp?v=2';}
 var css=document.createElement('style');
 css.textContent='.cookster-sign{position:absolute;pointer-events:none;transform-origin:50% 50%;-webkit-user-drag:none;user-select:none}'+
@@ -43,7 +43,9 @@ var tavHost=null;
 function hostFor(view){
   if(view==='kitchen')return document.getElementById('scene');
   if(view==='sink')return document.querySelector('#sinkZoom .sz-stage');
-  if(view==='grill')return document.getElementById('grillZoom');
+  if(view==='grill'){var gz=document.getElementById('grillZoom');if(!gz)return null;var gh=gz.querySelector('.gz-signs');
+    if(!gh){gh=document.createElement('div');gh.className='sign-host gz-signs';gh.style.cssText='left:0;top:0;width:100%;height:100%;will-change:transform,opacity';gz.insertBefore(gh,gz.querySelector('button'));}
+    return gh;}
   if(view==='tavern'){
     var room=document.getElementById('tavernScene');if(!room)return null;
     if(!tavHost||tavHost.parentNode!==room){tavHost=document.createElement('div');tavHost.className='sign-host';room.appendChild(tavHost);}
@@ -62,6 +64,7 @@ function apply(s){
   var im=el.firstChild;if(im&&im.style)im.style.filter=s.sh>0?'drop-shadow('+(s.shx||0)+'cqw '+(s.shy==null?3:s.shy)+'cqw '+(s.shb==null?3:s.shb)+'cqw rgba(15,6,0,'+s.sh+'))':'none';
   el.style.transform='translate(-50%,-50%) perspective('+(s.p||900)+'px) rotateX('+(s.rx||0)+'deg) rotateY('+(s.ry||0)+'deg) rotateZ('+(s.rz||0)+'deg) scaleX('+(s.flip?-1:1)+')';
   el.classList.toggle('sel',s===sel);
+  if(s.view==='grill')mirror(s);
 }
 function build(s,host){
   if(s._el)s._el.remove();
@@ -78,11 +81,28 @@ function build(s,host){
   el.addEventListener('wheel',function(e){if(!open)return;e.preventDefault();e.stopPropagation();select(s);s.w=Math.max(2,Math.min(80,+(s.w*(e.deltaY<0?1.06:1/1.06)).toFixed(2)));apply(s);fillSliders();save();},{passive:false});
   host.appendChild(el);s._el=el;apply(s);
 }
+/* the signs of the grill close-up are also on the grill in the kitchen (small, because the grill is far): the close-up is the kitchen picture zoomed K times
+   (see liveParams in kitchen-fixtures.js: the kitchen point G=(492,125) lies on the close-up point T=(870,470)), so the zoom carries the signs together with the grill */
+var GK=2.52,GG={x:492,y:125},GT={x:870,y:470};
+function mirror(s){
+  var sc=document.getElementById('scene');if(!sc)return;
+  if(!s._m||s._m.parentNode!==sc){
+    if(s._m)s._m.remove();
+    var el=document.createElement('div');el.className='cookster-sign cookster-mirror';el.style.pointerEvents='none';
+    var im=document.createElement('img');im.alt='';im.draggable=false;el.appendChild(im);sc.appendChild(el);s._m=el;s._mt=null;
+  }
+  var im2=s._m.firstChild;if(s._mt!==s.type){im2.src=pic(s.type);s._mt=s.type;}
+  var kx=GG.x+(s.x/100*1672-GT.x)/GK,ky=GG.y+(s.y/100*941-GT.y)/GK,e=s._m;
+  e.style.left=(kx/1672*100)+'%';e.style.top=(ky/941*100)+'%';e.style.width=(s.w/GK)+'%';e.style.containerType='inline-size';e.style.zIndex=s.front?'9000':'3';
+  im2.style.filter=s.sh>0?'drop-shadow('+(s.shx||0)+'cqw '+(s.shy==null?3:s.shy)+'cqw '+(s.shb==null?3:s.shb)+'cqw rgba(15,6,0,'+s.sh+'))':'none';
+  e.style.transform='translate(-50%,-50%) perspective('+(s.p||900)+'px) rotateX('+(s.rx||0)+'deg) rotateY('+(s.ry||0)+'deg) rotateZ('+(s.rz||0)+'deg) scaleX('+(s.flip?-1:1)+')';
+}
 /* every 250 ms: signs go to the host of their view (the grill close-up is created again every time it opens) */
 var curView='kitchen';
 function sweep(){
   var v=activeView();
   signs.forEach(function(s){
+    if(s.view==='grill')mirror(s);
     var h=hostFor(s.view);
     if(!h){if(s._el&&!s._el.isConnected)s._el=null;return;}
     if(!s._el||s._el.parentNode!==h)build(s,h);
@@ -100,7 +120,7 @@ function add(type,from){
   delete s._el;s.id='s'+(++uid);if(from){s.x+=2;s.y+=3;}
   signs.push(s);var h=hostFor(s.view);if(h)build(s,h);select(s);save();return s;
 }
-function remove(s){if(!s)return;if(s._el)s._el.remove();signs=signs.filter(function(x){return x!==s;});if(sel===s)sel=null;save();refresh();}
+function remove(s){if(!s)return;if(s._el)s._el.remove();if(s._m)s._m.remove();signs=signs.filter(function(x){return x!==s;});if(sel===s)sel=null;save();refresh();}
 function select(s){sel=s;signs.forEach(apply);refresh();}
 
 /* the tool */
@@ -169,12 +189,13 @@ function tool(){
   panel.querySelector('#sgDup').addEventListener('click',function(){if(sel)add(sel.type,sel);});
   panel.querySelector('#sgDel').addEventListener('click',function(){remove(sel);});
   panel.querySelector('#sgCopy').addEventListener('click',function(){
-    var t=JSON.stringify(signs.map(function(s){var c=Object.assign({},s);delete c._el;return c;}),null,2),st=panel.querySelector('#sgStatus');
+    var t=JSON.stringify(signs.map(function(s){var c=Object.assign({},s);delete c._el;delete c._m;delete c._mt;return c;}),null,2),st=panel.querySelector('#sgStatus');
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){st.textContent='JSON je kopiran: nalepi ga ovde u chat.';},function(){st.textContent='Ne mogu da kopiram.';});else st.textContent='Kopiranje nije dostupno u ovom pregledaču.';
   });
   refresh();
 }
+signs.forEach(function(s){delete s._m;});
 function init(){tool();sweep();setInterval(sweep,250);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
-window.CooksterSignposts={list:function(){return signs.map(function(s){var c=Object.assign({},s);delete c._el;return c;});},add:add,open:function(on){setOpen(on);},view:activeView};
+window.CooksterSignposts={list:function(){return signs.map(function(s){var c=Object.assign({},s);delete c._el;delete c._m;delete c._mt;return c;});},sweep:sweep,add:add,open:function(on){setOpen(on);},view:activeView};
 })();
