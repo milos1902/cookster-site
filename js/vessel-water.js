@@ -84,17 +84,17 @@ function swayFrame(now){
         var lp=Math.min(1,dt/.045),pvx=S.vx||0,pvy=S.vy||0;S.vx=pvx+(tvx-pvx)*lp;S.vy=pvy+(tvy-pvy)*lp;
         var ax=(S.vx-pvx)/dt,ay=(S.vy-pvy)/dt,W2=36,ZW=2*.16*6;   /* omega^2 (period about 1 s), damping */
         S.sx=S.sx||0;S.sy=S.sy||0;S.svx=S.svx||0;S.svy=S.svy||0;
-        var fx=-ax*W2/4200,fy=-ay*W2/4200,nSub=3,h=dt/nSub;
+        var fx=-ax*W2/2600,fy=-ay*W2/2600,nSub=3,h=dt/nSub;
         for(var q=0;q<nSub;q++){S.svx+=(-W2*S.sx-ZW*S.svx+fx)*h;S.svy+=(-W2*S.sy-ZW*S.svy+fy)*h;S.sx+=S.svx*h;S.sy+=S.svy*h;}
-        S.sx=Math.max(-1.5,Math.min(1.5,S.sx));S.sy=Math.max(-1.5,Math.min(1.5,S.sy));
+        S.sx=Math.max(-1.7,Math.min(1.7,S.sx));S.sy=Math.max(-1.7,Math.min(1.7,S.sy));
       }
       S.p[0]+=dt*1.7*sp;S.p[1]+=dt*1.15*sp;S.p[2]+=dt*3.1*sp;S.p[3]+=dt*4.3*sp;}
     var PX=S.sx||0,PY=S.sy||0,P4=S.p||[0,0,0,0],a1=Math.sin(P4[0]+o.ph)*.11*amp,a2=Math.sin(P4[1]+o.ph*1.7+1.3)*.07*amp,out=[];
     for(i=0;i<n;i++){
       var q=P[i],dx=q[0]-cx,dy=q[1]-cy,an=Math.atan2(dy,dx);
       var k=1+a1*Math.cos(an-.5*(1-bst))+a2*Math.cos(an-2.2)+(.014*Math.sin(an*5+P4[2]+o.ph)+.01*Math.sin(an*8-P4[3]))*amp;
-      var pk=1+.42*(PX*Math.cos(an)+PY*Math.sin(an)*.6);
-      out.push([cx+dx*k*pk+a1*6+PX*8,cy+dy*k*pk+a2*3+PY*3.4]);
+      var pk=1+.5*(PX*Math.cos(an)+PY*Math.sin(an)*.6);
+      out.push([cx+dx*k*pk+a1*6+PX*10,cy+dy*k*pk+a2*3+PY*4-PX*dx*.28]);   /* the surface also tips: the water climbs the wall it runs to */
     }
     var c='polygon('+out.map(function(q){return q[0].toFixed(2)+'% '+q[1].toFixed(2)+'%';}).join(',')+')';o.g.style.clipPath=c;o.g.style.webkitClipPath=c;
     if(o.el&&typeof holding!=='undefined'&&holding===o.el&&typeof placementGhost!=='undefined'&&placementGhost){var cg=placementGhost.querySelector('.vw-g');if(cg){cg.style.clipPath=c;cg.style.webkitClipPath=c;}}   /* the carried copy of the vessel (the ghost) has its own water: it follows too */
@@ -197,7 +197,7 @@ function set(el,f){
   if(f<=.004)delete el.dataset.water;else el.dataset.water=f.toFixed(3);
   sync(el);
 }
-window.CooksterVesselWater={agitate:function(el){var S=el&&(el._vw=el._vw||{});if(!S)return;var n=performance.now();S.boostT=n;S.kick=n;S.dur=1.8;},reload:function(){try{WCAL=JSON.parse(localStorage.getItem(WKEY)||'{}')||{};}catch(e){}},has:has,front:function(id){var p=prof(id);return p&&p.mask&&p.mask.length>=3?p.mask:null;},get:get,set:set,sync:sync,overlay:overlay,clamp:clamp};
+window.CooksterVesselWater={debug:function(){try{return (window.items||[]).filter(function(e){return e._vw}).map(function(e){return {id:e.dataset.itemId,held:typeof holding!=='undefined'&&holding===e,sx:+(e._vw.sx||0).toFixed(2),sy:+(e._vw.sy||0).toFixed(2),vx:Math.round(e._vw.vx||0)};});}catch(x){return String(x);}},agitate:function(el){var S=el&&(el._vw=el._vw||{});if(!S)return;var n=performance.now();S.boostT=n;S.kick=n;S.dur=1.8;},reload:function(){try{WCAL=JSON.parse(localStorage.getItem(WKEY)||'{}')||{};}catch(e){}},has:has,front:function(id){var p=prof(id);return p&&p.mask&&p.mask.length>=3?p.mask:null;},get:get,set:set,sync:sync,overlay:overlay,clamp:clamp};
 
 /* ---------- the tool "Voda u posudi": where the water of a vessel is ----------
    For every vessel: the shape of the surface of the water (the opening of the vessel), the point where the water stands when the vessel is nearly empty and the point when it is full,
