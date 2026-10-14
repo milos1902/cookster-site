@@ -553,3 +553,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Dijagnostika vode u ruci uključena (2026-10-14, vessel-water.js?v=29)
 - Dok je u ruci posuda sa vodom, levo dole se pokazuje statusni tekst (kalibracija vode, da li kopija ima vodu, izvor pokreta, da li je sloj u stranici, da li petlja radi, S.sx, brzina). Privremeno uključeno; isključuje se sa `localStorage.setItem('cookster.waterdebug','0')`. Ukloniti kad se kvar reši.
+
+## Dijagnostika sa snimka: fizika radi, vidljivost slaba kad je puno (2026-10-14, vessel-water.js?v=30)
+- Statusni tekst sa korisnikovog snimka: kalibracija dno+vrh (morph), meki rub 2.4, nivo 1.00, kopija ima vodu i `surf`, izvor pokreta `pose`, original u stranici, petlja radi, `S.sx` i `sx` kopije se menjaju od -1.7 do 1.7 pri brzinama do ±3600 px/s. Fizika dakle radi i u kopiji; problem je vidljivost: pri nivou 1.00 površina ispunjava otvor posude, pa se pomak ivice ne vidi.
+- Dodat sloj `.vw-tl`: svetlo na strani na koju voda trči (jačina prati `sx/sy`), vidljivo i kad je posuda puna; i u originalu i u kopiji.
