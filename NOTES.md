@@ -461,3 +461,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Jačina njihanja je puna pri sipanju (dok se nivo diže), kad se posuda uzme u ruku i kad se spusti, pa se 7 sekundi smanjuje do mirnog stanja (voda se i dalje malo miče, ~18% jačine).
 - Alat "Voda u posudi": klizač "Meki rub vode" (zamućenje ivice površine, % širine posude), čuva se kao `soft`.
 - Građa sloja: `vessel-water-ov` (silueta posude) > blur sloj > `g` (oblik površine koji se njiše) > slojevi vode.
+
+## Pljusak iza prednjeg zida, bez svetlih prelaza (2026-10-14, sink-zoom.js?v=20, vessel-water.js?v=15)
+- Sudopera: mlaz i pljusak se brišu (`destination-out`) gde je nacrtana prednja ivica posude (crvena u alatu "Voda u posudi", ili iz kalibracije hrane): zid posude je iznad vode.
+- Uklonjeni svetli prelazi (`vw-wave`) i svetli gradijent preko vode.

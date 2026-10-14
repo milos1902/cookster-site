@@ -230,7 +230,7 @@ function frame(now){
   flow+=(totalFlow()-flow)*Math.min(1,dt*7);
   var on=flow>.02;
   streamLen+=((on?1:0)-streamLen)*Math.min(1,dt*(on?9:14));
-  if(streamLen>.01&&flow>.01)drawWater(g,w,h,now);
+  if(streamLen>.01&&flow>.01){drawWater(g,w,h,now);cutFront(g,w,h);}
   else if(streamLen>.01){streamLen*=.8;}
   g.setTransform(1,0,0,1,0,0);
   if(moving||streamLen>.02||flow>.02||drops.length)requestAnimationFrame(frame);else fxRun=false;
@@ -272,6 +272,18 @@ function splashCfg(){var T=cal.tap;return {pos:T.sp&&T.sp.pos||T.land,size:T.sp&
 function setSp(k,v){var T=cal.tap;T.sp=Object.assign({},T.sp||{},splashCfg(),{});T.sp.pos=T.sp.pos.slice();T.sp[k]=v;}
 function prevAng(k){return (previewAng||0)*Math.PI/180*(k==='left'?1:-1);}
 var previewAng=0;
+// the front wall of a vessel in the sink hides the stream and the splash: where the front (the red shape of the tool "Voda u posudi") is drawn, the effect is erased
+function cutFront(g,w,h){
+  var W=window.CooksterVesselWater;if(!W||!W.front)return;
+  var cr=fx.getBoundingClientRect();if(!cr.width)return;
+  sunk.forEach(function(sv){
+    var im=sv._img;if(!im||!im.isConnected||!im.naturalWidth)return;
+    var poly=W.front(sv.id);if(!poly)return;
+    var r=im.getBoundingClientRect(),x=(r.left-cr.left)/cr.width*w,y=(r.top-cr.top)/cr.height*h,iw=r.width/cr.width*w,ih=r.height/cr.height*h;
+    g.save();g.beginPath();poly.forEach(function(q,i){g[i?'lineTo':'moveTo'](x+q[0]/100*iw,y+q[1]/100*ih);});g.closePath();g.clip();
+    g.globalCompositeOperation='destination-out';g.drawImage(im,x,y,iw,ih);g.restore();
+  });
+}
 function drawWater(g,w,h,now){
   var T=cal.tap,sx=T.spout[0]/100*w,sy=T.spout[1]/100*h,lx=T.land[0]/100*w,ly=T.land[1]/100*h;
   var len=ly-sy,ey=sy+len*streamLen,t=now/1000,wid=(w*.0035)*(.5+flow*1.3);
@@ -350,7 +362,7 @@ function renderSink(force){
   var total=sunk.length+Math.min(dishes,6),k=0;
   sunk.forEach(function(sv,i){
     var g=itemGeom(sv.id,14),w=document.createElement('div');w.className='sz-it take';w.title='klik: uzmi posudu · desni klik: isprazni vodu';
-    var im=document.createElement('img');im.draggable=false;im.style.cssText='display:block;width:100%;height:auto;-webkit-user-drag:none';w.appendChild(im);
+    var im=document.createElement('img');im.draggable=false;im.style.cssText='display:block;width:100%;height:auto;-webkit-user-drag:none';w.appendChild(im);sv._img=im;
     var x=slotX(k++,total,g.w);w._x=x;sv._x=x;sv._g=g;
     var wf=waterOf(sv);if(wf>.004){var ov=CooksterVesselWater.overlay(sv.id,wf,srcOf(sv),true);if(ov)w.appendChild(ov);}
     im.onload=function(){place(w,im,x,g)};im.src=srcOf(sv);if(im.complete&&im.naturalWidth)place(w,im,x,g);
