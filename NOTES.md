@@ -475,3 +475,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Voda se vidi u ruci, brže njihanje (2026-10-14, vessel-water.js?v=19)
 - Uzrok nestajanja vode dok je posuda u ruci: SVG `<mask>` za meki rub nije radio na uzetoj posudi. Meki rub je sada filter (`feGaussianBlur` na alfi + `feComposite in`), jačina je u pikselima širine posude.
 - Njihanje: uzimanje u ruku = brzo 5 s, spuštanje (sto, šporet, sudopera) i sipanje = brzo 7 s, pa mirno (ostaje malo kretanja). Što je jače, brža je i brzina kretanja (faze se sabiraju po posudi).
+
+## Putokazi (2026-10-14, signposts.js?v=1)
+- Novi alat "🪧 Putokazi" (dugme u HUD-u, panel `data-tool-ui`): dodaj koliko hoćeš putokaza (Kuhinja, Kafana, Sudopera, Roštilj), prevuci ih u sceni, točak miša = veličina; rotacija, nagib napred-nazad (`rotateX`), nagib levo-desno (`rotateY`), jačina perspektive, ogledalo, ispred/iza predmeta, duplikat, obriši.
+- Slike: `assets/signs/{kuhinja,kafana,sudopera,rostilj}.webp` (prozirna pozadina). Čuva se u `cookster.signposts.v1`; "Kopiraj sve (JSON)" daje listu za ugradnju u `SIGN_DEF` (sada prazna).
+- Putokazi su u `#scene` (koordinate scene), pa prate kameru; ne zavise od toga koja soba je u pogledu.
