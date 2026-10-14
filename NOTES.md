@@ -557,3 +557,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Dijagnostika sa snimka: fizika radi, vidljivost slaba kad je puno (2026-10-14, vessel-water.js?v=30)
 - Statusni tekst sa korisnikovog snimka: kalibracija dno+vrh (morph), meki rub 2.4, nivo 1.00, kopija ima vodu i `surf`, izvor pokreta `pose`, original u stranici, petlja radi, `S.sx` i `sx` kopije se menjaju od -1.7 do 1.7 pri brzinama do ±3600 px/s. Fizika dakle radi i u kopiji; problem je vidljivost: pri nivou 1.00 površina ispunjava otvor posude, pa se pomak ivice ne vidi.
 - Dodat sloj `.vw-tl`: svetlo na strani na koju voda trči (jačina prati `sx/sy`), vidljivo i kad je posuda puna; i u originalu i u kopiji.
+
+## Vraćeno: bez pomeranja vode u ruci (2026-10-14, vessel-water.js?v=31)
+- Po zahtevu korisnika sve vezano za pomeranje vode dok se posuda nosi je uklonjeno (fizika opruge, zasebna petlja za kopiju, klizanje slike vode, odsjaj, svetlo nagiba, statusni tekst). `js/vessel-water.js` vraćen na verziju pre fizike (njihanje 5 s posle uzimanja / 7 s posle spuštanja i sipanja, jače trljanje sunđerom, meki rub filterom), samo sa novim brojem verzije.
+- Ostaje u `game.js`: pravi predmet ostaje vidljiv dok se kopija ne učita, čuvar za predmet u ruci, kopija ne ponavlja prstenove.
