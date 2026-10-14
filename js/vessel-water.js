@@ -8,12 +8,12 @@ if(window.CooksterVesselWater)return;
 var TEX='assets/water/tamna.webp?v=1';
 var css=document.createElement('style');
 css.textContent='@keyframes vwDrift{from{background-position:0 0,0 0}to{background-position:0 0,768px 384px}}'+
- '@keyframes vwSlosh{from{background-position:0 0,0 0,0 0,-26px -10px}to{background-position:0 0,0 0,0 0,30px 12px}}'+
+ '@keyframes vwSlosh{from{background-position:0 0,-26px -10px}to{background-position:0 0,30px 12px}}'+
  '@keyframes vwWave{from{transform:translateX(-35%)}to{transform:translateX(335%)}}'+
  '.vessel-water-ov{position:absolute;inset:0;pointer-events:none;overflow:hidden}'+
  '.vessel-water-ov .vw-fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(rgba(30,38,36,.25),rgba(10,14,13,.5)),url('+TEX+');background-size:100% 100%,46% auto;opacity:.78;animation:vwDrift 26s linear infinite}'+
  '.vessel-water-ov .vw-top{position:absolute;left:0;right:0;height:3.2%;background:linear-gradient(rgba(255,255,255,.4),rgba(255,255,255,0));mix-blend-mode:screen}'+
- '.vessel-water-ov .vw-surf{filter:url(#vwDist);position:absolute;inset:0;opacity:.78;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 45%,rgba(0,0,0,.35) 100%),linear-gradient(rgba(255,255,255,.1),rgba(255,255,255,0) 40%),url('+TEX+');background-size:100% 100%,100% 100%,42% auto;animation:vwSlosh 5s ease-in-out infinite alternate}'+
+ '.vessel-water-ov .vw-surf{filter:url(#vwDist);position:absolute;inset:0;opacity:.78;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 45%,rgba(0,0,0,.35) 100%),url('+TEX+');background-size:100% 100%,42% auto;animation:vwSlosh 5s ease-in-out infinite alternate}'+
  '.vessel-water-ov .vw-wave{position:absolute;top:0;bottom:0;left:0;width:28%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.16),rgba(255,255,255,0));mix-blend-mode:screen;animation:vwWave 2.7s ease-in-out infinite alternate}'+
  '.vessel-water-ov .vw-wave.b{width:20%;animation-duration:3.9s;animation-direction:alternate-reverse;opacity:.7}'+
  '.vessel-water-ov.vw-light .vw-surf,.vessel-water-ov.vw-light .vw-fill{filter:hue-rotate(45deg) saturate(1.5) brightness(1.15)}'+
@@ -102,7 +102,6 @@ function overlay(id,f,src,withFront,pOverride,ringAge,owner){
     var b=document.createElement('div'),g=document.createElement('div');b.style.cssText='position:absolute;inset:0';g.style.cssText='position:absolute;inset:0;clip-path:'+poly+';-webkit-clip-path:'+poly;
     b.appendChild(g);d.appendChild(b);
     var sf=document.createElement('div');sf.className='vw-surf';g.appendChild(sf);
-    ['','b'].forEach(function(c){var w=document.createElement('div');w.className='vw-wave '+c;w.style.animationDelay=c?'-1.1s':'0s';g.appendChild(w);});
     var sp=surfacePoly(p,f),S=owner?(owner._vw=owner._vw||{}):(SINKS[id]=SINKS[id]||{}),nowT=performance.now();
     if(S.f!==undefined&&f>S.f+.0005)S.kick=nowT;S.f=f;   /* pouring: the water rocks until 7 seconds after the last drop */
     sway(d,g,b,sp,S,owner&&owner.dataset?owner:null,+p.soft||0);if(ringAge!=null&&ringAge<2.6)addRing(g,sp,p.ring,ringAge);
@@ -170,7 +169,7 @@ function set(el,f){
   if(f<=.004)delete el.dataset.water;else el.dataset.water=f.toFixed(3);
   sync(el);
 }
-window.CooksterVesselWater={reload:function(){try{WCAL=JSON.parse(localStorage.getItem(WKEY)||'{}')||{};}catch(e){}},has:has,get:get,set:set,sync:sync,overlay:overlay,clamp:clamp};
+window.CooksterVesselWater={reload:function(){try{WCAL=JSON.parse(localStorage.getItem(WKEY)||'{}')||{};}catch(e){}},has:has,front:function(id){var p=prof(id);return p&&p.mask&&p.mask.length>=3?p.mask:null;},get:get,set:set,sync:sync,overlay:overlay,clamp:clamp};
 
 /* ---------- the tool "Voda u posudi": where the water of a vessel is ----------
    For every vessel: the shape of the surface of the water (the opening of the vessel), the point where the water stands when the vessel is nearly empty and the point when it is full,
