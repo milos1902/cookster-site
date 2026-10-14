@@ -581,3 +581,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Tri stanja gomile brašna (2026-10-14, flour.js?v=4)
 - Gomila menja sliku prema količini: ravna (`gomila`, n<35), gomila (`gomila2`, n<110) i visoka (`gomila3`, više). Slike su od korisnika.
+
+## Naćve i brašno u njima (2026-10-14, flour.js?v=5, game.js?v=3.124)
+- Novi predmet `nacve` (slika korisnika `assets/flour/nacve.webp`, 105x196, stavlja se na sto). Kad mlaz brašna padne na otvor naćvi (`INNER` procenti slike), brašno ide u naćve (`dataset.inFlour`, do 300, čuva se u snimku) i vidi se kao gomila unutar otvora (isečena na ivice, tri slike gomile prema količini); inače pada na sto kao ranije.
+- Sledeće: voda iz bokala u naćve, kvasac, mešenje, krpa, rast testa.
