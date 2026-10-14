@@ -75,14 +75,29 @@ function swayFrame(now){
     var bAge=S.boostT?(now-S.boostT)/1000:99,bst=bAge<1.1?1-bAge/1.1:0;   /* scrubbing with the sponge: a strong slosh from the left to the right */
     amp*=1+1.3*bst;   /* after the stir the water keeps moving a little */
     if(S.fr!==now){var dt=Math.min(.05,S.lt?(now-S.lt)/1000:0);S.lt=now;S.fr=now;var sp=(1+1.3*kk)*(1+1.2*bst);   /* the stronger the stir, the faster the movement */
-      S.p=S.p||[0,0,0,0];S.p[0]+=dt*1.7*sp;S.p[1]+=dt*1.15*sp;S.p[2]+=dt*3.1*sp;S.p[3]+=dt*4.3*sp;}
-    var P4=S.p||[0,0,0,0],a1=Math.sin(P4[0]+o.ph)*.11*amp,a2=Math.sin(P4[1]+o.ph*1.7+1.3)*.07*amp,out=[];
+      S.p=S.p||[0,0,0,0];
+      // the water is a heavy liquid: when the vessel in the hand is jerked, the water lags behind, runs to the other side, comes back and rocks (a damped spring driven by the acceleration of the vessel)
+      var hdNow=!!(o.el&&typeof holding!=='undefined'&&holding===o.el&&typeof mouse!=='undefined');
+      var tvx=0,tvy=0;
+      if(hdNow){if(S.px!==undefined&&dt>0){tvx=(mouse.x-S.px)/dt;tvy=(mouse.y-S.py)/dt;}S.px=mouse.x;S.py=mouse.y;}
+      if(dt>0){
+        var lp=Math.min(1,dt/.045),pvx=S.vx||0,pvy=S.vy||0;S.vx=pvx+(tvx-pvx)*lp;S.vy=pvy+(tvy-pvy)*lp;
+        var ax=(S.vx-pvx)/dt,ay=(S.vy-pvy)/dt,W2=36,ZW=2*.16*6;   /* omega^2 (period about 1 s), damping */
+        S.sx=S.sx||0;S.sy=S.sy||0;S.svx=S.svx||0;S.svy=S.svy||0;
+        var fx=-ax*W2/9000,fy=-ay*W2/9000,n=3,h=dt/n;
+        for(var q=0;q<n;q++){S.svx+=(-W2*S.sx-ZW*S.svx+fx)*h;S.svy+=(-W2*S.sy-ZW*S.svy+fy)*h;S.sx+=S.svx*h;S.sy+=S.svy*h;}
+        S.sx=Math.max(-1.5,Math.min(1.5,S.sx));S.sy=Math.max(-1.5,Math.min(1.5,S.sy));
+      }
+      S.p[0]+=dt*1.7*sp;S.p[1]+=dt*1.15*sp;S.p[2]+=dt*3.1*sp;S.p[3]+=dt*4.3*sp;}
+    var PX=S.sx||0,PY=S.sy||0,P4=S.p||[0,0,0,0],a1=Math.sin(P4[0]+o.ph)*.11*amp,a2=Math.sin(P4[1]+o.ph*1.7+1.3)*.07*amp,out=[];
     for(i=0;i<n;i++){
       var q=P[i],dx=q[0]-cx,dy=q[1]-cy,an=Math.atan2(dy,dx);
       var k=1+a1*Math.cos(an-.5*(1-bst))+a2*Math.cos(an-2.2)+(.014*Math.sin(an*5+P4[2]+o.ph)+.01*Math.sin(an*8-P4[3]))*amp;
-      out.push([cx+dx*k+a1*6,cy+dy*k+a2*3]);
+      var pk=1+.28*(PX*Math.cos(an)+PY*Math.sin(an)*.6);
+      out.push([cx+dx*k*pk+a1*6+PX*5,cy+dy*k*pk+a2*3+PY*2.2]);
     }
     var c='polygon('+out.map(function(q){return q[0].toFixed(2)+'% '+q[1].toFixed(2)+'%';}).join(',')+')';o.g.style.clipPath=c;o.g.style.webkitClipPath=c;
+    if(o.el&&typeof holding!=='undefined'&&holding===o.el&&typeof placementGhost!=='undefined'&&placementGhost){var cg=placementGhost.querySelector('.vw-g');if(cg){cg.style.clipPath=c;cg.style.webkitClipPath=c;}}   /* the carried copy of the vessel (the ghost) has its own water: it follows too */
     if(o.mp&&o.d.offsetWidth>0){var sd=(o.d.offsetWidth*o.soft/100/2).toFixed(1);if(o.sd!==sd){o.sd=sd;o.mp.setAttribute('stdDeviation',sd);}}
   });
   SW=live;if(live.length)requestAnimationFrame(swayFrame);else swRun=false;
@@ -105,7 +120,7 @@ function overlay(id,f,src,withFront,pOverride,ringAge,owner){
   var poly='polygon('+(morph?surfacePoly(p,f):p.foodVisible).map(function(q){return q[0].toFixed(2)+'% '+q[1].toFixed(2)+'%'}).join(',')+')';
   if(morph){
     // d (the outline of the vessel) > b (soft edge: blur) > g (the shape of the surface, it rocks) > the layers of the water
-    var g=document.createElement('div'),mp=null,wrap=d;g.style.cssText='position:absolute;inset:0;clip-path:'+poly+';-webkit-clip-path:'+poly;
+    var g=document.createElement('div'),mp=null,wrap=d;g.className='vw-g';g.style.cssText='position:absolute;inset:0;clip-path:'+poly+';-webkit-clip-path:'+poly;
     if(+p.soft>0){
       // soft edge: a filter multiplies the (sharp, clipped) water by its own blurred outline: only the line of the edge fades, the layers stay sharp
       var uid='vwe'+(++MASKN),NS='http://www.w3.org/2000/svg',sv=document.createElementNS(NS,'svg');sv.setAttribute('width','0');sv.setAttribute('height','0');sv.style.cssText='position:absolute;width:0;height:0';

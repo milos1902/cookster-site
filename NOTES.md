@@ -525,3 +525,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Dok se sunđerom trlja prljava posuda u kojoj ima vode, voda se jako njiše (levo-desno, brže i jače): `CooksterVesselWater.agitate(el)` postavlja `boostT` (1.1 s opadanja), amplituda do ~2.3x, brzina do ~2.2x, osa njihanja prelazi u horizontalnu.
 - Kad prljavština nestane (`remaining<=.1`): `washWaterAway(vessel)`: voda se utapa (opacity 0.9 s), pa se briše `dataset.water`. Posuda je čista i prazna.
 - Provereno kroz pravi tok (sunđer u ruci, trljanje mišem): raspon pomeranja ivice vode 0.07 u miru → ~2.0–2.7 pri trljanju; na kraju prljavština i voda nestaju.
+
+## Fizika vode dok se posuda pomera (2026-10-14, vessel-water.js?v=21)
+- Dok je posuda u ruci, voda je prigušena opruga (period ~1 s, prigušenje ζ≈0.16) koju pokreće ubrzanje miša: naglo udesno → voda krene ulevo, vrati se udesno i njiše se; isto obrnuto, i napred-nazad. Posle spuštanja na sto/šporet njihanje nastavlja svojim zamahom dok ne stane.
+- Pomak vode: površina se pomera i izdužuje na stranu zamaha (`S.sx`, `S.sy`); pokreće se i kopija koju držiš u ruci (`.vw-g` u `placementGhost`).
