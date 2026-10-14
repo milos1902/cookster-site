@@ -263,9 +263,10 @@ window.addEventListener('pointerup',function(e){if(wp&&e.button===0){e.stopImmed
 // ---- mixing: the stirring spoon in the hand, LEFT button held, moved over the trough; the flour and the water become a dough (only when the ratio is right) ----
 var mixP=null;
 window.addEventListener('pointerdown',function(e){
-  var h=typeof holding!=='undefined'?holding:null;if(e.button!==0||!h||typeof isStirSpoon!=='function'||!isStirSpoon(h))return;
-  var c=tableSpot(),tr=c&&troughAt(c.cx,c.by);if(!tr)return;
-  var D=doughState(tr);if(D.st==='empty'||D.st==='flour'||D.st==='water'){return;}
+  var h=typeof holding!=='undefined'?holding:null;if(e.button!==0||h)return;     // by hand: nothing in the hand
+  if(e.target&&e.target.closest&&e.target.closest('#hud,[data-tool-ui],.cookster-ctx,#toolDock'))return;
+  var sp=screenToScene(e.clientX,e.clientY),tr=troughAt(sp.x,sp.y);if(!tr)return;
+  var D=doughState(tr);if(D.st==='empty'||D.st==='flour'||D.st==='water')return;   // an empty trough or only one thing in it: the normal click (picking it up)
   e.stopImmediatePropagation();e.preventDefault();
   if(D.st==='dry'){try{showToast('Suvo je, dodaj još vode.');}catch(x){}}
   if(D.st==='wet'){try{showToast('Previše je meko, dodaj još brašna.');}catch(x){}}

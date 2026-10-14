@@ -601,3 +601,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Testo se dobija mešanjem, ne pojavom iza oblaka (2026-10-14, flour.js?v=10, game.js?v=3.126)
 - Slika testa se više ne pojavljuje iza oblaka brašna (brašno se tada ne sipa). Sa drvenom kašikom u ruci (`isStirSpoon`), držeći levi taster i krećući miš iznad naćvi, `inMix` raste (oko 2400 px kretanja = 100%), a slika testa se postepeno ulije (providnost = mešanje). Ako odnos nije dobar, mešanje ne napreduje i poruka kaže "suvo, dodaj vode" ili "previše meko, dodaj brašna".
 - Provera: sa veštačkom zamenom kašike (kašika je brzi alat, nisam je uzeo kroz točak) mešanje stiže do 1.
+
+## Mešanje rukom (2026-10-14, flour.js?v=11)
+- Testo se meša rukom, ne kašikom: prazna ruka, levi taster držan i miš kretan iznad naćvi u kojima ima i brašna i vode (inače običan klik uzima naćve). Provereno: 0.33 posle ~70 koraka, 1 na kraju.
