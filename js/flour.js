@@ -62,7 +62,7 @@ function drawTrough(e){
   if(e._wt){e._wt.style.display=D.W>0?'':'none';if(e._wd)e._wd.style.opacity=String(Math.min(.95,.25+D.W/90)*(D.st==='good'?.45:(D.st==='wet'?1:.8)));}
   // the picture of the trough itself shows the flour (the pictures drawn by the owner)
   var tb=e.querySelector('.body');
-  if(tb){var want=n<=0?'assets/flour/nacve.webp':(n<120?'assets/flour/nacve_brasno1.webp':'assets/flour/nacve_brasno2.webp');
+  if(tb){var want=D.st==='good'?'assets/flour/nacve_testo.webp':n<=0?'assets/flour/nacve.webp':(n<120?'assets/flour/nacve_brasno1.webp':'assets/flour/nacve_brasno2.webp');
     if(tb.getAttribute('src')!==want){
       var old=tb.getAttribute('src');
       // the new picture does not jump in: the old one melts away behind a cloud of flour dust
