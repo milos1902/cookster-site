@@ -68,20 +68,24 @@ function swayFrame(now){
     if(!o.d.isConnected&&now-o.born>400)return;live.push(o);
     var P=o.pts,n=P.length,cx=0,cy=0,i;for(i=0;i<n;i++){cx+=P[i][0];cy+=P[i][1];}cx/=n;cy/=n;
     var S=o.S;
-    if(o.el&&typeof holding!=='undefined'){var hd=holding===o.el;if(S.held!==undefined&&hd!==S.held)S.kick=now;S.held=hd;}   /* picked up or put down: the water rocks again */
-    var age=S.kick?(now-S.kick)/1000:99,kk=age<7?Math.pow(1-age/7,1.5):0,amp=.18+.82*kk;   /* 7 seconds after pouring / lifting / putting down it calms down, but keeps moving a little */
-    var a1=Math.sin(t*1.7+o.ph)*.11*amp,a2=Math.sin(t*1.15+o.ph*1.7+1.3)*.07*amp,out=[];
+    if(o.el&&typeof holding!=='undefined'){var hd=holding===o.el;
+      if(hd!==S.held&&(S.held!==undefined||hd)){S.kick=now;S.dur=hd?5:7;}   /* picked up: fast for 5 seconds; put down (table, stove, sink): fast for 7 seconds, then it calms down */
+      S.held=hd;}
+    var dur=S.dur||7,age=S.kick?(now-S.kick)/1000:99,kk=age<dur?Math.pow(1-age/dur,1.5):0,amp=.18+1.12*kk;   /* after the stir the water keeps moving a little */
+    if(S.fr!==now){var dt=Math.min(.05,S.lt?(now-S.lt)/1000:0);S.lt=now;S.fr=now;var sp=1+1.3*kk;   /* the stronger the stir, the faster the movement */
+      S.p=S.p||[0,0,0,0];S.p[0]+=dt*1.7*sp;S.p[1]+=dt*1.15*sp;S.p[2]+=dt*3.1*sp;S.p[3]+=dt*4.3*sp;}
+    var P4=S.p||[0,0,0,0],a1=Math.sin(P4[0]+o.ph)*.11*amp,a2=Math.sin(P4[1]+o.ph*1.7+1.3)*.07*amp,out=[];
     for(i=0;i<n;i++){
       var q=P[i],dx=q[0]-cx,dy=q[1]-cy,an=Math.atan2(dy,dx);
-      var k=1+a1*Math.cos(an-.5)+a2*Math.cos(an-2.2)+(.014*Math.sin(an*5+t*3.1+o.ph)+.01*Math.sin(an*8-t*4.3))*amp;
+      var k=1+a1*Math.cos(an-.5)+a2*Math.cos(an-2.2)+(.014*Math.sin(an*5+P4[2]+o.ph)+.01*Math.sin(an*8-P4[3]))*amp;
       out.push([cx+dx*k+a1*6,cy+dy*k+a2*3]);
     }
-    if(o.mp){o.mp.setAttribute('points',out.map(function(q){return (q[0]/100).toFixed(4)+','+(q[1]/100).toFixed(4);}).join(' '));}   /* soft edge: only the line of the edge is blurred (a mask), not the whole water */
-    else{var c='polygon('+out.map(function(q){return q[0].toFixed(2)+'% '+q[1].toFixed(2)+'%';}).join(',')+')';o.g.style.clipPath=c;o.g.style.webkitClipPath=c;}
+    var c='polygon('+out.map(function(q){return q[0].toFixed(2)+'% '+q[1].toFixed(2)+'%';}).join(',')+')';o.g.style.clipPath=c;o.g.style.webkitClipPath=c;
+    if(o.mp&&o.d.offsetWidth>0){var sd=(o.d.offsetWidth*o.soft/100/2).toFixed(1);if(o.sd!==sd){o.sd=sd;o.mp.setAttribute('stdDeviation',sd);}}
   });
   SW=live;if(live.length)requestAnimationFrame(swayFrame);else swRun=false;
 }
-function sway(d,g,mp,pts,S,el){SW.push({d:d,g:g,mp:mp,pts:pts,S:S,el:el,ph:Math.random()*6.28,born:performance.now()});if(!swRun){swRun=true;requestAnimationFrame(swayFrame);}}
+function sway(d,g,mp,pts,S,el,soft){SW.push({d:d,g:g,mp:mp,pts:pts,S:S,el:el,soft:soft,ph:Math.random()*6.28,born:performance.now()});if(!swRun){swRun=true;requestAnimationFrame(swayFrame);}}
 // the first hit of the water: rings go out from the middle of the surface; the tilt (perspective) and the size are set in the tool
 function addRing(d,pts,r,age){
   var tl=r&&r.tilt!=null?+r.tilt:.5,sz=r&&r.size!=null?+r.size:70,x0=1e9,x1=-1e9,cx=0,cy=0;
@@ -99,19 +103,19 @@ function overlay(id,f,src,withFront,pOverride,ringAge,owner){
   var poly='polygon('+(morph?surfacePoly(p,f):p.foodVisible).map(function(q){return q[0].toFixed(2)+'% '+q[1].toFixed(2)+'%'}).join(',')+')';
   if(morph){
     // d (the outline of the vessel) > b (soft edge: blur) > g (the shape of the surface, it rocks) > the layers of the water
-    var g=document.createElement('div'),mp=null;g.style.cssText='position:absolute;inset:0;clip-path:'+poly+';-webkit-clip-path:'+poly;
+    var g=document.createElement('div'),mp=null,wrap=d;g.style.cssText='position:absolute;inset:0;clip-path:'+poly+';-webkit-clip-path:'+poly;
     if(+p.soft>0){
-      // soft edge: the surface is cut by an SVG mask whose shape is blurred (the layers themselves stay sharp)
-      var uid='vwm'+(++MASKN),NS='http://www.w3.org/2000/svg',sv=document.createElementNS(NS,'svg');sv.setAttribute('width','0');sv.setAttribute('height','0');sv.style.cssText='position:absolute;width:0;height:0';
-      sv.innerHTML='<defs><filter id="'+uid+'f" x="-40%" y="-40%" width="180%" height="180%" primitiveUnits="objectBoundingBox"><feGaussianBlur stdDeviation="'+(p.soft/100).toFixed(4)+'"/></filter><mask id="'+uid+'" maskContentUnits="objectBoundingBox" maskUnits="objectBoundingBox" x="-20%" y="-20%" width="140%" height="140%"><polygon fill="#fff" filter="url(#'+uid+'f)"/></mask></defs>';
-      mp=sv.querySelector('polygon');d.appendChild(sv);
-      g.style.clipPath='none';g.style.webkitClipPath='none';g.style.mask='url(#'+uid+')';g.style.webkitMask='url(#'+uid+')';
+      // soft edge: a filter multiplies the (sharp, clipped) water by its own blurred outline: only the line of the edge fades, the layers stay sharp
+      var uid='vwe'+(++MASKN),NS='http://www.w3.org/2000/svg',sv=document.createElementNS(NS,'svg');sv.setAttribute('width','0');sv.setAttribute('height','0');sv.style.cssText='position:absolute;width:0;height:0';
+      sv.innerHTML='<defs><filter id="'+uid+'" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation="0.01" result="a"/><feComposite in="SourceGraphic" in2="a" operator="in"/></filter></defs>';
+      mp=sv.querySelector('feGaussianBlur');d.appendChild(sv);
+      wrap=document.createElement('div');wrap.style.cssText='position:absolute;inset:0;filter:url(#'+uid+')';d.appendChild(wrap);
     }
-    d.appendChild(g);
+    wrap.appendChild(g);
     var sf=document.createElement('div');sf.className='vw-surf';g.appendChild(sf);
     var sp=surfacePoly(p,f),S=owner?(owner._vw=owner._vw||{}):(SINKS[id]=SINKS[id]||{}),nowT=performance.now();
-    if(S.f!==undefined&&f>S.f+.0005)S.kick=nowT;S.f=f;   /* pouring: the water rocks until 7 seconds after the last drop */
-    sway(d,g,mp,sp,S,owner&&owner.dataset?owner:null);if(ringAge!=null&&ringAge<2.6)addRing(g,sp,p.ring,ringAge);
+    if(S.f!==undefined&&f>S.f+.0005){S.kick=nowT;S.dur=7;}S.f=f;   /* pouring: the water rocks until 7 seconds after the last drop */
+    sway(d,g,mp,sp,S,owner&&owner.dataset?owner:null,+p.soft||0);if(ringAge!=null&&ringAge<2.6)addRing(g,sp,p.ring,ringAge);
     return finish(d,p,src,withFront);
   }
   d.style.clipPath=poly;d.style.webkitClipPath=poly;
