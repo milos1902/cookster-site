@@ -570,3 +570,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - `bokal_stari` je sada posuda (`type:'container'`, `vessel:true`, kapacitet 6, 160x160, dozvoljen u sudoperi), pa se puni/prazni kao ostale (slavina, presipanje).
 - Voda je samo u ustima bokala (ugrađeni `WDEF.bokal_stari` u vessel-water.js; raste od male mrlje pozadi do celih usta); telo bokala je prednja maska koja pokriva vodu, zadnji zid ne. Može se doterati u alatu "Voda u posudi" (ima prednost nad `WDEF`).
 - Sa strane sitan natpis procenata (`.vw-pct`, `CooksterVesselWater.label`) koji brzo trči gore dok se puni i dole dok se sipa; i u kuhinji i u sudoperi. Uključeno za ID-jeve u `PCT`.
+
+## Sipanje brašna na sto (2026-10-14, flour.js?v=2)
+- Džak brašna (`kal_01_dzak_brasna`) u ruci: LEVI taster držan iznad stola = džak se nagne (slike `assets/flour/dzak_nagnut1/2.webp`, prvih 0.35 s prva) i brašno pada kao gomila (`assets/flour/gomila.webp`) na mestu gde mlaz sleće (desno dole od džaka); DESNI taster spusti džak. Brzina 9 jedinica/s, džak ima 300; gomila raste (širina ~ n^0.62), spaja se sa obližnjom (60 px). Gomile se čuvaju (`cookster.flour-piles.v1`).
+- Senka i mali "backpack" prikaz džaka prate sliku (senka se menja, prikaz se sakriva dok se sipa).
+- Sledeće: voda + kvasac + mešanje u testo.
