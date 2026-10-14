@@ -5,18 +5,20 @@
 'use strict';
 if(window.CooksterFlour)return;
 var SACK='kal_01_dzak_brasna',KEY='cookster.flour-piles.v1',RATE=9,SACK_MAX=300;     // units of flour per second; one sack
-var IMG={a:'assets/flour/dzak_nagnut1.webp?v=1',b:'assets/flour/dzak_nagnut2.webp?v=1',pile:'assets/flour/gomila.webp?v=1'};
+var IMG={a:'assets/flour/dzak_nagnut1.webp?v=1',b:'assets/flour/dzak_nagnut2.webp?v=1',pile:'assets/flour/gomila.webp?v=1',pile2:'assets/flour/gomila2.webp?v=1',pile3:'assets/flour/gomila3.webp?v=1'};
 var piles=[],pour=null,hold=null;
 try{var raw=JSON.parse(localStorage.getItem(KEY)||'[]');if(Array.isArray(raw))piles=raw.filter(function(p){return p&&isFinite(p.x)&&isFinite(p.y)&&p.n>0;});}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(piles.map(function(p){return {x:p.x,y:p.y,n:p.n};})));}catch(e){}}
-[IMG.a,IMG.b,IMG.pile].forEach(function(s){var i=new Image();i.src=s;});
+[IMG.a,IMG.b,IMG.pile,IMG.pile2,IMG.pile3].forEach(function(s){var i=new Image();i.src=s;});
 function scn(){return document.getElementById('scene');}
 function pileW(n){return 46+Math.pow(Math.min(n,200),.62)*7.2;}   // pile width in the pixels of the scene (a little flour = a small heap, 100 units about 170 px)
 function drawPile(p){
   var sc=scn();if(!sc)return;
   if(!p.el||!p.el.isConnected){p.el=document.createElement('img');p.el.src=IMG.pile;p.el.draggable=false;p.el.className='flour-pile';p.el.style.cssText='position:absolute;pointer-events:none;transform:translate(-50%,-72%);user-select:none';sc.appendChild(p.el);}
   var vis=1;try{vis=surfaceScaleFor({dataset:{itemId:SACK,surfaceZone:'table'}},'table',p.y)||1;}catch(e){}
-  var w=pileW(p.n)*vis;p.el.style.left=p.x+'px';p.el.style.top=p.y+'px';p.el.style.width=w+'px';p.el.style.zIndex=String(Math.floor(p.y)+2);
+  var st=p.n<35?'pile':(p.n<110?'pile2':'pile3');   // a flat heap, a heap, a high mound
+  if(p.st!==st){p.st=st;p.el.src=IMG[st];}
+  var w=pileW(p.n)*vis*(st==='pile3'?.9:1);p.el.style.left=p.x+'px';p.el.style.top=p.y+'px';p.el.style.width=w+'px';p.el.style.zIndex=String(Math.floor(p.y)+2);
 }
 function addFlour(x,y,n){
   var best=null,bd=60;

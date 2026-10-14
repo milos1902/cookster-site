@@ -578,3 +578,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Animacija sipanja brašna i oblačić (2026-10-14, flour.js?v=3)
 - Zrnca brašna padaju iz usta džaka do mesta pada (fizika: brzina + gravitacija, do ~110 zrnaca), pri udaru odskoče sitna zrnca, a svakih 150 ms se podigne oblačić prašine brašna (zamućeni radijalni gradijent koji raste, diže se i bledi 0.9–1.4 s; na početku veći). Sve je procedura, bez novih slika.
+
+## Tri stanja gomile brašna (2026-10-14, flour.js?v=4)
+- Gomila menja sliku prema količini: ravna (`gomila`, n<35), gomila (`gomila2`, n<110) i visoka (`gomila3`, više). Slike su od korisnika.
