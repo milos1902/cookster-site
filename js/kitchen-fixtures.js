@@ -305,6 +305,7 @@ function runLive(v,back,done){
     var fw=Math.max(0,Math.round(150*(1-Math.min(1,u/.97)))),mk='linear-gradient(90deg,transparent 0,#000 '+fw+'px,#000 calc(100% - '+fw+'px),transparent 100%),linear-gradient(180deg,transparent 0,#000 '+fw+'px,#000 calc(100% - '+fw+'px),transparent 100%)';
     gi.style.webkitMaskImage=mk;gi.style.maskImage=mk;gi.style.webkitMaskComposite='source-in';gi.style.maskComposite='intersect';
     gi.style.opacity=back?Math.max(0,Math.min(1,u/.55)):Math.max(0,Math.min(1,(u-.28)/.42));          // it melts in while both are zooming; on the way back it melts out only at the very end, so the zoom out stops exactly when the whole scene has taken over
+    var sg=v.querySelector('.gz-signs');if(sg){sg.style.transformOrigin=Tl.x+'px '+Tl.y+'px';sg.style.transform=gi.style.transform;sg.style.opacity=gi.style.opacity;}   // the signs of the grill zoom with its picture
     if(e<total)requestAnimationFrame(step);else done();
   })(t0);
 }
@@ -315,7 +316,8 @@ function zoomLive(){
   var gi=document.createElement('img');gi.className='gz-grill';gi.draggable=false;gi.src=ZOOM_SRC;gi.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;display:block;will-change:transform,opacity';
   var back=document.createElement('button');back.type='button';back.textContent='← nazad u kuhinju';
   back.style.cssText='position:absolute;right:24px;top:72px;padding:10px 18px;font:700 16px system-ui,sans-serif;color:#fff;background:rgba(44,20,8,.92);border:2px solid #f1af33;border-radius:10px;cursor:pointer;opacity:0;transition:opacity .2s';
-  v.appendChild(gi);v.appendChild(back);document.body.appendChild(v);view=v;
+  var sgh=document.createElement('div');sgh.className='sign-host gz-signs';sgh.style.cssText='left:0;top:0;width:100%;height:100%;will-change:transform,opacity;opacity:0';
+  v.appendChild(gi);v.appendChild(sgh);v.appendChild(back);document.body.appendChild(v);view=v;try{window.CooksterSignposts&&CooksterSignposts.sweep()}catch(e){}
   ['pointerdown','pointerup','mousedown','mouseup','click','dblclick','contextmenu','wheel'].forEach(function(n){v.addEventListener(n,function(e){e.stopPropagation()})});
   back.addEventListener('click',closeGrill);v.addEventListener('click',function(){closeGrill()});
   addEventListener('keydown',onKey,true);v._busy=true;
@@ -367,5 +369,5 @@ function swingDoors(dur,from){
     if(now-t0<DUR)requestAnimationFrame(f);else{dEl.style.display='none';dBusy=false}})(t0);
 }
 window.CooksterKitchenFx={leaveTavern:leaveTavern,swingDoors:swingDoors,liveAt:liveAt,compose:function(src){return src},hit:hit,click:click,tryDrop:tryDrop,updateJars:updateJars,updateTools:updateTools,zoomGrill:zoomGrill,closeGrill:closeGrill,
-  drawer:function(k){return DR[k]?DR[k].p:0},setDrawer:function(k,v){if(DR[k])setP(k,v)},isZoomed:function(){return !!view}};
+  drawer:function(k){return DR[k]?DR[k].p:0},setDrawer:function(k,v){if(DR[k])setP(k,v)},isZoomed:function(){return !!view},zoomDoor:zoomDoor};
 })();
