@@ -66,7 +66,7 @@ var SW=[],swRun=false;
 function swayFrame(now){
   var t=now/1000,live=[];
   SW.forEach(function(o){
-    if(!o.d.isConnected&&now-o.born>400)return;live.push(o);
+    if(!o.d.isConnected&&now-o.born>400&&!(o.el&&typeof holding!=='undefined'&&holding===o.el))return;live.push(o);   /* a vessel in the hand may be taken out of the page for a while: its water must not be forgotten */
     var P=o.pts,n=P.length,cx=0,cy=0,i;for(i=0;i<n;i++){cx+=P[i][0];cy+=P[i][1];}cx/=n;cy/=n;
     var S=o.S;
     if(o.el&&typeof holding!=='undefined'){var hd=holding===o.el;
@@ -94,7 +94,6 @@ function swayFrame(now){
     // the picture of the water slides, tips and the light runs to the side the water runs to: it is seen even when the surface is full (the edge is hidden by the vessel)
     var tf='translate('+(PX*9).toFixed(2)+'%,'+(PY*6).toFixed(2)+'%) rotate('+(PX*4).toFixed(2)+'deg) scale(1.2)',hx=(50+PX*34).toFixed(1)+'%',hy=(45+PY*24).toFixed(1)+'%';
     if(o.sf)o.sf.style.transform=tf;if(o.hl){o.hl.style.left=hx;o.hl.style.top=hy;}
-    if(o.el&&typeof holding!=='undefined'&&holding===o.el&&typeof placementGhost!=='undefined'&&placementGhost){var gs=placementGhost.querySelector('.vw-surf'),gh=placementGhost.querySelector('.vw-hl');if(gs)gs.style.transform=tf;if(gh){gh.style.left=hx;gh.style.top=hy;}}
     var P4=S.p||[0,0,0,0],a1=Math.sin(P4[0]+o.ph)*.11*amp,a2=Math.sin(P4[1]+o.ph*1.7+1.3)*.07*amp,out=[];
     for(i=0;i<n;i++){
       var q=P[i],dx=q[0]-cx,dy=q[1]-cy,an=Math.atan2(dy,dx);
@@ -203,6 +202,45 @@ function set(el,f){
   if(f<=.004)delete el.dataset.water;else el.dataset.water=f.toFixed(3);
   sync(el);
 }
+
+/* The vessel in the hand. The visible vessel is its copy (the placement ghost), so the water of the copy is moved here, from the real movement of that copy
+   (its pose, or the mouse if there is none): a damped spring driven by the acceleration, like the water in a real pot. It does not depend on anything else of this file. */
+(function(){
+  var H={px:null,py:null,vx:0,vy:0,sx:0,sy:0,svx:0,svy:0,lt:0,id:null},hud=null,DBG=false;
+  try{DBG=localStorage.getItem('cookster.waterdebug')==='1';}catch(e){}   /* a small status text for finding faults: localStorage.setItem('cookster.waterdebug','1') */
+  function hudSet(t){
+    if(!DBG)return;
+    if(!hud){hud=document.createElement('div');hud.style.cssText='position:fixed;left:8px;bottom:56px;z-index:2147483600;background:rgba(0,0,0,.72);color:#9ff;font:11px/1.3 monospace;padding:4px 7px;border-radius:5px;pointer-events:none;white-space:pre';hud.setAttribute('data-tool-ui','1');document.body.appendChild(hud);}
+    hud.style.display=t?'block':'none';if(t)hud.textContent=t;
+  }
+  function frame(now){
+    requestAnimationFrame(frame);
+    var h=typeof holding!=='undefined'?holding:null,g=typeof placementGhost!=='undefined'?placementGhost:null;
+    var water=h&&h.dataset?+h.dataset.water||0:0;
+    if(!h||water<=.004||!g||g.style.display==='none'){H.px=null;H.vx=H.vy=0;H.lt=0;hudSet(h&&water>.004?'voda: u ruci, ali nema kopije (ghost)':'');return;}
+    var dt=H.lt?Math.min(.05,(now-H.lt)/1000):0;H.lt=now;
+    var pose=typeof placementGhostMotion!=='undefined'&&placementGhostMotion&&placementGhostMotion.pose,px,py,srcName;
+    if(pose&&isFinite(pose.cx)&&isFinite(pose.by)){px=pose.cx;py=pose.by;srcName='pose';}
+    else if(typeof mouse!=='undefined'){px=mouse.x;py=mouse.y;srcName='mouse';}
+    else{return;}
+    if(H.id!==h){H.id=h;H.px=null;H.sx=H.sy=H.svx=H.svy=0;}
+    var tvx=0,tvy=0;if(H.px!==null&&dt>0){tvx=(px-H.px)/dt;tvy=(py-H.py)/dt;}
+    H.px=px;H.py=py;
+    if(dt>0){
+      var lp=Math.min(1,dt/.045),pvx=H.vx,pvy=H.vy;H.vx=pvx+(tvx-pvx)*lp;H.vy=pvy+(tvy-pvy)*lp;
+      var ax=(H.vx-pvx)/dt,ay=(H.vy-pvy)/dt,W2=36,ZW=2*.16*6,fx=-ax*W2/2600,fy=-ay*W2/2600,n=3,hh=dt/n;
+      for(var q=0;q<n;q++){H.svx+=(-W2*H.sx-ZW*H.svx+fx)*hh;H.svy+=(-W2*H.sy-ZW*H.svy+fy)*hh;H.sx+=H.svx*hh;H.sy+=H.svy*hh;}
+      H.sx=Math.max(-1.7,Math.min(1.7,H.sx));H.sy=Math.max(-1.7,Math.min(1.7,H.sy));
+    }
+    var PX=H.sx,PY=H.sy;
+    var gg=g.querySelector('.vw-g'),gs=g.querySelector('.vw-surf'),gh=g.querySelector('.vw-hl');
+    if(gg)gg.style.transform='translate('+(PX*7).toFixed(2)+'%,'+(PY*4).toFixed(2)+'%) rotate('+(PX*3).toFixed(2)+'deg)';
+    if(gs)gs.style.transform='translate('+(PX*9).toFixed(2)+'%,'+(PY*6).toFixed(2)+'%) rotate('+(PX*4).toFixed(2)+'deg) scale(1.2)';
+    if(gh){gh.style.left=(50+PX*34).toFixed(1)+'%';gh.style.top=(45+PY*24).toFixed(1)+'%';}
+    hudSet('voda u ruci: '+(h.dataset.itemId||'?')+'  nivo '+water.toFixed(2)+'\nkopija: '+(gg?'ima vodu':'NEMA vode u kopiji')+'  izvor pokreta: '+srcName+'\nbrzina '+Math.round(H.vx)+' px/s   njihanje sx '+PX.toFixed(2));
+  }
+  requestAnimationFrame(frame);
+})();
 window.CooksterVesselWater={debug:function(){try{return (window.items||[]).filter(function(e){return e._vw}).map(function(e){return {id:e.dataset.itemId,held:typeof holding!=='undefined'&&holding===e,sx:+(e._vw.sx||0).toFixed(2),sy:+(e._vw.sy||0).toFixed(2),vx:Math.round(e._vw.vx||0)};});}catch(x){return String(x);}},agitate:function(el){var S=el&&(el._vw=el._vw||{});if(!S)return;var n=performance.now();S.boostT=n;S.kick=n;S.dur=1.8;},reload:function(){try{WCAL=JSON.parse(localStorage.getItem(WKEY)||'{}')||{};}catch(e){}},has:has,front:function(id){var p=prof(id);return p&&p.mask&&p.mask.length>=3?p.mask:null;},get:get,set:set,sync:sync,overlay:overlay,clamp:clamp};
 
 /* ---------- the tool "Voda u posudi": where the water of a vessel is ----------
