@@ -529,3 +529,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Fizika vode dok se posuda pomera (2026-10-14, vessel-water.js?v=21)
 - Dok je posuda u ruci, voda je prigušena opruga (period ~1 s, prigušenje ζ≈0.16) koju pokreće ubrzanje miša: naglo udesno → voda krene ulevo, vrati se udesno i njiše se; isto obrnuto, i napred-nazad. Posle spuštanja na sto/šporet njihanje nastavlja svojim zamahom dok ne stane.
 - Pomak vode: površina se pomera i izdužuje na stranu zamaha (`S.sx`, `S.sy`); pokreće se i kopija koju držiš u ruci (`.vw-g` u `placementGhost`).
+
+## Ispravka: voda se nije videla (2026-10-14, vessel-water.js?v=23, game.js?v=3.118)
+- Greška iz v=21 (fizika): promenljiva `n` (broj tačaka površine) je u petlji fizike prepisana sa 3, pa je površina vode imala samo 3 tačke (skoro nulta površina) i voda se nije videla. Preimenovano u `nSub`; provera: 40 tačaka, površina ~1515 (bilo 0.2).
+- Čuvar predmeta u ruci je stroži: kopija mora biti prikazana, na ekranu i sa učitanom slikom; posle ~0.5 s se gradi iznova (`_key=null`), posle ~1 s se prikaže sam predmet.
