@@ -6689,6 +6689,18 @@ function fillGhostContainer(container,el){
   copy.style.zIndex='1';copy.style.pointerEvents='none';
   copy.querySelectorAll('.pan-status,.wash-foam,.pan-smoke,.lid-hit').forEach(n=>n.remove());
   container.appendChild(copy);
+  // The copy is a new picture element: until its picture is loaded and decoded (it can take half a second) only the shadow would be seen.
+  // So the real object stays visible until the copy is ready, then it is hidden again.
+  try{
+    const wait=[...copy.querySelectorAll('img')].filter(i=>!(i.complete&&i.naturalWidth>0));
+    container._pendingN=(container._pendingN||0)+1;const tok=container._pendingN;
+    if(wait.length&&container===placementGhost&&el===holding&&el.dataset.fixedGrinder!=='1'&&!isQuickToolItem(el)){
+      el.style.visibility='';
+      Promise.all(wait.map(i=>new Promise(r=>{i.addEventListener('load',r,{once:true});i.addEventListener('error',r,{once:true});setTimeout(r,2000);}))).then(()=>{
+        if(container._pendingN===tok&&holding===el)el.style.visibility='hidden';
+      });
+    }
+  }catch(_){}
 }
 function ensurePlacementGhostFor(el){
  if(!placementGhost){placementGhost=document.createElement('div');placementGhost.className='placement-ghost';scene.appendChild(placementGhost)}

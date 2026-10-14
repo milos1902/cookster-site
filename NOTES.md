@@ -533,3 +533,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Ispravka: voda se nije videla (2026-10-14, vessel-water.js?v=23, game.js?v=3.118)
 - Greška iz v=21 (fizika): promenljiva `n` (broj tačaka površine) je u petlji fizike prepisana sa 3, pa je površina vode imala samo 3 tačke (skoro nulta površina) i voda se nije videla. Preimenovano u `nSub`; provera: 40 tačaka, površina ~1515 (bilo 0.2).
 - Čuvar predmeta u ruci je stroži: kopija mora biti prikazana, na ekranu i sa učitanom slikom; posle ~0.5 s se gradi iznova (`_key=null`), posle ~1 s se prikaže sam predmet.
+
+## Predmet se uzima bez "praznog" trenutka + jače njihanje u ruci (2026-10-14, game.js?v=3.119, vessel-water.js?v=24)
+- Snimak ekrana korisnika: kad se tegla uzme, ~0.5 s se vidi samo senka. Uzrok: kopija predmeta u ruci (`placementGhost`) je nov `<img>` čija slika se još učitava/dekodira. Sada `fillGhostContainer` drži pravi predmet vidljivim dok slika kopije nije spremna, pa ga sakrije (proveren i sa veštački usporenom slikom: vidljivo → kopija spremna → sakriveno, bez rupe).
+- Njihanje vode u ruci pojačano (sila /4200 umesto /9000, pomak i izduženje veći): obično pomeranje ruke od 400 px za 0.4 s daje pomak vode ~0.7, nagla promena pravca do ~1.5 (gornja granica), i njihanje posle zaustavljanja.

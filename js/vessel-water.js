@@ -84,7 +84,7 @@ function swayFrame(now){
         var lp=Math.min(1,dt/.045),pvx=S.vx||0,pvy=S.vy||0;S.vx=pvx+(tvx-pvx)*lp;S.vy=pvy+(tvy-pvy)*lp;
         var ax=(S.vx-pvx)/dt,ay=(S.vy-pvy)/dt,W2=36,ZW=2*.16*6;   /* omega^2 (period about 1 s), damping */
         S.sx=S.sx||0;S.sy=S.sy||0;S.svx=S.svx||0;S.svy=S.svy||0;
-        var fx=-ax*W2/9000,fy=-ay*W2/9000,nSub=3,h=dt/nSub;
+        var fx=-ax*W2/4200,fy=-ay*W2/4200,nSub=3,h=dt/nSub;
         for(var q=0;q<nSub;q++){S.svx+=(-W2*S.sx-ZW*S.svx+fx)*h;S.svy+=(-W2*S.sy-ZW*S.svy+fy)*h;S.sx+=S.svx*h;S.sy+=S.svy*h;}
         S.sx=Math.max(-1.5,Math.min(1.5,S.sx));S.sy=Math.max(-1.5,Math.min(1.5,S.sy));
       }
@@ -93,8 +93,8 @@ function swayFrame(now){
     for(i=0;i<n;i++){
       var q=P[i],dx=q[0]-cx,dy=q[1]-cy,an=Math.atan2(dy,dx);
       var k=1+a1*Math.cos(an-.5*(1-bst))+a2*Math.cos(an-2.2)+(.014*Math.sin(an*5+P4[2]+o.ph)+.01*Math.sin(an*8-P4[3]))*amp;
-      var pk=1+.28*(PX*Math.cos(an)+PY*Math.sin(an)*.6);
-      out.push([cx+dx*k*pk+a1*6+PX*5,cy+dy*k*pk+a2*3+PY*2.2]);
+      var pk=1+.42*(PX*Math.cos(an)+PY*Math.sin(an)*.6);
+      out.push([cx+dx*k*pk+a1*6+PX*8,cy+dy*k*pk+a2*3+PY*3.4]);
     }
     var c='polygon('+out.map(function(q){return q[0].toFixed(2)+'% '+q[1].toFixed(2)+'%';}).join(',')+')';o.g.style.clipPath=c;o.g.style.webkitClipPath=c;
     if(o.el&&typeof holding!=='undefined'&&holding===o.el&&typeof placementGhost!=='undefined'&&placementGhost){var cg=placementGhost.querySelector('.vw-g');if(cg){cg.style.clipPath=c;cg.style.webkitClipPath=c;}}   /* the carried copy of the vessel (the ghost) has its own water: it follows too */
