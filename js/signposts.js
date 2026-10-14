@@ -7,7 +7,7 @@
 'use strict';
 if(window.CooksterSignposts)return;
 var KEY='cookster.signposts.v1';
-var TYPES={kuhinja:'Kuhinja',kafana:'Kafana',sudopera:'Sudopera',rostilj:'Roštilj'};
+var TYPES={kuhinja:'Kuhinja →',kafana:'Kafana →',sudopera:'Sudopera →',rostilj:'Roštilj →',spajz:'Špajz →',basta:'Bašta ←',kafana_l:'Kafana ←',rostilj_l:'Roštilj ←'};   /* the arrow in the name: where the sign points */
 var VIEWS={kitchen:'kuhinja',sink:'sudopera (krupan plan)',grill:'roštilj (krupan plan)',tavern:'kafana'};
 var SIGN_DEF=[];
 var signs=[],sel=null,open=false,uid=0;
@@ -20,7 +20,7 @@ signs.forEach(function(s){
   s.id=s.id||('s'+(++uid));var n=+String(s.id).slice(1);if(n>uid)uid=n;
 });
 function save(){try{localStorage.setItem(KEY,JSON.stringify(signs,function(k,v){return k==='_el'?undefined:v;}));}catch(e){}}
-function pic(t){return 'assets/signs/'+t+'.webp?v=1';}
+function pic(t){return 'assets/signs/'+t+'.webp?v=2';}
 var css=document.createElement('style');
 css.textContent='.cookster-sign{position:absolute;pointer-events:none;transform-origin:50% 50%;-webkit-user-drag:none;user-select:none}'+
  '.cookster-sign img{display:block;width:100%;height:auto;pointer-events:none;-webkit-user-drag:none}'+

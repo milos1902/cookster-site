@@ -484,3 +484,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Putokazi u svim pogledima (2026-10-14, signposts.js?v=2)
 - Putokaz pripada pogledu u kome je postavljen: kuhinja, sudopera (krupan plan), roštilj (krupan plan), kafana. Alat prikazuje putokaze trenutnog pogleda; van kuhinje je dugme "🪧 Putokazi" dole desno.
 - Položaj i širina su sada u procentima slike pogleda (`u:1`); stari putokazi u pikselima kuhinje se pretvaraju pri učitavanju. Svakih 250 ms putokazi se vezuju za stranicu svog pogleda (krupan plan roštilja se pravi iznova pri svakom otvaranju).
+
+## Četiri nova putokaza (2026-10-14, signposts.js?v=3)
+- Novi tipovi u alatu Putokazi: Špajz → (žut), Bašta ← (zelen), Kafana ← (zelen), Roštilj ← (crven). Slike u `assets/signs/{spajz,basta,kafana_l,rostilj_l}.webp`. Stari tipovi ostaju (u listi sa →, jer pokazuju udesno).
