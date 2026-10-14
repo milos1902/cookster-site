@@ -588,3 +588,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Testo u naćvama: odnos vode i brašna, sipanje vode (2026-10-14, flour.js?v=6, game.js?v=3.125) — u izradi
 - `doughState`: odnos voda/brašno; suvo < 0.45, dobro 0.45–0.8, meko > 0.8 (natpis iznad naćvi, "dodaj vode" / "dodaj brašna"). Bokal levim tasterom iznad naćvi sipa vodu u `inWater`. Sipanje vode nije proverano. Slike naćvi sa brašnom/vodom još nisu ubačene.
+
+## Naćve: slike sa brašnom (2026-10-14, flour.js?v=7)
+- Slika naćvi se menja prema količini brašna: prazna / manje (<120) / više brašna (`assets/flour/nacve_brasno1/2.webp`). Slike sa vodom (brašno+voda) još nisu stigle kao fajlovi.

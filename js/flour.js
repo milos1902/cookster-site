@@ -60,7 +60,12 @@ function drawTrough(e){
     wcl.appendChild(wd);e.appendChild(wcl);e._wt=wcl;e._wd=wd;
   }
   if(e._wt){e._wt.style.display=D.W>0?'':'none';if(e._wd)e._wd.style.opacity=String(Math.min(.95,.25+D.W/90)*(D.st==='good'?.45:(D.st==='wet'?1:.8)));}
-  if(n<=0){if(e._fl){e._fl.remove();e._fl=null;}return;}
+  // the picture of the trough itself shows the flour (the pictures drawn by the owner)
+  var tb=e.querySelector('.body');
+  if(tb){var want=n<=0?'assets/flour/nacve.webp':(n<120?'assets/flour/nacve_brasno1.webp':'assets/flour/nacve_brasno2.webp');
+    if(tb.getAttribute('src')!==want){tb.setAttribute('src',want);}}
+  if(e._fl){e._fl.remove();e._fl=null;}
+  return;
   if(!e._fl||!e._fl.isConnected){
     var clip=document.createElement('div');clip.className='flour-in';
     clip.style.cssText='position:absolute;left:'+INNER.l+'%;top:'+INNER.t+'%;width:'+(INNER.r-INNER.l)+'%;height:'+(INNER.b-INNER.t)+'%;border-radius:38% / 18%;overflow:hidden;pointer-events:none;z-index:3';
