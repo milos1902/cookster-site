@@ -456,3 +456,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Voda na stolu poštuje prednju ivicu iz alata (2026-10-14, vessel-water.js?v=12)
 - U sudoperi se vodi primenjivala prednja ivica (crvena) iz alata "Voda u posudi", a na stolu ne (tamo je samo ivica iz kalibracije hrane): voda je prelazila preko prednje ivice šerpe. Sada se na stolu primenjuje ista prednja ivica kad je nacrtana.
+
+## Njihanje 7 sekundi, meki rub vode (2026-10-14, vessel-water.js?v=13)
+- Jačina njihanja je puna pri sipanju (dok se nivo diže), kad se posuda uzme u ruku i kad se spusti, pa se 7 sekundi smanjuje do mirnog stanja (voda se i dalje malo miče, ~18% jačine).
+- Alat "Voda u posudi": klizač "Meki rub vode" (zamućenje ivice površine, % širine posude), čuva se kao `soft`.
+- Građa sloja: `vessel-water-ov` (silueta posude) > blur sloj > `g` (oblik površine koji se njiše) > slojevi vode.
