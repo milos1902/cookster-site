@@ -561,3 +561,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Vraćeno: bez pomeranja vode u ruci (2026-10-14, vessel-water.js?v=31)
 - Po zahtevu korisnika sve vezano za pomeranje vode dok se posuda nosi je uklonjeno (fizika opruge, zasebna petlja za kopiju, klizanje slike vode, odsjaj, svetlo nagiba, statusni tekst). `js/vessel-water.js` vraćen na verziju pre fizike (njihanje 5 s posle uzimanja / 7 s posle spuštanja i sipanja, jače trljanje sunđerom, meki rub filterom), samo sa novim brojem verzije.
 - Ostaje u `game.js`: pravi predmet ostaje vidljiv dok se kopija ne učita, čuvar za predmet u ruci, kopija ne ponavlja prstenove.
+
+## Fioka i teglice sinhronizovane, dekodiranje slike u ruci (2026-10-14, kitchen-fixtures.js?v=69, game.js?v=3.121)
+- Posle duže igre pregledač izbacuje dekodirane slike: kadar fioke kasni, a teglice (druge slike) se već pokažu/sakriju. Sada se kadar fioke prikaže tek kad je dekodiran (`decode()`), `d.vis` je stvarno prikazani kadar, a teglice/alati se crtaju samo uz njega (i kod otvaranja i kod zatvaranja).
+- Isto za predmet u ruci: kopija se dekodira pre nego što se pravi predmet sakrije (nema "samo senka").
