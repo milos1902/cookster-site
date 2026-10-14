@@ -28,9 +28,15 @@ sv.innerHTML='<defs><filter id="vwDist" x="-5%" y="-5%" width="110%" height="110
 document.body?document.body.appendChild(sv):document.addEventListener('DOMContentLoaded',function(){document.body.appendChild(sv);});})();
 var WKEY='cookster.vessel-water-cal.v1',WCAL={};
 try{WCAL=JSON.parse(localStorage.getItem(WKEY)||'{}')||{};}catch(e){WCAL={};}
+// built-in water of the vessels that have no drawn calibration yet. The pitcher (bokal_stari): the water is seen only in the mouth; the whole body below the mouth is in front of it
+// (the front wall hides the water), the back wall is not drawn over it. The water grows from a small spot at the back of the mouth to the whole mouth.
+var WDEF={bokal_stari:{
+  poly:[[24.5,10.8],[28,8.2],[34,6.8],[40,6.3],[47,6.3],[54,6.8],[60,8],[64,10.2],[62,13],[56,15.2],[47,16.2],[38,15.8],[30,14],[25.5,12.4]],
+  bottom:[[36,8.6],[40,7.6],[46,7.3],[52,7.6],[56,8.6],[54,10],[48,10.8],[42,10.6],[38,10]],
+  front:[[16,16.4],[30,16.9],[47,17.5],[62,17],[72,15],[78,12],[92,12],[92,98],[16,98]],tilt:0}};
 function prof(id){
   // the calibration of the water (tool "Voda u posudi") wins over the calibration of the food
-  var w=WCAL[id];
+  var w=WCAL[id]||WDEF[id];
   if(w&&w.poly&&w.poly.length>=3&&w.bottom&&w.bottom.length>=3)return {foodVisible:w.poly,bottomPoly:w.bottom,mask:w.front&&w.front.length>=3?w.front:null,tilt:+w.tilt||0,ring:w.ring||null,soft:+w.soft||0,own:true};
   if(w&&w.poly&&w.poly.length>=3&&w.lo&&w.hi)return {foodVisible:w.poly,depth:{bottom:w.lo,foodTop:w.hi},mask:w.front&&w.front.length>=3?w.front:null,tilt:+w.tilt||0,ring:w.ring||null,own:true};
   var C=window.CooksterVesselFoodCalibration,p=C&&C.get&&C.get(id);
@@ -164,7 +170,9 @@ function get(el){return clamp(el&&el.dataset&&el.dataset.water);}
 // the vessel in the kitchen
 function sync(el){
   if(!el||!el.dataset)return;
-  var id=el.dataset.itemId,f=get(el),key=f<=.004||!has(id)?'':String(Math.round(f*100));
+  var id=el.dataset.itemId,f=get(el);
+  if(PCT[id]){el._pct=pctLabel(id,f,el._pct);if(el._pct.parentNode!==el)el.appendChild(el._pct);}
+  var key=f<=.004||!has(id)?'':String(Math.round(f*100));
   if(el._waterKey===key)return;
   el._waterKey=key;
   var now=performance.now(),last=el._lastF;
@@ -182,7 +190,28 @@ function set(el,f){
   if(f<=.004)delete el.dataset.water;else el.dataset.water=f.toFixed(3);
   sync(el);
 }
-window.CooksterVesselWater={agitate:function(el){var S=el&&(el._vw=el._vw||{});if(!S)return;var n=performance.now();S.boostT=n;S.kick=n;S.dur=1.8;},reload:function(){try{WCAL=JSON.parse(localStorage.getItem(WKEY)||'{}')||{};}catch(e){}},has:has,front:function(id){var p=prof(id);return p&&p.mask&&p.mask.length>=3?p.mask:null;},get:get,set:set,sync:sync,overlay:overlay,clamp:clamp};
+/* the percentage beside a vessel that shows it (the pitcher): the number runs quickly up while it is filled and down while it is poured */
+var PCT={bokal_stari:1},DISP={},LBL=[],lblRun=false;
+function lblFrame(now){
+  var live=[];
+  LBL.forEach(function(o){
+    if(!o.el.isConnected)return;live.push(o);
+    var cur=DISP[o.id]===undefined?o.t:DISP[o.id],tg=o.t,dt=Math.min(.05,(now-(o.last||now))/1000);o.last=now;
+    if(Math.abs(tg-cur)>.4){cur+=Math.sign(tg-cur)*Math.min(Math.abs(tg-cur),(40+Math.abs(tg-cur)*3)*dt);}else cur=tg;
+    DISP[o.id]=cur;o.el.textContent=Math.round(cur)+'%';
+  });
+  LBL=live;if(live.length)requestAnimationFrame(lblFrame);else lblRun=false;
+}
+function pctLabel(id,f,old){
+  if(!PCT[id])return null;
+  var e=old&&old.isConnected?old:document.createElement('div');
+  if(!old||!old.isConnected){e.className='vw-pct';e.style.cssText='position:absolute;left:100%;top:38%;margin-left:3px;font:700 11px/1 system-ui,sans-serif;color:#d8f1ff;text-shadow:0 0 3px #04141c,0 1px 2px #000;pointer-events:none;z-index:30;white-space:nowrap';e.textContent=Math.round(DISP[id]===undefined?f*100:DISP[id])+'%';}
+  var o=LBL.find(function(x){return x.el===e;});
+  if(o)o.t=f*100;else LBL.push({el:e,id:id,t:f*100,last:performance.now()});
+  if(!lblRun){lblRun=true;requestAnimationFrame(lblFrame);}
+  return e;
+}
+window.CooksterVesselWater={label:pctLabel,agitate:function(el){var S=el&&(el._vw=el._vw||{});if(!S)return;var n=performance.now();S.boostT=n;S.kick=n;S.dur=1.8;},reload:function(){try{WCAL=JSON.parse(localStorage.getItem(WKEY)||'{}')||{};}catch(e){}},has:has,front:function(id){var p=prof(id);return p&&p.mask&&p.mask.length>=3?p.mask:null;},get:get,set:set,sync:sync,overlay:overlay,clamp:clamp};
 
 /* ---------- the tool "Voda u posudi": where the water of a vessel is ----------
    For every vessel: the shape of the surface of the water (the opening of the vessel), the point where the water stands when the vessel is nearly empty and the point when it is full,

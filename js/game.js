@@ -4855,7 +4855,7 @@ persistImportedElements();
 // v1.83: water-vessel props created for the water-pouring test. Keep these as
 // ordinary Kitchen Elements so they can later receive their own pour targets.
 const WATER_VESSEL_PROPS=[
- {id:'bokal_stari',label:'Старински бокал',src:'assets/antique_water_pitcher.png',x:0,y:0,w:150,h:180,z:24,starter:true,placement:['table','floor'],shadowProfile:'tiny',snapProfile:'flat',category:'water-vessel'},
+ {id:'bokal_stari',label:'Старински бокал',src:'assets/antique_water_pitcher.png',type:'container',vessel:true,cooking:{capacity:6},x:0,y:0,w:160,h:160,z:24,starter:true,placement:['table','sink','floor'],shadowProfile:'tiny',snapProfile:'flat',category:'water-vessel'},
  {id:'tikva_za_vodu',label:'Издубљена тиква',src:'assets/hollowed_water_gourd.png',x:0,y:0,w:145,h:180,z:25,starter:true,placement:['table','floor'],shadowProfile:'tiny',snapProfile:'flat',category:'water-vessel'}
 ];
 const PAPRIKA_STEAM_BAG_ID='paprika_parna_kesa';
