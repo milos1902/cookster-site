@@ -14175,9 +14175,10 @@ function updateCleaning(e){
    for(let i=1;i<=steps;i++){const t=i/steps;VD.erase(stain,prev.x+(lc.x-prev.x)*t,prev.y+(lc.y-prev.y)*t);}
    stain._lastLocal=lc;
    stain._chk=(stain._chk||0)+1;
+   try{const wv=stain.parentElement;if(wv&&(+wv.dataset.water||0)>.02)window.CooksterVesselWater?.agitate?.(wv);}catch(_){}   // scrubbing in water: the water sloshes left and right
    if(stain._chk%3===0&&VD.remaining(stain)<=.1){
      const vessel=stain.parentElement;
-     VD.clean(vessel);endCleaning(true);
+     VD.clean(vessel);washWaterAway(vessel);endCleaning(true);
      playSfxVariant('woodDrop',.10);showToast('Posuda je čista.');
      try{CooksterSave.schedule();}catch(_){}
    }
@@ -14210,6 +14211,16 @@ function updateCleaning(e){
    }
  }
  stain._lastLocal=local;
+}
+// the dirt is gone: the water that washed it (a dirty vessel with a little water in it) drains away too
+function washWaterAway(vessel){
+ try{
+  if(!vessel||(+vessel.dataset.water||0)<=.004)return;
+  const ov=vessel._waterOv;
+  window.CooksterVesselWater?.agitate?.(vessel);
+  if(ov){ov.style.transition='opacity .9s ease';ov.style.opacity='0';}
+  setTimeout(()=>{delete vessel.dataset.water;try{window.CooksterVesselWater?.sync(vessel);}catch(_){}try{CooksterSave.schedule();}catch(_){}},950);
+ }catch(_){}
 }
 function endCleaning(finished=false){
  if(cleanStainEl&&cleanStainEl.isConnected)cleanStainEl.classList.remove('scrubbing');

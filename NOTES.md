@@ -520,3 +520,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Model tiganja/šerpe ima `dry` (sekunde suve vrućine), `idle` (sekunde od poslednjeg mešanja) i `scorched`. Ako se posuda greje (toplota ≥ 0.4), u njoj nema ulja (`staples.oil` = 0), nema vode (`dataset.water` ≤ 0.03) i niko ne meša duže od 2.5 s, `dry` raste; pri 9 s hrana se zalepi i zagori (sve serije `burnt`, vizuelno izgorelo + crni dim kao i inače). Mešanje resetuje `idle` i `dry` opada.
 - Upozorenje (toast) pri `dry` ≥ 4 s: "Nema ulja i niko ne meša". Poruka pri izgaranju kaže uzrok (`scorched`).
 - Izmereno u modelu na jakoj vatri: bez ulja i bez mešanja zagori za ~12 s; sa uljem ili mešanjem na svakih 1 s i 5 s ne zagori ranije nego inače (~54 s).
+
+## Pranje prljave posude sa vodom: jak talas i nestanak vode (2026-10-14, vessel-water.js?v=20, game.js?v=3.117)
+- Dok se sunđerom trlja prljava posuda u kojoj ima vode, voda se jako njiše (levo-desno, brže i jače): `CooksterVesselWater.agitate(el)` postavlja `boostT` (1.1 s opadanja), amplituda do ~2.3x, brzina do ~2.2x, osa njihanja prelazi u horizontalnu.
+- Kad prljavština nestane (`remaining<=.1`): `washWaterAway(vessel)`: voda se utapa (opacity 0.9 s), pa se briše `dataset.water`. Posuda je čista i prazna.
+- Provereno kroz pravi tok (sunđer u ruci, trljanje mišem): raspon pomeranja ivice vode 0.07 u miru → ~2.0–2.7 pri trljanju; na kraju prljavština i voda nestaju.

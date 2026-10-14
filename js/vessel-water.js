@@ -71,13 +71,15 @@ function swayFrame(now){
     if(o.el&&typeof holding!=='undefined'){var hd=holding===o.el;
       if(hd!==S.held&&(S.held!==undefined||hd)){S.kick=now;S.dur=hd?5:7;}   /* picked up: fast for 5 seconds; put down (table, stove, sink): fast for 7 seconds, then it calms down */
       S.held=hd;}
-    var dur=S.dur||7,age=S.kick?(now-S.kick)/1000:99,kk=age<dur?Math.pow(1-age/dur,1.5):0,amp=.18+1.12*kk;   /* after the stir the water keeps moving a little */
-    if(S.fr!==now){var dt=Math.min(.05,S.lt?(now-S.lt)/1000:0);S.lt=now;S.fr=now;var sp=1+1.3*kk;   /* the stronger the stir, the faster the movement */
+    var dur=S.dur||7,age=S.kick?(now-S.kick)/1000:99,kk=age<dur?Math.pow(1-age/dur,1.5):0,amp=.18+1.12*kk;
+    var bAge=S.boostT?(now-S.boostT)/1000:99,bst=bAge<1.1?1-bAge/1.1:0;   /* scrubbing with the sponge: a strong slosh from the left to the right */
+    amp*=1+1.3*bst;   /* after the stir the water keeps moving a little */
+    if(S.fr!==now){var dt=Math.min(.05,S.lt?(now-S.lt)/1000:0);S.lt=now;S.fr=now;var sp=(1+1.3*kk)*(1+1.2*bst);   /* the stronger the stir, the faster the movement */
       S.p=S.p||[0,0,0,0];S.p[0]+=dt*1.7*sp;S.p[1]+=dt*1.15*sp;S.p[2]+=dt*3.1*sp;S.p[3]+=dt*4.3*sp;}
     var P4=S.p||[0,0,0,0],a1=Math.sin(P4[0]+o.ph)*.11*amp,a2=Math.sin(P4[1]+o.ph*1.7+1.3)*.07*amp,out=[];
     for(i=0;i<n;i++){
       var q=P[i],dx=q[0]-cx,dy=q[1]-cy,an=Math.atan2(dy,dx);
-      var k=1+a1*Math.cos(an-.5)+a2*Math.cos(an-2.2)+(.014*Math.sin(an*5+P4[2]+o.ph)+.01*Math.sin(an*8-P4[3]))*amp;
+      var k=1+a1*Math.cos(an-.5*(1-bst))+a2*Math.cos(an-2.2)+(.014*Math.sin(an*5+P4[2]+o.ph)+.01*Math.sin(an*8-P4[3]))*amp;
       out.push([cx+dx*k+a1*6,cy+dy*k+a2*3]);
     }
     var c='polygon('+out.map(function(q){return q[0].toFixed(2)+'% '+q[1].toFixed(2)+'%';}).join(',')+')';o.g.style.clipPath=c;o.g.style.webkitClipPath=c;
@@ -180,7 +182,7 @@ function set(el,f){
   if(f<=.004)delete el.dataset.water;else el.dataset.water=f.toFixed(3);
   sync(el);
 }
-window.CooksterVesselWater={reload:function(){try{WCAL=JSON.parse(localStorage.getItem(WKEY)||'{}')||{};}catch(e){}},has:has,front:function(id){var p=prof(id);return p&&p.mask&&p.mask.length>=3?p.mask:null;},get:get,set:set,sync:sync,overlay:overlay,clamp:clamp};
+window.CooksterVesselWater={agitate:function(el){var S=el&&(el._vw=el._vw||{});if(!S)return;var n=performance.now();S.boostT=n;S.kick=n;S.dur=1.8;},reload:function(){try{WCAL=JSON.parse(localStorage.getItem(WKEY)||'{}')||{};}catch(e){}},has:has,front:function(id){var p=prof(id);return p&&p.mask&&p.mask.length>=3?p.mask:null;},get:get,set:set,sync:sync,overlay:overlay,clamp:clamp};
 
 /* ---------- the tool "Voda u posudi": where the water of a vessel is ----------
    For every vessel: the shape of the surface of the water (the opening of the vessel), the point where the water stands when the vessel is nearly empty and the point when it is full,
