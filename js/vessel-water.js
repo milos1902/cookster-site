@@ -13,7 +13,7 @@ css.textContent='@keyframes vwDrift{from{background-position:0 0,0 0}to{backgrou
  '.vessel-water-ov{position:absolute;inset:0;pointer-events:none;overflow:hidden}'+
  '.vessel-water-ov .vw-fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(rgba(30,38,36,.25),rgba(10,14,13,.5)),url('+TEX+');background-size:100% 100%,46% auto;opacity:.78;animation:vwDrift 26s linear infinite}'+
  '.vessel-water-ov .vw-top{position:absolute;left:0;right:0;height:3.2%;background:linear-gradient(rgba(255,255,255,.4),rgba(255,255,255,0));mix-blend-mode:screen}'+
- '.vessel-water-ov .vw-surf{filter:url(#vwDist);position:absolute;inset:0;opacity:.78;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 45%,rgba(0,0,0,.35) 100%),url('+TEX+');background-size:100% 100%,42% auto;animation:vwSlosh 5s ease-in-out infinite alternate}'+
+ '.vessel-water-ov .vw-surf{filter:url(#vwDist);position:absolute;inset:0;opacity:.78;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 45%,rgba(0,0,0,.35) 100%),url('+TEX+');background-size:100% 100%,42% auto}'+
  '.vessel-water-ov .vw-wave{position:absolute;top:0;bottom:0;left:0;width:28%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.16),rgba(255,255,255,0));mix-blend-mode:screen;animation:vwWave 2.7s ease-in-out infinite alternate}'+
  '.vessel-water-ov .vw-wave.b{width:20%;animation-duration:3.9s;animation-direction:alternate-reverse;opacity:.7}'+
  '.vessel-water-ov.vw-light .vw-surf,.vessel-water-ov.vw-light .vw-fill{filter:hue-rotate(45deg) saturate(1.5) brightness(1.15)}'+
@@ -70,18 +70,18 @@ function swayFrame(now){
     var S=o.S;
     if(o.el&&typeof holding!=='undefined'){var hd=holding===o.el;if(S.held!==undefined&&hd!==S.held)S.kick=now;S.held=hd;}   /* picked up or put down: the water rocks again */
     var age=S.kick?(now-S.kick)/1000:99,kk=age<7?Math.pow(1-age/7,1.5):0,amp=.18+.82*kk;   /* 7 seconds after pouring / lifting / putting down it calms down, but keeps moving a little */
-    if(o.soft&&!o.softDone&&o.d.offsetWidth>0){o.b.style.filter='blur('+(o.d.offsetWidth*o.soft/100).toFixed(1)+'px)';o.softDone=true;}
     var a1=Math.sin(t*1.7+o.ph)*.11*amp,a2=Math.sin(t*1.15+o.ph*1.7+1.3)*.07*amp,out=[];
     for(i=0;i<n;i++){
       var q=P[i],dx=q[0]-cx,dy=q[1]-cy,an=Math.atan2(dy,dx);
       var k=1+a1*Math.cos(an-.5)+a2*Math.cos(an-2.2)+(.014*Math.sin(an*5+t*3.1+o.ph)+.01*Math.sin(an*8-t*4.3))*amp;
-      out.push((cx+dx*k+Math.sin(t*1.7+o.ph)*dx*0+a1*6).toFixed(2)+'% '+(cy+dy*k+a2*3).toFixed(2)+'%');
+      out.push([cx+dx*k+a1*6,cy+dy*k+a2*3]);
     }
-    var c='polygon('+out.join(',')+')';o.g.style.clipPath=c;o.g.style.webkitClipPath=c;
+    if(o.mp){o.mp.setAttribute('points',out.map(function(q){return (q[0]/100).toFixed(4)+','+(q[1]/100).toFixed(4);}).join(' '));}   /* soft edge: only the line of the edge is blurred (a mask), not the whole water */
+    else{var c='polygon('+out.map(function(q){return q[0].toFixed(2)+'% '+q[1].toFixed(2)+'%';}).join(',')+')';o.g.style.clipPath=c;o.g.style.webkitClipPath=c;}
   });
   SW=live;if(live.length)requestAnimationFrame(swayFrame);else swRun=false;
 }
-function sway(d,g,b,pts,S,el,soft){SW.push({d:d,g:g,b:b,pts:pts,S:S,el:el,soft:soft,ph:Math.random()*6.28,born:performance.now()});if(!swRun){swRun=true;requestAnimationFrame(swayFrame);}}
+function sway(d,g,mp,pts,S,el){SW.push({d:d,g:g,mp:mp,pts:pts,S:S,el:el,ph:Math.random()*6.28,born:performance.now()});if(!swRun){swRun=true;requestAnimationFrame(swayFrame);}}
 // the first hit of the water: rings go out from the middle of the surface; the tilt (perspective) and the size are set in the tool
 function addRing(d,pts,r,age){
   var tl=r&&r.tilt!=null?+r.tilt:.5,sz=r&&r.size!=null?+r.size:70,x0=1e9,x1=-1e9,cx=0,cy=0;
@@ -91,7 +91,7 @@ function addRing(d,pts,r,age){
   [0,.45,.9].forEach(function(dl){var i=document.createElement('i');i.style.animationDelay=(dl-age)+'s';w.appendChild(i);});
   d.appendChild(w);
 }
-var SINKS={};
+var SINKS={},MASKN=0;
 function overlay(id,f,src,withFront,pOverride,ringAge,owner){
   var p=pOverride||prof(id);f=clamp(f);if(!p||f<=.004)return null;
   var d=document.createElement('div');d.className='vessel-water-ov';
@@ -99,12 +99,19 @@ function overlay(id,f,src,withFront,pOverride,ringAge,owner){
   var poly='polygon('+(morph?surfacePoly(p,f):p.foodVisible).map(function(q){return q[0].toFixed(2)+'% '+q[1].toFixed(2)+'%'}).join(',')+')';
   if(morph){
     // d (the outline of the vessel) > b (soft edge: blur) > g (the shape of the surface, it rocks) > the layers of the water
-    var b=document.createElement('div'),g=document.createElement('div');b.style.cssText='position:absolute;inset:0';g.style.cssText='position:absolute;inset:0;clip-path:'+poly+';-webkit-clip-path:'+poly;
-    b.appendChild(g);d.appendChild(b);
+    var g=document.createElement('div'),mp=null;g.style.cssText='position:absolute;inset:0;clip-path:'+poly+';-webkit-clip-path:'+poly;
+    if(+p.soft>0){
+      // soft edge: the surface is cut by an SVG mask whose shape is blurred (the layers themselves stay sharp)
+      var uid='vwm'+(++MASKN),NS='http://www.w3.org/2000/svg',sv=document.createElementNS(NS,'svg');sv.setAttribute('width','0');sv.setAttribute('height','0');sv.style.cssText='position:absolute;width:0;height:0';
+      sv.innerHTML='<defs><filter id="'+uid+'f" x="-40%" y="-40%" width="180%" height="180%" primitiveUnits="objectBoundingBox"><feGaussianBlur stdDeviation="'+(p.soft/100).toFixed(4)+'"/></filter><mask id="'+uid+'" maskContentUnits="objectBoundingBox" maskUnits="objectBoundingBox" x="-20%" y="-20%" width="140%" height="140%"><polygon fill="#fff" filter="url(#'+uid+'f)"/></mask></defs>';
+      mp=sv.querySelector('polygon');d.appendChild(sv);
+      g.style.clipPath='none';g.style.webkitClipPath='none';g.style.mask='url(#'+uid+')';g.style.webkitMask='url(#'+uid+')';
+    }
+    d.appendChild(g);
     var sf=document.createElement('div');sf.className='vw-surf';g.appendChild(sf);
     var sp=surfacePoly(p,f),S=owner?(owner._vw=owner._vw||{}):(SINKS[id]=SINKS[id]||{}),nowT=performance.now();
     if(S.f!==undefined&&f>S.f+.0005)S.kick=nowT;S.f=f;   /* pouring: the water rocks until 7 seconds after the last drop */
-    sway(d,g,b,sp,S,owner&&owner.dataset?owner:null,+p.soft||0);if(ringAge!=null&&ringAge<2.6)addRing(g,sp,p.ring,ringAge);
+    sway(d,g,mp,sp,S,owner&&owner.dataset?owner:null);if(ringAge!=null&&ringAge<2.6)addRing(g,sp,p.ring,ringAge);
     return finish(d,p,src,withFront);
   }
   d.style.clipPath=poly;d.style.webkitClipPath=poly;
