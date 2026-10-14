@@ -507,3 +507,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Provereno poravnanje: slika krupnog plana roštilja se poklapa sa uvećanom kuhinjom (SIFT, skala 1.000, pomak ~0), pa je preslikavanje tačno.
 - Krupan plan pokazuje više nego kuhinja (gornji zid), pa putokaz sa y<16% krupnog plana (npr. Sudopera) pada iznad slike kuhinje: tamo se više ne crta.
 - Kad je alat otvoren, mali putokazi roštilja u kuhinji se mogu prevući (`k:{x,y,w}`), točak = veličina, dvoklik = nazad na automatsko mesto. Ulazi u JSON.
+
+## Namešta se u kuhinji, u zumu je isto (2026-10-14, signposts.js?v=9)
+- Putokaz roštilja namešten u kuhinji (alat otvoren, prevuci / točak) upisuje mesto i u krupan plan (`setFromKitchen`: inverzno preslikavanje), pa je zum nosi tačno tamo gde stoji. Nema više odvojenog mesta `k` (stare sačuvane vrednosti se pretvaraju pri učitavanju).
+- Putokaz koji pada van slike kuhinje (Sudopera na zidu iznad roštilja): sa zatvorenim alatom se ne crta; sa otvorenim čeka na ivici slike da ga uvučeš.
