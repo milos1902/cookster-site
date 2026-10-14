@@ -151,7 +151,7 @@ function sync(el){
   if(el._waterOv){el._waterOv.remove();el._waterOv=null;}
   if(!key)return;
   var body=el.querySelector('.body'),src=body&&body.getAttribute('src');
-  var d=overlay(id,f,src,false,null,el._ring?(now-el._ring)/1000:null);if(!d)return;
+  var pr=prof(id),d=overlay(id,f,src,!!(pr&&pr.own&&pr.mask),null,el._ring?(now-el._ring)/1000:null);if(!d)return;
   // vessels with a front wall (a picture over the food, z-index 6): the water goes under it; the pans have none: the water is over the food
   d.style.zIndex=el._vesselFrontMask&&el._vesselFrontMask.style.display!=='none'?'5':'8';el.appendChild(d);el._waterOv=d;
 }
