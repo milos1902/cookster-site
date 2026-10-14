@@ -542,3 +542,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Snimak korisnika (voda u ruci "kamen"): merenjem sa snimka pomak vode ne prati kretanje posude. U probi sve radi (ceo tok: ruka, sačuvana/obnovljena posuda, sa prednjom ivicom i mekim rubom), pa je verovatno bila uključena starija/slabija verzija (snimak odmah po spajanju prethodnog PR-a). Sila pojačana još 1.6x (/2600), pomak 10 i izduženje 0.5; površina se nagne ka zidu na koji voda trči (`-PX*dx*.28`). Blag pokret ruke od 150 px daje pomak ~0.4, nagla promena pravca ~1.
 - Kopija predmeta u ruci više ne ponavlja prstenove (`.vw-rgw` se uklanja iz kopije).
 - Dijagnostika: `CooksterVesselWater.debug()` u konzoli vraća `sx/sy/vx` svake posude (i da li je u ruci).
+
+## Voda u ruci: vidljiv pokret i kad je posuda puna (2026-10-14, vessel-water.js?v=26)
+- Na snimku korisnika se pomak ivice površine nije video (voda puna, ivicu skriva posuda). Zato se sada pomera cela slika vode: `.vw-surf` klizi/naginje (`translate`, `rotate`, `scale(1.2)`), a svetao odsjaj (`.vw-hl`) trči na stranu na koju voda trči. Isto se prenosi na kopiju u ruci (`placementGhost`).

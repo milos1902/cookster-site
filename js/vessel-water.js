@@ -17,6 +17,7 @@ css.textContent='@keyframes vwDrift{from{background-position:0 0,0 0}to{backgrou
  '.vessel-water-ov .vw-wave{position:absolute;top:0;bottom:0;left:0;width:28%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.16),rgba(255,255,255,0));mix-blend-mode:screen;animation:vwWave 2.7s ease-in-out infinite alternate}'+
  '.vessel-water-ov .vw-wave.b{width:20%;animation-duration:3.9s;animation-direction:alternate-reverse;opacity:.7}'+
  '.vessel-water-ov.vw-light .vw-surf,.vessel-water-ov.vw-light .vw-fill{filter:url(#vwDist) hue-rotate(45deg) saturate(1.5) brightness(1.15)}'+
+ '.vessel-water-ov .vw-hl{position:absolute;width:70%;height:70%;left:50%;top:45%;transform:translate(-50%,-50%);background:radial-gradient(ellipse,rgba(235,245,250,.30),rgba(235,245,250,0) 62%);mix-blend-mode:screen;pointer-events:none}'+
  '@keyframes vwRg{0%{transform:scale(.06);opacity:0}15%{opacity:.9}100%{transform:scale(1);opacity:0}}'+
  '.vessel-water-ov .vw-rgw{position:absolute;pointer-events:none}.vessel-water-ov .vw-rgw i{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(230,242,238,.85);box-shadow:0 0 6px rgba(255,255,255,.35);opacity:0;animation:vwRg 2.4s ease-out both}'+
  '@keyframes vwRing{0%{transform:translate(-50%,-50%) scale(.05);opacity:0}12%{opacity:.85}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}'+
@@ -89,7 +90,12 @@ function swayFrame(now){
         S.sx=Math.max(-1.7,Math.min(1.7,S.sx));S.sy=Math.max(-1.7,Math.min(1.7,S.sy));
       }
       S.p[0]+=dt*1.7*sp;S.p[1]+=dt*1.15*sp;S.p[2]+=dt*3.1*sp;S.p[3]+=dt*4.3*sp;}
-    var PX=S.sx||0,PY=S.sy||0,P4=S.p||[0,0,0,0],a1=Math.sin(P4[0]+o.ph)*.11*amp,a2=Math.sin(P4[1]+o.ph*1.7+1.3)*.07*amp,out=[];
+    var PX=S.sx||0,PY=S.sy||0;
+    // the picture of the water slides, tips and the light runs to the side the water runs to: it is seen even when the surface is full (the edge is hidden by the vessel)
+    var tf='translate('+(PX*9).toFixed(2)+'%,'+(PY*6).toFixed(2)+'%) rotate('+(PX*4).toFixed(2)+'deg) scale(1.2)',hx=(50+PX*34).toFixed(1)+'%',hy=(45+PY*24).toFixed(1)+'%';
+    if(o.sf)o.sf.style.transform=tf;if(o.hl){o.hl.style.left=hx;o.hl.style.top=hy;}
+    if(o.el&&typeof holding!=='undefined'&&holding===o.el&&typeof placementGhost!=='undefined'&&placementGhost){var gs=placementGhost.querySelector('.vw-surf'),gh=placementGhost.querySelector('.vw-hl');if(gs)gs.style.transform=tf;if(gh){gh.style.left=hx;gh.style.top=hy;}}
+    var P4=S.p||[0,0,0,0],a1=Math.sin(P4[0]+o.ph)*.11*amp,a2=Math.sin(P4[1]+o.ph*1.7+1.3)*.07*amp,out=[];
     for(i=0;i<n;i++){
       var q=P[i],dx=q[0]-cx,dy=q[1]-cy,an=Math.atan2(dy,dx);
       var k=1+a1*Math.cos(an-.5*(1-bst))+a2*Math.cos(an-2.2)+(.014*Math.sin(an*5+P4[2]+o.ph)+.01*Math.sin(an*8-P4[3]))*amp;
@@ -102,7 +108,7 @@ function swayFrame(now){
   });
   SW=live;if(live.length)requestAnimationFrame(swayFrame);else swRun=false;
 }
-function sway(d,g,mp,pts,S,el,soft){SW.push({d:d,g:g,mp:mp,pts:pts,S:S,el:el,soft:soft,ph:Math.random()*6.28,born:performance.now()});if(!swRun){swRun=true;requestAnimationFrame(swayFrame);}}
+function sway(d,g,mp,pts,S,el,soft,sf,hl){SW.push({d:d,g:g,mp:mp,pts:pts,S:S,el:el,soft:soft,sf:sf,hl:hl,ph:Math.random()*6.28,born:performance.now()});if(!swRun){swRun=true;requestAnimationFrame(swayFrame);}}
 // the first hit of the water: rings go out from the middle of the surface; the tilt (perspective) and the size are set in the tool
 function addRing(d,pts,r,age){
   var tl=r&&r.tilt!=null?+r.tilt:.5,sz=r&&r.size!=null?+r.size:70,x0=1e9,x1=-1e9,cx=0,cy=0;
@@ -129,10 +135,10 @@ function overlay(id,f,src,withFront,pOverride,ringAge,owner){
       wrap=document.createElement('div');wrap.style.cssText='position:absolute;inset:0;filter:url(#'+uid+')';d.appendChild(wrap);
     }
     wrap.appendChild(g);
-    var sf=document.createElement('div');sf.className='vw-surf';g.appendChild(sf);
+    var sf=document.createElement('div');sf.className='vw-surf';g.appendChild(sf);var hl=document.createElement('div');hl.className='vw-hl';g.appendChild(hl);
     var sp=surfacePoly(p,f),S=owner?(owner._vw=owner._vw||{}):(SINKS[id]=SINKS[id]||{}),nowT=performance.now();
     if(S.f!==undefined&&f>S.f+.0005){S.kick=nowT;S.dur=7;}S.f=f;   /* pouring: the water rocks until 7 seconds after the last drop */
-    sway(d,g,mp,sp,S,owner&&owner.dataset?owner:null,+p.soft||0);if(ringAge!=null&&ringAge<2.6)addRing(g,sp,p.ring,ringAge);
+    sway(d,g,mp,sp,S,owner&&owner.dataset?owner:null,+p.soft||0,sf,hl);if(ringAge!=null&&ringAge<2.6)addRing(g,sp,p.ring,ringAge);
     return finish(d,p,src,withFront);
   }
   d.style.clipPath=poly;d.style.webkitClipPath=poly;
