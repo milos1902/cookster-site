@@ -13,7 +13,7 @@ css.textContent='@keyframes vwDrift{from{background-position:0 0,0 0}to{backgrou
  '.vessel-water-ov{position:absolute;inset:0;pointer-events:none;overflow:hidden}'+
  '.vessel-water-ov .vw-fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(rgba(30,38,36,.25),rgba(10,14,13,.5)),url('+TEX+');background-size:100% 100%,46% auto;opacity:.78;animation:vwDrift 26s linear infinite}'+
  '.vessel-water-ov .vw-top{position:absolute;left:0;right:0;height:3.2%;background:linear-gradient(rgba(255,255,255,.4),rgba(255,255,255,0));mix-blend-mode:screen}'+
- '.vessel-water-ov .vw-surf{filter:url(#vwDist);position:absolute;inset:0;opacity:.78;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 45%,rgba(0,0,0,.35) 100%),url('+TEX+');background-size:100% 100%,42% auto;animation:vwSlosh 5s ease-in-out infinite alternate}'+
+ '.vessel-water-ov .vw-surf{filter:url(#vwDist);position:absolute;inset:0;opacity:.78;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 45%,rgba(0,0,0,.35) 100%),url('+TEX+');background-size:100% 100%,42% auto}'+
  '.vessel-water-ov .vw-wave{position:absolute;top:0;bottom:0;left:0;width:28%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.16),rgba(255,255,255,0));mix-blend-mode:screen;animation:vwWave 2.7s ease-in-out infinite alternate}'+
  '.vessel-water-ov .vw-wave.b{width:20%;animation-duration:3.9s;animation-direction:alternate-reverse;opacity:.7}'+
  '.vessel-water-ov.vw-light .vw-surf,.vessel-water-ov.vw-light .vw-fill{filter:hue-rotate(45deg) saturate(1.5) brightness(1.15)}'+
