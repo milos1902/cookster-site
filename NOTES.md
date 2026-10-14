@@ -585,3 +585,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Naćve i brašno u njima (2026-10-14, flour.js?v=5, game.js?v=3.124)
 - Novi predmet `nacve` (slika korisnika `assets/flour/nacve.webp`, 105x196, stavlja se na sto). Kad mlaz brašna padne na otvor naćvi (`INNER` procenti slike), brašno ide u naćve (`dataset.inFlour`, do 300, čuva se u snimku) i vidi se kao gomila unutar otvora (isečena na ivice, tri slike gomile prema količini); inače pada na sto kao ranije.
 - Sledeće: voda iz bokala u naćve, kvasac, mešenje, krpa, rast testa.
+
+## Testo u naćvama: odnos vode i brašna, sipanje vode (2026-10-14, flour.js?v=6, game.js?v=3.125) — u izradi
+- `doughState`: odnos voda/brašno; suvo < 0.45, dobro 0.45–0.8, meko > 0.8 (natpis iznad naćvi, "dodaj vode" / "dodaj brašna"). Bokal levim tasterom iznad naćvi sipa vodu u `inWater`. Sipanje vode nije proverano. Slike naćvi sa brašnom/vodom još nisu ubačene.
