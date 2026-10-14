@@ -448,3 +448,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Iskrivljavanje teksture vode (2026-10-13, vessel-water.js?v=10)
 - SVG filter `#vwDist` (feTurbulence + feDisplacementMap, šum se sporo menja) krivi teksturu vode, pa se odsjaji pomeraju bez vidljivog ponavljanja. Uz to ostaje spori pomak teksture i njihanje ivice.
 - Kružni talasi (ripple) nisu vraćeni: korisniku se nisu svideli.
+
+## Krugovi samo pri prvom udaru vode, sa podesivom perspektivom (2026-10-14, vessel-water.js?v=11)
+- Tri kruga krenu od sredine površine kad voda počne da pada u (praznu ili posle pauze od 1.5 s) posudu; ne dok se voda stalno puni.
+- U alatu "Voda u posudi": klizači "nagib perspektive" (vertikalno spljoštavanje, 0.15 do 1) i "veličina", dugme "Probaj prvi udar". Čuva se u `ring` uz posudu (`cookster.vessel-water-cal.v1`).
+- Bez kalibracije: nagib 0.5, veličina 70% širine vode.
