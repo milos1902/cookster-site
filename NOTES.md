@@ -502,3 +502,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Putokazi vode na mesta + hover (2026-10-14, signposts.js?v=7, kitchen-fixtures.js?v=68)
 - Klik na putokaz (alat zatvoren): kuhinja → nazad u kuhinju, sudopera → krupan plan sudopere, roštilj → krupan plan roštilja, kafana → kafana (kroz vrata), bašta → bašta, špajz → špajz. Iz drugog pogleda prvo izađe iz trenutnog, pa uđe. Radi i na malim putokazima roštilja u kuhinji (preslikanim). Klik ne prolazi na sliku ispod.
 - Hover: putokaz se poveća, posvetli i dobije žut sjaj; tooltip sa imenom. `CooksterKitchenFx.zoomDoor` je sada izložen.
+
+## Mali putokazi roštilja u kuhinji: ručno mesto, van slike se ne crtaju (2026-10-14, signposts.js?v=8)
+- Provereno poravnanje: slika krupnog plana roštilja se poklapa sa uvećanom kuhinjom (SIFT, skala 1.000, pomak ~0), pa je preslikavanje tačno.
+- Krupan plan pokazuje više nego kuhinja (gornji zid), pa putokaz sa y<16% krupnog plana (npr. Sudopera) pada iznad slike kuhinje: tamo se više ne crta.
+- Kad je alat otvoren, mali putokazi roštilja u kuhinji se mogu prevući (`k:{x,y,w}`), točak = veličina, dvoklik = nazad na automatsko mesto. Ulazi u JSON.
