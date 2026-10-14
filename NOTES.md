@@ -453,3 +453,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Tri kruga krenu od sredine površine kad voda počne da pada u (praznu ili posle pauze od 1.5 s) posudu; ne dok se voda stalno puni.
 - U alatu "Voda u posudi": klizači "nagib perspektive" (vertikalno spljoštavanje, 0.15 do 1) i "veličina", dugme "Probaj prvi udar". Čuva se u `ring` uz posudu (`cookster.vessel-water-cal.v1`).
 - Bez kalibracije: nagib 0.5, veličina 70% širine vode.
+
+## Voda na stolu poštuje prednju ivicu iz alata (2026-10-14, vessel-water.js?v=12)
+- U sudoperi se vodi primenjivala prednja ivica (crvena) iz alata "Voda u posudi", a na stolu ne (tamo je samo ivica iz kalibracije hrane): voda je prelazila preko prednje ivice šerpe. Sada se na stolu primenjuje ista prednja ivica kad je nacrtana.
