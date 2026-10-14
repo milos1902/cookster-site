@@ -31,7 +31,7 @@ try{WCAL=JSON.parse(localStorage.getItem(WKEY)||'{}')||{};}catch(e){WCAL={};}
 function prof(id){
   // the calibration of the water (tool "Voda u posudi") wins over the calibration of the food
   var w=WCAL[id];
-  if(w&&w.poly&&w.poly.length>=3&&w.bottom&&w.bottom.length>=3)return {foodVisible:w.poly,bottomPoly:w.bottom,mask:w.front&&w.front.length>=3?w.front:null,tilt:+w.tilt||0,ring:w.ring||null,own:true};
+  if(w&&w.poly&&w.poly.length>=3&&w.bottom&&w.bottom.length>=3)return {foodVisible:w.poly,bottomPoly:w.bottom,mask:w.front&&w.front.length>=3?w.front:null,tilt:+w.tilt||0,ring:w.ring||null,soft:+w.soft||0,own:true};
   if(w&&w.poly&&w.poly.length>=3&&w.lo&&w.hi)return {foodVisible:w.poly,depth:{bottom:w.lo,foodTop:w.hi},mask:w.front&&w.front.length>=3?w.front:null,tilt:+w.tilt||0,ring:w.ring||null,own:true};
   var C=window.CooksterVesselFoodCalibration,p=C&&C.get&&C.get(id);
   if(!p||!p.foodVisible||p.foodVisible.length<3||!p.depth||!p.depth.bottom||!p.depth.foodTop)return null;
@@ -67,17 +67,21 @@ function swayFrame(now){
   SW.forEach(function(o){
     if(!o.d.isConnected&&now-o.born>400)return;live.push(o);
     var P=o.pts,n=P.length,cx=0,cy=0,i;for(i=0;i<n;i++){cx+=P[i][0];cy+=P[i][1];}cx/=n;cy/=n;
-    var a1=Math.sin(t*1.7+o.ph)*.11,a2=Math.sin(t*1.15+o.ph*1.7+1.3)*.07,out=[];
+    var S=o.S;
+    if(o.el&&typeof holding!=='undefined'){var hd=holding===o.el;if(S.held!==undefined&&hd!==S.held)S.kick=now;S.held=hd;}   /* picked up or put down: the water rocks again */
+    var age=S.kick?(now-S.kick)/1000:99,kk=age<7?Math.pow(1-age/7,1.5):0,amp=.18+.82*kk;   /* 7 seconds after pouring / lifting / putting down it calms down, but keeps moving a little */
+    if(o.soft&&!o.softDone&&o.d.offsetWidth>0){o.b.style.filter='blur('+(o.d.offsetWidth*o.soft/100).toFixed(1)+'px)';o.softDone=true;}
+    var a1=Math.sin(t*1.7+o.ph)*.11*amp,a2=Math.sin(t*1.15+o.ph*1.7+1.3)*.07*amp,out=[];
     for(i=0;i<n;i++){
       var q=P[i],dx=q[0]-cx,dy=q[1]-cy,an=Math.atan2(dy,dx);
-      var k=1+a1*Math.cos(an-.5)+a2*Math.cos(an-2.2)+.014*Math.sin(an*5+t*3.1+o.ph)+.01*Math.sin(an*8-t*4.3);
+      var k=1+a1*Math.cos(an-.5)+a2*Math.cos(an-2.2)+(.014*Math.sin(an*5+t*3.1+o.ph)+.01*Math.sin(an*8-t*4.3))*amp;
       out.push((cx+dx*k+Math.sin(t*1.7+o.ph)*dx*0+a1*6).toFixed(2)+'% '+(cy+dy*k+a2*3).toFixed(2)+'%');
     }
-    var c='polygon('+out.join(',')+')';o.d.style.clipPath=c;o.d.style.webkitClipPath=c;
+    var c='polygon('+out.join(',')+')';o.g.style.clipPath=c;o.g.style.webkitClipPath=c;
   });
   SW=live;if(live.length)requestAnimationFrame(swayFrame);else swRun=false;
 }
-function sway(d,pts){SW.push({d:d,pts:pts,ph:Math.random()*6.28,born:performance.now()});if(!swRun){swRun=true;requestAnimationFrame(swayFrame);}}
+function sway(d,g,b,pts,S,el,soft){SW.push({d:d,g:g,b:b,pts:pts,S:S,el:el,soft:soft,ph:Math.random()*6.28,born:performance.now()});if(!swRun){swRun=true;requestAnimationFrame(swayFrame);}}
 // the first hit of the water: rings go out from the middle of the surface; the tilt (perspective) and the size are set in the tool
 function addRing(d,pts,r,age){
   var tl=r&&r.tilt!=null?+r.tilt:.5,sz=r&&r.size!=null?+r.size:70,x0=1e9,x1=-1e9,cx=0,cy=0;
@@ -87,18 +91,24 @@ function addRing(d,pts,r,age){
   [0,.45,.9].forEach(function(dl){var i=document.createElement('i');i.style.animationDelay=(dl-age)+'s';w.appendChild(i);});
   d.appendChild(w);
 }
-function overlay(id,f,src,withFront,pOverride,ringAge){
+var SINKS={};
+function overlay(id,f,src,withFront,pOverride,ringAge,owner){
   var p=pOverride||prof(id);f=clamp(f);if(!p||f<=.004)return null;
   var d=document.createElement('div');d.className='vessel-water-ov';
   var morph=!!(p.bottomPoly&&p.bottomPoly.length>=3);
   var poly='polygon('+(morph?surfacePoly(p,f):p.foodVisible).map(function(q){return q[0].toFixed(2)+'% '+q[1].toFixed(2)+'%'}).join(',')+')';
-  d.style.clipPath=poly;d.style.webkitClipPath=poly;
   if(morph){
-    var sf=document.createElement('div');sf.className='vw-surf';d.appendChild(sf);
-    ['','b'].forEach(function(c){var w=document.createElement('div');w.className='vw-wave '+c;w.style.animationDelay=c?'-1.1s':'0s';d.appendChild(w);});
-    var sp=surfacePoly(p,f);sway(d,sp);if(ringAge!=null&&ringAge<2.6)addRing(d,sp,p.ring,ringAge);
+    // d (the outline of the vessel) > b (soft edge: blur) > g (the shape of the surface, it rocks) > the layers of the water
+    var b=document.createElement('div'),g=document.createElement('div');b.style.cssText='position:absolute;inset:0';g.style.cssText='position:absolute;inset:0;clip-path:'+poly+';-webkit-clip-path:'+poly;
+    b.appendChild(g);d.appendChild(b);
+    var sf=document.createElement('div');sf.className='vw-surf';g.appendChild(sf);
+    ['','b'].forEach(function(c){var w=document.createElement('div');w.className='vw-wave '+c;w.style.animationDelay=c?'-1.1s':'0s';g.appendChild(w);});
+    var sp=surfacePoly(p,f),S=owner?(owner._vw=owner._vw||{}):(SINKS[id]=SINKS[id]||{}),nowT=performance.now();
+    if(S.f!==undefined&&f>S.f+.0005)S.kick=nowT;S.f=f;   /* pouring: the water rocks until 7 seconds after the last drop */
+    sway(d,g,b,sp,S,owner&&owner.dataset?owner:null,+p.soft||0);if(ringAge!=null&&ringAge<2.6)addRing(g,sp,p.ring,ringAge);
     return finish(d,p,src,withFront);
   }
+  d.style.clipPath=poly;d.style.webkitClipPath=poly;
   var by=p.depth.bottom[1],ty=p.depth.foodTop[1],y=by+(ty-by)*f;      // the surface of the water (percent of the height of the picture)
   var tl=+p.tilt||0;
   // the surface of the water can be tilted (the angle set in the tool): the layer is wider than the vessel and turns round the middle of the surface
@@ -151,7 +161,7 @@ function sync(el){
   if(el._waterOv){el._waterOv.remove();el._waterOv=null;}
   if(!key)return;
   var body=el.querySelector('.body'),src=body&&body.getAttribute('src');
-  var pr=prof(id),d=overlay(id,f,src,!!(pr&&pr.own&&pr.mask),null,el._ring?(now-el._ring)/1000:null);if(!d)return;
+  var pr=prof(id),d=overlay(id,f,src,!!(pr&&pr.own&&pr.mask),null,el._ring?(now-el._ring)/1000:null,el);if(!d)return;
   // vessels with a front wall (a picture over the food, z-index 6): the water goes under it; the pans have none: the water is over the food
   d.style.zIndex=el._vesselFrontMask&&el._vesselFrontMask.style.display!=='none'?'5':'8';el.appendChild(d);el._waterOv=d;
 }
@@ -194,7 +204,7 @@ function buildTool(){
    '<label>Posuda <select id="vwSel"></select></label>'+
    '<div><button data-m="poly" class="on">Gore (puna posuda)</button><button data-m="bottom">Dno posude</button><button data-m="front">Prednja ivica</button></div>'+
    '<small><b>Točak miša</b> uveličava posudu, <b>desni ili srednji taster</b> pomera sliku. <b style="color:#7fe3ff">Gore</b>: oblik (krug) površine vode kad je posuda PUNA. <b style="color:#ffe27a">Dno</b>: oblik (krug) dna posude. Voda raste od oblika dna do oblika gore (uvek kao ceo krug). Prevuci tačke; klik na liniju ubacuje tačku, dvoklik briše. <b style="color:#ef5350">Prednja ivica</b> (nije obavezno): deo zida posude koji treba da bude IZNAD vode.</small>'+
-   '<label>Probni nivo vode <input id="vwLvl" type="range" min="0" max="100" value="60"><b id="vwLvlN">60%</b></label><label>Krugovi pri udaru: nagib perspektive <input id="vwRgT" type="range" min="0.15" max="1" step="0.01" value="0.5"><b id="vwRgTN">0.50</b></label><label>Krugovi: veličina (% širine vode) <input id="vwRgS" type="range" min="20" max="130" step="1" value="70"><b id="vwRgSN">70</b></label><div class="vw-row"><button id="vwRgGo">💦 Probaj prvi udar</button></div><label>Nagib napred-nazad (kako se vidi površina) <input id="vwTilt" type="range" min="-40" max="40" step="0.5" value="0"><b id="vwTiltN">0</b></label>'+
+   '<label>Probni nivo vode <input id="vwLvl" type="range" min="0" max="100" value="60"><b id="vwLvlN">60%</b></label><label>Meki rub vode <input id="vwSoft" type="range" min="0" max="10" step="0.2" value="0"><b id="vwSoftN">0</b></label><label>Krugovi pri udaru: nagib perspektive <input id="vwRgT" type="range" min="0.15" max="1" step="0.01" value="0.5"><b id="vwRgTN">0.50</b></label><label>Krugovi: veličina (% širine vode) <input id="vwRgS" type="range" min="20" max="130" step="1" value="70"><b id="vwRgSN">70</b></label><div class="vw-row"><button id="vwRgGo">💦 Probaj prvi udar</button></div><label>Nagib napred-nazad (kako se vidi površina) <input id="vwTilt" type="range" min="-40" max="40" step="0.5" value="0"><b id="vwTiltN">0</b></label>'+
    '<div><button id="vwSave">💾 Sačuvaj ovu posudu</button><button id="vwReset">↺ Početno</button><button id="vwCopy">Kopiraj sve (JSON)</button></div><small id="vwStatus"></small></div>'+
    '<div class="vw-main"><div class="vw-stage" id="vwStage"><img class="vw-pic" id="vwPic" alt=""><div id="vwOv" style="position:absolute;inset:0;pointer-events:none"></div><svg id="vwSvg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg></div></div></div>';
   document.body.appendChild(root);
@@ -204,9 +214,9 @@ function buildTool(){
   function fill(){sel.innerHTML='';list.forEach(function(v){var o=document.createElement('option');o.value=v.id;var sv=!!WCAL[v.id];o.textContent=(sv?'✔ ':'')+v.label;o.style.fontWeight=sv?'800':'400';sel.appendChild(o);});if(cur)sel.value=cur;}
   function load(id){cur=id;var w=WCAL[id];work=JSON.parse(JSON.stringify(w||startFor(id)));if(!work.front)work.front=[];if(!work.bottom||work.bottom.length<3)work.bottom=startFor(id).bottom;var v=list.find(function(x){return x.id===id});pic.src=v?v.src:'';rgSync();ringT=0;draw();}
   function se(t,a){var e=document.createElementNS('http://www.w3.org/2000/svg',t);for(var k in a)e.setAttribute(k,a[k]);return e;}
-  function profile(){return {foodVisible:work.poly,bottomPoly:work.bottom,mask:work.front&&work.front.length>=3?work.front:null,tilt:+work.tilt||0,ring:work.ring||null};}
-  var ringT=0;
-  function rgSync(){var r=work.ring||{};rgT.value=r.tilt!=null?r.tilt:.5;rgS.value=r.size!=null?r.size:70;root.querySelector('#vwRgTN').textContent=(+rgT.value).toFixed(2);root.querySelector('#vwRgSN').textContent=rgS.value;}
+  function profile(){return {foodVisible:work.poly,bottomPoly:work.bottom,mask:work.front&&work.front.length>=3?work.front:null,tilt:+work.tilt||0,ring:work.ring||null,soft:+work.soft||0};}
+  var ringT=0,toolOwner={};
+  function rgSync(){var sf=root.querySelector('#vwSoft');sf.value=+work.soft||0;root.querySelector('#vwSoftN').textContent=sf.value;var r=work.ring||{};rgT.value=r.tilt!=null?r.tilt:.5;rgS.value=r.size!=null?r.size:70;root.querySelector('#vwRgTN').textContent=(+rgT.value).toFixed(2);root.querySelector('#vwRgSN').textContent=rgS.value;}
   function draw(){
     while(svg.firstChild)svg.removeChild(svg.firstChild);
     ['front','bottom','poly'].forEach(function(k){var P=work[k]||[];if(P.length<2)return;var c=COL[k],on=mode===k;
@@ -214,7 +224,7 @@ function buildTool(){
       if(!on)return;
       P.forEach(function(p,i){var a=P[(i+1)%P.length],l=se('line',{x1:p[0],y1:p[1],x2:a[0],y2:a[1],stroke:'transparent','stroke-width':'12','vector-effect':'non-scaling-stroke'});l.dataset.k=k;l.dataset.e=i;svg.appendChild(l);});
       P.forEach(function(p,i){var c2=se('circle',{cx:p[0],cy:p[1],r:.9,fill:'#fff',stroke:c,'stroke-width':'.3','vector-effect':'non-scaling-stroke'});c2.dataset.k=k;c2.dataset.i=i;svg.appendChild(c2);});});
-    ov.innerHTML='';var o=overlay(cur,+lvl.value/100,pic.getAttribute('src'),true,profile(),ringT?(performance.now()-ringT)/1000:null);if(o)ov.appendChild(o);
+    ov.innerHTML='';var o=overlay(cur,+lvl.value/100,pic.getAttribute('src'),true,profile(),ringT?(performance.now()-ringT)/1000:null,toolOwner);if(o)ov.appendChild(o);
     root.querySelector('#vwLvlN').textContent=lvl.value+'%';root.querySelector('#vwTiltN').textContent=(+work.tilt||0);tiltEl.value=+work.tilt||0;
   }
   function pct(e){var r=stage.getBoundingClientRect();return [Math.max(0,Math.min(100,(e.clientX-r.left)/r.width*100)),Math.max(0,Math.min(100,(e.clientY-r.top)/r.height*100))];}
@@ -242,6 +252,7 @@ function buildTool(){
   main.addEventListener('pointerup',function(){pan=null;});
   main.addEventListener('pointercancel',function(){pan=null;});
   lvl.addEventListener('input',draw);
+  root.querySelector('#vwSoft').addEventListener('input',function(e){work.soft=+e.target.value;root.querySelector('#vwSoftN').textContent=e.target.value;draw();});
   var rgT=root.querySelector('#vwRgT'),rgS=root.querySelector('#vwRgS');
   function rgSet(){work.ring={tilt:+rgT.value,size:+rgS.value};root.querySelector('#vwRgTN').textContent=(+rgT.value).toFixed(2);root.querySelector('#vwRgSN').textContent=rgS.value;ringT=performance.now();draw();}
   rgT.addEventListener('input',rgSet);rgS.addEventListener('input',rgSet);
