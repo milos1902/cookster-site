@@ -16,8 +16,7 @@ css.textContent='@keyframes vwDrift{from{background-position:0 0,0 0}to{backgrou
  '.vessel-water-ov .vw-surf{filter:url(#vwDist);position:absolute;inset:0;opacity:.78;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 45%,rgba(0,0,0,.35) 100%),url('+TEX+');background-size:100% 100%,42% auto}'+
  '.vessel-water-ov .vw-wave{position:absolute;top:0;bottom:0;left:0;width:28%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.16),rgba(255,255,255,0));mix-blend-mode:screen;animation:vwWave 2.7s ease-in-out infinite alternate}'+
  '.vessel-water-ov .vw-wave.b{width:20%;animation-duration:3.9s;animation-direction:alternate-reverse;opacity:.7}'+
- '.vessel-water-ov.vw-light .vw-surf,.vessel-water-ov.vw-light .vw-fill{filter:url(#vwDist) hue-rotate(45deg) saturate(1.5) brightness(1.15)}'+
- '.vessel-water-ov .vw-tl{position:absolute;inset:0;mix-blend-mode:screen;pointer-events:none;opacity:0}.vessel-water-ov .vw-hl{position:absolute;width:70%;height:70%;left:50%;top:45%;transform:translate(-50%,-50%);background:radial-gradient(ellipse,rgba(235,245,250,.30),rgba(235,245,250,0) 62%);mix-blend-mode:screen;pointer-events:none}'+
+ '.vessel-water-ov.vw-light .vw-surf,.vessel-water-ov.vw-light .vw-fill{filter:hue-rotate(45deg) saturate(1.5) brightness(1.15)}'+
  '@keyframes vwRg{0%{transform:scale(.06);opacity:0}15%{opacity:.9}100%{transform:scale(1);opacity:0}}'+
  '.vessel-water-ov .vw-rgw{position:absolute;pointer-events:none}.vessel-water-ov .vw-rgw i{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(230,242,238,.85);box-shadow:0 0 6px rgba(255,255,255,.35);opacity:0;animation:vwRg 2.4s ease-out both}'+
  '@keyframes vwRing{0%{transform:translate(-50%,-50%) scale(.05);opacity:0}12%{opacity:.85}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}'+
@@ -63,16 +62,10 @@ function surfacePoly(p,f){
 }
 // the water rocks: the edge of the surface goes toward the wall, bounces back and the other side follows (a slow slosh + small ripples along the edge)
 var SW=[],swRun=false;
-// the light on a tipping surface: the side the water runs to is lit, the other one is dark; strong enough to be seen when the vessel is full
-function tiltLight(el,PX,PY){
-  if(!el)return;var a=Math.min(.7,Math.abs(PX)*.5),b=Math.min(.45,Math.abs(PY)*.35);
-  el.style.opacity=(a+b>.02)?'1':'0';
-  el.style.background='linear-gradient('+(PX>=0?'270deg':'90deg')+',rgba(235,246,252,'+a.toFixed(2)+') 0%,rgba(235,246,252,0) 62%),linear-gradient('+(PY>=0?'0deg':'180deg')+',rgba(235,246,252,'+b.toFixed(2)+') 0%,rgba(235,246,252,0) 55%)';
-}
 function swayFrame(now){
   var t=now/1000,live=[];
   SW.forEach(function(o){
-    if(!o.d.isConnected&&now-o.born>400&&!(o.el&&typeof holding!=='undefined'&&holding===o.el))return;live.push(o);   /* a vessel in the hand may be taken out of the page for a while: its water must not be forgotten */
+    if(!o.d.isConnected&&now-o.born>400)return;live.push(o);
     var P=o.pts,n=P.length,cx=0,cy=0,i;for(i=0;i<n;i++){cx+=P[i][0];cy+=P[i][1];}cx/=n;cy/=n;
     var S=o.S;
     if(o.el&&typeof holding!=='undefined'){var hd=holding===o.el;
@@ -82,38 +75,19 @@ function swayFrame(now){
     var bAge=S.boostT?(now-S.boostT)/1000:99,bst=bAge<1.1?1-bAge/1.1:0;   /* scrubbing with the sponge: a strong slosh from the left to the right */
     amp*=1+1.3*bst;   /* after the stir the water keeps moving a little */
     if(S.fr!==now){var dt=Math.min(.05,S.lt?(now-S.lt)/1000:0);S.lt=now;S.fr=now;var sp=(1+1.3*kk)*(1+1.2*bst);   /* the stronger the stir, the faster the movement */
-      S.p=S.p||[0,0,0,0];
-      // the water is a heavy liquid: when the vessel in the hand is jerked, the water lags behind, runs to the other side, comes back and rocks (a damped spring driven by the acceleration of the vessel)
-      var hdNow=!!(o.el&&typeof holding!=='undefined'&&holding===o.el&&typeof mouse!=='undefined');
-      var tvx=0,tvy=0;
-      if(hdNow){if(S.px!==undefined&&dt>0){tvx=(mouse.x-S.px)/dt;tvy=(mouse.y-S.py)/dt;}S.px=mouse.x;S.py=mouse.y;}
-      if(dt>0){
-        var lp=Math.min(1,dt/.045),pvx=S.vx||0,pvy=S.vy||0;S.vx=pvx+(tvx-pvx)*lp;S.vy=pvy+(tvy-pvy)*lp;
-        var ax=(S.vx-pvx)/dt,ay=(S.vy-pvy)/dt,W2=36,ZW=2*.16*6;   /* omega^2 (period about 1 s), damping */
-        S.sx=S.sx||0;S.sy=S.sy||0;S.svx=S.svx||0;S.svy=S.svy||0;
-        var fx=-ax*W2/2600,fy=-ay*W2/2600,nSub=3,h=dt/nSub;
-        for(var q=0;q<nSub;q++){S.svx+=(-W2*S.sx-ZW*S.svx+fx)*h;S.svy+=(-W2*S.sy-ZW*S.svy+fy)*h;S.sx+=S.svx*h;S.sy+=S.svy*h;}
-        S.sx=Math.max(-1.7,Math.min(1.7,S.sx));S.sy=Math.max(-1.7,Math.min(1.7,S.sy));
-      }
-      S.p[0]+=dt*1.7*sp;S.p[1]+=dt*1.15*sp;S.p[2]+=dt*3.1*sp;S.p[3]+=dt*4.3*sp;}
-    var PX=S.sx||0,PY=S.sy||0;
-    // the picture of the water slides, tips and the light runs to the side the water runs to: it is seen even when the surface is full (the edge is hidden by the vessel)
-    var tf='translate('+(PX*9).toFixed(2)+'%,'+(PY*6).toFixed(2)+'%) rotate('+(PX*4).toFixed(2)+'deg) scale(1.2)',hx=(50+PX*34).toFixed(1)+'%',hy=(45+PY*24).toFixed(1)+'%';
-    if(o.sf)o.sf.style.transform=tf;if(o.hl){o.hl.style.left=hx;o.hl.style.top=hy;}tiltLight(o.tl,PX,PY);
+      S.p=S.p||[0,0,0,0];S.p[0]+=dt*1.7*sp;S.p[1]+=dt*1.15*sp;S.p[2]+=dt*3.1*sp;S.p[3]+=dt*4.3*sp;}
     var P4=S.p||[0,0,0,0],a1=Math.sin(P4[0]+o.ph)*.11*amp,a2=Math.sin(P4[1]+o.ph*1.7+1.3)*.07*amp,out=[];
     for(i=0;i<n;i++){
       var q=P[i],dx=q[0]-cx,dy=q[1]-cy,an=Math.atan2(dy,dx);
       var k=1+a1*Math.cos(an-.5*(1-bst))+a2*Math.cos(an-2.2)+(.014*Math.sin(an*5+P4[2]+o.ph)+.01*Math.sin(an*8-P4[3]))*amp;
-      var pk=1+.5*(PX*Math.cos(an)+PY*Math.sin(an)*.6);
-      out.push([cx+dx*k*pk+a1*6+PX*10,cy+dy*k*pk+a2*3+PY*4-PX*dx*.28]);   /* the surface also tips: the water climbs the wall it runs to */
+      out.push([cx+dx*k+a1*6,cy+dy*k+a2*3]);
     }
     var c='polygon('+out.map(function(q){return q[0].toFixed(2)+'% '+q[1].toFixed(2)+'%';}).join(',')+')';o.g.style.clipPath=c;o.g.style.webkitClipPath=c;
-    if(o.el&&typeof holding!=='undefined'&&holding===o.el&&typeof placementGhost!=='undefined'&&placementGhost){var cg=placementGhost.querySelector('.vw-g');if(cg){cg.style.clipPath=c;cg.style.webkitClipPath=c;}}   /* the carried copy of the vessel (the ghost) has its own water: it follows too */
     if(o.mp&&o.d.offsetWidth>0){var sd=(o.d.offsetWidth*o.soft/100/2).toFixed(1);if(o.sd!==sd){o.sd=sd;o.mp.setAttribute('stdDeviation',sd);}}
   });
   SW=live;if(live.length)requestAnimationFrame(swayFrame);else swRun=false;
 }
-function sway(d,g,mp,pts,S,el,soft,sf,hl,tl){SW.push({d:d,g:g,mp:mp,pts:pts,S:S,el:el,soft:soft,sf:sf,hl:hl,tl:tl,ph:Math.random()*6.28,born:performance.now()});if(!swRun){swRun=true;requestAnimationFrame(swayFrame);}}
+function sway(d,g,mp,pts,S,el,soft){SW.push({d:d,g:g,mp:mp,pts:pts,S:S,el:el,soft:soft,ph:Math.random()*6.28,born:performance.now()});if(!swRun){swRun=true;requestAnimationFrame(swayFrame);}}
 // the first hit of the water: rings go out from the middle of the surface; the tilt (perspective) and the size are set in the tool
 function addRing(d,pts,r,age){
   var tl=r&&r.tilt!=null?+r.tilt:.5,sz=r&&r.size!=null?+r.size:70,x0=1e9,x1=-1e9,cx=0,cy=0;
@@ -131,7 +105,7 @@ function overlay(id,f,src,withFront,pOverride,ringAge,owner){
   var poly='polygon('+(morph?surfacePoly(p,f):p.foodVisible).map(function(q){return q[0].toFixed(2)+'% '+q[1].toFixed(2)+'%'}).join(',')+')';
   if(morph){
     // d (the outline of the vessel) > b (soft edge: blur) > g (the shape of the surface, it rocks) > the layers of the water
-    var g=document.createElement('div'),mp=null,wrap=d;g.className='vw-g';g.style.cssText='position:absolute;inset:0;clip-path:'+poly+';-webkit-clip-path:'+poly;
+    var g=document.createElement('div'),mp=null,wrap=d;g.style.cssText='position:absolute;inset:0;clip-path:'+poly+';-webkit-clip-path:'+poly;
     if(+p.soft>0){
       // soft edge: a filter multiplies the (sharp, clipped) water by its own blurred outline: only the line of the edge fades, the layers stay sharp
       var uid='vwe'+(++MASKN),NS='http://www.w3.org/2000/svg',sv=document.createElementNS(NS,'svg');sv.setAttribute('width','0');sv.setAttribute('height','0');sv.style.cssText='position:absolute;width:0;height:0';
@@ -140,10 +114,10 @@ function overlay(id,f,src,withFront,pOverride,ringAge,owner){
       wrap=document.createElement('div');wrap.style.cssText='position:absolute;inset:0;filter:url(#'+uid+')';d.appendChild(wrap);
     }
     wrap.appendChild(g);
-    var sf=document.createElement('div');sf.className='vw-surf';g.appendChild(sf);var hl=document.createElement('div');hl.className='vw-hl';g.appendChild(hl);var tl=document.createElement('div');tl.className='vw-tl';g.appendChild(tl);
+    var sf=document.createElement('div');sf.className='vw-surf';g.appendChild(sf);
     var sp=surfacePoly(p,f),S=owner?(owner._vw=owner._vw||{}):(SINKS[id]=SINKS[id]||{}),nowT=performance.now();
     if(S.f!==undefined&&f>S.f+.0005){S.kick=nowT;S.dur=7;}S.f=f;   /* pouring: the water rocks until 7 seconds after the last drop */
-    sway(d,g,mp,sp,S,owner&&owner.dataset?owner:null,+p.soft||0,sf,hl,tl);if(ringAge!=null&&ringAge<2.6)addRing(g,sp,p.ring,ringAge);
+    sway(d,g,mp,sp,S,owner&&owner.dataset?owner:null,+p.soft||0);if(ringAge!=null&&ringAge<2.6)addRing(g,sp,p.ring,ringAge);
     return finish(d,p,src,withFront);
   }
   d.style.clipPath=poly;d.style.webkitClipPath=poly;
@@ -208,52 +182,7 @@ function set(el,f){
   if(f<=.004)delete el.dataset.water;else el.dataset.water=f.toFixed(3);
   sync(el);
 }
-
-/* The vessel in the hand. The visible vessel is its copy (the placement ghost), so the water of the copy is moved here, from the real movement of that copy
-   (its pose, or the mouse if there is none): a damped spring driven by the acceleration, like the water in a real pot. It does not depend on anything else of this file. */
-(function(){
-  var H={px:null,py:null,vx:0,vy:0,sx:0,sy:0,svx:0,svy:0,lt:0,id:null},hud=null,DBG=false;
-  try{DBG=localStorage.getItem('cookster.waterdebug')!=='0';}catch(e){DBG=true;}   /* a small status text for finding faults: localStorage.setItem('cookster.waterdebug','1') */
-  function hudSet(t){
-    if(!DBG)return;
-    if(!hud){hud=document.createElement('div');hud.style.cssText='position:fixed;left:8px;bottom:56px;z-index:2147483600;background:rgba(0,0,0,.72);color:#9ff;font:11px/1.3 monospace;padding:4px 7px;border-radius:5px;pointer-events:none;white-space:pre';hud.setAttribute('data-tool-ui','1');document.body.appendChild(hud);}
-    hud.style.display=t?'block':'none';if(t)hud.textContent=t;
-  }
-  function frame(now){
-    requestAnimationFrame(frame);
-    var h=typeof holding!=='undefined'?holding:null,g=typeof placementGhost!=='undefined'?placementGhost:null;
-    var water=h&&h.dataset?+h.dataset.water||0:0;
-    if(!h||water<=.004||!g||g.style.display==='none'){H.px=null;H.vx=H.vy=0;H.lt=0;hudSet(h&&water>.004?'voda: u ruci, ali nema kopije (ghost)':'');return;}
-    var dt=H.lt?Math.min(.05,(now-H.lt)/1000):0;H.lt=now;
-    var pose=typeof placementGhostMotion!=='undefined'&&placementGhostMotion&&placementGhostMotion.pose,px,py,srcName;
-    if(pose&&isFinite(pose.cx)&&isFinite(pose.by)){px=pose.cx;py=pose.by;srcName='pose';}
-    else if(typeof mouse!=='undefined'){px=mouse.x;py=mouse.y;srcName='mouse';}
-    else{return;}
-    if(H.id!==h){H.id=h;H.px=null;H.sx=H.sy=H.svx=H.svy=0;}
-    var tvx=0,tvy=0;if(H.px!==null&&dt>0){tvx=(px-H.px)/dt;tvy=(py-H.py)/dt;}
-    H.px=px;H.py=py;
-    if(dt>0){
-      var lp=Math.min(1,dt/.045),pvx=H.vx,pvy=H.vy;H.vx=pvx+(tvx-pvx)*lp;H.vy=pvy+(tvy-pvy)*lp;
-      var ax=(H.vx-pvx)/dt,ay=(H.vy-pvy)/dt,W2=36,ZW=2*.16*6,fx=-ax*W2/2600,fy=-ay*W2/2600,n=3,hh=dt/n;
-      for(var q=0;q<n;q++){H.svx+=(-W2*H.sx-ZW*H.svx+fx)*hh;H.svy+=(-W2*H.sy-ZW*H.svy+fy)*hh;H.sx+=H.svx*hh;H.sy+=H.svy*hh;}
-      H.sx=Math.max(-1.7,Math.min(1.7,H.sx));H.sy=Math.max(-1.7,Math.min(1.7,H.sy));
-    }
-    var PX=H.sx,PY=H.sy;
-    var gg=g.querySelector('.vw-g'),gs=g.querySelector('.vw-surf'),gh=g.querySelector('.vw-hl');
-    if(gg)gg.style.transform='translate('+(PX*7).toFixed(2)+'%,'+(PY*4).toFixed(2)+'%) rotate('+(PX*3).toFixed(2)+'deg)';
-    if(gs)gs.style.transform='translate('+(PX*9).toFixed(2)+'%,'+(PY*6).toFixed(2)+'%) rotate('+(PX*4).toFixed(2)+'deg) scale(1.2)';
-    if(gh){gh.style.left=(50+PX*34).toFixed(1)+'%';gh.style.top=(45+PY*24).toFixed(1)+'%';}
-    tiltLight(g.querySelector('.vw-tl'),PX,PY);
-    var pr0=null;try{pr0=prof(h.dataset.itemId);}catch(e){}
-    var ov=h._waterOv,srcState=h._vw||{};
-    hudSet('DIJAGNOSTIKA vode (privremeno)\n'+(h.dataset.itemId||'?')+'  nivo '+water.toFixed(2)+'  kalibracija: '+(!pr0?'NEMA':(pr0.bottomPoly?'dno+vrh (morph)':'stara (bez dna)'))+(pr0&&pr0.soft?'  meki rub '+pr0.soft:'')+'\n'+
-      'kopija: '+(gg?'ima vodu':'NEMA vode u kopiji')+(gs?' | surf':' | NEMA surf')+'  izvor pokreta: '+srcName+'\n'+
-      'original: sloj '+(ov?(ov.isConnected?'u stranici':'VAN stranice'):'nema')+'  petlja '+(swRun?'radi':'STOJI')+' ('+SW.length+')  S.sx '+(+srcState.sx||0).toFixed(2)+'\n'+
-      'brzina '+Math.round(H.vx)+' px/s   njihanje kopije sx '+PX.toFixed(2));
-  }
-  requestAnimationFrame(frame);
-})();
-window.CooksterVesselWater={debug:function(){try{return (window.items||[]).filter(function(e){return e._vw}).map(function(e){return {id:e.dataset.itemId,held:typeof holding!=='undefined'&&holding===e,sx:+(e._vw.sx||0).toFixed(2),sy:+(e._vw.sy||0).toFixed(2),vx:Math.round(e._vw.vx||0)};});}catch(x){return String(x);}},agitate:function(el){var S=el&&(el._vw=el._vw||{});if(!S)return;var n=performance.now();S.boostT=n;S.kick=n;S.dur=1.8;},reload:function(){try{WCAL=JSON.parse(localStorage.getItem(WKEY)||'{}')||{};}catch(e){}},has:has,front:function(id){var p=prof(id);return p&&p.mask&&p.mask.length>=3?p.mask:null;},get:get,set:set,sync:sync,overlay:overlay,clamp:clamp};
+window.CooksterVesselWater={agitate:function(el){var S=el&&(el._vw=el._vw||{});if(!S)return;var n=performance.now();S.boostT=n;S.kick=n;S.dur=1.8;},reload:function(){try{WCAL=JSON.parse(localStorage.getItem(WKEY)||'{}')||{};}catch(e){}},has:has,front:function(id){var p=prof(id);return p&&p.mask&&p.mask.length>=3?p.mask:null;},get:get,set:set,sync:sync,overlay:overlay,clamp:clamp};
 
 /* ---------- the tool "Voda u posudi": where the water of a vessel is ----------
    For every vessel: the shape of the surface of the water (the opening of the vessel), the point where the water stands when the vessel is nearly empty and the point when it is full,
