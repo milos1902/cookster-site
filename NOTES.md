@@ -550,3 +550,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Verovatan uzrok "zaleđene" vode (korisnik: stoji, ponekad zaglavljena uz levu/desnu ivicu, jak udar tek po spuštanju): petlja njihanja je odbacivala vodu čiji je sloj (`d`) 400 ms posle nastanka bio van stranice (`!isConnected`), što se dešava predmetu u ruci; kopija (ghost) je ostajala na poslednjem obliku. Sada se predmet u ruci ne odbacuje.
 - Nova nezavisna petlja za kopiju u ruci: pokret računa iz stvarnog kretanja kopije (`placementGhostMotion.pose`, inače miš), prigušena opruga, i pomera `.vw-g` (translate/rotate), `.vw-surf` (translate/rotate/scale) i odsjaj `.vw-hl` u kopiji; ne zavisi od ostatka fajla.
 - Dijagnostika (isključena): `localStorage.setItem('cookster.waterdebug','1')` pokazuje malu statusnu liniju dok je posuda sa vodom u ruci.
+
+## Dijagnostika vode u ruci uključena (2026-10-14, vessel-water.js?v=29)
+- Dok je u ruci posuda sa vodom, levo dole se pokazuje statusni tekst (kalibracija vode, da li kopija ima vodu, izvor pokreta, da li je sloj u stranici, da li petlja radi, S.sx, brzina). Privremeno uključeno; isključuje se sa `localStorage.setItem('cookster.waterdebug','0')`. Ukloniti kad se kvar reši.
