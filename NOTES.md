@@ -495,3 +495,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Putokazi roštilja i u kuhinji (2026-10-14, signposts.js?v=5, kitchen-fixtures.js?v=67)
 - Putokazi postavljeni u krupnom planu roštilja (`view:'grill'`) vide se i u kuhinji, malo, na roštilju (preslikano: krupan plan = kuhinja uvećana K=2.52 oko tačke G=(492,125) → T=(870,470), kao u `liveParams`). Klik na roštilj ih zumira zajedno sa slikom roštilja: sloj `.gz-signs` u `#grillZoom` dobija isti transform i providnost kao slika roštilja u `runLive`.
 - Za "uvek tu" za sve igrače: JSON iz "Kopiraj sve (JSON)" ide u `SIGN_DEF` (sada prazno); na korisnikovom računaru treba obrisati `cookster.signposts.v1`, inače lokalna lista ima prednost.
+
+## Putokazi ugrađeni u igru (2026-10-14, signposts.js?v=6)
+- Vlasnikov JSON (8 putokaza: 4 roštilj, 2 sudopera, 2 kuhinja) je u `SIGN_DEF`; svi igrači ih imaju. Ključ čuvanja je sada `cookster.signposts.v2` (stara probna lista v1 se ne koristi); izmene u alatu se čuvaju lokalno i imaju prednost nad `SIGN_DEF`. Za novi izvoz: zameniti `SIGN_DEF` i podići ključ (v3).

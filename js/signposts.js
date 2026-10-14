@@ -6,10 +6,11 @@
 (function(){
 'use strict';
 if(window.CooksterSignposts)return;
-var KEY='cookster.signposts.v1';
+var KEY='cookster.signposts.v2';   /* v1 was the test list before the signs were built into the game */
 var TYPES={kuhinja:'Kuhinja →',kafana:'Kafana →',sudopera:'Sudopera →',rostilj:'Roštilj →',spajz:'Špajz →',basta:'Bašta ←',kafana_l:'Kafana ←',rostilj_l:'Roštilj ←'};   /* the arrow in the name: where the sign points */
 var VIEWS={kitchen:'kuhinja',sink:'sudopera (krupan plan)',grill:'roštilj (krupan plan)',tavern:'kafana'};
-var SIGN_DEF=[];
+/* the signs placed by the owner (export of the tool "Putokazi", 2026-10-14); the same for every player */
+var SIGN_DEF=[{"type": "kafana", "view": "grill", "u": 1, "x": 87.82, "y": 50.84, "w": 14, "rz": -56, "rx": -50, "ry": 1, "p": 2500, "flip": 0, "front": 1, "id": "s7", "sh": 0.62, "shb": 0.4, "shx": -2.2, "shy": 2.8}, {"type": "sudopera", "view": "grill", "u": 1, "x": 73.58, "y": 11.05, "w": 13.4, "rz": 0, "rx": 21, "ry": 1, "p": 900, "flip": 0, "front": 1, "id": "s8", "sh": 0.56, "shx": 5.6, "shb": 0.4, "shy": 1.2}, {"type": "kuhinja", "view": "grill", "u": 1, "x": 10.08, "y": 51.83, "w": 13.7, "rz": 60, "rx": -61, "ry": 12, "p": 2500, "flip": 0, "front": 1, "id": "s9", "sh": 0.5, "shx": 6.4, "shb": 0.4, "shy": 1}, {"type": "kuhinja", "view": "sink", "u": 1, "x": 78.41, "y": 73.04, "w": 14, "rz": 15, "rx": 41, "ry": 9, "p": 900, "flip": 0, "front": 1, "id": "s10"}, {"type": "rostilj", "view": "sink", "u": 1, "x": 26.2, "y": 70.78, "w": 14, "rz": 0, "rx": 0, "ry": 0, "p": 900, "flip": 0, "front": 1, "id": "s12"}, {"type": "spajz", "view": "kitchen", "u": 1, "x": 96.62, "y": 21.9, "w": 5.8, "rz": 7, "rx": 0, "ry": 0, "p": 900, "flip": 0, "front": 1, "id": "s13"}, {"type": "kafana_l", "view": "kitchen", "u": 1, "x": 71.31, "y": 21.64, "w": 7.9, "rz": 24, "rx": -53, "ry": -7, "p": 900, "flip": 0, "front": 1, "id": "s14", "sh": 0.62, "shy": 2.4, "shb": 1.8, "shx": 0.2}, {"type": "basta", "view": "grill", "u": 1, "x": 12.67, "y": 68.93, "w": 14, "rz": 0, "rx": -17, "ry": 0, "p": 250, "flip": 0, "front": 1, "id": "s15", "sh": 0.34, "shb": 0}];
 var signs=[],sel=null,open=false,uid=0;
 try{var raw=JSON.parse(localStorage.getItem(KEY)||'null');signs=Array.isArray(raw)?raw:JSON.parse(JSON.stringify(SIGN_DEF));}catch(e){signs=JSON.parse(JSON.stringify(SIGN_DEF));}
 signs=signs.filter(function(s){return s&&TYPES[s.type];});
