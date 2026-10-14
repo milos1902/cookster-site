@@ -487,3 +487,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Četiri nova putokaza (2026-10-14, signposts.js?v=3)
 - Novi tipovi u alatu Putokazi: Špajz → (žut), Bašta ← (zelen), Kafana ← (zelen), Roštilj ← (crven). Slike u `assets/signs/{spajz,basta,kafana_l,rostilj_l}.webp`. Stari tipovi ostaju (u listi sa →, jer pokazuju udesno).
+
+## Alat Putokazi: pomeranje i senke (2026-10-14, signposts.js?v=4)
+- Alat se hvata za naslov ("⠿ Putokazi") i prevlači bilo gde po ekranu; dugme ⇄ ga baci na drugu stranu. Položaj se pamti (`cookster.signtool-pos.v1`).
+- Senka putokaza: jačina, razmazanost, pomak levo-desno i gore-dole (`sh`, `shb`, `shx`, `shy`, u % širine putokaza; CSS `drop-shadow` sa `cqw`). Podrazumevano bez senke.
