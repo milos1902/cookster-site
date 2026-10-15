@@ -1599,7 +1599,6 @@ const SCENE_BACKGROUNDS={
  fireOnClosed:'assets/stove_states_v3/fire_on_closed.webp',
  fireboxOpenOff:'assets/stove_states_v3/firebox_open_off.webp',
  fireboxOpenFire:'assets/stove_states_v3/firebox_open_fire.webp',
- ovenOpen:'assets/stove_states_v3/oven_open.webp',
  fireOffClosed:'assets/stove_states_v3/fire_off_closed.webp'
 };
 const DOOR_OVERLAYS={open:'assets/stove_states/firebox_door_open.png',close:'assets/stove_states/firebox_door_closed.png'};
@@ -1615,6 +1614,7 @@ const COOKSTOVE_HOTSPOTS={
 const OVEN_DRAWER_RECT={closed:{left:1394,right:1590,top:556,bottom:640},open:{left:1394,right:1612,top:556,bottom:706}};
 const OVEN_DRAWER_LOGS_BOTTOM=628;   // open drawer: a click above this line takes a log, below it (the front with the handle) closes the drawer
 let ovenDrawerOpen=false;
+const OVEN_DOOR_OPEN_RECT={left:1394,right:1590,top:450,bottom:640};
 const stoveState=CooksterState.stove;
 // One fuel item should provide a meaningful cooking session instead of
 // burning out during a single short interaction.
@@ -1651,6 +1651,7 @@ function pointInSceneRect(pt,r){return pt.x>=r.left&&pt.x<=r.right&&pt.y>=r.top&
 function cookstoveHotspotAt(x,y){
  const p=screenToScene(x,y);
  if(pointInSceneRect(p,COOKSTOVE_HOTSPOTS.firebox))return 'firebox';
+ if(stoveState.ovenOpen&&pointInSceneRect(p,OVEN_DOOR_OPEN_RECT))return 'oven';   // the lowered door lies over the drawer: a click on it closes the oven
  if(pointInSceneRect(p,ovenDrawerOpen?OVEN_DRAWER_RECT.open:OVEN_DRAWER_RECT.closed))return 'drawer';
  if(pointInSceneRect(p,COOKSTOVE_HOTSPOTS.oven))return 'oven';
  return null;
@@ -1967,32 +1968,23 @@ function updateFireboxEffects(){
   fx.spark.classList.toggle('live',live);
 }
 
+// the open oven door is a small picture (assets/stove_states_v3/oven_door_open.webp) over the kitchen, not a whole new scene: the firebox, the fire and everything else are drawn exactly as when the oven is closed
+function syncOvenDoorPicture(){
+ const img=document.getElementById('ovenDoorOpen');
+ if(img)img.style.display=stoveState.ovenOpen?'block':'none';
+}
 function applyCookstoveState(transition='none'){
  CooksterSave.schedule();
- if(!stoveState.ovenOpen){
-   applySceneBackground(FIREBOX_BASE_NO_DOOR,'none');
-   syncFireboxDoorLayer(!!stoveState.fireboxOpen,true);
-   refreshCookstoveHeating(false);
-   updateFireboxEffects();
-   return;
- }
- syncFireboxDoorLayer(false,false);
- let bg=stoveState.fireOn?SCENE_BACKGROUNDS.fireOnClosed:SCENE_BACKGROUNDS.fireOffClosed;
- if(stoveState.fireboxOpen){
-   // Open + no fire stays dark until the player actually inserts a log.
-   // Only then do we switch to the open-fire artwork.
-   bg=stoveState.fireOn?SCENE_BACKGROUNDS.fireboxOpenFire:SCENE_BACKGROUNDS.fireboxOpenOff;
- }else if(stoveState.ovenOpen){
-   bg=SCENE_BACKGROUNDS.ovenOpen;
- }
- applySceneBackground(bg,transition);
+ syncOvenDoorPicture();
+ applySceneBackground(FIREBOX_BASE_NO_DOOR,'none');
+ syncFireboxDoorLayer(!!stoveState.fireboxOpen,true);
  refreshCookstoveHeating(false);
  updateFireboxEffects();
 }
 function toggleCookstoveFirebox(){
  const opening=!stoveState.fireboxOpen;
  stoveState.fireboxOpen=opening;
- if(stoveState.fireboxOpen)stoveState.ovenOpen=false;
+ if(stoveState.fireboxOpen){stoveState.ovenOpen=false;syncOvenDoorPicture();}
  applyFireboxDoorTransition(opening);
  // Keep the current full-scene background until the door-only animation
  // finishes; switching it here would make the animation visually identical.
@@ -2023,6 +2015,17 @@ function spawnHeldDrawerLog(pointerEvent=null){
  loose.dataset.collisionProfile='flat';
  startHolding(loose,pointerEvent);
  showToast('Uzeo si cjepanicu — ubaci je u ložište.');
+ return true;
+}
+// a log from the hand goes back into the open drawer (the wood in the drawer never runs out, so the log simply disappears)
+function returnHeldLogToDrawer(){
+ if(!holding||!isFirewoodLog(holding))return false;
+ if(!ovenDrawerOpen){showToast('Prvo otvori fioku.');return true;}
+ removeItem(holding);
+ holding=null;
+ hidePlacementGhost();hideOriginGhost();clearHover();
+ playImpactSound(firewoodSoundTarget,'insert');
+ showToast('Cjepanica je vraćena u fioku.');
  return true;
 }
 function clickOvenDrawer(e){
@@ -15266,6 +15269,7 @@ window.addEventListener('pointerdown',e=>{
   if(e.target.closest('#grillZoom')||e.target.closest('#savkaBookRoot')||e.target.closest('#gardenScene')||e.target.closest('.garden-window-hotspot')||e.target.closest('#marketScene')||e.target.closest('#kitchenElementsScene')||e.target.closest('#hud')||e.target.closest('#modal')||e.target.closest('.edge-arrow'))return;
  const cookstoveHot=cookstoveHotspotAt(e.clientX,e.clientY);
  if(e.button===0&&holding&&isFirewoodLog(holding)&&cookstoveHot==='firebox'){if(insertHeldLogIntoFirebox())return;}
+ if(e.button===0&&holding&&isFirewoodLog(holding)&&cookstoveHot==='drawer'){if(returnHeldLogToDrawer())return;}
  if(e.button===0&&holding&&isDisposableMarketPackaging(holding)&&cookstoveHot==='firebox'){if(insertHeldPackagingIntoFirebox())return;}
 if(e.button===0&&!holding&&cookstoveHot==='firebox'){const action=stoveState.fireboxOpen?'close':'open';toggleCookstoveFirebox();playImpactSound(fireboxHotspot,action);return;}
 if(e.button===0&&!holding&&cookstoveHot==='drawer'){clickOvenDrawer(e);return;}
