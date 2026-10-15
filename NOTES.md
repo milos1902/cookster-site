@@ -687,3 +687,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Naćve se lako uzimaju u ruku (2026-10-15, flour.js?v=47)
 - Ruka na testu (zamešanje i oblikovanje) radi samo na samom testu (elipsa u sredini otvora naćvi). Ivice naćvi i prazna mesta unutar otvora ih uzimaju u ruku kao i pre; ranije je ceo otvor bio "ruka", pa su se naćve hvatale samo na samom kraju.
+
+## Pretapanje faza testa 3 s, testo zadržava veličinu, nema bljeska iz trake (2026-10-15, dough-mesh.js?v=3, game.js?v=3.133)
+- Prelaz između faza testa (brašno sa vodom, grudve, razvučeno testo) je pretapanje od 3 s: stara slika sa svojim oblikom se topi u novu.
+- Testo zadržava veličinu dok se oblikuje: posle svakog povlačenja površina mreže se vraća na površinu testa sa slike (do 1,5 puta, ne preko otvora naćvi), pa lopta koju napraviš ne ostaje sitna.
+- Bljesak pri uzimanju iz donje trake: pravi predmet je na trenutak bio prikazan na svom starom mestu (sredina ekrana) dok se priprema kopija u ruci. Sada se pri uzimanju iz trake ne prikazuje (`dataset.noFlash`), a slike se dekodiraju tokom leta. Proba: bez ispravke 2 kadra vidljivo na starom mestu, sa ispravkom 0.
