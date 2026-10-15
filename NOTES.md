@@ -677,3 +677,13 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Ruka oblikuje testo slobodno, oblik ostaje (2026-10-15, flour.js?v=43, game.js?v=3.130)
 - Klik (levi taster) na testo u naćvama, i kad je već zamešeno, pokazuje ruku. Gotovo testo se oblikuje slobodno: miš nagore ga razvlači nagore (kugla prelazi u izduženo testo, pa još duže), nadole ga vraća ka lopti i dalje u spljošteno. Oblik ostaje posle puštanja (nema opruge) i čuva se sa igrom (`dataset.inShape`). Oblik blizu lopte (|oblik| < 0,07) sam skoči na pravu loptu.
 - Dok se testo još meša, ostaje prethodno ponašanje (opruga i napredak mešenja).
+
+## Testo kao mreža tačaka i trouglova, tri faze (2026-10-15, dough-mesh.js?v=2, flour.js?v=46, game.js?v=3.132)
+- Novi `js/dough-mesh.js`: slika testa je preko mreže od 13 x 17 tačaka (WebGL); ruka uhvati testo na mestu klika, tačke blizu miša idu za njim (bliže = više), oblik OSTAJE. Čuva se sa naćvama (`inMesh`, `inMeshS`).
+- Tri faze, po 5 sekundi mešenja (broji se samo dok se miš kreće; `inMix` = vreme / 10 s): 0 = brašno sa vodom (slika `testo_smesa`), 1 = grudvasto testo (`testo_grudve`), 2 = testo koje se prvi put pojavi razvučeno (`testo_razvuceno`), pa ga igrač sam pravi u loptu rukom. Pri promeni faze mreža se vraća na neutralnu. Slika kugle se više ne koristi.
+- Ruka se pojavi odmah pri kliku na testo (i na brašno sa vodom). Ako odnos nije dobar (suvo/meko), testo se i dalje oblikuje, ali ne napreduje.
+- Ako WebGL nije tu, prikazuju se obične slike po fazama (rezerva).
+- Ispravke: slike testa u naćvama koje drže u ruci više ne prikazuju sve odjednom (kopija u ruci forsira providnost 1 na svim slikama, pa se skrivene slike kriju sa display:none); stara slika koja se otapa iza oblaka brašna se ne kopira u ruku; zatvorena ruka (pritisnuta) menja otvorenu umesto da se crta preko nje; brašno sa vodom je veće (kao što je bilo samo brašno).
+
+## Naćve se lako uzimaju u ruku (2026-10-15, flour.js?v=47)
+- Ruka na testu (zamešanje i oblikovanje) radi samo na samom testu (elipsa u sredini otvora naćvi). Ivice naćvi i prazna mesta unutar otvora ih uzimaju u ruku kao i pre; ranije je ceo otvor bio "ruka", pa su se naćve hvatale samo na samom kraju.
