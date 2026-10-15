@@ -746,3 +746,9 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Direktan prelaz peta faza u loptu, više pomeranja tačaka (2026-10-15, dough-mesh.js?v=18)
 - Peta faza (slika 3, od 80% do 100%) se sada ponaša kao ostale vlažne faze (ranije je imala poseban režim sa resetom mreže, pa se testo loše ponašalo između 90 i 100%). Na 100% se slika pretapa pravo u loptu (3 s) i lopta ostaje.
 - Tačke se više pomeraju: najveći korak po događaju 2,7 (bilo 1,6), držanje je slabije (stick 60% umesto 85%, lepak 50% umesto 70%).
+
+## Windows program (Electron)
+- Novi folder `desktop/`: `main.js` (prozor, igra se služi sa `app://cookster/` da snimak ostane na istom mestu), `prepare-app.js` (kopira igru u `desktop/app`), `package.json` (electron-builder: NSIS instalater + portable .exe).
+- `.github/workflows/windows-build.yml`: ručno pokreni "Windows build" u Actions, preuzmi `Cookster-Windows`.
+- Igra se NE menja. Snimak iz Chrome-a se ne prenosi automatski (drugi prostor za čuvanje).
+- Proveren samo početak u Linux Electronu (igra se učita, localStorage radi). Windows .exe nije probavan.
