@@ -673,3 +673,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Testo je sada slika bez naćvi (`assets/flour/testo_smesa|grudve|kugla|razvuceno.webp`, tvoje slike isečene): brašno sa vodom (raste sa količinom brašna), pa grudvasta masa do polovine mešenja, pa glatka kugla. Naćve ostaju nepomične; razvlači se samo testo (opruga: miš nagore razvlači nagore, nadole nadole), a kugla se pri vučenju pretapa u izduženo testo. Slike su u prozoru oblika otvora naćvi.
 - Kad u naćvama ima i brašna i vode, osnova je prazna naćva, a brašno prekriva vodu (nema više belog "jajeta" od vode); sama voda (bez brašna) je svetla lokva do pola naćvi.
 - Brašno na stolu: samo fina zrnca (nema mrlja), ređe i bleđe prema ivici; ne čuva se.
+
+## Ruka oblikuje testo slobodno, oblik ostaje (2026-10-15, flour.js?v=43, game.js?v=3.130)
+- Klik (levi taster) na testo u naćvama, i kad je već zamešeno, pokazuje ruku. Gotovo testo se oblikuje slobodno: miš nagore ga razvlači nagore (kugla prelazi u izduženo testo, pa još duže), nadole ga vraća ka lopti i dalje u spljošteno. Oblik ostaje posle puštanja (nema opruge) i čuva se sa igrom (`dataset.inShape`). Oblik blizu lopte (|oblik| < 0,07) sam skoči na pravu loptu.
+- Dok se testo još meša, ostaje prethodno ponašanje (opruga i napredak mešenja).
