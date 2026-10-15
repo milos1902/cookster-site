@@ -3768,3 +3768,6 @@ body.quick-tool-wheel-open #label{display:none!important}
 .cut-progress.peel .ring::before,.cut-progress.peel .ring::after,.cut-progress.peel .txt{display:none}
 /* food of a cooking vessel sits above the old front wall (z 6), so the wall mask drawn in the tool "Maska posude" has to be above the food */
 .item:has(>.pan-content) .vessel-front-mask{z-index:8}
+/* vegetables and fruit: no glow when the cursor is over them, only a thin green line around the picture */
+.item[data-vegetable="1"].hovered > .body,.item[data-fruit="1"].hovered > .body{
+ filter:drop-shadow(1px 0 0 #46d45c) drop-shadow(-1px 0 0 #46d45c) drop-shadow(0 1px 0 #46d45c) drop-shadow(0 -1px 0 #46d45c)!important}

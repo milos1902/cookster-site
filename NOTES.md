@@ -811,3 +811,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Dodat i veliki oval (tanjir): hrana i voda (zarotirana elipsa).
 - Nisu rađeni: plava šerpa (ima poklopac, nema vidljivog otvora), tegle (imaju svoja stanja punjenja), stari bokal (ima svoju vodu).
 - Senka paprike/patlidžana na plotni: kad se plod položi na plotnu, slika tela se menja u položenu (`phase_1`), ali je slika senke ostajala uspravna (npr. `povrce_paprika_single_v2.png`), pa je iza položene paprike stajala senka uspravne. `renderPaprikaRoast` sada menja i sliku senke (`game.js?v=3.148`). Važi za crvenu i zelenu papriku i patlidžan.
+
+## Hover i klik samo na vidljivu sliku predmeta
+- `itemAt` (hover, klik, uzimanje) je ranije hvatao ceo pravougaonik predmeta, pa su providne ivice slike (do 10–15% širine kod povrća, bokala, mlina, tikve, daske, kante) hvatale kursor mnogo ranije. Sada se tačka vraća kroz transformaciju predmeta (rotacija, nagib, spljoštenje) u sliku i čita se providnost slike (uz 2,5 px tolerancije oko, da tanki delovi ostanu laki za hvatanje): `itemPixelHit` u `game.js?v=3.149`. Daska više ne koristi samo svoj pravougaonik; gajbice imaju svoj stari test; kombajn (mlin na zidu) i predmeti bez slike ostaju kao pre.
+- Povrće i voće: bez sjaja pri hoveru; samo tanka zelena linija (#46d45c, 1 px) oko slike (`game.css?v=3.04`).
+- Predmeti sa najviše praznog prostora u okviru: šargarepa 68%, metla 66%, džezva 62%, mlin 60%, paprika 58%, luk 57%, hoklica, kašika, tikva, lampe, paradajz 54%, bokal 50%, kanta 48%.

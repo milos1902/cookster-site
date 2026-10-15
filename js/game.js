@@ -14716,13 +14716,55 @@ function pointOnCrateBody(crate,x,y){
  const ly=(oy+ry/flatten-top)/h;
  return lx>=.10&&lx<=.90&&ly>=.40&&ly<=.98;
 }
+// ---- hover / click only on the visible picture of an item (not on the transparent frame around it) ----
+// The box of an item is bigger than what is drawn (the pictures have empty space around them), so the cursor "caught" items long before it touched them.
+// Here the point is carried back through the transform of the item (rotation, tilt, flattening) into the picture, and the alpha of the picture is read there
+// (and a little around it: HIT_PAD scene pixels, so thin parts like handles and knife are still easy to catch).
+const HIT_PAD=2.5,hitAlpha=new Map();
+function hitAlphaFor(body){
+ const src=body.currentSrc||body.src;if(!src||!body.complete||!body.naturalWidth)return null;
+ let a=hitAlpha.get(src);if(a!==undefined)return a;
+ a=null;
+ try{
+  const nw=body.naturalWidth,nh=body.naturalHeight,k=Math.min(1,256/Math.max(nw,nh)),w=Math.max(1,Math.round(nw*k)),h=Math.max(1,Math.round(nh*k));
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  const cx=cv.getContext('2d',{willReadFrequently:true});cx.drawImage(body,0,0,w,h);
+  const d=cx.getImageData(0,0,w,h).data,al=new Uint8Array(w*h);for(let i=0;i<w*h;i++)al[i]=d[i*4+3];
+  a={w,h,al,nw,nh};
+ }catch(_){a=null;}    // (a picture that cannot be read: the old box test is used)
+ hitAlpha.set(src,a);return a;
+}
+function itemPixelHit(it,sp){
+ const body=it.querySelector(':scope>img.body');if(!body)return true;
+ const A=hitAlphaFor(body);if(!A)return true;
+ const cs=getComputedStyle(it),left=parseFloat(it.style.left),top=parseFloat(it.style.top),w=it.offsetWidth,h=it.offsetHeight;
+ if(!(w>0&&h>0)||!Number.isFinite(left)||!Number.isFinite(top))return true;
+ const og=cs.transformOrigin.split(' ').map(parseFloat),ox=og[0]||0,oy=og[1]||0;
+ let m;try{m=new DOMMatrix(cs.transform==='none'?undefined:cs.transform);}catch(_){return true;}
+ // homography of the plane of the item: (x,y) -> (m11 x+m21 y+m41, m12 x+m22 y+m42, m14 x+m24 y+m44); inverted
+ const a=m.m11,b=m.m21,c=m.m41,d=m.m12,e=m.m22,f=m.m42,g=m.m14,hh=m.m24,i=m.m44;
+ const det=a*(e*i-f*hh)-b*(d*i-f*g)+c*(d*hh-e*g);if(!Number.isFinite(det)||Math.abs(det)<1e-12)return true;
+ const inv=[(e*i-f*hh)/det,(c*hh-b*i)/det,(b*f-c*e)/det,(f*g-d*i)/det,(a*i-c*g)/det,(c*d-a*f)/det,(d*hh-e*g)/det,(b*g-a*hh)/det,(a*e-b*d)/det];
+ const ia=A.nw/A.nh,ba=w/h;let dw=w,dh=h,offX=0,offY=0;
+ if(ia>ba){dh=w/ia;offY=(h-dh)/2;}else{dw=h*ia;offX=(w-dw)/2;}
+ const probe=(px,py)=>{
+  const X=px-left-ox,Y=py-top-oy,W=inv[6]*X+inv[7]*Y+inv[8];if(!W)return false;
+  const lx=(inv[0]*X+inv[1]*Y+inv[2])/W+ox,ly=(inv[3]*X+inv[4]*Y+inv[5])/W+oy;
+  const u=(lx-offX)/dw,v=(ly-offY)/dh;if(u<0||u>1||v<0||v>1)return false;
+  const ix=Math.min(A.w-1,Math.floor(u*A.w)),iy=Math.min(A.h-1,Math.floor(v*A.h));
+  return A.al[iy*A.w+ix]>24;
+ };
+ if(probe(sp.x,sp.y))return true;
+ for(let k=0;k<8;k++){const t=k*Math.PI/4;if(probe(sp.x+Math.cos(t)*HIT_PAD,sp.y+Math.sin(t)*HIT_PAD))return true;}
+ return false;
+}
 function itemAt(x,y){
  const nodes=document.elementsFromPoint(x,y),sp=screenToScene(x,y);
  for(const n of nodes){
   const it=n.closest?.('.item');
   if(!it||it===holding)continue;
-  if(it.dataset.itemId==='daska'&&!pointOnVisibleBoard(it,sp.x,sp.y))continue;
-  if(it.dataset.crate==='1'&&!pointOnCrateBody(it,sp.x,sp.y))continue;
+  if(it.dataset.crate==='1'){if(!pointOnCrateBody(it,sp.x,sp.y))continue;}
+  else if(it.dataset.fixedGrinder!=='1'&&!itemPixelHit(it,sp))continue;   // (the board too: pointOnVisibleBoard was only its box)
   return it;
  }
  return null;
