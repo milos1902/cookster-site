@@ -6697,7 +6697,7 @@ function fillGhostContainer(container,el){
     // a picture that is loaded may still be undecoded (after a long game the browser throws decoded pictures away): decode it before the real object is hidden
     const dec=[...copy.querySelectorAll('img')].filter(i=>i.complete&&i.naturalWidth>0&&i.decode).map(i=>i.decode().catch(()=>{}));
     container._pendingN=(container._pendingN||0)+1;const tok=container._pendingN;
-    if((wait.length||dec.length)&&container===placementGhost&&el===holding&&el.dataset.fixedGrinder!=='1'&&!isQuickToolItem(el)){
+    if((wait.length||dec.length)&&container===placementGhost&&el===holding&&el.dataset.fixedGrinder!=='1'&&el.dataset.noFlash!=='1'&&!isQuickToolItem(el)){
       el.style.visibility='';
       Promise.all([...dec,...wait.map(i=>new Promise(r=>{i.addEventListener('load',r,{once:true});i.addEventListener('error',r,{once:true});setTimeout(r,2000);}))]).then(()=>{
         if(container._pendingN===tok&&holding===el)el.style.visibility='hidden';
@@ -11327,11 +11327,13 @@ function takeBackpackItem(index,button,event){
  const targetButton=button||backpackButtonAt(index);
  backpackBusySlots.add(index);
  targetButton?.classList.add('is-backpack-pulling');
+ try{item.querySelectorAll('img').forEach(i=>{if(i.decode)i.decode().catch(()=>{});});}catch(_){}   // the pictures are decoded during the flight, so the copy in the hand is ready at once
  animateBackpackTransfer(item,targetButton,'take',event,()=>{
   backpackBusySlots.delete(index);
   targetButton?.classList.remove('is-backpack-pulling');
   syncBackpackUi();
   restoreBackpackItemToScene(item);
+  item.dataset.noFlash='1';setTimeout(()=>{delete item.dataset.noFlash;},1500);   // the real item stands at its old place (the middle of the screen): it must not be shown while the copy in the hand is being prepared
   if(item.dataset.quickTool==='1')startHoldingQuickToolDirect(item);
   else startHolding(item);
   updateHover();
