@@ -720,3 +720,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Tvoj nacrt poda i zidova naćvi je podrazumevan (2026-10-15, nacve-bounds.js?v=4)
 - Maska koju si nacrtao (1718 ćelija poda, 1596 ćelija zida, mreža 60 x 114) je ugrađena kao podrazumevana za sve igrače (`DEFMASK`); "Podrazumevano" u alatu je vraća. Ko je već ranije nešto farbao u svom pregledaču, zadržava svoje (`cookster.nacve-bounds.v3`) dok ne klikne "Podrazumevano".
 - Provera: testo ostaje na zelenom podu pri jakom vučenju, bez grešaka u konzoli.
+
+## Testo ima visinu: naliježe na zidove (2026-10-15, nacve-bounds.js?v=5, dough-mesh.js?v=12)
+- Sa tvog snimka: testo se videlo samo po zelenom dnu. Sada crveno (zid) nije zabranjeno: tačke testa smeju na zid i testo se vidi preko njega (naliježe), ali sporije (pomak 0,35 puta, kao da se penje), a neobojeno (van naćvi) i dalje zaustavlja. Zid sada znači "padina", a ne "ograda".
+- Tvoja maska je ista; zelena = pod, crvena = zid po kom se testo penje, neobojeno = zabranjeno.

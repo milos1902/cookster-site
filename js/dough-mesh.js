@@ -149,7 +149,9 @@ window.CooksterDoughMesh={
     if(m.glue)for(var g=0;g<m.glue.length;g++)if(m.glue[g]>0)m.glue[g]=Math.max(0,m.glue[g]-.01);      // the glue weakens while the dough is worked
     var b=box(tr,m.stage,m.F),sg=b.bh*SIG,k;
     for(k=0;k<NX*NY;k++){var c=curPos(b,m.off,k),r=Math.hypot(c[0]-m.grab.x,c[1]-m.grab.y),w=Math.exp(-(r/sg)*(r/sg));
-      if(w<.01)continue;var gl=m.glue?m.glue[k]*Math.max(0,1-(m.prog||0)*1.4):0,hold=(1-.85*stick(m,k))*(1-.7*gl);m.off[k*2]+=dx*w*hold/b.bh;m.off[k*2+1]+=dy*w*hold/b.bh;}
+      if(w<.01)continue;var gl=m.glue?m.glue[k]*Math.max(0,1-(m.prog||0)*1.4):0,hold=(1-.85*stick(m,k))*(1-.7*gl);
+      if(window.CooksterNacveBounds&&CooksterNacveBounds.wall(c[0]/b.W*100,c[1]/b.H*100))hold*=.35;      // on the wall the dough goes slower (it climbs)
+      m.off[k*2]+=dx*w*hold/b.bh;m.off[k*2+1]+=dy*w*hold/b.bh;}
     for(var it=0;it<3;it++){keepSize(tr,m);relax(tr,m);}      // the wall holds, the dough that is pushed against it is flattened there and spreads to the free sides (the volume stays)
     m.grab.x=p[0];m.grab.y=p[1];draw(tr);settle(tr);
   },
