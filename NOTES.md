@@ -625,3 +625,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Prelaz testa: mokra smesa se ulije do 75% mešenja, zatim kugla (`nacve_kugla.webp`) preuzima do 100%.
 - Čeka se prava slika ruke (osnovna i pritisnuta poza) da zameni SVG.
 - Poznato, nije rešeno: bokal se kod korisnika ponekad pojavljuje dvaput/triput pri sipanju (nisam uspeo da reprodukujem).
+
+## Brašno na stolu se ne pamti (2026-10-15, flour.js?v=17)
+- Gomile brašna na stolu više se ne čuvaju u pregledaču: posle osvežavanja igre sto je čist. Stari sačuvani ključ `cookster.flour-piles.v1` se briše pri učitavanju. Brašno unutar naćvi je deo predmeta i dalje se čuva sa naćvama.
+- Provereno: sa starom sačuvanom gomilom, posle osvežavanja nema gomila ni slika.

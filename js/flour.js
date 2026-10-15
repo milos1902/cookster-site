@@ -1,14 +1,14 @@
 /* Flour: the sack of flour (kal_01_dzak_brasna) is poured on the table.
    Take the sack (left click). With the sack in the hand the LEFT button held down = it tilts and the flour pours out on the table where the stream lands;
-   the RIGHT button puts the sack down. The flour makes a pile that grows (assets/flour/gomila.webp). The piles are saved in this browser (cookster.flour-piles.v1). */
+   the RIGHT button puts the sack down. The flour makes a pile that grows (assets/flour/gomila.webp). The flour on the table is NOT remembered: when the game is refreshed the table is clean again. */
 (function(){
 'use strict';
 if(window.CooksterFlour)return;
 var SACK='kal_01_dzak_brasna',KEY='cookster.flour-piles.v1',RATE=9,SACK_MAX=300;     // units of flour per second; one sack
 var IMG={a:'assets/flour/dzak_nagnut1.webp?v=1',b:'assets/flour/dzak_nagnut2.webp?v=1',pile:'assets/flour/gomila.webp?v=1',pile2:'assets/flour/gomila2.webp?v=1',pile3:'assets/flour/gomila3.webp?v=1'};
 var piles=[],pour=null,hold=null;
-try{var raw=JSON.parse(localStorage.getItem(KEY)||'[]');if(Array.isArray(raw))piles=raw.filter(function(p){return p&&isFinite(p.x)&&isFinite(p.y)&&p.n>0;});}catch(e){}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(piles.map(function(p){return {x:p.x,y:p.y,n:p.n};})));}catch(e){}}
+try{localStorage.removeItem(KEY);}catch(e){}     // the table does not remember the flour: an old saved pile is thrown away
+function save(){}
 [IMG.a,IMG.b,IMG.pile,IMG.pile2,IMG.pile3].forEach(function(s){var i=new Image();i.src=s;});
 function scn(){return document.getElementById('scene');}
 function pileW(n){return 46+Math.pow(Math.min(n,200),.62)*7.2;}   // pile width in the pixels of the scene (a little flour = a small heap, 100 units about 170 px)
