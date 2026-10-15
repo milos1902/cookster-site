@@ -105,7 +105,11 @@ function relax(tr,m){
     P[a*2]+=dx*t*.5;P[a*2+1]+=dy*t*.5;P[c*2]-=dx*t*.5;P[c*2+1]-=dy*t*.5;}
   for(it=0;it<6;it++){
     for(j=0;j<NY;j++)for(i=0;i<NX;i++){var a=j*NX+i;if(i<NX-1)edge(a,a+1,Lx);if(j<NY-1)edge(a,a+NX,Ly);}
-    for(k=0;k<n;k++){P[k*2]=Math.max(W*.15,Math.min(W*.87,P[k*2]));P[k*2+1]=Math.max(H*.12,Math.min(H*.79,P[k*2+1]));}
+    var NB=window.CooksterNacveBounds;
+    for(k=0;k<n;k++){
+      if(NB&&NB.get){var px=P[k*2]/W*100,py=P[k*2+1]/H*100;if(!NB.inside(px,py)){var q=NB.nearest(px,py);P[k*2]=q[0]/100*W;P[k*2+1]=q[1]/100*H;}}
+      else{P[k*2]=Math.max(W*.15,Math.min(W*.87,P[k*2]));P[k*2+1]=Math.max(H*.12,Math.min(H*.79,P[k*2+1]));}
+    }
   }
   // a point can go away from its place only so far (the dough is pulled and shaped, it does not slide away or turn into a thin streak)
   for(k=0;k<n;k++){var i2=k%NX,j2=(k/NX)|0,ox=(P[k*2]-(b.x0+b.bw*i2/(NX-1)))/b.bh,oy=(P[k*2+1]-(b.y0+b.bh*j2/(NY-1)))/b.bh;m.off[k*2]=Math.max(-.42,Math.min(.42,ox));m.off[k*2+1]=Math.max(-.42,Math.min(.42,oy));}
