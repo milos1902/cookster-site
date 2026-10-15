@@ -99,7 +99,6 @@ function draw(tr){
   var bl=m.stage===1?(m.ball||0):0,af=m.fade?f:1;
   pass(tr,m,m.stage,m.F,m.off,af);
   if(bl>.02&&STG[2].ok)pass(tr,m,1,m.F,m.off,af*bl,2);      // the picture of the ball over the stretched one (the skeleton becomes round)
-  dots(tr,m);
 }
 function fadeLoop(tr){var m=tr._m;if(!m||!m.fade){return;}draw(tr);if(m.fade)requestAnimationFrame(function(){fadeLoop(tr);});}
 /* the dough keeps its size when it is squeezed: the area of the net is brought back to the area of the dough in the picture (it can grow only up to the opening of the trough) */
@@ -160,6 +159,10 @@ window.CooksterDoughMesh={
   drag:function(tr,cx,cy){
     var m=tr._m;if(!m||!m.on||!m.grab||!m.ok||m.stage<0)return;
     var p=local(tr,cx,cy),dx=p[0]-m.grab.x,dy=p[1]-m.grab.y;if(!dx&&!dy)return;
+    if(m.stage===0){      // the wet dough is slow and sticky: however fast the mouse goes, the points move only a little in one step (the hold trails behind the mouse)
+      var ln=Math.hypot(dx,dy),LM=1.6;if(ln>LM){dx*=LM/ln;dy*=LM/ln;}
+      p=[m.grab.x+dx,m.grab.y+dy];
+    }
     if(m.stage===1)m.ball=Math.min(1,(m.ball||0)+Math.hypot(dx,dy)/1500);      // the longer the dough is worked, the more it is a ball
     if(m.glue)for(var g=0;g<m.glue.length;g++)if(m.glue[g]>0)m.glue[g]=Math.max(0,m.glue[g]-.01);      // the glue weakens while the dough is worked
     var b=box(tr,m.stage,m.F),sg=b.bh*SIG,k;

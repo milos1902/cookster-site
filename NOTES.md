@@ -731,3 +731,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Ruka umazana testom, čisti se kako se mesi (2026-10-15, flour.js?v=55)
 - Tvoje slike ruku sa testom (`ruka_a1/a2` mnogo umazana, otvorena i pritisnuta; `ruka_b1/b2` malo umazana) poravnate su sa čistom rukom (`ruka1/2`). Dok je testo vlažno, ruka je obilno umazana, pa sve čistija: čista ruka je uvek ispod, malo umazana preko nje (od ~5% napretka), mnogo umazana preko (do ~45%); na kraju mešenja ruka je čista. Pritisnuta poza menja otvorenu u svakom sloju.
+
+## Bez tačkica, sporija vlažna smesa (2026-10-15, dough-mesh.js?v=16)
+- Obrisane su tamne tačkice (tačke koje drže testo) koje su se videle po testu; držanje i dalje radi, samo se ne crta.
+- Dok je smesa vlažna (prva faza), tačke se pomeraju samo malo po koraku koliko god brzo miš ide (držanje kasni za mišem). U probi sa 6 brzih poteza gore-dole od 80 px najveći pomak je 0,045 (testo u drugoj fazi 0,186).
