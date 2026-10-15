@@ -570,6 +570,9 @@ body.cutting-active #leftArrow,body.cutting-active #rightArrow{display:none!impo
 #fireboxHotspot{left:1258px;top:428px;width:152px;height:190px}
 #ovenHotspot{left:1394px;top:450px;width:185px;height:102px}
 #drawerHotspot{left:1394px;top:556px;width:196px;height:84px}
+#ovenItems{position:absolute;left:0;top:0;width:1672px;height:941px;z-index:545;pointer-events:none;display:none}
+#ovenItems .item{pointer-events:auto}
+.in-oven-shadow{display:none!important}
 #ovenDoorOpen{position:absolute;display:none;left:1392px;top:436px;width:212px;height:204px;z-index:30;pointer-events:none;user-select:none}
 #ovenDrawerOpen{position:absolute;display:none;left:1384px;top:552px;width:236px;height:154px;z-index:30;pointer-events:none;user-select:none}
 

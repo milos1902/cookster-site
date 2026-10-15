@@ -1972,6 +1972,8 @@ function updateFireboxEffects(){
 function syncOvenDoorPicture(){
  const img=document.getElementById('ovenDoorOpen');
  if(img)img.style.display=stoveState.ovenOpen?'block':'none';
+ const l=document.getElementById('ovenItems');
+ if(l)l.style.display=stoveState.ovenOpen?'block':'none';   // closed oven: what is inside is not seen and cannot be clicked
 }
 function applyCookstoveState(transition='none'){
  CooksterSave.schedule();
@@ -2026,6 +2028,61 @@ function returnHeldLogToDrawer(){
  hidePlacementGhost();hideOriginGhost();clearHover();
  playImpactSound(firewoodSoundTarget,'insert');
  showToast('Cjepanica je vraćena u fioku.');
+ return true;
+}
+// ---- things inside the open oven: a pot, a pan or a baking tray put on the lowered door slides in (a little smaller) and is hidden by the frame of the oven
+const OVEN_CLIP={left:1432,right:1574,top:450,bottom:541};   // the dark opening of the oven (scene pixels): what is outside of it is hidden
+const OVEN_IN_BY=531,OVEN_IN_MAX_W=138,OVEN_IN_MAX_H=94,OVEN_IN_SHRINK=.86;
+function isOvenItem(el){
+ if(!el||!el.dataset||!isContainerItem(el))return false;
+ const id=el.dataset.itemId||'';
+ return isHeatableCookwareItem(el)||/pleh|tiganj|serpa|tepsij/.test(id);
+}
+function ovenItemsLayer(){
+ let l=document.getElementById('ovenItems');
+ if(!l){
+  l=document.createElement('div');l.id='ovenItems';l.setAttribute('aria-hidden','true');
+  l.style.clipPath=`inset(${OVEN_CLIP.top}px ${BASE_W-OVEN_CLIP.right}px ${BASE_H-OVEN_CLIP.bottom}px ${OVEN_CLIP.left}px)`;
+  l.style.display=stoveState.ovenOpen?'block':'none';
+  scene.appendChild(l);
+ }
+ return l;
+}
+function moveItemToOvenLayer(el){
+ const l=ovenItemsLayer();
+ if(el._contactShadow){el._contactShadow.classList.add('in-oven-shadow');}
+ l.appendChild(el);
+}
+function leaveOven(el){
+ if(!el||el.dataset.inOven!=='1')return;
+ delete el.dataset.inOven;delete el.dataset.fixedVis;
+ if(el._contactShadow)el._contactShadow.classList.remove('in-oven-shadow');
+ scene.appendChild(el);
+}
+function tryDropIntoOven(el){
+ if(!stoveState.ovenOpen||!isOvenItem(el)||el.dataset.fixedGrinder==='1')return false;
+ const p=screenToScene(mouse.x,mouse.y);
+ if(!pointInSceneRect(p,OVEN_DOOR_OPEN_RECT))return false;
+ const bw=Math.max(1,+el.dataset.baseW||100),bh=Math.max(1,+el.dataset.baseH||100);
+ const curVis=Math.max(.2,+el.dataset.vis||1);
+ // it goes a little smaller, and never bigger than the opening of the oven
+ const vis=Math.min(curVis*OVEN_IN_SHRINK,OVEN_IN_MAX_W/bw,OVEN_IN_MAX_H/bh);
+ const w=bw*vis;
+ const cx=Math.max(OVEN_CLIP.left+w/2+3,Math.min(OVEN_CLIP.right-w/2-3,p.x));
+ // the same finishing steps as a normal drop, without the flight to a surface
+ hidePlacementGhost();hideOriginGhost();setBoardSnapIndicator(false);clearStirReady();clearPourTarget();
+ el.style.visibility='';
+ el.classList.remove('held');heldGrabState=null;clearHeldPlacementState(el);el.style.removeProperty('--held-z');
+ delete el.dataset.pickupSurfaceZone;
+ window.CooksterStoveZones?.release(el);
+ el.dataset.surfaceZone='stove';el.dataset.inOven='1';el.dataset.fixedVis=String(vis);
+ moveItemToOvenLayer(el);
+ setPose(el,cx,OVEN_IN_BY,vis);
+ setCookwareOnStove(el,false);renderCookwareContents(el);
+ if(isHeatableCookwareItem(el))updateCookingStatus(el);
+ holding=null;placing=false;
+ playImpactSound(el,'drop');
+ updateHover();CooksterSave.schedule();
  return true;
 }
 function clickOvenDrawer(e){
@@ -10662,7 +10719,7 @@ function openKitchenElements(mode){
 
 function serializeWorldItem(el){
  const body=el.querySelector('.body');
-  const keep=['inFlour','inWater','inYeast','inMix','inShape','inMesh','inMeshS','inBall','flour','water','soak','dirt','hadFood','ingredient','ingredientKey','trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','cutStyle','ovalN','ovalItems','ovalOil','ovalParsley','ovalSeed','ovalExtras','srvItems','srvOil','srvParsley','srvSeed','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','basketWoodLog','firewood'];
+  const keep=['inOven','inFlour','inWater','inYeast','inMix','inShape','inMesh','inMeshS','inBall','flour','water','soak','dirt','hadFood','ingredient','ingredientKey','trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','cutStyle','ovalN','ovalItems','ovalOil','ovalParsley','ovalSeed','ovalExtras','srvItems','srvOil','srvParsley','srvSeed','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','basketWoodLog','firewood'];
  const data={};
  for(const k of keep)if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
  for(const k of ['ajvarMl','ajvarBatchMl'])if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
@@ -10716,6 +10773,7 @@ function restoreWorldItem(saved){
   if(el.dataset.itemId==='kaca_prazna'&&window.CooksterKaca)CooksterKaca.refresh(el);
   if(isAjvarJar(el))renderAjvarJar(el);
   if(isAjvarLadle(el))renderAjvarLadle(el);
+  if(el.dataset.inOven==='1'){el.dataset.fixedVis=String(+el.dataset.vis||.8);moveItemToOvenLayer(el);}
  if(isPaprikaSteamBag(el))renderPaprikaSteamBag(el);
  if(el.dataset.steamedPepper==='1'||(isWholeStraight(el)&&el.dataset.peeled==='1'))renderPaprikaPeelState(el);
  if(el.dataset.creatorShelfSlot)delete el.dataset.creatorShelfSlot;
@@ -14694,6 +14752,7 @@ function startHolding(el,pointerEvent=null){
  if(el?.dataset?.itemId==='noz'&&getBoardEl())el=getBoardEl();
  if(!el||picking||placing||pouring)return;
  if(el.dataset.locked==='1'){showToast('Ovaj predmet je zaključan na svom mestu.');return;}
+ if(el.dataset.inOven==='1')leaveOven(el);   // taken out of the oven: back to the scene
 
  // Capture the pickup relation before any held-state mutation.
  // This guarantees zero visual displacement at the instant of left click.
@@ -14858,6 +14917,8 @@ function dropHolding(){
  if(window.CooksterKaca&&CooksterKaca.tryDrop(holding))return;
  // a spice jar put down over the open left drawer of the table goes back into it (js/kitchen-fixtures.js)
  if(window.CooksterKitchenFx&&CooksterKitchenFx.tryDrop(holding))return;
+ // a pot, pan or tray put on the lowered door of the open oven slides into the oven
+ if(tryDropIntoOven(holding))return;
  // every ingredient can be put into every vessel that is not for cooking (js/serving.js)
  if(window.CooksterServe&&CooksterServe.tryDrop(holding))return;
  // One authoritative ingredient -> vessel path.
@@ -15272,6 +15333,7 @@ window.addEventListener('pointerdown',e=>{
  if(e.button===0&&holding&&isFirewoodLog(holding)&&cookstoveHot==='drawer'){if(returnHeldLogToDrawer())return;}
  if(e.button===0&&holding&&isDisposableMarketPackaging(holding)&&cookstoveHot==='firebox'){if(insertHeldPackagingIntoFirebox())return;}
 if(e.button===0&&!holding&&cookstoveHot==='firebox'){const action=stoveState.fireboxOpen?'close':'open';toggleCookstoveFirebox();playImpactSound(fireboxHotspot,action);return;}
+if(e.button===0&&!holding&&stoveState.ovenOpen){const inOven=itemAt(e.clientX,e.clientY);if(inOven&&inOven.dataset.inOven==='1'){startHolding(inOven,e);return;}}   // a click on a pot inside the oven takes it out; it does not close the oven
 if(e.button===0&&!holding&&cookstoveHot==='drawer'){clickOvenDrawer(e);return;}
 if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOpen?'close':'open';toggleCookstoveOven();playImpactSound(ovenHotspot,action);return;}
  if(e.button===0&&!holding&&window.CooksterKitchenFx&&!CooksterKitchenFx.isZoomed()){const kfx=CooksterKitchenFx.hit(e.clientX,e.clientY);if(kfx){CooksterKitchenFx.click(kfx,e);return;}}

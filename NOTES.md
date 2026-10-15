@@ -780,3 +780,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Napomena: otvorena vrata rerne i ložišta se ne pamte posle ponovnog učitavanja (i ranije nije bilo tako).
 - Nije provereno: animacija otvaranja (sve je odmah), telefon, dim/para sa rerne.
 - Vatra u prozorčiću ložišta ostaje kad je rerna otvorena (uslov `!stoveState.ovenOpen` u `updateFireboxEffects` je obrisan; ostao je od stare slike otvorene rerne). Slika ložišta se ne koristi za otvorenu rernu: isečak pokriva samo mesto rerne (`game.js?v=3.140`).
+
+## Posude se uvlače u otvorenu rernu
+- Kad je rerna otvorena, šerpa, tiganj, okrugli i pravougaoni pleh (i sve što je za grejanje) spušteni na vrata rerne sami ulaze unutra (`tryDropIntoOven` u `dropHolding`): smanje se (×0,86, najviše 138×94 px), postave se na dubinu y=531, a okvir rerne ih seče sa strana i odozgo (maska: `#ovenItems` sa `clip-path` preko otvora rerne, `OVEN_CLIP`). Kad se rerna zatvori, sadržaj je skriven; klik na posudu u rerni je vadi (`leaveOven`), a posuda se vraća na normalnu veličinu.
+- Predmeti u rerni se ne greju (nema logike pečenja), senka je skrivena (`.in-oven-shadow`).
+- Nije provereno: čuvanje i učitavanje predmeta u rerni (`inOven` je dodato u listu čuvanja i u obnavljanje, ali puni tok snimanja nisam probao), telefon, pečenje.
