@@ -232,15 +232,20 @@ function wFrame(now){
   var dt=Math.min(.05,(now-wp.last)/1000);wp.last=now;wp.t+=dt;
   tilt(true);
   var lvl=+h.dataset.water||0;
-  var c=tableSpot(),tr=c&&troughAt(c.cx,c.by);
+  var c=tableSpot();
+  /* the tip of the spout of the tilted pitcher (the picture turns 62 degrees round 30% / 15% of its box): the water leaves from there and falls straight down */
+  var gh=typeof placementGhost!=='undefined'?placementGhost:null,gr=gh&&gh.getBoundingClientRect(),sp=null;
+  if(gr&&gr.width&&typeof screenToScene==='function')sp=screenToScene(gr.left+gr.width*.209,gr.top+gr.height*.204);
+  var tr=c&&sp?troughAt(sp.x,c.by):null;
   if(lvl<=.004){try{showToast('Bokal je prazan.');}catch(e){}wStop();return;}
-  if(!tr&&wp.t>.4){/* the stream is not over the trough: it runs on the table and is lost */}
   if(wp.t>.3){
     var use=Math.min(lvl,WRATE*dt/100);
     try{CooksterVesselWater.set(h,lvl-use);}catch(e){h.dataset.water=String(lvl-use);}
-    if(tr){tr.dataset.inWater=String(Math.min(400,(+tr.dataset.inWater||0)+use*100));drawTrough(tr);}
-    var g=typeof placementGhost!=='undefined'?placementGhost:null,b=g&&g.querySelector('.ghost-item-copy .body'),land=c?{x:c.cx,y:c.by}:null;
-    if(b&&land){var r=b.getBoundingClientRect(),sp=screenToScene(r.left+r.width*.12,r.top+r.height*.30);waterGrains(sp,land);if(tr&&now-puffAt>260){puffAt=now;ripple(land);}}
+    var land=null;
+    if(tr){tr.dataset.inWater=String(Math.min(400,(+tr.dataset.inWater||0)+use*100));drawTrough(tr);
+      var tb=tr.getBoundingClientRect(),tp=screenToScene(tb.left+tb.width*.5,tb.top+tb.height*.55);land={x:sp.x,y:tp.y};}
+    else if(c&&sp)land={x:sp.x,y:c.by};     // not over the trough: it falls on the table and is lost
+    if(sp&&land){waterGrains(sp,land);if(tr&&now-puffAt>260){puffAt=now;ripple(land);}}
   }
   stepGrains(dt,null);requestAnimationFrame(wFrame);
 }
@@ -249,7 +254,7 @@ function waterGrains(m,land){
   for(var i=0;i<3&&grains.length<120;i++){
     var d=document.createElement('i'),sz=2.4+Math.random()*2.4,T=.3+Math.random()*.12,dx=land.x-m.x,dy=land.y-m.y;
     d.style.cssText='position:absolute;border-radius:50%;background:rgba(205,232,248,.9);box-shadow:0 0 2px rgba(255,255,255,.7);width:'+sz+'px;height:'+(sz*1.5)+'px';
-    L.appendChild(d);grains.push({el:d,x:m.x+(Math.random()-.5)*6,y:m.y,vx:dx/T+(Math.random()-.5)*14,vy:(dy-.5*620*T*T)/T,ly:land.y+(Math.random()-.5)*5,sz:sz});
+    L.appendChild(d);grains.push({el:d,x:m.x+(Math.random()-.5)*2,y:m.y,vx:dx/T+(Math.random()-.5)*3,vy:(dy-.5*620*T*T)/T,ly:land.y+(Math.random()-.5)*5,sz:sz});
   }
 }
 function ripple(land){

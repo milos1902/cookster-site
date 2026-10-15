@@ -616,3 +616,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Ruka i testo iz kadrova se seku na otvor naćvi (nema više izlaženja levo-desno); ruka može da ide naniže preko prednje ivice.
 - Na kraju mešenja ostaje kugla testa (`assets/flour/nacve_kugla.webp`, tvoja slika 61), ne mokra smesa.
 - Provereno u pregledaču sa slikama; nije provereno na telefonu.
+
+## Voda iz bokala pada ravno (2026-10-15, flour.js?v=15)
+- Mlaz izlazi iz vrha kljuna nagnutog bokala (izračunato iz nagiba 62° oko 30%/15% slike) i pada ravno naniže u naćve (ranije je išao koso od tačke iznad bokala do sredine naćvi). Voda se računa kao sipana u naćve samo ako je kljun iznad njih; inače pada na sto i gubi se. Provereno slikom iz pregledača.
