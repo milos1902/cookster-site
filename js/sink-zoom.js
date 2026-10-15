@@ -285,6 +285,10 @@ function cutFront(g,w,h){
     g.globalCompositeOperation='destination-out';g.drawImage(im,x,y,iw,ih);g.restore();
   });
 }
+function vesselUnderStream(){
+  try{var Wt=window.CooksterVesselWater,lx=cal.tap.land[0];if(!Wt)return false;
+    return sunk.some(function(sv){if(!Wt.has(sv.id))return false;var g=sv._g||itemGeom(sv.id,14),x=sv._x;return x!=null&&Math.abs(x-lx)<=g.w*.6;});}catch(e){return false;}
+}
 function drawWater(g,w,h,now){
   var T=cal.tap,sx=T.spout[0]/100*w,sy=T.spout[1]/100*h,lx=T.land[0]/100*w,ly=T.land[1]/100*h;
   var len=ly-sy,ey=sy+len*streamLen,t=now/1000,wid=(w*.0035)*(.5+flow*1.3);
@@ -300,7 +304,7 @@ function drawWater(g,w,h,now){
   for(var k=0;k<3;k++){var off=((t*(2.4+k*.6)+k*.33)%1);g.beginPath();g.moveTo(sx-wid*.25+k*wid*.2,sy+(ey-sy)*off*.9);g.lineTo(sx-wid*.25+k*wid*.2,sy+(ey-sy)*Math.min(1,off*.9+.12));g.stroke();}
   g.restore();
   // where it lands: the splash (a row of 8 pictures: the pictures 3 to 8 are repeated)
-  if(streamLen>.9&&SPLASH.complete&&SPLASH.naturalWidth){
+  if(streamLen>.9&&!vesselUnderStream()&&SPLASH.complete&&SPLASH.naturalWidth){      // no splash behind a vessel that is being filled (the water is seen entering its mouth)
     var fw=SPLASH.naturalWidth/8,fh=SPLASH.naturalHeight,fi=2+Math.floor(t*13)%6,sc=splashCfg(),sw=w*sc.size/100*(.7+flow*.5),shh=sw*fh/fw;
     g.save();g.globalAlpha=Math.min(1,flow*1.6);g.translate(sc.pos[0]/100*w,sc.pos[1]/100*h);g.scale(1,sc.tilt);g.drawImage(SPLASH,fi*fw,0,fw,fh,-sw/2,-shh*.63,sw,shh);g.restore();
   }

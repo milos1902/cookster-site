@@ -665,3 +665,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Brašno na stolu: dok se sipa brašno i dok se mesi, oko naćvi se na stolu pojavljuju bele mrlje i zrnca (platno `z-index:30`, iznad slike stola, ispod predmeta); ne čuva se, posle osvežavanja je sto čist.
 - Vreća brašna: preskače srednju sliku nagiba, odmah ide na sliku sipanja.
 - Slike testa bez naćvi (4 komada, razvlačenje) stigle su samo umetnute u poruku, ne kao fajlovi, pa nisu ugrađene.
+
+## Sudopera: nema pljuska iza bokala koji se puni (2026-10-15, sink-zoom.js?v=23)
+- Kad je bokal (ili druga posuda sa vodom) ispod mlaza, ne crta se pljusak iza njega; vidi se samo mlaz koji ulazi u usta posude. Bez posude ispod mlaza pljusak ostaje.
