@@ -4366,6 +4366,10 @@ function createContactShadowLab(){
       id:'market_bag',label:'Kesa sa pijace',src:MARKET_BAG_ASSET,
       w:112,h:112,snapProfile:'flat',shadowProfile:'tiny',category:'market-bag'
     });
+    map.set('testo_lopta',{
+      id:'testo_lopta',label:'Lopta testa (u naćvama)',src:'assets/flour/testo_kugla.webp?v=2',
+      w:90,h:90,snapProfile:'flat',shadowProfile:'tiny',category:'dough-ball'
+    });
     map.set('produce_crate',{
       id:'produce_crate',label:'Gajbica sa povrćem',src:CRATE_STAGE_ASSETS.paradajz.full,
       w:340,h:257,snapProfile:'crate',shadowProfile:'crate',category:'produce-crate'
@@ -4676,6 +4680,8 @@ function createContactShadowLab(){
  };
 }
 // the papers of the orders (kitchen-orders.js) take their shadow from the same master
+// the shadow of the dough ball in the kneading trough (drawn in js/dough-mesh.js with these numbers): the starting values; the tool for the shadows changes them
+if(!contactShadowMaster.items.testo_lopta)contactShadowMaster.items.testo_lopta={itemId:'testo_lopta',label:'Lopta testa (u naćvama)',shadow:{shadowX:0,shadowY:5,width:.95,height:.3,blur:4,opacity:.7,angle:0}};
 window.CooksterContactShadowCfg=id=>{const e=contactShadowMaster.items?.[id];return e&&e.shadow?{...e.shadow}:null;};
 const contactShadowLabDockButton=document.createElement('button');
 contactShadowLabDockButton.type='button';
@@ -10790,7 +10796,7 @@ function openKitchenElements(mode){
 
 function serializeWorldItem(el){
  const body=el.querySelector('.body');
-  const keep=['inOven','inFlour','inWater','inYeast','inMix','inShape','inMesh','inMeshS','inBall','flour','water','soak','dirt','hadFood','ingredient','ingredientKey','trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','cutStyle','ovalN','ovalItems','ovalOil','ovalParsley','ovalSeed','ovalExtras','srvItems','srvOil','srvParsley','srvSeed','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','basketWoodLog','firewood'];
+  const keep=['inOven','inFlour','inWater','inYeast','inSugar','inStir','inStarter','inYeastDead','inMix','inShape','inMesh','inMeshS','inBall','flour','water','soak','dirt','hadFood','ingredient','ingredientKey','trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','cutStyle','ovalN','ovalItems','ovalOil','ovalParsley','ovalSeed','ovalExtras','srvItems','srvOil','srvParsley','srvSeed','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','basketWoodLog','firewood'];
  const data={};
  for(const k of keep)if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
  for(const k of ['ajvarMl','ajvarBatchMl'])if(el.dataset[k]!==undefined)data[k]=el.dataset[k];

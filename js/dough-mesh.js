@@ -11,7 +11,7 @@ var STG=[{src:'assets/flour/testo_f1.webp?v=1',ar:321/480},{src:'assets/flour/te
 var list=[];
 STG.forEach(function(g,i){g.img=new Image();g.ok=false;g.img.onload=function(){g.ok=true;list.forEach(function(t){if(t._m&&t._m.on&&t._m.stage===i)draw(t);});};g.img.src=g.src;});
 function bhOf(tr,st,F){var H=tr.offsetHeight||197;return H*(st<=4?.56:.44);}   // the height of the dough in the opening of the trough
-function box(tr,st,F){var W=tr.offsetWidth||105,H=tr.offsetHeight||197,bh=bhOf(tr,st,F),bw=bh*STG[st].ar,bl=(st===5&&tr._m)?(tr._m.ball||0):0;return {W:W,H:H,bw:bw,bh:bh,x0:W/2-bw/2,y0:H*CY-bh/2,ball:bl,cx:W/2,cy:H*CY,rx:H*.2,ry:H*.25};}
+function box(tr,st,F){var W=tr.offsetWidth||105,H=tr.offsetHeight||197,bh=bhOf(tr,st,F),bw=bh*STG[st].ar,bl=(st===5&&tr._m)?(tr._m.ball||0):0;return {W:W,H:H,bw:bw,bh:bh,x0:W/2-bw/2,y0:H*(CY+(st===5?.055:0))-bh/2,ball:bl,cx:W/2,cy:H*(CY+(st===5?.055:0)),rx:H*.2,ry:H*.25};}
 function local(tr,cx,cy){var r=tr.getBoundingClientRect(),k=(r.width/(tr.offsetWidth||1))||1;return [(cx-r.left)/k,(cy-r.top)/k];}
 function init(tr){
   if(tr._m)return tr._m;
@@ -88,6 +88,23 @@ function pass(tr,m,st,F,off,alpha,tx){
   gl.bindBuffer(gl.ARRAY_BUFFER,m.pb);gl.bufferSubData(gl.ARRAY_BUFFER,0,pos);gl.uniform1f(m.ua,alpha);
   gl.drawElements(gl.TRIANGLES,m.n,gl.UNSIGNED_SHORT,0);
 }
+/* the shadow of the ball: a dark, blurred, squashed copy of the picture of the ball under it (the same recipe as the contact shadows of the items in the game);
+   the numbers are those of the tool for the shadows (item "Lopta testa"), read each time it is drawn, so a change in the tool is seen at once */
+var BS_DEF={shadowX:0,shadowY:5,width:.95,height:.3,blur:4,opacity:.7,angle:0};
+function ballShadow(tr,m){
+  var el=m.bs;
+  if(!(m.stage===5&&(m.ball||0)>.01)){if(el)el.style.opacity='0';return;}
+  if(!el){el=document.createElement('div');el.className='dough-ball-shadow';el.style.cssText='position:absolute;left:0;top:0;pointer-events:none;overflow:hidden;transform-origin:50% 100%';
+    var im=document.createElement('img');im.src=STG[5].src;im.draggable=false;im.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;filter:brightness(0);max-width:none';el.appendChild(im);
+    (tr._dw||tr).insertBefore(el,m.cv);m.bs=el;}
+  var c=BS_DEF;try{var q=window.CooksterContactShadowCfg&&window.CooksterContactShadowCfg('testo_lopta');if(q)c=q;}catch(e){}
+  var b=box(tr,5,m.F),i,sx=0,sy=0,n=m.off.length/2;for(i=0;i<m.off.length;i+=2){sx+=m.off[i];sy+=m.off[i+1];}sx=sx/n*b.bh;sy=sy/n*b.bh;   // the shadow follows the dough when it is pulled
+  var wx=Math.max(.05,+c.width||.9),hy=Math.max(.01,+c.height||.2),ox=+(c.shadowX!=null?c.shadowX:c.x)||0,oy=+(c.shadowY!=null?c.shadowY:c.y)||0;
+  var f=m.fade&&m.fade.from!==undefined?Math.min(1,(performance.now()-m.fade.t0)/FADE):1;
+  el.style.width=b.bw+'px';el.style.height=b.bh+'px';el.style.left=(b.x0+sx+ox)+'px';el.style.top=(b.y0+b.bh+sy+oy-b.bh)+'px';
+  el.style.opacity=(Math.max(0,Math.min(1,+c.opacity||0))*f).toFixed(3);el.style.filter='blur('+Math.max(0,+c.blur||0)+'px)';
+  el.style.transform='rotate('+(+c.angle||0)+'deg) scale('+wx+','+hy+')';
+}
 function draw(tr){
   var m=tr._m;if(!m||!m.ok||m.stage<0||!STG[m.stage].ok)return;
   if(!m.gl&&!glSetup(tr,m))return;
@@ -97,6 +114,7 @@ function draw(tr){
     if(STG[m.fade.from].ok)pass(tr,m,m.fade.from,m.fade.F,m.fade.off,1);
     if(f>=1)m.fade=null;}
   var af=m.fade?f:1;
+  ballShadow(tr,m);
   pass(tr,m,m.stage,m.F,m.off,af);
 }
 function fadeLoop(tr){var m=tr._m;if(!m||!m.fade){return;}draw(tr);if(m.fade)requestAnimationFrame(function(){fadeLoop(tr);});}
