@@ -724,3 +724,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Testo ima visinu: naliježe na zidove (2026-10-15, nacve-bounds.js?v=5, dough-mesh.js?v=12)
 - Sa tvog snimka: testo se videlo samo po zelenom dnu. Sada crveno (zid) nije zabranjeno: tačke testa smeju na zid i testo se vidi preko njega (naliježe), ali sporije (pomak 0,35 puta, kao da se penje), a neobojeno (van naćvi) i dalje zaustavlja. Zid sada znači "padina", a ne "ograda".
 - Tvoja maska je ista; zelena = pod, crvena = zid po kom se testo penje, neobojeno = zabranjeno.
+
+## Skelet lopte: testo se vraća u loptu (2026-10-15, dough-mesh.js?v=15, game.js?v=3.134)
+- Gotovo testo (druga faza) ima skelet lopte: što duže se radi (miš se kreće; oko 25 s do pune lopte, 1500 px kretanja = 1), mreža se iz pravougaonika slike pretapa u krug (kvadrat preslikan u disk), a slika se pretapa u sliku kugle (`testo_kugla`). Tačke se sve manje povode za rukom (do 65% manje) i elastično se vraćaju ka lopti kad pustiš (do 4,5% po kadru), pa u osnovi ostaje lopta, a i dalje mogu da se vuku. Stepen lopte se čuva (`inBall`).
+- Ispravke: pretapanje je crtalo dve poluprovidne slike pa je testo bilo poluprovidno (sada se stara slika crta cela, nova preko nje); ograničenja mreže i pomaci su računati od pravougaonika, ne od skeleta lopte (testo se sabijalo u pravougaonik pa se razlilo).
