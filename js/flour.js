@@ -120,7 +120,7 @@ function drawTrough(e){
     e.appendChild(dw);e._dw=dw;e._dg=dg;
   }
   var wetF=D.W>=1&&D.F>=3,stage=mx<1?0:1,meshOn=false;      // stages: 0 wet flour (7 s of kneading), 1 the dough (it first appears stretched)
-  if(window.CooksterDoughMesh){if(wetF)meshOn=CooksterDoughMesh.setStage(e,stage,D.F);else CooksterDoughMesh.hide(e);}
+  if(window.CooksterDoughMesh){if(wetF)meshOn=CooksterDoughMesh.setStage(e,stage,D.F,mx);else CooksterDoughMesh.hide(e);}
   // reserve (when WebGL is not there): the plain pictures
   e._o={kugla:0};
   setO(e._dl.smesa,(wetF&&!meshOn&&stage===0)?1:0);setO(e._dl.grudve,0);setO(e._dl.razvuceno,(wetF&&!meshOn&&stage===1)?1:0);setO(e._dl.kugla,0);
@@ -258,7 +258,7 @@ window.addEventListener('pointerup',function(e){if(pour&&e.button===0){e.stopImm
 window.addEventListener('click',function(e){if(hold!==null&&e.button===0){hold=null;e.stopImmediatePropagation();}},true);
 window.addEventListener('contextmenu',function(e){var h=typeof holding!=='undefined'?holding:null;if(isSack(h))e.preventDefault();},true);
 // ---- mixing: the stirring spoon in the hand, LEFT button held, moved over the trough; the flour and the water become a dough (only when the ratio is right) ----
-/* The camera: while the dough is kneaded the picture comes closer in 0.2 s (the trough in the upper middle, the arm goes down behind the squares at the bottom); the moment the kneading
+/* The camera: while the dough is kneaded the picture comes a little closer in 0.2 s (1.35 times, the whole table stays visible; the trough in the middle, the arm goes down behind the squares at the bottom); the moment the kneading
    is let go it goes back in 0.2 s. It uses the camera of the game (scale, offsetX, offsetY). */
 var camSaved=null,camRaf=0;
 function camTo(T,dur,done){
@@ -273,7 +273,7 @@ function camIn(tr){
   try{
     camSaved={s:scale,ox:offsetX,oy:offsetY};
     var r=tr.getBoundingClientRect(),pt=screenToScene(r.left+r.width/2,r.top+r.height*.46);
-    var s=Math.min(fitScale*2.4,Math.max(scale*1.9,fitScale*1.9)),sx=innerWidth/2,sy=innerHeight*.4;
+    var s=Math.min(fitScale*1.5,Math.max(scale*1.35,fitScale*1.35)),sx=innerWidth/2,sy=innerHeight*.47;      // only a little closer: the whole table stays in the picture
     camTo({s:s,ox:sx-(pt.x-cameraX)*s,oy:sy-pt.y*s},200);
   }catch(e){camSaved=null;}
 }

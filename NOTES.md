@@ -700,3 +700,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Kamera pri mešenju i podlaktica do donje trake (2026-10-15, flour.js?v=50)
 - Čim krene mešenje/oblikovanje testa, kamera se približi za 0,2 s (do 1,9 puta, naćve u gornjoj sredini); čim se pusti taster, vrati se za 0,2 s. Koristi kameru igre (`scale`, `offsetX`, `offsetY`).
 - Podlaktica je duža (slika 420 x 4200) i završava se iza kvadratića na dnu ekrana: kad je ruka iznad trake, prozor ruke se seče na sredini trake, pa se kraj ruke ne vidi; van trake ide do dna ekrana.
+
+## Tačke koje drže testo i manji zoom (2026-10-15, dough-mesh.js?v=7, flour.js?v=52)
+- Tačke koje drže testo: na početku mešenja (brašno sa vodom) testo je zalepljeno za mnogo tačaka (vide se kao sitne tamne tačke); one se opiru ruci i vuku testo nazad. Što se duže mesi (7 s), svaka tačka u svom trenutku pušta testo, a na kraju je slobodno od svih tačaka (pa prelazi u testo koje igrač oblikuje u loptu).
+- Kamera pri mešenju se približava samo 1,35 puta (cela površina stola ostaje u kadru), naćve u sredini.

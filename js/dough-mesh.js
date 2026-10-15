@@ -54,6 +54,24 @@ function texFor(m,st){
     m.texUp[st]=true;
   }
 }
+/* The points that hold the dough: at the start of the kneading (wet flour) the dough is stuck to many points; they resist the hand and pull the dough back.
+   The longer it is kneaded, the more points let it go (each point has its own moment), and at the end it is free from all of them. */
+function hash(k){var x=Math.sin(k*12.9898)*43758.5453;return x-Math.floor(x);}
+function stick(m,k){if(m.stage!==0)return 0;var th=.15+.85*hash(k);return Math.max(0,Math.min(1,(th-(m.prog||0))/.15));}
+function dots(tr,m){
+  if(!m.dc){var c=document.createElement('canvas');c.width=m.cv.width;c.height=m.cv.height;c.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none';m.cv.parentNode.appendChild(c);m.dc=c;m.dx=c.getContext('2d');}
+  var x=m.dx,b=box(tr,m.stage,m.F),k;x.clearRect(0,0,m.dc.width,m.dc.height);if(m.stage!==0)return;
+  for(k=0;k<NX*NY;k++){var a=stick(m,k);if(a<.05)continue;var p=curPos(b,m.off,k);x.fillStyle='rgba(95,70,45,'+(.55*a).toFixed(2)+')';x.beginPath();x.arc(p[0]*VS,p[1]*VS,1.6*VS,0,7);x.fill();}
+}
+function settle(tr){      // the points that still hold the dough pull it back to its place
+  var m=tr._m;if(!m||!m.on||m.stage!==0||m.settling)return;m.settling=true;
+  (function f(){
+    if(!m.on||m.stage!==0){m.settling=false;return;}
+    var k,big=0;for(k=0;k<NX*NY;k++){var a=stick(m,k);if(a>0){m.off[k*2]*=1-a*.05;m.off[k*2+1]*=1-a*.05;}big=Math.max(big,Math.abs(m.off[k*2]),Math.abs(m.off[k*2+1]));}
+    draw(tr);
+    if(big>.003)requestAnimationFrame(f);else m.settling=false;
+  })();
+}
 function curPos(b,off,k){var i=k%NX,j=(k/NX)|0;return [b.x0+b.bw*i/(NX-1)+off[k*2]*b.bh,b.y0+b.bh*j/(NY-1)+off[k*2+1]*b.bh];}
 function pass(tr,m,st,F,off,alpha){
   var gl=m.gl,b=box(tr,st,F),k,pos=m.pos;texFor(m,st);
@@ -70,6 +88,7 @@ function draw(tr){
     if(STG[m.fade.from].ok)pass(tr,m,m.fade.from,m.fade.F,m.fade.off,1-f);
     if(f>=1)m.fade=null;}
   pass(tr,m,m.stage,m.F,m.off,m.fade?f:1);
+  dots(tr,m);
 }
 function fadeLoop(tr){var m=tr._m;if(!m||!m.fade){return;}draw(tr);if(m.fade)requestAnimationFrame(function(){fadeLoop(tr);});}
 /* the dough keeps its size when it is squeezed: the area of the net is brought back to the area of the dough in the picture (it can grow only up to the opening of the trough) */
@@ -105,17 +124,17 @@ function save(tr){var m=tr._m;if(!m)return;var s=[],any=false;for(var i=0;i<m.of
   if(any){tr.dataset.inMesh=s.join(',');tr.dataset.inMeshS=String(m.stage);}else{delete tr.dataset.inMesh;delete tr.dataset.inMeshS;}}
 window.CooksterDoughMesh={
   /* the stage of the dough (0, 1, 2) and the flour in the trough: the mesh shows its picture; returns true if the mesh is drawing (the old pictures are then hidden) */
-  setStage:function(tr,stage,flour){
+  setStage:function(tr,stage,flour,prog){
     var m=init(tr);if(!m.ok)return false;
     if(m.stage!==stage){
       var keep=(m.stage<0&&m.savedStage===stage);            // the first time after a load the saved shape is kept when it belongs to this stage
       if(!keep){if(m.stage>=0&&m.gl)m.fade={from:m.stage,F:m.F,off:m.off.slice(),t0:performance.now()};m.off.fill(0);if(m.stage>=0){delete tr.dataset.inMesh;delete tr.dataset.inMeshS;}}
       m.stage=stage;m.savedStage=undefined;
     }
-    m.F=flour||0;m.on=true;
+    m.F=flour||0;m.prog=prog||0;m.on=true;
     if(!m.gl&&STG[stage].ok)glSetup(tr,m);
     if(!m.gl||!STG[stage].ok)return false;
-    m.cv.style.display='';m.cv.style.opacity='1';draw(tr);if(m.fade)fadeLoop(tr);return true;
+    m.cv.style.display='';m.cv.style.opacity='1';draw(tr);if(m.fade)fadeLoop(tr);settle(tr);return true;
   },
   hide:function(tr){var m=tr._m;if(!m)return;m.on=false;if(m.cv){m.cv.style.display='none';m.cv.style.opacity='0';}},
   grab:function(tr,cx,cy){var m=tr._m;if(!m||!m.on)return;var p=local(tr,cx,cy);m.grab={x:p[0],y:p[1]};},
@@ -124,8 +143,8 @@ window.CooksterDoughMesh={
     var p=local(tr,cx,cy),dx=p[0]-m.grab.x,dy=p[1]-m.grab.y;if(!dx&&!dy)return;
     var b=box(tr,m.stage,m.F),sg=b.bh*SIG,k;
     for(k=0;k<NX*NY;k++){var c=curPos(b,m.off,k),r=Math.hypot(c[0]-m.grab.x,c[1]-m.grab.y),w=Math.exp(-(r/sg)*(r/sg));
-      if(w<.01)continue;m.off[k*2]+=dx*w/b.bh;m.off[k*2+1]+=dy*w/b.bh;}
-    keepSize(tr,m);relax(tr,m);m.grab.x=p[0];m.grab.y=p[1];draw(tr);
+      if(w<.01)continue;var hold=1-.85*stick(m,k);m.off[k*2]+=dx*w*hold/b.bh;m.off[k*2+1]+=dy*w*hold/b.bh;}
+    keepSize(tr,m);relax(tr,m);m.grab.x=p[0];m.grab.y=p[1];draw(tr);settle(tr);
   },
   release:function(tr){var m=tr._m;if(m)m.grab=null;save(tr);},
   active:function(tr){var m=tr._m;return !!(m&&m.on&&m.gl);}
