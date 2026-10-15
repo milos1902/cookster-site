@@ -301,6 +301,19 @@ window.addEventListener('contextmenu',function(e){var h=typeof holding!=='undefi
 var YEAST='kal_01_kvasac',SUGAR='zacin_secer',SPOON='kasika_mesanje',stirP=null;
 function sayT(m){try{showToast(m);}catch(x){}}
 /* the yeast bowl tilts over the trough like the spice jars: to the side that is away from where it comes (from the left it pours to the right) */
+/* the risen dough goes into the hand as an item (it hangs from the hand and stretches, see cloth-hand.js); the trough is empty again */
+function takeDough(tr,e){
+  var d;try{d=kitchenEquipmentDef('kal_testo_naraslo');}catch(x){}
+  if(!d||(typeof holding!=='undefined'&&holding))return false;
+  e.stopImmediatePropagation();e.preventDefault();
+  ['inFlour','inWater','inWaterT','inMix','inRise','inCloth','inYeast','inSugar','inStir','inStarter','inYeastDead','inBall','inMesh','inMeshS'].forEach(function(k){delete tr.dataset[k];});
+  try{if(tr._m){tr._m.off.fill(0);tr._m.ball=0;tr._m.stage=-1;tr._m.glue=null;}CooksterDoughMesh.hide(tr);}catch(x){}
+  drawTrough(tr);
+  var el=makeItem({...d,instanceId:nextItemInstanceId(d.id),x:700-d.w/2,y:560-d.h,z:++zCounter});
+  if(el){el.dataset.surfaceZone='table';setPose(el,700,560,surfaceScaleFor(el,'table',560));el.dataset.noFlash='1';el.style.visibility='hidden';setTimeout(function(){delete el.dataset.noFlash;},1500);startHolding(el);}
+  sayT('Testo je u ruci. Spusti ga na sto što pre, razvlači se.');try{CooksterSave.schedule();}catch(x){}
+  return true;
+}
 var tilt={a:0,dir:0},mx=0,my=0,lastY=null;
 window.addEventListener('pointermove',function(e){mx=e.clientX;my=e.clientY;},true);
 function trCenter(tr){var b=tr.getBoundingClientRect();return screenToScene(b.left+b.width*.5,b.top+b.height*.46);}
@@ -326,6 +339,10 @@ window.addEventListener('pointerdown',function(e){
   if(e.button===0&&!(typeof holding!=='undefined'&&holding)){          // an empty hand on a covered trough takes the cloth off
     if(e.target&&e.target.closest&&e.target.closest('#hud,[data-tool-ui],.cookster-ctx,#toolDock'))return;
     var sp0=screenToScene(e.clientX,e.clientY),tr0=troughAt(sp0.x,sp0.y);
+    if(tr0&&tr0.dataset.inCloth!=='1'&&(+tr0.dataset.inRise||0)>=1&&doughState(tr0).st==='good'){       // the risen dough: the hand takes it out of the trough
+      var br0=tr0.getBoundingClientRect(),nx0=(e.clientX-br0.left)/br0.width-.5,ny0=(e.clientY-br0.top)/br0.height-.46;
+      if((nx0/.34)*(nx0/.34)+(ny0/.34)*(ny0/.34)<=1&&takeDough(tr0,e))return;
+    }
     if(tr0&&tr0.dataset.inCloth==='1'){e.stopImmediatePropagation();e.preventDefault();delete tr0.dataset.inCloth;drawTrough(tr0);sayT((+tr0.dataset.inRise||0)>=1?'Krpa je skinuta, testo je naraslo.':'Krpa je skinuta.');try{CooksterSave.schedule();}catch(x){}return;}
   }
   var id=heldId();if(e.button!==0||(id!==YEAST&&id!==SPOON&&id!==KRPA))return;

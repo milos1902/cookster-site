@@ -853,3 +853,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Krpa u ruci i u kvadratićima je slika obešene krpe (`krpa_ruka.webp`); slika pokrivenih naćvi (`krpa.webp`) ostaje samo kao poklopac preko testa.
 - Krpa u ruci vijori (`js/cloth-hand.js`): mreža 8×12 tačaka sa težinom (Verlet: gravitacija, štapići između suseda, slab povratak ka slici); gornji ćošak prati miša, ostalo zaostaje i ljulja se. Radi samo dok je krpa u ruci. Slika krpe koju igra crta u ruci je skrivena dok traje.
 - Kad se krpa stavlja preko naćvi, leti iznad njih, spušta se i preliva u sliku pokrivenih naćvi (oko 1 s), pa tek tad testo počinje da se diže.
+
+## Krpa lakše vijori + naraslo testo u ruci
+- Krpa (`js/cloth-hand.js`): donji deo je teži (masa raste ka dnu), slabije kočenje (damp .9975), slab povratak ka slici, plus vazduh koji lagano talasa krpu (jači kad se brzo mahne). Ljulja se još par sekundi posle zaustavljanja, kao laka tkanina.
+- Naraslo testo (`kal_testo_naraslo`, "Naraslo testo"): praznom rukom, klik na naraslo testo (inRise = 1, bez krpe) vadi ga iz naćvi u ruku; naćve se prazne. U ruci visi sa dva gornja čvora, teže ga vuče dole i razvlači se (do 2,3x duže i tanje, zapremina ostaje). Posle 5 s: "spusti ga na sto". Na stolu je opet lopta.
+- Isti mehanizam kao krpa (mreža tačaka sa težinom), samo drugačija podešavanja (`KINDS` u cloth-hand.js).

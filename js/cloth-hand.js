@@ -1,25 +1,36 @@
-/* The cloth in the hand (kal_krpa): a net of points that have weight. The top of the cloth follows the mouse, the rest hangs, lags behind and sways (a simple Verlet simulation:
+/* The things that hang from the hand (the cloth kal_krpa and the risen dough kal_testo_naraslo): a net of points that have weight. The top of the cloth follows the mouse, the rest hangs, lags behind and sways (a simple Verlet simulation:
    gravity, sticks between the neighbouring points, a weak pull back to the picture so the cloth stays readable). The picture is drawn on a canvas over the net, triangle by triangle.
    It runs only while the cloth is in the hand (and in the short animation when the cloth is laid over the trough). The picture of the cloth in the hand that the game draws is hidden meanwhile. */
 (function(){
 'use strict';
 if(window.CooksterCloth)return;
-var ID='kal_krpa',SRC='assets/calibration_props/krpa/krpa_ruka.webp?v=1',NX=8,NY=12,AX=.53,AR=361/640;      // AX: where the tip of the cloth is in the picture (0..1); AR: width / height
-var img=new Image();img.src=SRC;
+/* AX: where the hand holds the picture (0..1 across); AR: width / height; size: how many times the picture of the item in the game; pins: the columns of the top row that are held by the hand (null = the whole row);
+   grav: gravity; damp: how much movement is kept in one step (1 = never stops); pull: the pull back to the picture; mass: how much heavier the bottom is than the top; flutter: the strength of the air; grow: how fast the dough stretches */
+var KINDS={
+  krpa:{id:'kal_krpa',src:'assets/calibration_props/krpa/krpa_ruka.webp?v=1',key:'krpa',nx:8,ny:12,ax:.53,ar:361/640,size:2.4,pins:null,grav:1500,damp:.9975,pull:.006,mass:3.2,flutter:1,grow:0,iters:4},
+  testo:{id:'kal_testo_naraslo',src:'assets/flour/testo_kugla.webp?v=2',key:'testo_kugla',nx:8,ny:8,ax:.5,ar:1,size:1.15,pins:[3,4],grav:3400,damp:.985,pull:.0015,mass:2.2,flutter:0,grow:.085,iters:6}
+};
+var NX=8,NY=12,K=KINDS.krpa,AX=.53,AR=361/640,ID=K.id,img=new Image(),imgs={};
+Object.keys(KINDS).forEach(function(k){var i=new Image();i.src=KINDS[k].src;imgs[k]=i;});img=imgs.krpa;
 var css=document.createElement('style');css.textContent='body.krpa-held .placement-ghost{clip-path:inset(50%)!important}#clothLayer{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2147482000}';
 document.head.appendChild(css);
-var mx=innerWidth/2,my=innerHeight/2,cv=null,cx=null,P=null,H=0,last=0,anim=null,lastMX=0,lastMY=0,on=false;
+var mx=innerWidth/2,my=innerHeight/2,cv=null,cx=null,P=null,H=0,last=0,anim=null,lastMX=0,lastMY=0,on=false,kname='krpa',age=0,spd=0,tm=0,warned=false;
 window.addEventListener('pointermove',function(e){mx=e.clientX;my=e.clientY;},true);
-function held(){return typeof holding!=='undefined'&&holding&&holding.dataset&&holding.dataset.itemId===ID?holding:null;}
+function held(){
+  if(typeof holding==='undefined'||!holding||!holding.dataset)return null;
+  for(var k in KINDS)if(KINDS[k].id===holding.dataset.itemId){if(k!==kname&&on)stop();kname=k;K=KINDS[k];NX=K.nx;NY=K.ny;AX=K.ax;AR=K.ar;img=imgs[k];return holding;}
+  return null;
+}
 function sizeNow(){
-  var g=document.querySelector('.ghost-item-copy img[src*="krpa"]'),r=g&&g.getBoundingClientRect();
+  var g=document.querySelector('.ghost-item-copy img[src*="'+K.key+'"]'),r=g&&g.getBoundingClientRect();
   if(r&&r.height>20)return r.height;
-  var h=held(),q=h&&h.getBoundingClientRect();return q&&q.height>20?q.height:106;
+  var h=held(),q=h&&h.getBoundingClientRect();return q&&q.height>20?q.height:(kname==='krpa'?106:90);
 }
 function build(ax,ay,h){
   H=h;var Wc=h*AR,pts=[],i,j;
-  for(j=0;j<NY;j++)for(i=0;i<NX;i++){var rx=(i/(NX-1)-AX)*Wc,ry=j/(NY-1)*h;pts.push({x:ax+rx,y:ay+ry,px:ax+rx,py:ay+ry,rx:rx,ry:ry,pin:j===0});}
-  var st=[];function add(a,b){var A=pts[a],B=pts[b];st.push([a,b,Math.hypot(A.rx-B.rx,A.ry-B.ry)]);}
+  for(j=0;j<NY;j++)for(i=0;i<NX;i++){var rx=(i/(NX-1)-AX)*Wc,ry=j/(NY-1)*h,vv=j/(NY-1);pts.push({x:ax+rx,y:ay+ry,px:ax+rx,py:ay+ry,rx:rx,ry:ry,pin:j===0&&(!K.pins||K.pins.indexOf(i)>=0),m:1+K.mass*vv*vv,col:i,row:j});}
+  age=0;warned=false;
+  var st=[];function add(a,b){var A=pts[a],B=pts[b];st.push([a,b,Math.hypot(A.rx-B.rx,A.ry-B.ry),B.rx-A.rx,B.ry-A.ry]);}
   for(j=0;j<NY;j++)for(i=0;i<NX;i++){var k=j*NX+i;if(i<NX-1)add(k,k+1);if(j<NY-1)add(k,k+NX);if(i<NX-1&&j<NY-1){add(k,k+NX+1);add(k+1,k+NX);}if(i<NX-2)add(k,k+2);if(j<NY-2)add(k,k+2*NX);}
   P={pts:pts,st:st};
 }
@@ -28,15 +39,18 @@ function layer(){
   cv=document.createElement('canvas');cv.id='clothLayer';cv.width=innerWidth;cv.height=innerHeight;document.body.appendChild(cv);cx=cv.getContext('2d');
 }
 function step(ax,ay,dt){
-  var pts=P.pts,k,g=2600*dt*dt,i;
-  for(k=0;k<pts.length;k++){var p=pts[k],v=k<NX?0:k/NX/(NY-1);
+  var pts=P.pts,k,g=K.grav*dt*dt,i,sc=1+Math.min(1.3,age*K.grow),sq=1/Math.sqrt(sc),wind=K.flutter*(260+Math.min(1400,spd)*.9)*dt*dt;
+  for(k=0;k<pts.length;k++){var p=pts[k],v=p.row/(NY-1);
     if(p.pin){p.px=p.x;p.py=p.y;p.x=ax+p.rx;p.y=ay+p.ry;continue;}
-    var vx=(p.x-p.px)*.985,vy=(p.y-p.py)*.985;p.px=p.x;p.py=p.y;p.x+=vx;p.y+=vy+g;
-    var pull=.045*(1-v*.75);p.x+=(ax+p.rx-p.x)*pull;p.y+=(ay+p.ry-p.y)*pull*.5;      // a weak pull back to the picture (stronger near the hand)
+    var vx=(p.x-p.px)*K.damp,vy=(p.y-p.py)*K.damp;p.px=p.x;p.py=p.y;p.x+=vx;p.y+=vy+g;
+    if(wind){var ph=tm*3.3+p.col*.75+p.row*.55;p.x+=Math.sin(ph)*wind*v;p.y-=Math.cos(ph*.8+1)*wind*.35*v;}      // the air: the cloth flutters, more when it is moved fast
+    var pull=K.pull*(1-v*.75);p.x+=(ax+p.rx-p.x)*pull;if(!K.grow)p.y+=(ay+p.ry-p.y)*pull*.5;      // a weak pull back to the picture (stronger near the hand)
   }
-  for(i=0;i<5;i++)for(k=0;k<P.st.length;k++){
-    var s=P.st[k],A=pts[s[0]],B=pts[s[1]],dx=B.x-A.x,dy=B.y-A.y,d=Math.hypot(dx,dy)||.0001,wa=A.pin?0:1,wb=B.pin?0:1,sm=wa+wb;
-    if(!sm)continue;var cr=(d-s[2])/d/sm;
+  for(i=0;i<K.iters;i++)for(k=0;k<P.st.length;k++){
+    var s=P.st[k],A=pts[s[0]],B=pts[s[1]],dx=B.x-A.x,dy=B.y-A.y,d=Math.hypot(dx,dy)||.0001,wa=A.pin?0:1/A.m,wb=B.pin?0:1/B.m,sm=wa+wb,L=s[2];
+    if(!sm)continue;
+    if(K.grow)L=Math.hypot(s[3]*sq,s[4]*sc);      // the dough is pulled by its own weight: it gets longer and thinner (the volume stays)
+    var cr=(d-L)/d/sm;
     A.x+=dx*cr*wa;A.y+=dy*cr*wa;B.x-=dx*cr*wb;B.y-=dy*cr*wb;
   }
 }
@@ -79,9 +93,11 @@ function tick(now){
       if(!anim.fired){anim.fired=true;try{anim.cb&&anim.cb();}catch(e){}}
       if(k2>=1){anim=null;stop();return;}}
   }
-  if(!on){on=true;layer();build(ax,ay,anim?anim.H:sizeNow()*2.4);document.body.classList.add('krpa-held');}
+  if(!on){on=true;layer();build(ax,ay,anim?anim.H:sizeNow()*K.size);document.body.classList.add('krpa-held');}
   if(!cv||!cv.isConnected){layer();}
   if(cv.width!==innerWidth||cv.height!==innerHeight){cv.width=innerWidth;cv.height=innerHeight;}
+  spd=spd*.85+Math.hypot(ax-lastMX,ay-lastMY)/Math.max(.008,dt)*.15;lastMX=ax;lastMY=ay;tm+=dt;age+=dt;
+  if(K.grow&&!warned&&age>5){warned=true;try{showToast('Testo se razvlači, spusti ga na sto!');}catch(e){}}
   step(ax,ay,1/120);step(ax,ay,1/120);
   draw(alpha);
 }
