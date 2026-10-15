@@ -222,10 +222,14 @@ window.addEventListener('contextmenu',function(e){var h=typeof holding!=='undefi
 // ---- the pitcher: LEFT button held over the trough = the pitcher tilts and the water runs into the trough; the RIGHT button puts it down ----
 var PITCHER='bokal_stari',WRATE=11,wp=null;
 function isPitcher(el){return !!el&&el.dataset&&el.dataset.itemId===PITCHER;}
-function pitcherBodies(){var out=[],h=typeof holding!=='undefined'?holding:null,g=typeof placementGhost!=='undefined'?placementGhost:null;if(h){var b=h.querySelector('.body');if(b)out.push(b);}if(g){var c=g.querySelector('.ghost-item-copy');if(c)out.push(c);}return out;}   /* the whole copy tilts: its water and its front mask are pictures of the pitcher too, they stayed upright before */
+function pitcherBodies(){var out=[],h=typeof holding!=='undefined'?holding:null,g=typeof placementGhost!=='undefined'?placementGhost:null;if(h){var hb=h.querySelector('.body');if(hb&&hb.style.transform){hb.style.transform='';hb.style.transition='';}}   /* the real pitcher is never turned: the copy in the hand is made from it, so a turned picture would be turned twice (and break in half) */
+  if(g){var c=g.querySelector('.ghost-item-copy');if(c)out.push(c);}return out;}   /* the whole copy tilts: its water and its front mask are pictures of the pitcher too, they stayed upright before */
+(function(){var st=document.createElement('style');st.textContent='body.pitcher-pouring .cookster-backpack-held-preview{visibility:hidden!important;opacity:0!important}';document.head.appendChild(st);})();
 function tilt(on){
-  /* the small upright copy of the pitcher (backpack mode) would stay behind the tilted one */
-  document.querySelectorAll('.cookster-backpack-held-preview').forEach(function(e){if(on)e.style.setProperty('display','none','important');else e.style.removeProperty('display');});
+  /* the second copy of the pitcher in the hand (backpack mode) is made again and again by the game with its own display, so it is hidden with a rule of the page (it would show two pitchers) */
+  document.body.classList.toggle('pitcher-pouring',!!on);
+  document.querySelectorAll('.cookster-backpack-held-preview').forEach(function(e){if(on)e.style.setProperty('clip-path','inset(50%)','important');else e.style.removeProperty('clip-path');});   // the game sets display/visibility on it again every frame: a clip that it does not touch hides it
+  if(on){var h=typeof holding!=='undefined'?holding:null;if(h&&isPitcher(h))h.style.visibility='hidden';}   // the real pitcher stays hidden: only the tilted copy is seen
   pitcherBodies().forEach(function(b){var gc=b.classList.contains('ghost-item-copy');b.style.transformOrigin=on?'30% 15%':(gc?'50% 90%':'30% 15%');b.style.transition='transform .25s ease';b.style.transform=on?'rotate(-62deg)':(gc?'none':'');});}
 function wFrame(now){
   if(!wp)return;var h=typeof holding!=='undefined'?holding:null;

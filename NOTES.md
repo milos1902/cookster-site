@@ -640,3 +640,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Sada za vreme sipanja (`dataset.pourLock`, postavlja flour.js) ključ računa vodu u koracima od 5%, a pravi bokal se ne prikazuje dok se kopija pravi: u probi 11 pravljenja za 3 s (po 5% vode), bez treptanja.
 - Greška pada taba: `Crashpad_NotConnectedToHandler` (tab se srušio, program za izveštaje nije bio dostupan); sam kod ne kaže uzrok. Nije potvrđeno da je ovo uzrok pada.
 - Nije reprodukovano: dva bokala i nestanak jedne česme u sudoperi pri punjenju (u mojoj probi u sudoperi je jedan bokal i obe česme).
+
+## Sipanje iz bokala: dvostruko nagnut bokal (2026-10-15, flour.js?v=27)
+- Uzrok "dva nagnuta bokala, jedan se lomi": pravi bokal u ruci sam takođe naginjao (rotate -62°), a kopija koja se vidi pravi se kloniranjem pravog bokala, pa je slika bokala u kopiji bila okrenuta dvaput (voda i prednja maska jednom). Sada se pravi bokal nikad ne okreće, samo cela kopija.
+- Druga kopija iz moda "ranac" (`.cookster-backpack-held-preview`) se tokom sipanja krije isečkom (`clip-path`), jer igra svaki kadar sama vraća njen `display`/`visibility`.
+- Provereno slikom iz pregledača kroz tri sipanja sa prekidima: jedan nagnut bokal, mlaz ravno nadole.
