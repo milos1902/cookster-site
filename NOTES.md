@@ -761,8 +761,14 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Mali natpis "špajz →" u kuhinji (`js/pantry-scene.js?v=3.13`) i polje nad cvećem koje je na hover pokazivalo "BAŠTA" (`js/garden.js?v=2`, `css/game.css?v=2.96`) su obrisani. U špajz i baštu se ide preko tabli sa pokazivačima (`signposts.js`).
 - Provereno: kuhinja bez tih elemenata, `CooksterGarden.open()` i `CooksterPantry.open()` rade, nema grešaka u konzoli.
 
-## Gajba za drva umesto korpe
-- Korpa za drva zamenjena gajbom (tri slike: `assets/wood_basket/crate-full|medium|empty.webp`, iste dimenzije 1254×1254, ista ivica; puna i srednja su suzene za 3% da im se desna ivica poklopi sa praznom). Stare `basket-*.png` obrisane.
-- Isti predmet (`korpa_drva`), ista logika: 9 cepanica; 9–6 puna, 5–1 srednja, 0 prazna (`WOOD_BASKET_ASSETS`, `woodBasketStageIndex`). Drvarnica (`wood-refill-scene.js?v=2.94`) koristi srednju sliku i za "malo".
-- Dodata u Kuhinjske elemente (`WOOD_CRATE_DEF`, `game.js?v=3.135`) da može da se kalibriše; tekstovi "korpa" → "gajba".
-- Nije provereno: drvarnica (scena sa gomilom) i njena geometrija nisu probane; telefon.
+## Obrisana korpa (gajba) za drva i drvarnica
+- Korpa za drva (kasnije gajba) i scena drvarnice (punjenje) su obrisane: predmet `korpa_drva`, `js/wood-refill-scene.js`, `css/wood-refill-scene.css`, markup `#woodSupplyScene`, slike korpe/gajbe i dvorišta, senke korpe u alatu za senke, unos u Kuhinjskim elementima. Stari snimci: korpa se uklanja pri učitavanju (`items.filter(...korpa_drva).forEach(removeItem)`). Ostaje `assets/wood_basket/individual-log.png` (cepanica), `isBasketWoodLog`, `isFirewoodLog` i ubacivanje cepanice u ložište.
+- Drva će se čuvati u fioci ispod rerne (sledeći korak). Ranija logika uzimanja cepanice iz korpe je u istoriji gita (komit `3292aef`, funkcije `spawnHeldWoodBasketLog`, `renderWoodBasket`).
+- Do tada nema izvora cepanica u igri.
+
+## Fioka ispod rerne sa drvima
+- Slika otvorene fioke je isečak sa slike iz ChatGPT-a (`assets/stove_states_v3/drawer_open.webp`, 236×154, meke ivice) preko stare kuhinje na mestu (1384,552). Ostatak kuhinje ostaje stara slika.
+- Klik na zatvorenu fioku je otvara; klik na cepanice u otvorenoj fioci daje cepanicu u ruku (drva se nikad ne prazne); klik na prednju stranu fioke (ručka) je zatvara. Zvuk je zvuk desne fioke stola.
+- Hotspot rerne je skraćen (do y=552) da ne pokriva fioku. Dok je nova slika otvorene rerne nema, otvaranje fioke zatvara rernu i obrnuto.
+- `index.html`: `#ovenDrawerOpen`, `#drawerHotspot`; `game.js?v=3.137`, `game.css?v=2.97`. Funkcije: `setOvenDrawer`, `spawnHeldDrawerLog`, `clickOvenDrawer`.
+- Nije provereno: animacija (fioka se otvara odmah, bez prelaza), telefon, ubacivanje cepanice u ložište iz fioke u celom toku (samo uzimanje).

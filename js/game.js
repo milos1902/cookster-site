@@ -175,57 +175,6 @@ for(const key of ['produce_paprika','produce_paprika_plotna_silja','veg_paprika_
   const authoritative=LATEST_CONTACT_SHADOW_CALIBRATION[key]||RED_POINTED_PEPPER_STOVE_CONTACT_SHADOW[key];
   if(authoritative)contactShadowMaster.items[key]=JSON.parse(JSON.stringify(authoritative));
 }
-// Scene-specific profiles use the latest supplied indoor and outdoor exports.
-const WOOD_BASKET_INDOOR_SHADOW_DEFAULT={
- shadowX:6,shadowY:-29,width:.58,height:.17,blur:17.9,opacity:1,angle:0
-};
-const WOOD_BASKET_OUTDOOR_SHADOW_DEFAULT={
- shadowX:4,shadowY:-66,width:.58,height:.255,blur:1,opacity:.62,angle:.1
-};
-const WOOD_BASKET_OUTDOOR_SHADOW_ID='korpa_drva_napolju';
-const WOOD_BASKET_SHADOW_SPLIT_KEY='cookster.basket-shadow-split.v2.89';
-const WOOD_BASKET_OUTDOOR_UPDATE_KEY='cookster.basket-outdoor-calibration.v2.90';
-const WOOD_BASKET_INDOOR_UPDATE_KEY='cookster.basket-indoor-calibration.v2.92';
-let installBasketShadowSplit=true;
-try{installBasketShadowSplit=localStorage.getItem(WOOD_BASKET_SHADOW_SPLIT_KEY)!=='done';}catch(_){}
-for(const [id,label,shadow] of [
- ['korpa_drva','Gajba sa drvima — u sobi',WOOD_BASKET_INDOOR_SHADOW_DEFAULT],
- [WOOD_BASKET_OUTDOOR_SHADOW_ID,'Gajba sa drvima — napolju',WOOD_BASKET_OUTDOOR_SHADOW_DEFAULT]
-]){
- if(installBasketShadowSplit||!contactShadowMaster.items[id])
-  contactShadowMaster.items[id]={itemId:id,label,shadow:{...shadow}};
-}
-if(installBasketShadowSplit){
- try{
-  localStorage.setItem(CONTACT_SHADOW_MASTER_KEY,JSON.stringify(contactShadowMaster));
-  localStorage.setItem(WOOD_BASKET_SHADOW_SPLIT_KEY,'done');
- }catch(_){}
-}
-// Install the new supplied outdoor calibration once; never overwrite later user adjustments.
-try{
- if(localStorage.getItem(WOOD_BASKET_OUTDOOR_UPDATE_KEY)!=='done'){
-  contactShadowMaster.items[WOOD_BASKET_OUTDOOR_SHADOW_ID]={
-   itemId:WOOD_BASKET_OUTDOOR_SHADOW_ID,
-   label:'Gajba sa drvima — napolju',
-   shadow:{...WOOD_BASKET_OUTDOOR_SHADOW_DEFAULT}
-  };
-  localStorage.setItem(CONTACT_SHADOW_MASTER_KEY,JSON.stringify(contactShadowMaster));
-  localStorage.setItem(WOOD_BASKET_OUTDOOR_UPDATE_KEY,'done');
- }
-}catch(_){}
-// Replace the old indoor calibration once, leaving the outdoor profile untouched.
-try{
- if(localStorage.getItem(WOOD_BASKET_INDOOR_UPDATE_KEY)!=='done'){
-  contactShadowMaster.items.korpa_drva={
-   itemId:'korpa_drva',
-   label:'Gajba sa drvima — u sobi',
-   shadow:{...WOOD_BASKET_INDOOR_SHADOW_DEFAULT}
-  };
-  localStorage.setItem(CONTACT_SHADOW_MASTER_KEY,JSON.stringify(contactShadowMaster));
-  localStorage.setItem(WOOD_BASKET_INDOOR_UPDATE_KEY,'done');
- }
-}catch(_){}
-
 function contactShadowProfileKeyFor(el){
  const id=el?.dataset?.itemId||'';
  if(el?.dataset?.marketBag==='1')return 'market_bag';
@@ -1660,15 +1609,12 @@ const FIREBOX_BASE_NO_DOOR='assets/stove_states_v3/firebox_base_no_door.webp';
 Object.values({...SCENE_BACKGROUNDS,...DOOR_OVERLAYS}).forEach(src=>{const im=new Image();im.src=src;});
 const COOKSTOVE_HOTSPOTS={
  firebox:{left:1258,right:1410,top:428,bottom:618},
- oven:{left:1394,right:1579,top:450,bottom:630}
+ oven:{left:1394,right:1579,top:450,bottom:552}
 };
-const WOOD_BASKET_ID='korpa_drva';
-const WOOD_BASKET_MAX_LOGS=9;
-const WOOD_BASKET_ASSETS=[
- {name:'full',src:'assets/wood_basket/crate-full.webp?v=1'},
- {name:'medium',src:'assets/wood_basket/crate-medium.webp?v=1'},
- {name:'empty',src:'assets/wood_basket/crate-empty.webp?v=1'}
-];
+// the wide drawer under the oven: closed it is one small hotspot, open it is the pulled-out drawer (the picture assets/stove_states_v3/drawer_open.webp lies over the kitchen)
+const OVEN_DRAWER_RECT={closed:{left:1394,right:1590,top:556,bottom:640},open:{left:1394,right:1612,top:556,bottom:706}};
+const OVEN_DRAWER_LOGS_BOTTOM=628;   // open drawer: a click above this line takes a log, below it (the front with the handle) closes the drawer
+let ovenDrawerOpen=false;
 const stoveState=CooksterState.stove;
 // One fuel item should provide a meaningful cooking session instead of
 // burning out during a single short interaction.
@@ -1705,6 +1651,7 @@ function pointInSceneRect(pt,r){return pt.x>=r.left&&pt.x<=r.right&&pt.y>=r.top&
 function cookstoveHotspotAt(x,y){
  const p=screenToScene(x,y);
  if(pointInSceneRect(p,COOKSTOVE_HOTSPOTS.firebox))return 'firebox';
+ if(pointInSceneRect(p,ovenDrawerOpen?OVEN_DRAWER_RECT.open:OVEN_DRAWER_RECT.closed))return 'drawer';
  if(pointInSceneRect(p,COOKSTOVE_HOTSPOTS.oven))return 'oven';
  return null;
 }
@@ -2052,8 +1999,43 @@ function toggleCookstoveFirebox(){
  refreshCookstoveHeating(false);updateFireboxEffects();
  showToast(stoveState.fireboxOpen?'Ložište je otvoreno.':'Ložište je zatvoreno.');
 }
+function setOvenDrawer(open){
+ ovenDrawerOpen=!!open;
+ const img=document.getElementById('ovenDrawerOpen'),btn=document.getElementById('drawerHotspot');
+ if(img)img.style.display=ovenDrawerOpen?'block':'none';
+ if(btn){const r=ovenDrawerOpen?OVEN_DRAWER_RECT.open:OVEN_DRAWER_RECT.closed;btn.style.width=(r.right-r.left)+'px';btn.style.height=(r.bottom-r.top)+'px';}
+ playImpactSound(drawerRightSoundTarget,ovenDrawerOpen?'open':'close');
+}
+// a log from the drawer: the wood in the drawer never runs out
+function spawnHeldDrawerLog(pointerEvent=null){
+ if(holding||picking||placing)return false;
+ const logW=112,logH=66;
+ const pt=pointerEvent&&Number.isFinite(pointerEvent.clientX)?screenToScene(pointerEvent.clientX,pointerEvent.clientY):{x:1500,y:590};
+ const loose=makeItem({
+   id:'drvo',instanceId:nextItemInstanceId('drvo'),label:'Cjepanica',
+   src:'assets/wood_basket/individual-log.png',
+   x:pt.x-logW/2-CENTER_OFFSET,y:pt.y+logH/2-logH,w:logW,h:logH,z:++zCounter,
+   shadowProfile:'tiny',snapProfile:'produce'
+ });
+ if(!loose)return false;
+ loose.dataset.firewood='1';
+ loose.dataset.basketWoodLog='1';
+ loose.dataset.collisionProfile='flat';
+ startHolding(loose,pointerEvent);
+ showToast('Uzeo si cjepanicu — ubaci je u ložište.');
+ return true;
+}
+function clickOvenDrawer(e){
+ if(!ovenDrawerOpen){
+  if(stoveState.ovenOpen)toggleCookstoveOven();   // the picture of the open oven door would lie under the drawer: one of them at a time
+  setOvenDrawer(true);return;
+ }
+ const p=screenToScene(e.clientX,e.clientY);
+ if(p.y<OVEN_DRAWER_LOGS_BOTTOM)spawnHeldDrawerLog(e);else setOvenDrawer(false);
+}
 function toggleCookstoveOven(){
  const opening=!stoveState.ovenOpen;
+ if(opening&&ovenDrawerOpen)setOvenDrawer(false);
  stoveState.ovenOpen=opening;
  if(stoveState.ovenOpen)stoveState.fireboxOpen=false;
  // Never fade the entire scene: that old transition temporarily hid every
@@ -2116,78 +2098,8 @@ function insertHeldPackagingIntoFirebox(){
  }
  return fuelFireWithRemovedItem(item,isBag?'bag':'crate');
 }
-function isWoodBasket(el){
- return !!el&&(el.dataset.woodBasket==='1'||el.dataset.itemId===WOOD_BASKET_ID);
-}
-function woodBasketRemaining(el){
- if(!el||el.dataset.woodRemaining==null)return WOOD_BASKET_MAX_LOGS;
- return Math.max(0,Math.min(WOOD_BASKET_MAX_LOGS,Math.floor(+el.dataset.woodRemaining||0)));
-}
-function woodBasketStageIndex(remaining){
- // only three pictures: full (9..6 logs), medium (5..1), empty (0)
- return remaining>=6?0:remaining>0?1:2;
-}
-function renderWoodBasket(el){
- if(!isWoodBasket(el))return null;
- el.dataset.woodBasket='1';
- const remaining=woodBasketRemaining(el);
- el.dataset.woodRemaining=String(remaining);
- const stage=WOOD_BASKET_ASSETS[woodBasketStageIndex(remaining)];
- el.dataset.woodStage=stage.name;
- const body=el.querySelector('.body');
- if(body&&body.getAttribute('src')!==stage.src)body.src=stage.src;
- const shadowImage=el._contactShadow?.querySelector('img');
- if(shadowImage&&shadowImage.getAttribute('src')!==stage.src)shadowImage.src=stage.src;
- return stage;
-}
-function ensureWoodBasket(){
- let basket=items.find(isWoodBasket);
- if(!basket){
-   basket=makeItem({
-     id:WOOD_BASKET_ID,instanceId:'wood-basket-main',label:'Gajba sa drvima',
-     src:WOOD_BASKET_ASSETS[0].src,x:1425,y:532,w:236,h:236,z:++zCounter,
-     snapProfile:'flat',shadowProfile:'tiny'
-   });
- }
- if(!basket)return null;
- basket.dataset.woodBasket='1';
- if(basket.dataset.woodRemaining==null)basket.dataset.woodRemaining=String(WOOD_BASKET_MAX_LOGS);
- basket.dataset.surfaceZone=basket.dataset.surfaceZone||'floor';
- basket.dataset.collisionProfile=basket.dataset.collisionProfile||'flat';
- const body=basket.querySelector('.body');
- if(body)body.draggable=false;
- setPose(basket,+basket.dataset.cx||1543,+basket.dataset.by||768,+basket.dataset.vis||1);
- return renderWoodBasket(basket)?basket:null;
-}
 function isBasketWoodLog(el){
  return !!el&&el.dataset.basketWoodLog==='1';
-}
-function spawnHeldWoodBasketLog(basket,pointerEvent=null){
- if(!isWoodBasket(basket)||holding||picking||placing)return false;
- const remaining=woodBasketRemaining(basket);
- if(remaining<=0)return false;
- const cx=+basket.dataset.cx||1543,by=+basket.dataset.by||768;
- const logW=112,logH=66;
- const clickPoint=pointerEvent&&Number.isFinite(pointerEvent.clientX)&&Number.isFinite(pointerEvent.clientY)
-   ?screenToScene(pointerEvent.clientX,pointerEvent.clientY):null;
- const spawnCx=clickPoint?.x??cx;
- const spawnCenterY=clickPoint?.y??(by-(+basket.dataset.baseH||236)*.62);
- const spawnBy=spawnCenterY+logH/2;
- const loose=makeItem({
-   id:'drvo',instanceId:nextItemInstanceId('drvo'),label:'Cjepanica',
-   src:'assets/wood_basket/individual-log.png',
-   x:spawnCx-logW/2-CENTER_OFFSET,y:spawnBy-logH,w:logW,h:logH,z:++zCounter,
-   shadowProfile:'tiny',snapProfile:'produce'
- });
- if(!loose)return false;
- loose.dataset.firewood='1';
- loose.dataset.basketWoodLog='1';
- loose.dataset.collisionProfile='flat';
- basket.dataset.woodRemaining=String(remaining-1);
- renderWoodBasket(basket);
- startHolding(loose,pointerEvent);
- showToast('Uzeo si cjepanicu — ubaci je u ložište.');
- return true;
 }
 function isFirewoodLog(el){
  return isBasketWoodLog(el);
@@ -2197,73 +2109,6 @@ function insertHeldLogIntoFirebox(){
  if(!stoveState.fireboxOpen){showToast('Prvo otvori vrata ložišta.');return true;}
  return fuelFireWithRemovedItem(holding,'log');
 }
-let woodBasketActionMenu=null;
-function closeWoodBasketActionMenu(){
- if(woodBasketActionMenu){woodBasketActionMenu.remove();woodBasketActionMenu=null;}
-}
-function requestWoodBasketFill(basket){
- closeWoodBasketActionMenu();
- window.dispatchEvent(new CustomEvent('cookster:wood-basket-fill-request',{
-   detail:{instanceId:basket?.dataset?.instanceId||'',remaining:woodBasketRemaining(basket)}
- }));
-}
-function openWoodBasketActionMenu(basket,x,y){
- closeWoodBasketActionMenu();
- const menu=document.createElement('div');
- menu.className='wood-basket-action-menu';
- Object.assign(menu.style,{
-   position:'fixed',left:'0px',top:'0px',zIndex:'30000',display:'flex',
-   flexDirection:'column',gap:'5px',padding:'7px',
-   background:'rgba(39,28,19,.96)',border:'1px solid rgba(255,220,150,.75)',
-   borderRadius:'7px',boxShadow:'0 5px 18px rgba(0,0,0,.45)',color:'#fff',
-   font:'600 13px/1.2 system-ui,sans-serif'
- });
- menu.addEventListener('pointerdown',e=>e.stopPropagation());
- const title=document.createElement('strong');
- title.textContent='Gajba je prazna';
- title.style.padding='2px 5px 4px';
- menu.appendChild(title);
- const button=document.createElement('button');
- button.type='button';
- button.textContent='Napuni gajbu';
- Object.assign(button.style,{
-   border:'0',borderRadius:'5px',padding:'7px 10px',cursor:'pointer',
-   background:'#f0c36a',color:'#2a1a0e',font:'700 13px system-ui'
- });
- button.addEventListener('click',e=>{e.stopPropagation();requestWoodBasketFill(basket);});
- menu.appendChild(button);
- document.body.appendChild(menu);
- woodBasketActionMenu=menu;
- const mw=menu.offsetWidth||160,mh=menu.offsetHeight||60;
- menu.style.left=Math.max(8,Math.min(innerWidth-mw-8,x+4))+'px';
- menu.style.top=Math.max(8,Math.min(innerHeight-mh-8,y+4))+'px';
- setTimeout(()=>document.addEventListener('pointerdown',e=>{
-   if(!menu.contains(e.target))closeWoodBasketActionMenu();
- },{once:true}),0);
-}
-window.CooksterWoodBasket={
- get(){return items.find(isWoodBasket)||null;},
- snapshot(){
-   const basket=items.find(isWoodBasket);
-   if(!basket)return null;
-   const record=serializeWorldItem(basket);
-   return{
-     remaining:woodBasketRemaining(basket),stage:basket.dataset.woodStage||'',
-     cx:record.cx,by:record.by,instanceId:record.instanceId,src:record.src
-   };
- },
-  setRemaining(value){
-    const basket=items.find(isWoodBasket);
-    if(!basket)return false;
-    const remaining=Math.max(0,Math.min(WOOD_BASKET_MAX_LOGS,Math.floor(+value||0)));
-    basket.dataset.woodRemaining=String(remaining);
-    renderWoodBasket(basket);
-    CooksterSave.schedule();
-    return true;
-  },
- requestFill(){const basket=items.find(isWoodBasket);if(!basket)return false;requestWoodBasketFill(basket);return true;}
-};
-
 // v79: samo pažljivo odabrani gameplay zvukovi. Stari generički SFX ostaju ugašeni.
 const SFX={
  tomatoChop:'assets/sfx/game/tomatoChop_1.wav',
@@ -4288,19 +4133,6 @@ function createContactShadowLab(){
  const applyBtn=btn('Примени у игру',applyCurrentItem);
  const resetBtn=btn('Ресетуј предмет',resetCurrentItem);
  const exportBtn=btn('Извези master JSON',exportMaster);
-  function exportBasketShadow(id,sceneName){
-    const profile=contactShadowMaster.items[id];
-    if(!profile)return;
-    const data={version:2,tool:'cookster-wood-basket-shadow',itemId:'korpa_drva',
-      scene:sceneName,shadow:{...profile.shadow}};
-    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-    a.download=`cookster-wood-basket-shadow-${sceneName}.json`;a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-    status.textContent=`Izvezena senka korpe: ${sceneName==='indoor'?'u sobi':'napolju'}.`;
-  }
-  btn('Izvezi senku u sobi',()=>exportBasketShadow('korpa_drva','indoor'));
-  btn('Izvezi senku napolju',()=>exportBasketShadow(WOOD_BASKET_OUTDOOR_SHADOW_ID,'outdoor'));
  const closeBtn=btn('Затвори',()=>panel.style.display='none');
 
  const pointList=document.createElement('div');
@@ -4410,14 +4242,6 @@ function createContactShadowLab(){
       id:'produce_crate',label:'Gajbica sa povrćem',src:CRATE_STAGE_ASSETS.paradajz.full,
       w:340,h:257,snapProfile:'crate',shadowProfile:'crate',category:'produce-crate'
     });
-    map.set('korpa_drva',{
-      id:'korpa_drva',label:'Gajba sa drvima — u sobi',src:WOOD_BASKET_ASSETS[0].src,
-      w:236,h:236,snapProfile:'flat',shadowProfile:'tiny',category:'wood-basket'
-    });
-    map.set(WOOD_BASKET_OUTDOOR_SHADOW_ID,{
-      id:WOOD_BASKET_OUTDOOR_SHADOW_ID,label:'Gajba sa drvima — napolju',src:WOOD_BASKET_ASSETS[0].src,
-      w:236,h:236,snapProfile:'flat',shadowProfile:'tiny',category:'wood-basket'
-    });
    for(const el of items||[]){
      const id=el?.dataset?.itemId;if(!id||map.has(id))continue;
      map.set(id,{id,label:el.dataset.label||id,src:el.querySelector('.body')?.src||'',w:+el.dataset.baseW||120,h:+el.dataset.baseH||100});
@@ -4444,8 +4268,6 @@ function createContactShadowLab(){
    return current||'table';
  }
  function defaultCfgFor(itemId){
-   if(itemId==='korpa_drva')return {...WOOD_BASKET_INDOOR_SHADOW_DEFAULT};
-   if(itemId===WOOD_BASKET_OUTDOOR_SHADOW_ID)return {...WOOD_BASKET_OUTDOOR_SHADOW_DEFAULT};
    const pot=String(itemId).includes('serpa');
    return pot
     ?{shadowX:0,shadowY:0,width:1.10,height:.70,opacity:.52,blur:.8,angle:.6}
@@ -4465,11 +4287,7 @@ function createContactShadowLab(){
    syncSurfaceSelector();
    const c=state.selected;
    if(c){
-     status.textContent=c.itemId===WOOD_BASKET_OUTDOOR_SHADOW_ID
-       ?'Gajba sa drvima · senka napolju · promene se vide u drvarnici'
-       :c.itemId==='korpa_drva'
-       ?'Gajba sa drvima · senka u sobi · ne menja senku napolju'
-       :c.itemId==='daska'
+     status.textContent=c.itemId==='daska'
        ?`${defFor(c.itemId)?.label||c.itemId} · сенка за ${c.surface} · x ${c.x.toFixed(1)} / y ${c.y.toFixed(1)}`
        :`${defFor(c.itemId)?.label||c.itemId} · глобална сенка · preview: ${c.surface} · x ${c.x.toFixed(1)} / y ${c.y.toFixed(1)}`;
    }else{
@@ -4487,21 +4305,6 @@ function createContactShadowLab(){
    }
  }
  function renderCopy(c){
-   if(c?.itemId==='korpa_drva'||c?.itemId===WOOD_BASKET_OUTDOOR_SHADOW_ID){
-     const shadow={shadowX:c.shadowX,shadowY:c.shadowY,width:c.width,height:c.height,
-       blur:c.blur,opacity:c.opacity,angle:c.angle};
-     const id=c.itemId;
-     const profile={itemId:id,label:id==='korpa_drva'
-       ?'Gajba sa drvima — u sobi':'Gajba sa drvima — napolju',shadow};
-     contactShadowMaster.items[id]=profile;
-     state.applied[id]=JSON.parse(JSON.stringify(profile));
-     try{localStorage.setItem(CONTACT_SHADOW_MASTER_KEY,JSON.stringify(contactShadowMaster));}catch(_){}
-     if(id===WOOD_BASKET_OUTDOOR_SHADOW_ID)window.CooksterWoodRefill?.setShadow?.(shadow);
-     else for(const el of items||[]){
-       if(el.dataset.itemId===id&&Number.isFinite(+el.dataset.cx))
-         setPose(el,+el.dataset.cx,+el.dataset.by,+el.dataset.vis||1);
-     }
-   }
    if(!c?.el)return;
    const d=defFor(c.itemId);if(!d)return;
 
@@ -4744,12 +4547,6 @@ function createContactShadowLab(){
    panel
  };
 }
-window.CooksterWoodBasketShadow={
- get(){return {...WOOD_BASKET_OUTDOOR_SHADOW_DEFAULT,
-   ...contactShadowMaster.items[WOOD_BASKET_OUTDOOR_SHADOW_ID]?.shadow};},
- open(){if(!openContactShadowLab())return false;
-   contactShadowLab.selectItem(WOOD_BASKET_OUTDOOR_SHADOW_ID);return true;}
-};
 // the papers of the orders (kitchen-orders.js) take their shadow from the same master
 window.CooksterContactShadowCfg=id=>{const e=contactShadowMaster.items?.[id];return e&&e.shadow?{...e.shadow}:null;};
 const contactShadowLabDockButton=document.createElement('button');
@@ -4893,8 +4690,7 @@ const FIXED_GRINDER_DEF={
  category:'fixed-kitchen-machine',fixedMount:'table-left'
 };
 const KNEADING_TROUGH_DEF={id:'nacve',label:'Naćve',src:'assets/flour/nacve.webp',x:0,y:0,w:105,h:196,z:22,starter:true,placement:['table','floor'],shadowProfile:'tiny',snapProfile:'flat',category:'tool'};
-const WOOD_CRATE_DEF={id:WOOD_BASKET_ID,label:'Gajba sa drvima',src:WOOD_BASKET_ASSETS[0].src,x:0,y:0,w:236,h:236,z:22,starter:true,placement:['floor','table'],shadowProfile:'tiny',snapProfile:'flat',category:'tool'};
-const KITCHEN_EQUIPMENT=[...catalogKitchenEquipment,PAPRIKA_STEAM_BAG_DEF,...WATER_VESSEL_PROPS,KNEADING_TROUGH_DEF,WOOD_CRATE_DEF,FIXED_GRINDER_DEF].filter((prop,i,arr)=>arr.findIndex(x=>x.id===prop.id)===i);
+const KITCHEN_EQUIPMENT=[...catalogKitchenEquipment,PAPRIKA_STEAM_BAG_DEF,...WATER_VESSEL_PROPS,KNEADING_TROUGH_DEF,FIXED_GRINDER_DEF].filter((prop,i,arr)=>arr.findIndex(x=>x.id===prop.id)===i);
 const CRATE_ZONE_ASSETS={
  table:'assets/crate_table.png',
  under:'assets/crate_under.png',
@@ -10863,7 +10659,7 @@ function openKitchenElements(mode){
 
 function serializeWorldItem(el){
  const body=el.querySelector('.body');
-  const keep=['inFlour','inWater','inYeast','inMix','inShape','inMesh','inMeshS','inBall','flour','water','soak','dirt','hadFood','ingredient','ingredientKey','trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','cutStyle','ovalN','ovalItems','ovalOil','ovalParsley','ovalSeed','ovalExtras','srvItems','srvOil','srvParsley','srvSeed','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','woodBasket','woodRemaining','basketWoodLog','firewood'];
+  const keep=['inFlour','inWater','inYeast','inMix','inShape','inMesh','inMeshS','inBall','flour','water','soak','dirt','hadFood','ingredient','ingredientKey','trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','cutStyle','ovalN','ovalItems','ovalOil','ovalParsley','ovalSeed','ovalExtras','srvItems','srvOil','srvParsley','srvSeed','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','basketWoodLog','firewood'];
  const data={};
  for(const k of keep)if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
  for(const k of ['ajvarMl','ajvarBatchMl'])if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
@@ -10917,11 +10713,6 @@ function restoreWorldItem(saved){
   if(el.dataset.itemId==='kaca_prazna'&&window.CooksterKaca)CooksterKaca.refresh(el);
   if(isAjvarJar(el))renderAjvarJar(el);
   if(isAjvarLadle(el))renderAjvarLadle(el);
-  if(isWoodBasket(el)){
-    el.dataset.woodBasket='1';
-    if(el.dataset.woodRemaining==null)el.dataset.woodRemaining=String(WOOD_BASKET_MAX_LOGS);
-    renderWoodBasket(el);
-  }
  if(isPaprikaSteamBag(el))renderPaprikaSteamBag(el);
  if(el.dataset.steamedPepper==='1'||(isWholeStraight(el)&&el.dataset.peeled==='1'))renderPaprikaPeelState(el);
  if(el.dataset.creatorShelfSlot)delete el.dataset.creatorShelfSlot;
@@ -14855,7 +14646,7 @@ function updateHover(){
  if(faucetHit(mouse.x,mouse.y)){clearHover();label.textContent=faucetOn?'slavina — klik za zatvaranje vode':'slavina — klik za puštanje vode';label.style.left=mouse.x+'px';label.style.top=(mouse.y-12)+'px';label.style.display='block';return;}
  const lh=lidAt(mouse.x,mouse.y);
  if(lh){if(hoverItem!==lh.item){clearHover();hoverItem=lh.item}lh.lid.classList.add('hover-lid');hoverItem.classList.remove('hovered');label.textContent='poklopac — '+lh.item.dataset.label}
-  else{const it=itemAt(mouse.x,mouse.y);if(it!==hoverItem){clearHover();hoverItem=it;if(it){it.classList.add('hovered')}}if(it)label.textContent=isWoodBasket(it)?(woodBasketRemaining(it)>0?'Gajba sa drvima · L: uzmi cjepanicu · gajba je zaključana':'Prazna gajba · D: Napuni gajbu · fiksirana pozicija'):it.dataset.crate==='1'?it.dataset.label+' · L: 1 komad · D: cela gajba':(it.dataset.detachedLid==='1'?'poklopac':it.dataset.label)}
+  else{const it=itemAt(mouse.x,mouse.y);if(it!==hoverItem){clearHover();hoverItem=it;if(it){it.classList.add('hovered')}}if(it)label.textContent=it.dataset.crate==='1'?it.dataset.label+' · L: 1 komad · D: cela gajba':(it.dataset.detachedLid==='1'?'poklopac':it.dataset.label)}
  if(hoverItem){label.style.left=mouse.x+'px';label.style.top=(mouse.y-12)+'px';label.style.display='block'}
  resetBagPickIfTargetChanged();
  updateBagQtyBadge();
@@ -15473,20 +15264,11 @@ window.addEventListener('pointerdown',e=>{
  if(isCutting)return;
  if(e.button===1){e.preventDefault();if(toggleQuickToolHand())return;}
   if(e.target.closest('#grillZoom')||e.target.closest('#savkaBookRoot')||e.target.closest('#gardenScene')||e.target.closest('.garden-window-hotspot')||e.target.closest('#marketScene')||e.target.closest('#kitchenElementsScene')||e.target.closest('#hud')||e.target.closest('#modal')||e.target.closest('.edge-arrow'))return;
-  // The basket occupies part of the oven hotspot visually. Resolve its visible
-  // top layer first so taking a log never toggles the oven underneath it.
-  if(e.button===0&&!holding){
-    const basketAtPointer=itemAt(e.clientX,e.clientY);
-    if(isWoodBasket(basketAtPointer)){
-      if(woodBasketRemaining(basketAtPointer)>0)spawnHeldWoodBasketLog(basketAtPointer,e);
-      else showToast('Gajba je prazna. Desni klik za meni.');
-      return;
-    }
-  }
  const cookstoveHot=cookstoveHotspotAt(e.clientX,e.clientY);
  if(e.button===0&&holding&&isFirewoodLog(holding)&&cookstoveHot==='firebox'){if(insertHeldLogIntoFirebox())return;}
  if(e.button===0&&holding&&isDisposableMarketPackaging(holding)&&cookstoveHot==='firebox'){if(insertHeldPackagingIntoFirebox())return;}
 if(e.button===0&&!holding&&cookstoveHot==='firebox'){const action=stoveState.fireboxOpen?'close':'open';toggleCookstoveFirebox();playImpactSound(fireboxHotspot,action);return;}
+if(e.button===0&&!holding&&cookstoveHot==='drawer'){clickOvenDrawer(e);return;}
 if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOpen?'close':'open';toggleCookstoveOven();playImpactSound(ovenHotspot,action);return;}
  if(e.button===0&&!holding&&window.CooksterKitchenFx&&!CooksterKitchenFx.isZoomed()){const kfx=CooksterKitchenFx.hit(e.clientX,e.clientY);if(kfx){CooksterKitchenFx.click(kfx,e);return;}}
  if(e.button===0&&faucetHit(e.clientX,e.clientY)){setFaucet(!faucetOn);return;}
@@ -15505,13 +15287,6 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
        openAjvarJarActionMenu(it,e.clientX,e.clientY);
        return;
      }
-    if(holding&&isWoodBasket(holding)){e.preventDefault();dropHolding();return}
-    if(it&&isWoodBasket(it)){
-      e.preventDefault();
-      if(woodBasketRemaining(it)<=0)openWoodBasketActionMenu(it,e.clientX,e.clientY);
-      else showToast('Gajba za drva je zaključana na svom mestu. Levi klik uzima cepanicu.');
-      return;
-    }
     if(it&&isPaprikaSteamBag(it)){e.preventDefault();openPaprikaBagActionMenu(it,e.clientX,e.clientY);return}
     if(it&&it.dataset.readyToPeel==='1'&&it.dataset.peeled!=='1'){e.preventDefault();showToast(it.dataset.attachedToBoard==='1'?'Drži slovo E da oljušti.':'Stavi na dasku i drži slovo E da oljušti.');return}
    // Market paper bags use the same physical right-click pickup/drop language as crates.
@@ -15547,11 +15322,6 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
     return;
   }
  if(!holding){
-    if(it&&isWoodBasket(it)){
-      if(woodBasketRemaining(it)>0)spawnHeldWoodBasketLog(it,e);
-      else showToast('Gajba je prazna. Desni klik za meni.');
-      return;
-    }
    const pepperVessel=roastedPepperVesselAt(e.clientX,e.clientY);
    if(pepperVessel&&takeRoastedPepperFromVessel(pepperVessel))return;
  }
@@ -15678,7 +15448,9 @@ if(!__hasSavedWorld){
  itemsData.filter(def=>!QUICK_TOOL_ITEM_IDS.has(def.id)).forEach(makeItem);
 }
 const __worldRestored=CooksterWorld.restore(CooksterState.world);
-ensureWoodBasket();
+// the old wood basket is gone (the wood will be kept in the drawer under the oven): remove it from older saves
+items.filter(el=>el.dataset.itemId==='korpa_drva').forEach(removeItem);
+try{for(let i=0;i<backpackContents.length;i++)if(backpackContents[i]?.dataset?.itemId==='korpa_drva')backpackContents[i]=null;}catch(_){}
 // The stirring spoon is a physical kitchen tool, not a quick-wheel tool. Older
 // saves could be missing it, so restore one only when there is no scene instance.
 let __starterSpoon=items.find(el=>el.dataset.itemId==='kasika_mesanje')||
@@ -15718,7 +15490,6 @@ if(!__hasSavedWorld){
 // Props placed by the owner (measured from his save, 2026-10-12): they stand exactly here at the start of every game and cannot be moved (dataset.locked).
 const FIXED_PROPS=[
  {id:'daska',cx:839.1996770721205,by:484.8223259742607,vis:0.9826182397886274,zone:'table',startOnly:true},
- {id:'korpa_drva',cx:1355.6103336921421,by:848.0204520990312,vis:1.165,zone:'floor'},
  {id:'kanta_set_zatvorena',cx:1574.4822389666308,by:944.109900380681,vis:1.463239401919793,zone:'floor'},
  {id:'zvonce_konobar',cx:1176.064585575888,by:309.2766415500538,vis:0.73,zone:'table'},
  {id:'ticket_rail',cx:1028.599569429494,by:273.2301932949392,vis:0.8748773233935208,zone:'table'}
@@ -15726,7 +15497,7 @@ const FIXED_PROPS=[
 function lockFixedProps(){
  for(const p of FIXED_PROPS){
   try{
-   let el=items.find(e=>e.dataset.calibrationCopy!=='1'&&(p.id==='korpa_drva'?isWoodBasket(e):e.dataset.itemId===p.id));
+   let el=items.find(e=>e.dataset.calibrationCopy!=='1'&&e.dataset.itemId===p.id);
    if(!el){
     const def=kitchenEquipmentDef(p.id)||itemsData.find(d=>d.id===p.id);if(!def)continue;
     el=makeItem({...def,instanceId:nextItemInstanceId(def.id),x:p.cx-def.w/2-CENTER_OFFSET,y:p.by-def.h,z:++zCounter});
