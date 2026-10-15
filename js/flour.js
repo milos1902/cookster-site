@@ -11,6 +11,30 @@ try{localStorage.removeItem(KEY);}catch(e){}     // the table does not remember 
 function save(){}
 [IMG.a,IMG.b,IMG.pile,IMG.pile2,IMG.pile3].forEach(function(s){var i=new Image();i.src=s;});
 function scn(){return document.getElementById('scene');}
+/* The table gets white where the flour is worked: a canvas under the objects on which small white specks and soft blots are added around the trough.
+   It is not saved (after a refresh the table is clean again). */
+var dcv=null,dcx=null;
+function dustLayer(){
+  var sc=scn();if(!sc)return null;
+  if(!dcv||!dcv.isConnected){
+    dcv=document.createElement('canvas');dcv.width=Math.max(300,sc.offsetWidth||1672);dcv.height=Math.max(200,sc.offsetHeight||941);
+    dcv.style.cssText='position:absolute;left:0;top:0;width:'+dcv.width+'px;height:'+dcv.height+'px;pointer-events:none;z-index:30';   // above the picture of the table (the layer of the table is z 25), below the objects
+    sc.appendChild(dcv);dcx=dcv.getContext('2d');
+  }
+  return dcx;
+}
+function dustAt(x,y,rx,ry,n){        // x,y: scene; rx,ry: the size of the spot; n: how many specks
+  var c=dustLayer();if(!c)return;
+  for(var i=0;i<n;i++){
+    var a=Math.random()*6.283,r=Math.sqrt(Math.random()),px=x+Math.cos(a)*r*rx,py=y+Math.sin(a)*r*ry,k=Math.random();
+    if(k<.12){var br=5+Math.random()*10,g=c.createRadialGradient(px,py,0,px,py,br);g.addColorStop(0,'rgba(255,252,244,.3)');g.addColorStop(1,'rgba(255,252,244,0)');c.fillStyle=g;c.beginPath();c.ellipse(px,py,br,br*.6,0,0,7);c.fill();}
+    else{c.fillStyle='rgba(255,'+(250+Math.floor(Math.random()*5))+','+(238+Math.floor(Math.random()*12))+','+(.5+Math.random()*.45).toFixed(2)+')';c.beginPath();c.ellipse(px,py,1+Math.random()*2.2,(1+Math.random()*2.2)*.7,0,0,7);c.fill();}
+  }
+}
+function dustTrough(tr,n){            // the place on the table around a trough
+  try{var r=tr.getBoundingClientRect(),a=screenToScene(r.left,r.top),b=screenToScene(r.right,r.bottom),w=b.x-a.x,h=b.y-a.y;
+    dustAt((a.x+b.x)/2,a.y+h*.6,w*1.05,h*.36,n*5);}catch(e){}
+}
 function pileW(n){return 46+Math.pow(Math.min(n,200),.62)*7.2;}   // pile width in the pixels of the scene (a little flour = a small heap, 100 units about 170 px)
 function drawPile(p){
   var sc=scn();if(!sc)return;
@@ -56,10 +80,11 @@ function drawTrough(e){
   e._lbl.style.color=D.st==='good'?'#bff5b8':(D.st==='dry'||D.st==='wet'?'#ffd48a':'#fff');
   if(D.W>0&&(!e._wt||!e._wt.isConnected)){
     var wcl=document.createElement('div');wcl.style.cssText='position:absolute;left:'+INNER.l+'%;top:'+INNER.t+'%;width:'+(INNER.r-INNER.l)+'%;height:'+(INNER.b-INNER.t)+'%;border-radius:38% / 18%;overflow:hidden;pointer-events:none;z-index:2';
-    var wd=document.createElement('div');wd.style.cssText='position:absolute;left:50%;top:60%;width:70%;height:34%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(ellipse,rgba(190,225,240,.85),rgba(150,200,225,.55) 60%,rgba(150,200,225,0) 100%)';
+    var wd=document.createElement('div');wd.style.cssText='position:absolute;left:50%;top:50%;width:30%;height:30%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(ellipse at 40% 32%,rgba(250,254,255,.92),rgba(222,240,250,.82) 40%,rgba(190,222,240,.78) 100%);box-shadow:inset 0 0 10px rgba(255,255,255,.6),inset 0 -2px 6px rgba(120,170,205,.35);transition:width .7s ease,height .7s ease,opacity .5s';
     wcl.appendChild(wd);e.appendChild(wcl);e._wt=wcl;e._wd=wd;
   }
-  if(e._wt){e._wt.style.display=D.W>0?'':'none';if(e._wd)e._wd.style.opacity=String(Math.min(.95,.25+D.W/90)*(D.st==='good'?.45:(D.st==='wet'?1:.8)));}
+  if(e._wt){e._wt.style.display=D.W>0?'':'none';if(e._wd){var sp=Math.max(0,Math.min(1,D.W/60));e._wd.style.width=(30+sp*50)+'%';e._wd.style.height=(22+sp*28)+'%';}   // the water spreads as there is more of it, but only up to the half of the length of the trough (not to the edges)
+    if(e._wd)e._wd.style.opacity=String(Math.min(.95,.25+D.W/90)*(D.st==='good'?.45:(D.st==='wet'?1:.8)));}
   // the picture of the trough itself shows the flour (the pictures drawn by the owner)
   var tb=e.querySelector('.body');
   if(tb){var want=n<=0?'assets/flour/nacve.webp':(n<120?'assets/flour/nacve_brasno1.webp':'assets/flour/nacve_brasno2.webp');
@@ -174,7 +199,7 @@ function frame(now){
   var dt=Math.min(.05,(now-pour.last)/1000);pour.last=now;pour.t+=dt;
   var left=remaining(h);
   if(left<=0){try{showToast('Džak je prazan.');}catch(e){}stop();return;}
-  setPic(pour.t<.35?'a':'b');
+  setPic('b');      // straight to the pouring picture (no middle picture)
   var c=tableSpot();
   if(c&&pour.t>.35){
     var n=Math.min(left,RATE*dt);
@@ -185,6 +210,7 @@ function frame(now){
       var tb=tr.getBoundingClientRect(),tp=screenToScene(tb.left+tb.width*.5,tb.top+tb.height*.5);
       p={x:tp.x,y:tp.y};land={x:lx,y:ly};
     }else{p=addFlour(lx,ly,n);land={x:p.x,y:p.y};}
+    if(tr)dustTrough(tr,5);else dustAt(land.x,land.y,60,22,3);
     var m=mouthPoint();
     if(m){spawnGrains(m,land,3);if(now-puffAt>150){puffAt=now;puff(land,pour.t<1);}}
     h.dataset.flour=String(left-n);
@@ -266,6 +292,7 @@ function knMove(tr,e,vx,vy){
   if(now-(tr._puff||0)>260&&Math.abs(vy)+Math.abs(vx)>3){tr._puff=now;
     var c=document.createElement('div'),sz=12+Math.random()*10;
     c.style.cssText='position:absolute;left:'+(px-sz/2+(Math.random()-.5)*18)+'px;top:'+(py-sz/2+(Math.random()-.5)*14)+'px;width:'+sz+'px;height:'+sz*.7+'px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,252,244,.85),rgba(255,250,240,0) 70%);filter:blur(1.5px);pointer-events:none;z-index:8';
+    dustTrough(tr,7);
     tr.appendChild(c);var a=c.animate([{opacity:.9,transform:'scale(.5)'},{opacity:0,transform:'translateY(-14px) scale(1.7)'}],{duration:700,fill:'forwards'});a.onfinish=function(){c.remove();};}
 }
 window.addEventListener('pointermove',function(e){
