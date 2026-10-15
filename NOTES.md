@@ -705,6 +705,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Tačke koje drže testo: na početku mešenja (brašno sa vodom) testo je zalepljeno za mnogo tačaka (vide se kao sitne tamne tačke); one se opiru ruci i vuku testo nazad. Što se duže mesi (7 s), svaka tačka u svom trenutku pušta testo, a na kraju je slobodno od svih tačaka (pa prelazi u testo koje igrač oblikuje u loptu).
 - Kamera pri mešenju se približava samo 1,35 puta (cela površina stola ostaje u kadru), naćve u sredini.
 
-## Alat "Granice testa" u naćvama (2026-10-15, nacve-bounds.js?v=1, dough-mesh.js?v=8, flour.js?v=53)
-- Dugme "🪵 Granice testa" (dole desno) približi kameru na naćve i prikaže zeleni mnogougao (pod naćvi do zidova). Tačke se prevlače, klik na liniju dodaje tačku, desni klik ili dvoklik briše tačku; "Kopiraj JSON" daje brojeve (procenti slike naćvi), "Podrazumevano" vraća početne. Čuva se u pregledaču (`cookster.nacve-bounds.v1`).
-- Tačke testa (`dough-mesh.js`) se sudaraju sa tim mnogouglom: ako tačka izađe, postavi se na najbližu tačku zida (klizi uz zid). Dok je alat otvoren, ruka ne mesi.
+## Alat "Granice testa": farbanje poda i zidova (2026-10-15, nacve-bounds.js?v=3, dough-mesh.js?v=8, flour.js?v=53)
+- Dugme "🪵 Granice testa" (dole desno) približi kameru na naćve i otvori četku: 🟩 Pod (zeleno), 🟥 Zid (crveno), Gumica (ili desni taster), veličina četke, "Obriši sve", "Podrazumevano", "Kopiraj JSON". Mreža je 60 x 114 ćelija preko slike naćvi (vrednosti: 0 ništa, 1 pod, 2 zid). Čuva se u pregledaču (`cookster.nacve-bounds.v3`).
+- Tačke testa (`dough-mesh.js`) smeju samo po zelenom podu; tačka koja izađe postavlja se na najbliže zeleno mesto i klizi uz zid. Crveno (zid) i neobojeno (van naćvi) zaustavljaju testo. Dok je alat otvoren, ruka ne mesi.
