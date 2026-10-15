@@ -692,3 +692,15 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Prelaz između faza testa (brašno sa vodom, grudve, razvučeno testo) je pretapanje od 3 s: stara slika sa svojim oblikom se topi u novu.
 - Testo zadržava veličinu dok se oblikuje: posle svakog povlačenja površina mreže se vraća na površinu testa sa slike (do 1,5 puta, ne preko otvora naćvi), pa lopta koju napraviš ne ostaje sitna.
 - Bljesak pri uzimanju iz donje trake: pravi predmet je na trenutak bio prikazan na svom starom mestu (sredina ekrana) dok se priprema kopija u ruci. Sada se pri uzimanju iz trake ne prikazuje (`dataset.noFlash`), a slike se dekodiraju tokom leta. Proba: bez ispravke 2 kadra vidljivo na starom mestu, sa ispravkom 0.
+
+## Gušća mreža, dve faze testa, ograničenja mreže (2026-10-15, dough-mesh.js?v=6, flour.js?v=48)
+- Mreža je gušća (21 x 27 tačaka, hvatanje je lokalnije) i ima ograničenja: komšije se ne razvlače preko ~1,9 puta ni ne sabijaju ispod 0,5 puta (testo ostaje jedan komad), nijedna tačka ne izlazi iz otvora naćvi, a tačka ne odlazi od svog mesta dalje od 0,42 visine testa (testo se ne razmaže u tanku foliju). Površina se vraća na površinu testa sa slike (do 2 puta).
+- Srednja slika (grudvasto testo) se ne koristi: posle 7 sekundi mešenja (dok se miš kreće) brašno sa vodom prelazi u testo (pretapanje 3 s), koje se prvi put pojavi razvučeno; loptu pravi igrač.
+
+## Kamera pri mešenju i podlaktica do donje trake (2026-10-15, flour.js?v=50)
+- Čim krene mešenje/oblikovanje testa, kamera se približi za 0,2 s (do 1,9 puta, naćve u gornjoj sredini); čim se pusti taster, vrati se za 0,2 s. Koristi kameru igre (`scale`, `offsetX`, `offsetY`).
+- Podlaktica je duža (slika 420 x 4200) i završava se iza kvadratića na dnu ekrana: kad je ruka iznad trake, prozor ruke se seče na sredini trake, pa se kraj ruke ne vidi; van trake ide do dna ekrana.
+
+## Tačke koje drže testo i manji zoom (2026-10-15, dough-mesh.js?v=7, flour.js?v=52)
+- Tačke koje drže testo: na početku mešenja (brašno sa vodom) testo je zalepljeno za mnogo tačaka (vide se kao sitne tamne tačke); one se opiru ruci i vuku testo nazad. Što se duže mesi (7 s), svaka tačka u svom trenutku pušta testo, a na kraju je slobodno od svih tačaka (pa prelazi u testo koje igrač oblikuje u loptu).
+- Kamera pri mešenju se približava samo 1,35 puta (cela površina stola ostaje u kadru), naćve u sredini.

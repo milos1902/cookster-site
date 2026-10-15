@@ -119,11 +119,11 @@ function drawTrough(e){
       im.className='dough-img';im.style.cssText='position:absolute;left:50%;top:46%;height:'+q[1]+'%;width:auto;transform:translate(-50%,-50%);opacity:0;display:none';dg.appendChild(im);e._dl[q[0]]=im;});
     e.appendChild(dw);e._dw=dw;e._dg=dg;
   }
-  var wetF=D.W>=1&&D.F>=3,stage=mx<.5?0:(mx<1?1:2),meshOn=false;      // stages: 0 wet flour, 1 lumpy mass, 2 the stretched dough (5 s of kneading each)
-  if(window.CooksterDoughMesh){if(wetF)meshOn=CooksterDoughMesh.setStage(e,stage,D.F);else CooksterDoughMesh.hide(e);}
+  var wetF=D.W>=1&&D.F>=3,stage=mx<1?0:1,meshOn=false;      // stages: 0 wet flour (7 s of kneading), 1 the dough (it first appears stretched)
+  if(window.CooksterDoughMesh){if(wetF)meshOn=CooksterDoughMesh.setStage(e,stage,D.F,mx);else CooksterDoughMesh.hide(e);}
   // reserve (when WebGL is not there): the plain pictures
   e._o={kugla:0};
-  setO(e._dl.smesa,(wetF&&!meshOn&&stage===0)?1:0);setO(e._dl.grudve,(wetF&&!meshOn&&stage===1)?1:0);setO(e._dl.razvuceno,(wetF&&!meshOn&&stage===2)?1:0);setO(e._dl.kugla,0);
+  setO(e._dl.smesa,(wetF&&!meshOn&&stage===0)?1:0);setO(e._dl.grudve,0);setO(e._dl.razvuceno,(wetF&&!meshOn&&stage===1)?1:0);setO(e._dl.kugla,0);
   e._dl.smesa.style.height=(48+Math.min(1,D.F/200)*16)+'%';      // the wet flour fills the opening like the flour did (it grows with the amount of the flour)
   return;
   if(!e._fl||!e._fl.isConnected){
@@ -258,6 +258,29 @@ window.addEventListener('pointerup',function(e){if(pour&&e.button===0){e.stopImm
 window.addEventListener('click',function(e){if(hold!==null&&e.button===0){hold=null;e.stopImmediatePropagation();}},true);
 window.addEventListener('contextmenu',function(e){var h=typeof holding!=='undefined'?holding:null;if(isSack(h))e.preventDefault();},true);
 // ---- mixing: the stirring spoon in the hand, LEFT button held, moved over the trough; the flour and the water become a dough (only when the ratio is right) ----
+/* The camera: while the dough is kneaded the picture comes a little closer in 0.2 s (1.35 times, the whole table stays visible; the trough in the middle, the arm goes down behind the squares at the bottom); the moment the kneading
+   is let go it goes back in 0.2 s. It uses the camera of the game (scale, offsetX, offsetY). */
+var camSaved=null,camRaf=0;
+function camTo(T,dur,done){
+  if(camRaf)cancelAnimationFrame(camRaf);
+  var s0=scale,x0=offsetX,y0=offsetY,t0=performance.now();
+  (function f(now){var k=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-k,3);
+    scale=s0+(T.s-s0)*e;offsetX=x0+(T.ox-x0)*e;offsetY=y0+(T.oy-y0)*e;applyCamera();
+    if(k<1)camRaf=requestAnimationFrame(f);else{camRaf=0;if(done)done();}})(t0);
+}
+function camIn(tr){
+  if(camSaved)return;
+  try{
+    camSaved={s:scale,ox:offsetX,oy:offsetY};
+    var r=tr.getBoundingClientRect(),pt=screenToScene(r.left+r.width/2,r.top+r.height*.46);
+    var s=Math.min(fitScale*1.5,Math.max(scale*1.35,fitScale*1.35)),sx=innerWidth/2,sy=innerHeight*.47;      // only a little closer: the whole table stays in the picture
+    camTo({s:s,ox:sx-(pt.x-cameraX)*s,oy:sy-pt.y*s},200);
+  }catch(e){camSaved=null;}
+}
+function camOut(){
+  if(!camSaved)return;var T={s:camSaved.s,ox:camSaved.ox,oy:camSaved.oy};camSaved=null;
+  try{camTo(T,200);}catch(e){}
+}
 var mixP=null;
 window.addEventListener('pointerdown',function(e){
   var h=typeof holding!=='undefined'?holding:null;if(e.button!==0||h)return;     // by hand: nothing in the hand
@@ -272,19 +295,20 @@ window.addEventListener('pointerdown',function(e){
   if(D.st==='wet'){try{showToast('Previše je meko, dodaj još brašna.');}catch(x){}}
   mixP={tr:tr,x:e.clientX,y:e.clientY,t:performance.now()};
   try{CooksterDoughMesh.grab(tr,e.clientX,e.clientY);}catch(x){}
+  camIn(tr);
   knMove(tr,e,0,0,true);
 },true);
 /* The kneading hand, drawn in code (no video): it follows the mouse inside the opening of the trough and presses the dough; every bit of movement kneads (up-down counts fully, left-right a quarter), so going up-down-up-down gets to the end. The dough picture is pushed a little by the hand and a puff of flour rises now and then. */
 /* the two pictures of the hand (open and pressed): the same place on both, so the swap does not jump */
-var HAND_IMG=['assets/flour/ruka1.webp?v=2','assets/flour/ruka2.webp?v=2'];
+var HAND_IMG=['assets/flour/ruka1.webp?v=3','assets/flour/ruka2.webp?v=3'];
 HAND_IMG.forEach(function(u){var i=new Image();i.src=u;});
 function knLayer(tr){
   if(tr._kn&&tr._kn.isConnected)return tr._kn;
   /* a window the size of the trough opening (it goes on down, so the arm can come from the front): the hand never goes out of the sides */
-  var w=document.createElement('div');w.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:7;clip-path:polygon('+INNER.l+'% '+INNER.t+'%,'+INNER.r+'% '+INNER.t+'%,'+INNER.r+'% 140%,'+INNER.l+'% 140%)';
-  var h=document.createElement('div');h.style.cssText='position:absolute;left:0;top:0;width:'+(tr.offsetWidth*.62)+'px;opacity:0;transition:opacity .2s;transform-origin:49% 22%;will-change:transform';
+  var w=document.createElement('div');w.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:7;clip-path:polygon('+INNER.l+'% '+INNER.t+'%,'+INNER.r+'% '+INNER.t+'%,'+INNER.r+'% 700%,'+INNER.l+'% 700%)';
+  var h=document.createElement('div');h.style.cssText='position:absolute;left:0;top:0;width:'+(tr.offsetWidth*.62)+'px;opacity:0;transition:opacity .2s;transform-origin:49% 9.5%;will-change:transform';
   h.innerHTML='<img draggable="false" src="'+HAND_IMG[0]+'" style="display:block;width:100%;user-select:none"><img draggable="false" src="'+HAND_IMG[1]+'" style="position:absolute;left:0;top:0;width:100%;opacity:0;user-select:none">';
-  h._p=h.children[1];w.appendChild(h);tr.appendChild(w);tr._kn=h;return h;
+  h._p=h.children[1];w.appendChild(h);tr.appendChild(w);tr._kn=h;tr._kw=w;return h;
 }
 /* the dough stretches the way the hand pulls it: going up it stretches upwards, going down downwards (and gets thinner), then it springs back */
 function knStretch(tr,vy,vx){
@@ -303,9 +327,14 @@ function knStretch(tr,vy,vx){
 function knMove(tr,e,vx,vy,shaping){
   var h=knLayer(tr),r=tr.getBoundingClientRect(),k=r.width/(tr.offsetWidth||1)||1,W=tr.offsetWidth,H=tr.offsetHeight;
   var px=Math.max(W*(INNER.l+12)/100,Math.min(W*(INNER.r-12)/100,(e.clientX-r.left)/k)),py=Math.max(H*INNER.t/100+W*.62*.93*.9,Math.min(H*(INNER.b-2)/100,(e.clientY-r.top)/k));   // the fingers stay inside the opening
-  var hw=W*.62,hh=hw*1804/420,rot=Math.max(-12,Math.min(12,vx*.5)),sc=1-Math.max(-.05,Math.min(.05,vy*.003));
+  var hw=W*.62,hh=hw*4200/420,rot=Math.max(-12,Math.min(12,vx*.5)),sc=1-Math.max(-.05,Math.min(.05,vy*.003));
   if(vy>1.5)h._pt=performance.now();var pr=(performance.now()-(h._pt||0)<160);h._p.style.opacity=pr?'1':'0';h.children[0].style.opacity=pr?'0':'1';   // the pressed hand while it goes down
-  h.style.opacity='1';h.style.transform='translate('+(px-hw*.49)+'px,'+(py-hh*.222)+'px) rotate('+rot+'deg) scale('+sc+')';
+  h.style.opacity='1';h.style.transform='translate('+(px-hw*.49)+'px,'+(py-hh*.0952)+'px) rotate('+rot+'deg) scale('+sc+')';
+  // the end of the arm goes behind the squares at the bottom of the screen (the bar with the vessels): the window of the hand ends in the middle of the bar when the arm is over it
+  try{var bs=document.querySelectorAll('.cookster-bottom-button'),bl=1e9,brr=-1e9,bt=1e9,bb2=-1e9,q;
+    bs.forEach(function(x){q=x.getBoundingClientRect();if(q.width){bl=Math.min(bl,q.left);brr=Math.max(brr,q.right);bt=Math.min(bt,q.top);bb2=Math.max(bb2,q.bottom);}});
+    var armX=r.left+px*k,cut=(brr>bl&&armX>bl&&armX<brr)?(bt+bb2)/2:1e5,lp=Math.max(100,Math.min(900,((cut-r.top)/k)/H*100));
+    if(tr._kw)tr._kw.style.clipPath='polygon('+INNER.l+'% '+INNER.t+'%,'+INNER.r+'% '+INNER.t+'%,'+INNER.r+'% '+lp+'%,'+INNER.l+'% '+lp+'%)';}catch(x){}
   if(!shaping)knStretch(tr,vy,vx);
   var now=performance.now();
   if(now-(tr._puff||0)>260&&Math.abs(vy)+Math.abs(vx)>3){tr._puff=now;
@@ -320,13 +349,14 @@ window.addEventListener('pointermove',function(e){
   try{CooksterDoughMesh.drag(tr,e.clientX,e.clientY);}catch(x){}           // the hand pulls the dough, the points follow it and stay
   var D=doughState(tr);
   if(D.st!=='good'){tr.dataset.inMix=String(Math.max(0,(+tr.dataset.inMix||0)-d/6000));drawTrough(tr);knMove(tr,e,vx,vy,true);return;}
-  if(d>1.5){            // every 5 seconds of kneading (only while the mouse moves) the dough goes to the next stage; after 10 s it is the stretched dough
-    var was=+tr.dataset.inMix||0,T=Math.min(10,was*10+dt),nm=T/10;
+  if(d>1.5){            // after 7 seconds of kneading (only while the mouse moves) the wet flour becomes the dough
+    var was=+tr.dataset.inMix||0,T=Math.min(7,was*7+dt),nm=T/7;
     if(nm>=1&&was<1){try{showToast('Testo je zamešeno. Oblikuj ga rukom u loptu.');}catch(x){}}
     tr.dataset.inMix=String(nm);drawTrough(tr);
   }
   knMove(tr,e,vx,vy,true);
 },true);
-window.addEventListener('pointerup',function(e){if(mixP&&e.button===0){if(mixP.tr._kn)mixP.tr._kn.style.opacity='0';try{CooksterDoughMesh.release(mixP.tr);}catch(x){}mixP=null;try{CooksterSave.schedule();}catch(x){}}},true);
+window.addEventListener('pointerup',function(e){if(mixP&&e.button===0){if(mixP.tr._kn)mixP.tr._kn.style.opacity='0';try{CooksterDoughMesh.release(mixP.tr);}catch(x){}mixP=null;camOut();try{CooksterSave.schedule();}catch(x){}}},true);
+window.addEventListener('blur',function(){if(mixP){mixP=null;}camOut();});
 window.CooksterFlour={troughAt:troughAt,addWater:function(tr,units){tr.dataset.inWater=String(Math.min(400,(+tr.dataset.inWater||0)+units));drawTrough(tr);},dough:function(){var e=(typeof items!=='undefined'?items:[]).filter(function(x){return x.dataset&&x.dataset.itemId===TR;}).pop();return e?doughState(e):null;},piles:function(){return piles.map(function(p){return {x:p.x,y:p.y,n:p.n};});},clear:function(){piles.forEach(function(p){if(p.el)p.el.remove();});piles=[];save();}};
 })();
