@@ -752,3 +752,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - `.github/workflows/windows-build.yml`: ručno pokreni "Windows build" u Actions, preuzmi `Cookster-Windows`.
 - Igra se NE menja. Snimak iz Chrome-a se ne prenosi automatski (drugi prostor za čuvanje).
 - Proveren samo početak u Linux Electronu (igra se učita, localStorage radi). Windows .exe nije probavan.
+
+## Bljesak pri uzimanju iz donjih kvadratića (zadnje korišćeno)
+- Klik na kvadratić pravi novu kopiju na stolu (700,560); dok se slika u ruci nije dekodirala, igra je ostavljala pravu kopiju vidljivom, pa je bljesnula na stolu. Sad kopija odmah dobija `noFlash` i `visibility:hidden` (`js/recent-items.js?v=3`), a `dropBounce` je izbačen jer je radio nad skrivenim predmetom.
+- Provereno kadar po kadar (načva, bokal, džak brašna): prava kopija se ne vidi ni u jednom kadru. Nije provereno: izgled na pravom računaru, telefon.

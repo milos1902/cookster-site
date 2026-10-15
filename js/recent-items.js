@@ -49,7 +49,8 @@
     if(!el)return false;
     el.dataset.surfaceZone='table';
     setPose(el,700,560,surfaceScaleFor(el,'table',560));
-    try{dropBounce(el);}catch(_){}
+    // the new copy stands at (700,560) on the table: it must never be shown, only the copy that follows the mouse (that is the flash that was seen)
+    el.dataset.noFlash='1';el.style.visibility='hidden';setTimeout(()=>{delete el.dataset.noFlash;},1500);
     startHolding(el);
     try{CooksterSave.schedule();}catch(_){}
     return true;
