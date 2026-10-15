@@ -79,7 +79,7 @@ function tick(now){
       if(!anim.fired){anim.fired=true;try{anim.cb&&anim.cb();}catch(e){}}
       if(k2>=1){anim=null;stop();return;}}
   }
-  if(!on){on=true;layer();build(ax,ay,anim?anim.H:sizeNow()*1.5);document.body.classList.add('krpa-held');}
+  if(!on){on=true;layer();build(ax,ay,anim?anim.H:sizeNow()*2.4);document.body.classList.add('krpa-held');}
   if(!cv||!cv.isConnected){layer();}
   if(cv.width!==innerWidth||cv.height!==innerHeight){cv.width=innerWidth;cv.height=innerHeight;}
   step(ax,ay,1/120);step(ax,ay,1/120);
