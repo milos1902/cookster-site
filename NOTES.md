@@ -772,3 +772,10 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Hotspot rerne je skraćen (do y=552) da ne pokriva fioku. Dok je nova slika otvorene rerne nema, otvaranje fioke zatvara rernu i obrnuto.
 - `index.html`: `#ovenDrawerOpen`, `#drawerHotspot`; `game.js?v=3.137`, `game.css?v=2.97`. Funkcije: `setOvenDrawer`, `spawnHeldDrawerLog`, `clickOvenDrawer`.
 - Nije provereno: animacija (fioka se otvara odmah, bez prelaza), telefon, ubacivanje cepanice u ložište iz fioke u celom toku (samo uzimanje).
+
+## Otvorena rerna (spuštena vrata) i vraćanje cepanica u fioku
+- Stara slika otvorene rerne (cela scena, sa vatrom u ložištu i vratima koja prekrivaju fioku) je obrisana (`oven_open.webp`). Nova je mali isečak (`assets/stove_states_v3/oven_door_open.webp`, 212×204) preko normalne kuhinje: vrata su spuštena prema gledaocu, svetli okvir oko vrata ostaje, a ložište i vatra se crtaju isto kao kad je rerna zatvorena. Unutrašnjost je sa stare slike (rešetke). Bela traka okvira desno od otvora (x 1586–1604) je sa stare kuhinje, da okvir ne nestane Donja (prednja) ivica spuštenih vrata je pomerena 13 px udesno, a spoj sa rernom ostaje na mestu (bolja perspektiva, po crtežu vlasnika).
+- `syncOvenDoorPicture()`, `OVEN_DOOR_OPEN_RECT`; klik na spuštena vrata zatvara rernu. Otvaranje rerne zatvara fioku i obrnuto (vrata leže preko fioke).
+- Cepanica iz ruke se vraća u otvorenu fioku klikom na nju (`returnHeldLogToDrawer`); ako je fioka zatvorena: "Prvo otvori fioku." (`game.js?v=3.139`).
+- Napomena: otvorena vrata rerne i ložišta se ne pamte posle ponovnog učitavanja (i ranije nije bilo tako).
+- Nije provereno: animacija otvaranja (sve je odmah), telefon, dim/para sa rerne.
