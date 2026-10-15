@@ -67,7 +67,8 @@ function settle(tr){      // the points that still hold the dough pull it back t
   var m=tr._m;if(!m||!m.on||m.stage!==0||m.settling)return;m.settling=true;
   (function f(){
     if(!m.on||m.stage!==0){m.settling=false;return;}
-    var k,big=0;for(k=0;k<NX*NY;k++){var a=stick(m,k);if(a>0){m.off[k*2]*=1-a*.05;m.off[k*2+1]*=1-a*.05;}big=Math.max(big,Math.abs(m.off[k*2]),Math.abs(m.off[k*2+1]));}
+    var k,big=0;if(m.glue)for(k=0;k<NX*NY;k++)if(m.glue[k]>0)m.glue[k]=Math.max(0,m.glue[k]-.0025);
+    for(k=0;k<NX*NY;k++){var a=stick(m,k);if(a>0){m.off[k*2]*=1-a*.05;m.off[k*2+1]*=1-a*.05;}big=Math.max(big,Math.abs(m.off[k*2]),Math.abs(m.off[k*2+1]));}
     draw(tr);
     if(big>.003)requestAnimationFrame(f);else m.settling=false;
   })();
@@ -107,7 +108,7 @@ function relax(tr,m){
     for(j=0;j<NY;j++)for(i=0;i<NX;i++){var a=j*NX+i;if(i<NX-1)edge(a,a+1,Lx);if(j<NY-1)edge(a,a+NX,Ly);}
     var NB=window.CooksterNacveBounds;
     for(k=0;k<n;k++){
-      if(NB&&NB.get){var px=P[k*2]/W*100,py=P[k*2+1]/H*100;if(!NB.inside(px,py)){var q=NB.nearest(px,py);P[k*2]=q[0]/100*W;P[k*2+1]=q[1]/100*H;}}
+      if(NB&&NB.get){var px=P[k*2]/W*100,py=P[k*2+1]/H*100;if(!NB.inside(px,py)){var q=NB.nearest(px,py);P[k*2]=q[0]/100*W;P[k*2+1]=q[1]/100*H;if(m.stage===0){if(!m.glue)m.glue=new Float32Array(n);m.glue[k]=1;}}}
       else{P[k*2]=Math.max(W*.15,Math.min(W*.87,P[k*2]));P[k*2+1]=Math.max(H*.12,Math.min(H*.79,P[k*2+1]));}
     }
   }
@@ -132,7 +133,7 @@ window.CooksterDoughMesh={
     var m=init(tr);if(!m.ok)return false;
     if(m.stage!==stage){
       var keep=(m.stage<0&&m.savedStage===stage);            // the first time after a load the saved shape is kept when it belongs to this stage
-      if(!keep){if(m.stage>=0&&m.gl)m.fade={from:m.stage,F:m.F,off:m.off.slice(),t0:performance.now()};m.off.fill(0);if(m.stage>=0){delete tr.dataset.inMesh;delete tr.dataset.inMeshS;}}
+      if(!keep){if(m.stage>=0&&m.gl)m.fade={from:m.stage,F:m.F,off:m.off.slice(),t0:performance.now()};m.off.fill(0);m.glue=null;if(m.stage>=0){delete tr.dataset.inMesh;delete tr.dataset.inMeshS;}}
       m.stage=stage;m.savedStage=undefined;
     }
     m.F=flour||0;m.prog=prog||0;m.on=true;
@@ -145,9 +146,10 @@ window.CooksterDoughMesh={
   drag:function(tr,cx,cy){
     var m=tr._m;if(!m||!m.on||!m.grab||!m.ok||m.stage<0)return;
     var p=local(tr,cx,cy),dx=p[0]-m.grab.x,dy=p[1]-m.grab.y;if(!dx&&!dy)return;
+    if(m.glue)for(var g=0;g<m.glue.length;g++)if(m.glue[g]>0)m.glue[g]=Math.max(0,m.glue[g]-.01);      // the glue weakens while the dough is worked
     var b=box(tr,m.stage,m.F),sg=b.bh*SIG,k;
     for(k=0;k<NX*NY;k++){var c=curPos(b,m.off,k),r=Math.hypot(c[0]-m.grab.x,c[1]-m.grab.y),w=Math.exp(-(r/sg)*(r/sg));
-      if(w<.01)continue;var hold=1-.85*stick(m,k);m.off[k*2]+=dx*w*hold/b.bh;m.off[k*2+1]+=dy*w*hold/b.bh;}
+      if(w<.01)continue;var gl=m.glue?m.glue[k]*Math.max(0,1-(m.prog||0)*1.4):0,hold=(1-.85*stick(m,k))*(1-.7*gl);m.off[k*2]+=dx*w*hold/b.bh;m.off[k*2+1]+=dy*w*hold/b.bh;}
     for(var it=0;it<3;it++){keepSize(tr,m);relax(tr,m);}      // the wall holds, the dough that is pushed against it is flattened there and spreads to the free sides (the volume stays)
     m.grab.x=p[0];m.grab.y=p[1];draw(tr);settle(tr);
   },

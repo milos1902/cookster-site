@@ -711,3 +711,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Testo uz zid se spljošti (2026-10-15, dough-mesh.js?v=9)
 - Pri vučenju se tri puta ponavlja: vraćanje površine (testo se širi) pa zid (drži). Testo koje guraš u zid ostaje uz zid spljošteno, a višak ide na slobodne strane. U mojoj probi sa uskim podom širina testa se sa 71 smanjila na 65 posto naćvi, a visina je ostala ista jer nema mesta (pod je isto visok kao testo), pa širenje u stranu nisam mogao jasno da pokažem.
+
+## Testo se lepi za zid, zrnca brašna otpadaju (2026-10-15, dough-mesh.js?v=11, flour.js?v=54)
+- Dok je testo vlažno (prva faza), tačke koje su gurnute u zid se zalepe: teže se odvajaju od zida, a lepak popušta sa mešenjem (nestaje oko 70% napretka) i sa vučenjem.
+- Pri vučenju testa sa ruke otpadaju sitna zrnca brašna (do 5 po koraku) koja padaju na testo i sto.
+- Provera: u probi su zrnca bila u vazduhu (3), a uz zid su se zalepile 2 tačke; teško je na slici pokazati kako lepak izgleda u pokretu.
