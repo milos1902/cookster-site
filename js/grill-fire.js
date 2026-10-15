@@ -13,11 +13,13 @@ var level=0,target=0,left=0,last=0,run=false,t=0,effects=[];
    sx0,sx1,sy = where the smoke starts (x range and y); patch = the cold coals patch (kitchen only) */
 function makeEffect(o){
   var cv=document.createElement('canvas');cv.width=o.cw;cv.height=o.ch;cv.className=o.cls||'';
-  var cx=cv.getContext('2d'),mimg=new Image(),mask=document.createElement('canvas'),cells=[],smoke=[],off=document.createElement('canvas'),ox;
+  var cx=cv.getContext('2d'),mimg=new Image(),mask=document.createElement('canvas'),pit=document.createElement('canvas'),cells=[],smoke=[],off=document.createElement('canvas'),ox;
   mimg.src=o.mask;off.width=o.cw;off.height=o.ch;ox=off.getContext('2d');
   var e={cv:cv,patch:o.patch||null};
   function pick(){
     mask.width=o.cw;mask.height=o.ch;var mk=mask.getContext('2d');mk.clearRect(0,0,o.cw,o.ch);mk.drawImage(mimg,o.mx,o.my);
+    // the pit: the mask of the embers a little blurred and spread (only the place of the coals, never the stones around); the breathing glow of the pit is clipped by it
+    pit.width=o.cw;pit.height=o.ch;var pk=pit.getContext('2d');pk.filter='blur('+(5*o.k).toFixed(1)+'px)';for(var q=0;q<4;q++)pk.drawImage(mask,0,0);pk.filter='none';
     var d=mk.getImageData(0,0,o.cw,o.ch).data,tries=0;cells=[];
     while(cells.length<o.n&&tries<9000){tries++;var x=Math.floor(Math.random()*o.cw),y=Math.floor(Math.random()*o.ch);if(d[(y*o.cw+x)*4+3]>110)cells.push({x:x,y:y,f:.7+Math.random()*2.6,p:Math.random()*6.28,n:Math.random(),r:(6+Math.random()*7)*o.k});}
   }
@@ -43,11 +45,13 @@ function makeEffect(o){
       blots(true);cx.globalCompositeOperation='lighter';cx.drawImage(off,0,0);
       var gx=o.mx+o.mw*.5,gy=o.my+o.mh*.52,g=cx.createRadialGradient(gx,gy,10*o.k,gx,gy,o.mw*.46);      // the whole pit breathes a little
       g.addColorStop(0,'rgba(255,120,30,'+((.05+.05*pulse)*level).toFixed(3)+')');g.addColorStop(1,'rgba(255,90,10,0)');
-      cx.globalCompositeOperation='lighter';cx.fillStyle=g;cx.fillRect(o.mx,o.my,o.mw,o.mh);cx.globalCompositeOperation='source-over';
+      ox.globalCompositeOperation='source-over';ox.clearRect(0,0,o.cw,o.ch);ox.fillStyle=g;ox.fillRect(o.mx,o.my,o.mw,o.mh);
+      ox.globalCompositeOperation='destination-in';ox.drawImage(pit,0,0);
+      cx.globalCompositeOperation='lighter';cx.drawImage(off,0,0);cx.globalCompositeOperation='source-over';
     }
-    if(level>.05&&Math.random()<dt*(1.2+3*level))smoke.push({x:o.sx0+Math.random()*(o.sx1-o.sx0),y:o.sy+Math.random()*20*o.k,vx:(6+Math.random()*10)*o.k,vy:-(14+Math.random()*14)*o.k,life:0,max:3.6+Math.random()*2.6,r:(7+Math.random()*7)*o.k,k:level});
+    if(level>.05&&Math.random()<dt*(1.2+3*level))smoke.push({x:o.sx0+Math.random()*(o.sx1-o.sx0),y:o.sy+Math.random()*20*o.k,vx:(6+Math.random()*10)*o.k,vy:-(10+Math.random()*9)*o.k,life:0,max:2.0+Math.random()*1.5,r:(5+Math.random()*5)*o.k,k:level});
     for(var i=smoke.length-1;i>=0;i--){var p=smoke[i];p.life+=dt;if(p.life>=p.max){smoke.splice(i,1);continue;}
-      p.x+=(p.vx+Math.sin(p.life*1.7+i)*6*o.k)*dt;p.y+=p.vy*dt;var f=p.life/p.max,rr=p.r*(1+f*2.8),al=.24*p.k*Math.sin(Math.min(1,f*3)*Math.PI/2)*(1-f);
+      p.x+=(p.vx+Math.sin(p.life*1.7+i)*6*o.k)*dt;p.y+=p.vy*dt;var f=p.life/p.max,rr=p.r*(1+f*1.3),al=.2*p.k*Math.sin(Math.min(1,f*3)*Math.PI/2)*(1-f);
       var gg=cx.createRadialGradient(p.x,p.y,0,p.x,p.y,rr);gg.addColorStop(0,'rgba(215,210,205,'+al.toFixed(3)+')');gg.addColorStop(1,'rgba(215,210,205,0)');cx.fillStyle=gg;cx.beginPath();cx.arc(p.x,p.y,rr,0,Math.PI*2);cx.fill();}
     return smoke.length>0;
   };
@@ -59,13 +63,13 @@ function build(){
   var sc0=document.getElementById('scene');if(!sc0)return false;
   var patch=document.createElement('img');patch.src='assets/effects/grill_coals_off.webp?v=1';patch.draggable=false;
   patch.style.cssText='position:absolute;left:230px;top:18px;width:540px;height:147px;opacity:1;transition:opacity 1.6s ease;pointer-events:none;z-index:2';
-  kitchen=makeEffect({cx:230,cy:0,cw:540,ch:165,mx:0,my:18,mw:540,mh:147,mask:'assets/effects/grill_embers_mask.png?v=1',n:90,k:1,sx0:60,sx1:480,sy:54,patch:patch});
+  kitchen=makeEffect({cx:230,cy:0,cw:540,ch:165,mx:0,my:18,mw:540,mh:147,mask:'assets/effects/grill_embers_mask.png?v=2',n:90,k:1,sx0:60,sx1:480,sy:54,patch:patch});
   kitchen.cv.style.cssText='position:absolute;left:230px;top:0;width:540px;height:165px;pointer-events:none;z-index:3';
   sc0.appendChild(patch);sc0.appendChild(kitchen.cv);effects.push(kitchen);return true;
 }
 /* the close-up of the grill: the canvas goes into the view (kitchen-fixtures.js) and follows the picture of the grill (same transform and opacity) */
 function zoomEffect(){
-  var e=makeEffect({cx:190,cy:0,cw:1220,ch:500,mx:15,my:322,mw:1187,mh:160,mask:'assets/effects/grill_zoom_mask.png?v=1',n:170,k:2.3,sx0:150,sx1:1100,sy:330,cls:'gz-fx'});
+  var e=makeEffect({cx:190,cy:0,cw:1220,ch:500,mx:15,my:322,mw:1187,mh:160,mask:'assets/effects/grill_zoom_mask.png?v=2',n:170,k:2.3,sx0:150,sx1:1100,sy:330,cls:'gz-fx'});
   e.cv.style.cssText='position:absolute;left:'+(190/1672*100)+'%;top:0;width:'+(1220/1672*100)+'%;height:'+(500/941*100)+'%;pointer-events:none;opacity:0';
   e.zoom=true;effects.push(e);kick();return e.cv;
 }
