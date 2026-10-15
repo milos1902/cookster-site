@@ -2083,7 +2083,7 @@ function putItemIntoOven(el,xScene){
  // it goes a little smaller, and never bigger than the opening of the oven; the owner's tool can change the size on top of that
  const baseVis=Math.min(curVis*OVEN_IN_SHRINK,OVEN_IN_MAX_W/bw,OVEN_IN_MAX_H/bh);
  const cfg=ovenCfgFor(el.dataset.itemId),w=bw*baseVis*cfg.k;
- const cx=Math.max(OVEN_CLIP.left+w/2+3,Math.min(OVEN_CLIP.right-w/2-3,xScene));
+ const cx=Math.max(OVEN_CLIP.left+w*.2,Math.min(OVEN_CLIP.right-w*.2,xScene));
  // the same finishing steps as a normal drop, without the flight to a surface
  hidePlacementGhost();hideOriginGhost();setBoardSnapIndicator(false);clearStirReady();clearPourTarget();
  el.style.visibility='';
@@ -2126,6 +2126,15 @@ window.CooksterOvenItems={
   try{localStorage.setItem(OVEN_ITEM_CFG_KEY,JSON.stringify(ovenItemCfg));}catch(_){}
   items.filter(el=>el.dataset.inOven==='1'&&el.dataset.itemId===id).forEach(ovenApplyPose);
  },
+ // moves the items of this kind that stand in the oven left-right (scene x); they never leave the opening of the oven
+ moveX(id,x){
+  items.filter(el=>el.dataset.inOven==='1'&&el.dataset.itemId===id).forEach(el=>{
+   const w=(+el.dataset.baseW||100)*(+el.dataset.vis||.8);
+   el.dataset.cx=String(Math.max(OVEN_CLIP.left+w*.2,Math.min(OVEN_CLIP.right-w*.2,+x)));   // it may slide sideways until the frame hides part of it
+   ovenApplyPose(el);
+  });
+ },
+ xOf(id){const el=items.find(e=>e.dataset.inOven==='1'&&e.dataset.itemId===id);return el?Math.round(+el.dataset.cx):null;},
  // test item for the tool: opens the oven and puts one of this kind inside (an existing one, or a new one)
  putTest(id){
   if(!stoveState.ovenOpen)toggleCookstoveOven();
