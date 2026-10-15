@@ -629,3 +629,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Brašno na stolu se ne pamti (2026-10-15, flour.js?v=17)
 - Gomile brašna na stolu više se ne čuvaju u pregledaču: posle osvežavanja igre sto je čist. Stari sačuvani ključ `cookster.flour-piles.v1` se briše pri učitavanju. Brašno unutar naćvi je deo predmeta i dalje se čuva sa naćvama.
 - Provereno: sa starom sačuvanom gomilom, posle osvežavanja nema gomila ni slika.
+
+## Prava ruka i razvlačenje testa (2026-10-15, flour.js?v=22)
+- Ruka je tvoja slika (`assets/flour/ruka1.webp` otvorena, `ruka2.webp` pritisnuta; zelena izrezana, podlaktica produžena do dna naćvi). Prati miša unutar otvora naćvi; dok ide nadole, prikazuje se pritisnuta poza (160 ms posle kretanja nadole). Prsti ostaju unutar otvora.
+- Testo se razvlači opružno: ide li miš nagore, testo se razvlači nagore (raste od dna), nadole - nadole (od vrha), pa se vraća. Slike testa su sada u prozoru oblika otvora, pa se ivica naćvi ne izobličuje.
+- Provereno slikama u pregledaču; nije provereno na telefonu. Skelet na zglobovima ruke (savijanje prstiju) još nije napravljen.
