@@ -742,3 +742,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Ruka: prvih 3 s čista, od 3 s do 10 s najprljavija, od 10 s manje prljava do kraja.
 - Brašno i prašina: više zrnaca (do 11 po koraku) i veći oblak brašna (do ~65 px, diže se 46 px i bledi 1,5 s) dok se meša; jačina je puna do 3. faze, pa opada i staje tek kad se testo umeša (5. faza).
 - Zoom pri mešenju je uklonjen (ostaje samo u alatu za granice).
+
+## Direktan prelaz peta faza u loptu, više pomeranja tačaka (2026-10-15, dough-mesh.js?v=18)
+- Peta faza (slika 3, od 80% do 100%) se sada ponaša kao ostale vlažne faze (ranije je imala poseban režim sa resetom mreže, pa se testo loše ponašalo između 90 i 100%). Na 100% se slika pretapa pravo u loptu (3 s) i lopta ostaje.
+- Tačke se više pomeraju: najveći korak po događaju 2,7 (bilo 1,6), držanje je slabije (stick 60% umesto 85%, lepak 50% umesto 70%).

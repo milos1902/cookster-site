@@ -57,16 +57,16 @@ function texFor(m,st){
 /* The points that hold the dough: at the start of the kneading (wet flour) the dough is stuck to many points; they resist the hand and pull the dough back.
    The longer it is kneaded, the more points let it go (each point has its own moment), and at the end it is free from all of them. */
 function hash(k){var x=Math.sin(k*12.9898)*43758.5453;return x-Math.floor(x);}
-function stick(m,k){if(m.stage>3)return 0;var th=.15+.85*hash(k);return Math.max(0,Math.min(1,(th-(m.prog||0))/.15));}
+function stick(m,k){if(m.stage>4)return 0;var th=.15+.85*hash(k);return Math.max(0,Math.min(1,(th-(m.prog||0))/.15));}
 function dots(tr,m){
   if(!m.dc){var c=document.createElement('canvas');c.width=m.cv.width;c.height=m.cv.height;c.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none';m.cv.parentNode.appendChild(c);m.dc=c;m.dx=c.getContext('2d');}
   var x=m.dx,b=box(tr,m.stage,m.F),k;x.clearRect(0,0,m.dc.width,m.dc.height);if(m.stage!==0)return;
   for(k=0;k<NX*NY;k++){var a=stick(m,k);if(a<.05)continue;var p=curPos(b,m.off,k);x.fillStyle='rgba(95,70,45,'+(.55*a).toFixed(2)+')';x.beginPath();x.arc(p[0]*VS,p[1]*VS,1.6*VS,0,7);x.fill();}
 }
 function settle(tr){      // the points that still hold the dough pull it back to its place
-  var m=tr._m;if(!m||!m.on||m.settling)return;if(m.stage>3&&!(m.stage===5&&m.ball>.05))return;m.settling=true;
+  var m=tr._m;if(!m||!m.on||m.settling)return;if(m.stage>4&&!(m.stage===5&&m.ball>.05))return;m.settling=true;
   (function f(){
-    if(!m.on||(m.stage>3&&!(m.stage===5&&m.ball>.05))){m.settling=false;return;}
+    if(!m.on||(m.stage>4&&!(m.stage===5&&m.ball>.05))){m.settling=false;return;}
     if(m.stage===5&&m.ball>0){var kk=1-m.ball*.045,q;for(q=0;q<m.off.length;q++)m.off[q]*=kk;}      // the skeleton of the ball: the points come back to the ball
     var k,big=0;if(m.glue)for(k=0;k<NX*NY;k++)if(m.glue[k]>0)m.glue[k]=Math.max(0,m.glue[k]-.0025);
     for(k=0;k<NX*NY;k++){var a=stick(m,k);if(a>0){m.off[k*2]*=1-a*.05;m.off[k*2+1]*=1-a*.05;}big=Math.max(big,Math.abs(m.off[k*2]),Math.abs(m.off[k*2+1]));}
@@ -117,7 +117,7 @@ function relax(tr,m){
     for(j=0;j<NY;j++)for(i=0;i<NX;i++){var a=j*NX+i;if(i<NX-1)edge(a,a+1,rl(a,a+1));if(j<NY-1)edge(a,a+NX,rl(a,a+NX));}
     var NB=window.CooksterNacveBounds;
     for(k=0;k<n;k++){
-      if(NB&&NB.get){var px=P[k*2]/W*100,py=P[k*2+1]/H*100;if(!NB.inside(px,py)){var q=NB.nearest(px,py);P[k*2]=q[0]/100*W;P[k*2+1]=q[1]/100*H;if(m.stage<=3){if(!m.glue)m.glue=new Float32Array(n);m.glue[k]=1;}}}
+      if(NB&&NB.get){var px=P[k*2]/W*100,py=P[k*2+1]/H*100;if(!NB.inside(px,py)){var q=NB.nearest(px,py);P[k*2]=q[0]/100*W;P[k*2+1]=q[1]/100*H;if(m.stage<=4){if(!m.glue)m.glue=new Float32Array(n);m.glue[k]=1;}}}
       else{P[k*2]=Math.max(W*.15,Math.min(W*.87,P[k*2]));P[k*2+1]=Math.max(H*.12,Math.min(H*.79,P[k*2+1]));}
     }
   }
@@ -145,7 +145,7 @@ window.CooksterDoughMesh={
     var m=init(tr);if(!m.ok)return false;
     if(m.stage!==stage){
       var keep=(m.stage<0&&m.savedStage===stage);            // the first time after a load the saved shape is kept when it belongs to this phase
-      var soft=(m.stage>=0&&m.stage<=3&&stage<=3);           // between the wet phases the points stay where they are (only the picture melts into the next one)
+      var soft=(m.stage>=0&&m.stage<=4&&stage<=4);           // between the wet phases the points stay where they are (only the picture melts into the next one)
       if(!keep){
         if(m.stage>=0&&m.gl)m.fade={from:m.stage,F:m.F,off:m.off.slice(),t0:performance.now()};
         if(!soft){m.off.fill(0);m.glue=null;if(m.stage>=0){delete tr.dataset.inMesh;delete tr.dataset.inMeshS;}}
@@ -163,14 +163,14 @@ window.CooksterDoughMesh={
   drag:function(tr,cx,cy){
     var m=tr._m;if(!m||!m.on||!m.grab||!m.ok||m.stage<0)return;
     var p=local(tr,cx,cy),dx=p[0]-m.grab.x,dy=p[1]-m.grab.y;if(!dx&&!dy)return;
-    if(m.stage<=3){      // the wet dough is slow and sticky: however fast the mouse goes, the points move only a little in one step (the hold trails behind the mouse)
-      var ln=Math.hypot(dx,dy),LM=1.6;if(ln>LM){dx*=LM/ln;dy*=LM/ln;}
+    if(m.stage<=4){      // the wet dough is slow and sticky: however fast the mouse goes, the points move only a little in one step (the hold trails behind the mouse)
+      var ln=Math.hypot(dx,dy),LM=2.7;if(ln>LM){dx*=LM/ln;dy*=LM/ln;}
       p=[m.grab.x+dx,m.grab.y+dy];
     }
     if(m.glue)for(var g=0;g<m.glue.length;g++)if(m.glue[g]>0)m.glue[g]=Math.max(0,m.glue[g]-.01);      // the glue weakens while the dough is worked
     var b=box(tr,m.stage,m.F),sg=b.bh*SIG,k;
     for(k=0;k<NX*NY;k++){var c=curPos(b,m.off,k),r=Math.hypot(c[0]-m.grab.x,c[1]-m.grab.y),w=Math.exp(-(r/sg)*(r/sg));
-      if(w<.01)continue;var gl=m.glue?m.glue[k]*Math.max(0,1-(m.prog||0)*1.4):0,hold=(1-.85*stick(m,k))*(1-.7*gl);
+      if(w<.01)continue;var gl=m.glue?m.glue[k]*Math.max(0,1-(m.prog||0)*1.4):0,hold=(1-.6*stick(m,k))*(1-.5*gl);
       if(m.stage===5)hold*=1-.65*(m.ball||0);
       if(window.CooksterNacveBounds&&CooksterNacveBounds.wall(c[0]/b.W*100,c[1]/b.H*100))hold*=.35;      // on the wall the dough goes slower (it climbs)
       m.off[k*2]+=dx*w*hold/b.bh;m.off[k*2+1]+=dy*w*hold/b.bh;}
