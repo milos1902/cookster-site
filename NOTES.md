@@ -708,3 +708,11 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Alat "Granice testa": farbanje poda i zidova (2026-10-15, nacve-bounds.js?v=3, dough-mesh.js?v=8, flour.js?v=53)
 - Dugme "🪵 Granice testa" (dole desno) približi kameru na naćve i otvori četku: 🟩 Pod (zeleno), 🟥 Zid (crveno), Gumica (ili desni taster), veličina četke, "Obriši sve", "Podrazumevano", "Kopiraj JSON". Mreža je 60 x 114 ćelija preko slike naćvi (vrednosti: 0 ništa, 1 pod, 2 zid). Čuva se u pregledaču (`cookster.nacve-bounds.v3`).
 - Tačke testa (`dough-mesh.js`) smeju samo po zelenom podu; tačka koja izađe postavlja se na najbliže zeleno mesto i klizi uz zid. Crveno (zid) i neobojeno (van naćvi) zaustavljaju testo. Dok je alat otvoren, ruka ne mesi.
+
+## Testo uz zid se spljošti (2026-10-15, dough-mesh.js?v=9)
+- Pri vučenju se tri puta ponavlja: vraćanje površine (testo se širi) pa zid (drži). Testo koje guraš u zid ostaje uz zid spljošteno, a višak ide na slobodne strane. U mojoj probi sa uskim podom širina testa se sa 71 smanjila na 65 posto naćvi, a visina je ostala ista jer nema mesta (pod je isto visok kao testo), pa širenje u stranu nisam mogao jasno da pokažem.
+
+## Testo se lepi za zid, zrnca brašna otpadaju (2026-10-15, dough-mesh.js?v=11, flour.js?v=54)
+- Dok je testo vlažno (prva faza), tačke koje su gurnute u zid se zalepe: teže se odvajaju od zida, a lepak popušta sa mešenjem (nestaje oko 70% napretka) i sa vučenjem.
+- Pri vučenju testa sa ruke otpadaju sitna zrnca brašna (do 5 po koraku) koja padaju na testo i sto.
+- Provera: u probi su zrnca bila u vazduhu (3), a uz zid su se zalepile 2 tačke; teško je na slici pokazati kako lepak izgleda u pokretu.

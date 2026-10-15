@@ -341,6 +341,15 @@ function knMove(tr,e,vx,vy,shaping){
     var c=document.createElement('div'),sz=12+Math.random()*10;
     c.style.cssText='position:absolute;left:'+(px-sz/2+(Math.random()-.5)*18)+'px;top:'+(py-sz/2+(Math.random()-.5)*14)+'px;width:'+sz+'px;height:'+sz*.7+'px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,252,244,.85),rgba(255,250,240,0) 70%);filter:blur(1.5px);pointer-events:none;z-index:8';
     dustTrough(tr,6);
+    // the specks of flour that are torn off the dough while it is pulled: they fall to the dough and to the table
+    var nS=Math.min(5,1+Math.floor((Math.abs(vy)+Math.abs(vx))/9));
+    for(var q=0;q<nS;q++){
+      var sp=document.createElement('i'),sx=px+(Math.random()-.5)*34,sy=py+(Math.random()-.5)*30,sz=1.2+Math.random()*2;
+      sp.style.cssText='position:absolute;left:'+sx+'px;top:'+sy+'px;width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:#fbf6ea;pointer-events:none;z-index:8;opacity:.9';
+      tr.appendChild(sp);
+      var an=sp.animate([{transform:'translate(0,0)',opacity:.9},{transform:'translate('+((Math.random()-.5)*14)+'px,'+(10+Math.random()*26)+'px)',opacity:0}],{duration:520+Math.random()*420,easing:'cubic-bezier(.3,.1,.7,1)',fill:'forwards'});
+      an.onfinish=(function(el){return function(){el.remove();};})(sp);
+    }
     tr.appendChild(c);var a=c.animate([{opacity:.9,transform:'scale(.5)'},{opacity:0,transform:'translateY(-14px) scale(1.7)'}],{duration:700,fill:'forwards'});a.onfinish=function(){c.remove();};}
 }
 window.addEventListener('pointermove',function(e){
