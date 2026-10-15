@@ -70,23 +70,46 @@ function troughAt(x,y){
 /* The dough can always be made: the ratio water : flour decides the state, and the player corrects it (dry: add water, too soft: add flour).
    units: the sack gives flour, a full pitcher is 100 units of water; a good dough is about 0.6 water for 1 flour (0.45 to 0.8). */
 var R_DRY=.45,R_WET=.8;
+/* The yeast: one measure per batch. First it wakes up in a small starter (a little water, a little flour, a little sugar, stirred with the spoon, then a short wait);
+   only then the right amount of flour and water is added. Without a live yeast the dough can be kneaded but it will not rise (y: none / sleep / alive / dead). */
+var ST_F=14,ST_W=50,STIR_PX=1200,WAKE_S=25;
 function doughState(e){
   var F=+e.dataset.inFlour||0,W=+e.dataset.inWater||0,r=F>0?W/F:(W>0?9:0);
+  var Y=+e.dataset.inYeast>0,act=(+e.dataset.inStarter||0)>=1,sg=+e.dataset.inSugar||0;
+  var y=!Y?'none':(e.dataset.inYeastDead==='1'?'dead':(act?'alive':'sleep'));
   var st=F<3&&W<3?'empty':(W<1?'flour':(F<3?'water':(r<R_DRY?'dry':(r>R_WET?'wet':'good'))));
-  return {F:F,W:W,r:r,st:st};
+  if((y==='sleep'||y==='alive')&&F<=ST_F&&W<=ST_W)st='starter';
+  return {F:F,W:W,r:r,st:st,y:y,sugar:sg};
 }
-var ST_TXT={flour:'brašno',water:'voda',dry:'suvo, dodaj vode',good:'dobro testo',wet:'previše meko, dodaj brašna'};
+var ST_TXT={flour:'brašno',water:'voda',dry:'suvo, dodaj vode',good:'dobro testo',wet:'previše meko, dodaj brašna',starter:'kvasac'};
+function starterTxt(e,D){
+  var need=[];if(D.W<10)need.push('voda');if(D.F<3)need.push('brašno');if(D.sugar<1)need.push('šećer');
+  if(need.length)return 'kvasac · fali: '+need.join(', ');
+  var sr=+e.dataset.inStir||0,wk=+e.dataset.inStarter||0;
+  if(D.y==='alive')return 'kvasac je živ · dodaj brašno i vodu';
+  if(sr<1)return 'kvasac · promešaj kašikom '+Math.round(sr*100)+'%';
+  return 'kvasac se budi · '+Math.max(1,Math.ceil((1-wk)*WAKE_S))+' s';
+}
+(function(){var st=document.createElement('style');st.textContent='@keyframes yb{0%{transform:translateY(30%) scale(.5);opacity:0}30%{opacity:.9}100%{transform:translateY(-120%) scale(1.15);opacity:0}}';document.head.appendChild(st);})();
 function drawTrough(e){
   var D=doughState(e),n=D.F;
   if(!e._lbl||!e._lbl.isConnected){var l=document.createElement('div');l.className='dough-lbl';l.style.cssText='position:absolute;left:50%;top:-4%;transform:translate(-50%,-100%);font:700 10px/1.1 system-ui,sans-serif;color:#fff;text-shadow:0 0 3px #000,0 1px 2px #000;white-space:nowrap;pointer-events:none;z-index:6;text-align:center';e.appendChild(l);e._lbl=l;}
-  e._lbl.textContent=D.st==='empty'?'':(ST_TXT[D.st]+(D.st==='good'?'  ·  umešeno '+Math.round(Math.min(1,+e.dataset.inMix||0)*100)+'%':'')+'  ·  brašno '+Math.round(D.F)+' · voda '+Math.round(D.W));
+  if(D.y==='sleep'&&D.st!=='starter'&&D.F>ST_F||D.y==='sleep'&&D.W>ST_W){e.dataset.inYeastDead='1';D=doughState(e);}   // too much flour or water before the yeast woke up: it does not work any more
+  var yTxt=D.y==='alive'?'  ·  kvasac živ':(D.y==='dead'?'  ·  kvasac nije oživeo, testo se neće dići':(D.y==='none'?'  ·  bez kvasca se neće dići':''));
+  e._lbl.textContent=D.st==='empty'?(D.y==='sleep'?'kvasac u naćvama':''):(D.st==='starter'?starterTxt(e,D):(ST_TXT[D.st]+(D.st==='good'?'  ·  umešeno '+Math.round(Math.min(1,+e.dataset.inMix||0)*100)+'%':'')+'  ·  brašno '+Math.round(D.F)+' · voda '+Math.round(D.W)+yTxt));
   e._lbl.style.color=D.st==='good'?'#bff5b8':(D.st==='dry'||D.st==='wet'?'#ffd48a':'#fff');
   if(D.W>0&&(!e._wt||!e._wt.isConnected)){
     var wcl=document.createElement('div');wcl.style.cssText='position:absolute;left:'+INNER.l+'%;top:'+INNER.t+'%;width:'+(INNER.r-INNER.l)+'%;height:'+(INNER.b-INNER.t)+'%;border-radius:38% / 18%;overflow:hidden;pointer-events:none;z-index:2';
     var wd=document.createElement('div');wd.style.cssText='position:absolute;left:50%;top:50%;width:30%;height:30%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(ellipse at 40% 32%,rgba(250,254,255,.92),rgba(222,240,250,.82) 40%,rgba(190,222,240,.78) 100%);box-shadow:inset 0 0 10px rgba(255,255,255,.6),inset 0 -2px 6px rgba(120,170,205,.35);transition:width .7s ease,height .7s ease,opacity .5s';
     wcl.appendChild(wd);e.appendChild(wcl);e._wt=wcl;e._wd=wd;
   }
-  if(e._wt){e._wt.style.display=(D.W>0&&D.F<3)?'':'none';   // the flour covers the water: with flour in the trough the water is not drawn, the picture of the wet flour shows it
+  if(e._wt){e._wt.style.display=(D.W>0&&(D.F<3||D.st==='starter'))?'':'none';
+    if(e._wd&&D.y!=='none'){var wk2=D.y==='alive'?1:(+e.dataset.inStarter||0),bs=e._wt.querySelector('.yb-box');
+      if(!bs){bs=document.createElement('div');bs.className='yb-box';bs.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none';
+        for(var bi=0;bi<9;bi++){var bb=document.createElement('i');bb.style.cssText='position:absolute;left:'+(28+Math.random()*44)+'%;top:'+(48+Math.random()*26)+'%;width:'+(5+Math.random()*7)+'px;height:'+(5+Math.random()*7)+'px;border-radius:50%;background:rgba(255,247,222,.85);box-shadow:inset 0 0 3px rgba(190,160,100,.7);opacity:0;animation:yb '+(1.6+Math.random()*1.4)+'s linear infinite;animation-delay:'+(Math.random()*2)+'s';bs.appendChild(bb);}
+        e._wt.appendChild(bs);}
+      bs.style.opacity=String(D.y==='dead'?0:(+e.dataset.inStir>=1||D.y==='alive'?Math.min(1,.25+wk2):.0));
+      e._wd.style.background='radial-gradient(ellipse at 40% 32%,rgba(246,236,205,.95),rgba(226,206,160,.85) 45%,rgba(204,176,120,.8) 100%)';}   // the flour covers the water: with flour in the trough the water is not drawn, the picture of the wet flour shows it
    if(e._wd){var sp=Math.max(0,Math.min(1,D.W/60));e._wd.style.width=(30+sp*50)+'%';e._wd.style.height=(22+sp*28)+'%';}   // the water spreads as there is more of it, but only up to the half of the length of the trough (not to the edges)
     if(e._wd)e._wd.style.opacity=String(Math.min(.95,.25+D.W/90)*(D.st==='good'?.45:(D.st==='wet'?1:.8)));}
   // the picture of the trough itself shows the flour (the pictures drawn by the owner)
@@ -119,7 +142,7 @@ function drawTrough(e){
       im.className='dough-img';im.style.cssText='position:absolute;left:50%;top:46%;height:'+q[1]+'%;width:auto;transform:translate(-50%,-50%);opacity:0;display:none';dg.appendChild(im);e._dl[q[0]]=im;});
     e.appendChild(dw);e._dw=dw;e._dg=dg;
   }
-  var wetF=D.W>=1&&D.F>=3,stage=mx>=1?5:Math.min(4,Math.floor(mx*5)),meshOn=false;      // 5 phases of the mixing, 4 s of kneading each (20 s), then 5 = the whole ball
+  var wetF=D.W>=1&&D.F>=3&&D.st!=='starter',stage=mx>=1?5:Math.min(4,Math.floor(mx*5)),meshOn=false;      // 5 phases of the mixing, 4 s of kneading each (20 s), then 5 = the whole ball
   if(window.CooksterDoughMesh){if(wetF)meshOn=CooksterDoughMesh.setStage(e,stage,D.F,mx);else CooksterDoughMesh.hide(e);}
   // reserve (when WebGL is not there): the plain pictures
   e._o={kugla:0};
@@ -257,6 +280,52 @@ window.addEventListener('pointerdown',function(e){
 window.addEventListener('pointerup',function(e){if(pour&&e.button===0){e.stopImmediatePropagation();stop();}},true);
 window.addEventListener('click',function(e){if(hold!==null&&e.button===0){hold=null;e.stopImmediatePropagation();}},true);
 window.addEventListener('contextmenu',function(e){var h=typeof holding!=='undefined'?holding:null;if(isSack(h))e.preventDefault();},true);
+// ---- the yeast: the yeast bowl (one measure) and the sugar jar over the trough; the spoon stirs the starter; the yeast wakes up by itself in a few seconds ----
+var YEAST='kal_01_kvasac',SUGAR='zacin_secer',SPOON='kasika_mesanje',stirP=null;
+function sayT(m){try{showToast(m);}catch(x){}}
+function heldId(){var h=typeof holding!=='undefined'?holding:null;return h&&h.dataset?h.dataset.itemId:'';}
+function puffAtTrough(tr,col){try{var r=tr.getBoundingClientRect(),n=0;for(var i=0;i<8;i++){var d=document.createElement('i'),sz=2.5+Math.random()*3;d.style.cssText='position:fixed;left:'+(r.left+r.width*(.3+Math.random()*.4))+'px;top:'+(r.top+r.height*.05)+'px;width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+col+';z-index:20000;pointer-events:none;transition:transform .5s cubic-bezier(.3,.1,.6,1),opacity .5s';document.body.appendChild(d);(function(d){requestAnimationFrame(function(){d.style.transform='translate('+((Math.random()-.5)*10)+'px,'+(r.height*(.28+Math.random()*.2))+'px)';d.style.opacity='.2';});setTimeout(function(){d.remove();},600);})(d);}}catch(x){}}
+window.addEventListener('pointerdown',function(e){
+  var id=heldId();if(e.button!==0||(id!==YEAST&&id!==SUGAR&&id!==SPOON))return;
+  if(e.target&&e.target.closest&&e.target.closest('#hud,[data-tool-ui],.cookster-ctx,#toolDock'))return;
+  var sp=screenToScene(e.clientX,e.clientY),tr=troughAt(sp.x,sp.y);if(!tr)return;
+  var D=doughState(tr);
+  if(id===YEAST){
+    e.stopImmediatePropagation();e.preventDefault();
+    if(D.y!=='none'){sayT('Jedna merica kvasca je dovoljna za jedno testo.');return;}
+    if(D.F>ST_F||D.W>ST_W){sayT('Kvasac se prvo budi u malo vode i malo brašna, pre nego što dodaš ostalo.');return;}
+    tr.dataset.inYeast='1';tr.dataset.inStir='0';tr.dataset.inStarter='0';delete tr.dataset.inYeastDead;
+    puffAtTrough(tr,'#d9b873');sayT('Kvasac je u naćvama. Treba voda, malo brašna i šećera, pa promešaj kašikom.');drawTrough(tr);try{CooksterSave.schedule();}catch(x){}
+  }else if(id===SUGAR){
+    e.stopImmediatePropagation();e.preventDefault();
+    if((+tr.dataset.inSugar||0)>=3){sayT('Šećera je dosta.');return;}
+    tr.dataset.inSugar=String((+tr.dataset.inSugar||0)+1);puffAtTrough(tr,'#fffdf5');try{playImpactSound(holding,'sprinkle');}catch(x){}
+    sayT('šećer ×'+tr.dataset.inSugar);drawTrough(tr);try{CooksterSave.schedule();}catch(x){}
+  }else if(id===SPOON){
+    if(D.st!=='starter')return;                       // the normal behaviour of the spoon
+    e.stopImmediatePropagation();e.preventDefault();
+    if(D.W<10||D.F<3||D.sugar<1){sayT(starterTxt(tr,D)+'.');return;}
+    if((+tr.dataset.inStir||0)>=1){sayT('Već je promešano, sačekaj da kvasac počne da radi.');return;}
+    stirP={tr:tr,x:e.clientX,y:e.clientY};
+  }
+},true);
+window.addEventListener('pointermove',function(e){
+  if(!stirP)return;var tr=stirP.tr,d=Math.hypot(e.clientX-stirP.x,e.clientY-stirP.y);stirP.x=e.clientX;stirP.y=e.clientY;
+  var sp=screenToScene(e.clientX,e.clientY);if(troughAt(sp.x,sp.y)!==tr)return;
+  var v=Math.min(1,(+tr.dataset.inStir||0)+d/STIR_PX);tr.dataset.inStir=String(v);
+  if(v>=1)sayT('Promešano. Kvasac se budi, sačekaj malo.');
+  drawTrough(tr);
+},true);
+window.addEventListener('pointerup',function(e){if(stirP&&e.button===0){stirP=null;try{CooksterSave.schedule();}catch(x){}}},true);
+window.addEventListener('click',function(e){var id=heldId();if(e.button===0&&(id===YEAST||id===SUGAR||id===SPOON)){var sp=screenToScene(e.clientX,e.clientY),tr=troughAt(sp.x,sp.y);if(tr&&(id!==SPOON||doughState(tr).st==='starter'))e.stopImmediatePropagation();}},true);
+setInterval(function(){(typeof items!=='undefined'?items:[]).forEach(function(e){
+  if(!e||!e.dataset||e.dataset.itemId!==TR||!(+e.dataset.inYeast>0))return;
+  var D=doughState(e);
+  if(D.y==='sleep'&&(+e.dataset.inStir||0)>=1&&D.F>=3&&D.W>=10){
+    var w=Math.min(1,(+e.dataset.inStarter||0)+.5/WAKE_S);e.dataset.inStarter=String(w);
+    if(w>=1){sayT('Kvasac je živ. Sad dodaj pravu količinu brašna i vode.');try{CooksterSave.schedule();}catch(x){}}
+    drawTrough(e);
+  }});},500);
 // ---- mixing: the stirring spoon in the hand, LEFT button held, moved over the trough; the flour and the water become a dough (only when the ratio is right) ----
 /* The camera: while the dough is kneaded the picture comes a little closer in 0.2 s (1.35 times, the whole table stays visible; the trough in the middle, the arm goes down behind the squares at the bottom); the moment the kneading
    is let go it goes back in 0.2 s. It uses the camera of the game (scale, offsetX, offsetY). */
@@ -286,7 +355,7 @@ window.addEventListener('pointerdown',function(e){
   var h=typeof holding!=='undefined'?holding:null;if(e.button!==0||h||document.body.classList.contains('nacve-tool'))return;     // by hand: nothing in the hand (and not while the tool for the limits of the dough is open)
   if(e.target&&e.target.closest&&e.target.closest('#hud,[data-tool-ui],.cookster-ctx,#toolDock'))return;
   var sp=screenToScene(e.clientX,e.clientY),tr=troughAt(sp.x,sp.y);if(!tr)return;
-  var D=doughState(tr);if(D.st==='empty'||D.st==='flour'||D.st==='water')return;   // an empty trough or only one thing in it: the normal click (picking it up)
+  var D=doughState(tr);if(D.st==='empty'||D.st==='flour'||D.st==='water'||D.st==='starter')return;   // an empty trough or only one thing in it: the normal click (picking it up)
   // the hand is only on the dough itself (an ellipse in the middle of the opening); the rim and the empty places of the trough still pick the trough up
   var br=tr.getBoundingClientRect(),nx=(e.clientX-br.left)/br.width-.5,ny=(e.clientY-br.top)/br.height-.46;
   if((nx/.3)*(nx/.3)+(ny/.3)*(ny/.3)>1)return;

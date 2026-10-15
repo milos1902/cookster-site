@@ -831,3 +831,9 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Lopta testa: spuštena i sa senkom
 - Lopta u naćvama je spuštena za 5,5% visine naćvi (`box()` u `dough-mesh.js?v=20`, samo za poslednju fazu) da ne lebdi.
 - Senka lopte: tamna, zamućena, spljoštena kopija slike lopte ispod nje (isti recept kao kontaktne senke predmeta), prati testo kad se vuče, nestaje i dolazi uz 3 s pretapanja. Brojevi (pomeraj, širina, visina, zamućenje, providnost) su u alatu za senke kao predmet **"Lopta testa (u naćvama)"** (`testo_lopta`; početno X 0, Y 5, širina .95, visina .3, blur 4, providnost .7); `dough-mesh.js` čita te brojeve pri svakom crtanju (`CooksterContactShadowCfg('testo_lopta')`), pa se promena vidi odmah. `game.js?v=3.150`.
+
+## Kvasac (starter u naćvama)
+- Kvasac (`kal_01_kvasac`, jedna merica) i šećer (`zacin_secer`) se kliknu iznad naćvi dok su u ruci. Starter važi dok u naćvama ima do 14 brašna i 50 vode.
+- Redosled: voda (≥10) + malo brašna (≥3) + šećer (≥1) + kvasac → kašika (`kasika_mesanje`, levo dugme i vuci po naćvama, ~1200 px) → čekanje 25 s (mehurići) → "kvasac je živ" → tek onda prava količina brašna i vode i mešenje rukom.
+- Ako se doda previše brašna/vode pre nego što kvasac oživi, kvasac je "mrtav" (`inYeastDead`). Bez kvasca ili sa mrtvim testo se mesi ali se neće dići (natpis u naćvama). `CooksterFlour.dough()` vraća `y`: none / sleep / alive / dead — to koristi dizanje.
+- Novi ključevi u čuvanju: `inSugar`, `inStir`, `inStarter`, `inYeastDead`.
