@@ -264,6 +264,9 @@ window.addEventListener('pointerdown',function(e){
   if(e.target&&e.target.closest&&e.target.closest('#hud,[data-tool-ui],.cookster-ctx,#toolDock'))return;
   var sp=screenToScene(e.clientX,e.clientY),tr=troughAt(sp.x,sp.y);if(!tr)return;
   var D=doughState(tr);if(D.st==='empty'||D.st==='flour'||D.st==='water')return;   // an empty trough or only one thing in it: the normal click (picking it up)
+  // the hand is only on the dough itself (an ellipse in the middle of the opening); the rim and the empty places of the trough still pick the trough up
+  var br=tr.getBoundingClientRect(),nx=(e.clientX-br.left)/br.width-.5,ny=(e.clientY-br.top)/br.height-.46;
+  if((nx/.3)*(nx/.3)+(ny/.3)*(ny/.3)>1)return;
   e.stopImmediatePropagation();e.preventDefault();
   if(D.st==='dry'){try{showToast('Suvo je, dodaj još vode.');}catch(x){}}
   if(D.st==='wet'){try{showToast('Previše je meko, dodaj još brašna.');}catch(x){}}

@@ -684,3 +684,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Ruka se pojavi odmah pri kliku na testo (i na brašno sa vodom). Ako odnos nije dobar (suvo/meko), testo se i dalje oblikuje, ali ne napreduje.
 - Ako WebGL nije tu, prikazuju se obične slike po fazama (rezerva).
 - Ispravke: slike testa u naćvama koje drže u ruci više ne prikazuju sve odjednom (kopija u ruci forsira providnost 1 na svim slikama, pa se skrivene slike kriju sa display:none); stara slika koja se otapa iza oblaka brašna se ne kopira u ruku; zatvorena ruka (pritisnuta) menja otvorenu umesto da se crta preko nje; brašno sa vodom je veće (kao što je bilo samo brašno).
+
+## Naćve se lako uzimaju u ruku (2026-10-15, flour.js?v=47)
+- Ruka na testu (zamešanje i oblikovanje) radi samo na samom testu (elipsa u sredini otvora naćvi). Ivice naćvi i prazna mesta unutar otvora ih uzimaju u ruku kao i pre; ranije je ceo otvor bio "ruka", pa su se naćve hvatale samo na samom kraju.
