@@ -851,3 +851,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Prazna ruka + klik na pokrivene naćve skida krpu; testo (mreža, senka) je veće do 1,45x.
 - Novi ključevi u čuvanju: `inCloth`, `inRise`. Dok je krpa preko, mešenje je isključeno.
 - Krpa u ruci i u kvadratićima je slika obešene krpe (`krpa_ruka.webp`); slika pokrivenih naćvi (`krpa.webp`) ostaje samo kao poklopac preko testa.
+- Krpa u ruci vijori (`js/cloth-hand.js`): mreža 8×12 tačaka sa težinom (Verlet: gravitacija, štapići između suseda, slab povratak ka slici); gornji ćošak prati miša, ostalo zaostaje i ljulja se. Radi samo dok je krpa u ruci. Slika krpe koju igra crta u ruci je skrivena dok traje.
+- Kad se krpa stavlja preko naćvi, leti iznad njih, spušta se i preliva u sliku pokrivenih naćvi (oko 1 s), pa tek tad testo počinje da se diže.

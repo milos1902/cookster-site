@@ -336,9 +336,12 @@ window.addEventListener('pointerdown',function(e){
     e.stopImmediatePropagation();e.preventDefault();
     if(tr.dataset.inCloth==='1')return;
     if(D.st!=='good'||(+tr.dataset.inMix||0)<1){sayT('Prvo umesi testo do kraja, pa ga pokrij krpom.');return;}
-    try{CooksterPantryBridge.detachHeld();}catch(x){return;}
-    tr.dataset.inCloth='1';if(tr.dataset.inRise==null)tr.dataset.inRise='0';drawTrough(tr);
-    sayT(D.y==='alive'?'Testo se diže pod krpom.':'Testo je pod krpom, ali bez živog kvasca se neće dići.');try{CooksterSave.schedule();}catch(x){}return;
+    if(tr._covering)return;
+    var cover=function(){tr._covering=false;tr.dataset.inCloth='1';if(tr.dataset.inRise==null)tr.dataset.inRise='0';drawTrough(tr);
+      sayT(D.y==='alive'?'Testo se diže pod krpom.':'Testo je pod krpom, ali bez živog kvasca se neće dići.');try{CooksterSave.schedule();}catch(x){}};
+    tr._covering=true;var flying=false;try{flying=!!(window.CooksterCloth&&CooksterCloth.dropOver(tr,cover));}catch(x){}      // the cloth flies over the trough, then it covers it
+    try{CooksterPantryBridge.detachHeld();}catch(x){tr._covering=false;return;}
+    if(!flying)cover();return;
   }
   if(id===YEAST){
     e.stopImmediatePropagation();e.preventDefault();
