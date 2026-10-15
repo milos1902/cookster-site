@@ -823,3 +823,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Daska (`assets/new_props/daska.png`): uklonjen mali odvojeni ostatak na desnoj ivici (37 px, iza noža), isti postupak kao za ostale predmete.
 - Drugi prolaz čišćenja: iz slika kašike, ulja, luka, rotkvice, šargarepe, džezve i daske obrisani su i svi providni pikseli udaljeni više od 4 px od čvrstog tela predmeta (slab sjaj/halo i sitni ostaci), pa zelena linija pri hoveru prati sam predmet. Putanje tih slika u `catalog.js`/`kitchen-fixtures.js` dobile su `?v=2` (`catalog.js?v=3.29`, `kitchen-fixtures.js?v=70`) da pregledač ne koristi stare slike iz keša.
 - Džak brašna (`assets/calibration_props/kitchen_set_18/01_dzak_brasna.png`): uklonjeni providni ostaci levo i drugde van tela džaka (1171 px); putanja u `catalog.js` dobila `?v=2`. Slike nagnutog džaka (`assets/flour/dzak_nagnut*.webp`) nisu menjane: sitna zrna brašna koja se sipaju su deo slike.
+
+## Poslednja slika testa je okrugla lopta
+- Lopta (`assets/flour/testo_kugla.webp`) je bila jajasta (384×480) i mreža ju je dodatno vukla iz kvadrata u elipsu (formula "kvadrat → krug" uvlači uglove), pa je izgledala kao romb. Sada je slika kvadratna 480×480 (`ar:1`), mreža ostaje kvadrat (bez povlačenja uglova) i visina je 44% naćvi (bilo 50%), pa je krug a ne romb (`dough-mesh.js?v=19`, `flour.js?v=57`).
+- Provereno: lopta posle 100% (screenshot pre/posle); vuča mišem i dalje radi (bez grešaka). Nije provereno: izgled pri vučenju lopte u stranu, telefon.

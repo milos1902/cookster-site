@@ -7,10 +7,10 @@
 'use strict';
 if(window.CooksterDoughMesh)return;
 var NX=21,NY=27,CY=.46,SIG=.2,VS=2,FADE=3000;
-var STG=[{src:'assets/flour/testo_f1.webp?v=1',ar:321/480},{src:'assets/flour/testo_f2.webp?v=1',ar:319/480},{src:'assets/flour/testo_f3.webp?v=1',ar:314/480},{src:'assets/flour/testo_f4.webp?v=1',ar:305/480},{src:'assets/flour/testo_f5.webp?v=1',ar:308/480},{src:'assets/flour/testo_kugla.webp?v=1',ar:384/480}];      // phases 1 to 5 of the mixing (the wet flour becomes the dough, 4 s each), then 6 = the whole ball
+var STG=[{src:'assets/flour/testo_f1.webp?v=1',ar:321/480},{src:'assets/flour/testo_f2.webp?v=1',ar:319/480},{src:'assets/flour/testo_f3.webp?v=1',ar:314/480},{src:'assets/flour/testo_f4.webp?v=1',ar:305/480},{src:'assets/flour/testo_f5.webp?v=1',ar:308/480},{src:'assets/flour/testo_kugla.webp?v=2',ar:1}];      // phases 1 to 5 of the mixing (the wet flour becomes the dough, 4 s each), then 6 = the whole ball
 var list=[];
 STG.forEach(function(g,i){g.img=new Image();g.ok=false;g.img.onload=function(){g.ok=true;list.forEach(function(t){if(t._m&&t._m.on&&t._m.stage===i)draw(t);});};g.img.src=g.src;});
-function bhOf(tr,st,F){var H=tr.offsetHeight||197;return H*(st<=4?.56:.5);}   // the height of the dough in the opening of the trough
+function bhOf(tr,st,F){var H=tr.offsetHeight||197;return H*(st<=4?.56:.44);}   // the height of the dough in the opening of the trough
 function box(tr,st,F){var W=tr.offsetWidth||105,H=tr.offsetHeight||197,bh=bhOf(tr,st,F),bw=bh*STG[st].ar,bl=(st===5&&tr._m)?(tr._m.ball||0):0;return {W:W,H:H,bw:bw,bh:bh,x0:W/2-bw/2,y0:H*CY-bh/2,ball:bl,cx:W/2,cy:H*CY,rx:H*.2,ry:H*.25};}
 function local(tr,cx,cy){var r=tr.getBoundingClientRect(),k=(r.width/(tr.offsetWidth||1))||1;return [(cx-r.left)/k,(cy-r.top)/k];}
 function init(tr){
@@ -77,7 +77,7 @@ function settle(tr){      // the points that still hold the dough pull it back t
 function curPos(b,off,k){
   var i=k%NX,j=(k/NX)|0,x=b.x0+b.bw*i/(NX-1),y=b.y0+b.bh*j/(NY-1);
   if(b.ball>0){                                           // the skeleton of the ball: the net goes from the rectangle of the picture to a disc (a square mapped to a circle)
-    var u=2*i/(NX-1)-1,v=2*j/(NY-1)-1,dx=b.cx+u*Math.sqrt(1-v*v/2)*b.rx,dy=b.cy+v*Math.sqrt(1-u*u/2)*b.ry;
+    var u=2*i/(NX-1)-1,v=2*j/(NY-1)-1,dx=b.cx+u*b.bw/2,dy=b.cy+v*b.bh/2;      // (the picture of the ball is round: a square stays a square, the old square->disc mapping pulled the corners in and the ball looked like a diamond)
     x+=(dx-x)*b.ball;y+=(dy-y)*b.ball;
   }
   return [x+off[k*2]*b.bh,y+off[k*2+1]*b.bh];
