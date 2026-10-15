@@ -189,8 +189,8 @@ const WOOD_BASKET_INDOOR_UPDATE_KEY='cookster.basket-indoor-calibration.v2.92';
 let installBasketShadowSplit=true;
 try{installBasketShadowSplit=localStorage.getItem(WOOD_BASKET_SHADOW_SPLIT_KEY)!=='done';}catch(_){}
 for(const [id,label,shadow] of [
- ['korpa_drva','Korpa sa drvima — u sobi',WOOD_BASKET_INDOOR_SHADOW_DEFAULT],
- [WOOD_BASKET_OUTDOOR_SHADOW_ID,'Korpa sa drvima — napolju',WOOD_BASKET_OUTDOOR_SHADOW_DEFAULT]
+ ['korpa_drva','Gajba sa drvima — u sobi',WOOD_BASKET_INDOOR_SHADOW_DEFAULT],
+ [WOOD_BASKET_OUTDOOR_SHADOW_ID,'Gajba sa drvima — napolju',WOOD_BASKET_OUTDOOR_SHADOW_DEFAULT]
 ]){
  if(installBasketShadowSplit||!contactShadowMaster.items[id])
   contactShadowMaster.items[id]={itemId:id,label,shadow:{...shadow}};
@@ -206,7 +206,7 @@ try{
  if(localStorage.getItem(WOOD_BASKET_OUTDOOR_UPDATE_KEY)!=='done'){
   contactShadowMaster.items[WOOD_BASKET_OUTDOOR_SHADOW_ID]={
    itemId:WOOD_BASKET_OUTDOOR_SHADOW_ID,
-   label:'Korpa sa drvima — napolju',
+   label:'Gajba sa drvima — napolju',
    shadow:{...WOOD_BASKET_OUTDOOR_SHADOW_DEFAULT}
   };
   localStorage.setItem(CONTACT_SHADOW_MASTER_KEY,JSON.stringify(contactShadowMaster));
@@ -218,7 +218,7 @@ try{
  if(localStorage.getItem(WOOD_BASKET_INDOOR_UPDATE_KEY)!=='done'){
   contactShadowMaster.items.korpa_drva={
    itemId:'korpa_drva',
-   label:'Korpa sa drvima — u sobi',
+   label:'Gajba sa drvima — u sobi',
    shadow:{...WOOD_BASKET_INDOOR_SHADOW_DEFAULT}
   };
   localStorage.setItem(CONTACT_SHADOW_MASTER_KEY,JSON.stringify(contactShadowMaster));
@@ -1665,10 +1665,9 @@ const COOKSTOVE_HOTSPOTS={
 const WOOD_BASKET_ID='korpa_drva';
 const WOOD_BASKET_MAX_LOGS=9;
 const WOOD_BASKET_ASSETS=[
- {name:'full',src:'assets/wood_basket/basket-full.png?v=2.86'},
- {name:'medium',src:'assets/wood_basket/basket-medium.png?v=2.86'},
- {name:'low',src:'assets/wood_basket/basket-low.png?v=2.86'},
- {name:'empty',src:'assets/wood_basket/basket-empty.png?v=2.86'}
+ {name:'full',src:'assets/wood_basket/crate-full.webp?v=1'},
+ {name:'medium',src:'assets/wood_basket/crate-medium.webp?v=1'},
+ {name:'empty',src:'assets/wood_basket/crate-empty.webp?v=1'}
 ];
 const stoveState=CooksterState.stove;
 // One fuel item should provide a meaningful cooking session instead of
@@ -2125,7 +2124,8 @@ function woodBasketRemaining(el){
  return Math.max(0,Math.min(WOOD_BASKET_MAX_LOGS,Math.floor(+el.dataset.woodRemaining||0)));
 }
 function woodBasketStageIndex(remaining){
- return Math.min(WOOD_BASKET_ASSETS.length-1,Math.floor((WOOD_BASKET_MAX_LOGS-remaining)/3));
+ // only three pictures: full (9..6 logs), medium (5..1), empty (0)
+ return remaining>=6?0:remaining>0?1:2;
 }
 function renderWoodBasket(el){
  if(!isWoodBasket(el))return null;
@@ -2144,7 +2144,7 @@ function ensureWoodBasket(){
  let basket=items.find(isWoodBasket);
  if(!basket){
    basket=makeItem({
-     id:WOOD_BASKET_ID,instanceId:'wood-basket-main',label:'Korpa sa drvima',
+     id:WOOD_BASKET_ID,instanceId:'wood-basket-main',label:'Gajba sa drvima',
      src:WOOD_BASKET_ASSETS[0].src,x:1425,y:532,w:236,h:236,z:++zCounter,
      snapProfile:'flat',shadowProfile:'tiny'
    });
@@ -2220,12 +2220,12 @@ function openWoodBasketActionMenu(basket,x,y){
  });
  menu.addEventListener('pointerdown',e=>e.stopPropagation());
  const title=document.createElement('strong');
- title.textContent='Korpa je prazna';
+ title.textContent='Gajba je prazna';
  title.style.padding='2px 5px 4px';
  menu.appendChild(title);
  const button=document.createElement('button');
  button.type='button';
- button.textContent='Napuni korpu';
+ button.textContent='Napuni gajbu';
  Object.assign(button.style,{
    border:'0',borderRadius:'5px',padding:'7px 10px',cursor:'pointer',
    background:'#f0c36a',color:'#2a1a0e',font:'700 13px system-ui'
@@ -4411,11 +4411,11 @@ function createContactShadowLab(){
       w:340,h:257,snapProfile:'crate',shadowProfile:'crate',category:'produce-crate'
     });
     map.set('korpa_drva',{
-      id:'korpa_drva',label:'Korpa sa drvima — u sobi',src:WOOD_BASKET_ASSETS[0].src,
+      id:'korpa_drva',label:'Gajba sa drvima — u sobi',src:WOOD_BASKET_ASSETS[0].src,
       w:236,h:236,snapProfile:'flat',shadowProfile:'tiny',category:'wood-basket'
     });
     map.set(WOOD_BASKET_OUTDOOR_SHADOW_ID,{
-      id:WOOD_BASKET_OUTDOOR_SHADOW_ID,label:'Korpa sa drvima — napolju',src:WOOD_BASKET_ASSETS[0].src,
+      id:WOOD_BASKET_OUTDOOR_SHADOW_ID,label:'Gajba sa drvima — napolju',src:WOOD_BASKET_ASSETS[0].src,
       w:236,h:236,snapProfile:'flat',shadowProfile:'tiny',category:'wood-basket'
     });
    for(const el of items||[]){
@@ -4466,9 +4466,9 @@ function createContactShadowLab(){
    const c=state.selected;
    if(c){
      status.textContent=c.itemId===WOOD_BASKET_OUTDOOR_SHADOW_ID
-       ?'Korpa sa drvima · senka napolju · promene se vide u drvarnici'
+       ?'Gajba sa drvima · senka napolju · promene se vide u drvarnici'
        :c.itemId==='korpa_drva'
-       ?'Korpa sa drvima · senka u sobi · ne menja senku napolju'
+       ?'Gajba sa drvima · senka u sobi · ne menja senku napolju'
        :c.itemId==='daska'
        ?`${defFor(c.itemId)?.label||c.itemId} · сенка за ${c.surface} · x ${c.x.toFixed(1)} / y ${c.y.toFixed(1)}`
        :`${defFor(c.itemId)?.label||c.itemId} · глобална сенка · preview: ${c.surface} · x ${c.x.toFixed(1)} / y ${c.y.toFixed(1)}`;
@@ -4492,7 +4492,7 @@ function createContactShadowLab(){
        blur:c.blur,opacity:c.opacity,angle:c.angle};
      const id=c.itemId;
      const profile={itemId:id,label:id==='korpa_drva'
-       ?'Korpa sa drvima — u sobi':'Korpa sa drvima — napolju',shadow};
+       ?'Gajba sa drvima — u sobi':'Gajba sa drvima — napolju',shadow};
      contactShadowMaster.items[id]=profile;
      state.applied[id]=JSON.parse(JSON.stringify(profile));
      try{localStorage.setItem(CONTACT_SHADOW_MASTER_KEY,JSON.stringify(contactShadowMaster));}catch(_){}
@@ -4893,7 +4893,8 @@ const FIXED_GRINDER_DEF={
  category:'fixed-kitchen-machine',fixedMount:'table-left'
 };
 const KNEADING_TROUGH_DEF={id:'nacve',label:'Naćve',src:'assets/flour/nacve.webp',x:0,y:0,w:105,h:196,z:22,starter:true,placement:['table','floor'],shadowProfile:'tiny',snapProfile:'flat',category:'tool'};
-const KITCHEN_EQUIPMENT=[...catalogKitchenEquipment,PAPRIKA_STEAM_BAG_DEF,...WATER_VESSEL_PROPS,KNEADING_TROUGH_DEF,FIXED_GRINDER_DEF].filter((prop,i,arr)=>arr.findIndex(x=>x.id===prop.id)===i);
+const WOOD_CRATE_DEF={id:WOOD_BASKET_ID,label:'Gajba sa drvima',src:WOOD_BASKET_ASSETS[0].src,x:0,y:0,w:236,h:236,z:22,starter:true,placement:['floor','table'],shadowProfile:'tiny',snapProfile:'flat',category:'tool'};
+const KITCHEN_EQUIPMENT=[...catalogKitchenEquipment,PAPRIKA_STEAM_BAG_DEF,...WATER_VESSEL_PROPS,KNEADING_TROUGH_DEF,WOOD_CRATE_DEF,FIXED_GRINDER_DEF].filter((prop,i,arr)=>arr.findIndex(x=>x.id===prop.id)===i);
 const CRATE_ZONE_ASSETS={
  table:'assets/crate_table.png',
  under:'assets/crate_under.png',
@@ -14854,7 +14855,7 @@ function updateHover(){
  if(faucetHit(mouse.x,mouse.y)){clearHover();label.textContent=faucetOn?'slavina — klik za zatvaranje vode':'slavina — klik za puštanje vode';label.style.left=mouse.x+'px';label.style.top=(mouse.y-12)+'px';label.style.display='block';return;}
  const lh=lidAt(mouse.x,mouse.y);
  if(lh){if(hoverItem!==lh.item){clearHover();hoverItem=lh.item}lh.lid.classList.add('hover-lid');hoverItem.classList.remove('hovered');label.textContent='poklopac — '+lh.item.dataset.label}
-  else{const it=itemAt(mouse.x,mouse.y);if(it!==hoverItem){clearHover();hoverItem=it;if(it){it.classList.add('hovered')}}if(it)label.textContent=isWoodBasket(it)?(woodBasketRemaining(it)>0?'Korpa sa drvima · L: uzmi cjepanicu · korpa je zaključana':'Prazna korpa · D: Napuni korpu · fiksirana pozicija'):it.dataset.crate==='1'?it.dataset.label+' · L: 1 komad · D: cela gajba':(it.dataset.detachedLid==='1'?'poklopac':it.dataset.label)}
+  else{const it=itemAt(mouse.x,mouse.y);if(it!==hoverItem){clearHover();hoverItem=it;if(it){it.classList.add('hovered')}}if(it)label.textContent=isWoodBasket(it)?(woodBasketRemaining(it)>0?'Gajba sa drvima · L: uzmi cjepanicu · gajba je zaključana':'Prazna gajba · D: Napuni gajbu · fiksirana pozicija'):it.dataset.crate==='1'?it.dataset.label+' · L: 1 komad · D: cela gajba':(it.dataset.detachedLid==='1'?'poklopac':it.dataset.label)}
  if(hoverItem){label.style.left=mouse.x+'px';label.style.top=(mouse.y-12)+'px';label.style.display='block'}
  resetBagPickIfTargetChanged();
  updateBagQtyBadge();
@@ -15478,7 +15479,7 @@ window.addEventListener('pointerdown',e=>{
     const basketAtPointer=itemAt(e.clientX,e.clientY);
     if(isWoodBasket(basketAtPointer)){
       if(woodBasketRemaining(basketAtPointer)>0)spawnHeldWoodBasketLog(basketAtPointer,e);
-      else showToast('Korpa je prazna. Desni klik za meni.');
+      else showToast('Gajba je prazna. Desni klik za meni.');
       return;
     }
   }
@@ -15508,7 +15509,7 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
     if(it&&isWoodBasket(it)){
       e.preventDefault();
       if(woodBasketRemaining(it)<=0)openWoodBasketActionMenu(it,e.clientX,e.clientY);
-      else showToast('Korpa za drva je zaključana na svom mestu. Levi klik uzima cepanicu.');
+      else showToast('Gajba za drva je zaključana na svom mestu. Levi klik uzima cepanicu.');
       return;
     }
     if(it&&isPaprikaSteamBag(it)){e.preventDefault();openPaprikaBagActionMenu(it,e.clientX,e.clientY);return}
@@ -15548,7 +15549,7 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
  if(!holding){
     if(it&&isWoodBasket(it)){
       if(woodBasketRemaining(it)>0)spawnHeldWoodBasketLog(it,e);
-      else showToast('Korpa je prazna. Desni klik za meni.');
+      else showToast('Gajba je prazna. Desni klik za meni.');
       return;
     }
    const pepperVessel=roastedPepperVesselAt(e.clientX,e.clientY);

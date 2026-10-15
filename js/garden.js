@@ -65,11 +65,7 @@
   }
 
 
-  const windowHotspot=document.createElement('button');
-  windowHotspot.type='button';
-  windowHotspot.className='garden-window-hotspot';
-  windowHotspot.setAttribute('aria-label','Изађи у башту');
-  scene.appendChild(windowHotspot);
+  // the old hover hotspot over the flowers is removed: the signpost leads to the garden now
 
   function openGarden(e){
     e?.stopPropagation?.();
@@ -88,8 +84,6 @@
     gardenScene.setAttribute('aria-hidden','true');
     document.body.classList.remove('garden-open');
   }
-  windowHotspot.addEventListener('pointerdown',e=>e.stopPropagation());
-  windowHotspot.addEventListener('click',openGarden);
   back?.addEventListener('click',closeGarden);
 
   /*

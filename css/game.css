@@ -897,10 +897,6 @@ body.kitchen-elements-open #cursor,body.kitchen-elements-open #label,body.kitche
 .garden-loose-crate.dragging{cursor:grabbing;z-index:100}
 .garden-loose-crate img{width:100%;height:100%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 6px 5px rgba(35,21,10,.34))}
 .garden-loose-crate:hover img{filter:drop-shadow(0 0 2px #fff7d2) drop-shadow(0 6px 5px rgba(35,21,10,.34))}
-.garden-window-hotspot{position:absolute;left:0;top:5%;width:18%;height:31%;z-index:40;border:0;background:transparent;cursor:pointer;border-radius:12px}
-.garden-window-hotspot:hover{box-shadow:inset 0 0 0 3px rgba(255,239,181,.38),inset 0 0 28px rgba(255,226,117,.13)}
-.garden-window-hotspot::after{content:'BAŠTA';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(49,28,14,.72);color:#fff1c8;padding:8px 12px;border-radius:10px;font-weight:900;opacity:0;transition:opacity .12s}
-.garden-window-hotspot:hover::after{opacity:1}
 body.garden-open #hud{display:none}
 body.garden-open #cursor,body.garden-open #label{display:none!important}
 
