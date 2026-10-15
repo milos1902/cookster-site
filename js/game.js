@@ -2037,12 +2037,12 @@ const OVEN_IN_BY=531,OVEN_IN_MAX_W=138,OVEN_IN_MAX_H=94,OVEN_IN_SHRINK=.86;
 const OVEN_ITEM_CFG_KEY='cookster.oven-items.v1';
 let ovenItemCfg={};
 try{ovenItemCfg=JSON.parse(localStorage.getItem(OVEN_ITEM_CFG_KEY)||'{}')||{};}catch(_){ovenItemCfg={};}
-function ovenCfgFor(id){return {by:OVEN_IN_BY,k:1,angle:0,tilt:0,dark:.5,...(ovenItemCfg[id]||{})};}
+function ovenCfgFor(id){return {by:OVEN_IN_BY,k:1,angle:0,tilt:0,dark:.5,x:1503,...(ovenItemCfg[id]||{})};}
 function ovenApplyPose(el){
  const cfg=ovenCfgFor(el.dataset.itemId),vis=(+el.dataset.ovenBaseVis||+el.dataset.vis||.8)*cfg.k;
  el.dataset.fixedVis=String(vis);el.dataset.angle=String(cfg.angle);el.dataset.tilt=String(cfg.tilt);
  el.style.setProperty('--oven-dark',String(cfg.dark));   // 0 = not darkened, 1 = very dark
- setPose(el,+el.dataset.cx||1500,cfg.by,vis);
+ setPose(el,cfg.x,cfg.by,vis);
 }
 function isOvenItem(el){
  if(!el||!el.dataset||!isContainerItem(el))return false;
@@ -2079,11 +2079,13 @@ function leaveOven(el){
 }
 function putItemIntoOven(el,xScene){
  const bw=Math.max(1,+el.dataset.baseW||100),bh=Math.max(1,+el.dataset.baseH||100);
- const curVis=Math.max(.2,+el.dataset.vis||1);
- // it goes a little smaller, and never bigger than the opening of the oven; the owner's tool can change the size on top of that
- const baseVis=Math.min(curVis*OVEN_IN_SHRINK,OVEN_IN_MAX_W/bw,OVEN_IN_MAX_H/bh);
- const cfg=ovenCfgFor(el.dataset.itemId),w=bw*baseVis*cfg.k;
- const cx=Math.max(OVEN_CLIP.left+w/2+3,Math.min(OVEN_CLIP.right-w/2-3,xScene));
+ // the size does NOT depend on where the item was held or on the point of the click (that changed from drop to drop):
+ // it comes from the size of this kind of item resting on the table, a little smaller, never bigger than the opening of the oven
+ let refVis=.8;
+ try{refVis=surfaceScaleFor({dataset:{...el.dataset,cx:'1000',by:'520',surfaceZone:'table'}},'table',520)||refVis;}catch(_){}
+ const baseVis=Math.min(refVis*OVEN_IN_SHRINK,OVEN_IN_MAX_W/bw,OVEN_IN_MAX_H/bh);
+ // the place is the one set for this kind of item in the tool (default: the middle of the oven), the same at every drop
+ const cx=ovenCfgFor(el.dataset.itemId).x;
  // the same finishing steps as a normal drop, without the flight to a surface
  hidePlacementGhost();hideOriginGhost();setBoardSnapIndicator(false);clearStirReady();clearPourTarget();
  el.style.visibility='';
@@ -2094,7 +2096,7 @@ function putItemIntoOven(el,xScene){
   el.dataset.preOvenAngle=el.dataset.angle===undefined?'':el.dataset.angle;
   el.dataset.preOvenTilt=el.dataset.tilt===undefined?'':el.dataset.tilt;
  }
- el.dataset.surfaceZone='stove';el.dataset.inOven='1';el.dataset.ovenBaseVis=String(baseVis);el.dataset.cx=String(cx);
+ el.dataset.surfaceZone='stove';el.dataset.inOven='1';el.dataset.ovenBaseVis=String(baseVis);el.dataset.cx=String(cx);   // the pose itself comes from the tool settings (ovenApplyPose)
  moveItemToOvenLayer(el);
  ovenApplyPose(el);
  setCookwareOnStove(el,false);renderCookwareContents(el);
@@ -2126,6 +2128,12 @@ window.CooksterOvenItems={
   try{localStorage.setItem(OVEN_ITEM_CFG_KEY,JSON.stringify(ovenItemCfg));}catch(_){}
   items.filter(el=>el.dataset.inOven==='1'&&el.dataset.itemId===id).forEach(ovenApplyPose);
  },
+ // moves the items of this kind that stand in the oven left-right (scene x); they never leave the opening of the oven
+ moveX(id,x){
+  const bw=(+(items.find(e=>e.dataset.itemId===id)?.dataset.baseW)||100)*0.7;
+  this.set(id,{x:Math.max(OVEN_CLIP.left+bw*.2,Math.min(OVEN_CLIP.right-bw*.2,+x))});   // it may slide sideways until the frame hides part of it
+ },
+ xOf(id){return Math.round(ovenCfgFor(id).x);},
  // test item for the tool: opens the oven and puts one of this kind inside (an existing one, or a new one)
  putTest(id){
   if(!stoveState.ovenOpen)toggleCookstoveOven();
