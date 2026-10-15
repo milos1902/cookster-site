@@ -850,3 +850,4 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Pod krpom se testo diže 45 s (`inRise` 0..1) samo sa živim kvascem; bez njega piše "ne diže se · nema živog kvasca". Kad naraste: "skini krpu".
 - Prazna ruka + klik na pokrivene naćve skida krpu; testo (mreža, senka) je veće do 1,45x.
 - Novi ključevi u čuvanju: `inCloth`, `inRise`. Dok je krpa preko, mešenje je isključeno.
+- Krpa u ruci i u kvadratićima je slika obešene krpe (`krpa_ruka.webp`); slika pokrivenih naćvi (`krpa.webp`) ostaje samo kao poklopac preko testa.
