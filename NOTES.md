@@ -862,3 +862,9 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Krpa: ispravljena greška u fizici (gravitacija je u prethodnoj verziji slučajno bila isključena, pa je krpa padala kao balon): jača gravitacija, donji deo se vuče 2,6x jače, krpa se smiri za oko 1,5 s.
 - Krpa u ruci, kao predmet i na šporetu su iste veličine (predmet `kal_krpa` 143×254, u ruci bez uvećanja).
 - Krpa visi na šipki pored šporeta (scena 1608,457) kao slika sa laganim ljuljanjem i zelenom linijom pri prelasku mišem; klik je uzima u ruku (`CooksterCloth.give()`). Dok je u ruci, na stolu ili preko naćvi, nije na šipki. Kad se krpa skine sa naćvi, odmah je u ruci.
+
+## Roštilj (gore levo): ugašen, pa upaljen sa animacijom
+- Slika kuhinje ima užarene žeravice naslikane u pozadini. Sada je roštilj po početku UGAŠEN: preko žeravica leži zakrpa (`assets/effects/grill_coals_off.webp`, ista slika sa hladnim ugljem, bez narandžastog sjaja na kamenju) – `js/grill-fire.js`.
+- Kad se upali, zakrpa se topi (1,6 s), pojavljuju se naslikane žeravice, a preko njih svetlucanje: ~90 tačaka žeravice, svaka svojim ritmom malo jače pa malo slabije zasvetli (stalno), pulsiranje celog ležišta, i tanak dim koji se diže i nosi ulevo/udesno.
+- Pali se cjepanicom iz ruke (klik cjepanicom na roštilj, ona se troši). Gori 4 min (do 8 min ako se dodaje), poslednjih 25 s se gasi. Iz koda: `CooksterGrill.set(true/false)`.
+- Nije urađeno: krupan plan roštilja (`assets/grill_zoom.webp`) ima svoje naslikane žeravice, ne prati ovo stanje.
