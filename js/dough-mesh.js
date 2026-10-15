@@ -7,16 +7,16 @@
 'use strict';
 if(window.CooksterDoughMesh)return;
 var NX=21,NY=27,CY=.46,SIG=.2,VS=2,FADE=3000;
-var STG=[{src:'assets/flour/testo_smesa.webp?v=1',ar:303/480},{src:'assets/flour/testo_razvuceno.webp?v=1',ar:270/480}];      // 0 = the wet flour, 1 = the dough (the middle picture, the lumpy mass, is not used any more)
+var STG=[{src:'assets/flour/testo_smesa.webp?v=1',ar:303/480},{src:'assets/flour/testo_razvuceno.webp?v=1',ar:270/480},{src:'assets/flour/testo_kugla.webp?v=1',ar:384/480}];      // 0 = the wet flour, 1 = the dough (the middle picture, the lumpy mass, is not used any more)
 var list=[];
 STG.forEach(function(g,i){g.img=new Image();g.ok=false;g.img.onload=function(){g.ok=true;list.forEach(function(t){if(t._m&&t._m.on&&t._m.stage===i)draw(t);});};g.img.src=g.src;});
 function bhOf(tr,st,F){var H=tr.offsetHeight||197;return H*(st===0?(.48+Math.min(1,(F||0)/200)*.16):.68);}   // the height of the dough in the opening of the trough
-function box(tr,st,F){var W=tr.offsetWidth||105,H=tr.offsetHeight||197,bh=bhOf(tr,st,F),bw=bh*STG[st].ar;return {W:W,H:H,bw:bw,bh:bh,x0:W/2-bw/2,y0:H*CY-bh/2};}
+function box(tr,st,F){var W=tr.offsetWidth||105,H=tr.offsetHeight||197,bh=bhOf(tr,st,F),bw=bh*STG[st].ar,bl=(st===1&&tr._m)?(tr._m.ball||0):0;return {W:W,H:H,bw:bw,bh:bh,x0:W/2-bw/2,y0:H*CY-bh/2,ball:bl,cx:W/2,cy:H*CY,rx:H*.2,ry:H*.25};}
 function local(tr,cx,cy){var r=tr.getBoundingClientRect(),k=(r.width/(tr.offsetWidth||1))||1;return [(cx-r.left)/k,(cy-r.top)/k];}
 function init(tr){
   if(tr._m)return tr._m;
-  var m={off:new Float32Array(NX*NY*2),on:false,gl:null,cv:null,ok:true,grab:null,stage:-1,F:0,texs:[null,null],texUp:[false,false]};tr._m=m;list.push(tr);
-  try{var s=tr.dataset.inMesh,st=tr.dataset.inMeshS;if(s&&st!==undefined){var a=s.split(',');if(a.length===NX*NY*2){for(var i=0;i<a.length;i++)m.off[i]=(+a[i]||0)/1000;m.savedStage=+st;}}}catch(e){}
+  var m={off:new Float32Array(NX*NY*2),on:false,gl:null,cv:null,ok:true,grab:null,stage:-1,F:0,texs:[null,null,null],texUp:[false,false,false],ball:0};tr._m=m;list.push(tr);
+  try{var s=tr.dataset.inMesh,st=tr.dataset.inMeshS;if(s&&st!==undefined){var a=s.split(',');if(a.length===NX*NY*2){for(var i=0;i<a.length;i++)m.off[i]=(+a[i]||0)/1000;m.savedStage=+st;}}if(tr.dataset.inBall)m.ball=+tr.dataset.inBall||0;}catch(e){}
   return m;
 }
 function glSetup(tr,m){
@@ -64,18 +64,26 @@ function dots(tr,m){
   for(k=0;k<NX*NY;k++){var a=stick(m,k);if(a<.05)continue;var p=curPos(b,m.off,k);x.fillStyle='rgba(95,70,45,'+(.55*a).toFixed(2)+')';x.beginPath();x.arc(p[0]*VS,p[1]*VS,1.6*VS,0,7);x.fill();}
 }
 function settle(tr){      // the points that still hold the dough pull it back to its place
-  var m=tr._m;if(!m||!m.on||m.stage!==0||m.settling)return;m.settling=true;
+  var m=tr._m;if(!m||!m.on||m.settling)return;if(m.stage!==0&&!(m.stage===1&&m.ball>.05))return;m.settling=true;
   (function f(){
-    if(!m.on||m.stage!==0){m.settling=false;return;}
+    if(!m.on||(m.stage!==0&&!(m.stage===1&&m.ball>.05))){m.settling=false;return;}
+    if(m.stage===1&&m.ball>0){var kk=1-m.ball*.045,q;for(q=0;q<m.off.length;q++)m.off[q]*=kk;}      // the skeleton of the ball: the points come back to the ball
     var k,big=0;if(m.glue)for(k=0;k<NX*NY;k++)if(m.glue[k]>0)m.glue[k]=Math.max(0,m.glue[k]-.0025);
     for(k=0;k<NX*NY;k++){var a=stick(m,k);if(a>0){m.off[k*2]*=1-a*.05;m.off[k*2+1]*=1-a*.05;}big=Math.max(big,Math.abs(m.off[k*2]),Math.abs(m.off[k*2+1]));}
     draw(tr);
     if(big>.003)requestAnimationFrame(f);else m.settling=false;
   })();
 }
-function curPos(b,off,k){var i=k%NX,j=(k/NX)|0;return [b.x0+b.bw*i/(NX-1)+off[k*2]*b.bh,b.y0+b.bh*j/(NY-1)+off[k*2+1]*b.bh];}
-function pass(tr,m,st,F,off,alpha){
-  var gl=m.gl,b=box(tr,st,F),k,pos=m.pos;texFor(m,st);
+function curPos(b,off,k){
+  var i=k%NX,j=(k/NX)|0,x=b.x0+b.bw*i/(NX-1),y=b.y0+b.bh*j/(NY-1);
+  if(b.ball>0){                                           // the skeleton of the ball: the net goes from the rectangle of the picture to a disc (a square mapped to a circle)
+    var u=2*i/(NX-1)-1,v=2*j/(NY-1)-1,dx=b.cx+u*Math.sqrt(1-v*v/2)*b.rx,dy=b.cy+v*Math.sqrt(1-u*u/2)*b.ry;
+    x+=(dx-x)*b.ball;y+=(dy-y)*b.ball;
+  }
+  return [x+off[k*2]*b.bh,y+off[k*2+1]*b.bh];
+}
+function pass(tr,m,st,F,off,alpha,tx){
+  var gl=m.gl,b=box(tr,st,F),k,pos=m.pos;texFor(m,tx===undefined?st:tx);
   for(k=0;k<NX*NY;k++){var p=curPos(b,off,k);pos[k*2]=p[0]*VS;pos[k*2+1]=p[1]*VS;}
   gl.bindBuffer(gl.ARRAY_BUFFER,m.pb);gl.bufferSubData(gl.ARRAY_BUFFER,0,pos);gl.uniform1f(m.ua,alpha);
   gl.drawElements(gl.TRIANGLES,m.n,gl.UNSIGNED_SHORT,0);
@@ -85,10 +93,12 @@ function draw(tr){
   if(!m.gl&&!glSetup(tr,m))return;
   var gl=m.gl;gl.viewport(0,0,m.cv.width,m.cv.height);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
   var f=1;
-  if(m.fade){f=Math.min(1,(performance.now()-m.fade.t0)/FADE);f=f*f*(3-2*f);       // the old picture melts into the new one (3 seconds)
-    if(STG[m.fade.from].ok)pass(tr,m,m.fade.from,m.fade.F,m.fade.off,1-f);
+  if(m.fade){f=Math.min(1,(performance.now()-m.fade.t0)/FADE);f=f*f*(3-2*f);       // the old picture melts into the new one (3 seconds): the old one is drawn whole, the new one over it with more and more strength
+    if(STG[m.fade.from].ok)pass(tr,m,m.fade.from,m.fade.F,m.fade.off,1);
     if(f>=1)m.fade=null;}
-  pass(tr,m,m.stage,m.F,m.off,m.fade?f:1);
+  var bl=m.stage===1?(m.ball||0):0,af=m.fade?f:1;
+  pass(tr,m,m.stage,m.F,m.off,af);
+  if(bl>.02&&STG[2].ok)pass(tr,m,1,m.F,m.off,af*bl,2);      // the picture of the ball over the stretched one (the skeleton becomes round)
   dots(tr,m);
 }
 function fadeLoop(tr){var m=tr._m;if(!m||!m.fade){return;}draw(tr);if(m.fade)requestAnimationFrame(function(){fadeLoop(tr);});}
@@ -100,12 +110,13 @@ function area(b,off){var A=0,i,j;for(j=0;j<NY-1;j++)for(i=0;i<NX-1;i++){var k=j*
 function relax(tr,m){
   var b=box(tr,m.stage,m.F),W=b.W,H=b.H,k,n=NX*NY,P=new Float32Array(n*2),it,i,j;
   for(k=0;k<n;k++){var p=curPos(b,m.off,k);P[k*2]=p[0];P[k*2+1]=p[1];}
-  var Lx=b.bw/(NX-1),Ly=b.bh/(NY-1),MAX=1.9,MIN=.5;
+  var MAX=1.9,MIN=.5,Z0=new Float32Array(n*2),R0=[];for(k=0;k<n;k++)R0.push(curPos(b,Z0,k));
+  function rl(a,c){return Math.hypot(R0[c][0]-R0[a][0],R0[c][1]-R0[a][1])||1;}
   function edge(a,c,L0){var dx=P[c*2]-P[a*2],dy=P[c*2+1]-P[a*2+1],L=Math.hypot(dx,dy)||.0001,t=0;
     if(L>L0*MAX)t=(L-L0*MAX)/L*.5;else if(L<L0*MIN)t=-(L0*MIN-L)/L*.5;if(!t)return;
     P[a*2]+=dx*t*.5;P[a*2+1]+=dy*t*.5;P[c*2]-=dx*t*.5;P[c*2+1]-=dy*t*.5;}
   for(it=0;it<6;it++){
-    for(j=0;j<NY;j++)for(i=0;i<NX;i++){var a=j*NX+i;if(i<NX-1)edge(a,a+1,Lx);if(j<NY-1)edge(a,a+NX,Ly);}
+    for(j=0;j<NY;j++)for(i=0;i<NX;i++){var a=j*NX+i;if(i<NX-1)edge(a,a+1,rl(a,a+1));if(j<NY-1)edge(a,a+NX,rl(a,a+NX));}
     var NB=window.CooksterNacveBounds;
     for(k=0;k<n;k++){
       if(NB&&NB.get){var px=P[k*2]/W*100,py=P[k*2+1]/H*100;if(!NB.inside(px,py)){var q=NB.nearest(px,py);P[k*2]=q[0]/100*W;P[k*2+1]=q[1]/100*H;if(m.stage===0){if(!m.glue)m.glue=new Float32Array(n);m.glue[k]=1;}}}
@@ -113,10 +124,12 @@ function relax(tr,m){
     }
   }
   // a point can go away from its place only so far (the dough is pulled and shaped, it does not slide away or turn into a thin streak)
-  for(k=0;k<n;k++){var i2=k%NX,j2=(k/NX)|0,ox=(P[k*2]-(b.x0+b.bw*i2/(NX-1)))/b.bh,oy=(P[k*2+1]-(b.y0+b.bh*j2/(NY-1)))/b.bh;m.off[k*2]=Math.max(-.42,Math.min(.42,ox));m.off[k*2+1]=Math.max(-.42,Math.min(.42,oy));}
+  var Z=new Float32Array(n*2);
+  for(k=0;k<n;k++){var rp=curPos(b,Z,k),ox=(P[k*2]-rp[0])/b.bh,oy=(P[k*2+1]-rp[1])/b.bh;      // the offset from the REST place (the rectangle of the picture, or the round skeleton of the ball)
+    m.off[k*2]=Math.max(-.42,Math.min(.42,ox));m.off[k*2+1]=Math.max(-.42,Math.min(.42,oy));}
 }
 function keepSize(tr,m){
-  var b=box(tr,m.stage,m.F),A0=b.bw*b.bh,A=area(b,m.off);if(A<=0)return;
+  var b=box(tr,m.stage,m.F),A0=area(b,new Float32Array(NX*NY*2)),A=area(b,m.off);if(A<=0)return;
   var sc=Math.sqrt(A0/A);if(sc<1.015)return;sc=Math.min(sc,2);
   // the centre of the net and the width it may have
   var k,cx=0,cy=0,mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9;
@@ -126,14 +139,15 @@ function keepSize(tr,m){
   for(k=0;k<NX*NY;k++){var q=curPos(b,m.off,k);m.off[k*2]+=((cx+(q[0]-cx)*sc)-q[0])/b.bh;m.off[k*2+1]+=((cy+(q[1]-cy)*sc)-q[1])/b.bh;}
 }
 function save(tr){var m=tr._m;if(!m)return;var s=[],any=false;for(var i=0;i<m.off.length;i++){var v=Math.round(m.off[i]*1000);if(v)any=true;s.push(v);}
-  if(any){tr.dataset.inMesh=s.join(',');tr.dataset.inMeshS=String(m.stage);}else{delete tr.dataset.inMesh;delete tr.dataset.inMeshS;}}
+  if(any){tr.dataset.inMesh=s.join(',');tr.dataset.inMeshS=String(m.stage);}else{delete tr.dataset.inMesh;delete tr.dataset.inMeshS;}
+  if(m.stage===1&&m.ball>.01)tr.dataset.inBall=m.ball.toFixed(3);else delete tr.dataset.inBall;}
 window.CooksterDoughMesh={
   /* the stage of the dough (0, 1, 2) and the flour in the trough: the mesh shows its picture; returns true if the mesh is drawing (the old pictures are then hidden) */
   setStage:function(tr,stage,flour,prog){
     var m=init(tr);if(!m.ok)return false;
     if(m.stage!==stage){
       var keep=(m.stage<0&&m.savedStage===stage);            // the first time after a load the saved shape is kept when it belongs to this stage
-      if(!keep){if(m.stage>=0&&m.gl)m.fade={from:m.stage,F:m.F,off:m.off.slice(),t0:performance.now()};m.off.fill(0);m.glue=null;if(m.stage>=0){delete tr.dataset.inMesh;delete tr.dataset.inMeshS;}}
+      if(!keep){if(m.stage>=0&&m.gl)m.fade={from:m.stage,F:m.F,off:m.off.slice(),t0:performance.now()};m.off.fill(0);m.glue=null;if(m.stage>=0){m.ball=0;delete tr.dataset.inMesh;delete tr.dataset.inMeshS;}}
       m.stage=stage;m.savedStage=undefined;
     }
     m.F=flour||0;m.prog=prog||0;m.on=true;
@@ -146,10 +160,12 @@ window.CooksterDoughMesh={
   drag:function(tr,cx,cy){
     var m=tr._m;if(!m||!m.on||!m.grab||!m.ok||m.stage<0)return;
     var p=local(tr,cx,cy),dx=p[0]-m.grab.x,dy=p[1]-m.grab.y;if(!dx&&!dy)return;
+    if(m.stage===1)m.ball=Math.min(1,(m.ball||0)+Math.hypot(dx,dy)/1500);      // the longer the dough is worked, the more it is a ball
     if(m.glue)for(var g=0;g<m.glue.length;g++)if(m.glue[g]>0)m.glue[g]=Math.max(0,m.glue[g]-.01);      // the glue weakens while the dough is worked
     var b=box(tr,m.stage,m.F),sg=b.bh*SIG,k;
     for(k=0;k<NX*NY;k++){var c=curPos(b,m.off,k),r=Math.hypot(c[0]-m.grab.x,c[1]-m.grab.y),w=Math.exp(-(r/sg)*(r/sg));
       if(w<.01)continue;var gl=m.glue?m.glue[k]*Math.max(0,1-(m.prog||0)*1.4):0,hold=(1-.85*stick(m,k))*(1-.7*gl);
+      if(m.stage===1)hold*=1-.65*(m.ball||0);
       if(window.CooksterNacveBounds&&CooksterNacveBounds.wall(c[0]/b.W*100,c[1]/b.H*100))hold*=.35;      // on the wall the dough goes slower (it climbs)
       m.off[k*2]+=dx*w*hold/b.bh;m.off[k*2+1]+=dy*w*hold/b.bh;}
     for(var it=0;it<3;it++){keepSize(tr,m);relax(tr,m);}      // the wall holds, the dough that is pushed against it is flattened there and spreads to the free sides (the volume stays)
