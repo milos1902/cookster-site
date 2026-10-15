@@ -268,12 +268,12 @@ function camTo(T,dur,done){
     scale=s0+(T.s-s0)*e;offsetX=x0+(T.ox-x0)*e;offsetY=y0+(T.oy-y0)*e;applyCamera();
     if(k<1)camRaf=requestAnimationFrame(f);else{camRaf=0;if(done)done();}})(t0);
 }
-function camIn(tr){
+function camIn(tr,f){
   if(camSaved)return;
   try{
     camSaved={s:scale,ox:offsetX,oy:offsetY};
     var r=tr.getBoundingClientRect(),pt=screenToScene(r.left+r.width/2,r.top+r.height*.46);
-    var s=Math.min(fitScale*1.5,Math.max(scale*1.35,fitScale*1.35)),sx=innerWidth/2,sy=innerHeight*.47;      // only a little closer: the whole table stays in the picture
+    f=f||1.35;var s=Math.min(fitScale*(f+.15),Math.max(scale*f,fitScale*f)),sx=innerWidth/2,sy=innerHeight*.47;      // only a little closer: the whole table stays in the picture
     camTo({s:s,ox:sx-(pt.x-cameraX)*s,oy:sy-pt.y*s},200);
   }catch(e){camSaved=null;}
 }
@@ -283,7 +283,7 @@ function camOut(){
 }
 var mixP=null;
 window.addEventListener('pointerdown',function(e){
-  var h=typeof holding!=='undefined'?holding:null;if(e.button!==0||h)return;     // by hand: nothing in the hand
+  var h=typeof holding!=='undefined'?holding:null;if(e.button!==0||h||document.body.classList.contains('nacve-tool'))return;     // by hand: nothing in the hand (and not while the tool for the limits of the dough is open)
   if(e.target&&e.target.closest&&e.target.closest('#hud,[data-tool-ui],.cookster-ctx,#toolDock'))return;
   var sp=screenToScene(e.clientX,e.clientY),tr=troughAt(sp.x,sp.y);if(!tr)return;
   var D=doughState(tr);if(D.st==='empty'||D.st==='flour'||D.st==='water')return;   // an empty trough or only one thing in it: the normal click (picking it up)
@@ -358,5 +358,5 @@ window.addEventListener('pointermove',function(e){
 },true);
 window.addEventListener('pointerup',function(e){if(mixP&&e.button===0){if(mixP.tr._kn)mixP.tr._kn.style.opacity='0';try{CooksterDoughMesh.release(mixP.tr);}catch(x){}mixP=null;camOut();try{CooksterSave.schedule();}catch(x){}}},true);
 window.addEventListener('blur',function(){if(mixP){mixP=null;}camOut();});
-window.CooksterFlour={troughAt:troughAt,addWater:function(tr,units){tr.dataset.inWater=String(Math.min(400,(+tr.dataset.inWater||0)+units));drawTrough(tr);},dough:function(){var e=(typeof items!=='undefined'?items:[]).filter(function(x){return x.dataset&&x.dataset.itemId===TR;}).pop();return e?doughState(e):null;},piles:function(){return piles.map(function(p){return {x:p.x,y:p.y,n:p.n};});},clear:function(){piles.forEach(function(p){if(p.el)p.el.remove();});piles=[];save();}};
+window.CooksterFlour={camIn:camIn,camOut:camOut,troughAt:troughAt,addWater:function(tr,units){tr.dataset.inWater=String(Math.min(400,(+tr.dataset.inWater||0)+units));drawTrough(tr);},dough:function(){var e=(typeof items!=='undefined'?items:[]).filter(function(x){return x.dataset&&x.dataset.itemId===TR;}).pop();return e?doughState(e):null;},piles:function(){return piles.map(function(p){return {x:p.x,y:p.y,n:p.n};});},clear:function(){piles.forEach(function(p){if(p.el)p.el.remove();});piles=[];save();}};
 })();
