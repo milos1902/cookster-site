@@ -837,3 +837,10 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Redosled: voda (≥10) + malo brašna (≥3) + šećer (≥1) + kvasac → kašika (`kasika_mesanje`, levo dugme i vuci po naćvama, ~1200 px) → čekanje 25 s (mehurići) → "kvasac je živ" → tek onda prava količina brašna i vode i mešenje rukom.
 - Ako se doda previše brašna/vode pre nego što kvasac oživi, kvasac je "mrtav" (`inYeastDead`). Bez kvasca ili sa mrtvim testo se mesi ali se neće dići (natpis u naćvama). `CooksterFlour.dough()` vraća `y`: none / sleep / alive / dead — to koristi dizanje.
 - Novi ključevi u čuvanju: `inSugar`, `inStir`, `inStarter`, `inYeastDead`.
+
+## Kvasac: mlaka voda, nagib šećera/kvasca, mali nanosi brašna
+- Sudopera (krupan plan): levi ventil (crveni) = toplo, desni (plavi) = hladno; para se vidi kad je topli otvoren. Temperatura vode u posudi (`waterTemp`) je mešavina onoga što je bilo i onoga što priteče (toplo 55, hladno 10).
+- Bokal sipa u naćve sa svojom temperaturom (`inWaterT`). Kvasac se budi samo u mlakoj vodi (28–45): hladna = ne budi se, prevruća = kvasac ugine.
+- Šećer i kvasac se naginju ka naćvama sa strane suprotne od one sa koje dolaze; kvasac se sipa kao zrnca koja padaju.
+- Malo brašna (do 14) u naćvama su mali nanosi (stara slika gomile), ne slika pune naćve.
+- Testo: dok se mesi, pomera se i gornji deo, ne samo donji.

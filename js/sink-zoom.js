@@ -231,10 +231,11 @@ function frame(now){
   flow+=(totalFlow()-flow)*Math.min(1,dt*7);
   var on=flow>.02;
   streamLen+=((on?1:0)-streamLen)*Math.min(1,dt*(on?9:14));
+  drawSteam(g,w,h,dt);
   if(streamLen>.01&&flow>.01){drawWater(g,w,h,now);cutFront(g,w,h);}
   else if(streamLen>.01){streamLen*=.8;}
   g.setTransform(1,0,0,1,0,0);
-  if(moving||streamLen>.02||flow>.02||drops.length)requestAnimationFrame(frame);else fxRun=false;
+  if(moving||streamLen>.02||flow>.02||drops.length||steam.length||valve.left.open>.1)requestAnimationFrame(frame);else fxRun=false;
 }
 // the head of a valve: a piece of the picture (a disc around its centre) turned like the cross of a real valve, seen from above at an angle
 var SPR={},NO_COVER=true;
@@ -268,6 +269,17 @@ function drawHead(g,k,v,w,h){
     g.scale(1,q);g.rotate(v.ang+prevAng(k)-(n-1-i)*.16*dir);g.scale(1,1/q);
     g.drawImage(hs,-R,-hh/2,R*2,hh);g.restore();
   }
+}
+var steam=[];
+function hotShare(){var a=valve.left.open,b=valve.right.open;return a+b>.02?a/(a+b):0;}
+function tapTemp(){return 10+45*hotShare();}
+function drawSteam(g,w,h,dt){
+  var T=cal.tap,sx=T.spout[0]/100*w,sy=T.spout[1]/100*h,hot=valve.left.open*(.4+.6*hotShare());
+  if(hot>.1&&Math.random()<dt*(9+22*hot)){steam.push({x:sx+(Math.random()-.5)*w*.012,y:sy+h*.01,vx:(Math.random()-.5)*w*.01,life:0,max:1.6+Math.random()*1.2,r:w*(.007+Math.random()*.007)});}
+  for(var i=steam.length-1;i>=0;i--){var p=steam[i];p.life+=dt;if(p.life>=p.max){steam.splice(i,1);continue;}
+    p.y-=h*.1*dt*(1+p.life*.3);p.x+=p.vx*dt+Math.sin(p.life*3+i)*w*.0006;var f=p.life/p.max,rr=p.r*(1+f*2.4);
+    var gg=g.createRadialGradient(p.x,p.y,0,p.x,p.y,rr);gg.addColorStop(0,'rgba(255,255,255,'+(.32*Math.sin(Math.min(1,f*1.6)*Math.PI*.5)*(1-f)).toFixed(3)+')');gg.addColorStop(1,'rgba(255,255,255,0)');
+    g.fillStyle=gg;g.beginPath();g.arc(p.x,p.y,rr,0,Math.PI*2);g.fill();}
 }
 function splashCfg(){var T=cal.tap;return {pos:T.sp&&T.sp.pos||T.land,size:T.sp&&T.sp.size||11.5,tilt:T.sp&&T.sp.tilt||1};}
 function setSp(k,v){var T=cal.tap;T.sp=Object.assign({},T.sp||{},splashCfg(),{});T.sp.pos=T.sp.pos.slice();T.sp[k]=v;}
@@ -373,7 +385,7 @@ function renderSink(force){
     if(wf>.004){var ov=CooksterVesselWater.overlay(sv.id,wf,srcOf(sv),true);if(ov)w.appendChild(ov);}
     im.onload=function(){place(w,im,x,g)};im.src=srcOf(sv);if(im.complete&&im.naturalWidth)place(w,im,x,g);
     w.addEventListener('pointerdown',function(e){e.stopPropagation();e.preventDefault();if(e.button===2)return;takeOut(i);});
-    w.addEventListener('contextmenu',function(e){e.preventDefault();e.stopPropagation();if(sv.data&&sv.data.water){delete sv.data.water;saveSunk();renderSink(true);}});
+    w.addEventListener('contextmenu',function(e){e.preventDefault();e.stopPropagation();if(sv.data&&sv.data.water){delete sv.data.water;delete sv.data.waterTemp;saveSunk();renderSink(true);}});
     layer.appendChild(w);
   });
   var gd=itemGeom('posuda_za_kupus',11);
@@ -420,7 +432,8 @@ function fillTick(){
     sunk.forEach(function(sv){
       if(!Wt.has(sv.id))return;var g=sv._g||itemGeom(sv.id,14),x=sv._x;if(x==null)return;
       if(Math.abs(x-lx)>g.w*.6)return;                               // only a vessel under the stream
-      sv.data=sv.data||{};var f=Wt.clamp(sv.data.water)+dt*.09*flow;f=Math.min(1,f);
+      sv.data=sv.data||{};var w0=Wt.clamp(sv.data.water),f=w0+dt*.09*flow;f=Math.min(1,f);
+      var t0=sv.data.waterTemp!=null?+sv.data.waterTemp:15;sv.data.waterTemp=String(((t0*w0+tapTemp()*(f-w0))/Math.max(.0001,f)).toFixed(1));   // the temperature of the water in the vessel: the mix of what was there and what flows in (hot valve = 55, cold = 10)
       if(Math.abs(f-Wt.clamp(sv.data.water))>.0005){sv.data.water=f.toFixed(3);changed=true;}
     });
   }

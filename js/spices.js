@@ -53,7 +53,8 @@
   // ---------- spice jars: tilt over a vessel, shake to sprinkle ----------
   let tilt=0,lastX=0,lastDir=0,travel=0,shakes=0,lastJar=null,lastEmit=0;
   function vesselUnder(jar){
-    try{return containerAt(mouse.x,mouse.y);}catch(_){return null;}
+    try{const c=containerAt(mouse.x,mouse.y);if(c)return c;
+      const s=screenToScene(mouse.x,mouse.y);return window.CooksterFlour&&CooksterFlour.troughAt?CooksterFlour.troughAt(s.x,s.y):null;}catch(_){return null;}
   }
   // where the lid (the open mouth) of the tilted jar is on the screen: the visible jar is the placement ghost, turned by `tilt` around its pivot
   function lidPoint(jar){
@@ -107,7 +108,9 @@
       return;
     }
     const target=vesselUnder(jar);
-    const goal=target?38:0;
+    // over the kneading trough the jar tilts away from the side it comes from (from the left: pours to the right)
+    const isTr=!!target&&target.dataset&&target.dataset.itemId==='nacve';
+    const goal=target?38*(isTr&&mouse.x>target.getBoundingClientRect().left+target.getBoundingClientRect().width/2?-1:1):0;
     tilt+=(goal-tilt)*.18;
     jar.style.rotate=tilt.toFixed(1)+'deg';
     document.querySelectorAll('.ghost-item-copy').forEach(g=>{if(g.querySelector('img[src*="calibration_props/zacini/"]'))g.style.rotate=tilt.toFixed(1)+'deg';});
@@ -120,9 +123,13 @@
     const jar=(typeof holding!=='undefined'&&holding&&spiceOf(holding))?holding:null;
     if(!jar)return;
     const target=vesselUnder(jar);
-    if(!target||tilt<12)return;
+    if(!target||Math.abs(tilt)<12)return;
     e.preventDefault();e.stopImmediatePropagation();
     const kind=spiceOf(jar);
+    if(target.dataset&&target.dataset.itemId==='nacve'){
+      if(kind!=='secer'){try{showToast('To ne ide u naćve.');}catch(_){}return;}
+      emit(jar,kind,target);try{CooksterFlour.addSugar(target);}catch(_){}return;
+    }
     emit(jar,kind,target);dose(target,kind);
   },true);
 

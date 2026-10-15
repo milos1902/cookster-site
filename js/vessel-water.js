@@ -201,7 +201,7 @@ function sync(el){
 }
 function set(el,f){
   f=clamp(f);
-  if(f<=.004)delete el.dataset.water;else el.dataset.water=f.toFixed(3);
+  if(f<=.004){delete el.dataset.water;delete el.dataset.waterTemp;}else el.dataset.water=f.toFixed(3);
   sync(el);
 }
 /* the percentage beside a vessel that shows it (the pitcher): the number runs quickly up while it is filled and down while it is poured */
