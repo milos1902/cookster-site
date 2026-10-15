@@ -8,7 +8,6 @@
 <link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23B54A1A'/%3E%3Cpath d='M8 11h16l-2 13H10L8 11Zm3-5h10v3H11V6Z' fill='%23fff3d6'/%3E%3C/svg%3E" rel="icon" type="image/svg+xml"/>
 <link href="css/game.css?v=2.96" rel="stylesheet"/>
 <link href="css/ui-popart-overrides.css?v=2.89" rel="stylesheet"/>
-<link href="css/wood-refill-scene.css?v=2.92" rel="stylesheet"/>
 <link href="css/ui-bottom-buttons.css?v=2.84" rel="stylesheet"/>
 <link href="css/cutura-drink-animation.css?v=2.66" rel="stylesheet"/>
 <link href="css/vessel-food-mask-tool.css?v=7" rel="stylesheet"/>
@@ -162,37 +161,6 @@
 <div aria-hidden="true" id="gardenBedLayer"></div>
 </div>
 </div>
-<div aria-hidden="true" id="woodSupplyScene">
-<div aria-label="Dvorište za punjenje korpe" id="woodSupplyFrame">
-<img alt="Dvorište sa gomilom cjepanica" class="wood-supply-art" id="woodSupplyArt" src="assets/wood_basket/wood-supply-yard.png?v=2.87"/>
-<img alt="" aria-hidden="true" class="wood-supply-wind wood-supply-wind-left" src="assets/wood_basket/wood-supply-leaves-left.png?v=2.87"/>
-<img alt="" aria-hidden="true" class="wood-supply-wind wood-supply-wind-center" src="assets/wood_basket/wood-supply-leaves-center.png?v=2.87"/>
-<img alt="" aria-hidden="true" class="wood-supply-wind wood-supply-wind-right" src="assets/wood_basket/wood-supply-leaves-right.png?v=2.87"/>
-<header class="wood-supply-hud">
-<strong>Drvarnica</strong>
-<p aria-live="polite" id="woodSupplyMessage">Prevuci cjepanicu sa gomile u gajbu.</p>
-<output aria-label="Broj ubačenih cjepanica" id="woodSupplyCount">0 / 4</output>
-</header>
-<button aria-label="Uzmi cjepanicu sa gomile i prevuci je u gajbu" class="wood-supply-pile-hit" id="woodSupplyPile" type="button"></button>
-<div class="wood-supply-tools">
-<button id="woodSupplyScaleToggle" type="button">Skala korpe</button>
-<button id="woodSupplyShadowToggle" type="button">Senka korpe napolju</button>
-</div>
-<div class="wood-supply-scale-panel" id="woodSupplyScalePanel" hidden>
-<div class="wood-supply-scale-title">Korpa · veličina i perspektiva</div>
-<label>Veličina <input id="woodSupplyScale" type="range" min="0.5" max="2.2" step="0.01"/><output id="woodSupplyScaleValue"></output></label>
-<label>Nagib napred/nazad <input id="woodSupplyTiltX" type="range" min="-55" max="55" step="1"/><output id="woodSupplyTiltXValue"></output></label>
-<label>Bočni nagib <input id="woodSupplyTiltY" type="range" min="-55" max="55" step="1"/><output id="woodSupplyTiltYValue"></output></label>
-<div class="wood-supply-scale-actions"><button id="woodSupplyScaleReset" type="button">Resetuj</button><button id="woodSupplyScaleExport" type="button">Izvezi JSON</button></div>
-</div>
-<div aria-hidden="true" class="wood-supply-contact-shadow" id="woodSupplyShadow"></div>
-<img alt="Prazna gajba za drva" class="wood-supply-basket" id="woodSupplyBasket" draggable="false" src="assets/wood_basket/crate-empty.webp?v=1"/>
-<div aria-hidden="true" id="woodSupplyLogLayer"></div>
-<div aria-hidden="true" aria-label="Opcije korpe" class="wood-supply-context-menu" id="woodSupplyContextMenu" role="menu" hidden>
-<button id="woodSupplyReturn" role="menuitem" type="button">Natrag u kuću</button>
-</div>
-</div>
-</div>
 <div id="crateHelp">Gajbica: 10 komada povrća<br/>levi klik = uzmi 1 komad · desni = nosi celu gajbicu<br/>na stolu / ispod stola / na podu menja perspektivu</div>
 <div id="modalShade"><div id="modal"><header><span>Pijaca — paradajz</span><button id="closeModal">Zatvori</button></header><table><thead><tr><th>Namirnica</th><th>Cena</th><th></th></tr></thead><tbody id="marketRows"></tbody></table></div></div>
 <script src="js/core/tool-shield.js?v=1"></script>
@@ -232,7 +200,7 @@
 <script src="js/tavern-calibration.js?v=13"></script>
 <script src="js/table-items-tool.js?v=97"></script>
 <script src="js/waiter-steps-tool.js?v=4"></script>
-<script src="js/game.js?v=3.135"></script>
+<script src="js/game.js?v=3.136"></script>
 <script src="js/vessel-dirt.js?v=3"></script>
 <script src="js/vessel-water.js?v=32"></script>
 <script src="js/sink-zoom.js?v=23"></script>
@@ -259,7 +227,6 @@
 <script src="js/tomato-cut3d.js?v=27"></script>
 <script src="js/piece-sim.js?v=28"></script>
 <script src="js/egg-sim.js?v=8"></script>
-<script src="js/wood-refill-scene.js?v=2.94"></script>
 <script src="js/ui-bottom-buttons.js?v=2.84"></script>
 <script src="js/ui-button-calibration.js?v=2.76"></script>
 <script src="js/cutura-drink-animation.js?v=2.74"></script>
