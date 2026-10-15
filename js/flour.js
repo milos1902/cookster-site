@@ -82,6 +82,9 @@ function doughState(e){
   return {F:F,W:W,r:r,st:st,y:y,sugar:sg,T:T,small:F<=ST_F&&W<=ST_W};
 }
 var ST_TXT={flour:'brašno',water:'voda',dry:'suvo, dodaj vode',good:'dobro testo',wet:'previše meko, dodaj brašna',starter:'kvasac'};
+var CLOTH='assets/calibration_props/krpa/krpa.webp?v=1',RISE_S=45,KRPA='kal_krpa';
+(function(){var i=new Image();i.src=CLOTH;})();
+function riseTf(e){var r=Math.min(1,+e.dataset.inRise||0);return r>.002?'scale('+(1+.45*r).toFixed(3)+')':'';}   // the dough that has risen is bigger (it grows from its bottom)
 function starterTxt(e,D){
   var need=[];if(D.W<10)need.push('voda');if(D.F<3)need.push('brašno');if(D.sugar<1)need.push('šećer');
   if(need.length)return 'kvasac · fali: '+need.join(', ');
@@ -136,6 +139,14 @@ function drawTrough(e){
     e._shI.style.width=Math.min(60,12+D.F*2.4)+'%';e._sh.style.opacity=D.W>=3?'.82':'1';
   }else if(e._sh){e._sh.remove();e._sh=null;}
   if(e._fl){e._fl.remove();e._fl=null;}
+  // the cloth over the trough: it covers the dough while it rises
+  if(e.dataset.inCloth==='1'){
+    if(!e._cl||!e._cl.isConnected){var cl=document.createElement('img');cl.src=CLOTH;cl.draggable=false;cl.style.cssText='position:absolute;left:-3%;top:-1%;width:106%;height:103%;pointer-events:none;z-index:9;transform-origin:50% 60%;transition:transform 1s linear,opacity .35s;opacity:0;user-select:none';e.appendChild(cl);e._cl=cl;requestAnimationFrame(function(){cl.style.opacity='1';});}
+    var rz=Math.min(1,+e.dataset.inRise||0);e._cl.style.transform='scale('+(1+.07*rz).toFixed(3)+')';
+    e._lbl.textContent=D.y==='alive'?(rz>=1?'testo je naraslo · skini krpu':'diže se '+Math.round(rz*100)+'%'):'ne diže se · nema živog kvasca';
+  }else if(e._cl){e._cl.remove();e._cl=null;}
+  if(e._dg&&!(e._st&&e._st.run))e._dg.style.transform=riseTf(e);
+  if(e._m){var rs=Math.min(1,+e.dataset.inRise||0),rv=rs>.002?String((1+.45*rs).toFixed(3)):'';[e._m.cv,e._m.bs].forEach(function(n){if(n){n.style.scale=rv;n.style.transformOrigin='50% 62%';}});}   // the mesh of the dough (a canvas) grows too
   // the dough appears only by mixing (the flour and the water that are already in the trough), not by pouring: the picture of the dough melts in as the mixing goes
   var mx=Math.min(1,+e.dataset.inMix||0);
   // the dough is a picture of its own (without the trough), so that only the dough can stretch while the trough stays still:
@@ -312,10 +323,23 @@ function driveGrains(){var t0=performance.now();(function f(n){var dt=Math.min(.
 function heldId(){var h=typeof holding!=='undefined'?holding:null;return h&&h.dataset?h.dataset.itemId:'';}
 function puffAtTrough(tr,col){try{var r=tr.getBoundingClientRect(),n=0;for(var i=0;i<8;i++){var d=document.createElement('i'),sz=2.5+Math.random()*3;d.style.cssText='position:fixed;left:'+(r.left+r.width*(.3+Math.random()*.4))+'px;top:'+(r.top+r.height*.05)+'px;width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+col+';z-index:20000;pointer-events:none;transition:transform .5s cubic-bezier(.3,.1,.6,1),opacity .5s';document.body.appendChild(d);(function(d){requestAnimationFrame(function(){d.style.transform='translate('+((Math.random()-.5)*10)+'px,'+(r.height*(.28+Math.random()*.2))+'px)';d.style.opacity='.2';});setTimeout(function(){d.remove();},600);})(d);}}catch(x){}}
 window.addEventListener('pointerdown',function(e){
-  var id=heldId();if(e.button!==0||(id!==YEAST&&id!==SPOON))return;
+  if(e.button===0&&!(typeof holding!=='undefined'&&holding)){          // an empty hand on a covered trough takes the cloth off
+    if(e.target&&e.target.closest&&e.target.closest('#hud,[data-tool-ui],.cookster-ctx,#toolDock'))return;
+    var sp0=screenToScene(e.clientX,e.clientY),tr0=troughAt(sp0.x,sp0.y);
+    if(tr0&&tr0.dataset.inCloth==='1'){e.stopImmediatePropagation();e.preventDefault();delete tr0.dataset.inCloth;drawTrough(tr0);sayT((+tr0.dataset.inRise||0)>=1?'Krpa je skinuta, testo je naraslo.':'Krpa je skinuta.');try{CooksterSave.schedule();}catch(x){}return;}
+  }
+  var id=heldId();if(e.button!==0||(id!==YEAST&&id!==SPOON&&id!==KRPA))return;
   if(e.target&&e.target.closest&&e.target.closest('#hud,[data-tool-ui],.cookster-ctx,#toolDock'))return;
   var sp=screenToScene(e.clientX,e.clientY),tr=troughAt(sp.x,sp.y);if(!tr)return;
   var D=doughState(tr);
+  if(id===KRPA){
+    e.stopImmediatePropagation();e.preventDefault();
+    if(tr.dataset.inCloth==='1')return;
+    if(D.st!=='good'||(+tr.dataset.inMix||0)<1){sayT('Prvo umesi testo do kraja, pa ga pokrij krpom.');return;}
+    try{CooksterPantryBridge.detachHeld();}catch(x){return;}
+    tr.dataset.inCloth='1';if(tr.dataset.inRise==null)tr.dataset.inRise='0';drawTrough(tr);
+    sayT(D.y==='alive'?'Testo se diže pod krpom.':'Testo je pod krpom, ali bez živog kvasca se neće dići.');try{CooksterSave.schedule();}catch(x){}return;
+  }
   if(id===YEAST){
     e.stopImmediatePropagation();e.preventDefault();
     if(D.y!=='none'){sayT('Jedna merica kvasca je dovoljna za jedno testo.');return;}
@@ -340,7 +364,12 @@ window.addEventListener('pointermove',function(e){
   drawTrough(tr);
 },true);
 window.addEventListener('pointerup',function(e){if(stirP&&e.button===0){stirP=null;try{CooksterSave.schedule();}catch(x){}}},true);
-window.addEventListener('click',function(e){var id=heldId();if(e.button===0&&(id===YEAST||id===SUGAR||id===SPOON)){var sp=screenToScene(e.clientX,e.clientY),tr=troughAt(sp.x,sp.y);if(tr&&(id!==SPOON||doughState(tr).st==='starter'))e.stopImmediatePropagation();}},true);
+window.addEventListener('click',function(e){var id=heldId();if(e.button===0&&(id===YEAST||id===SUGAR||id===SPOON||id===KRPA)){var sp=screenToScene(e.clientX,e.clientY),tr=troughAt(sp.x,sp.y);if(tr&&(id!==SPOON||doughState(tr).st==='starter'))e.stopImmediatePropagation();}},true);
+setInterval(function(){(typeof items!=='undefined'?items:[]).forEach(function(e){      // the rising: only under the cloth and only with a live yeast
+  if(!e||!e.dataset||e.dataset.itemId!==TR||e.dataset.inCloth!=='1')return;
+  var D=doughState(e),r=+e.dataset.inRise||0;
+  if(D.y==='alive'&&r<1){r=Math.min(1,r+.5/RISE_S);e.dataset.inRise=String(r);if(r>=1){sayT('Testo je naraslo. Skini krpu.');try{CooksterSave.schedule();}catch(x){}}drawTrough(e);}
+});},500);
 setInterval(function(){(typeof items!=='undefined'?items:[]).forEach(function(e){
   if(!e||!e.dataset||e.dataset.itemId!==TR||!(+e.dataset.inYeast>0))return;
   var D=doughState(e);
@@ -379,7 +408,7 @@ window.addEventListener('pointerdown',function(e){
   var h=typeof holding!=='undefined'?holding:null;if(e.button!==0||h||document.body.classList.contains('nacve-tool'))return;     // by hand: nothing in the hand (and not while the tool for the limits of the dough is open)
   if(e.target&&e.target.closest&&e.target.closest('#hud,[data-tool-ui],.cookster-ctx,#toolDock'))return;
   var sp=screenToScene(e.clientX,e.clientY),tr=troughAt(sp.x,sp.y);if(!tr)return;
-  var D=doughState(tr);if(D.st==='empty'||D.st==='flour'||D.st==='water'||D.st==='starter')return;   // an empty trough or only one thing in it: the normal click (picking it up)
+  var D=doughState(tr);if(tr.dataset.inCloth==='1'||D.st==='empty'||D.st==='flour'||D.st==='water'||D.st==='starter')return;   // an empty trough or only one thing in it: the normal click (picking it up)
   // the hand is only on the dough itself (an ellipse in the middle of the opening); the rim and the empty places of the trough still pick the trough up
   var br=tr.getBoundingClientRect(),nx=(e.clientX-br.left)/br.width-.5,ny=(e.clientY-br.top)/br.height-.46;
   if((nx/.3)*(nx/.3)+(ny/.3)*(ny/.3)>1)return;
@@ -417,11 +446,11 @@ function knStretch(tr,vy,vx){
   if(!st.run){st.run=true;st.t=performance.now();requestAnimationFrame(function f(now){
     var dt=Math.min(.05,(now-st.t)/1000);st.t=now;
     st.v+=(-st.s*90-st.v*9)*dt;st.s+=st.v*dt;st.s=Math.max(-.22,Math.min(.22,st.s));   // the spring
-    var a=Math.abs(st.s),o=st.s<0?'50% 100%':'50% 0%',tf=a<.002?'':'scale('+(1-a*.35)+','+(1+a*.9)+')';   // going up: it grows upwards from its bottom
+    var a=Math.abs(st.s),o=st.s<0?'50% 100%':'50% 0%',tf=riseTf(tr)+(a<.002?'':' scale('+(1-a*.35)+','+(1+a*.9)+')');   // going up: it grows upwards from its bottom
     if(tr._dg){tr._dg.style.transformOrigin=o;tr._dg.style.transform=tf;}
     tr._ks=Math.min(1,a*5);                                    // the ball turns into the long dough while it is pulled
     if(tr._dl&&tr._o){setO(tr._dl.kugla,tr._o.kugla*(1-tr._ks));setO(tr._dl.razvuceno,tr._o.kugla*tr._ks);}
-    if(a>.002||Math.abs(st.v)>.01)requestAnimationFrame(f);else{st.run=false;st.s=st.v=0;tr._ks=0;if(tr._dg)tr._dg.style.transform='';if(tr._dl&&tr._o){setO(tr._dl.kugla,tr._o.kugla);setO(tr._dl.razvuceno,0);}}
+    if(a>.002||Math.abs(st.v)>.01)requestAnimationFrame(f);else{st.run=false;st.s=st.v=0;tr._ks=0;if(tr._dg)tr._dg.style.transform=riseTf(tr);if(tr._dl&&tr._o){setO(tr._dl.kugla,tr._o.kugla);setO(tr._dl.razvuceno,0);}}
   });}
 }
 function knMove(tr,e,vx,vy,shaping){
