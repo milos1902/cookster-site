@@ -23,17 +23,18 @@ function dustLayer(){
   }
   return dcx;
 }
-function dustAt(x,y,rx,ry,n){        // x,y: scene; rx,ry: the size of the spot; n: how many specks
+function dustAt(x,y,rx,ry,n){        // x,y: scene; rx,ry: the size of the spot; n: how many specks. Only fine dust: tiny specks, thinner towards the edge, never a solid patch
   var c=dustLayer();if(!c)return;
   for(var i=0;i<n;i++){
-    var a=Math.random()*6.283,r=Math.sqrt(Math.random()),px=x+Math.cos(a)*r*rx,py=y+Math.sin(a)*r*ry,k=Math.random();
-    if(k<.12){var br=5+Math.random()*10,g=c.createRadialGradient(px,py,0,px,py,br);g.addColorStop(0,'rgba(255,252,244,.3)');g.addColorStop(1,'rgba(255,252,244,0)');c.fillStyle=g;c.beginPath();c.ellipse(px,py,br,br*.6,0,0,7);c.fill();}
-    else{c.fillStyle='rgba(255,'+(250+Math.floor(Math.random()*5))+','+(238+Math.floor(Math.random()*12))+','+(.5+Math.random()*.45).toFixed(2)+')';c.beginPath();c.ellipse(px,py,1+Math.random()*2.2,(1+Math.random()*2.2)*.7,0,0,7);c.fill();}
+    var a=Math.random()*6.283,r=Math.pow(Math.random(),.65),px=x+Math.cos(a)*r*rx,py=y+Math.sin(a)*r*ry;
+    var fade=1-r*.7,sz=.5+Math.random()*1.1;
+    c.fillStyle='rgba(255,'+(248+Math.floor(Math.random()*7))+','+(236+Math.floor(Math.random()*14))+','+((.18+Math.random()*.4)*fade).toFixed(2)+')';
+    c.beginPath();c.ellipse(px,py,sz,sz*.75,0,0,7);c.fill();
   }
 }
 function dustTrough(tr,n){            // the place on the table around a trough
   try{var r=tr.getBoundingClientRect(),a=screenToScene(r.left,r.top),b=screenToScene(r.right,r.bottom),w=b.x-a.x,h=b.y-a.y;
-    dustAt((a.x+b.x)/2,a.y+h*.6,w*1.05,h*.36,n*5);}catch(e){}
+    dustAt((a.x+b.x)/2,a.y+h*.6,w*1.1,h*.38,n);}catch(e){}
 }
 function pileW(n){return 46+Math.pow(Math.min(n,200),.62)*7.2;}   // pile width in the pixels of the scene (a little flour = a small heap, 100 units about 170 px)
 function drawPile(p){
@@ -83,11 +84,12 @@ function drawTrough(e){
     var wd=document.createElement('div');wd.style.cssText='position:absolute;left:50%;top:50%;width:30%;height:30%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(ellipse at 40% 32%,rgba(250,254,255,.92),rgba(222,240,250,.82) 40%,rgba(190,222,240,.78) 100%);box-shadow:inset 0 0 10px rgba(255,255,255,.6),inset 0 -2px 6px rgba(120,170,205,.35);transition:width .7s ease,height .7s ease,opacity .5s';
     wcl.appendChild(wd);e.appendChild(wcl);e._wt=wcl;e._wd=wd;
   }
-  if(e._wt){e._wt.style.display=D.W>0?'':'none';if(e._wd){var sp=Math.max(0,Math.min(1,D.W/60));e._wd.style.width=(30+sp*50)+'%';e._wd.style.height=(22+sp*28)+'%';}   // the water spreads as there is more of it, but only up to the half of the length of the trough (not to the edges)
+  if(e._wt){e._wt.style.display=(D.W>0&&D.F<3)?'':'none';   // the flour covers the water: with flour in the trough the water is not drawn, the picture of the wet flour shows it
+   if(e._wd){var sp=Math.max(0,Math.min(1,D.W/60));e._wd.style.width=(30+sp*50)+'%';e._wd.style.height=(22+sp*28)+'%';}   // the water spreads as there is more of it, but only up to the half of the length of the trough (not to the edges)
     if(e._wd)e._wd.style.opacity=String(Math.min(.95,.25+D.W/90)*(D.st==='good'?.45:(D.st==='wet'?1:.8)));}
   // the picture of the trough itself shows the flour (the pictures drawn by the owner)
   var tb=e.querySelector('.body');
-  if(tb){var want=n<=0?'assets/flour/nacve.webp':(n<120?'assets/flour/nacve_brasno1.webp':'assets/flour/nacve_brasno2.webp');
+  if(tb){var want=(D.W>=1&&D.F>=3)||n<=0?'assets/flour/nacve.webp':(n<120?'assets/flour/nacve_brasno1.webp':'assets/flour/nacve_brasno2.webp');
     if(tb.getAttribute('src')!==want){
       var old=tb.getAttribute('src');
       // the new picture does not jump in: the old one melts away behind a cloud of flour dust
@@ -105,14 +107,23 @@ function drawTrough(e){
   if(e._fl){e._fl.remove();e._fl=null;}
   // the dough appears only by mixing (the flour and the water that are already in the trough), not by pouring: the picture of the dough melts in as the mixing goes
   var mx=Math.min(1,+e.dataset.inMix||0);
-  if(!e._dw||!e._dw.isConnected){var dw=document.createElement('div');dw.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3;clip-path:inset('+(INNER.t+1)+'% '+(100-INNER.r+1)+'% '+(100-INNER.b+1)+'% '+(INNER.l+1)+'% round 38% / 18%)';e.appendChild(dw);e._dw=dw;}
-  if(mx>0&&(!e._dough||!e._dough.isConnected)){var di=document.createElement('img');di.src='assets/flour/nacve_testo.webp?v=1';di.draggable=false;di.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none';e._dw.appendChild(di);e._dough=di;}
-  if(e._dough){
-    // the wet mass melts in with the mixing, the smooth ball takes over at the end
-    e._dough.style.opacity=String(Math.min(1,mx/.75));
-    if(mx>=.6&&(!e._ball||!e._ball.isConnected)){var bi=document.createElement('img');bi.src='assets/flour/nacve_kugla.webp?v=1';bi.draggable=false;bi.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;opacity:0';e._dw.appendChild(bi);e._ball=bi;}
-    if(e._ball)e._ball.style.opacity=String(Math.max(0,Math.min(1,(mx-.75)/.25)));
+  // the dough is a picture of its own (without the trough), so that only the dough can stretch while the trough stays still:
+  // the wet flour (flour and water in the trough) -> the lumpy mass -> the smooth ball; when it is pulled the ball turns into the long dough
+  if(!e._dw||!e._dw.isConnected){
+    var dw=document.createElement('div');dw.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3;clip-path:inset('+(INNER.t+1)+'% '+(100-INNER.r+1)+'% '+(100-INNER.b+1)+'% '+(INNER.l+1)+'% round 38% / 18%)';
+    var dg=document.createElement('div');dg.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%';dw.appendChild(dg);
+    e._dl={};[['smesa',58],['grudve',64],['kugla',46],['razvuceno',68]].forEach(function(q){
+      var im=document.createElement('img');im.src='assets/flour/testo_'+q[0]+'.webp?v=1';im.draggable=false;
+      im.style.cssText='position:absolute;left:50%;top:47%;height:'+q[1]+'%;width:auto;transform:translate(-50%,-50%);opacity:0;transition:opacity .35s ease';dg.appendChild(im);e._dl[q[0]]=im;});
+    e.appendChild(dw);e._dw=dw;e._dg=dg;
   }
+  var wetF=D.W>=1&&D.F>=3,o={smesa:0,grudve:0,kugla:0};
+  if(wetF){o.smesa=mx<.5?1-mx*2:0;o.grudve=mx>0?(mx<.5?mx*2:Math.max(0,1-(mx-.5)*2)):0;o.kugla=mx>.5?(mx-.5)*2:0;if(mx===0)o.smesa=1;}
+  e._o=o;
+  var ks=e._ks||0;
+  e._dl.smesa.style.opacity=String(o.smesa);e._dl.grudve.style.opacity=String(o.grudve);
+  e._dl.kugla.style.opacity=String(o.kugla*(1-ks));e._dl.razvuceno.style.opacity=String(o.kugla*ks);
+  e._dl.smesa.style.height=(34+Math.min(1,D.F/200)*26)+'%';      // the wet flour grows with the amount of the flour
   return;
   if(!e._fl||!e._fl.isConnected){
     var clip=document.createElement('div');clip.className='flour-in';
@@ -210,7 +221,7 @@ function frame(now){
       var tb=tr.getBoundingClientRect(),tp=screenToScene(tb.left+tb.width*.5,tb.top+tb.height*.5);
       p={x:tp.x,y:tp.y};land={x:lx,y:ly};
     }else{p=addFlour(lx,ly,n);land={x:p.x,y:p.y};}
-    if(tr)dustTrough(tr,5);else dustAt(land.x,land.y,60,22,3);
+    if(tr)dustTrough(tr,3);else dustAt(land.x,land.y,60,22,2);
     var m=mouthPoint();
     if(m){spawnGrains(m,land,3);if(now-puffAt>150){puffAt=now;puff(land,pour.t<1);}}
     h.dataset.flour=String(left-n);
@@ -276,9 +287,11 @@ function knStretch(tr,vy,vx){
   if(!st.run){st.run=true;st.t=performance.now();requestAnimationFrame(function f(now){
     var dt=Math.min(.05,(now-st.t)/1000);st.t=now;
     st.v+=(-st.s*90-st.v*9)*dt;st.s+=st.v*dt;st.s=Math.max(-.22,Math.min(.22,st.s));   // the spring
-    var a=Math.abs(st.s),o=st.s<0?'50% 100%':'50% 0%',tf=a<.002?'':'scale('+(1-a*.45)+','+(1+a*1.1)+')';   // going up: it grows upwards from its bottom
-    [tr._dough,tr._ball].forEach(function(i){if(i){i.style.transformOrigin=o;i.style.transform=tf;}});
-    if(a>.002||Math.abs(st.v)>.01)requestAnimationFrame(f);else{st.run=false;st.s=st.v=0;[tr._dough,tr._ball].forEach(function(i){if(i)i.style.transform='';});}
+    var a=Math.abs(st.s),o=st.s<0?'50% 100%':'50% 0%',tf=a<.002?'':'scale('+(1-a*.35)+','+(1+a*.9)+')';   // going up: it grows upwards from its bottom
+    if(tr._dg){tr._dg.style.transformOrigin=o;tr._dg.style.transform=tf;}
+    tr._ks=Math.min(1,a*5);                                    // the ball turns into the long dough while it is pulled
+    if(tr._dl&&tr._o){tr._dl.kugla.style.opacity=String(tr._o.kugla*(1-tr._ks));tr._dl.razvuceno.style.opacity=String(tr._o.kugla*tr._ks);}
+    if(a>.002||Math.abs(st.v)>.01)requestAnimationFrame(f);else{st.run=false;st.s=st.v=0;tr._ks=0;if(tr._dg)tr._dg.style.transform='';if(tr._dl&&tr._o){tr._dl.kugla.style.opacity=String(tr._o.kugla);tr._dl.razvuceno.style.opacity='0';}}
   });}
 }
 function knMove(tr,e,vx,vy){
@@ -292,7 +305,7 @@ function knMove(tr,e,vx,vy){
   if(now-(tr._puff||0)>260&&Math.abs(vy)+Math.abs(vx)>3){tr._puff=now;
     var c=document.createElement('div'),sz=12+Math.random()*10;
     c.style.cssText='position:absolute;left:'+(px-sz/2+(Math.random()-.5)*18)+'px;top:'+(py-sz/2+(Math.random()-.5)*14)+'px;width:'+sz+'px;height:'+sz*.7+'px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,252,244,.85),rgba(255,250,240,0) 70%);filter:blur(1.5px);pointer-events:none;z-index:8';
-    dustTrough(tr,7);
+    dustTrough(tr,6);
     tr.appendChild(c);var a=c.animate([{opacity:.9,transform:'scale(.5)'},{opacity:0,transform:'translateY(-14px) scale(1.7)'}],{duration:700,fill:'forwards'});a.onfinish=function(){c.remove();};}
 }
 window.addEventListener('pointermove',function(e){

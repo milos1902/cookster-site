@@ -668,3 +668,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Sudopera: nema pljuska iza bokala koji se puni (2026-10-15, sink-zoom.js?v=23)
 - Kad je bokal (ili druga posuda sa vodom) ispod mlaza, ne crta se pljusak iza njega; vidi se samo mlaz koji ulazi u usta posude. Bez posude ispod mlaza pljusak ostaje.
+
+## Testo kao posebna slika koja se razvlači, fino brašno na stolu (2026-10-15, flour.js?v=42)
+- Testo je sada slika bez naćvi (`assets/flour/testo_smesa|grudve|kugla|razvuceno.webp`, tvoje slike isečene): brašno sa vodom (raste sa količinom brašna), pa grudvasta masa do polovine mešenja, pa glatka kugla. Naćve ostaju nepomične; razvlači se samo testo (opruga: miš nagore razvlači nagore, nadole nadole), a kugla se pri vučenju pretapa u izduženo testo. Slike su u prozoru oblika otvora naćvi.
+- Kad u naćvama ima i brašna i vode, osnova je prazna naćva, a brašno prekriva vodu (nema više belog "jajeta" od vode); sama voda (bez brašna) je svetla lokva do pola naćvi.
+- Brašno na stolu: samo fina zrnca (nema mrlja), ređe i bleđe prema ivici; ne čuva se.
