@@ -272,11 +272,25 @@ window.addEventListener('pointerdown',function(e){
   if(D.st==='wet'){try{showToast('Previše je meko, dodaj još brašna.');}catch(x){}}
   mixP={tr:tr,x:e.clientX,y:e.clientY};
 },true);
+/* The kneading hand: frames of the hand (green screen removed) in assets/flour/knead/. The mouse going up and down kneads: every bit of vertical movement brings the next frame, so going up-down-up-down gets to the end of the kneading. */
+var KN=124,knImgs=null;
+function knLoad(){if(knImgs)return;knImgs=[];for(var i=0;i<KN;i++){var m=new Image();m.src='assets/flour/knead/k'+('00'+i).slice(-3)+'.webp?v=1';knImgs.push(m);}}
+function knLayer(tr){
+  if(tr._kn&&tr._kn.isConnected)return tr._kn;
+  var im=document.createElement('img');im.draggable=false;
+  im.style.cssText='position:absolute;left:50%;top:50%;height:112%;width:auto;transform:translate(-50%,-47%);pointer-events:none;z-index:7;opacity:0;transition:opacity .25s;user-select:none';
+  tr.appendChild(im);tr._kn=im;return im;
+}
+function knShow(tr,on){var im=knLayer(tr);if(on){knLoad();knFrame(tr);}im.style.opacity=on?'1':'0';}
+function knFrame(tr){var f=Math.max(0,Math.min(KN-1,Math.round((+tr.dataset.inMix||0)*(KN-1)))),im=knLayer(tr),u=knImgs[f].src;if(im.src!==u)im.src=u;}
 window.addEventListener('pointermove',function(e){
-  if(!mixP)return;var d=Math.hypot(e.clientX-mixP.x,e.clientY-mixP.y);mixP.x=e.clientX;mixP.y=e.clientY;
+  if(!mixP)return;var dy=Math.abs(e.clientY-mixP.y),dx=Math.abs(e.clientX-mixP.x),d=Math.hypot(dx,dy);mixP.x=e.clientX;mixP.y=e.clientY;
   var D=doughState(mixP.tr);if(D.st!=='good'){mixP.tr.dataset.inMix=String(Math.max(0,(+mixP.tr.dataset.inMix||0)-d/6000));drawTrough(mixP.tr);return;}
-  mixP.tr.dataset.inMix=String(Math.min(1,(+mixP.tr.dataset.inMix||0)+d/2400));drawTrough(mixP.tr);
+  var was=+mixP.tr.dataset.inMix||0,now=Math.min(1,was+(dy+dx*.25)/2200);
+  if(now>=1&&was<1){try{showToast('Testo je zamešeno.');}catch(x){}}
+  mixP.tr.dataset.inMix=String(now);drawTrough(mixP.tr);
+  if(now<1){knShow(mixP.tr,true);}else{knShow(mixP.tr,false);}
 },true);
-window.addEventListener('pointerup',function(e){if(mixP&&e.button===0){mixP=null;try{CooksterSave.schedule();}catch(x){}}},true);
+window.addEventListener('pointerup',function(e){if(mixP&&e.button===0){if(mixP.tr._kn)mixP.tr._kn.style.opacity='0';mixP=null;try{CooksterSave.schedule();}catch(x){}}},true);
 window.CooksterFlour={dough:function(){var e=(typeof items!=='undefined'?items:[]).filter(function(x){return x.dataset&&x.dataset.itemId===TR;}).pop();return e?doughState(e):null;},piles:function(){return piles.map(function(p){return {x:p.x,y:p.y,n:p.n};});},clear:function(){piles.forEach(function(p){if(p.el)p.el.remove();});piles=[];save();}};
 })();

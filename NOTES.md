@@ -604,3 +604,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Mešanje rukom (2026-10-14, flour.js?v=11)
 - Testo se meša rukom, ne kašikom: prazna ruka, levi taster držan i miš kretan iznad naćvi u kojima ima i brašna i vode (inače običan klik uzima naćve). Provereno: 0.33 posle ~70 koraka, 1 na kraju.
+
+## Ruka mesi testo: kadrovi videa prate miša gore-dole (2026-10-15, flour.js?v=12)
+- Iz AI videa (ruka i testo na zelenoj pozadini) izvučena su 124 kadra, zelena je izrezana (providno), `assets/flour/knead/k000..k123.webp` (~1.6 MB ukupno). Dok se meša (levi taster, miš iznad naćvi, odnos dobar) preko naćvi se vidi kadar koji odgovara `inMix`. Svako kretanje miša, gore-dole i levo-desno, pomera napredak (vertikalno puno, horizontalno četvrtinu; oko 2200 px = kraj). Na kraju sloj ruke nestaje, ostaje naša slika testa i poruka "Testo je zamešeno."
+- Provereno u pregledaču: kretanje gore-dole stiže do kadra 123, nema grešaka. Nije provereno: izgled kad se naćve pomere ili uvećaju, ni telefon.
+- Poznato: testo u videu "luta" po kadru i ruka je glatka/dečja, pa je ovo probni izgled.
