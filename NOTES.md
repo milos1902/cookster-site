@@ -794,3 +794,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Dugme "Napredak · JSON" (snimanje) nije alat i ne sakriva se.
 - Alat Predmeti u rerni: klizač **Pomeranje levo-desno** (`oven-items-tool.js?v=3`, `CooksterOvenItems.moveX/xOf`): pomera predmete izabrane vrste u rerni; mogu da zađu pod okvir (maska ih seče), centar je u opsegu od 20% širine unutar otvora. Predmet se može i uzeti mišem iz rerne i ponovo spustiti na vrata na drugom mestu. `game.js?v=3.144`.
 - Posuda uvek ulazi u rernu u istoj veličini i na istom mestu (ranije je veličina zavisila od toga gde je držana, a mesto od mesta klika): veličina dolazi iz veličine te posude na stolu, a mesto je `x` iz alata (podrazumevano 1503, sredina). Klizač "Položaj levo-desno" sada menja to mesto za celu vrstu i čuva se u `cookster.oven-items.v1`. `game.js?v=3.145`, `oven-items-tool.js?v=4`.
+
+## Podrazumevane vrednosti za predmete u rerni
+- Vrednosti iz alata 🔥 Predmeti u rerni (izvoz vlasnika, 2026-10-15) su ugrađene u igru (`OVEN_ITEM_DEFAULTS` u `game.js?v=3.146`): serpa, veliki i mali tiganj, okrugli i pravougaoni pleh imaju svoju visinu, veličinu, nagibe, tamnoću i mesto (`x`) za sve igrače. Vrednosti sačuvane u pregledaču (iz alata) i dalje idu preko njih; "Resetuj ovaj" vraća na ugrađene. "Kopiraj JSON" sada daje trenutne vrednosti svih pet vrsta.
