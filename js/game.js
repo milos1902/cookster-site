@@ -6854,7 +6854,10 @@ function renderPaprikaRoast(el){
  }
  const phase=paprikaRoastPhase(el),body=el.querySelector('.body');
  if(body){
-   body.src=eggplant?straightRoastAssets(el)[Math.min(3,phase)-1]:PAPRIKA_ROAST_ASSETS[phase-1];
+   const roastSrc=eggplant?straightRoastAssets(el)[Math.min(3,phase)-1]:PAPRIKA_ROAST_ASSETS[phase-1];
+   body.src=roastSrc;
+   // the shadow on the floor/stove is a copy of the same picture: it has to change with the body, otherwise the shadow of the upright pepper stays behind the one that lies
+   const shImg=el._contactShadow?.querySelector('img');if(shImg&&shImg.getAttribute('src')!==roastSrc)shImg.src=roastSrc;
    body.style.filter=(+el.dataset.roastProgress||0)>=1.08
      ?'brightness(.38) saturate(.55) sepia(.45)':'';
  }
