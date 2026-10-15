@@ -756,3 +756,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Bljesak pri uzimanju iz donjih kvadratića (zadnje korišćeno)
 - Klik na kvadratić pravi novu kopiju na stolu (700,560); dok se slika u ruci nije dekodirala, igra je ostavljala pravu kopiju vidljivom, pa je bljesnula na stolu. Sad kopija odmah dobija `noFlash` i `visibility:hidden` (`js/recent-items.js?v=3`), a `dropBounce` je izbačen jer je radio nad skrivenim predmetom.
 - Provereno kadar po kadar (načva, bokal, džak brašna): prava kopija se ne vidi ni u jednom kadru. Nije provereno: izgled na pravom računaru, telefon.
+
+## Obrisane stare prečice (špajz i bašta)
+- Mali natpis "špajz →" u kuhinji (`js/pantry-scene.js?v=3.13`) i polje nad cvećem koje je na hover pokazivalo "BAŠTA" (`js/garden.js?v=2`, `css/game.css?v=2.96`) su obrisani. U špajz i baštu se ide preko tabli sa pokazivačima (`signposts.js`).
+- Provereno: kuhinja bez tih elemenata, `CooksterGarden.open()` i `CooksterPantry.open()` rade, nema grešaka u konzoli.

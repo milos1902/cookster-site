@@ -22,9 +22,8 @@ function navBtn(label,dir){
 
 var openBtn=navBtn('\u0161pajz','r');
 openBtn.id='pantryOpenBtn';
-openBtn.style.left='1540px';openBtn.style.top='265px';
 openBtn.setAttribute('aria-label','\u0160pajz, desno');
-scene.appendChild(openBtn);
+// the little "\u0161pajz \u2192" text in the kitchen is removed: the signpost (signposts.js) leads to the pantry now; the button stays only as a hidden helper of this file, it is not in the page
 
 var room=mk('div');room.id='pantryScene';
 room.setAttribute('role','dialog');room.setAttribute('aria-modal','true');
