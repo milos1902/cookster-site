@@ -148,7 +148,8 @@ window.CooksterDoughMesh={
     var b=box(tr,m.stage,m.F),sg=b.bh*SIG,k;
     for(k=0;k<NX*NY;k++){var c=curPos(b,m.off,k),r=Math.hypot(c[0]-m.grab.x,c[1]-m.grab.y),w=Math.exp(-(r/sg)*(r/sg));
       if(w<.01)continue;var hold=1-.85*stick(m,k);m.off[k*2]+=dx*w*hold/b.bh;m.off[k*2+1]+=dy*w*hold/b.bh;}
-    keepSize(tr,m);relax(tr,m);m.grab.x=p[0];m.grab.y=p[1];draw(tr);settle(tr);
+    for(var it=0;it<3;it++){keepSize(tr,m);relax(tr,m);}      // the wall holds, the dough that is pushed against it is flattened there and spreads to the free sides (the volume stays)
+    m.grab.x=p[0];m.grab.y=p[1];draw(tr);settle(tr);
   },
   release:function(tr){var m=tr._m;if(m)m.grab=null;save(tr);},
   active:function(tr){var m=tr._m;return !!(m&&m.on&&m.gl);}
