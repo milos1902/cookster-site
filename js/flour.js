@@ -115,7 +115,7 @@ function drawTrough(e){
     var dw=document.createElement('div');dw.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3;clip-path:inset('+(INNER.t+1)+'% '+(100-INNER.r+1)+'% '+(100-INNER.b+1)+'% '+(INNER.l+1)+'% round 38% / 18%)';
     var dg=document.createElement('div');dg.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%';dw.appendChild(dg);
     e._dl={};[['smesa',58],['grudve',70],['kugla',46],['razvuceno',68]].forEach(function(q){
-      var im=document.createElement('img');im.src='assets/flour/testo_'+q[0]+'.webp?v=1';im.draggable=false;
+      var im=document.createElement('img');im.src='assets/flour/testo_'+q[0]+'.webp?v=2';im.draggable=false;
       im.className='dough-img';im.style.cssText='position:absolute;left:50%;top:46%;height:'+q[1]+'%;width:auto;transform:translate(-50%,-50%);opacity:0;display:none';dg.appendChild(im);e._dl[q[0]]=im;});
     e.appendChild(dw);e._dw=dw;e._dg=dg;
   }
