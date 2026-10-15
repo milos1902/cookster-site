@@ -311,6 +311,7 @@ function runLive(v,back,done){
     var fw=Math.max(0,Math.round(150*(1-Math.min(1,u/.97)))),mk='linear-gradient(90deg,transparent 0,#000 '+fw+'px,#000 calc(100% - '+fw+'px),transparent 100%),linear-gradient(180deg,transparent 0,#000 '+fw+'px,#000 calc(100% - '+fw+'px),transparent 100%)';
     gi.style.webkitMaskImage=mk;gi.style.maskImage=mk;gi.style.webkitMaskComposite='source-in';gi.style.maskComposite='intersect';
     gi.style.opacity=back?Math.max(0,Math.min(1,u/.55)):Math.max(0,Math.min(1,(u-.28)/.42));          // it melts in while both are zooming; on the way back it melts out only at the very end, so the zoom out stops exactly when the whole scene has taken over
+    var gx=v.querySelector('.gz-fx');if(gx){gx.style.transformOrigin=Tl.x+'px '+Tl.y+'px';gx.style.transform=gi.style.transform;gx.style.opacity=gi.style.opacity;gx.style.webkitMaskImage=mk;gx.style.maskImage=mk;gx.style.webkitMaskComposite='source-in';gx.style.maskComposite='intersect';}
     var sg=v.querySelector('.gz-signs');if(sg){sg.style.transformOrigin=Tl.x+'px '+Tl.y+'px';sg.style.transform=gi.style.transform;sg.style.opacity=gi.style.opacity;}   // the signs of the grill zoom with its picture
     if(e<total)requestAnimationFrame(step);else done();
   })(t0);
@@ -319,11 +320,11 @@ function zoomLive(){
   var scn=document.getElementById('scene');if(scn){scn.style.transition='none';scn.style.willChange='transform'}
   var P=liveParams(),v=document.createElement('div');v.id='grillZoom';v.setAttribute('data-tool-ui','1');v._live=true;v._P=P;
   v.style.cssText='position:fixed;left:'+P.tx0+'px;top:'+P.ty0+'px;width:'+(W*P.sc)+'px;height:'+(H*P.sc)+'px;z-index:30000;overflow:hidden;cursor:default';
-  var gi=document.createElement('img');gi.className='gz-grill';gi.draggable=false;gi.src=ZOOM_SRC;gi.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;display:block;will-change:transform,opacity';
+  var gi=document.createElement('img');gi.className='gz-grill';gi.draggable=false;gi.src=(window.CooksterGrill&&CooksterGrill.zoomSrc)?CooksterGrill.zoomSrc(CooksterGrill.lit()||CooksterGrill.left()>0):ZOOM_SRC;gi.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;display:block;will-change:transform,opacity';
   var back=document.createElement('button');back.type='button';back.textContent='← nazad u kuhinju';
   back.style.cssText='position:absolute;right:24px;top:72px;padding:10px 18px;font:700 16px system-ui,sans-serif;color:#fff;background:rgba(44,20,8,.92);border:2px solid #f1af33;border-radius:10px;cursor:pointer;opacity:0;transition:opacity .2s';
   var sgh=document.createElement('div');sgh.className='sign-host gz-signs';sgh.style.cssText='left:0;top:0;width:100%;height:100%;will-change:transform,opacity;opacity:0';
-  v.appendChild(gi);v.appendChild(sgh);v.appendChild(back);document.body.appendChild(v);view=v;try{window.CooksterSignposts&&CooksterSignposts.sweep()}catch(e){}
+  v.appendChild(gi);var gfx=null;try{gfx=window.CooksterGrill&&CooksterGrill.zoomCanvas();}catch(e){}if(gfx)v.appendChild(gfx);v.appendChild(sgh);v.appendChild(back);document.body.appendChild(v);view=v;try{window.CooksterSignposts&&CooksterSignposts.sweep()}catch(e){}
   ['pointerdown','pointerup','mousedown','mouseup','click','dblclick','contextmenu','wheel'].forEach(function(n){v.addEventListener(n,function(e){e.stopPropagation()})});
   back.addEventListener('click',closeGrill);v.addEventListener('click',function(){closeGrill()});
   addEventListener('keydown',onKey,true);v._busy=true;
