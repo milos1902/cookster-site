@@ -82,10 +82,10 @@ function drawTrough(e){
   var mx=Math.min(1,+e.dataset.inMix||0);
   if(mx>0&&(!e._dough||!e._dough.isConnected)){var di=document.createElement('img');di.src='assets/flour/nacve_testo.webp?v=1';di.draggable=false;di.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3';e.appendChild(di);e._dough=di;}
   if(e._dough){
-    // done mixing: the smooth ball of dough (not the wet mass)
-    var ball=mx>=1?'assets/flour/nacve_kugla.webp?v=1':'assets/flour/nacve_testo.webp?v=1';
-    if(e._dough.getAttribute('src')!==ball)e._dough.setAttribute('src',ball);
-    e._dough.style.opacity=String(mx);
+    // the wet mass melts in with the mixing, the smooth ball takes over at the end
+    e._dough.style.opacity=String(Math.min(1,mx/.75));
+    if(mx>=.6&&(!e._ball||!e._ball.isConnected)){var bi=document.createElement('img');bi.src='assets/flour/nacve_kugla.webp?v=1';bi.draggable=false;bi.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3;opacity:0';e.appendChild(bi);e._ball=bi;}
+    if(e._ball)e._ball.style.opacity=String(Math.max(0,Math.min(1,(mx-.75)/.25)));
   }
   return;
   if(!e._fl||!e._fl.isConnected){
@@ -290,27 +290,44 @@ window.addEventListener('pointerdown',function(e){
   if(D.st==='wet'){try{showToast('Previše je meko, dodaj još brašna.');}catch(x){}}
   mixP={tr:tr,x:e.clientX,y:e.clientY};
 },true);
-/* The kneading hand: frames of the hand (green screen removed) in assets/flour/knead/. The mouse going up and down kneads: every bit of vertical movement brings the next frame, so going up-down-up-down gets to the end of the kneading. */
-var KN=124,knImgs=null;
-function knLoad(){if(knImgs)return;knImgs=[];for(var i=0;i<KN;i++){var m=new Image();m.src='assets/flour/knead/k'+('00'+i).slice(-3)+'.webp?v=1';knImgs.push(m);}}
+/* The kneading hand, drawn in code (no video): it follows the mouse inside the opening of the trough and presses the dough; every bit of movement kneads (up-down counts fully, left-right a quarter), so going up-down-up-down gets to the end. The dough picture is pushed a little by the hand and a puff of flour rises now and then. */
+var HAND_SVG='<svg viewBox="0 0 120 220" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible"><defs><linearGradient id="hg" x1="0" x2="1"><stop offset="0" stop-color="#f4cfae"/><stop offset=".6" stop-color="#ebb88f"/><stop offset="1" stop-color="#d9a07a"/></linearGradient></defs>'+
+  '<g fill="url(#hg)" stroke="#7a4a30" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round">'+
+  '<path d="M38 122 L84 122 L90 230 L32 230 Z"/>'+
+  '<rect x="30" y="40" width="13" height="58" rx="6.5" transform="rotate(-9 36 98)"/>'+
+  '<rect x="45" y="26" width="13" height="66" rx="6.5" transform="rotate(-3 51 92)"/>'+
+  '<rect x="60" y="30" width="13" height="62" rx="6.5" transform="rotate(3 66 92)"/>'+
+  '<rect x="75" y="46" width="12" height="52" rx="6" transform="rotate(10 81 98)"/>'+
+  '<rect x="10" y="84" width="14" height="44" rx="7" transform="rotate(-52 22 120)"/>'+
+  '<ellipse cx="60" cy="108" rx="31" ry="30"/>'+
+  '</g><g fill="none" stroke="#7a4a30" stroke-width="1.6" stroke-linecap="round" opacity=".55"><path d="M37 92 q5 4 10 0"/><path d="M52 90 q5 4 10 0"/><path d="M67 90 q5 4 10 0"/><path d="M45 124 q16 8 32 0"/></g></svg>';
 function knLayer(tr){
   if(tr._kn&&tr._kn.isConnected)return tr._kn;
-  /* a window the size of the trough opening (it goes on down, so the arm can come from the front): the dough and the hand never go out of the sides */
+  /* a window the size of the trough opening (it goes on down, so the arm can come from the front): the hand never goes out of the sides */
   var w=document.createElement('div');w.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:7;clip-path:polygon('+INNER.l+'% '+INNER.t+'%,'+INNER.r+'% '+INNER.t+'%,'+INNER.r+'% 140%,'+INNER.l+'% 140%)';
-  var im=document.createElement('img');im.draggable=false;
-  im.style.cssText='position:absolute;left:50%;top:46%;height:98%;width:auto;transform:translate(-50%,-50%);opacity:0;transition:opacity .25s;user-select:none';
-  w.appendChild(im);tr.appendChild(w);tr._kn=im;return im;
+  var h=document.createElement('div');h.style.cssText='position:absolute;left:0;top:0;width:'+(tr.offsetWidth*.5)+'px;opacity:0;transition:opacity .2s;transform-origin:50% 48%;will-change:transform';
+  h.innerHTML=HAND_SVG;w.appendChild(h);tr.appendChild(w);tr._kn=h;return h;
 }
-function knShow(tr,on){var im=knLayer(tr);if(on){knLoad();knFrame(tr);}im.style.opacity=on?'1':'0';}
-function knFrame(tr){var f=Math.max(0,Math.min(KN-1,Math.round((+tr.dataset.inMix||0)*(KN-1)))),im=knLayer(tr),u=knImgs[f].src;if(im.src!==u)im.src=u;}
+function knMove(tr,e,vx,vy){
+  var h=knLayer(tr),r=tr.getBoundingClientRect(),k=r.width/(tr.offsetWidth||1)||1,W=tr.offsetWidth,H=tr.offsetHeight;
+  var px=Math.max(W*(INNER.l+12)/100,Math.min(W*(INNER.r-12)/100,(e.clientX-r.left)/k)),py=Math.max(H*(INNER.t+9)/100,Math.min(H*(INNER.b-2)/100,(e.clientY-r.top)/k));
+  var hw=W*.5,hh=hw*220/120,rot=Math.max(-14,Math.min(14,vx*.6)),sc=1-Math.max(-.06,Math.min(.06,vy*.004));
+  h.style.opacity='1';h.style.transform='translate('+(px-hw*.5)+'px,'+(py-hh*.48)+'px) rotate('+rot+'deg) scale('+sc+')';
+  if(tr._dough){var dx=(px/W-.5)*5,dy=(py/H-.5)*4;tr._dough.style.transform='translate('+dx+'px,'+dy+'px) scale('+(1+Math.abs(vy)*.0015)+','+(1-Math.abs(vy)*.0012)+')';}
+  var now=performance.now();
+  if(now-(tr._puff||0)>260&&Math.abs(vy)+Math.abs(vx)>3){tr._puff=now;
+    var c=document.createElement('div'),sz=12+Math.random()*10;
+    c.style.cssText='position:absolute;left:'+(px-sz/2+(Math.random()-.5)*18)+'px;top:'+(py-sz/2+(Math.random()-.5)*14)+'px;width:'+sz+'px;height:'+sz*.7+'px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,252,244,.85),rgba(255,250,240,0) 70%);filter:blur(1.5px);pointer-events:none;z-index:8';
+    tr.appendChild(c);var a=c.animate([{opacity:.9,transform:'scale(.5)'},{opacity:0,transform:'translateY(-14px) scale(1.7)'}],{duration:700,fill:'forwards'});a.onfinish=function(){c.remove();};}
+}
 window.addEventListener('pointermove',function(e){
-  if(!mixP)return;var dy=Math.abs(e.clientY-mixP.y),dx=Math.abs(e.clientX-mixP.x),d=Math.hypot(dx,dy);mixP.x=e.clientX;mixP.y=e.clientY;
+  if(!mixP)return;var vy=e.clientY-mixP.y,vx=e.clientX-mixP.x,dy=Math.abs(vy),dx=Math.abs(vx),d=Math.hypot(dx,dy);mixP.x=e.clientX;mixP.y=e.clientY;
   var D=doughState(mixP.tr);if(D.st!=='good'){mixP.tr.dataset.inMix=String(Math.max(0,(+mixP.tr.dataset.inMix||0)-d/6000));drawTrough(mixP.tr);return;}
   var was=+mixP.tr.dataset.inMix||0,now=Math.min(1,was+(dy+dx*.25)/2200);
   if(now>=1&&was<1){try{showToast('Testo je zamešeno.');}catch(x){}}
   mixP.tr.dataset.inMix=String(now);drawTrough(mixP.tr);
-  if(now<1){knShow(mixP.tr,true);}else{knShow(mixP.tr,false);}
+  if(now<1)knMove(mixP.tr,e,vx,vy);else if(mixP.tr._kn)mixP.tr._kn.style.opacity='0';
 },true);
-window.addEventListener('pointerup',function(e){if(mixP&&e.button===0){if(mixP.tr._kn)mixP.tr._kn.style.opacity='0';mixP=null;try{CooksterSave.schedule();}catch(x){}}},true);
+window.addEventListener('pointerup',function(e){if(mixP&&e.button===0){if(mixP.tr._kn)mixP.tr._kn.style.opacity='0';if(mixP.tr._dough)mixP.tr._dough.style.transform='';mixP=null;try{CooksterSave.schedule();}catch(x){}}},true);
 window.CooksterFlour={dough:function(){var e=(typeof items!=='undefined'?items:[]).filter(function(x){return x.dataset&&x.dataset.itemId===TR;}).pop();return e?doughState(e):null;},piles:function(){return piles.map(function(p){return {x:p.x,y:p.y,n:p.n};});},clear:function(){piles.forEach(function(p){if(p.el)p.el.remove();});piles=[];save();}};
 })();
