@@ -119,11 +119,11 @@ function drawTrough(e){
       im.className='dough-img';im.style.cssText='position:absolute;left:50%;top:46%;height:'+q[1]+'%;width:auto;transform:translate(-50%,-50%);opacity:0;display:none';dg.appendChild(im);e._dl[q[0]]=im;});
     e.appendChild(dw);e._dw=dw;e._dg=dg;
   }
-  var wetF=D.W>=1&&D.F>=3,stage=mx<.5?0:(mx<1?1:2),meshOn=false;      // stages: 0 wet flour, 1 lumpy mass, 2 the stretched dough (5 s of kneading each)
+  var wetF=D.W>=1&&D.F>=3,stage=mx<1?0:1,meshOn=false;      // stages: 0 wet flour (7 s of kneading), 1 the dough (it first appears stretched)
   if(window.CooksterDoughMesh){if(wetF)meshOn=CooksterDoughMesh.setStage(e,stage,D.F);else CooksterDoughMesh.hide(e);}
   // reserve (when WebGL is not there): the plain pictures
   e._o={kugla:0};
-  setO(e._dl.smesa,(wetF&&!meshOn&&stage===0)?1:0);setO(e._dl.grudve,(wetF&&!meshOn&&stage===1)?1:0);setO(e._dl.razvuceno,(wetF&&!meshOn&&stage===2)?1:0);setO(e._dl.kugla,0);
+  setO(e._dl.smesa,(wetF&&!meshOn&&stage===0)?1:0);setO(e._dl.grudve,0);setO(e._dl.razvuceno,(wetF&&!meshOn&&stage===1)?1:0);setO(e._dl.kugla,0);
   e._dl.smesa.style.height=(48+Math.min(1,D.F/200)*16)+'%';      // the wet flour fills the opening like the flour did (it grows with the amount of the flour)
   return;
   if(!e._fl||!e._fl.isConnected){
@@ -320,8 +320,8 @@ window.addEventListener('pointermove',function(e){
   try{CooksterDoughMesh.drag(tr,e.clientX,e.clientY);}catch(x){}           // the hand pulls the dough, the points follow it and stay
   var D=doughState(tr);
   if(D.st!=='good'){tr.dataset.inMix=String(Math.max(0,(+tr.dataset.inMix||0)-d/6000));drawTrough(tr);knMove(tr,e,vx,vy,true);return;}
-  if(d>1.5){            // every 5 seconds of kneading (only while the mouse moves) the dough goes to the next stage; after 10 s it is the stretched dough
-    var was=+tr.dataset.inMix||0,T=Math.min(10,was*10+dt),nm=T/10;
+  if(d>1.5){            // after 7 seconds of kneading (only while the mouse moves) the wet flour becomes the dough
+    var was=+tr.dataset.inMix||0,T=Math.min(7,was*7+dt),nm=T/7;
     if(nm>=1&&was<1){try{showToast('Testo je zamešeno. Oblikuj ga rukom u loptu.');}catch(x){}}
     tr.dataset.inMix=String(nm);drawTrough(tr);
   }

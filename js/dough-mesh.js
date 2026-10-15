@@ -1,21 +1,21 @@
-/* The dough as a mesh of points. In every stage of the dough its picture is put over a net of small triangles (13 x 17 points): the hand takes the dough at a place
+/* The dough as a mesh of points. In every stage of the dough its picture is put over a net of small triangles (21 x 27 points): the hand takes the dough at a place
    and the points near it follow the mouse (the nearer, the more), so the dough is pulled like a real one and it STAYS in the shape it was pulled to.
-   Stages (each one 5 seconds of kneading): 0 = the wet flour (flour and water), 1 = the lumpy mass, 2 = the dough that first appears stretched (the player makes
+   Stages: 0 = the wet flour (flour and water, 7 seconds of kneading), 1 = the dough that first appears stretched (the player makes
    the ball by hand). The points go back to the neutral net when the stage changes. They are saved with the trough (dataset.inMesh, inMeshS).
    It is drawn with WebGL on a canvas in the opening of the trough. */
 (function(){
 'use strict';
 if(window.CooksterDoughMesh)return;
-var NX=13,NY=17,CY=.46,SIG=.3,VS=2,FADE=3000;
-var STG=[{src:'assets/flour/testo_smesa.webp?v=1',ar:303/480},{src:'assets/flour/testo_grudve.webp?v=1',ar:271/480},{src:'assets/flour/testo_razvuceno.webp?v=1',ar:270/480}];
+var NX=21,NY=27,CY=.46,SIG=.2,VS=2,FADE=3000;
+var STG=[{src:'assets/flour/testo_smesa.webp?v=1',ar:303/480},{src:'assets/flour/testo_razvuceno.webp?v=1',ar:270/480}];      // 0 = the wet flour, 1 = the dough (the middle picture, the lumpy mass, is not used any more)
 var list=[];
 STG.forEach(function(g,i){g.img=new Image();g.ok=false;g.img.onload=function(){g.ok=true;list.forEach(function(t){if(t._m&&t._m.on&&t._m.stage===i)draw(t);});};g.img.src=g.src;});
-function bhOf(tr,st,F){var H=tr.offsetHeight||197;return H*(st===0?(.48+Math.min(1,(F||0)/200)*.16):(st===1?.70:.68));}   // the height of the dough in the opening of the trough
+function bhOf(tr,st,F){var H=tr.offsetHeight||197;return H*(st===0?(.48+Math.min(1,(F||0)/200)*.16):.68);}   // the height of the dough in the opening of the trough
 function box(tr,st,F){var W=tr.offsetWidth||105,H=tr.offsetHeight||197,bh=bhOf(tr,st,F),bw=bh*STG[st].ar;return {W:W,H:H,bw:bw,bh:bh,x0:W/2-bw/2,y0:H*CY-bh/2};}
 function local(tr,cx,cy){var r=tr.getBoundingClientRect(),k=(r.width/(tr.offsetWidth||1))||1;return [(cx-r.left)/k,(cy-r.top)/k];}
 function init(tr){
   if(tr._m)return tr._m;
-  var m={off:new Float32Array(NX*NY*2),on:false,gl:null,cv:null,ok:true,grab:null,stage:-1,F:0,texs:[null,null,null],texUp:[false,false,false]};tr._m=m;list.push(tr);
+  var m={off:new Float32Array(NX*NY*2),on:false,gl:null,cv:null,ok:true,grab:null,stage:-1,F:0,texs:[null,null],texUp:[false,false]};tr._m=m;list.push(tr);
   try{var s=tr.dataset.inMesh,st=tr.dataset.inMeshS;if(s&&st!==undefined){var a=s.split(',');if(a.length===NX*NY*2){for(var i=0;i<a.length;i++)m.off[i]=(+a[i]||0)/1000;m.savedStage=+st;}}}catch(e){}
   return m;
 }
@@ -75,9 +75,25 @@ function fadeLoop(tr){var m=tr._m;if(!m||!m.fade){return;}draw(tr);if(m.fade)req
 /* the dough keeps its size when it is squeezed: the area of the net is brought back to the area of the dough in the picture (it can grow only up to the opening of the trough) */
 function area(b,off){var A=0,i,j;for(j=0;j<NY-1;j++)for(i=0;i<NX-1;i++){var k=j*NX+i,p=curPos(b,off,k),q=curPos(b,off,k+1),r=curPos(b,off,k+NX),t=curPos(b,off,k+NX+1);
   A+=Math.abs((q[0]-p[0])*(r[1]-p[1])-(r[0]-p[0])*(q[1]-p[1]))/2+Math.abs((q[0]-t[0])*(r[1]-t[1])-(r[0]-t[0])*(q[1]-t[1]))/2;}return A;}
+/* the dough stays one piece: a neighbour of a point can be neither much farther (it does not tear into a thin film) nor much nearer (it does not fold up),
+   and no point leaves the opening of the trough */
+function relax(tr,m){
+  var b=box(tr,m.stage,m.F),W=b.W,H=b.H,k,n=NX*NY,P=new Float32Array(n*2),it,i,j;
+  for(k=0;k<n;k++){var p=curPos(b,m.off,k);P[k*2]=p[0];P[k*2+1]=p[1];}
+  var Lx=b.bw/(NX-1),Ly=b.bh/(NY-1),MAX=1.9,MIN=.5;
+  function edge(a,c,L0){var dx=P[c*2]-P[a*2],dy=P[c*2+1]-P[a*2+1],L=Math.hypot(dx,dy)||.0001,t=0;
+    if(L>L0*MAX)t=(L-L0*MAX)/L*.5;else if(L<L0*MIN)t=-(L0*MIN-L)/L*.5;if(!t)return;
+    P[a*2]+=dx*t*.5;P[a*2+1]+=dy*t*.5;P[c*2]-=dx*t*.5;P[c*2+1]-=dy*t*.5;}
+  for(it=0;it<6;it++){
+    for(j=0;j<NY;j++)for(i=0;i<NX;i++){var a=j*NX+i;if(i<NX-1)edge(a,a+1,Lx);if(j<NY-1)edge(a,a+NX,Ly);}
+    for(k=0;k<n;k++){P[k*2]=Math.max(W*.15,Math.min(W*.87,P[k*2]));P[k*2+1]=Math.max(H*.12,Math.min(H*.79,P[k*2+1]));}
+  }
+  // a point can go away from its place only so far (the dough is pulled and shaped, it does not slide away or turn into a thin streak)
+  for(k=0;k<n;k++){var i2=k%NX,j2=(k/NX)|0,ox=(P[k*2]-(b.x0+b.bw*i2/(NX-1)))/b.bh,oy=(P[k*2+1]-(b.y0+b.bh*j2/(NY-1)))/b.bh;m.off[k*2]=Math.max(-.42,Math.min(.42,ox));m.off[k*2+1]=Math.max(-.42,Math.min(.42,oy));}
+}
 function keepSize(tr,m){
   var b=box(tr,m.stage,m.F),A0=b.bw*b.bh,A=area(b,m.off);if(A<=0)return;
-  var sc=Math.sqrt(A0/A);if(sc<1.015)return;sc=Math.min(sc,1.5);
+  var sc=Math.sqrt(A0/A);if(sc<1.015)return;sc=Math.min(sc,2);
   // the centre of the net and the width it may have
   var k,cx=0,cy=0,mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9;
   for(k=0;k<NX*NY;k++){var p=curPos(b,m.off,k);cx+=p[0];cy+=p[1];mnx=Math.min(mnx,p[0]);mxx=Math.max(mxx,p[0]);mny=Math.min(mny,p[1]);mxy=Math.max(mxy,p[1]);}
@@ -109,7 +125,7 @@ window.CooksterDoughMesh={
     var b=box(tr,m.stage,m.F),sg=b.bh*SIG,k;
     for(k=0;k<NX*NY;k++){var c=curPos(b,m.off,k),r=Math.hypot(c[0]-m.grab.x,c[1]-m.grab.y),w=Math.exp(-(r/sg)*(r/sg));
       if(w<.01)continue;m.off[k*2]+=dx*w/b.bh;m.off[k*2+1]+=dy*w/b.bh;}
-    keepSize(tr,m);m.grab.x=p[0];m.grab.y=p[1];draw(tr);
+    keepSize(tr,m);relax(tr,m);m.grab.x=p[0];m.grab.y=p[1];draw(tr);
   },
   release:function(tr){var m=tr._m;if(m)m.grab=null;save(tr);},
   active:function(tr){var m=tr._m;return !!(m&&m.on&&m.gl);}
