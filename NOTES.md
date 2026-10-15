@@ -645,3 +645,9 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Uzrok "dva nagnuta bokala, jedan se lomi": pravi bokal u ruci sam takođe naginjao (rotate -62°), a kopija koja se vidi pravi se kloniranjem pravog bokala, pa je slika bokala u kopiji bila okrenuta dvaput (voda i prednja maska jednom). Sada se pravi bokal nikad ne okreće, samo cela kopija.
 - Druga kopija iz moda "ranac" (`.cookster-backpack-held-preview`) se tokom sipanja krije isečkom (`clip-path`), jer igra svaki kadar sama vraća njen `display`/`visibility`.
 - Provereno slikom iz pregledača kroz tri sipanja sa prekidima: jedan nagnut bokal, mlaz ravno nadole.
+
+## Sipanje iz bokala: bez osvežavanja i opterećenja procesora (2026-10-15, game.js?v=3.128, flour.js?v=28)
+- Dok se sipa, kopija bokala u ruci se više ne pravi iznova (ključ kopije ne sadrži vodu dok traje sipanje; jedno pravljenje kad sipanje prestane). Ranije se na svakih 5% vode pravila nova uspravna kopija pa se tek onda naginjala, što se videlo kao "vraća se uspravno, pa se opet nagne", i opterećivalo procesor.
+- Nova kopija se naginje bez animacije posle prve pola sekunde sipanja.
+- Provera: 1 pravljenje kopije u 3 s sipanja (bilo 55); jedan nagnut bokal.
+- Nije reprodukovano: dva bokala u sudoperi (sa pravim klikom sa bokalom u ruci u sudoperi je jedan bokal). Moguće je da je u sudoperi sačuvan stari bokal (`cookster.sink-items.v1`).

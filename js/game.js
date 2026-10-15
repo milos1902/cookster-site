@@ -6655,8 +6655,8 @@ function ghostKeyFor(el){
    el.querySelector('.body')?.getAttribute('src')||'',
    el.dataset.cutState||'',
    el.dataset.count||'',
-   // while the pitcher is being poured the water goes down every frame: the carry copy is rebuilt only for every 5% (not 60 times a second)
-   el.dataset.pourLock==='1'?String(Math.round((+el.dataset.water||0)*20)):(el.dataset.water||''),el.dataset.dirt||'',
+   // while the pitcher is being poured the water goes down every frame: the carry copy is not rebuilt at all (one rebuild when the pouring stops)
+   el.dataset.pourLock==='1'?'~':(el.dataset.water||''),el.dataset.dirt||'',
    renderedContents??(el.dataset.panContents||''),
    renderedContents??(el.dataset.containerContents||''),
    el.classList.contains('open')?'open':'closed'

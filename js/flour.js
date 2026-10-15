@@ -230,7 +230,7 @@ function tilt(on){
   document.body.classList.toggle('pitcher-pouring',!!on);
   document.querySelectorAll('.cookster-backpack-held-preview').forEach(function(e){if(on)e.style.setProperty('clip-path','inset(50%)','important');else e.style.removeProperty('clip-path');});   // the game sets display/visibility on it again every frame: a clip that it does not touch hides it
   if(on){var h=typeof holding!=='undefined'?holding:null;if(h&&isPitcher(h))h.style.visibility='hidden';}   // the real pitcher stays hidden: only the tilted copy is seen
-  pitcherBodies().forEach(function(b){var gc=b.classList.contains('ghost-item-copy');b.style.transformOrigin=on?'30% 15%':(gc?'50% 90%':'30% 15%');b.style.transition='transform .25s ease';b.style.transform=on?'rotate(-62deg)':(gc?'none':'');});}
+  pitcherBodies().forEach(function(b){var gc=b.classList.contains('ghost-item-copy');b.style.transformOrigin=on?'30% 15%':(gc?'50% 90%':'30% 15%');b.style.transition=(on&&wp&&wp.t>.5)?'none':'transform .25s ease';b.style.transform=on?'rotate(-62deg)':(gc?'none':'');});}
 function wFrame(now){
   if(!wp)return;var h=typeof holding!=='undefined'?holding:null;
   if(!h||h!==wp.el){wStop();return;}
