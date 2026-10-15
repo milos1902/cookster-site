@@ -83,14 +83,14 @@ function frame(now){
   var dt=Math.min(.05,(now-p.last)/1000);p.last=now;
   if(p.img.style.transform){                                     // the water runs only when the pitcher is tilted
     var use=Math.min(p.level-p.used,RATE*dt);p.used+=use;p.acc+=use*100;
-    if(p.acc>=1){try{CooksterFlour.addWater(tr,p.acc);}catch(e){}p.acc=0;}
+    if(p.acc>=1){try{CooksterFlour.addWater(tr,p.acc,+p.el.dataset.waterTemp||15);}catch(e){}p.acc=0;}
   }
   if(p.used>=p.level-.0005){try{showToast('Bokal je prazan.');}catch(e){}stop();return;}
   place();draw(p,dt);requestAnimationFrame(frame);
 }
 function stop(){
   var p=pour;if(!p)return;pour=null;
-  if(p.acc>0){try{CooksterFlour.addWater(p.tr,p.acc);}catch(e){}}
+  if(p.acc>0){try{CooksterFlour.addWater(p.tr,p.acc,+p.el.dataset.waterTemp||15);}catch(e){}}
   var l=document.getElementById('ppLayer');if(l)l.innerHTML='';
   document.body.classList.remove('pitcher-pouring');
   var left=Math.max(0,p.level-p.used);

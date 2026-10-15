@@ -188,6 +188,7 @@ window.CooksterDoughMesh={
     if(m.glue)for(var g=0;g<m.glue.length;g++)if(m.glue[g]>0)m.glue[g]=Math.max(0,m.glue[g]-.01);      // the glue weakens while the dough is worked
     var b=box(tr,m.stage,m.F),sg=b.bh*SIG,k;
     for(k=0;k<NX*NY;k++){var c=curPos(b,m.off,k),r=Math.hypot(c[0]-m.grab.x,c[1]-m.grab.y),w=Math.exp(-(r/sg)*(r/sg));
+      if(m.stage<=4)w=Math.max(w,.34*Math.exp(-(r/(sg*3.4))*(r/(sg*3.4))));      // the whole piece of dough follows the hand a little (the top moves too, not only the part under the hand)
       if(w<.01)continue;var gl=m.glue?m.glue[k]*Math.max(0,1-(m.prog||0)*1.4):0,hold=(1-.6*stick(m,k))*(1-.5*gl);
       if(m.stage===5)hold*=1-.65*(m.ball||0);
       if(window.CooksterNacveBounds&&CooksterNacveBounds.wall(c[0]/b.W*100,c[1]/b.H*100))hold*=.35;      // on the wall the dough goes slower (it climbs)
