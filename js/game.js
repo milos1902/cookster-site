@@ -2037,7 +2037,15 @@ const OVEN_IN_BY=531,OVEN_IN_MAX_W=138,OVEN_IN_MAX_H=94,OVEN_IN_SHRINK=.86;
 const OVEN_ITEM_CFG_KEY='cookster.oven-items.v1';
 let ovenItemCfg={};
 try{ovenItemCfg=JSON.parse(localStorage.getItem(OVEN_ITEM_CFG_KEY)||'{}')||{};}catch(_){ovenItemCfg={};}
-function ovenCfgFor(id){return {by:OVEN_IN_BY,k:1,angle:0,tilt:0,dark:.5,x:1503,...(ovenItemCfg[id]||{})};}
+// the values the owner set with the tool (exported 2026-10-15): they are built into the game, so every player gets them; the tool's own values (saved in this browser) go over them
+const OVEN_ITEM_DEFAULTS={
+ serpa_velika:{by:531,k:1.18,angle:0,tilt:0,dark:1,x:1490},
+ tiganj_veliki:{by:537,k:1.19,angle:1,tilt:12,dark:1,x:1488},
+ tiganj_mali:{by:522,k:1.23,angle:0,tilt:11,dark:1,x:1472},
+ kal_01_okrugli_pleh:{by:522,k:.89,angle:0,tilt:10,dark:1,x:1489},
+ kal_01_pravougaoni_pleh:{by:524,k:.93,angle:0,tilt:9,dark:1,x:1490}
+};
+function ovenCfgFor(id){return {by:OVEN_IN_BY,k:1,angle:0,tilt:0,dark:.5,x:1503,...(OVEN_ITEM_DEFAULTS[id]||{}),...(ovenItemCfg[id]||{})};}
 function ovenApplyPose(el){
  const cfg=ovenCfgFor(el.dataset.itemId),vis=(+el.dataset.ovenBaseVis||+el.dataset.vis||.8)*cfg.k;
  el.dataset.fixedVis=String(vis);el.dataset.angle=String(cfg.angle);el.dataset.tilt=String(cfg.tilt);
@@ -2117,7 +2125,7 @@ function tryDropIntoOven(el){
 window.CooksterOvenItems={
  kinds:['serpa_velika','tiganj_veliki','tiganj_mali','kal_01_okrugli_pleh','kal_01_pravougaoni_pleh'],
  cfg:ovenCfgFor,
- all:()=>JSON.parse(JSON.stringify(ovenItemCfg)),
+ all:()=>{const o={};['serpa_velika','tiganj_veliki','tiganj_mali','kal_01_okrugli_pleh','kal_01_pravougaoni_pleh'].forEach(id=>{o[id]=ovenCfgFor(id);});return o;},
  set(id,patch){
   ovenItemCfg[id]={...ovenCfgFor(id),...patch};
   try{localStorage.setItem(OVEN_ITEM_CFG_KEY,JSON.stringify(ovenItemCfg));}catch(_){}
