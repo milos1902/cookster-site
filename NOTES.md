@@ -805,3 +805,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Krug za ljuštenje paprika i senke paprika na plotni
 - Krug koji se puni dok se drži E (ljuštenje): prečnik 40 px (bilo 82), puni se za 0,6 s (bilo 1,8 s), boja tamna maslinasto-zelena (#4f5f1c), bliže paprici (`game.js?v=3.147`, `game.css?v=3.02`).
 - Senke paprika na plotni: nalaze se u alatu za senke (🔦/senke) kao "Crvena šilja — vodoravno na plotni" (`produce_paprika_plotna_silja`) i "Zelena paprika — položena na plotnu" (`produce_paprika_zelena_plotna`); visina senke je `height`. Crvena je pri svakom pokretanju vraćana na staru vrednost (lista `for(const key of [...])` u `game.js`), pa je izmene iz alata nisu pamtile; ta stavka je uklonjena iz liste. Nove početne vrednosti: crvena height 1,15 (bilo 0,86), zelena 0,55 (bilo 0,14).
+
+## Alat "Maska hrane u posudi" prikazuje ugrađene maske
+- Alat je ranije učitavao samo ono što je sačuvano u pregledaču, pa početne maske (ugrađene u igru) nije prikazivao. Sada se posuda koju vlasnik još nije crtao prikazuje sa ugrađenim profilom (maska, deo hrane, dno, tačke dubine), pa može da se doteruje. Ugrađeni profil se u pregledač upisuje tek kad se nešto promeni (`seedFromGame` u `vessel-food-mask-tool.js?v=14`); ako vlasnik obriše posudu (⌫), ugrađeni profil se više ne prikazuje.
+- Dodat i veliki oval (tanjir): hrana i voda (zarotirana elipsa).
+- Nisu rađeni: plava šerpa (ima poklopac, nema vidljivog otvora), tegle (imaju svoja stanja punjenja), stari bokal (ima svoju vodu).
