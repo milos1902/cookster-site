@@ -728,3 +728,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Skelet lopte: testo se vraća u loptu (2026-10-15, dough-mesh.js?v=15, game.js?v=3.134)
 - Gotovo testo (druga faza) ima skelet lopte: što duže se radi (miš se kreće; oko 25 s do pune lopte, 1500 px kretanja = 1), mreža se iz pravougaonika slike pretapa u krug (kvadrat preslikan u disk), a slika se pretapa u sliku kugle (`testo_kugla`). Tačke se sve manje povode za rukom (do 65% manje) i elastično se vraćaju ka lopti kad pustiš (do 4,5% po kadru), pa u osnovi ostaje lopta, a i dalje mogu da se vuku. Stepen lopte se čuva (`inBall`).
 - Ispravke: pretapanje je crtalo dve poluprovidne slike pa je testo bilo poluprovidno (sada se stara slika crta cela, nova preko nje); ograničenja mreže i pomaci su računati od pravougaonika, ne od skeleta lopte (testo se sabijalo u pravougaonik pa se razlilo).
+
+## Ruka umazana testom, čisti se kako se mesi (2026-10-15, flour.js?v=55)
+- Tvoje slike ruku sa testom (`ruka_a1/a2` mnogo umazana, otvorena i pritisnuta; `ruka_b1/b2` malo umazana) poravnate su sa čistom rukom (`ruka1/2`). Dok je testo vlažno, ruka je obilno umazana, pa sve čistija: čista ruka je uvek ispod, malo umazana preko nje (od ~5% napretka), mnogo umazana preko (do ~45%); na kraju mešenja ruka je čista. Pritisnuta poza menja otvorenu u svakom sloju.

@@ -300,17 +300,24 @@ window.addEventListener('pointerdown',function(e){
 },true);
 /* The kneading hand, drawn in code (no video): it follows the mouse inside the opening of the trough and presses the dough; every bit of movement kneads (up-down counts fully, left-right a quarter), so going up-down-up-down gets to the end. The dough picture is pushed a little by the hand and a puff of flour rises now and then. */
 /* the two pictures of the hand (open and pressed): the same place on both, so the swap does not jump */
-var HAND_IMG=['assets/flour/ruka1.webp?v=3','assets/flour/ruka2.webp?v=3'];
-HAND_IMG.forEach(function(u){var i=new Image();i.src=u;});
+var HAND_IMG={c:['ruka1','ruka2'],m:['ruka_b1','ruka_b2'],v:['ruka_a1','ruka_a2']};   // the clean hand, the hand a little and a lot smeared with the dough (open and pressed)
+Object.keys(HAND_IMG).forEach(function(k){HAND_IMG[k].forEach(function(n){var i=new Image();i.src='assets/flour/'+n+'.webp?v=4';});});
 function knLayer(tr){
   if(tr._kn&&tr._kn.isConnected)return tr._kn;
   /* a window the size of the trough opening (it goes on down, so the arm can come from the front): the hand never goes out of the sides */
   var w=document.createElement('div');w.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:7;clip-path:polygon('+INNER.l+'% '+INNER.t+'%,'+INNER.r+'% '+INNER.t+'%,'+INNER.r+'% 700%,'+INNER.l+'% 700%)';
   var h=document.createElement('div');h.style.cssText='position:absolute;left:0;top:0;width:'+(tr.offsetWidth*.62)+'px;opacity:0;transition:opacity .2s;transform-origin:49% 9.5%;will-change:transform';
-  h.innerHTML='<img draggable="false" src="'+HAND_IMG[0]+'" style="display:block;width:100%;user-select:none"><img draggable="false" src="'+HAND_IMG[1]+'" style="position:absolute;left:0;top:0;width:100%;opacity:0;user-select:none">';
-  h._p=h.children[1];w.appendChild(h);tr.appendChild(w);tr._kn=h;tr._kw=w;return h;
+  var html='',lv,po;
+  ['c','m','v'].forEach(function(l){[0,1].forEach(function(q){html+='<img draggable="false" data-l="'+l+'" data-p="'+q+'" src="assets/flour/'+HAND_IMG[l][q]+'.webp?v=4" style="'+(l==='c'&&q===0?'display:block;width:100%;':'position:absolute;left:0;top:0;width:100%;')+'opacity:'+(l==='c'&&q===0?1:0)+';user-select:none">';});});
+  h.innerHTML=html;h._I={};[].forEach.call(h.children,function(i){h._I[i.dataset.l+i.dataset.p]=i;});
+  w.appendChild(h);tr.appendChild(w);tr._kn=h;tr._kw=w;return h;
 }
-/* the dough stretches the way the hand pulls it: going up it stretches upwards, going down downwards (and gets thinner), then it springs back */
+/* the hand is smeared with the dough while the dough is wet and gets cleaner as it is kneaded: the clean hand is always below, the little smeared one over it and the very smeared one over that */
+function knDress(h,pressed,v){
+  var oM=Math.min(1,Math.max(0,(v-.05)*2.2)),oV=Math.max(0,Math.min(1,(v-.45)*2.4)),p=pressed?1:0;
+  [['c',1],['m',oM],['v',oV]].forEach(function(L){h._I[L[0]+'0'].style.opacity=String(p?0:L[1]);h._I[L[0]+'1'].style.opacity=String(p?L[1]:0);});
+  h._I.c0.style.opacity=p?'0':'1';h._I.c1.style.opacity=p?'1':'0';
+}
 function knStretch(tr,vy,vx){
   var st=tr._st||(tr._st={s:0,v:0,t:0,run:false});
   st.v+=Math.max(-30,Math.min(30,vy))*.03;      // the pull
@@ -328,7 +335,7 @@ function knMove(tr,e,vx,vy,shaping){
   var h=knLayer(tr),r=tr.getBoundingClientRect(),k=r.width/(tr.offsetWidth||1)||1,W=tr.offsetWidth,H=tr.offsetHeight;
   var px=Math.max(W*(INNER.l+12)/100,Math.min(W*(INNER.r-12)/100,(e.clientX-r.left)/k)),py=Math.max(H*INNER.t/100+W*.62*.93*.9,Math.min(H*(INNER.b-2)/100,(e.clientY-r.top)/k));   // the fingers stay inside the opening
   var hw=W*.62,hh=hw*4200/420,rot=Math.max(-12,Math.min(12,vx*.5)),sc=1-Math.max(-.05,Math.min(.05,vy*.003));
-  if(vy>1.5)h._pt=performance.now();var pr=(performance.now()-(h._pt||0)<160);h._p.style.opacity=pr?'1':'0';h.children[0].style.opacity=pr?'0':'1';   // the pressed hand while it goes down
+  if(vy>1.5)h._pt=performance.now();var pr=(performance.now()-(h._pt||0)<160),mxv=+tr.dataset.inMix||0,stg=doughState(tr);knDress(h,pr,(stg.W>=1&&stg.F>=3)?Math.max(0,1-mxv):0);   // the pressed hand while it goes down
   h.style.opacity='1';h.style.transform='translate('+(px-hw*.49)+'px,'+(py-hh*.0952)+'px) rotate('+rot+'deg) scale('+sc+')';
   // the end of the arm goes behind the squares at the bottom of the screen (the bar with the vessels): the window of the hand ends in the middle of the bar when the arm is over it
   try{var bs=document.querySelectorAll('.cookster-bottom-button'),bl=1e9,brr=-1e9,bt=1e9,bb2=-1e9,q;
