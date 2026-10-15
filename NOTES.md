@@ -609,3 +609,10 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Iz AI videa (ruka i testo na zelenoj pozadini) izvučena su 124 kadra, zelena je izrezana (providno), `assets/flour/knead/k000..k123.webp` (~1.6 MB ukupno). Dok se meša (levi taster, miš iznad naćvi, odnos dobar) preko naćvi se vidi kadar koji odgovara `inMix`. Svako kretanje miša, gore-dole i levo-desno, pomera napredak (vertikalno puno, horizontalno četvrtinu; oko 2200 px = kraj). Na kraju sloj ruke nestaje, ostaje naša slika testa i poruka "Testo je zamešeno."
 - Provereno u pregledaču: kretanje gore-dole stiže do kadra 123, nema grešaka. Nije provereno: izgled kad se naćve pomere ili uvećaju, ni telefon.
 - Poznato: testo u videu "luta" po kadru i ruka je glatka/dečja, pa je ovo probni izgled.
+
+## Ispravke: bokal, kapi, testo u naćvama, kugla (2026-10-15, flour.js?v=14)
+- Bokal pri sipanju: naginje se cela kopija (voda i prednja maska su takođe slike bokala i ostajale su uspravne iza nagnutog), a mala kopija iz ranca se krije dok traje sipanje.
+- Kapi vode koje su bile u vazduhu kad se pusti taster sada padnu i nestanu (ranije su ostajale pred naćvama).
+- Ruka i testo iz kadrova se seku na otvor naćvi (nema više izlaženja levo-desno); ruka može da ide naniže preko prednje ivice.
+- Na kraju mešenja ostaje kugla testa (`assets/flour/nacve_kugla.webp`, tvoja slika 61), ne mokra smesa.
+- Provereno u pregledaču sa slikama; nije provereno na telefonu.

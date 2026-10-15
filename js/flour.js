@@ -81,7 +81,12 @@ function drawTrough(e){
   // the dough appears only by mixing (the flour and the water that are already in the trough), not by pouring: the picture of the dough melts in as the mixing goes
   var mx=Math.min(1,+e.dataset.inMix||0);
   if(mx>0&&(!e._dough||!e._dough.isConnected)){var di=document.createElement('img');di.src='assets/flour/nacve_testo.webp?v=1';di.draggable=false;di.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3';e.appendChild(di);e._dough=di;}
-  if(e._dough)e._dough.style.opacity=String(mx);
+  if(e._dough){
+    // done mixing: the smooth ball of dough (not the wet mass)
+    var ball=mx>=1?'assets/flour/nacve_kugla.webp?v=1':'assets/flour/nacve_testo.webp?v=1';
+    if(e._dough.getAttribute('src')!==ball)e._dough.setAttribute('src',ball);
+    e._dough.style.opacity=String(mx);
+  }
   return;
   if(!e._fl||!e._fl.isConnected){
     var clip=document.createElement('div');clip.className='flour-in';
@@ -216,8 +221,11 @@ window.addEventListener('contextmenu',function(e){var h=typeof holding!=='undefi
 // ---- the pitcher: LEFT button held over the trough = the pitcher tilts and the water runs into the trough; the RIGHT button puts it down ----
 var PITCHER='bokal_stari',WRATE=11,wp=null;
 function isPitcher(el){return !!el&&el.dataset&&el.dataset.itemId===PITCHER;}
-function pitcherBodies(){var out=[],h=typeof holding!=='undefined'?holding:null,g=typeof placementGhost!=='undefined'?placementGhost:null;if(h){var b=h.querySelector('.body');if(b)out.push(b);}if(g){var c=g.querySelector('.ghost-item-copy .body');if(c)out.push(c);}return out;}
-function tilt(on){pitcherBodies().forEach(function(b){b.style.transformOrigin='30% 15%';b.style.transition='transform .25s ease';b.style.transform=on?'rotate(-62deg)':'';});}
+function pitcherBodies(){var out=[],h=typeof holding!=='undefined'?holding:null,g=typeof placementGhost!=='undefined'?placementGhost:null;if(h){var b=h.querySelector('.body');if(b)out.push(b);}if(g){var c=g.querySelector('.ghost-item-copy');if(c)out.push(c);}return out;}   /* the whole copy tilts: its water and its front mask are pictures of the pitcher too, they stayed upright before */
+function tilt(on){
+  /* the small upright copy of the pitcher (backpack mode) would stay behind the tilted one */
+  document.querySelectorAll('.cookster-backpack-held-preview').forEach(function(e){if(on)e.style.setProperty('display','none','important');else e.style.removeProperty('display');});
+  pitcherBodies().forEach(function(b){var gc=b.classList.contains('ghost-item-copy');b.style.transformOrigin=on?'30% 15%':(gc?'50% 90%':'30% 15%');b.style.transition='transform .25s ease';b.style.transform=on?'rotate(-62deg)':(gc?'none':'');});}
 function wFrame(now){
   if(!wp)return;var h=typeof holding!=='undefined'?holding:null;
   if(!h||h!==wp.el){wStop();return;}
@@ -250,7 +258,12 @@ function ripple(land){
   var a=e.animate([{transform:'scale(.3)',opacity:.9},{transform:'scale(2.2)',opacity:0}],{duration:700,fill:'forwards'});a.onfinish=function(){e.remove();};
 }
 function wStart(el){if(wp)return;wp={el:el,t:0,last:performance.now()};try{if(typeof playImpactSound==='function')playImpactSound(el,'pour');}catch(e){}requestAnimationFrame(wFrame);}
-function wStop(){if(!wp)return;wp=null;tilt(false);try{CooksterSave.schedule();}catch(e){}}
+function wStop(){
+  if(!wp)return;wp=null;tilt(false);
+  /* the drops that are still in the air fall down and disappear (they stayed on the screen before) */
+  (function drain(){var t0=performance.now();(function f(n){stepGrains(.016,null);if(grains.length&&n-t0<900)requestAnimationFrame(f);else{grains.forEach(function(g){g.el.remove();});grains=[];}})(t0);})();
+  try{CooksterSave.schedule();}catch(e){}
+}
 window.addEventListener('pointerdown',function(e){
   var h=typeof holding!=='undefined'?holding:null;if(!isPitcher(h))return;
   if(e.target&&e.target.closest&&e.target.closest('#hud,[data-tool-ui],.cookster-ctx,#toolDock'))return;
@@ -277,9 +290,11 @@ var KN=124,knImgs=null;
 function knLoad(){if(knImgs)return;knImgs=[];for(var i=0;i<KN;i++){var m=new Image();m.src='assets/flour/knead/k'+('00'+i).slice(-3)+'.webp?v=1';knImgs.push(m);}}
 function knLayer(tr){
   if(tr._kn&&tr._kn.isConnected)return tr._kn;
+  /* a window the size of the trough opening (it goes on down, so the arm can come from the front): the dough and the hand never go out of the sides */
+  var w=document.createElement('div');w.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:7;clip-path:polygon('+INNER.l+'% '+INNER.t+'%,'+INNER.r+'% '+INNER.t+'%,'+INNER.r+'% 140%,'+INNER.l+'% 140%)';
   var im=document.createElement('img');im.draggable=false;
-  im.style.cssText='position:absolute;left:50%;top:50%;height:112%;width:auto;transform:translate(-50%,-47%);pointer-events:none;z-index:7;opacity:0;transition:opacity .25s;user-select:none';
-  tr.appendChild(im);tr._kn=im;return im;
+  im.style.cssText='position:absolute;left:50%;top:46%;height:98%;width:auto;transform:translate(-50%,-50%);opacity:0;transition:opacity .25s;user-select:none';
+  w.appendChild(im);tr.appendChild(w);tr._kn=im;return im;
 }
 function knShow(tr,on){var im=knLayer(tr);if(on){knLoad();knFrame(tr);}im.style.opacity=on?'1':'0';}
 function knFrame(tr){var f=Math.max(0,Math.min(KN-1,Math.round((+tr.dataset.inMix||0)*(KN-1)))),im=knLayer(tr),u=knImgs[f].src;if(im.src!==u)im.src=u;}
