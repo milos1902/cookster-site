@@ -7,7 +7,7 @@ if(window.CooksterCloth)return;
 /* AX: where the hand holds the picture (0..1 across); AR: width / height; size: how many times the picture of the item in the game; pins: the columns of the top row that are held by the hand (null = the whole row);
    grav: gravity; damp: how much movement is kept in one step (1 = never stops); pull: the pull back to the picture; mass: how much heavier the bottom is than the top; flutter: the strength of the air; grow: how fast the dough stretches */
 var KINDS={
-  krpa:{id:'kal_krpa',src:'assets/calibration_props/krpa/krpa_ruka.webp?v=1',key:'krpa',nx:12,ny:18,ax:.53,ar:361/640,size:2.4,pins:null,grav:1300,damp:.994,pull:.012,mass:2.4,flutter:.45,grow:0,iters:8,bend:.78,sep:.75,follow:11},
+  krpa:{id:'kal_krpa',src:'assets/calibration_props/krpa/krpa_ruka.webp?v=1',key:'krpa',nx:12,ny:18,ax:.53,ar:361/640,size:1,pins:null,grav:4200,damp:.988,pull:.012,mass:2.4,flutter:.45,grow:0,iters:8,bend:.78,sep:.75,follow:11},
   testo:{id:'kal_testo_naraslo',src:'assets/flour/testo_kugla.webp?v=2',key:'testo_kugla',nx:8,ny:8,ax:.5,ar:1,size:1.15,pins:[3,4],grav:3400,damp:.985,pull:.0015,mass:2.2,flutter:0,grow:.085,iters:6,bend:0,sep:0,follow:0}
 };
 var NX=12,NY=18,K=KINDS.krpa,AX=.53,AR=361/640,ID=K.id,img=new Image(),imgs={};
@@ -42,7 +42,8 @@ function step(ax,ay,dt){
   var pts=P.pts,k,g=K.grav*dt*dt,i,sc=1+Math.min(1.3,age*K.grow),sq=1/Math.sqrt(sc),wind=K.flutter*(260+Math.min(1400,spd)*.9)*dt*dt;
   for(k=0;k<pts.length;k++){var p=pts[k],v=p.row/(NY-1);
     if(p.pin){p.px=p.x;p.py=p.y;p.x=ax+p.rx;p.y=ay+p.ry;continue;}
-    var vx=(p.x-p.px)*K.damp,vy=(p.y-p.py)*K.damp,vm=Math.hypot(vx,vy),vc=P.cell*1.4;if(vm>vc){vx*=vc/vm;vy*=vc/vm;}      // no point runs more than a little in one stepp.px=p.x;p.py=p.y;p.x+=vx;p.y+=vy+g;
+    var vx=(p.x-p.px)*K.damp,vy=(p.y-p.py)*K.damp,vm=Math.hypot(vx,vy),vc=P.cell*1.4;if(vm>vc){vx*=vc/vm;vy*=vc/vm;}      // no point runs more than a little in one step
+    p.px=p.x;p.py=p.y;p.x+=vx;p.y+=vy+g*(1+1.6*v);      // gravity: the lower part of the cloth is pulled harder
     if(wind){var ph=tm*3.3+p.col*.75+p.row*.55;p.x+=Math.sin(ph)*wind*v;p.y-=Math.cos(ph*.8+1)*wind*.35*v;}      // the air: the cloth flutters, more when it is moved fast
     var pull=K.pull*(1-v*.75);p.x+=(ax+p.rx-p.x)*pull;if(!K.grow)p.y+=(ay+p.ry-p.y)*pull*.5;      // a weak pull back to the picture (stronger near the hand)
   }
@@ -121,5 +122,53 @@ function dropOver(tr,cb){
   anim={t0:performance.now(),x0:mx,y0:my,tx:r.left+r.width/2+(AX-.5)*0+0,ty1:r.top-H*.25,ty2:r.top+r.height*.12,H:H,cb:cb,fired:false};
   return true;
 }
-window.CooksterCloth={_P:function(){return P;},dropOver:dropOver,active:function(){return on;}};
+/* the cloth hangs on the rail at the stove (next to the old towel) and is taken from there; when it is in the hand, on the table or over a trough, it is not on the rail */
+var HOOK={x:1608,y:457,h:254},hook=null,hookA=null;
+function hookEl(){
+  if(hook&&hook.isConnected)return hook;
+  var sc=document.getElementById('scene');if(!sc)return null;
+  hook=document.createElement('img');hook.src=KINDS.krpa.src;hook.draggable=false;hook.className='krpa-hook';
+  var w=HOOK.h*KINDS.krpa.ar;
+  hook.style.cssText='position:absolute;left:'+(HOOK.x-KINDS.krpa.ax*w)+'px;top:'+HOOK.y+'px;height:'+HOOK.h+'px;width:'+w+'px;pointer-events:none;z-index:40;transform-origin:'+(KINDS.krpa.ax*100)+'% 0;animation:krpaSway 5s ease-in-out infinite;user-select:none';
+  sc.appendChild(hook);
+  var cs=document.createElement('canvas'),im=imgs.krpa;cs.width=64;cs.height=112;
+  var draw=function(){try{cs.getContext('2d').drawImage(im,0,0,64,112);hookA=cs.getContext('2d').getImageData(0,0,64,112).data;}catch(e){hookA=null;}};
+  if(im.complete&&im.naturalWidth)draw();else im.addEventListener('load',draw);
+  return hook;
+}
+(function(){var st=document.createElement('style');st.textContent='@keyframes krpaSway{0%,100%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}}';document.head.appendChild(st);})();
+function krpaGone(){
+  if(typeof holding!=='undefined'&&holding&&holding.dataset&&holding.dataset.itemId===ID)return true;
+  if(anim||on&&kname==='krpa')return true;
+  var l=(typeof items!=='undefined'?items:[]);
+  for(var i=0;i<l.length;i++){var e=l[i];if(e&&e.dataset&&(e.dataset.itemId===ID||(e.dataset.itemId==='nacve'&&e.dataset.inCloth==='1')))return true;}
+  return false;
+}
+setInterval(function(){var h=hookEl();if(h)h.style.display=krpaGone()?'none':'';},300);
+function overHook(x,y){
+  if(!hook||!hook.isConnected||hook.style.display==='none'||!hookA)return false;
+  var r=hook.getBoundingClientRect(),u=(x-r.left)/r.width,v=(y-r.top)/r.height;
+  if(u<0||u>1||v<0||v>1)return false;
+  var px=Math.min(63,Math.floor(u*64)),py=Math.min(111,Math.floor(v*112)),a=0;
+  for(var dx=-2;dx<=2;dx++)for(var dy=-2;dy<=2;dy++){var X=Math.max(0,Math.min(63,px+dx)),Y=Math.max(0,Math.min(111,py+dy));a=Math.max(a,hookA[(Y*64+X)*4+3]);}
+  return a>40;
+}
+function give(){
+  var d;try{d=kitchenEquipmentDef(ID);}catch(e){}
+  if(!d||(typeof holding!=='undefined'&&holding))return false;
+  var el=makeItem({...d,instanceId:nextItemInstanceId(d.id),x:700-d.w/2,y:560-d.h,z:++zCounter});if(!el)return false;
+  el.dataset.surfaceZone='table';setPose(el,700,560,surfaceScaleFor(el,'table',560));el.dataset.noFlash='1';el.style.visibility='hidden';setTimeout(function(){delete el.dataset.noFlash;},1500);
+  startHolding(el);try{CooksterSave.schedule();}catch(e){}return true;
+}
+window.addEventListener('pointerdown',function(e){
+  if(e.button!==0||(typeof holding!=='undefined'&&holding))return;
+  if(e.target&&e.target.closest&&e.target.closest('#hud,[data-tool-ui],.cookster-ctx,#toolDock'))return;
+  if(!overHook(e.clientX,e.clientY))return;
+  if(give()){e.stopImmediatePropagation();e.preventDefault();}
+},true);
+window.addEventListener('pointermove',function(e){
+  if(typeof holding!=='undefined'&&holding)return;
+  if(overHook(e.clientX,e.clientY)){hook.style.filter='drop-shadow(0 0 1px #46d45c) drop-shadow(0 0 1px #46d45c)';}else if(hook)hook.style.filter='';
+},true);
+window.CooksterCloth={_P:function(){return P;},dropOver:dropOver,give:give,active:function(){return on;}};
 })();

@@ -343,7 +343,7 @@ window.addEventListener('pointerdown',function(e){
       var br0=tr0.getBoundingClientRect(),nx0=(e.clientX-br0.left)/br0.width-.5,ny0=(e.clientY-br0.top)/br0.height-.46;
       if((nx0/.34)*(nx0/.34)+(ny0/.34)*(ny0/.34)<=1&&takeDough(tr0,e))return;
     }
-    if(tr0&&tr0.dataset.inCloth==='1'){e.stopImmediatePropagation();e.preventDefault();delete tr0.dataset.inCloth;drawTrough(tr0);sayT((+tr0.dataset.inRise||0)>=1?'Krpa je skinuta, testo je naraslo.':'Krpa je skinuta.');try{CooksterSave.schedule();}catch(x){}return;}
+    if(tr0&&tr0.dataset.inCloth==='1'){e.stopImmediatePropagation();e.preventDefault();delete tr0.dataset.inCloth;drawTrough(tr0);try{CooksterCloth.give();}catch(x){}sayT((+tr0.dataset.inRise||0)>=1?'Krpa je skinuta, testo je naraslo.':'Krpa je skinuta.');try{CooksterSave.schedule();}catch(x){}return;}
   }
   var id=heldId();if(e.button!==0||(id!==YEAST&&id!==SPOON&&id!==KRPA))return;
   if(e.target&&e.target.closest&&e.target.closest('#hud,[data-tool-ui],.cookster-ctx,#toolDock'))return;
