@@ -2033,6 +2033,17 @@ function returnHeldLogToDrawer(){
 // ---- things inside the open oven: a pot, a pan or a baking tray put on the lowered door slides in (a little smaller) and is hidden by the frame of the oven
 const OVEN_CLIP={left:1432,right:1574,top:450,bottom:541};   // the dark opening of the oven (scene pixels): what is outside of it is hidden
 const OVEN_IN_BY=531,OVEN_IN_MAX_W=138,OVEN_IN_MAX_H=94,OVEN_IN_SHRINK=.86;
+// the owner's tool (js/oven-items-tool.js) sets, per kind of item: by = height (depth) in the oven, k = size, angle = lean left-right, tilt = pitch up-down
+const OVEN_ITEM_CFG_KEY='cookster.oven-items.v1';
+let ovenItemCfg={};
+try{ovenItemCfg=JSON.parse(localStorage.getItem(OVEN_ITEM_CFG_KEY)||'{}')||{};}catch(_){ovenItemCfg={};}
+function ovenCfgFor(id){return {by:OVEN_IN_BY,k:1,angle:0,tilt:0,dark:.5,...(ovenItemCfg[id]||{})};}
+function ovenApplyPose(el){
+ const cfg=ovenCfgFor(el.dataset.itemId),vis=(+el.dataset.ovenBaseVis||+el.dataset.vis||.8)*cfg.k;
+ el.dataset.fixedVis=String(vis);el.dataset.angle=String(cfg.angle);el.dataset.tilt=String(cfg.tilt);
+ el.style.setProperty('--oven-dark',String(cfg.dark));   // 0 = not darkened, 1 = very dark
+ setPose(el,+el.dataset.cx||1500,cfg.by,vis);
+}
 function isOvenItem(el){
  if(!el||!el.dataset||!isContainerItem(el))return false;
  const id=el.dataset.itemId||'';
@@ -2059,37 +2070,73 @@ function moveItemToOvenLayer(el){
 }
 function leaveOven(el){
  if(!el||el.dataset.inOven!=='1')return;
- delete el.dataset.inOven;delete el.dataset.fixedVis;
- el.classList.remove('in-oven');el.style.removeProperty('--oven-mask');
+ delete el.dataset.inOven;delete el.dataset.fixedVis;delete el.dataset.ovenBaseVis;
+ if(el.dataset.preOvenAngle!==undefined){if(el.dataset.preOvenAngle==='')delete el.dataset.angle;else el.dataset.angle=el.dataset.preOvenAngle;delete el.dataset.preOvenAngle;}
+ if(el.dataset.preOvenTilt!==undefined){if(el.dataset.preOvenTilt==='')delete el.dataset.tilt;else el.dataset.tilt=el.dataset.preOvenTilt;delete el.dataset.preOvenTilt;}
+ el.classList.remove('in-oven');el.style.removeProperty('--oven-mask');el.style.removeProperty('--oven-dark');
  if(el._contactShadow)el._contactShadow.classList.remove('in-oven-shadow');
  scene.appendChild(el);
+}
+function putItemIntoOven(el,xScene){
+ const bw=Math.max(1,+el.dataset.baseW||100),bh=Math.max(1,+el.dataset.baseH||100);
+ const curVis=Math.max(.2,+el.dataset.vis||1);
+ // it goes a little smaller, and never bigger than the opening of the oven; the owner's tool can change the size on top of that
+ const baseVis=Math.min(curVis*OVEN_IN_SHRINK,OVEN_IN_MAX_W/bw,OVEN_IN_MAX_H/bh);
+ const cfg=ovenCfgFor(el.dataset.itemId),w=bw*baseVis*cfg.k;
+ const cx=Math.max(OVEN_CLIP.left+w/2+3,Math.min(OVEN_CLIP.right-w/2-3,xScene));
+ // the same finishing steps as a normal drop, without the flight to a surface
+ hidePlacementGhost();hideOriginGhost();setBoardSnapIndicator(false);clearStirReady();clearPourTarget();
+ el.style.visibility='';
+ el.classList.remove('held');if(holding===el)heldGrabState=null;clearHeldPlacementState(el);el.style.removeProperty('--held-z');
+ delete el.dataset.pickupSurfaceZone;
+ window.CooksterStoveZones?.release(el);
+ if(el.dataset.inOven!=='1'){
+  el.dataset.preOvenAngle=el.dataset.angle===undefined?'':el.dataset.angle;
+  el.dataset.preOvenTilt=el.dataset.tilt===undefined?'':el.dataset.tilt;
+ }
+ el.dataset.surfaceZone='stove';el.dataset.inOven='1';el.dataset.ovenBaseVis=String(baseVis);el.dataset.cx=String(cx);
+ moveItemToOvenLayer(el);
+ ovenApplyPose(el);
+ setCookwareOnStove(el,false);renderCookwareContents(el);
+ if(isHeatableCookwareItem(el))updateCookingStatus(el);
+ if(holding===el)holding=null;
+ placing=false;
+ updateHover();CooksterSave.schedule();
+ return true;
 }
 function tryDropIntoOven(el){
  if(!stoveState.ovenOpen||!isOvenItem(el)||el.dataset.fixedGrinder==='1')return false;
  const p=screenToScene(mouse.x,mouse.y);
  if(!pointInSceneRect(p,OVEN_DOOR_OPEN_RECT))return false;
- const bw=Math.max(1,+el.dataset.baseW||100),bh=Math.max(1,+el.dataset.baseH||100);
- const curVis=Math.max(.2,+el.dataset.vis||1);
- // it goes a little smaller, and never bigger than the opening of the oven
- const vis=Math.min(curVis*OVEN_IN_SHRINK,OVEN_IN_MAX_W/bw,OVEN_IN_MAX_H/bh);
- const w=bw*vis;
- const cx=Math.max(OVEN_CLIP.left+w/2+3,Math.min(OVEN_CLIP.right-w/2-3,p.x));
- // the same finishing steps as a normal drop, without the flight to a surface
- hidePlacementGhost();hideOriginGhost();setBoardSnapIndicator(false);clearStirReady();clearPourTarget();
- el.style.visibility='';
- el.classList.remove('held');heldGrabState=null;clearHeldPlacementState(el);el.style.removeProperty('--held-z');
- delete el.dataset.pickupSurfaceZone;
- window.CooksterStoveZones?.release(el);
- el.dataset.surfaceZone='stove';el.dataset.inOven='1';el.dataset.fixedVis=String(vis);
- moveItemToOvenLayer(el);
- setPose(el,cx,OVEN_IN_BY,vis);
- setCookwareOnStove(el,false);renderCookwareContents(el);
- if(isHeatableCookwareItem(el))updateCookingStatus(el);
- holding=null;placing=false;
+ putItemIntoOven(el,p.x);
  playImpactSound(el,'drop');
- updateHover();CooksterSave.schedule();
  return true;
 }
+window.CooksterOvenItems={
+ kinds:['serpa_velika','tiganj_veliki','tiganj_mali','kal_01_okrugli_pleh','kal_01_pravougaoni_pleh'],
+ cfg:ovenCfgFor,
+ all:()=>JSON.parse(JSON.stringify(ovenItemCfg)),
+ set(id,patch){
+  ovenItemCfg[id]={...ovenCfgFor(id),...patch};
+  try{localStorage.setItem(OVEN_ITEM_CFG_KEY,JSON.stringify(ovenItemCfg));}catch(_){}
+  items.filter(el=>el.dataset.inOven==='1'&&el.dataset.itemId===id).forEach(ovenApplyPose);
+ },
+ reset(id){
+  delete ovenItemCfg[id];
+  try{localStorage.setItem(OVEN_ITEM_CFG_KEY,JSON.stringify(ovenItemCfg));}catch(_){}
+  items.filter(el=>el.dataset.inOven==='1'&&el.dataset.itemId===id).forEach(ovenApplyPose);
+ },
+ // test item for the tool: opens the oven and puts one of this kind inside (an existing one, or a new one)
+ putTest(id){
+  if(!stoveState.ovenOpen)toggleCookstoveOven();
+  let el=items.find(e=>e.dataset.itemId===id&&e.dataset.inOven==='1');
+  if(el)return el;
+  el=items.find(e=>e.dataset.itemId===id&&e!==holding);
+  if(!el){if(!spawnKitchenEquipment(id,false))return null;el=items.filter(e=>e.dataset.itemId===id).pop();}
+  if(!el)return null;
+  putItemIntoOven(el,1503);return el;
+ }
+};
 function clickOvenDrawer(e){
  if(!ovenDrawerOpen){
   if(stoveState.ovenOpen)toggleCookstoveOven();   // the picture of the open oven door would lie under the drawer: one of them at a time
