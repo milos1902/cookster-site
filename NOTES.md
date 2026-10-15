@@ -779,3 +779,4 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Cepanica iz ruke se vraća u otvorenu fioku klikom na nju (`returnHeldLogToDrawer`); ako je fioka zatvorena: "Prvo otvori fioku." (`game.js?v=3.139`).
 - Napomena: otvorena vrata rerne i ložišta se ne pamte posle ponovnog učitavanja (i ranije nije bilo tako).
 - Nije provereno: animacija otvaranja (sve je odmah), telefon, dim/para sa rerne.
+- Vatra u prozorčiću ložišta ostaje kad je rerna otvorena (uslov `!stoveState.ovenOpen` u `updateFireboxEffects` je obrisan; ostao je od stare slike otvorene rerne). Slika ložišta se ne koristi za otvorenu rernu: isečak pokriva samo mesto rerne (`game.js?v=3.140`).
