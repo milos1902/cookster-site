@@ -2051,11 +2051,16 @@ function ovenItemsLayer(){
 function moveItemToOvenLayer(el){
  const l=ovenItemsLayer();
  if(el._contactShadow){el._contactShadow.classList.add('in-oven-shadow');}
+ // the dark gradient of the oven lies over the item in the shape of its picture (the mask is the picture of the item)
+ const body=el.querySelector('img.body')||el.querySelector('img');
+ if(body&&body.src)el.style.setProperty('--oven-mask',`url("${body.src}")`);
+ el.classList.add('in-oven');
  l.appendChild(el);
 }
 function leaveOven(el){
  if(!el||el.dataset.inOven!=='1')return;
  delete el.dataset.inOven;delete el.dataset.fixedVis;
+ el.classList.remove('in-oven');el.style.removeProperty('--oven-mask');
  if(el._contactShadow)el._contactShadow.classList.remove('in-oven-shadow');
  scene.appendChild(el);
 }

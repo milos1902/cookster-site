@@ -571,7 +571,11 @@ body.cutting-active #leftArrow,body.cutting-active #rightArrow{display:none!impo
 #ovenHotspot{left:1394px;top:450px;width:185px;height:102px}
 #drawerHotspot{left:1394px;top:556px;width:196px;height:84px}
 #ovenItems{position:absolute;left:0;top:0;width:1672px;height:941px;z-index:545;pointer-events:none;display:none}
-#ovenItems .item{pointer-events:auto}
+#ovenItems .item{pointer-events:auto;filter:brightness(.82) saturate(.92)}
+/* the dark of the oven: darker at the top and at the sides, lighter at the front; only over the shape of the item */
+#ovenItems .item.in-oven::after{content:'';position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;
+ background:linear-gradient(to right,rgba(4,2,1,.38),rgba(4,2,1,0) 24%,rgba(4,2,1,0) 76%,rgba(4,2,1,.38)),linear-gradient(to bottom,rgba(4,2,1,.7),rgba(4,2,1,.34) 60%,rgba(4,2,1,.2));
+ -webkit-mask-image:var(--oven-mask);mask-image:var(--oven-mask);-webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
 .in-oven-shadow{display:none!important}
 #ovenDoorOpen{position:absolute;display:none;left:1392px;top:436px;width:212px;height:204px;z-index:30;pointer-events:none;user-select:none}
 #ovenDrawerOpen{position:absolute;display:none;left:1384px;top:552px;width:236px;height:154px;z-index:30;pointer-events:none;user-select:none}
