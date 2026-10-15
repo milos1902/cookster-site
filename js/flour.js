@@ -263,9 +263,9 @@ function ripple(land){
   e.style.cssText='position:absolute;left:'+land.x+'px;top:'+land.y+'px;width:26px;height:12px;margin:-6px 0 0 -13px;border-radius:50%;border:1.5px solid rgba(215,238,250,.9)';L.appendChild(e);
   var a=e.animate([{transform:'scale(.3)',opacity:.9},{transform:'scale(2.2)',opacity:0}],{duration:700,fill:'forwards'});a.onfinish=function(){e.remove();};
 }
-function wStart(el){if(wp)return;wp={el:el,t:0,last:performance.now()};try{if(typeof playImpactSound==='function')playImpactSound(el,'pour');}catch(e){}requestAnimationFrame(wFrame);}
+function wStart(el){if(wp)return;wp={el:el,t:0,last:performance.now()};el.dataset.pourLock='1';try{if(typeof playImpactSound==='function')playImpactSound(el,'pour');}catch(e){}requestAnimationFrame(wFrame);}
 function wStop(){
-  if(!wp)return;wp=null;tilt(false);
+  if(!wp)return;try{delete wp.el.dataset.pourLock;}catch(e){}wp=null;tilt(false);
   /* the drops that are still in the air fall down and disappear (they stayed on the screen before) */
   (function drain(){var t0=performance.now();(function f(n){stepGrains(.016,null);if(grains.length&&n-t0<900)requestAnimationFrame(f);else{grains.forEach(function(g){g.el.remove();});grains=[];}})(t0);})();
   try{CooksterSave.schedule();}catch(e){}

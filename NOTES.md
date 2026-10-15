@@ -634,3 +634,9 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Ruka je tvoja slika (`assets/flour/ruka1.webp` otvorena, `ruka2.webp` pritisnuta; zelena izrezana, podlaktica produžena do dna naćvi). Prati miša unutar otvora naćvi; dok ide nadole, prikazuje se pritisnuta poza (160 ms posle kretanja nadole). Prsti ostaju unutar otvora.
 - Testo se razvlači opružno: ide li miš nagore, testo se razvlači nagore (raste od dna), nadole - nadole (od vrha), pa se vraća. Slike testa su sada u prozoru oblika otvora, pa se ivica naćvi ne izobličuje.
 - Provereno slikama u pregledaču; nije provereno na telefonu. Skelet na zglobovima ruke (savijanje prstiju) još nije napravljen.
+
+## Sipanje iz bokala: kopija u ruci se ne pravi 60 puta u sekundi (2026-10-15, game.js?v=3.127, flour.js?v=23)
+- Uzrok dupliranja ("dva, tri bokala, jedan se lomi"): ključ kopije predmeta u ruci (`ghostKeyFor`) sadrži nivo vode. Dok se sipa, voda opada svaki kadar, pa se pri svakom pomeranju miša kopija pravila iznova (u probi 55 puta za 3 s), a pravi bokal bi se pri svakom pravljenju kratko pokazao pored kopije i dekodiranje slika se gomilalo.
+- Sada za vreme sipanja (`dataset.pourLock`, postavlja flour.js) ključ računa vodu u koracima od 5%, a pravi bokal se ne prikazuje dok se kopija pravi: u probi 11 pravljenja za 3 s (po 5% vode), bez treptanja.
+- Greška pada taba: `Crashpad_NotConnectedToHandler` (tab se srušio, program za izveštaje nije bio dostupan); sam kod ne kaže uzrok. Nije potvrđeno da je ovo uzrok pada.
+- Nije reprodukovano: dva bokala i nestanak jedne česme u sudoperi pri punjenju (u mojoj probi u sudoperi je jedan bokal i obe česme).
