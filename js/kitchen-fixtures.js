@@ -120,7 +120,7 @@ function updateJars(){
 setInterval(updateJars,150);
 // ---------- the wooden spoon and the ladle lie in the right drawer (pictures, like the jars of the left drawer): the front of the drawer hides their lower part; a click on one takes the real item, and an item put down over the open drawer goes back ----------
 var TOOLS=[
-  {id:'kasika_mesanje',src:'assets/new_props/kasika_1.png',cx:935,cy:662,w:58,h:142,rot:90,k:.82,label:'drvena kašika'},
+  {id:'kasika_mesanje',src:'assets/new_props/kasika_1.png?v=2',cx:935,cy:662,w:58,h:142,rot:90,k:.82,label:'drvena kašika'},
   {id:'kutlaca_ajvar',src:'assets/calibration_props/ajvar_jars/kutlaca_ajvar.png',cx:1075,cy:664,w:112,h:112,rot:0,k:.9,label:'drvena kutlača'}
 ];
 var TOOL_IN={l:860,t:605,r:1165,b:712},toolClip=null;

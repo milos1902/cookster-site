@@ -25,7 +25,7 @@ window.CooksterCatalog = Object.freeze({
     krastavac: Object.freeze({
       id: 'krastavac',
       label: 'Krastavac',
-      src: 'assets/povrce_krastavac.png',
+      src: 'assets/povrce_krastavac.png?v=2',
       slicedSrc: 'assets/povrce_krastavac_secen.png',
       dicedSrc: 'assets/diced_veg/krastavac_diced.png',
       friedDicedSrc: 'assets/diced_veg_fried/krastavac_diced_fried.png',
@@ -69,7 +69,7 @@ window.CooksterCatalog = Object.freeze({
     luk: Object.freeze({
       id: 'luk',
       label: 'Luk',
-      src: 'assets/ingredients/luk.png',
+      src: 'assets/ingredients/luk.png?v=2',
       slicedSrc: 'assets/ingredients/luk_secen.png',
       dicedSrc: 'assets/diced_veg/luk_diced.png',
       friedDicedSrc: 'assets/diced_veg_fried/luk_diced_fried.png',
@@ -130,7 +130,7 @@ window.CooksterCatalog = Object.freeze({
       label: 'Šargarepa',
       slicedLabel: 'isečena šargarepa',
       sliceMessage: 'Šargarepa je isečena na kolutove.',
-      src: 'assets/market_veg/sargarepa.png',
+      src: 'assets/market_veg/sargarepa.png?v=2',
       slicedSrc: 'assets/market_veg/sargarepa_secen.png',
       dicedSrc: 'assets/diced_veg/sargarepa_diced.png',
       friedDicedSrc: 'assets/diced_veg_fried/sargarepa_diced_fried.png',
@@ -227,7 +227,7 @@ window.CooksterCatalog = Object.freeze({
       label: 'Rotkvica',
       slicedLabel: 'isečena rotkvica',
       sliceMessage: 'Rotkvica je isečena na kolutove.',
-      src: 'assets/market_veg/rotkvice.png',
+      src: 'assets/market_veg/rotkvice.png?v=2',
       slicedSrc: 'assets/market_veg/rotkvice_secen.png',
       dicedSrc: 'assets/diced_veg/rotkvice_diced.png',
       friedDicedSrc: 'assets/diced_veg_fried/rotkvice_diced_fried.png',
@@ -262,9 +262,9 @@ window.CooksterCatalog = Object.freeze({
     })
   }),
   ITEMS: Object.freeze([
-    Object.freeze({id:'daska',type:'tool',subtype:'board',label:'daska',src:'assets/new_props/daska.png',x:482,y:378,w:291,h:110,snapProfile:'board',placement:['table']}),
+    Object.freeze({id:'daska',type:'tool',subtype:'board',label:'daska',src:'assets/new_props/daska.png?v=2',x:482,y:378,w:291,h:110,snapProfile:'board',placement:['table']}),
     Object.freeze({id:'noz',type:'tool',subtype:'knife',label:'nož',src:'assets/noz.png',x:650,y:410,w:176,h:31,snapProfile:'flat',placement:['table']}),
-    Object.freeze({id:'kasika_mesanje',type:'tool',subtype:'stir_spoon',label:'drvena kašika',src:'assets/new_props/kasika_1.png',x:1148,y:450,w:58,h:142,angle:178,snapProfile:'flat',shadowProfile:'tiny',placement:['table','pan']}),
+    Object.freeze({id:'kasika_mesanje',type:'tool',subtype:'stir_spoon',label:'drvena kašika',src:'assets/new_props/kasika_1.png?v=2',x:1148,y:450,w:58,h:142,angle:178,snapProfile:'flat',shadowProfile:'tiny',placement:['table','pan']}),
     Object.freeze({id:'kutlaca_ajvar',type:'tool',subtype:'ajvar_ladle',label:'drvena kutlača za ajvar',src:'assets/calibration_props/ajvar_jars/kutlaca_ajvar.png',x:1238,y:446,w:112,h:112,angle:0,snapProfile:'flat',shadowProfile:'tiny',placement:['table','pan']}),
     Object.freeze({id:'sundjer',type:'tool',subtype:'sponge',label:'sunđer',src:'assets/new_props/sundjer.svg',x:1328,y:78,w:74,h:45,angle:-6,snapProfile:'flat',shadowProfile:'tiny',placement:['table','sink','stove']})
   ]),
@@ -292,8 +292,8 @@ window.CooksterCatalog = Object.freeze({
     Object.freeze({id:'hoklica',type:'prop',subtype:'calibration_prop',label:"Drvena hoklica",src:'assets/calibration_props/hoklica.png',w:160,h:146,snapProfile:'flat',shadowProfile:'tiny',placement:['table','floor'],price:0,starter:true}),
     Object.freeze({id:'tepih_etno',type:'prop',subtype:'calibration_prop',label:"Etno tepih",src:'assets/calibration_props/tepih_etno.png',w:112,h:210,snapProfile:'flat',shadowProfile:'tiny',placement:['table','floor'],price:0,starter:true}),
     Object.freeze({id:'kal_01_dzak_brasna',type:'prop',subtype:'calibration_prop',label:"Džak brašna",src:'assets/calibration_props/kitchen_set_18/01_dzak_brasna.png',w:145,h:109,snapProfile:'flat',shadowProfile:'tiny',placement:['table','floor'],price:0,starter:true}),
-    Object.freeze({id:'kal_01_dzezva',type:'prop',subtype:'calibration_prop',label:"Džezva",src:'assets/calibration_props/kitchen_set_18/01_dzezva.png',w:92,h:110,snapProfile:'flat',shadowProfile:'tiny',placement:['table','floor'],price:0,starter:true}),
-    Object.freeze({id:'kal_01_flasa_ulja',type:'prop',subtype:'calibration_prop',label:"Flaša ulja",src:'assets/calibration_props/kitchen_set_18/01_flasa_ulja.png',w:48,h:90,snapProfile:'flat',shadowProfile:'tiny',placement:['table','floor'],price:0,starter:true}),
+    Object.freeze({id:'kal_01_dzezva',type:'prop',subtype:'calibration_prop',label:"Džezva",src:'assets/calibration_props/kitchen_set_18/01_dzezva.png?v=2',w:92,h:110,snapProfile:'flat',shadowProfile:'tiny',placement:['table','floor'],price:0,starter:true}),
+    Object.freeze({id:'kal_01_flasa_ulja',type:'prop',subtype:'calibration_prop',label:"Flaša ulja",src:'assets/calibration_props/kitchen_set_18/01_flasa_ulja.png?v=2',w:48,h:90,snapProfile:'flat',shadowProfile:'tiny',placement:['table','floor'],price:0,starter:true}),
     Object.freeze({id:'kal_01_hleb',type:'prop',subtype:'calibration_prop',label:"Hleb",src:'assets/calibration_props/kitchen_set_18/01_hleb.png',w:155,h:104,snapProfile:'flat',shadowProfile:'tiny',placement:['table','floor'],price:0,starter:true}),
     Object.freeze({id:'kal_01_jaje',type:'prop',subtype:'calibration_prop',label:"Jaje",ingredientKey:'jaje',infinite:true,src:'assets/calibration_props/kitchen_set_18/01_jaje.png',w:45,h:55,snapProfile:'flat',shadowProfile:'tiny',placement:['table','floor'],price:0,starter:true}),
     Object.freeze({id:'kal_01_kvasac',type:'prop',subtype:'calibration_prop',label:"Kvasac",src:'assets/calibration_props/kitchen_set_18/01_kvasac.png',w:75,h:52,snapProfile:'flat',shadowProfile:'tiny',placement:['table','floor'],price:0,starter:true}),
