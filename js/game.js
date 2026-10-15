@@ -90,7 +90,7 @@ const IMPORTED_CONTACT_SHADOW_CALIBRATION={
  "produce_paradajz":{"itemId":"produce_paradajz","label":"Povrće — Paradajz","shadow":{"shadowX":0,"shadowY":0,"width":0.72,"height":0.275,"blur":5,"opacity":0.7,"angle":0.6}},
  "produce_paprika":{"itemId":"produce_paprika","label":"Povrće — Paprika","shadow":{"shadowX":0,"shadowY":0,"width":0.72,"height":0.38,"blur":5.5,"opacity":0.62,"angle":0.6}},
  "produce_paprika_plotna":{"itemId":"produce_paprika_plotna","label":"Paprika — položena na plotnu","shadow":{"shadowX":0,"shadowY":-2,"width":0.95,"height":0.16,"blur":3.6,"opacity":0.64,"angle":0.6}},
- "produce_paprika_zelena_plotna":{"itemId":"produce_paprika_zelena_plotna","label":"Zelena paprika — položena na plotnu","shadow":{"shadowX":0,"shadowY":-2,"width":0.95,"height":0.14,"blur":3.6,"opacity":0.62,"angle":0.6}},
+ "produce_paprika_zelena_plotna":{"itemId":"produce_paprika_zelena_plotna","label":"Zelena paprika — položena na plotnu","shadow":{"shadowX":0,"shadowY":0,"width":0.95,"height":0.55,"blur":3.2,"opacity":0.68,"angle":0.6}},
  "produce_luk":{"itemId":"produce_luk","label":"Povrće — Luk","shadow":{"shadowX":0,"shadowY":0,"width":0.72,"height":0.35,"blur":6.4,"opacity":0.75,"angle":0.6}},
  "produce_kupus":{"itemId":"produce_kupus","label":"Povrće — Kupus","shadow":{"shadowX":0,"shadowY":0,"width":0.82,"height":0.2,"blur":5.7,"opacity":0.71,"angle":0.6}},
  "produce_krastavac":{"itemId":"produce_krastavac","label":"Povrće — Krastavac","shadow":{"shadowX":0,"shadowY":0,"width":0.72,"height":0.265,"blur":4.5,"opacity":0.73,"angle":0.6}}
@@ -142,7 +142,7 @@ const LATEST_CONTACT_SHADOW_CALIBRATION={
  'kaca_sa_poklopcem':{itemId:'kaca_sa_poklopcem',label:'Bačva za kiseljenje — sa poklopcem',shadow:{shadowX:26,shadowY:3,width:.785,height:.635,blur:7.6,opacity:.91,angle:-5.7}}
 };
 const RED_POINTED_PEPPER_STOVE_CONTACT_SHADOW={
- 'produce_paprika_plotna_silja':{itemId:'produce_paprika_plotna_silja',label:'Crvena šilja — vodoravno na plotni',shadow:{shadowX:0,shadowY:-1,width:.94,height:.86,blur:1.2,opacity:.55,angle:0}}
+ 'produce_paprika_plotna_silja':{itemId:'produce_paprika_plotna_silja',label:'Crvena šilja — vodoravno na plotni',shadow:{shadowX:0,shadowY:1,width:.96,height:1.15,blur:2.4,opacity:.65,angle:0}}
 };
 let contactShadowMaster={
  version:1,
@@ -171,7 +171,7 @@ try{
 }catch(_){}
 // Master 2 changed these profiles. Keep an older browser session from
 // re-applying the previous calibration over the newly supplied values.
-for(const key of ['produce_paprika','produce_paprika_plotna_silja','veg_paprika_1790124308385','kaca_prazna','kaca_sa_poklopcem']){
+for(const key of ['produce_paprika','veg_paprika_1790124308385','kaca_prazna','kaca_sa_poklopcem']){   // (the red pepper on the stove is not forced any more, so what is set in the tool stays)
   const authoritative=LATEST_CONTACT_SHADOW_CALIBRATION[key]||RED_POINTED_PEPPER_STOVE_CONTACT_SHADOW[key];
   if(authoritative)contactShadowMaster.items[key]=JSON.parse(JSON.stringify(authoritative));
 }
@@ -6854,7 +6854,10 @@ function renderPaprikaRoast(el){
  }
  const phase=paprikaRoastPhase(el),body=el.querySelector('.body');
  if(body){
-   body.src=eggplant?straightRoastAssets(el)[Math.min(3,phase)-1]:PAPRIKA_ROAST_ASSETS[phase-1];
+   const roastSrc=eggplant?straightRoastAssets(el)[Math.min(3,phase)-1]:PAPRIKA_ROAST_ASSETS[phase-1];
+   body.src=roastSrc;
+   // the shadow on the floor/stove is a copy of the same picture: it has to change with the body, otherwise the shadow of the upright pepper stays behind the one that lies
+   const shImg=el._contactShadow?.querySelector('img');if(shImg&&shImg.getAttribute('src')!==roastSrc)shImg.src=roastSrc;
    body.style.filter=(+el.dataset.roastProgress||0)>=1.08
      ?'brightness(.38) saturate(.55) sepia(.45)':'';
  }
@@ -14483,10 +14486,10 @@ function finishPeelHold(){
 function startPeelHold(){
   if(peelHold||isCutting||paprikaPeelGame)return false;
   const ts=peelTargetsOnBoard();if(!ts.length)return false;
-  const spot=()=>{const t=ts.filter(el=>el.isConnected);if(!t.length)return null;const cx=t.reduce((s,el)=>s+(+el.dataset.cx||0),0)/t.length;const top=Math.min(...t.map(el=>parseFloat(el.style.top)||0));return {cx,y:top-46*(+t[0].dataset.vis||1)};};
+  const spot=()=>{const t=ts.filter(el=>el.isConnected);if(!t.length)return null;const cx=t.reduce((s,el)=>s+(+el.dataset.cx||0),0)/t.length;const top=Math.min(...t.map(el=>parseFloat(el.style.top)||0));return {cx,y:top-24*(+t[0].dataset.vis||1)};};
   const p0=spot();if(!p0)return false;
   const ring=ensureCutProgress(p0.cx,p0.y);ring.classList.add('peel');
-  const DUR=1800,start=performance.now();
+  const DUR=600,start=performance.now();   // a small ring that fills fast
   peelHold={ts,raf:0};
   const step=now=>{
     if(!peelHold)return;

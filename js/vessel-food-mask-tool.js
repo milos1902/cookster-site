@@ -68,7 +68,21 @@
         const point=data.vessels[v.id].depth[k];
         data.vessels[v.id].depth[k]=point&&typeof point==='object'?normalizePoint(point):null;
       });
+      seedFromGame(v.id,data.vessels[v.id]);
     });
+  }
+  // A vessel that the owner has not drawn yet and that has a built-in profile in the game (js/data/vessel-food-cal-export.js, js/core/vessel-food-calibration.js)
+  // is shown with that profile, so it can be corrected instead of being drawn from nothing. It is saved in the browser only after it is changed.
+  const seedOf=sh=>JSON.stringify({soft:sh.soft,mask:sh.mask,foodVisible:sh.foodVisible,bottom:sh.bottom,depth:sh.depth});
+  function seedFromGame(id,sh){
+    if(sh.saved||sh.cleared)return;
+    if(sh.mask.length||sh.foodVisible.length||sh.bottom.length||(sh.depth&&(sh.depth.bottom||sh.depth.foodTop)))return;   // something is already drawn
+    const C=window.CooksterVesselFoodCalibration;let pr=null;try{pr=C&&C.get&&C.get(id);}catch(_){}
+    if(!pr||!Array.isArray(pr.foodVisible)||pr.foodVisible.length<3)return;
+    const toObj=l=>(l||[]).map(q=>normalizePoint({x:q[0],y:q[1]}));
+    sh.mask=toObj(pr.mask);sh.foodVisible=toObj(pr.foodVisible);sh.bottom=toObj(pr.bottom);
+    sh.depth={bottom:pr.depth&&pr.depth.bottom?normalizePoint({x:pr.depth.bottom[0],y:pr.depth.bottom[1]}):null,foodTop:pr.depth&&pr.depth.foodTop?normalizePoint({x:pr.depth.foodTop[0],y:pr.depth.foodTop[1]}):null};
+    Object.defineProperty(sh,'_seed',{value:seedOf(sh),writable:true,enumerable:false,configurable:true});
   }
   function persist(){
     data.format='cookster-vessel-food-visibility-calibration';
@@ -79,7 +93,10 @@
       y:'0..100 top-to-bottom',
       note:'Tačke su procenti slike posude, nezavisni od veličine prikaza.'
     };
-    try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data));}catch(_){}
+    // what is still exactly the built-in profile is not saved as the owner's drawing (so a later correction of the built-in profile reaches him)
+    const out={...data,vessels:{}};
+    Object.keys(data.vessels).forEach(id=>{const sh=data.vessels[id];if(sh&&sh._seed&&seedOf(sh)===sh._seed)return;out.vessels[id]=sh;});
+    try{localStorage.setItem(STORAGE_KEY,JSON.stringify(out));}catch(_){}
     pushLive();
   }
   // the game takes what is drawn at once (the vessel in the kitchen is drawn again with the new area of the food)
@@ -235,11 +252,11 @@
     persist();draw();
   }
   function clearCurrentVessel(){
-    data.vessels[currentId]=emptyShape();
+    data.vessels[currentId]=emptyShape();data.vessels[currentId].cleared=true;   // cleared on purpose: the built-in profile is not shown again
     persist();draw();
   }
   function clearAll(){
-    VESSELS.forEach(v=>data.vessels[v.id]=emptyShape());
+    VESSELS.forEach(v=>{data.vessels[v.id]=emptyShape();data.vessels[v.id].cleared=true;});
     persist();draw();
     setStatus('Obrisane su sve kalibracije. Možeš početi iznova.');
   }
