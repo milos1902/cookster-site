@@ -219,70 +219,6 @@ window.addEventListener('pointerdown',function(e){
 window.addEventListener('pointerup',function(e){if(pour&&e.button===0){e.stopImmediatePropagation();stop();}},true);
 window.addEventListener('click',function(e){if(hold!==null&&e.button===0){hold=null;e.stopImmediatePropagation();}},true);
 window.addEventListener('contextmenu',function(e){var h=typeof holding!=='undefined'?holding:null;if(isSack(h))e.preventDefault();},true);
-// ---- the pitcher: LEFT button held over the trough = the pitcher tilts and the water runs into the trough; the RIGHT button puts it down ----
-var PITCHER='bokal_stari',WRATE=11,wp=null;
-function isPitcher(el){return !!el&&el.dataset&&el.dataset.itemId===PITCHER;}
-function pitcherBodies(){var out=[],h=typeof holding!=='undefined'?holding:null,g=typeof placementGhost!=='undefined'?placementGhost:null;if(h){var hb=h.querySelector('.body');if(hb&&hb.style.transform){hb.style.transform='';hb.style.transition='';}}   /* the real pitcher is never turned: the copy in the hand is made from it, so a turned picture would be turned twice (and break in half) */
-  if(g){var c=g.querySelector('.ghost-item-copy');if(c)out.push(c);}return out;}   /* the whole copy tilts: its water and its front mask are pictures of the pitcher too, they stayed upright before */
-(function(){var st=document.createElement('style');st.textContent='body.pitcher-pouring .cookster-backpack-held-preview{visibility:hidden!important;opacity:0!important}';document.head.appendChild(st);})();
-function tilt(on){
-  /* the second copy of the pitcher in the hand (backpack mode) is made again and again by the game with its own display, so it is hidden with a rule of the page (it would show two pitchers) */
-  document.body.classList.toggle('pitcher-pouring',!!on);
-  document.querySelectorAll('.cookster-backpack-held-preview').forEach(function(e){if(on)e.style.setProperty('clip-path','inset(50%)','important');else e.style.removeProperty('clip-path');});   // the game sets display/visibility on it again every frame: a clip that it does not touch hides it
-  if(on){var h=typeof holding!=='undefined'?holding:null;if(h&&isPitcher(h))h.style.visibility='hidden';}   // the real pitcher stays hidden: only the tilted copy is seen
-  pitcherBodies().forEach(function(b){var gc=b.classList.contains('ghost-item-copy');b.style.transformOrigin=on?'30% 15%':(gc?'50% 90%':'30% 15%');b.style.transition=(on&&wp&&wp.t>.5)?'none':'transform .25s ease';b.style.transform=on?'rotate(-62deg)':(gc?'none':'');});}
-function wFrame(now){
-  if(!wp)return;var h=typeof holding!=='undefined'?holding:null;
-  if(!h||h!==wp.el){wStop();return;}
-  var dt=Math.min(.05,(now-wp.last)/1000);wp.last=now;wp.t+=dt;
-  tilt(true);
-  var lvl=+h.dataset.water||0;
-  var c=tableSpot();
-  /* the tip of the spout of the tilted pitcher (the picture turns 62 degrees round 30% / 15% of its box): the water leaves from there and falls straight down */
-  var gh=typeof placementGhost!=='undefined'?placementGhost:null,gr=gh&&gh.getBoundingClientRect(),sp=null;
-  if(gr&&gr.width&&typeof screenToScene==='function')sp=screenToScene(gr.left+gr.width*.209,gr.top+gr.height*.204);
-  var tr=c&&sp?troughAt(sp.x,c.by):null;
-  if(lvl<=.004){try{showToast('Bokal je prazan.');}catch(e){}wStop();return;}
-  if(wp.t>.3){
-    var use=Math.min(lvl,WRATE*dt/100);
-    try{CooksterVesselWater.set(h,lvl-use);}catch(e){h.dataset.water=String(lvl-use);}
-    var land=null;
-    if(tr){tr.dataset.inWater=String(Math.min(400,(+tr.dataset.inWater||0)+use*100));drawTrough(tr);
-      var tb=tr.getBoundingClientRect(),tp=screenToScene(tb.left+tb.width*.5,tb.top+tb.height*.55);land={x:sp.x,y:tp.y};}
-    else if(c&&sp)land={x:sp.x,y:c.by};     // not over the trough: it falls on the table and is lost
-    if(sp&&land){waterGrains(sp,land);if(tr&&now-puffAt>260){puffAt=now;ripple(land);}}
-  }
-  stepGrains(dt,null);requestAnimationFrame(wFrame);
-}
-function waterGrains(m,land){
-  var L=fxLayer();if(!L)return;
-  for(var i=0;i<3&&grains.length<120;i++){
-    var d=document.createElement('i'),sz=2.4+Math.random()*2.4,T=.3+Math.random()*.12,dx=land.x-m.x,dy=land.y-m.y;
-    d.style.cssText='position:absolute;border-radius:50%;background:rgba(205,232,248,.9);box-shadow:0 0 2px rgba(255,255,255,.7);width:'+sz+'px;height:'+(sz*1.5)+'px';
-    L.appendChild(d);grains.push({el:d,x:m.x+(Math.random()-.5)*2,y:m.y,vx:dx/T+(Math.random()-.5)*3,vy:(dy-.5*620*T*T)/T,ly:land.y+(Math.random()-.5)*5,sz:sz});
-  }
-}
-function ripple(land){
-  var L=fxLayer();if(!L)return;var e=document.createElement('div');
-  e.style.cssText='position:absolute;left:'+land.x+'px;top:'+land.y+'px;width:26px;height:12px;margin:-6px 0 0 -13px;border-radius:50%;border:1.5px solid rgba(215,238,250,.9)';L.appendChild(e);
-  var a=e.animate([{transform:'scale(.3)',opacity:.9},{transform:'scale(2.2)',opacity:0}],{duration:700,fill:'forwards'});a.onfinish=function(){e.remove();};
-}
-function wStart(el){if(wp)return;wp={el:el,t:0,last:performance.now()};el.dataset.pourLock='1';try{if(typeof playImpactSound==='function')playImpactSound(el,'pour');}catch(e){}requestAnimationFrame(wFrame);}
-function wStop(){
-  if(!wp)return;try{delete wp.el.dataset.pourLock;}catch(e){}wp=null;tilt(false);
-  /* the drops that are still in the air fall down and disappear (they stayed on the screen before) */
-  (function drain(){var t0=performance.now();(function f(n){stepGrains(.016,null);if(grains.length&&n-t0<900)requestAnimationFrame(f);else{grains.forEach(function(g){g.el.remove();});grains=[];}})(t0);})();
-  try{CooksterSave.schedule();}catch(e){}
-}
-window.addEventListener('pointerdown',function(e){
-  var h=typeof holding!=='undefined'?holding:null;if(!isPitcher(h))return;
-  if(e.target&&e.target.closest&&e.target.closest('#hud,[data-tool-ui],.cookster-ctx,#toolDock'))return;
-  if(e.button===0){
-    var c=tableSpot();if(!c||!troughAt(c.cx,c.by)||(+h.dataset.water||0)<=.004)return;
-    e.stopImmediatePropagation();e.preventDefault();wStart(h);
-  }
-},true);
-window.addEventListener('pointerup',function(e){if(wp&&e.button===0){e.stopImmediatePropagation();wStop();}},true);
 // ---- mixing: the stirring spoon in the hand, LEFT button held, moved over the trough; the flour and the water become a dough (only when the ratio is right) ----
 var mixP=null;
 window.addEventListener('pointerdown',function(e){
@@ -341,5 +277,5 @@ window.addEventListener('pointermove',function(e){
   if(now<1)knMove(mixP.tr,e,vx,vy);else if(mixP.tr._kn)mixP.tr._kn.style.opacity='0';
 },true);
 window.addEventListener('pointerup',function(e){if(mixP&&e.button===0){if(mixP.tr._kn)mixP.tr._kn.style.opacity='0';mixP=null;try{CooksterSave.schedule();}catch(x){}}},true);
-window.CooksterFlour={dough:function(){var e=(typeof items!=='undefined'?items:[]).filter(function(x){return x.dataset&&x.dataset.itemId===TR;}).pop();return e?doughState(e):null;},piles:function(){return piles.map(function(p){return {x:p.x,y:p.y,n:p.n};});},clear:function(){piles.forEach(function(p){if(p.el)p.el.remove();});piles=[];save();}};
+window.CooksterFlour={troughAt:troughAt,addWater:function(tr,units){tr.dataset.inWater=String(Math.min(400,(+tr.dataset.inWater||0)+units));drawTrough(tr);},dough:function(){var e=(typeof items!=='undefined'?items:[]).filter(function(x){return x.dataset&&x.dataset.itemId===TR;}).pop();return e?doughState(e):null;},piles:function(){return piles.map(function(p){return {x:p.x,y:p.y,n:p.n};});},clear:function(){piles.forEach(function(p){if(p.el)p.el.remove();});piles=[];save();}};
 })();

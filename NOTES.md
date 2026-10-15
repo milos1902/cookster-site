@@ -651,3 +651,10 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Nova kopija se naginje bez animacije posle prve pola sekunde sipanja.
 - Provera: 1 pravljenje kopije u 3 s sipanja (bilo 55); jedan nagnut bokal.
 - Nije reprodukovano: dva bokala u sudoperi (sa pravim klikom sa bokalom u ruci u sudoperi je jedan bokal). Moguće je da je u sudoperi sačuvan stari bokal (`cookster.sink-items.v1`).
+
+## Sipanje iz bokala napisano ispočetka + dugme za pražnjenje sudopere (2026-10-15, pitcher-pour.js?v=1, flour.js?v=29, game.js?v=3.129, sink-zoom.js?v=22)
+- Obrisano staro sipanje iz bokala (u `flour.js`: nagib, mlaz od zrnaca, osluškivači; u `game.js`: `pourLock`). Novi `js/pitcher-pour.js`: sa bokalom u ruci, levi taster držan dok je miš iznad naćvi = jedna posebna nagnuta slika bokala prati miš (vrh kljuna je na mišu), tanak mlaz pada ravno nadole u naćve, pušta se = staje; desni taster spušta bokal kao i uvek. Slika bokala u ruci (koju igra pravi kopijom) se ne dira, krije se dok traje sipanje (`body.pitcher-pouring`). Voda bokala se upisuje jednom kad sipanje stane (nema 60 pravljenja kopije u sekundi).
+- Naćve sada izlažu `CooksterFlour.troughAt` i `CooksterFlour.addWater`.
+- U sudoperi dugme "🧹 Isprazni sudoperu" (pita za potvrdu) briše sve što je u njoj, jer posle pada stranice stari bokali ostanu sačuvani (`cookster.sink-items.v1`).
+- Zadržano kako je bilo (tvoje kalibracije): definicija bokala, njegova mesta/veličina u sudoperi, voda samo u ustima bokala, procenti.
+- Provereno slikom iz pregledača: tokom sipanja jedan nagnut bokal, voda u naćvama raste, sudopera ima jedan bokal, dugme prazni sudoperu, mešenje radi, bez grešaka. Nije provereno: telefon.

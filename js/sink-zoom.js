@@ -12,10 +12,11 @@ css.textContent=
 '#sinkZoom .sz-stage{position:absolute;left:50%;top:50%;width:min(100vw,calc(100vh*16/9));aspect-ratio:16/9;transform-origin:50% 50%;will-change:transform,opacity;overflow:hidden;border-radius:6px;box-shadow:0 12px 50px rgba(0,0,0,.6)}'+
 '#sinkZoom .sz-pic{position:absolute;inset:0;width:100%;height:100%;display:block;-webkit-user-drag:none;user-select:none}'+
 '#sinkZoom .sz-back{position:absolute;right:16px;top:60px;z-index:2;border:2px solid #351b0d;border-radius:9px;background:#e8c27a;color:#351b0d;font:700 14px/1 system-ui,sans-serif;padding:9px 14px;cursor:pointer;opacity:0;transition:opacity .4s ease}'+
+'#sinkZoom .sz-clear{position:absolute;right:16px;top:104px;z-index:2;border:2px solid #351b0d;border-radius:9px;background:#e8c27a;color:#351b0d;font:700 12px/1 system-ui,sans-serif;padding:8px 12px;cursor:pointer;opacity:0;transition:opacity .4s ease}#sinkZoom.ready .sz-clear{opacity:.85}#sinkZoom .sz-clear:hover{opacity:1}'+
 '#sinkZoom.ready .sz-back{opacity:.92}#sinkZoom .sz-back:hover{opacity:1}';
 document.head.appendChild(css);
 var root=document.createElement('div');root.id='sinkZoom';root.setAttribute('data-tool-ui','1');
-root.innerHTML='<div class="sz-stage"><img class="sz-pic" alt="Sudopera" draggable="false"><button type="button" class="sz-back" data-tool-ui="1">⬅ Nazad</button></div>';
+root.innerHTML='<div class="sz-stage"><img class="sz-pic" alt="Sudopera" draggable="false"><button type="button" class="sz-back" data-tool-ui="1">⬅ Nazad</button><button type="button" class="sz-clear" data-tool-ui="1">🧹 Isprazni sudoperu</button></div>';
 document.body.appendChild(root);
 var stage=root.querySelector('.sz-stage'),img=root.querySelector('.sz-pic'),back=root.querySelector('.sz-back');
 img.src=SRC;
@@ -386,6 +387,13 @@ function takeOut(i){
   setTimeout(function(){try{bridge.take(sv);}catch(e){}renderSink(true);},DUR*.8);
 }
 // a vessel from the hand goes into the sink and the close-up opens
+/* the button "Isprazni sudoperu": everything that stands in the sink is thrown away (after a crash of the page old copies could stay there) */
+root.querySelector('.sz-clear').addEventListener('click',function(e){
+  e.stopPropagation();
+  if(!sunk.length){try{showToast('Sudopera je prazna.');}catch(x){}return;}
+  if(!confirm('Isprazniti sudoperu? Sve što je u njoj nestaje ('+sunk.length+').'))return;
+  sunk.length=0;saveSunk();renderSink(true);try{showToast('Sudopera je prazna.');}catch(x){}
+});
 function putHeld(){
   var bridge=window.CooksterPantryBridge;if(!bridge||!bridge.heldItem)return false;
   var el=bridge.heldItem();if(!el)return false;
