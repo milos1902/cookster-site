@@ -7,14 +7,14 @@ if(window.CooksterCloth)return;
 /* AX: where the hand holds the picture (0..1 across); AR: width / height; size: how many times the picture of the item in the game; pins: the columns of the top row that are held by the hand (null = the whole row);
    grav: gravity; damp: how much movement is kept in one step (1 = never stops); pull: the pull back to the picture; mass: how much heavier the bottom is than the top; flutter: the strength of the air; grow: how fast the dough stretches */
 var KINDS={
-  krpa:{id:'kal_krpa',src:'assets/calibration_props/krpa/krpa_ruka.webp?v=1',key:'krpa',nx:8,ny:12,ax:.53,ar:361/640,size:2.4,pins:null,grav:1500,damp:.9975,pull:.006,mass:3.2,flutter:1,grow:0,iters:4},
-  testo:{id:'kal_testo_naraslo',src:'assets/flour/testo_kugla.webp?v=2',key:'testo_kugla',nx:8,ny:8,ax:.5,ar:1,size:1.15,pins:[3,4],grav:3400,damp:.985,pull:.0015,mass:2.2,flutter:0,grow:.085,iters:6}
+  krpa:{id:'kal_krpa',src:'assets/calibration_props/krpa/krpa_ruka.webp?v=1',key:'krpa',nx:12,ny:18,ax:.53,ar:361/640,size:2.4,pins:null,grav:1300,damp:.994,pull:.012,mass:2.4,flutter:.45,grow:0,iters:8,bend:.78,sep:.75,follow:11},
+  testo:{id:'kal_testo_naraslo',src:'assets/flour/testo_kugla.webp?v=2',key:'testo_kugla',nx:8,ny:8,ax:.5,ar:1,size:1.15,pins:[3,4],grav:3400,damp:.985,pull:.0015,mass:2.2,flutter:0,grow:.085,iters:6,bend:0,sep:0,follow:0}
 };
-var NX=8,NY=12,K=KINDS.krpa,AX=.53,AR=361/640,ID=K.id,img=new Image(),imgs={};
+var NX=12,NY=18,K=KINDS.krpa,AX=.53,AR=361/640,ID=K.id,img=new Image(),imgs={};
 Object.keys(KINDS).forEach(function(k){var i=new Image();i.src=KINDS[k].src;imgs[k]=i;});img=imgs.krpa;
 var css=document.createElement('style');css.textContent='body.krpa-held .placement-ghost{clip-path:inset(50%)!important}#clothLayer{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2147482000}';
 document.head.appendChild(css);
-var mx=innerWidth/2,my=innerHeight/2,cv=null,cx=null,P=null,H=0,last=0,anim=null,lastMX=0,lastMY=0,on=false,kname='krpa',age=0,spd=0,tm=0,warned=false;
+var mx=innerWidth/2,my=innerHeight/2,cv=null,cx=null,P=null,H=0,last=0,anim=null,lastMX=0,lastMY=0,on=false,kname='krpa',age=0,spd=0,tm=0,warned=false,sax=0,say=0,sepN=0;
 window.addEventListener('pointermove',function(e){mx=e.clientX;my=e.clientY;},true);
 function held(){
   if(typeof holding==='undefined'||!holding||!holding.dataset)return null;
@@ -30,9 +30,9 @@ function build(ax,ay,h){
   H=h;var Wc=h*AR,pts=[],i,j;
   for(j=0;j<NY;j++)for(i=0;i<NX;i++){var rx=(i/(NX-1)-AX)*Wc,ry=j/(NY-1)*h,vv=j/(NY-1);pts.push({x:ax+rx,y:ay+ry,px:ax+rx,py:ay+ry,rx:rx,ry:ry,pin:j===0&&(!K.pins||K.pins.indexOf(i)>=0),m:1+K.mass*vv*vv,col:i,row:j});}
   age=0;warned=false;
-  var st=[];function add(a,b){var A=pts[a],B=pts[b];st.push([a,b,Math.hypot(A.rx-B.rx,A.ry-B.ry),B.rx-A.rx,B.ry-A.ry]);}
-  for(j=0;j<NY;j++)for(i=0;i<NX;i++){var k=j*NX+i;if(i<NX-1)add(k,k+1);if(j<NY-1)add(k,k+NX);if(i<NX-1&&j<NY-1){add(k,k+NX+1);add(k+1,k+NX);}if(i<NX-2)add(k,k+2);if(j<NY-2)add(k,k+2*NX);}
-  P={pts:pts,st:st};
+  var st=[];function add(a,b,t){var A=pts[a],B=pts[b];st.push([a,b,Math.hypot(A.rx-B.rx,A.ry-B.ry),B.rx-A.rx,B.ry-A.ry,t||0]);}
+  for(j=0;j<NY;j++)for(i=0;i<NX;i++){var k=j*NX+i;if(i<NX-1)add(k,k+1);if(j<NY-1)add(k,k+NX);if(i<NX-1&&j<NY-1){add(k,k+NX+1);add(k+1,k+NX);}if(i<NX-2)add(k,k+2,1);if(j<NY-2)add(k,k+2*NX,1);if(i<NX-3)add(k,k+3,1);if(j<NY-3)add(k,k+3*NX,1);}
+  P={pts:pts,st:st,cell:Math.min(Wc/(NX-1),h/(NY-1))};sax=ax;say=ay;
 }
 function layer(){
   if(cv&&cv.isConnected)return;
@@ -42,7 +42,7 @@ function step(ax,ay,dt){
   var pts=P.pts,k,g=K.grav*dt*dt,i,sc=1+Math.min(1.3,age*K.grow),sq=1/Math.sqrt(sc),wind=K.flutter*(260+Math.min(1400,spd)*.9)*dt*dt;
   for(k=0;k<pts.length;k++){var p=pts[k],v=p.row/(NY-1);
     if(p.pin){p.px=p.x;p.py=p.y;p.x=ax+p.rx;p.y=ay+p.ry;continue;}
-    var vx=(p.x-p.px)*K.damp,vy=(p.y-p.py)*K.damp;p.px=p.x;p.py=p.y;p.x+=vx;p.y+=vy+g;
+    var vx=(p.x-p.px)*K.damp,vy=(p.y-p.py)*K.damp,vm=Math.hypot(vx,vy),vc=P.cell*1.4;if(vm>vc){vx*=vc/vm;vy*=vc/vm;}      // no point runs more than a little in one stepp.px=p.x;p.py=p.y;p.x+=vx;p.y+=vy+g;
     if(wind){var ph=tm*3.3+p.col*.75+p.row*.55;p.x+=Math.sin(ph)*wind*v;p.y-=Math.cos(ph*.8+1)*wind*.35*v;}      // the air: the cloth flutters, more when it is moved fast
     var pull=K.pull*(1-v*.75);p.x+=(ax+p.rx-p.x)*pull;if(!K.grow)p.y+=(ay+p.ry-p.y)*pull*.5;      // a weak pull back to the picture (stronger near the hand)
   }
@@ -50,8 +50,18 @@ function step(ax,ay,dt){
     var s=P.st[k],A=pts[s[0]],B=pts[s[1]],dx=B.x-A.x,dy=B.y-A.y,d=Math.hypot(dx,dy)||.0001,wa=A.pin?0:1/A.m,wb=B.pin?0:1/B.m,sm=wa+wb,L=s[2];
     if(!sm)continue;
     if(K.grow)L=Math.hypot(s[3]*sq,s[4]*sc);      // the dough is pulled by its own weight: it gets longer and thinner (the volume stays)
-    var cr=(d-L)/d/sm;
+    if(s[5]&&K.bend&&d>=L*K.bend)continue;      // a bend stick only stops the cloth from folding too sharply (it does not hold it stretched)
+    var cr=(s[5]&&K.bend?(d-L*K.bend):(d-L))/d/sm;
     A.x+=dx*cr*wa;A.y+=dy*cr*wa;B.x-=dx*cr*wb;B.y-=dy*cr*wb;
+  }
+  if(K.sep&&(sepN++&1)){      // (every second step is enough) the points that are not neighbours do not go into each other: the cloth folds in soft layers, it does not crumple into a knot
+    var md=P.cell*K.sep,n=pts.length,a,b;
+    for(a=0;a<n;a++){var A2=pts[a];for(b=a+1;b<n;b++){var B2=pts[b];
+      if(Math.abs(A2.col-B2.col)<=2&&Math.abs(A2.row-B2.row)<=2)continue;
+      var ddx=B2.x-A2.x;if(ddx>md||ddx<-md)continue;var ddy=B2.y-A2.y;if(ddy>md||ddy<-md)continue;
+      var dd=Math.hypot(ddx,ddy);if(dd>=md||dd<.0001)continue;
+      var w1=A2.pin?0:1/A2.m,w2=B2.pin?0:1/B2.m,ws=w1+w2;if(!ws)continue;var pc=(md-dd)/dd*.5/ws;
+      A2.x-=ddx*pc*w1;A2.y-=ddy*pc*w1;B2.x+=ddx*pc*w2;B2.y+=ddy*pc*w2;}}
   }
 }
 function tri(c,x0,y0,x1,y1,x2,y2,u0,v0,u1,v1,u2,v2){
@@ -98,6 +108,8 @@ function tick(now){
   if(cv.width!==innerWidth||cv.height!==innerHeight){cv.width=innerWidth;cv.height=innerHeight;}
   spd=spd*.85+Math.hypot(ax-lastMX,ay-lastMY)/Math.max(.008,dt)*.15;lastMX=ax;lastMY=ay;tm+=dt;age+=dt;
   if(K.grow&&!warned&&age>5){warned=true;try{showToast('Testo se razvlači, spusti ga na sto!');}catch(e){}}
+  if(K.follow&&!anim){sax+=(ax-sax)*Math.min(1,dt*K.follow);say+=(ay-say)*Math.min(1,dt*K.follow);ax=sax;ay=say;}      // the hand pulls the cloth softly, a quick flick of the mouse does not whip it
+  else{sax=ax;say=ay;}
   step(ax,ay,1/120);step(ax,ay,1/120);
   draw(alpha);
 }
