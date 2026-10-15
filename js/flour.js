@@ -79,7 +79,7 @@ var ST_TXT={flour:'brašno',water:'voda',dry:'suvo, dodaj vode',good:'dobro test
 function drawTrough(e){
   var D=doughState(e),n=D.F;
   if(!e._lbl||!e._lbl.isConnected){var l=document.createElement('div');l.className='dough-lbl';l.style.cssText='position:absolute;left:50%;top:-4%;transform:translate(-50%,-100%);font:700 10px/1.1 system-ui,sans-serif;color:#fff;text-shadow:0 0 3px #000,0 1px 2px #000;white-space:nowrap;pointer-events:none;z-index:6;text-align:center';e.appendChild(l);e._lbl=l;}
-  e._lbl.textContent=D.st==='empty'?'':(ST_TXT[D.st]+'  ·  brašno '+Math.round(D.F)+' · voda '+Math.round(D.W));
+  e._lbl.textContent=D.st==='empty'?'':(ST_TXT[D.st]+(D.st==='good'?'  ·  umešeno '+Math.round(Math.min(1,+e.dataset.inMix||0)*100)+'%':'')+'  ·  brašno '+Math.round(D.F)+' · voda '+Math.round(D.W));
   e._lbl.style.color=D.st==='good'?'#bff5b8':(D.st==='dry'||D.st==='wet'?'#ffd48a':'#fff');
   if(D.W>0&&(!e._wt||!e._wt.isConnected)){
     var wcl=document.createElement('div');wcl.style.cssText='position:absolute;left:'+INNER.l+'%;top:'+INNER.t+'%;width:'+(INNER.r-INNER.l)+'%;height:'+(INNER.b-INNER.t)+'%;border-radius:38% / 18%;overflow:hidden;pointer-events:none;z-index:2';
@@ -119,11 +119,11 @@ function drawTrough(e){
       im.className='dough-img';im.style.cssText='position:absolute;left:50%;top:46%;height:'+q[1]+'%;width:auto;transform:translate(-50%,-50%);opacity:0;display:none';dg.appendChild(im);e._dl[q[0]]=im;});
     e.appendChild(dw);e._dw=dw;e._dg=dg;
   }
-  var wetF=D.W>=1&&D.F>=3,stage=mx<1?0:1,meshOn=false;      // stages: 0 wet flour (7 s of kneading), 1 the dough (it first appears stretched)
+  var wetF=D.W>=1&&D.F>=3,stage=mx>=1?5:Math.min(4,Math.floor(mx*5)),meshOn=false;      // 5 phases of the mixing, 4 s of kneading each (20 s), then 5 = the whole ball
   if(window.CooksterDoughMesh){if(wetF)meshOn=CooksterDoughMesh.setStage(e,stage,D.F,mx);else CooksterDoughMesh.hide(e);}
   // reserve (when WebGL is not there): the plain pictures
   e._o={kugla:0};
-  setO(e._dl.smesa,(wetF&&!meshOn&&stage===0)?1:0);setO(e._dl.grudve,0);setO(e._dl.razvuceno,(wetF&&!meshOn&&stage===1)?1:0);setO(e._dl.kugla,0);
+  setO(e._dl.smesa,(wetF&&!meshOn&&stage<=3)?1:0);setO(e._dl.grudve,0);setO(e._dl.razvuceno,(wetF&&!meshOn&&stage>=4)?1:0);setO(e._dl.kugla,0);
   e._dl.smesa.style.height=(48+Math.min(1,D.F/200)*16)+'%';      // the wet flour fills the opening like the flour did (it grows with the amount of the flour)
   return;
   if(!e._fl||!e._fl.isConnected){
@@ -295,7 +295,6 @@ window.addEventListener('pointerdown',function(e){
   if(D.st==='wet'){try{showToast('Previše je meko, dodaj još brašna.');}catch(x){}}
   mixP={tr:tr,x:e.clientX,y:e.clientY,t:performance.now()};
   try{CooksterDoughMesh.grab(tr,e.clientX,e.clientY);}catch(x){}
-  camIn(tr);
   knMove(tr,e,0,0,true);
 },true);
 /* The kneading hand, drawn in code (no video): it follows the mouse inside the opening of the trough and presses the dough; every bit of movement kneads (up-down counts fully, left-right a quarter), so going up-down-up-down gets to the end. The dough picture is pushed a little by the hand and a puff of flour rises now and then. */
@@ -313,8 +312,9 @@ function knLayer(tr){
   w.appendChild(h);tr.appendChild(w);tr._kn=h;tr._kw=w;return h;
 }
 /* the hand is smeared with the dough while the dough is wet and gets cleaner as it is kneaded: the clean hand is always below, the little smeared one over it and the very smeared one over that */
-function knDress(h,pressed,v){
-  var oM=Math.min(1,Math.max(0,(v-.05)*2.2)),oV=Math.max(0,Math.min(1,(v-.45)*2.4)),p=pressed?1:0;
+function knDress(h,pressed,T,wet){
+  var oM=0,oV=0,p=pressed?1:0;
+  if(wet&&T>=3){oM=Math.min(1,(T-3)*2.5);oV=T<10?Math.min(1,(T-3)*2.5):Math.max(0,1-(T-10)*1.6);}      // clean for the first 3 s, then the most smeared hand, from 10 s the less smeared one to the end
   [['c',1],['m',oM],['v',oV]].forEach(function(L){h._I[L[0]+'0'].style.opacity=String(p?0:L[1]);h._I[L[0]+'1'].style.opacity=String(p?L[1]:0);});
   h._I.c0.style.opacity=p?'0':'1';h._I.c1.style.opacity=p?'1':'0';
 }
@@ -335,7 +335,7 @@ function knMove(tr,e,vx,vy,shaping){
   var h=knLayer(tr),r=tr.getBoundingClientRect(),k=r.width/(tr.offsetWidth||1)||1,W=tr.offsetWidth,H=tr.offsetHeight;
   var px=Math.max(W*(INNER.l+12)/100,Math.min(W*(INNER.r-12)/100,(e.clientX-r.left)/k)),py=Math.max(H*INNER.t/100+W*.62*.93*.9,Math.min(H*(INNER.b-2)/100,(e.clientY-r.top)/k));   // the fingers stay inside the opening
   var hw=W*.62,hh=hw*4200/420,rot=Math.max(-12,Math.min(12,vx*.5)),sc=1-Math.max(-.05,Math.min(.05,vy*.003));
-  if(vy>1.5)h._pt=performance.now();var pr=(performance.now()-(h._pt||0)<160),mxv=+tr.dataset.inMix||0,stg=doughState(tr);knDress(h,pr,(stg.W>=1&&stg.F>=3)?Math.max(0,1-mxv):0);   // the pressed hand while it goes down
+  if(vy>1.5)h._pt=performance.now();var pr=(performance.now()-(h._pt||0)<160),mxv=+tr.dataset.inMix||0,stg=doughState(tr);knDress(h,pr,mxv*20,stg.W>=1&&stg.F>=3);   // the pressed hand while it goes down
   h.style.opacity='1';h.style.transform='translate('+(px-hw*.49)+'px,'+(py-hh*.0952)+'px) rotate('+rot+'deg) scale('+sc+')';
   // the end of the arm goes behind the squares at the bottom of the screen (the bar with the vessels): the window of the hand ends in the middle of the bar when the arm is over it
   try{var bs=document.querySelectorAll('.cookster-bottom-button'),bl=1e9,brr=-1e9,bt=1e9,bb2=-1e9,q;
@@ -344,12 +344,13 @@ function knMove(tr,e,vx,vy,shaping){
     if(tr._kw)tr._kw.style.clipPath='polygon('+INNER.l+'% '+INNER.t+'%,'+INNER.r+'% '+INNER.t+'%,'+INNER.r+'% '+lp+'%,'+INNER.l+'% '+lp+'%)';}catch(x){}
   if(!shaping)knStretch(tr,vy,vx);
   var now=performance.now();
-  if(now-(tr._puff||0)>260&&Math.abs(vy)+Math.abs(vx)>3){tr._puff=now;
-    var c=document.createElement('div'),sz=12+Math.random()*10;
-    c.style.cssText='position:absolute;left:'+(px-sz/2+(Math.random()-.5)*18)+'px;top:'+(py-sz/2+(Math.random()-.5)*14)+'px;width:'+sz+'px;height:'+sz*.7+'px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,252,244,.85),rgba(255,250,240,0) 70%);filter:blur(1.5px);pointer-events:none;z-index:8';
-    dustTrough(tr,6);
+  var mxk=+tr.dataset.inMix||0,ph=Math.min(5,Math.floor(mxk*5)),kf=[1,1,.95,.6,.25,0][ph];      // the flour in the air is strong in the first phases and stops only when the dough is mixed
+  if(kf>0&&now-(tr._puff||0)>110&&Math.abs(vy)+Math.abs(vx)>3){tr._puff=now;
+    var c=document.createElement('div'),sz=(30+Math.random()*34)*(.6+.4*kf);
+    c.style.cssText='position:absolute;left:'+(px-sz/2+(Math.random()-.5)*18)+'px;top:'+(py-sz/2+(Math.random()-.5)*14)+'px;width:'+sz+'px;height:'+sz*.75+'px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,253,247,.9),rgba(255,250,240,0) 70%);filter:blur(1.5px);pointer-events:none;z-index:8';
+    dustTrough(tr,Math.round(12*kf));
     // the specks of flour that are torn off the dough while it is pulled: they fall to the dough and to the table
-    var nS=Math.min(5,1+Math.floor((Math.abs(vy)+Math.abs(vx))/9));
+    var nS=Math.round(Math.min(11,2+Math.floor((Math.abs(vy)+Math.abs(vx))/5))*kf);
     for(var q=0;q<nS;q++){
       var sp=document.createElement('i'),sx=px+(Math.random()-.5)*34,sy=py+(Math.random()-.5)*30,sz=1.2+Math.random()*2;
       sp.style.cssText='position:absolute;left:'+sx+'px;top:'+sy+'px;width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:#fbf6ea;pointer-events:none;z-index:8;opacity:.9';
@@ -357,7 +358,7 @@ function knMove(tr,e,vx,vy,shaping){
       var an=sp.animate([{transform:'translate(0,0)',opacity:.9},{transform:'translate('+((Math.random()-.5)*14)+'px,'+(10+Math.random()*26)+'px)',opacity:0}],{duration:520+Math.random()*420,easing:'cubic-bezier(.3,.1,.7,1)',fill:'forwards'});
       an.onfinish=(function(el){return function(){el.remove();};})(sp);
     }
-    tr.appendChild(c);var a=c.animate([{opacity:.9,transform:'scale(.5)'},{opacity:0,transform:'translateY(-14px) scale(1.7)'}],{duration:700,fill:'forwards'});a.onfinish=function(){c.remove();};}
+    tr.appendChild(c);var a=c.animate([{opacity:.75*kf+.15,transform:'translateY(0) scale(.5)'},{opacity:.5*kf,transform:'translateY(-22px) scale(1.5)',offset:.5},{opacity:0,transform:'translateY(-46px) scale(2.3)'}],{duration:1500,fill:'forwards'});a.onfinish=function(){c.remove();};}
 }
 window.addEventListener('pointermove',function(e){
   if(!mixP)return;var vy=e.clientY-mixP.y,vx=e.clientX-mixP.x,d=Math.hypot(vx,vy),tr=mixP.tr;mixP.x=e.clientX;mixP.y=e.clientY;
@@ -366,8 +367,8 @@ window.addEventListener('pointermove',function(e){
   var D=doughState(tr);
   if(D.st!=='good'){tr.dataset.inMix=String(Math.max(0,(+tr.dataset.inMix||0)-d/6000));drawTrough(tr);knMove(tr,e,vx,vy,true);return;}
   if(d>1.5){            // after 7 seconds of kneading (only while the mouse moves) the wet flour becomes the dough
-    var was=+tr.dataset.inMix||0,T=Math.min(7,was*7+dt),nm=T/7;
-    if(nm>=1&&was<1){try{showToast('Testo je zamešeno. Oblikuj ga rukom u loptu.');}catch(x){}}
+    var was=+tr.dataset.inMix||0,T=Math.min(20,was*20+dt),nm=T/20;
+    if(nm>=1&&was<1){try{showToast('Testo je umešeno 100%. Oblikuj ga rukom.');}catch(x){}}
     tr.dataset.inMix=String(nm);drawTrough(tr);
   }
   knMove(tr,e,vx,vy,true);
