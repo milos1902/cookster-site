@@ -6655,7 +6655,8 @@ function ghostKeyFor(el){
    el.querySelector('.body')?.getAttribute('src')||'',
    el.dataset.cutState||'',
    el.dataset.count||'',
-   el.dataset.water||'',el.dataset.dirt||'',
+   // while the pitcher is being poured the water goes down every frame: the carry copy is rebuilt only for every 5% (not 60 times a second)
+   el.dataset.pourLock==='1'?String(Math.round((+el.dataset.water||0)*20)):(el.dataset.water||''),el.dataset.dirt||'',
    renderedContents??(el.dataset.panContents||''),
    renderedContents??(el.dataset.containerContents||''),
    el.classList.contains('open')?'open':'closed'
@@ -6697,7 +6698,7 @@ function fillGhostContainer(container,el){
     // a picture that is loaded may still be undecoded (after a long game the browser throws decoded pictures away): decode it before the real object is hidden
     const dec=[...copy.querySelectorAll('img')].filter(i=>i.complete&&i.naturalWidth>0&&i.decode).map(i=>i.decode().catch(()=>{}));
     container._pendingN=(container._pendingN||0)+1;const tok=container._pendingN;
-    if((wait.length||dec.length)&&container===placementGhost&&el===holding&&el.dataset.fixedGrinder!=='1'&&!isQuickToolItem(el)){
+    if((wait.length||dec.length)&&container===placementGhost&&el===holding&&el.dataset.fixedGrinder!=='1'&&el.dataset.pourLock!=='1'&&!isQuickToolItem(el)){
       el.style.visibility='';
       Promise.all([...dec,...wait.map(i=>new Promise(r=>{i.addEventListener('load',r,{once:true});i.addEventListener('error',r,{once:true});setTimeout(r,2000);}))]).then(()=>{
         if(container._pendingN===tok&&holding===el)el.style.visibility='hidden';
