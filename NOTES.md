@@ -658,3 +658,10 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - U sudoperi dugme "🧹 Isprazni sudoperu" (pita za potvrdu) briše sve što je u njoj, jer posle pada stranice stari bokali ostanu sačuvani (`cookster.sink-items.v1`).
 - Zadržano kako je bilo (tvoje kalibracije): definicija bokala, njegova mesta/veličina u sudoperi, voda samo u ustima bokala, procenti.
 - Provereno slikom iz pregledača: tokom sipanja jedan nagnut bokal, voda u naćvama raste, sudopera ima jedan bokal, dugme prazni sudoperu, mešenje radi, bez grešaka. Nije provereno: telefon.
+
+## Lepša animacija sipanja vode, voda u naćvama, brašno na stolu, vreća (2026-10-15, pitcher-pour.js?v=3, flour.js?v=39)
+- Mlaz iz bokala se crta na platnu: vijugav mlaz koji se sužava, sa pokretnim odsjajem, kapi sa strane, prskanje i krugovi koji se šire po vodi u naćvama.
+- Voda u naćvama je svetla (belja) i raste od male lokve do najviše pola naćvi (ne do ivica), bez animacije iz šerpi (probano i odbačeno na zahtev).
+- Brašno na stolu: dok se sipa brašno i dok se mesi, oko naćvi se na stolu pojavljuju bele mrlje i zrnca (platno `z-index:30`, iznad slike stola, ispod predmeta); ne čuva se, posle osvežavanja je sto čist.
+- Vreća brašna: preskače srednju sliku nagiba, odmah ide na sliku sipanja.
+- Slike testa bez naćvi (4 komada, razvlačenje) stigle su samo umetnute u poruku, ne kao fajlovi, pa nisu ugrađene.

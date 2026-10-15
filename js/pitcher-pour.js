@@ -13,9 +13,7 @@ var css=document.createElement('style');
 css.textContent='body.pitcher-pouring .placement-ghost{clip-path:inset(50%)!important}'+
  '#ppLayer{position:fixed;left:0;top:0;width:0;height:0;pointer-events:none;z-index:2147483000}'+
  '#ppLayer img{position:absolute;transform-origin:30% 15%;transition:transform .22s ease;user-select:none;-webkit-user-drag:none}'+
- '#ppLayer .pp-stream{position:absolute;width:4px;margin-left:-2px;border-radius:2px;background:repeating-linear-gradient(180deg,rgba(214,238,252,.95) 0 7px,rgba(150,205,235,.8) 7px 13px);background-size:100% 13px;animation:ppflow .35s linear infinite;box-shadow:0 0 3px rgba(255,255,255,.6)}'+
- '#ppLayer .pp-rip{position:absolute;width:26px;height:10px;margin:-5px 0 0 -13px;border:1.5px solid rgba(215,238,250,.9);border-radius:50%;animation:pprip .7s ease-out infinite}'+
- '@keyframes ppflow{to{background-position:0 13px}}@keyframes pprip{from{transform:scale(.3);opacity:.9}to{transform:scale(2.2);opacity:0}}';
+ '#ppLayer canvas{position:fixed;left:0;top:0;pointer-events:none}';
 document.head.appendChild(css);
 function held(){return typeof holding!=='undefined'?holding:null;}
 function isPitcher(el){return !!el&&el.dataset&&el.dataset.itemId===ID;}
@@ -26,9 +24,8 @@ function layer(){var l=document.getElementById('ppLayer');if(!l){l=document.crea
 function start(el,tr){
   var g=typeof placementGhost!=='undefined'?placementGhost:null,gr=g&&g.getBoundingClientRect(),W=(gr&&gr.width)||el.getBoundingClientRect().width||150;
   var L=layer(),img=document.createElement('img');img.src=PIC;img.draggable=false;img.style.width=W+'px';img.style.height=W+'px';
-  var st=document.createElement('div');st.className='pp-stream';var rp=document.createElement('div');rp.className='pp-rip';
-  L.appendChild(st);L.appendChild(rp);L.appendChild(img);
-  pour={el:el,tr:tr,W:W,img:img,stream:st,rip:rp,level:+el.dataset.water||0,used:0,last:performance.now(),acc:0,tilted:false};
+  var cv=document.createElement('canvas');cv.width=innerWidth;cv.height=innerHeight;L.appendChild(cv);L.appendChild(img);
+  pour={el:el,tr:tr,W:W,img:img,cv:cv,cx:cv.getContext('2d'),parts:[],sx:0,sy:0,ly:0,t:0,level:+el.dataset.water||0,used:0,last:performance.now(),acc:0,tilted:false,dropAt:0};
   document.body.classList.add('pitcher-pouring');
   try{if(typeof playImpactSound==='function')playImpactSound(el,'pour');}catch(e){}
   place();requestAnimationFrame(frame);
@@ -38,9 +35,44 @@ function place(){
   var x=mouse.x,y=mouse.y;                                     // the tip of the spout is at the mouse
   p.img.style.left=(x-SPOUT_X*p.W)+'px';p.img.style.top=(y-SPOUT_Y*p.W)+'px';
   if(!p.tilted){p.tilted=true;requestAnimationFrame(function(){if(pour===p)p.img.style.transform='rotate('+TILT+'deg)';});}
-  var tr=p.tr,r=tr.getBoundingClientRect(),surf=r.top+r.height*.55,h=Math.max(8,surf-y);
-  p.stream.style.left=x+'px';p.stream.style.top=y+'px';p.stream.style.height=h+'px';
-  p.rip.style.left=x+'px';p.rip.style.top=surf+'px';
+  var r=p.tr.getBoundingClientRect();p.sx=x;p.sy=y;p.ly=Math.max(y+10,r.top+r.height*.55);
+}
+/* the picture of the water: a stream that thins and wobbles with a moving shine, drops beside it, a splash and rings on the water of the trough */
+function draw(p,dt){
+  var c=p.cx;c.clearRect(0,0,p.cv.width,p.cv.height);
+  if(!p.img.style.transform)return;
+  p.t+=dt;var t=p.t,sx=p.sx,sy=p.sy,ly=p.ly,H=ly-sy,i,y,k;
+  var grow=Math.min(1,t/.35);                                   // the stream grows out of the spout
+  var yEnd=sy+H*grow;
+  // the stream: a thin body that gets narrower while it falls
+  var step=5,L=[],R=[],C=[];
+  for(y=sy;y<=yEnd;y+=step){
+    var f=(y-sy)/Math.max(1,H),w=(5.4-2*f)*(1+.1*Math.sin(y*.11-t*22)),x=sx+Math.sin(y*.045-t*9)*.7*f;
+    L.push([x-w/2,y]);R.push([x+w/2,y]);C.push([x,y]);
+  }
+  if(L.length>1){
+    c.save();c.shadowColor='rgba(120,185,225,.55)';c.shadowBlur=5;
+    c.beginPath();c.moveTo(L[0][0],L[0][1]);for(i=1;i<L.length;i++)c.lineTo(L[i][0],L[i][1]);for(i=R.length-1;i>=0;i--)c.lineTo(R[i][0],R[i][1]);c.closePath();
+    var g=c.createLinearGradient(sx-4,0,sx+4,0);g.addColorStop(0,'rgba(150,200,232,.78)');g.addColorStop(.45,'rgba(225,244,255,.92)');g.addColorStop(1,'rgba(120,175,215,.78)');
+    c.fillStyle=g;c.fill();c.restore();
+    // the shine: short bright streaks that run down
+    c.save();c.lineCap='round';c.strokeStyle='rgba(255,255,255,.85)';c.lineWidth=1.2;c.setLineDash([9,16]);c.lineDashOffset=-t*210;
+    c.beginPath();c.moveTo(C[0][0]-.8,C[0][1]);for(i=1;i<C.length;i++)c.lineTo(C[i][0]-.8,C[i][1]);c.stroke();c.restore();
+    // the drop that hangs at the lip of the spout
+    c.beginPath();c.ellipse(sx,sy+1,3.4,3,0,0,7);c.fillStyle='rgba(205,236,252,.95)';c.fill();
+  }
+  // drops that jump off the stream and fall beside it
+  if(t-p.dropAt>.06&&p.parts.length<70){p.dropAt=t;var dy=sy+H*(.2+Math.random()*.7);p.parts.push({k:0,x:sx+(Math.random()-.5)*6,y:dy,vx:(Math.random()-.5)*26,vy:40+Math.random()*60,life:.55,r:1+Math.random()*.9});}
+  // the splash where it lands: small drops jump up and fall back
+  if(grow>=1&&p.parts.length<70){for(k=0;k<2;k++)p.parts.push({k:1,x:sx+(Math.random()-.5)*8,y:ly,vx:(Math.random()-.5)*95,vy:-(70+Math.random()*120),life:.5,r:1.1+Math.random()*1.3});}
+  for(i=p.parts.length-1;i>=0;i--){
+    var q=p.parts[i];q.life-=dt;if(q.life<=0){p.parts.splice(i,1);continue;}
+    q.vy+=620*dt;q.x+=q.vx*dt;q.y+=q.vy*dt;
+    c.globalAlpha=Math.min(1,q.life*2.2)*(q.k?.9:.7);c.fillStyle='rgb(222,243,255)';c.beginPath();c.arc(q.x,q.y,q.r,0,7);c.fill();
+  }
+  c.globalAlpha=1;
+  // rings on the water of the trough
+  if(grow>=1){for(k=0;k<3;k++){var ph=(t*1.5+k/3)%1,rx=6+38*ph;c.globalAlpha=(1-ph)*.75;c.strokeStyle='rgba(225,244,255,1)';c.lineWidth=1.4*(1-ph*.5);c.beginPath();c.ellipse(sx,ly,rx,rx*.36,0,0,7);c.stroke();}c.globalAlpha=1;}
 }
 function frame(now){
   var p=pour;if(!p)return;
@@ -54,7 +86,7 @@ function frame(now){
     if(p.acc>=1){try{CooksterFlour.addWater(tr,p.acc);}catch(e){}p.acc=0;}
   }
   if(p.used>=p.level-.0005){try{showToast('Bokal je prazan.');}catch(e){}stop();return;}
-  place();requestAnimationFrame(frame);
+  place();draw(p,dt);requestAnimationFrame(frame);
 }
 function stop(){
   var p=pour;if(!p)return;pour=null;
