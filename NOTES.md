@@ -585,3 +585,27 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Naćve i brašno u njima (2026-10-14, flour.js?v=5, game.js?v=3.124)
 - Novi predmet `nacve` (slika korisnika `assets/flour/nacve.webp`, 105x196, stavlja se na sto). Kad mlaz brašna padne na otvor naćvi (`INNER` procenti slike), brašno ide u naćve (`dataset.inFlour`, do 300, čuva se u snimku) i vidi se kao gomila unutar otvora (isečena na ivice, tri slike gomile prema količini); inače pada na sto kao ranije.
 - Sledeće: voda iz bokala u naćve, kvasac, mešenje, krpa, rast testa.
+
+## Testo u naćvama: odnos vode i brašna, sipanje vode (2026-10-14, flour.js?v=6, game.js?v=3.125) — u izradi
+- `doughState`: odnos voda/brašno; suvo < 0.45, dobro 0.45–0.8, meko > 0.8 (natpis iznad naćvi, "dodaj vode" / "dodaj brašna"). Bokal levim tasterom iznad naćvi sipa vodu u `inWater`. Sipanje vode nije proverano. Slike naćvi sa brašnom/vodom još nisu ubačene.
+
+## Naćve: slike sa brašnom (2026-10-14, flour.js?v=7)
+- Slika naćvi se menja prema količini brašna: prazna / manje (<120) / više brašna (`assets/flour/nacve_brasno1/2.webp`). Slike sa vodom (brašno+voda) još nisu stigle kao fajlovi.
+
+## Naćve: slika se pojavljuje iza oblaka brašna (2026-10-14, flour.js?v=8)
+- Pri promeni slike naćvi stara se otapa 1.5 s iza 7 oblačića prašine brašna, pa se pojavi nova (nema naglog skoka). Stigla je i slika mesa/testa (mešano testo), još nije ubačena (nije stigla kao fajl).
+
+## Naćve: slika testa (2026-10-14, flour.js?v=9)
+- Kad je odnos vode i brašna dobar (`good`), naćve prikazuju sliku testa (`assets/flour/nacve_testo.webp`, korisnikova). Slike za suvo/meko sa vodom još nisu stigle.
+
+## Testo se dobija mešanjem, ne pojavom iza oblaka (2026-10-14, flour.js?v=10, game.js?v=3.126)
+- Slika testa se više ne pojavljuje iza oblaka brašna (brašno se tada ne sipa). Sa drvenom kašikom u ruci (`isStirSpoon`), držeći levi taster i krećući miš iznad naćvi, `inMix` raste (oko 2400 px kretanja = 100%), a slika testa se postepeno ulije (providnost = mešanje). Ako odnos nije dobar, mešanje ne napreduje i poruka kaže "suvo, dodaj vode" ili "previše meko, dodaj brašna".
+- Provera: sa veštačkom zamenom kašike (kašika je brzi alat, nisam je uzeo kroz točak) mešanje stiže do 1.
+
+## Mešanje rukom (2026-10-14, flour.js?v=11)
+- Testo se meša rukom, ne kašikom: prazna ruka, levi taster držan i miš kretan iznad naćvi u kojima ima i brašna i vode (inače običan klik uzima naćve). Provereno: 0.33 posle ~70 koraka, 1 na kraju.
+
+## Ruka mesi testo: kadrovi videa prate miša gore-dole (2026-10-15, flour.js?v=12)
+- Iz AI videa (ruka i testo na zelenoj pozadini) izvučena su 124 kadra, zelena je izrezana (providno), `assets/flour/knead/k000..k123.webp` (~1.6 MB ukupno). Dok se meša (levi taster, miš iznad naćvi, odnos dobar) preko naćvi se vidi kadar koji odgovara `inMix`. Svako kretanje miša, gore-dole i levo-desno, pomera napredak (vertikalno puno, horizontalno četvrtinu; oko 2200 px = kraj). Na kraju sloj ruke nestaje, ostaje naša slika testa i poruka "Testo je zamešeno."
+- Provereno u pregledaču: kretanje gore-dole stiže do kadra 123, nema grešaka. Nije provereno: izgled kad se naćve pomere ili uvećaju, ni telefon.
+- Poznato: testo u videu "luta" po kadru i ruka je glatka/dečja, pa je ovo probni izgled.
