@@ -568,7 +568,9 @@ body.cutting-active #leftArrow,body.cutting-active #rightArrow{display:none!impo
 .stove-hotspot{position:absolute;border:0;background:transparent;cursor:pointer;border-radius:10px;outline:none;box-shadow:none;z-index:41}
 .stove-hotspot:hover,.stove-hotspot:focus{outline:none;box-shadow:none;background:transparent}
 #fireboxHotspot{left:1258px;top:428px;width:152px;height:190px}
-#ovenHotspot{left:1394px;top:450px;width:185px;height:180px}
+#ovenHotspot{left:1394px;top:450px;width:185px;height:102px}
+#drawerHotspot{left:1394px;top:556px;width:196px;height:84px}
+#ovenDrawerOpen{position:absolute;display:none;left:1384px;top:552px;width:236px;height:154px;z-index:30;pointer-events:none;user-select:none}
 
 
 

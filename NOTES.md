@@ -765,3 +765,10 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Korpa za drva (kasnije gajba) i scena drvarnice (punjenje) su obrisane: predmet `korpa_drva`, `js/wood-refill-scene.js`, `css/wood-refill-scene.css`, markup `#woodSupplyScene`, slike korpe/gajbe i dvorišta, senke korpe u alatu za senke, unos u Kuhinjskim elementima. Stari snimci: korpa se uklanja pri učitavanju (`items.filter(...korpa_drva).forEach(removeItem)`). Ostaje `assets/wood_basket/individual-log.png` (cepanica), `isBasketWoodLog`, `isFirewoodLog` i ubacivanje cepanice u ložište.
 - Drva će se čuvati u fioci ispod rerne (sledeći korak). Ranija logika uzimanja cepanice iz korpe je u istoriji gita (komit `3292aef`, funkcije `spawnHeldWoodBasketLog`, `renderWoodBasket`).
 - Do tada nema izvora cepanica u igri.
+
+## Fioka ispod rerne sa drvima
+- Slika otvorene fioke je isečak sa slike iz ChatGPT-a (`assets/stove_states_v3/drawer_open.webp`, 236×154, meke ivice) preko stare kuhinje na mestu (1384,552). Ostatak kuhinje ostaje stara slika.
+- Klik na zatvorenu fioku je otvara; klik na cepanice u otvorenoj fioci daje cepanicu u ruku (drva se nikad ne prazne); klik na prednju stranu fioke (ručka) je zatvara. Zvuk je zvuk desne fioke stola.
+- Hotspot rerne je skraćen (do y=552) da ne pokriva fioku. Dok je nova slika otvorene rerne nema, otvaranje fioke zatvara rernu i obrnuto.
+- `index.html`: `#ovenDrawerOpen`, `#drawerHotspot`; `game.js?v=3.137`, `game.css?v=2.97`. Funkcije: `setOvenDrawer`, `spawnHeldDrawerLog`, `clickOvenDrawer`.
+- Nije provereno: animacija (fioka se otvara odmah, bez prelaza), telefon, ubacivanje cepanice u ložište iz fioke u celom toku (samo uzimanje).

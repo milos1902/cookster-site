@@ -1609,8 +1609,12 @@ const FIREBOX_BASE_NO_DOOR='assets/stove_states_v3/firebox_base_no_door.webp';
 Object.values({...SCENE_BACKGROUNDS,...DOOR_OVERLAYS}).forEach(src=>{const im=new Image();im.src=src;});
 const COOKSTOVE_HOTSPOTS={
  firebox:{left:1258,right:1410,top:428,bottom:618},
- oven:{left:1394,right:1579,top:450,bottom:630}
+ oven:{left:1394,right:1579,top:450,bottom:552}
 };
+// the wide drawer under the oven: closed it is one small hotspot, open it is the pulled-out drawer (the picture assets/stove_states_v3/drawer_open.webp lies over the kitchen)
+const OVEN_DRAWER_RECT={closed:{left:1394,right:1590,top:556,bottom:640},open:{left:1394,right:1612,top:556,bottom:706}};
+const OVEN_DRAWER_LOGS_BOTTOM=628;   // open drawer: a click above this line takes a log, below it (the front with the handle) closes the drawer
+let ovenDrawerOpen=false;
 const stoveState=CooksterState.stove;
 // One fuel item should provide a meaningful cooking session instead of
 // burning out during a single short interaction.
@@ -1647,6 +1651,7 @@ function pointInSceneRect(pt,r){return pt.x>=r.left&&pt.x<=r.right&&pt.y>=r.top&
 function cookstoveHotspotAt(x,y){
  const p=screenToScene(x,y);
  if(pointInSceneRect(p,COOKSTOVE_HOTSPOTS.firebox))return 'firebox';
+ if(pointInSceneRect(p,ovenDrawerOpen?OVEN_DRAWER_RECT.open:OVEN_DRAWER_RECT.closed))return 'drawer';
  if(pointInSceneRect(p,COOKSTOVE_HOTSPOTS.oven))return 'oven';
  return null;
 }
@@ -1994,8 +1999,43 @@ function toggleCookstoveFirebox(){
  refreshCookstoveHeating(false);updateFireboxEffects();
  showToast(stoveState.fireboxOpen?'Ložište je otvoreno.':'Ložište je zatvoreno.');
 }
+function setOvenDrawer(open){
+ ovenDrawerOpen=!!open;
+ const img=document.getElementById('ovenDrawerOpen'),btn=document.getElementById('drawerHotspot');
+ if(img)img.style.display=ovenDrawerOpen?'block':'none';
+ if(btn){const r=ovenDrawerOpen?OVEN_DRAWER_RECT.open:OVEN_DRAWER_RECT.closed;btn.style.width=(r.right-r.left)+'px';btn.style.height=(r.bottom-r.top)+'px';}
+ playImpactSound(drawerRightSoundTarget,ovenDrawerOpen?'open':'close');
+}
+// a log from the drawer: the wood in the drawer never runs out
+function spawnHeldDrawerLog(pointerEvent=null){
+ if(holding||picking||placing)return false;
+ const logW=112,logH=66;
+ const pt=pointerEvent&&Number.isFinite(pointerEvent.clientX)?screenToScene(pointerEvent.clientX,pointerEvent.clientY):{x:1500,y:590};
+ const loose=makeItem({
+   id:'drvo',instanceId:nextItemInstanceId('drvo'),label:'Cjepanica',
+   src:'assets/wood_basket/individual-log.png',
+   x:pt.x-logW/2-CENTER_OFFSET,y:pt.y+logH/2-logH,w:logW,h:logH,z:++zCounter,
+   shadowProfile:'tiny',snapProfile:'produce'
+ });
+ if(!loose)return false;
+ loose.dataset.firewood='1';
+ loose.dataset.basketWoodLog='1';
+ loose.dataset.collisionProfile='flat';
+ startHolding(loose,pointerEvent);
+ showToast('Uzeo si cjepanicu — ubaci je u ložište.');
+ return true;
+}
+function clickOvenDrawer(e){
+ if(!ovenDrawerOpen){
+  if(stoveState.ovenOpen)toggleCookstoveOven();   // the picture of the open oven door would lie under the drawer: one of them at a time
+  setOvenDrawer(true);return;
+ }
+ const p=screenToScene(e.clientX,e.clientY);
+ if(p.y<OVEN_DRAWER_LOGS_BOTTOM)spawnHeldDrawerLog(e);else setOvenDrawer(false);
+}
 function toggleCookstoveOven(){
  const opening=!stoveState.ovenOpen;
+ if(opening&&ovenDrawerOpen)setOvenDrawer(false);
  stoveState.ovenOpen=opening;
  if(stoveState.ovenOpen)stoveState.fireboxOpen=false;
  // Never fade the entire scene: that old transition temporarily hid every
@@ -15228,6 +15268,7 @@ window.addEventListener('pointerdown',e=>{
  if(e.button===0&&holding&&isFirewoodLog(holding)&&cookstoveHot==='firebox'){if(insertHeldLogIntoFirebox())return;}
  if(e.button===0&&holding&&isDisposableMarketPackaging(holding)&&cookstoveHot==='firebox'){if(insertHeldPackagingIntoFirebox())return;}
 if(e.button===0&&!holding&&cookstoveHot==='firebox'){const action=stoveState.fireboxOpen?'close':'open';toggleCookstoveFirebox();playImpactSound(fireboxHotspot,action);return;}
+if(e.button===0&&!holding&&cookstoveHot==='drawer'){clickOvenDrawer(e);return;}
 if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOpen?'close':'open';toggleCookstoveOven();playImpactSound(ovenHotspot,action);return;}
  if(e.button===0&&!holding&&window.CooksterKitchenFx&&!CooksterKitchenFx.isZoomed()){const kfx=CooksterKitchenFx.hit(e.clientX,e.clientY);if(kfx){CooksterKitchenFx.click(kfx,e);return;}}
  if(e.button===0&&faucetHit(e.clientX,e.clientY)){setFaucet(!faucetOn);return;}
