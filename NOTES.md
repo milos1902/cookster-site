@@ -844,3 +844,9 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Šećer i kvasac se naginju ka naćvama sa strane suprotne od one sa koje dolaze; kvasac se sipa kao zrnca koja padaju.
 - Malo brašna (do 14) u naćvama su mali nanosi (stara slika gomile), ne slika pune naćve.
 - Testo: dok se mesi, pomera se i gornji deo, ne samo donji.
+
+## Dizanje testa (krpa)
+- Novi predmet `kal_krpa` ("Krpa za dizanje testa", slika `assets/calibration_props/krpa/krpa.webp`) u Kuhinjskim elementima. Klik sa krpom u ruci iznad naćvi pokriva testo, ali samo ako je umešeno do kraja (100%). Krpa nestaje iz ruke (`detachHeld`).
+- Pod krpom se testo diže 45 s (`inRise` 0..1) samo sa živim kvascem; bez njega piše "ne diže se · nema živog kvasca". Kad naraste: "skini krpu".
+- Prazna ruka + klik na pokrivene naćve skida krpu; testo (mreža, senka) je veće do 1,45x.
+- Novi ključevi u čuvanju: `inCloth`, `inRise`. Dok je krpa preko, mešenje je isključeno.
