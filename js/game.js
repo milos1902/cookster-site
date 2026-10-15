@@ -4366,6 +4366,10 @@ function createContactShadowLab(){
       id:'market_bag',label:'Kesa sa pijace',src:MARKET_BAG_ASSET,
       w:112,h:112,snapProfile:'flat',shadowProfile:'tiny',category:'market-bag'
     });
+    map.set('testo_lopta',{
+      id:'testo_lopta',label:'Lopta testa (u naćvama)',src:'assets/flour/testo_kugla.webp?v=2',
+      w:90,h:90,snapProfile:'flat',shadowProfile:'tiny',category:'dough-ball'
+    });
     map.set('produce_crate',{
       id:'produce_crate',label:'Gajbica sa povrćem',src:CRATE_STAGE_ASSETS.paradajz.full,
       w:340,h:257,snapProfile:'crate',shadowProfile:'crate',category:'produce-crate'
@@ -4676,6 +4680,8 @@ function createContactShadowLab(){
  };
 }
 // the papers of the orders (kitchen-orders.js) take their shadow from the same master
+// the shadow of the dough ball in the kneading trough (drawn in js/dough-mesh.js with these numbers): the starting values; the tool for the shadows changes them
+if(!contactShadowMaster.items.testo_lopta)contactShadowMaster.items.testo_lopta={itemId:'testo_lopta',label:'Lopta testa (u naćvama)',shadow:{shadowX:0,shadowY:5,width:.95,height:.3,blur:4,opacity:.7,angle:0}};
 window.CooksterContactShadowCfg=id=>{const e=contactShadowMaster.items?.[id];return e&&e.shadow?{...e.shadow}:null;};
 const contactShadowLabDockButton=document.createElement('button');
 contactShadowLabDockButton.type='button';
