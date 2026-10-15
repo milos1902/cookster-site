@@ -735,3 +735,10 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Bez tačkica, sporija vlažna smesa (2026-10-15, dough-mesh.js?v=16)
 - Obrisane su tamne tačkice (tačke koje drže testo) koje su se videle po testu; držanje i dalje radi, samo se ne crta.
 - Dok je smesa vlažna (prva faza), tačke se pomeraju samo malo po koraku koliko god brzo miš ide (držanje kasni za mišem). U probi sa 6 brzih poteza gore-dole od 80 px najveći pomak je 0,045 (testo u drugoj fazi 0,186).
+
+## Pet faza umešanosti, procenat, ruka po vremenu, više brašna, bez zooma (2026-10-15, dough-mesh.js?v=17, flour.js?v=56)
+- Pet faza testa (tvoje slike, isečene u `assets/flour/testo_f1..f5.webp`: faza 1 = slika 4, 2 = slika 5, 3 = slika 1, 4 = slika 2, 5 = slika 3) menjaju se na svake 4 s mešenja (broji se samo dok se miš kreće), ukupno 20 s; pretapanje 3 s. Posle toga ide cela lopta (`testo_kugla`), sa skeletom lopte. Stara međufaza (grudve/razvučeno) je izbačena. U fazama 1 do 4 tačke su lepljive i sporije, a između tih faza tačke ostaju gde su.
+- Natpis iznad naćvi pokazuje "umešeno N%"; 100% = testo je lepo umešano.
+- Ruka: prvih 3 s čista, od 3 s do 10 s najprljavija, od 10 s manje prljava do kraja.
+- Brašno i prašina: više zrnaca (do 11 po koraku) i veći oblak brašna (do ~65 px, diže se 46 px i bledi 1,5 s) dok se meša; jačina je puna do 3. faze, pa opada i staje tek kad se testo umeša (5. faza).
+- Zoom pri mešenju je uklonjen (ostaje samo u alatu za granice).
