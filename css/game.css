@@ -3763,8 +3763,8 @@ body.quick-tool-wheel-open #label{display:none!important}
 /* posuda za kupus sa celom slikom (kupus/paprika): hrana iz sloja se ne crta preko slike */
 .item.bowl-photo-look .vessel-content{display:none!important}
 /* the ring that fills while E is held to peel: only a green line, nothing inside and no text */
-.cut-progress.peel{filter:drop-shadow(0 2px 5px rgba(0,0,0,.35))}
-.cut-progress.peel .ring{background:conic-gradient(#46d45c calc(var(--p,0)*1%), rgba(15,40,20,.35) 0);-webkit-mask:radial-gradient(circle,transparent 0 31px,#000 32px);mask:radial-gradient(circle,transparent 0 31px,#000 32px)}
+.cut-progress.peel{width:40px;height:40px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
+.cut-progress.peel .ring{background:conic-gradient(#4f5f1c calc(var(--p,0)*1%), rgba(22,28,8,.42) 0);-webkit-mask:radial-gradient(circle,transparent 0 15px,#000 16px);mask:radial-gradient(circle,transparent 0 15px,#000 16px)}
 .cut-progress.peel .ring::before,.cut-progress.peel .ring::after,.cut-progress.peel .txt{display:none}
 /* food of a cooking vessel sits above the old front wall (z 6), so the wall mask drawn in the tool "Maska posude" has to be above the food */
 .item:has(>.pan-content) .vessel-front-mask{z-index:8}
