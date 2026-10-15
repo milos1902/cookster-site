@@ -25,10 +25,10 @@
   }
 
   const stageImages = {
-    empty: 'assets/wood_basket/basket-empty.png?v=2.87',
-    low: 'assets/wood_basket/basket-low.png?v=2.87',
-    medium: 'assets/wood_basket/basket-medium.png?v=2.87',
-    full: 'assets/wood_basket/basket-full.png?v=2.87'
+    empty: 'assets/wood_basket/crate-empty.webp?v=1',
+    low: 'assets/wood_basket/crate-medium.webp?v=1',
+    medium: 'assets/wood_basket/crate-medium.webp?v=1',
+    full: 'assets/wood_basket/crate-full.webp?v=1'
   };
   let activeBasket = null;
   let previousVisibility = '';
@@ -117,7 +117,7 @@
       : progress < 4 ? 'medium'
       : 'full';
     basketImage.src = stageImages[stage];
-    basketImage.alt = progress === 4 ? 'Puna korpa za drva' : `Korpa sa ${progress} od 4 cjepanice`;
+    basketImage.alt = progress === 4 ? 'Puna gajba za drva' : `Gajba sa ${progress} od 4 cjepanice`;
     frame.dataset.refillProgress = String(progress);
     frame.dataset.basketStage = stage;
     countOutput.value = `${progress} / 4`;
@@ -159,7 +159,7 @@
     shadow = { ...shadow, ...window.CooksterWoodBasketShadow?.get?.() };
     scalePanel.hidden = true;
     setProgress(0);
-    setMessage('Prevuci cjepanicu sa gomile u korpu. Korpa ostaje na svom mestu.');
+    setMessage('Prevuci cjepanicu sa gomile u gajbu. Gajba ostaje na svom mestu.');
     menu.hidden = true;
     menu.setAttribute('aria-hidden', 'true');
     scene.classList.add('open');
@@ -227,7 +227,7 @@
     if (progress === 4) {
       setMessage('Korpa je puna (4/4). Desni klik na korpu za povratak u kuću.');
     } else {
-      setMessage(`Cjepanica je ubačena. Još ${4 - progress} do pune korpe.`);
+      setMessage(`Cjepanica je ubačena. Još ${4 - progress} do pune gajbe.`);
     }
     setTimeout(() => log.remove(), 260);
     return point;
@@ -286,7 +286,7 @@
       putLogInBasket(action, event.clientX, event.clientY);
     } else {
       action.element.remove();
-      setMessage('Pusti cjepanicu u korpu da je ubaciš.');
+      setMessage('Pusti cjepanicu u gajbu da je ubaciš.');
     }
   });
 
@@ -309,7 +309,7 @@
     setProgress(progress + 1);
     setMessage(progress === 4
       ? 'Korpa je puna (4/4). Desni klik na korpu za povratak u kuću.'
-      : `Cjepanica je ubačena. Još ${4 - progress} do pune korpe.`);
+      : `Cjepanica je ubačena. Još ${4 - progress} do pune gajbe.`);
   });
 
   returnButton.addEventListener('click', leaveScene);

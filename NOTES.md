@@ -760,3 +760,9 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 ## Obrisane stare prečice (špajz i bašta)
 - Mali natpis "špajz →" u kuhinji (`js/pantry-scene.js?v=3.13`) i polje nad cvećem koje je na hover pokazivalo "BAŠTA" (`js/garden.js?v=2`, `css/game.css?v=2.96`) su obrisani. U špajz i baštu se ide preko tabli sa pokazivačima (`signposts.js`).
 - Provereno: kuhinja bez tih elemenata, `CooksterGarden.open()` i `CooksterPantry.open()` rade, nema grešaka u konzoli.
+
+## Gajba za drva umesto korpe
+- Korpa za drva zamenjena gajbom (tri slike: `assets/wood_basket/crate-full|medium|empty.webp`, iste dimenzije 1254×1254, ista ivica; puna i srednja su suzene za 3% da im se desna ivica poklopi sa praznom). Stare `basket-*.png` obrisane.
+- Isti predmet (`korpa_drva`), ista logika: 9 cepanica; 9–6 puna, 5–1 srednja, 0 prazna (`WOOD_BASKET_ASSETS`, `woodBasketStageIndex`). Drvarnica (`wood-refill-scene.js?v=2.94`) koristi srednju sliku i za "malo".
+- Dodata u Kuhinjske elemente (`WOOD_CRATE_DEF`, `game.js?v=3.135`) da može da se kalibriše; tekstovi "korpa" → "gajba".
+- Nije provereno: drvarnica (scena sa gomilom) i njena geometrija nisu probane; telefon.
