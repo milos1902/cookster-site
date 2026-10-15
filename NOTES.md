@@ -716,3 +716,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Dok je testo vlažno (prva faza), tačke koje su gurnute u zid se zalepe: teže se odvajaju od zida, a lepak popušta sa mešenjem (nestaje oko 70% napretka) i sa vučenjem.
 - Pri vučenju testa sa ruke otpadaju sitna zrnca brašna (do 5 po koraku) koja padaju na testo i sto.
 - Provera: u probi su zrnca bila u vazduhu (3), a uz zid su se zalepile 2 tačke; teško je na slici pokazati kako lepak izgleda u pokretu.
+
+## Tvoj nacrt poda i zidova naćvi je podrazumevan (2026-10-15, nacve-bounds.js?v=4)
+- Maska koju si nacrtao (1718 ćelija poda, 1596 ćelija zida, mreža 60 x 114) je ugrađena kao podrazumevana za sve igrače (`DEFMASK`); "Podrazumevano" u alatu je vraća. Ko je već ranije nešto farbao u svom pregledaču, zadržava svoje (`cookster.nacve-bounds.v3`) dok ne klikne "Podrazumevano".
+- Provera: testo ostaje na zelenom podu pri jakom vučenju, bez grešaka u konzoli.
