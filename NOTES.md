@@ -797,3 +797,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Podrazumevane vrednosti za predmete u rerni
 - Vrednosti iz alata 🔥 Predmeti u rerni (izvoz vlasnika, 2026-10-15) su ugrađene u igru (`OVEN_ITEM_DEFAULTS` u `game.js?v=3.146`): serpa, veliki i mali tiganj, okrugli i pravougaoni pleh imaju svoju visinu, veličinu, nagibe, tamnoću i mesto (`x`) za sve igrače. Vrednosti sačuvane u pregledaču (iz alata) i dalje idu preko njih; "Resetuj ovaj" vraća na ugrađene. "Kopiraj JSON" sada daje trenutne vrednosti svih pet vrsta.
+
+## Početne maske hrane i vode za ostale posude
+- Za posude koje vlasnik nije sam crtao napravljene su početne maske iz slika (otvor ruba, dno, prednji zid): hrana u `js/data/vessel-food-cal-export.js?v=4` (vangla mala i velika, lavor, okrugli i pravougaoni pleh, činija mala i velika, duboki i ravni tanjir), voda u `WDEF` u `js/vessel-water.js?v=33` (sve to plus srednja vangla i posuda za kupus). Brojevi su procenti slike posude, isti format kao alat; ono što vlasnik nacrta u alatu (sačuvano u njegovom pregledaču) uvek ima prednost.
+- Nema (nije ni trebalo): hrana za veliku šerpu, oba tiganja, srednju vanglu i posudu za kupus, i voda za veliku šerpu i oba tiganja; to je vlasnik radio sam i čuva se samo u njegovom pregledaču (za druge igrače treba izvoz iz alata i ugradnja). Bokal (stari) ima svoju vodu odranije.
