@@ -6,7 +6,7 @@
    At night the window is shown closed (the night picture of js/day-light.js has no open version), so the piece fades with the "night" value of the clock. */
 (function(){
 if(window.CooksterWindow)return;
-var KEY='cooksterWindowOpen',W=176,H=440,open=false,anim=null,box=null,inner=null,hot=null,lvl=open?1:0,vid=null,cv=null,gl=null,tex=null,prog=null,vidT=0,playing=false,broke=false,CLIP_W=706,CLIP_H=941,BREAK_AT=1.58,CLIP_RATE=1.2,FADE_AT=2.75,FADE_END=3.9;      // the clip covers the part of the scene (0,0)-(706,941), BREAK_AT = the second of the clip when the pot hits the floor
+var KEY='cooksterWindowOpen',W=176,H=440,open=false,anim=null,box=null,inner=null,hot=null,lvl=open?1:0,vid=null,cv=null,gl=null,tex=null,prog=null,vidT=0,playing=false,broke=false,CLIP_W=706,CLIP_H=941,BREAK_AT=1.27,CLIP_RATE=1.2,FADE_AT=2.45,FADE_END=3.6;      // the clip covers the part of the scene (0,0)-(706,941), BREAK_AT = the second of the clip when the pot hits the floor
 try{open=localStorage.getItem(KEY)==='1';}catch(e){}
 function build(){
   var sc=document.getElementById('scene');if(!sc)return false;
@@ -17,10 +17,10 @@ function build(){
   box.appendChild(inner);
   sc.appendChild(box);
   vid=document.createElement('video');vid.muted=true;vid.playsInline=true;vid.preload='auto';vid.setAttribute('playsinline','');
-  [['assets/effects/prozor_zeleni.webm?v=2','video/webm'],['assets/effects/prozor_zeleni.mp4?v=2','video/mp4']].forEach(function(x){var so=document.createElement('source');so.src=x[0];so.type=x[1];vid.appendChild(so);});
+  [['assets/effects/prozor_zeleni.webm?v=3','video/webm'],['assets/effects/prozor_zeleni.mp4?v=3','video/mp4']].forEach(function(x){var so=document.createElement('source');so.src=x[0];so.type=x[1];vid.appendChild(so);});
   vid.addEventListener('ended',endClip);
   cv=document.createElement('canvas');cv.id='windowOpenClip';cv.width=1080;cv.height=1440;
-  cv.style.cssText='position:absolute;left:0;top:0;width:'+CLIP_W+'px;height:'+CLIP_H+'px;pointer-events:none;z-index:70000;opacity:0;-webkit-mask-image:url(assets/effects/prozor_maska.png?v=3);mask-image:url(assets/effects/prozor_maska.png?v=3);-webkit-mask-size:100% 100%;mask-size:100% 100%';      // above the things on the floor (the barrel), under the chandelier and the dark of the room; the mask (drawn by the player) lets through only the window part and the floor: the wall, the table and the cupboard hide the shards
+  cv.style.cssText='position:absolute;left:0;top:0;width:'+CLIP_W+'px;height:'+CLIP_H+'px;pointer-events:none;z-index:70000;opacity:0;-webkit-mask-image:url(assets/effects/prozor_maska.png?v=5);mask-image:url(assets/effects/prozor_maska.png?v=5);-webkit-mask-size:100% 100%;mask-size:100% 100%';      // above the things on the floor (the barrel), under the chandelier and the dark of the room; the mask (drawn by the player) lets through only the window part and the floor: the wall, the table and the cupboard hide the shards
   sc.appendChild(cv);initGL();
 
   hot=document.createElement('div');hot.id='windowHot';hot.title='Otvori / zatvori prozor';
@@ -74,7 +74,7 @@ function set(v,animate){
     var pr=vid.play();playing=true;
     if(pr&&pr.then)pr.then(function(){cv.style.transition='none';cv.style.opacity='1';requestAnimationFrame(drawFrame);}).catch(function(){playing=false;});
     else{cv.style.transition='none';cv.style.opacity='1';requestAnimationFrame(drawFrame);}
-    vidT=setTimeout(endClip,Math.round(4300/CLIP_RATE)+100);      // in case "ended" does not come
+    vidT=setTimeout(endClip,Math.round(3800/CLIP_RATE)+100);      // in case "ended" does not come
   }
 }
 function tick(){      // at night the window is closed on the picture
