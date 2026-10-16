@@ -1,4 +1,4 @@
-/* Cookster: the window of the kitchen opens with a click (an animation of the sash swinging into the room).
+/* Cookster: the window of the kitchen opens with a click (the picture changes at once, like the drawer under the oven).
    assets/effects/prozor_otvoren.webp is a piece of the picture with the window wide open, laid over the kitchen only around the window (the rest of the scene is untouched).
    At night the window is shown closed (the night picture of js/day-light.js has no open version), so the piece fades with the "night" value of the clock. */
 (function(){
@@ -23,12 +23,8 @@ function toggle(){set(!open,true);}
 function set(v,animate){
   if(!build())return;open=!!v;try{localStorage.setItem(KEY,open?'1':'0');}catch(e){}
   if(anim){try{anim.cancel();}catch(e){}anim=null;}
-  if(!animate||!box.animate){box.style.opacity=open?1:0;box.style.transform='';return;}
-  var from=open?{opacity:0,transform:'perspective(500px) rotateY(-75deg) scaleX(.6)'}:{opacity:1,transform:'none'},
-      to=open?{opacity:1,transform:'none'}:{opacity:0,transform:'perspective(500px) rotateY(-75deg) scaleX(.6)'};
-  box.style.opacity=open?1:0;box.style.transform='';
+  box.style.opacity=open?1:0;box.style.transform='';      // no animation, like the drawer under the oven: the picture simply changes
   try{if(typeof playImpactSound==='function'&&hot)playImpactSound(hot,open?'open':'close');}catch(e){}
-  anim=box.animate([from,to],{duration:open?750:600,easing:open?'cubic-bezier(.2,.8,.25,1)':'ease-in'});
 }
 function tick(){      // at night the window is closed on the picture
   if(!build())return;var D=window.CooksterDay,nw=0;try{nw=D&&D.phase?D.phase().nw:0;}catch(e){}
