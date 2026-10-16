@@ -5,7 +5,7 @@
    At night the window is shown closed (the night picture of js/day-light.js has no open version), so the piece fades with the "night" value of the clock. */
 (function(){
 if(window.CooksterWindow)return;
-var KEY='cooksterWindowOpen',W=176,H=440,open=false,anim=null,box=null,inner=null,hot=null,vid=null,vidT=0,CLIP_W=380,CLIP_H=500,BREAK_AT=2.15;
+var KEY='cooksterWindowOpen',W=176,H=440,open=false,anim=null,box=null,inner=null,hot=null,lvl=open?1:0,vid=null,vidT=0,CLIP_W=380,CLIP_H=500,BREAK_AT=2.15;
 try{open=localStorage.getItem(KEY)==='1';}catch(e){}
 function build(){
   var sc=document.getElementById('scene');if(!sc)return false;
@@ -48,6 +48,7 @@ function tick(){      // at night the window is closed on the picture
   inner.style.opacity=String(Math.max(0,Math.min(1,1-nw)).toFixed(2));
 }
 setInterval(tick,400);
+setInterval(function(){var t=open?1:0;if(Math.abs(t-lvl)>.001){lvl+=(t-lvl)*.06;if(Math.abs(t-lvl)<.01)lvl=t;}},40);      // the light of the room follows the window slowly (about 1.5 s)
 window.addEventListener('load',function(){setTimeout(function(){build();tick();},300);});
-window.CooksterWindow={toggle:toggle,set:function(v){set(v,true);},isOpen:function(){return open;}};
+window.CooksterWindow={toggle:toggle,set:function(v){set(v,true);},isOpen:function(){return open;},level:function(){return lvl;}};
 })();
