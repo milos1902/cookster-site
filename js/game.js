@@ -5349,7 +5349,7 @@ function clearStirReady(){
 function updateStirReady(){
  if(stirring)return stirVessel;
  clearStirReady();
- if(!holding||!isStirSpoon(holding)||picking||placing)return null;
+ if(true||!holding||!isStirSpoon(holding)||picking||placing)return null;      // the spoon in the hand does not stir any more: the food is stirred with the small spoon at the cursor (miniSpoon)
  const vessel=stirVesselAt(mouse.x,mouse.y,true);
  if(!vessel)return null;
  stirReadyVessel=vessel;
@@ -5743,7 +5743,8 @@ function endStirring(finished=false,message=''){
    renderCookwareContents(vessel);
    updateCookingStatus(vessel);
  }
- if(holding){
+ if(holding&&holding._mini){miniSpoonHide();holding=null;}
+ else if(holding){
    holding.classList.remove('stirring-tool');
    delete holding._stirTransformVis;
    holding.style.willChange='';
@@ -5772,6 +5773,54 @@ function endStirring(finished=false,message=''){
  updateHover();
  updateStirReady();
 }
+
+/* ---- stirring without a spoon in the hand: over the food in a vessel (nothing in the hand) a very small spoon appears at the cursor; hold the left button and move to stir ----
+   The stirring itself is the old one (beginStirring / updateStirring / endStirring), only the spoon is a small helper element that is `holding` while the button is down. */
+let miniSpoon=null,miniVessel=null;
+const MINI_W=22,MINI_H=54;
+function miniSpoonEl(){
+ if(miniSpoon&&miniSpoon.isConnected)return miniSpoon;
+ const d=document.createElement('div');d.className='item mini-spoon';d.dataset.itemId='kasika_mesanje';d.dataset.baseW=String(MINI_W);d.dataset.baseH=String(MINI_H);d._mini=true;
+ d.style.cssText='position:absolute;left:0;top:0;width:'+MINI_W+'px;height:'+MINI_H+'px;pointer-events:none;display:none;z-index:11500;transform-origin:50% 50%';
+ const im=document.createElement('img');im.className='body';im.src='assets/new_props/kasika_1.png?v=2';im.draggable=false;im.style.cssText='width:100%;height:100%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))';
+ d.appendChild(im);scene.appendChild(d);return miniSpoon=d;
+}
+function miniSpoonHide(){if(miniSpoon)miniSpoon.style.display='none';miniVessel=null;document.body.classList.remove('mini-spoon-on');}
+function foodVesselAt(x,y){      // a vessel with food in it, the point is over its food (the content of the vessel)
+ if(lidAt(x,y))return null;
+ let best=null,bz=-1;
+ for(const v of items){
+   if(!v||!v.isConnected||v===holding||v.style.display==='none'||!stirEligible(v))continue;
+   let c=isPanItem(v)?v._panContent:v._vesselContent,r=(c||v).getBoundingClientRect();
+   if(c&&(!r.width||!r.height)){c=null;r=v.getBoundingClientRect();}
+   if(!r.width||!r.height)continue;
+   const cx=r.left+r.width*.5,cy=r.top+r.height*.52,rx=r.width*(c?.5:.38),ry=r.height*(c?.5:.38),nx=(x-cx)/rx,ny=(y-cy)/ry;
+   const z=parseInt(v.style.zIndex,10)||0;
+   if(nx*nx+ny*ny<=1&&z>=bz){best=v;bz=z;}
+ }
+ return best;
+}
+function placeMiniSpoon(clientX,clientY,vessel){
+ const m=miniSpoonEl(),p=screenToScene(clientX,clientY),vis=Math.max(.72,Math.min(.98,(+vessel.dataset.vis||1)*.88)),w=MINI_W*vis,h=MINI_H*vis;
+ m.style.width=w+'px';m.style.height=h+'px';m._stirTransformVis=vis;
+ m.style.transform='translate3d('+(p.x-w/2).toFixed(2)+'px,'+(p.y-h*.82).toFixed(2)+'px,0) rotateZ(180deg)';
+ m.style.zIndex=String(Math.max(11000,(parseInt(vessel.style.zIndex||0,10)||0)+160));m.style.display='block';
+}
+window.addEventListener('pointermove',e=>{
+ if(stirring)return;
+ const blocked=holding||quickWheelOpen||pouring||oilPouring||panWashing||cleaning||picking||placing||(e.buttons&1)||(e.target&&e.target.closest&&e.target.closest('[data-tool-ui],#dlPanel,.overlay,.modal'))||(window.CooksterSinkZoom&&CooksterSinkZoom.isOpen&&CooksterSinkZoom.isOpen());
+ const v=blocked?null:foodVesselAt(e.clientX,e.clientY);
+ if(!v){if(miniVessel)miniSpoonHide();return;}
+ miniVessel=v;placeMiniSpoon(e.clientX,e.clientY,v);document.body.classList.add('mini-spoon-on');
+},true);
+window.addEventListener('pointerdown',e=>{
+ if(e.button!==0||holding||stirring||!miniVessel||!miniSpoon||miniSpoon.style.display==='none')return;
+ const v=foodVesselAt(e.clientX,e.clientY);if(!v||v!==miniVessel)return;
+ e.stopImmediatePropagation();e.preventDefault();
+ holding=miniSpoon;
+ if(!beginStirring(v,e)){holding=null;return;}
+ if(!stirring){holding=null;miniSpoonHide();}
+},true);
 
 // v198.5.87 — momentum coast-down: keeps spinning the pile at a decaying
 // angular velocity after the spoon is released, until it's slow enough to
@@ -15461,10 +15510,6 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
  if(e.button===0&&!holding&&!window.CooksterSinkZoom?.isOpen()&&sinkHit(e.clientX,e.clientY)){window.CooksterSinkZoom?.open();return;}
  if(e.button===0&&holding&&isContainerItem(holding)&&sinkHit(e.clientX,e.clientY)&&!faucetHit(e.clientX,e.clientY)&&window.CooksterSinkZoom?.putHeld?.())return;   // a vessel from the hand goes into the sink and the close-up opens
  if(e.button===0&&holding&&isHeatableCookwareItem(holding)&&sinkHit(e.clientX,e.clientY)){if(beginPanWashing(holding,e))return;}
- if(e.button===0&&holding&&isStirSpoon(holding)){
-   const stirTarget=stirReadyVessel||stirVesselAt(e.clientX,e.clientY,true);
-   if(stirTarget&&beginStirring(stirTarget,e))return;
- }
  const lh=lidAt(e.clientX,e.clientY),rawIt=itemAt(e.clientX,e.clientY);
  const it=(rawIt&&rawIt.dataset.itemId==='noz'&&rawIt.dataset.attachedToBoard==='1'&&getBoardEl())?getBoardEl():rawIt;
  if(e.button===2){

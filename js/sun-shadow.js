@@ -24,11 +24,18 @@ function make(el,scene){
   lg.setAttribute('id',gid);lg.setAttribute('gradientUnits','userSpaceOnUse');
   [[0,1],[.45,.62],[1,0]].forEach(function(st){var sp=document.createElementNS(NS,'stop');sp.setAttribute('offset',st[0]);sp.setAttribute('stop-color','#000');sp.setAttribute('stop-opacity',st[1]);lg.appendChild(sp);});      // dark near the thing, melts into transparency toward the far end
   df.appendChild(lg);sv.appendChild(df);pa.setAttribute('fill','url(#'+gid+')');sv.appendChild(pa);d.appendChild(sv);d._svg=sv;d._path=pa;d._grad=lg;
-  scene.appendChild(d);return d;
+  var wr=document.createElement('div');wr.className='sun-shadow-wrap';wr.style.cssText='position:absolute;left:0;top:0;width:1672px;height:941px;pointer-events:none';      // the shadow is cut at the edge of the surface it lies on (the table, the stove)
+  wr.appendChild(d);scene.appendChild(wr);d._wrap=wr;return d;
 }
 /* the shadow drawn by the player: ~20 points round the thing; 4 points on the left (they start under the thing) and 5 on the right, all of them can be moved (js/shadow-editor.js);
    the handles are kept for every key of the day (jutro / podne / vece) and flow between the keys with the clock. cfg.shPoly[itemId][key] = [[u,v] x9] (4 left + 5 right), u,v = the place in the box of the thing (0..1, may go out of it) */
 var OUTL={};
+function surfaceClip(el){      // only the surfaces get shadows: the table (its polygon) and the top of the stove; what falls over the edge is lost
+  var z=el.dataset.surfaceZone||'',S=(typeof placementGeometry!=='undefined'&&placementGeometry.SURFACES)||null;if(!S)return 'none';
+  if(z==='stove'){var b=S.stove;return 'polygon('+b.left+'px '+b.top+'px,'+b.right+'px '+b.top+'px,'+b.right+'px '+b.bottom+'px,'+b.left+'px '+b.bottom+'px)';}
+  if(z===''||z==='table'||z==='board'){var P=S.tablePoly;if(P&&P.length)return 'polygon('+P.map(function(q){return q.x+'px '+q.y+'px';}).join(',')+')';}
+  return 'none';
+}
 function getOutline(el,body){
   var id=el.dataset.itemId||'';if(OUTL[id])return OUTL[id];
   if(!body||!body.complete||!body.naturalWidth)return null;
@@ -79,6 +86,7 @@ function tick(){
     if(!vis){if(rec)rec.style.display='none';return;}
     if(!rec){rec=make(el,scene);map.set(el,rec);}
     seen.add(el);
+    rec._wrap.style.zIndex=String(Math.max(1,(parseInt(el.style.zIndex,10)||20)-2));rec._wrap.style.clipPath=surfaceClip(el);
     var im=rec.firstChild,bm=META&&sh.baked!==0?META[el.dataset.itemId||'']:null,iid=el.dataset.itemId||'';
     if(cfg.shPoly&&cfg.shPoly[iid]){      // drawn by the player (points): this wins over the baked and the live shadow
       var wts0=keyWeights(cfg,D.minute()%1440),o0=D.itemSh(iid)||{},pp=polyPoints(cfg,el,body,wts0,o0);
@@ -118,7 +126,7 @@ function tick(){
     im.style.filter='brightness(0) blur('+Math.max(0,P.shb+def(o.b,0)).toFixed(1)+'px)';
     rec.style.display='block';
   });
-  map.forEach(function(rec,el){if(!el.isConnected){rec.remove();map.delete(el);}else if(!seen.has(el))rec.style.display='none';});
+  map.forEach(function(rec,el){if(!el.isConnected){rec._wrap.remove();map.delete(el);}else if(!seen.has(el))rec.style.display='none';});
 }
 setInterval(tick,100);
 window.CooksterSunShadow={tick:tick,keyWeights:keyWeights,
