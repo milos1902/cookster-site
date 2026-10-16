@@ -2487,6 +2487,7 @@ function resolvedImpactConfig(el,action='drop'){
  else if(action==='hover'){sound='';volume=.25;}
  else if(action==='cut'){sound='tomatoChop';volume=.78;}
  else if(action==='putIn'){sound='metalDrop';volume=.18;}
+ else if(action==='break'){sound='tableDropGlass';volume=.55;}
  else if(action==='peel'){sound='pickup';volume=.35;}
  else if(action==='step'){sound='waiterStep1';volume=.28;}
  else if(action==='open'||action==='close'){
