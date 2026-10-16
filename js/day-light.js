@@ -154,13 +154,15 @@ function render(){
 }
 
 /* ---------- the things in the shaft of the sun are lit ---------- */
-(function(){var st2=document.createElement('style');st2.textContent='.item.lit-sun>.body{filter:brightness(var(--lit-b,1)) saturate(var(--lit-s,1)) sepia(var(--lit-w,0))}';document.head.appendChild(st2);})();
+(function(){var st2=document.createElement('style');st2.textContent='.item.lit-sun:not(.hovered):not(.container-target):not(.stir-ready-target):not(.pour-target-ready),.flour-pile.lit-sun{filter:brightness(var(--lit-b,1)) saturate(var(--lit-s,1)) sepia(var(--lit-w,0))}';document.head.appendChild(st2);})();
 function litTick(){
-  var items=(typeof window.items!=='undefined'&&window.items)||(typeof items!=='undefined'?items:[]);if(!items||!items.length)return;
+  var list=((typeof window.items!=='undefined'&&window.items)||(typeof items!=='undefined'?items:[])||[]).slice();
+  [].forEach.call(document.querySelectorAll('.flour-pile'),function(e){list.push(e);});      // the flour on the table is not an item, but it is lit too
+  if(!list.length)return;
   var P=mixPhase((st.closed?1440:nowM())%1440),w=cfg.win,on=P.alpha>.03&&(+cfg.itemLight||0)>.001;
   var mx=(w.x1+w.x2)/2,my=(w.y1+w.y2)/2,dx=P.lx-mx,dy=P.ly-my,len2=dx*dx+dy*dy||1,len=Math.sqrt(len2);
-  items.forEach(function(el){
-    if(!el||!el.dataset||!el.isConnected)return;
+  list.forEach(function(el){
+    if(!el||!el.isConnected)return;
     var k=0;
     if(on&&el!==(typeof holding!=='undefined'?holding:null)&&!el.classList.contains('ghost-item-copy')){
       var r=el.getBoundingClientRect(),c=screenToScene(r.left+r.width/2,r.top+r.height*.62),
