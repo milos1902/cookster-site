@@ -345,6 +345,7 @@ function build(){
   h=document.createElement('h4');h.textContent='Prozor (klik na prozor menja svetlo)';pn.appendChild(h);
   row('Zrak sunca kad je prozor otvoren ×','wo',0,3,.05,function(){return cfg.win2.open;},function(v){cfg.win2.open=v;});
   row('Zrak sunca kad je prozor zatvoren ×','wc',0,3,.05,function(){return cfg.win2.closed;},function(v){cfg.win2.closed=v;});
+  mk(pn,'Vrati samo senke na početne',function(){var sd=clone(DEF.keys);cfg.keys.forEach(function(k){sd.forEach(function(d){if(d.name===k.name){['shk','shl','sho','sha','shx','shy','shw','shh','shr','shb'].forEach(function(f){k[f]=d[f];});}});});cfg.shItems=clone(DEF.shItems);cfg.sh=clone(DEF.sh);save();selectKey(selK,false);lastSig='';render();chip();});      // the lighting, the times and the window stay as they are
   var b2=document.createElement('div');
   mk(b2,'Izvezi JSON',function(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'}));a.download='cookster-day-light.json';document.body.appendChild(a);a.click();setTimeout(function(){a.remove();},500);});
   var fi=document.createElement('input');fi.type='file';fi.accept='application/json';fi.style.display='none';
