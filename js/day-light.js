@@ -79,7 +79,8 @@ function bell(h,s,p,e){return h<=s||h>=e?0:h<p?(h-s)/(p-s):(e-h)/(e-p);}
 function rgba(c,a){return 'rgba('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+','+Math.max(0,Math.min(1,a)).toFixed(3)+')';}
 function grillLevel(){try{return window.CooksterGrill&&CooksterGrill.level?CooksterGrill.level():0;}catch(e){return 0;}}
 function stoveLevel(){try{return (stoveState.fireOn&&(+stoveState.fireLevel||0)>0)?Math.min(1,(+stoveState.fireLevel||0)/FIRE_MAX_LEVEL):0;}catch(e){return 0;}}
-function fireSig(){return Math.round(grillLevel()*20)+'/'+Math.round(stoveLevel()*10);}
+function lusterLevel(){try{return window.CooksterLuster&&CooksterLuster.level?CooksterLuster.level():0;}catch(e){return 0;}}
+function fireSig(){return Math.round(grillLevel()*20)+'/'+Math.round(stoveLevel()*10)+'/'+Math.round(lusterLevel()*30);}
 var cv=null,cx=null,tintC=null,sunI=new Image();sunI.src='assets/effects/sun_patches.png?v=1';
 /* the picture of the kitchen WITHOUT the sun on the floor (assets/effects/kuhinja_bez_sunca.webp, the same picture, drawn without the light of the window) lies over the real one inside a mask of the window light
    (assets/effects/sun_zone_mask.png) and it melts in while the sun goes away (evening, night, early morning). If that picture is not there, the patches are only darkened. */
@@ -162,6 +163,8 @@ function render(){
   // 4. the fire shines: pools of light that cut the dark (the grill, the stove)
   var nightF=clamp01(P.dark/.3)*(+cfg.fireNight||1),gl=grillLevel(),stl=stoveLevel();
   if(gl>.02)pool(497,98,340,115,Math.min(1,gl*.95*nightF),gl*.22*nightF,[255,140,50]);
+  var ll=lusterLevel(),dk=clamp01(P.dark/.25);      // the chandelier lights the whole room: a wide pool of warm light under it that cuts the dark (the more dark, the more it is seen)
+  if(ll>.02){pool(830,360,820,500,Math.min(.9,ll*.8*dk),ll*.10*dk,[255,200,120]);pool(830,300,330,220,Math.min(.9,ll*.55*dk),ll*.12*dk,[255,210,140]);}
   if(stl>.02)pool(1334,540,230,190,Math.min(1,stl*.75*nightF),stl*.16*nightF,[255,150,60]);
 }
 
@@ -175,7 +178,7 @@ function render(){
   sv.innerHTML='<filter id="dlAmb" color-interpolation-filters="sRGB" x="-5%" y="-5%" width="110%" height="110%"><feColorMatrix id="dlAmbM" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"/></filter>';(document.body||document.documentElement).appendChild(sv);})();
 /* the same blend as the canvas: colour*(1-a) + shade*a (the dark of the time of day) + the warm haze; a feColorMatrix does it exactly */
 var heldS=0;      // the veil of the sun shaft at the place of the thing in the hand (0..1)
-function ambMatrix(P){var m=document.getElementById('dlAmbM');if(!m)return;var a=clamp01(P.dark*.95),hz=clamp01(P.light*.55),sv=clamp01(heldS),k=(1-a)*(1-hz)*(1-sv),r=((P.shade[0]*a*(1-hz)+P.c[0]*hz)*(1-sv)+P.bc[0]*sv)/255,g=((P.shade[1]*a*(1-hz)+P.c[1]*hz)*(1-sv)+P.bc[1]*sv)/255,b=((P.shade[2]*a*(1-hz)+P.c[2]*hz)*(1-sv)+P.bc[2]*sv)/255;
+function ambMatrix(P){var m=document.getElementById('dlAmbM');if(!m)return;var a=clamp01(P.dark*.95*(1-.7*lusterLevel())),hz=clamp01(P.light*.55),sv=clamp01(heldS),k=(1-a)*(1-hz)*(1-sv),r=((P.shade[0]*a*(1-hz)+P.c[0]*hz)*(1-sv)+P.bc[0]*sv)/255,g=((P.shade[1]*a*(1-hz)+P.c[1]*hz)*(1-sv)+P.bc[1]*sv)/255,b=((P.shade[2]*a*(1-hz)+P.c[2]*hz)*(1-sv)+P.bc[2]*sv)/255;
   m.setAttribute('values',k.toFixed(4)+' 0 0 0 '+r.toFixed(4)+'  0 '+k.toFixed(4)+' 0 0 '+g.toFixed(4)+'  0 0 '+k.toFixed(4)+' 0 '+b.toFixed(4)+'  0 0 0 1 0');}
 function shaftAt(c,P){      // c = a point of the scene: how strongly the shaft lights it (k, for the item) and how thick the veil of the shaft is over it (sa, as the canvas draws it)
   var w=cfg.win,mx=(w.x1+w.x2)/2,my=(w.y1+w.y2)/2,dx=P.lx-mx,dy=P.ly-my,len2=dx*dx+dy*dy||1,len=Math.sqrt(len2),t=((c.x-mx)*dx+(c.y-my)*dy)/len2;
