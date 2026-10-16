@@ -29,7 +29,7 @@ function tick(){
         len=P.shl*def(o.l,1),ar=(P.sha+def(o.a,0))*Math.PI/180,sx=Math.cos(ar)*len,sy=Math.max(.15,Math.sin(ar))*len*.7*P.shh*def(o.h,1);      // every key of the day has its own length, strength and direction; between the keys it flows with the clock
     rec.style.left=el.offsetLeft+'px';rec.style.top=el.offsetTop+'px';rec.style.width=el.offsetWidth+'px';rec.style.height=el.offsetHeight+'px';
     rec.style.zIndex=String(Math.max(1,(parseInt(el.style.zIndex,10)||20)-2));
-    rec.style.transform='translate('+(P.shx+def(o.x,0)).toFixed(1)+'px,'+(P.shy+def(o.y,0)).toFixed(1)+'px) rotate('+(P.shr+def(o.r,0)).toFixed(1)+'deg) scaleX('+(P.shw*def(o.w,1)).toFixed(3)+') matrix(1,0,'+(-sx).toFixed(3)+','+(-sy).toFixed(3)+',0,0)';
+    rec.style.transform='translate('+(P.shx+def(o.x,0)).toFixed(1)+'px,'+(P.shy+def(o.y,0)).toFixed(1)+'px) rotate('+(P.shr+def(o.r,0)).toFixed(1)+'deg) scaleX('+(P.shw*def(o.w,1)).toFixed(3)+') matrix(1,0,'+(-sx*(1-P.shk)).toFixed(3)+','+(-sy*(1-P.shk)+P.shk).toFixed(3)+',0,0)';
     rec.style.opacity=(P.sho*def(o.o,1)*str).toFixed(3);
     im.style.filter='brightness(0) blur('+Math.max(0,P.shb+def(o.b,0)).toFixed(1)+'px)';
     rec.style.display='block';
