@@ -3771,3 +3771,7 @@ body.quick-tool-wheel-open #label{display:none!important}
 /* every item: no glow when the cursor is over it, only a thin green line around the picture (the same as it was for the vegetables) */
 body .item.hovered > .body,body .detached-lid.hovered .lid-crop,body .lid-hit.hover-lid .lid-crop{
  filter:drop-shadow(1px 0 0 #46d45c) drop-shadow(-1px 0 0 #46d45c) drop-shadow(0 1px 0 #46d45c) drop-shadow(0 -1px 0 #46d45c)!important;animation:none}
+
+/* the very small spoon at the cursor over the food (js/game.js: miniSpoon) */
+body.mini-spoon-on #scene,body.mini-spoon-on #scene *{cursor:none!important}
+.item.mini-spoon{filter:none!important}

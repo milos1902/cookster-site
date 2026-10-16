@@ -931,3 +931,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Crtanje senke: sada 9 pokretnih tačaka (4 leve, plave, na početku ispod predmeta + 5 desnih, narandžastih); stari crteži sa 5 tačaka se i dalje učitavaju. Novi klizač po predmetu 'Gradijent: dužina prelaza ×'.
 
 - Početne senke predmeta (shItems, shPoly, tri ključa senke) uzete iz Milošovog exporta (cookster-day-light_3.json).
+
+- Mešanje bez kašike u ruci: iznad hrane u posudi (ništa u ruci) pojavi se mala kašičica na kursoru, držiš levi taster i mešaš (stara logika mešanja, js/game.js miniSpoon). Kašika u ruci više ne meša (kvasac u naćvama i dalje radi).
+- Senke predmeta se seku na ivici površine (sto = tablePoly, šporet = vrh šporeta), js/sun-shadow.js surfaceClip.
+- Početne senke ažurirane iz cookster-day-light_4.json.
