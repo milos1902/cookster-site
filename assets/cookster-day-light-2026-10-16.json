@@ -1,0 +1,72 @@
+{
+  "secPerHour": 10,
+  "win": {
+    "x1": -12,
+    "y1": -17,
+    "x2": -9,
+    "y2": 302
+  },
+  "keys": [
+    {
+      "name": "Jutro",
+      "t": 360,
+      "c": "#ff932e",
+      "light": 0.09,
+      "dark": 0.12,
+      "shade": "#33210f",
+      "sun": 1,
+      "lx": 1277,
+      "ly": 854,
+      "spread": 2,
+      "alpha": 0.52,
+      "blur": 38,
+      "bc": "#ffddad"
+    },
+    {
+      "name": "Podne",
+      "t": 720,
+      "c": "#fff4dc",
+      "light": 0,
+      "dark": 0,
+      "shade": "#2a2a2e",
+      "sun": 1,
+      "lx": 614,
+      "ly": 858,
+      "spread": 1.1,
+      "alpha": 0.37,
+      "blur": 30,
+      "bc": "#fff6dc"
+    },
+    {
+      "name": "Veče",
+      "t": 1140,
+      "c": "#4639fe",
+      "light": 0.07,
+      "dark": 0.28,
+      "shade": "#010223",
+      "sun": 0.3,
+      "lx": 432,
+      "ly": 589,
+      "spread": 0,
+      "alpha": 0,
+      "blur": 0,
+      "bc": "#000000"
+    },
+    {
+      "name": "Noć",
+      "t": 0,
+      "c": "#192b52",
+      "light": 0.22,
+      "dark": 0.53,
+      "shade": "#050c24",
+      "sun": 0,
+      "lx": 600,
+      "ly": 720,
+      "spread": 0.5,
+      "alpha": 0.68,
+      "blur": 0,
+      "bc": "#bcd0ff"
+    }
+  ],
+  "fireNight": 0.2
+}

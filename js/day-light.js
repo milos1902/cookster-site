@@ -11,15 +11,15 @@ var KEY='cookster.day-light.v2',OPEN=360,CLOSE=1440,W=1672,H=941,SC=.25;
    lx,ly = where the light falls on the floor (the centre of the far end of the shaft), spread = how much the shaft widens, alpha = how strong, blur = how soft, bc = its colour.
    Between two keys everything changes slowly (the sun moves from one place to the other). The window (the beginning of the shaft) is one for all keys. */
 var DEF={
-  secPerHour:60,
-  win:{x1:14,y1:30,x2:14,y2:330},
+  secPerHour:60,      // Miloš's export has 10 here (a test); the real default stays one real minute = one game hour
+  win:{x1:-12,y1:-17,x2:-9,y2:302},
   keys:[
-    {name:'Jutro',t:420,c:'#fec590',light:.23,dark:.29,shade:'#33210f',sun:1,lx:380,ly:640,spread:.5,alpha:.55,blur:36,bc:'#ffe9b0'},
-    {name:'Podne',t:720,c:'#fff4dc',light:.08,dark:.02,shade:'#2a2a2e',sun:1,lx:300,ly:760,spread:.45,alpha:.42,blur:36,bc:'#fff6dc'},
-    {name:'Veče',t:1140,c:'#ff9b57',light:.10,dark:.21,shade:'#3d1a0c',sun:1,lx:700,ly:600,spread:.55,alpha:.6,blur:40,bc:'#ffb070'},
-    {name:'Noć',t:1320,c:'#192b52',light:0,dark:.48,shade:'#050c24',sun:0,lx:600,ly:700,spread:.5,alpha:0,blur:40,bc:'#bcd0ff'}
+    {name:'Jutro',t:360,c:'#ff932e',light:0.09,dark:0.12,shade:'#33210f',sun:1,lx:1277,ly:854,spread:2,alpha:0.52,blur:38,bc:'#ffddad'},
+    {name:'Podne',t:720,c:'#fff4dc',light:0,dark:0,shade:'#2a2a2e',sun:1,lx:614,ly:858,spread:1.1,alpha:0.37,blur:30,bc:'#fff6dc'},
+    {name:'Veče',t:1140,c:'#4639fe',light:0.07,dark:0.28,shade:'#010223',sun:0.3,lx:432,ly:589,spread:0,alpha:0,blur:0,bc:'#000000'},
+    {name:'Noć',t:0,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}
   ],
-  fireNight:1.6
+  fireNight:0.2
 };
 function clone(o){return JSON.parse(JSON.stringify(o));}
 var cfg=clone(DEF);
@@ -33,7 +33,7 @@ function nowM(){return st.minute;}
 function hex(h){h=String(h||'#000').replace('#','');if(h.length===3)h=h.replace(/./g,'$&$&');var n=parseInt(h,16)||0;return [(n>>16)&255,(n>>8)&255,n&255];}
 function toHex(a){return '#'+a.map(function(v){return ('0'+Math.max(0,Math.min(255,Math.round(v))).toString(16)).slice(-2);}).join('');}
 function fmt(m){m=Math.floor(m);var hh=Math.floor(m/60)%24,mm=m%60;return (hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm;}
-function part(h){return h<10?'Jutro':h<17?'Dan':h<21?'Veče':'Noć';}
+function part(h){return h<5?'Noć':h<10?'Jutro':h<17?'Dan':h<21?'Veče':'Noć';}
 window.currentGameMinute=function(){return nowM()%1440;};      // the old stub of the game said 12:00 forever
 window.gameDayPart=function(){var h=nowM()/60;return part(h)==='Jutro'?'Jutro':part(h)==='Dan'?'Podne':part(h);};
 var lastT=performance.now(),lastSig='';
@@ -145,7 +145,7 @@ function chip(){
   if(!chipEl||!chipEl.isConnected){chipEl=document.createElement('div');chipEl.id='dayClock';chipEl.setAttribute('data-tool-ui','1');
     chipEl.style.cssText='position:fixed;left:1062px;top:10px;z-index:2147483000;border:2px solid #351b0d;border-radius:12px;background:#f1d9a0;color:#351b0d;font:700 12px/1 system-ui,sans-serif;padding:6px 10px;opacity:.92;pointer-events:none';
     document.body.appendChild(chipEl);}
-  var h=nowM()/60,ic=st.closed?'🌙':h<10?'🌅':h<17?'☀':h<21?'🌇':'🌙';
+  var h=nowM()/60,ic=st.closed||h<5?'🌙':h<10?'🌅':h<17?'☀':h<21?'🌇':'🌙';
   chipEl.textContent=ic+' '+fmt(st.closed?1440:nowM())+' · '+(st.closed?'Kafana zatvorena':part(h))+(st.paused?' ⏸':'');
 }
 
@@ -179,8 +179,9 @@ function colorRow(label,get,set){
   ctr['c_'+label]=function(){i.value=toHex(hex(get()));};ctr['c_'+label]();
 }
 function hh(m){return fmt(m);}
-function jump(m){st.minute=Math.max(OPEN,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;st.paused=true;ctr.pp&&ctr.pp();lastSig='';render();chip();placeHandles();}
-function selectKey(i,go){selK=i;if(go)jump(Math.max(OPEN,Math.min(CLOSE-1,cfg.keys[i].t)));Object.keys(ctr).forEach(function(k){try{ctr[k]();}catch(e){}});markKeys();placeHandles();}
+function jump(m){st.minute=Math.max(0,Math.min(CLOSE,m));      // in the tool the whole 24 hours can be looked at (the game itself runs from 06:00 to 24:00)
+  st.closed=st.minute>=CLOSE;st.paused=true;ctr.pp&&ctr.pp();lastSig='';render();chip();placeHandles();}
+function selectKey(i,go){selK=i;if(go)jump(Math.max(0,Math.min(CLOSE-1,cfg.keys[i].t)));Object.keys(ctr).forEach(function(k){try{ctr[k]();}catch(e){}});markKeys();placeHandles();}
 var keyBtns=[];
 function markKeys(){keyBtns.forEach(function(b,i){b.classList.toggle('on',i===selK);b.textContent=cfg.keys[i].name+' '+hh(cfg.keys[i].t);});}
 function build(){
@@ -190,7 +191,7 @@ function build(){
   var pp=mk(bar,st.paused?'▶ Pusti':'⏸ Pauza',function(){st.paused=!st.paused;ctr.pp();chip();});ctr.pp=function(){pp.textContent=st.paused?'▶ Pusti':'⏸ Pauza';};
   mk(bar,'Novi dan (06:00)',function(){endDay();});
   pn.appendChild(bar);
-  row('Vreme','t',OPEN,CLOSE,5,function(){return st.minute;},function(v){st.minute=v;st.closed=v>=CLOSE;st.paused=true;ctr.pp();},function(v){return hh(v>=1440?1440:v);});
+  row('Vreme (celih 24 h za podešavanje)','t',0,CLOSE,5,function(){return st.minute;},function(v){st.minute=v;st.closed=v>=CLOSE;st.paused=true;ctr.pp();},function(v){return hh(v>=1440?1440:v);});
   row('Trajanje jednog sata u igri (s)','sph',10,180,5,function(){return cfg.secPerHour;},function(v){cfg.secPerHour=v;},function(v){return v+' s (dan = '+Math.round(v*18/6)/10+' min)';});
   var h=document.createElement('h4');h.textContent='Četiri tačke u vremenu (klik = otvori tačku i idi na to vreme)';pn.appendChild(h);
   var kb=document.createElement('div');keyBtns=[];cfg.keys.forEach(function(k,i){keyBtns.push(mk(kb,'',function(){selectKey(i,true);}));});pn.appendChild(kb);
@@ -259,7 +260,7 @@ btn.addEventListener('click',function(){var on=pn.style.display!=='block';pn.sty
 setInterval(function(){if(pn.style.display==='block')placeHandles();},300);
 
 setInterval(tick,250);
-window.CooksterDay={minute:nowM,selectKey:function(i){if(!keyBtns.length)build();selectKey(i,true);},setMinute:function(m){st.minute=Math.max(OPEN,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;lastSig='';render();chip();},pause:function(v){st.paused=v!==false;chip();},endDay:endDay,isClosed:function(){return st.closed;},day:function(){return st.day;},fmt:fmt,config:function(){return cfg;}};
+window.CooksterDay={minute:nowM,selectKey:function(i){if(!keyBtns.length)build();selectKey(i,true);},setMinute:function(m){st.minute=Math.max(0,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;lastSig='';render();chip();},pause:function(v){st.paused=v!==false;chip();},endDay:endDay,isClosed:function(){return st.closed;},day:function(){return st.day;},fmt:fmt,config:function(){return cfg;}};
 try{CooksterGrill&&CooksterGrill.boost&&CooksterGrill.boost(1+.5*cfg.fireNight);}catch(e){}
 setTimeout(function(){render();chip();},300);
 })();
