@@ -71,7 +71,7 @@ function fireSig(){return Math.round(grillLevel()*20)+'/'+Math.round(stoveLevel(
 var cv=null,cx=null,tintC=null,sunI=new Image();sunI.src='assets/effects/sun_patches.png?v=1';
 /* the picture of the kitchen WITHOUT the sun on the floor (assets/effects/kuhinja_bez_sunca.webp, the same picture, drawn without the light of the window) lies over the real one inside a mask of the window light
    (assets/effects/sun_zone_mask.png) and it melts in while the sun goes away (evening, night, early morning). If that picture is not there, the patches are only darkened. */
-var SUNLESS='assets/effects/kuhinja_bez_sunca.webp?v=1',ZONE='assets/effects/sun_zone_mask.png?v=1',sunless=null,sunlessOK=false;
+var SUNLESS='assets/effects/kuhinja_bez_sunca.webp?v=2',ZONE='assets/effects/sun_zone_mask.png?v=1',sunless=null,sunlessOK=false;
 (function(){var im=new Image();im.onload=function(){sunlessOK=true;lastSig='';};im.src=SUNLESS;})();
 function sunlessLayer(){
   var sc=document.getElementById('scene');if(!sc)return null;
