@@ -71,15 +71,19 @@ function fireSig(){return Math.round(grillLevel()*20)+'/'+Math.round(stoveLevel(
 var cv=null,cx=null,tintC=null,sunI=new Image();sunI.src='assets/effects/sun_patches.png?v=1';
 /* the picture of the kitchen WITHOUT the sun on the floor (assets/effects/kuhinja_bez_sunca.webp, the same picture, drawn without the light of the window) lies over the real one inside a mask of the window light
    (assets/effects/sun_zone_mask.png) and it melts in while the sun goes away (evening, night, early morning). If that picture is not there, the patches are only darkened. */
-var SUNLESS='assets/effects/kuhinja_bez_sunca.webp?v=3',ZONE='assets/effects/sun_zone_mask.png?v=1',sunless=null,sunlessOK=false;
+var sunless2=null,OCC_CLIP='polygon(322px 243px,1211px 243px,1243px 548px,1212px 612px,365px 612px,320px 548px)';      // the same polygon as #tableOccluder in game.css (it draws the OLD picture of the table over the things under the table)
+var SUNLESS='assets/effects/kuhinja_bez_sunca.webp?v=3',ZONE='assets/effects/sun_zone_mask.png?v=2',sunless=null,sunlessOK=false;
 (function(){var im=new Image();im.onload=function(){sunlessOK=true;lastSig='';};im.src=SUNLESS;})();
 function sunlessLayer(){
   var sc=document.getElementById('scene');if(!sc)return null;
-  if(sunless&&sunless.parentNode===sc)return sunless;
-  sunless=document.createElement('div');sunless.id='daySunless';
-  sunless.style.cssText='position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;pointer-events:none;z-index:0;opacity:0;background:url('+SUNLESS+') 0 0/100% 100% no-repeat;'+
-    '-webkit-mask-image:url('+ZONE+');mask-image:url('+ZONE+');-webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat';
-  sc.insertBefore(sunless,sc.firstChild);return sunless;
+  if(sunless&&sunless.parentNode===sc&&sunless2&&sunless2.parentNode===sc)return sunless;
+  function mk(id,z,clip){var d=document.createElement('div');d.id=id;
+    d.style.cssText='position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;pointer-events:none;z-index:'+z+';opacity:0;background:url('+SUNLESS+') 0 0/100% 100% no-repeat;'+
+    '-webkit-mask-image:url('+ZONE+');mask-image:url('+ZONE+');-webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat'+(clip?';clip-path:'+clip:'');return d;}
+  if(sunless)sunless.remove();if(sunless2)sunless2.remove();
+  sunless=mk('daySunless',0,null);sc.insertBefore(sunless,sc.firstChild);
+  sunless2=mk('daySunless2',25,OCC_CLIP);sc.appendChild(sunless2);      // over the occluder of the table, so the old picture does not show the sun in the floor left of the table
+  return sunless;
 }
 function layer(){
   var sc=document.getElementById('scene');if(!sc)return false;
@@ -108,7 +112,7 @@ function render(){
   cx.fillStyle=rgba(P.shade,P.dark*.95);cx.fillRect(0,0,W,H);
   // 1b. the patches of sun that are painted on the floor go dark when there is no sun (night, early morning, late evening)
   var dayF=clamp01(Math.min((h-5)/2,(21-h)/2)),extra=(1-dayF)*(+cfg.sunPatch||0);
-  var sl=sunlessLayer();if(sl)sl.style.opacity=sunlessOK?(1-dayF).toFixed(3):'0';
+  var sl=sunlessLayer();if(sl){var op=sunlessOK?(1-dayF).toFixed(3):'0';sl.style.opacity=op;if(sunless2)sunless2.style.opacity=op;}
   if(!sunlessOK&&extra>.01&&sunI.complete&&sunI.naturalWidth){
     if(!tintC){tintC=document.createElement('canvas');tintC.width=cv.width;tintC.height=cv.height;}
     var tc=tintC.getContext('2d');tc.setTransform(1,0,0,1,0,0);tc.globalCompositeOperation='source-over';tc.clearRect(0,0,tintC.width,tintC.height);
