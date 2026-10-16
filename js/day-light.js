@@ -318,6 +318,7 @@ function build(){
   row('Vatra noću sija jače','fn',0,3,.1,function(){return cfg.fireNight;},function(v){cfg.fireNight=v;try{CooksterGrill.boost(1+.5*v);}catch(e){}},function(v){return (+v).toFixed(1)+'x';});
   h=document.createElement('h4');h.textContent='Senke od sunca (odvojene od senki dodira)';pn.appendChild(h);
   var sb=mk(pn,'Senke od sunca uključene',function(){cfg.sh.on=cfg.sh.on?0:1;sb.classList.toggle('on',!!cfg.sh.on);save();});sb.classList.toggle('on',!!cfg.sh.on);
+  var bkb=mk(pn,'Pečene senke (tanjir, tiganji, šerpa)',function(){cfg.sh.baked=cfg.sh.baked===0?1:0;bkb.classList.toggle('on',cfg.sh.baked!==0);save();});bkb.classList.toggle('on',cfg.sh.baked!==0);
   row('Tip senke: 0 duga, 1 kao kap (za izabranu tačku)','shk',0,1,.05,function(){return K().shk;},function(v){K().shk=v;});
   row('Dužina senke (za izabranu tačku)','shl',0,3,.05,function(){return K().shl;},function(v){K().shl=v;});
   row('Jačina senke (za izabranu tačku)','sho',0,1,.05,function(){return K().sho;},function(v){K().sho=v;});
