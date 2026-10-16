@@ -134,6 +134,7 @@ function render(){
     tc.fillStyle=rgba(P.shade,1);tc.fillRect(0,0,tintC.width,tintC.height);tc.globalCompositeOperation='destination-in';tc.drawImage(sunI,0,0,tintC.width,tintC.height);
     cx.save();cx.setTransform(1,0,0,1,0,0);cx.globalAlpha=extra;cx.drawImage(tintC,0,0);cx.restore();
   }
+  try{var rs=document.documentElement.style,ab=clamp01(1-P.dark*.95*.98),haze=P.light*.5;rs.setProperty('--amb-b',Math.min(1.05,ab+haze*.35).toFixed(3));rs.setProperty('--amb-s',(1-P.dark*.25).toFixed(3));}catch(e){}
   var wl=winLayer();if(wl)wl.style.opacity=clamp01(P.nw).toFixed(3);
   // 2. the warm haze of the morning / the evening
   if(P.light>.005){cx.fillStyle=rgba(P.c,P.light*.55);cx.fillRect(0,0,W,H);}
@@ -154,7 +155,11 @@ function render(){
 }
 
 /* ---------- the things in the shaft of the sun are lit ---------- */
-(function(){var st2=document.createElement('style');st2.textContent='.item.lit-sun:not(.hovered):not(.container-target):not(.stir-ready-target):not(.pour-target-ready),.flour-pile.lit-sun{filter:brightness(var(--lit-b,1)) saturate(var(--lit-s,1)) sepia(var(--lit-w,0))}';document.head.appendChild(st2);})();
+(function(){var st2=document.createElement('style');st2.textContent='.item.lit-sun:not(.container-target):not(.stir-ready-target):not(.pour-target-ready),.flour-pile.lit-sun{filter:brightness(var(--lit-b,1)) saturate(var(--lit-s,1)) sepia(var(--lit-w,0))}';document.head.appendChild(st2);})();
+/* the things that are drawn ABOVE the dark layer (the item in the hand = its ghost, the pitcher that pours, the cloth, the picture of the sack) do not get the dark of the canvas, so they get the same dark as a filter:
+   --amb-b is set on the page in render() from the dark of the time of day (the held thing looks as dark as the things lying around). */
+(function(){var st3=document.createElement('style');st3.textContent=
+ '.placement-ghost,#ppLayer,#clothLayer,.cookster-backpack-held-preview{filter:brightness(var(--amb-b,1)) saturate(var(--amb-s,1))}';document.head.appendChild(st3);})();
 function litTick(){
   var list=((typeof window.items!=='undefined'&&window.items)||(typeof items!=='undefined'?items:[])||[]).slice();
   [].forEach.call(document.querySelectorAll('.flour-pile'),function(e){list.push(e);});      // the flour on the table is not an item, but it is lit too
