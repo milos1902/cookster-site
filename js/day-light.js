@@ -18,16 +18,24 @@ var DEF={
     {name:'Podne',shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:.3,sho:.45,sha:50,t:720,nw:0,c:'#fff4dc',light:0,dark:0,shade:'#2a2a2e',sun:1,lx:614,ly:858,spread:1.1,alpha:0.37,blur:30,bc:'#fff6dc'},
     {name:'Veče',shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:1.4,sho:.2,sha:75,t:1140,nw:0.6,c:'#4639fe',light:0.07,dark:0.28,shade:'#010223',sun:0.3,lx:432,ly:589,spread:0,alpha:0,blur:0,bc:'#000000'},
     {name:'Noć',shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:0,sho:0,sha:45,t:0,nw:1,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}
+    ,{name:'Pred zoru',t:300,nw:1,shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:0,sho:0,sha:45,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}      // 0:00-5:00 the same as the night (constant dark), from 5:00 the sun starts to come
   ],
+  shItems:{},
   itemLight2:.15,
   fireNight:0.2,
   sh:{on:1,len:.9,op:.45,blur:2.5,flat:.7}
 };
 function clone(o){return JSON.parse(JSON.stringify(o));}
 var cfg=clone(DEF);
-try{var sv=JSON.parse(localStorage.getItem(KEY)||'null');if(sv&&sv.keys&&sv.keys.length===4){cfg=clone(DEF);if(sv.secPerHour)cfg.secPerHour=sv.secPerHour;if(sv.win)cfg.win=Object.assign(cfg.win,sv.win);if(sv.fireNight!=null)cfg.fireNight=sv.fireNight;if(sv.itemLight2!=null)cfg.itemLight2=sv.itemLight2;if(sv.sh)cfg.sh=Object.assign(cfg.sh,sv.sh);sv.keys.forEach(function(k,i){cfg.keys[i]=Object.assign(cfg.keys[i],k);});}}catch(e){}
+function applyCfg(c,sv){
+  if(sv.secPerHour)c.secPerHour=sv.secPerHour;if(sv.win)c.win=Object.assign(c.win,sv.win);if(sv.fireNight!=null)c.fireNight=sv.fireNight;if(sv.itemLight2!=null)c.itemLight2=sv.itemLight2;if(sv.sh)c.sh=Object.assign(c.sh,sv.sh);if(sv.shItems)c.shItems=clone(sv.shItems);
+  var has5=false;
+  (sv.keys||[]).forEach(function(k,i){var j=-1;c.keys.forEach(function(d,n){if(d.name===k.name)j=n;});if(j<0&&i<c.keys.length)j=i;if(j>=0){if(k.name==='Pred zoru')has5=true;var t=c.keys[j].t;Object.assign(c.keys[j],k);if(k.name==='Pred zoru'||c.keys[j].name==='Pred zoru')c.keys[j].name='Pred zoru';}});
+  if(!has5){var nk=null,zk=null;c.keys.forEach(function(d){if(d.name==='Noć')nk=d;if(d.name==='Pred zoru')zk=d;});if(nk&&zk){var t=zk.t;Object.assign(zk,clone(nk));zk.name='Pred zoru';zk.t=t;}}      // an old save without the new key: before the dawn is as dark as the night he already set
+  return c;}
+try{var sv=JSON.parse(localStorage.getItem(KEY)||'null');if(sv&&sv.keys&&sv.keys.length>=4){cfg=applyCfg(clone(DEF),sv);}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(cfg));}catch(e){}}
-function mergeCfg(src){var c=clone(DEF);if(src.secPerHour)c.secPerHour=src.secPerHour;if(src.win)c.win=Object.assign(c.win,src.win);if(src.fireNight!=null)c.fireNight=src.fireNight;if(src.itemLight2!=null)c.itemLight2=src.itemLight2;if(src.sh)c.sh=Object.assign(c.sh,src.sh);if(src.keys&&src.keys.length===4)src.keys.forEach(function(k,i){c.keys[i]=Object.assign(c.keys[i],k);});return c;}
+function mergeCfg(src){return applyCfg(clone(DEF),src);}
 
 /* ---------- the clock ---------- */
 var st={minute:OPEN,paused:false,day:1,closed:false};
@@ -237,7 +245,7 @@ document.head.appendChild(css);
 var btn=document.createElement('button');btn.id='dlBtn';btn.type='button';btn.textContent='☀ Vreme i svetlo';btn.setAttribute('data-tool-ui','1');
 var pn=document.createElement('div');pn.id='dlPanel';pn.setAttribute('data-tool-ui','1');
 document.body.appendChild(btn);document.body.appendChild(pn);
-var ctr={},selK=0,showH=true,hl=null,hSun=null,hA=null,hB=null,tagS=null,tagW=null;
+var pickOn=false,selItem='',selItemLabel='',ctr={},selK=0,showH=true,hl=null,hSun=null,hA=null,hB=null,tagS=null,tagW=null;
 function K(){return cfg.keys[selK];}
 function row(label,key,min,max,step,get,set,fmtv){
   var l=document.createElement('label'),o=document.createElement('output'),i=document.createElement('input');i.type='range';i.min=min;i.max=max;i.step=step;
@@ -304,6 +312,20 @@ function build(){
   row('Visina / spljoštenost senke','shh',.1,3,.05,function(){return K().shh;},function(v){K().shh=v;});
   row('Rotacija senke','shr',-90,90,1,function(){return K().shr;},function(v){K().shr=v;},function(v){return Math.round(v)+'°';});
   row('Mekoća senke','shb',0,12,.5,function(){return K().shb;},function(v){K().shb=v;},function(v){return (+v).toFixed(1)+'px';});
+  h=document.createElement('h4');h.textContent='Senka jednog predmeta (preko podešavanja za dan)';pn.appendChild(h);
+  var itLab=document.createElement('div');itLab.style.cssText='font-size:12px;margin:2px 0 6px;opacity:.85';itLab.textContent='Predmet nije izabran';pn.appendChild(itLab);
+  var pickB=mk(pn,'Nišani',function(){pickOn=!pickOn;pickB.classList.toggle('on',pickOn);pickB.textContent=pickOn?'Klikni predmet na sceni…':'Nišani';document.body.classList.toggle('dl-pick',pickOn);});
+  var rstB=mk(pn,'Vrati ovaj predmet',function(){if(selItem){delete cfg.shItems[selItem];save();Object.keys(ctr).forEach(function(k){try{ctr[k]();}catch(e){}});}});
+  var cs=document.createElement('style');cs.textContent='body.dl-pick #scene,body.dl-pick #scene *{cursor:crosshair!important}';document.head.appendChild(cs);
+  var dummy={};
+  function IS(){if(!selItem)return dummy;return cfg.shItems[selItem]||(cfg.shItems[selItem]={});}
+  function irow(label,key,min,max,step,def,fm){row(label,'i_'+key,min,max,step,function(){var v=IS()[key];return v==null?def:v;},function(v){IS()[key]=v;},fm);}
+  irow('Dužina ×','l',0,3,.05,1);irow('Jačina ×','o',0,2,.05,1);irow('Smer + (stepeni)','a',-90,90,1,0,function(v){return Math.round(v)+'°';});
+  irow('Pomeraj X','x',-150,150,1,0,function(v){return Math.round(v);});irow('Pomeraj Y','y',-150,150,1,0,function(v){return Math.round(v);});
+  irow('Širina ×','w',.2,3,.05,1);irow('Visina ×','h',.1,3,.05,1);irow('Rotacija +','r',-90,90,1,0,function(v){return Math.round(v)+'°';});irow('Mekoća +','b',-5,10,.5,0,function(v){return (+v).toFixed(1)+'px';});
+  ctr.itl=function(){itLab.textContent=selItem?('Izabran: '+selItemLabel):'Predmet nije izabran — pritisni Nišani i klikni predmet';};
+  window.addEventListener('pointerdown',function(e){if(!pickOn||pn.contains(e.target))return;var el=e.target&&e.target.closest&&e.target.closest('.item');if(!el)return;e.preventDefault();e.stopImmediatePropagation();
+    selItem=el.dataset.itemId||'';selItemLabel=el.dataset.label||selItem;pickOn=false;pickB.classList.remove('on');pickB.textContent='Nišani';document.body.classList.remove('dl-pick');Object.keys(ctr).forEach(function(k){try{ctr[k]();}catch(x){}});},true);
   var b2=document.createElement('div');
   mk(b2,'Izvezi JSON',function(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'}));a.download='cookster-day-light.json';document.body.appendChild(a);a.click();setTimeout(function(){a.remove();},500);});
   var fi=document.createElement('input');fi.type='file';fi.accept='application/json';fi.style.display='none';
@@ -346,7 +368,7 @@ btn.addEventListener('click',function(){var on=pn.style.display!=='block';pn.sty
 setInterval(function(){if(pn.style.display==='block')placeHandles();},300);
 
 setInterval(tick,250);
-window.CooksterDay={minute:nowM,selectKey:function(i){if(!keyBtns.length)build();selectKey(i,true);},setMinute:function(m){st.minute=Math.max(0,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;lastSig='';render();chip();},pause:function(v){st.paused=v!==false;chip();},endDay:endDay,isClosed:function(){return st.closed;},day:function(){return st.day;},fmt:fmt,config:function(){return cfg;},phase:function(){return mixPhase((st.closed?1440:nowM())%1440);}};
+window.CooksterDay={minute:nowM,selectKey:function(i){if(!keyBtns.length)build();selectKey(i,true);},setMinute:function(m){st.minute=Math.max(0,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;lastSig='';render();chip();},pause:function(v){st.paused=v!==false;chip();},endDay:endDay,isClosed:function(){return st.closed;},day:function(){return st.day;},fmt:fmt,config:function(){return cfg;},itemSh:function(id){return cfg.shItems[id]||null;},phase:function(){return mixPhase((st.closed?1440:nowM())%1440);}};
 try{CooksterGrill&&CooksterGrill.boost&&CooksterGrill.boost(1+.5*cfg.fireNight);}catch(e){}
 setTimeout(function(){render();chip();},300);
 })();

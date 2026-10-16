@@ -903,3 +903,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Dinamične: dugačke ujutru i uveče, kratke u podne; smer prati prozor→mesto gde zrak pada i menja se sa vremenom. Noću nestaju.
 - Podešavanje u alatu „Vreme i svetlo“: uključi/isključi, dužina, jačina, mekoća, spljoštenost (`cfg.sh`, čuva se i u JSON-u).
 - Senke od sunca su sada po tačkama dana (Jutro/Podne/Veče/Noć) u alatu: dužina, jačina, smer, pomeraj X/Y, širina, visina, rotacija, mekoća; između tačaka se glatko prelivaju sa satom.
+- Peta tačka dana „Pred zoru“ (05:00): od 00:00 do 05:00 je konstantan mrak, sunce kreće od 05:00. Stari sačuvani podaci/JSON se učitavaju po imenu tačke; „Pred zoru“ se kopira iz sačuvane „Noć“.
+- Senka jednog predmeta: dugme „Nišani“ u alatu → klik na predmet na sceni → klizači (dužina ×, jačina ×, smer +, pomeraj X/Y, širina ×, visina ×, rotacija +, mekoća +) važe za taj tip predmeta preko podešavanja za dan (`cfg.shItems`, čuva se i u JSON-u).
