@@ -105,7 +105,8 @@ function layer(){
   if(cv&&cv.isConnected&&cv.parentNode===sc)return true;
   cv=document.createElement('canvas');cv.id='dayLight';cv.width=Math.round(W*SC);cv.height=Math.round(H*SC);
   cv.style.cssText='position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;pointer-events:none;z-index:90000';
-  sc.appendChild(cv);cx=cv.getContext('2d');return true;
+  sc.appendChild(cv);cx=cv.getContext('2d');
+  return true;
 }
 function pool(x,y,rx,ry,carve,glow,col){
   cx.save();cx.translate(x,y);cx.scale(1,ry/rx);
@@ -160,30 +161,36 @@ function render(){
 /* the things that are drawn ABOVE the dark layer (the item in the hand = its ghost, the pitcher that pours, the cloth, the picture of the sack) do not get the dark of the canvas, so they get the same dark as a filter:
    --amb-b is set on the page in render() from the dark of the time of day (the held thing looks as dark as the things lying around). */
 (function(){var st3=document.createElement('style');st3.textContent=
- '.placement-ghost,#ppLayer,#clothLayer,.cookster-backpack-held-preview{filter:url(#dlAmb)}';document.head.appendChild(st3);
+ '#ppLayer,#clothLayer,body>.placement-ghost{filter:url(#dlAmb)}      /* the picture of the thing in the hand is a fixed copy on the body (outside the scene), so the dark layer of the scene does not reach it */';document.head.appendChild(st3);
   var sv=document.createElementNS('http://www.w3.org/2000/svg','svg');sv.setAttribute('width','0');sv.setAttribute('height','0');sv.style.cssText='position:absolute;width:0;height:0';
   sv.innerHTML='<filter id="dlAmb" color-interpolation-filters="sRGB" x="-5%" y="-5%" width="110%" height="110%"><feColorMatrix id="dlAmbM" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"/></filter>';(document.body||document.documentElement).appendChild(sv);})();
 /* the same blend as the canvas: colour*(1-a) + shade*a (the dark of the time of day) + the warm haze; a feColorMatrix does it exactly */
-function ambMatrix(P){var m=document.getElementById('dlAmbM');if(!m)return;var a=clamp01(P.dark*.95),hz=clamp01(P.light*.55),k=(1-a)*(1-hz),r=(P.shade[0]*a*(1-hz)+P.c[0]*hz)/255,g=(P.shade[1]*a*(1-hz)+P.c[1]*hz)/255,b=(P.shade[2]*a*(1-hz)+P.c[2]*hz)/255;
+var heldS=0;      // the veil of the sun shaft at the place of the thing in the hand (0..1)
+function ambMatrix(P){var m=document.getElementById('dlAmbM');if(!m)return;var a=clamp01(P.dark*.95),hz=clamp01(P.light*.55),sv=clamp01(heldS),k=(1-a)*(1-hz)*(1-sv),r=((P.shade[0]*a*(1-hz)+P.c[0]*hz)*(1-sv)+P.bc[0]*sv)/255,g=((P.shade[1]*a*(1-hz)+P.c[1]*hz)*(1-sv)+P.bc[1]*sv)/255,b=((P.shade[2]*a*(1-hz)+P.c[2]*hz)*(1-sv)+P.bc[2]*sv)/255;
   m.setAttribute('values',k.toFixed(4)+' 0 0 0 '+r.toFixed(4)+'  0 '+k.toFixed(4)+' 0 0 '+g.toFixed(4)+'  0 0 '+k.toFixed(4)+' 0 '+b.toFixed(4)+'  0 0 0 1 0');}
+function shaftAt(c,P){      // c = a point of the scene: how strongly the shaft lights it (k, for the item) and how thick the veil of the shaft is over it (sa, as the canvas draws it)
+  var w=cfg.win,mx=(w.x1+w.x2)/2,my=(w.y1+w.y2)/2,dx=P.lx-mx,dy=P.ly-my,len2=dx*dx+dy*dy||1,len=Math.sqrt(len2),t=((c.x-mx)*dx+(c.y-my)*dy)/len2;
+  if(!(t>0&&t<1.15))return {k:0,sa:0};
+  var px=(c.x-mx)-t*dx,py=(c.y-my)-t*dy,across=Math.abs(px*(-dy)/len+py*(dx/len)),hw=Math.hypot(w.x2-w.x1,w.y2-w.y1)/2,
+      half=hw+hw*P.spread*t+60,side=1-clamp01((across-(half-120))/120),g=t<.55?1-t/.55*.55:Math.max(0,.45*(1-(t-.55)/.45));
+  return {k:clamp01(side*clamp01(1.05-t*.55)*P.alpha/.55),sa:clamp01(P.alpha*g*side)};
+}
+function heldTick(){      // the thing in the hand lies above the dark layer, so it gets the veil of the shaft as a filter too (the same as the things lying around)
+  var g=document.querySelector('body>.placement-ghost .ghost-item-copy'),P=mixPhase((st.closed?1440:nowM())%1440),s0=0;
+  if(g){try{var r=g.getBoundingClientRect(),c=screenToScene(r.left+r.width/2,r.top+r.height*.62);s0=shaftAt(c,P).sa;}catch(e){}}
+  if(Math.abs(s0-heldS)>.01){heldS=s0;ambMatrix(P);}
+}
+setInterval(heldTick,80);
 function litTick(){
   var list=((typeof window.items!=='undefined'&&window.items)||(typeof items!=='undefined'?items:[])||[]).slice();
   [].forEach.call(document.querySelectorAll('.flour-pile'),function(e){list.push(e);});      // the flour on the table is not an item, but it is lit too
   if(!list.length)return;
   var P=mixPhase((st.closed?1440:nowM())%1440),w=cfg.win,on=P.alpha>.03&&(+cfg.itemLight||0)>.001;
-  var mx=(w.x1+w.x2)/2,my=(w.y1+w.y2)/2,dx=P.lx-mx,dy=P.ly-my,len2=dx*dx+dy*dy||1,len=Math.sqrt(len2);
   list.forEach(function(el){
     if(!el||!el.isConnected)return;
     var k=0;
     if(on&&el!==(typeof holding!=='undefined'?holding:null)){      // the copy that follows the mouse (ghost-item-copy) is lit too, it shows where the thing would lie
-      var r=el.getBoundingClientRect(),c=screenToScene(r.left+r.width/2,r.top+r.height*.62),
-          t=((c.x-mx)*dx+(c.y-my)*dy)/len2;                      // 0 = at the window, 1 = where the shaft falls
-      if(t>0&&t<1.15){
-        var px=(c.x-mx)-t*dx,py=(c.y-my)-t*dy,across=Math.abs(px*(-dy)/len+py*(dx/len)),                 // distance from the axis of the shaft
-            half=Math.hypot(w.x2-w.x1,w.y2-w.y1)/2+(Math.hypot(w.x2-w.x1,w.y2-w.y1)/2)*P.spread*t+60;      // half of the width of the shaft at that place (+ a soft edge)
-        var side=1-clamp01((across-(half-120))/120);
-        k=clamp01(side*clamp01(1.05-t*.55)*P.alpha/.55);
-      }
+      var r=el.getBoundingClientRect();k=shaftAt(screenToScene(r.left+r.width/2,r.top+r.height*.62),P).k;
     }
     var was=el._litK||0;
     if(Math.abs(k-was)<.02&&!(k===0&&was!==0))return;
