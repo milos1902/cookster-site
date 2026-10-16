@@ -64,7 +64,7 @@ function stopClip(){if(!vid)return;clearTimeout(vidT);playing=false;try{vid.paus
 function night(){var D=window.CooksterDay;try{return D&&D.phase?D.phase().nw:0;}catch(e){return 0;}}
 function set(v,animate){
   if(!build())return;var was=open;open=!!v;try{localStorage.setItem(KEY,open?'1':'0');}catch(e){}
-  stopClip();broke=false;
+  stopClip();broke=false;lvlGo();
   var willClip=open&&!was&&animate&&gl&&night()<.3;      // with the clip the picture of the open window shows only when the clip ends (no flash of the open window before the clip starts)
   box.style.opacity=(open&&!willClip)?1:0;box.style.transform='';
   try{if(typeof playImpactSound==='function'&&hot)playImpactSound(hot,open?'open':'close');}catch(e){}
@@ -82,7 +82,10 @@ function tick(){      // at night the window is closed on the picture
   inner.style.opacity=String(Math.max(0,Math.min(1,1-nw)).toFixed(2));
 }
 setInterval(tick,400);
-setInterval(function(){var t=open?1:0;if(Math.abs(t-lvl)>.001){lvl+=(t-lvl)*.06;if(Math.abs(t-lvl)<.01)lvl=t;}},40);      // the light of the room follows the window slowly (about 1.5 s)
+/* the light of the room follows the window: as long as the window is opening (0.8 s) or closing (0.5 s), drawn every frame (not 4 times a second) */
+var lvlFrom=lvl,lvlTo=lvl,lvlT0=0,lvlDur=800,lvlRun=false;
+function lvlStep(){var k=Math.max(0,Math.min(1,(performance.now()-lvlT0)/lvlDur));lvl=lvlFrom+(lvlTo-lvlFrom)*(k*k*(3-2*k));try{if(window.CooksterDay&&CooksterDay.refresh)CooksterDay.refresh();}catch(e){}if(k<1)requestAnimationFrame(lvlStep);else lvlRun=false;}
+function lvlGo(){lvlFrom=lvl;lvlTo=open?1:0;lvlT0=performance.now();lvlDur=open?800:500;if(!lvlRun){lvlRun=true;requestAnimationFrame(lvlStep);}}
 window.addEventListener('load',function(){setTimeout(function(){build();tick();},300);});
 window.CooksterWindow={toggle:toggle,set:function(v){set(v,true);},isOpen:function(){return open;},level:function(){return lvl;},video:function(){return vid;}};
 })();

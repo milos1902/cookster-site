@@ -377,7 +377,7 @@ btn.addEventListener('click',function(){var on=pn.style.display!=='block';pn.sty
 setInterval(function(){if(pn.style.display==='block')placeHandles();},300);
 
 setInterval(tick,250);
-window.CooksterDay={minute:nowM,selectKey:function(i){if(!keyBtns.length)build();selectKey(i,true);},setMinute:function(m){st.minute=Math.max(0,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;lastSig='';render();chip();},pause:function(v){st.paused=v!==false;chip();},endDay:endDay,isClosed:function(){return st.closed;},day:function(){return st.day;},fmt:fmt,config:function(){return cfg;},itemSh:function(id){return cfg.shItems[id]||null;},phase:function(){return mixPhase((st.closed?1440:nowM())%1440);}};
+window.CooksterDay={refresh:function(){lastSig='';render();try{litTick();}catch(e){}},minute:nowM,selectKey:function(i){if(!keyBtns.length)build();selectKey(i,true);},setMinute:function(m){st.minute=Math.max(0,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;lastSig='';render();chip();},pause:function(v){st.paused=v!==false;chip();},endDay:endDay,isClosed:function(){return st.closed;},day:function(){return st.day;},fmt:fmt,config:function(){return cfg;},itemSh:function(id){return cfg.shItems[id]||null;},phase:function(){return mixPhase((st.closed?1440:nowM())%1440);}};
 try{CooksterGrill&&CooksterGrill.boost&&CooksterGrill.boost(1+.5*cfg.fireNight);}catch(e){}
 setTimeout(function(){render();chip();},300);
 })();
