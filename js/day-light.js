@@ -318,6 +318,7 @@ function build(){
   row('Vatra noću sija jače','fn',0,3,.1,function(){return cfg.fireNight;},function(v){cfg.fireNight=v;try{CooksterGrill.boost(1+.5*v);}catch(e){}},function(v){return (+v).toFixed(1)+'x';});
   h=document.createElement('h4');h.textContent='Senke od sunca (odvojene od senki dodira)';pn.appendChild(h);
   var sb=mk(pn,'Senke od sunca uključene',function(){cfg.sh.on=cfg.sh.on?0:1;sb.classList.toggle('on',!!cfg.sh.on);save();});sb.classList.toggle('on',!!cfg.sh.on);
+  var bkb=mk(pn,'Pečene senke (tanjir, tiganji, šerpa)',function(){cfg.sh.baked=cfg.sh.baked===0?1:0;bkb.classList.toggle('on',cfg.sh.baked!==0);save();});bkb.classList.toggle('on',cfg.sh.baked!==0);
   row('Tip senke: 0 duga, 1 kao kap (za izabranu tačku)','shk',0,1,.05,function(){return K().shk;},function(v){K().shk=v;});
   row('Dužina senke (za izabranu tačku)','shl',0,3,.05,function(){return K().shl;},function(v){K().shl=v;});
   row('Jačina senke (za izabranu tačku)','sho',0,1,.05,function(){return K().sho;},function(v){K().sho=v;});
@@ -345,6 +346,7 @@ function build(){
   h=document.createElement('h4');h.textContent='Prozor (klik na prozor menja svetlo)';pn.appendChild(h);
   row('Zrak sunca kad je prozor otvoren ×','wo',0,3,.05,function(){return cfg.win2.open;},function(v){cfg.win2.open=v;});
   row('Zrak sunca kad je prozor zatvoren ×','wc',0,3,.05,function(){return cfg.win2.closed;},function(v){cfg.win2.closed=v;});
+  mk(pn,'Vrati samo senke na početne',function(){var sd=clone(DEF.keys);cfg.keys.forEach(function(k){sd.forEach(function(d){if(d.name===k.name){['shk','shl','sho','sha','shx','shy','shw','shh','shr','shb'].forEach(function(f){k[f]=d[f];});}});});cfg.shItems=clone(DEF.shItems);cfg.sh=clone(DEF.sh);save();selectKey(selK,false);lastSig='';render();chip();});      // the lighting, the times and the window stay as they are
   var b2=document.createElement('div');
   mk(b2,'Izvezi JSON',function(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'}));a.download='cookster-day-light.json';document.body.appendChild(a);a.click();setTimeout(function(){a.remove();},500);});
   var fi=document.createElement('input');fi.type='file';fi.accept='application/json';fi.style.display='none';
@@ -387,7 +389,7 @@ btn.addEventListener('click',function(){var on=pn.style.display!=='block';pn.sty
 setInterval(function(){if(pn.style.display==='block')placeHandles();},300);
 
 setInterval(tick,250);
-window.CooksterDay={refresh:function(){lastSig='';render();try{litTick();}catch(e){}},minute:nowM,selectKey:function(i){if(!keyBtns.length)build();selectKey(i,true);},setMinute:function(m){st.minute=Math.max(0,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;lastSig='';render();chip();},pause:function(v){st.paused=v!==false;chip();},endDay:endDay,isClosed:function(){return st.closed;},day:function(){return st.day;},fmt:fmt,config:function(){return cfg;},itemSh:function(id){return cfg.shItems[id]||null;},phase:function(){return mixPhase((st.closed?1440:nowM())%1440);}};
+window.CooksterDay={refresh:function(){lastSig='';render();try{litTick();}catch(e){}},refreshLight:function(){lastSig='';render();},minute:nowM,selectKey:function(i){if(!keyBtns.length)build();selectKey(i,true);},setMinute:function(m){st.minute=Math.max(0,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;lastSig='';render();chip();},pause:function(v){st.paused=v!==false;chip();},endDay:endDay,isClosed:function(){return st.closed;},day:function(){return st.day;},fmt:fmt,config:function(){return cfg;},itemSh:function(id){return cfg.shItems[id]||null;},phase:function(){return mixPhase((st.closed?1440:nowM())%1440);}};
 try{CooksterGrill&&CooksterGrill.boost&&CooksterGrill.boost(1+.5*cfg.fireNight);}catch(e){}
 setTimeout(function(){render();chip();},300);
 })();

@@ -49,10 +49,10 @@ function tick(){      // the lamps glow smoothly (about half a second), as much 
   glows[0].style.opacity=level.toFixed(3);
 }
 try{on=localStorage.getItem(KEY)==='1';level=on?1:0;}catch(e){}
-/* switching on / off is quick (0.4 s / 0.3 s) and drawn every frame (the light of the room too), not in jumps */
+/* switching on / off is almost instant (0.12 s / 0.1 s: one or two frames when the page is slow) and only the light is redrawn (not the lighting of every item), so it does not stutter */
 var lFrom=level,lTo=level,lT0=0,lDur=400,lRun=false;
-function lStep(){var k=Math.max(0,Math.min(1,(performance.now()-lT0)/lDur));level=lFrom+(lTo-lFrom)*(k*k*(3-2*k));tick();try{if(window.CooksterDay&&CooksterDay.refresh)CooksterDay.refresh();}catch(e){}if(k<1)requestAnimationFrame(lStep);else lRun=false;}
-function lGo(){lFrom=level;lTo=on?1:0;lT0=performance.now();lDur=on?400:300;if(!lRun){lRun=true;requestAnimationFrame(lStep);}}
+function lStep(){var k=Math.max(0,Math.min(1,(performance.now()-lT0)/lDur));level=lFrom+(lTo-lFrom)*(k*k*(3-2*k));tick();try{if(window.CooksterDay&&CooksterDay.refreshLight)CooksterDay.refreshLight();}catch(e){}if(k<1)requestAnimationFrame(lStep);else lRun=false;}
+function lGo(){lFrom=level;lTo=on?1:0;lT0=performance.now();lDur=on?120:100;if(!lRun){lRun=true;requestAnimationFrame(lStep);}}
 setInterval(tick,300);
 window.addEventListener('load',function(){setTimeout(function(){build();tick();},300);});
 window.CooksterLuster={toggle:toggle,set:function(v){set(v,true);},isOn:function(){return on;},level:function(){return level;}};

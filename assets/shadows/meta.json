@@ -1,0 +1,110 @@
+{
+ "kal_02_duboki_tanjir": {
+  "sw": 547,
+  "sh": 349,
+  "keys": {
+   "jutro": {
+    "file": "assets/shadows/kal_02_duboki_tanjir_jutro.png",
+    "ox": -3,
+    "oy": -4,
+    "w": 585,
+    "h": 365
+   },
+   "podne": {
+    "file": "assets/shadows/kal_02_duboki_tanjir_podne.png",
+    "ox": -1,
+    "oy": -4,
+    "w": 563,
+    "h": 367
+   },
+   "vece": {
+    "file": "assets/shadows/kal_02_duboki_tanjir_vece.png",
+    "ox": -3,
+    "oy": -4,
+    "w": 565,
+    "h": 417
+   }
+  }
+ },
+ "tiganj_mali": {
+  "sw": 284,
+  "sh": 313,
+  "keys": {
+   "jutro": {
+    "file": "assets/shadows/tiganj_mali_jutro.png",
+    "ox": -4,
+    "oy": -3,
+    "w": 322,
+    "h": 329
+   },
+   "podne": {
+    "file": "assets/shadows/tiganj_mali_podne.png",
+    "ox": -3,
+    "oy": -3,
+    "w": 297,
+    "h": 332
+   },
+   "vece": {
+    "file": "assets/shadows/tiganj_mali_vece.png",
+    "ox": -4,
+    "oy": -3,
+    "w": 301,
+    "h": 385
+   }
+  }
+ },
+ "tiganj_veliki": {
+  "sw": 365,
+  "sh": 343,
+  "keys": {
+   "jutro": {
+    "file": "assets/shadows/tiganj_veliki_jutro.png",
+    "ox": -4,
+    "oy": -3,
+    "w": 406,
+    "h": 360
+   },
+   "podne": {
+    "file": "assets/shadows/tiganj_veliki_podne.png",
+    "ox": -3,
+    "oy": -3,
+    "w": 380,
+    "h": 363
+   },
+   "vece": {
+    "file": "assets/shadows/tiganj_veliki_vece.png",
+    "ox": -4,
+    "oy": -3,
+    "w": 384,
+    "h": 419
+   }
+  }
+ },
+ "serpa_velika": {
+  "sw": 1448,
+  "sh": 1086,
+  "keys": {
+   "jutro": {
+    "file": "assets/shadows/serpa_velika_jutro.png",
+    "ox": -19,
+    "oy": -15,
+    "w": 1454,
+    "h": 1098
+   },
+   "podne": {
+    "file": "assets/shadows/serpa_velika_podne.png",
+    "ox": -19,
+    "oy": -15,
+    "w": 1414,
+    "h": 1101
+   },
+   "vece": {
+    "file": "assets/shadows/serpa_velika_vece.png",
+    "ox": -19,
+    "oy": -15,
+    "w": 1422,
+    "h": 1184
+   }
+  }
+ }
+}
