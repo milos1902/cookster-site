@@ -175,12 +175,22 @@ function shaftAt(c,P){      // c = a point of the scene: how strongly the shaft 
       half=hw+hw*P.spread*t+60,side=1-clamp01((across-(half-120))/120),g=t<.55?1-t/.55*.55:Math.max(0,.45*(1-(t-.55)/.45));
   return {k:clamp01(side*clamp01(1.05-t*.55)*P.alpha/.55),sa:clamp01(P.alpha*g*side)};
 }
-function heldTick(){      // the thing in the hand lies above the dark layer, so it gets the veil of the shaft as a filter too (the same as the things lying around)
-  var g=document.querySelector('body>.placement-ghost .ghost-item-copy'),P=mixPhase((st.closed?1440:nowM())%1440),s0=0;
-  if(g){try{var r=g.getBoundingClientRect(),c=screenToScene(r.left+r.width/2,r.top+r.height*.62);s0=shaftAt(c,P).sa;}catch(e){}}
-  if(Math.abs(s0-heldS)>.01){heldS=s0;ambMatrix(P);}
+function heldTick(pt){      // the thing in the hand lies above the dark layer, so it gets the veil of the shaft as a filter too (the same as the things lying around)
+  var g=document.querySelector('body>.placement-ghost .ghost-item-copy'),P=mixPhase((st.closed?1440:nowM())%1440),s0=0,k=0;
+  var c=null;
+  if(g){try{var r=g.getBoundingClientRect();c=screenToScene(r.left+r.width/2,r.top+r.height*.62);}catch(e){}}
+  else if(pt)c=pt;      // the moment of the click: the ghost is not there yet, the veil is made ready for the place of the click
+  if(c){var h=shaftAt(c,P);s0=h.sa;k=h.k;}
+  if(Math.abs(s0-heldS)>.004){heldS=s0;ambMatrix(P);}
+  if(g&&(+cfg.itemLight2||0)>.001){      // the light of the sun on the thing itself, at once (not every 0.3 s)
+    if(k>.02){g.classList.add('lit-sun');g.style.setProperty('--lit-b',(1+cfg.itemLight2*k).toFixed(3));g.style.setProperty('--lit-s',(1+.04*k).toFixed(3));g.style.setProperty('--lit-w',(.03*k).toFixed(3));g.style.setProperty('--lit-c',(1-.05*k).toFixed(3));g._litK=k;}
+    else if(g._litK){g.classList.remove('lit-sun');g.style.removeProperty('--lit-b');g.style.removeProperty('--lit-s');g.style.removeProperty('--lit-w');g.style.removeProperty('--lit-c');g._litK=0;}
+  }
 }
-setInterval(heldTick,80);
+/* no flicker when the thing is taken: the veil is ready before the ghost is drawn (the click), it is set at once when the ghost appears (MutationObserver) and it follows the mouse every frame */
+window.addEventListener('pointerdown',function(e){if(e.button===0&&!(typeof holding!=='undefined'&&holding)){try{heldTick(screenToScene(e.clientX,e.clientY));}catch(x){}}},true);
+try{new MutationObserver(function(){heldTick();}).observe(document.body,{childList:true});}catch(e){}
+(function heldLoop(){requestAnimationFrame(heldLoop);if(document.querySelector('body>.placement-ghost')||heldS)heldTick();})();
 function litTick(){
   var list=((typeof window.items!=='undefined'&&window.items)||(typeof items!=='undefined'?items:[])||[]).slice();
   [].forEach.call(document.querySelectorAll('.flour-pile'),function(e){list.push(e);});      // the flour on the table is not an item, but it is lit too
