@@ -1,0 +1,38 @@
+{
+ "keys": {
+  "jutro": {
+   "angle": 15,
+   "len": 1.0
+  },
+  "podne": {
+   "angle": 50,
+   "len": 0.4
+  },
+  "vece": {
+   "angle": 75,
+   "len": 1.5
+  }
+ },
+ "items": {
+  "kal_02_duboki_tanjir": {
+   "src": "assets/calibration_props/kitchen_set_18/02_duboki_tanjir.png",
+   "h": 34,
+   "foot": "full"
+  },
+  "tiganj_mali": {
+   "src": "assets/new_props/tiganj_mali.png",
+   "h": 36,
+   "foot": "full"
+  },
+  "tiganj_veliki": {
+   "src": "assets/new_props/tiganj_veliki.png",
+   "h": 38,
+   "foot": "full"
+  },
+  "serpa_velika": {
+   "src": "assets/new_props/serpa_velika.png",
+   "h": 56,
+   "foot": "full"
+  }
+ }
+}
