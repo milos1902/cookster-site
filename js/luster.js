@@ -42,15 +42,18 @@ window.addEventListener('pointerdown',function(e){
 window.addEventListener('click',function(e){if(performance.now()-swallowT<600&&onLuster(e)){e.preventDefault();e.stopImmediatePropagation();}},true);
 window.addEventListener('pointermove',function(e){var sc=document.getElementById('scene');if(!sc)return;var h=onLuster(e)&&!(typeof holding!=='undefined'&&holding);if(h!==!!sc._lusterCur){sc._lusterCur=h;sc.style.cursor=h?'pointer':'';}},true);
 function toggle(){set(!on,true);}
-function set(v,sound){on=!!v;try{localStorage.setItem(KEY,on?'1':'0');}catch(e){}
+function set(v,sound){on=!!v;lGo();try{localStorage.setItem(KEY,on?'1':'0');}catch(e){}
   if(sound){try{if(typeof playImpactSound==='function'&&hot)playImpactSound(hot,'click');}catch(e){}}}
 function tick(){      // the lamps glow smoothly (about half a second), as much as the chandelier is switched on
   if(!build())return;
-  var tgt=on?1:0;if(Math.abs(tgt-level)>.001){level+=(tgt-level)*.18;if(Math.abs(tgt-level)<.01)level=tgt;}
   glows[0].style.opacity=level.toFixed(3);
 }
 try{on=localStorage.getItem(KEY)==='1';level=on?1:0;}catch(e){}
-setInterval(tick,40);
+/* switching on / off is quick (0.4 s / 0.3 s) and drawn every frame (the light of the room too), not in jumps */
+var lFrom=level,lTo=level,lT0=0,lDur=400,lRun=false;
+function lStep(){var k=Math.max(0,Math.min(1,(performance.now()-lT0)/lDur));level=lFrom+(lTo-lFrom)*(k*k*(3-2*k));tick();try{if(window.CooksterDay&&CooksterDay.refresh)CooksterDay.refresh();}catch(e){}if(k<1)requestAnimationFrame(lStep);else lRun=false;}
+function lGo(){lFrom=level;lTo=on?1:0;lT0=performance.now();lDur=on?400:300;if(!lRun){lRun=true;requestAnimationFrame(lStep);}}
+setInterval(tick,300);
 window.addEventListener('load',function(){setTimeout(function(){build();tick();},300);});
 window.CooksterLuster={toggle:toggle,set:function(v){set(v,true);},isOn:function(){return on;},level:function(){return level;}};
 })();
