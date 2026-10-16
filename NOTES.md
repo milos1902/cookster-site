@@ -922,3 +922,4 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Senke napravljene posebno za svaki predmet (DEF.shItems u js/day-light.js): tanjiri (duboki, ravni, ovalni), mali tiganj, veliki tiganj i šerpa imaju svoj pomeraj, jačinu i mekoću preko podešavanja dana. Sačuvano podešavanje igrača u alatu (Nišani) ima prednost.
 - Luster: paljenje traje 0.4 s, gašenje 0.3 s, crta se svaki frejm (glow i svetlo sobe), kao kod prozora (lStep u js/luster.js).
 - Razbijanje saksije ubrzano još ×1.3 (klip 3.2 s; fade krhotina 2.2–3.0 s). Maska klipa: sve ispod stola i desno od leve ivice stola je isključeno (krhotine ne idu ispod stola, samo levo od njega na podu).
+- Luster: paljenje 0.12 s, gašenje 0.1 s (skoro trenutno, 1–2 frejma kad je stranica spora); crta se samo svetlo sobe (CooksterDay.refreshLight), ne i osvetljenje svakog predmeta, da ne zaostaje.
