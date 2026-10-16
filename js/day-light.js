@@ -28,6 +28,7 @@ var DEF={
     tiganj_veliki:{x:12,y:7,o:1.15,w:1.02,b:1},
     serpa_velika:{x:16,y:9,o:1.25,b:1}
   },
+  shPoly:{},      // the shadows drawn by the player: itemId -> {jutro,podne,vece: 5 handles [u,v]} (js/shadow-editor.js, js/sun-shadow.js)
   shV:2,      // version of the sun shadows' values: older saves get the new ones (a soft drop shadow, like the plate)
   win2:{open:1.35,closed:1},      // how strong the light of the sun is when the window is open / closed (a click on the window changes the light)
   itemLight2:.15,
@@ -37,7 +38,7 @@ var DEF={
 function clone(o){return JSON.parse(JSON.stringify(o));}
 var cfg=clone(DEF);
 function applyCfg(c,sv){
-  if(sv.secPerHour)c.secPerHour=sv.secPerHour;if(sv.win)c.win=Object.assign(c.win,sv.win);if(sv.fireNight!=null)c.fireNight=sv.fireNight;if(sv.itemLight2!=null)c.itemLight2=sv.itemLight2;if(sv.sh)c.sh=Object.assign(c.sh,sv.sh);if(sv.win2)c.win2=Object.assign(c.win2,sv.win2);if(sv.shItems)c.shItems=Object.assign(clone(DEF.shItems),clone(sv.shItems));var oldSh=!(sv.shV>=2);
+  if(sv.secPerHour)c.secPerHour=sv.secPerHour;if(sv.win)c.win=Object.assign(c.win,sv.win);if(sv.fireNight!=null)c.fireNight=sv.fireNight;if(sv.itemLight2!=null)c.itemLight2=sv.itemLight2;if(sv.sh)c.sh=Object.assign(c.sh,sv.sh);if(sv.win2)c.win2=Object.assign(c.win2,sv.win2);if(sv.shItems)c.shItems=Object.assign(clone(DEF.shItems),clone(sv.shItems));if(sv.shPoly)c.shPoly=clone(sv.shPoly);var oldSh=!(sv.shV>=2);
   var has5=false;
   (sv.keys||[]).forEach(function(k,i){var j=-1;c.keys.forEach(function(d,n){if(d.name===k.name)j=n;});if(j<0&&i<c.keys.length)j=i;if(j>=0){if(k.name==='Pred zoru')has5=true;var t=c.keys[j].t;Object.assign(c.keys[j],k);if(k.name==='Pred zoru'||c.keys[j].name==='Pred zoru')c.keys[j].name='Pred zoru';}});
   if(oldSh){var sd=clone(DEF.keys);c.keys.forEach(function(k){sd.forEach(function(d){if(d.name===k.name){['shk','shl','sho','sha','shx','shy','shw','shh','shr','shb'].forEach(function(f){k[f]=d[f];});}});});}
@@ -334,6 +335,9 @@ function build(){
   var pickB=mk(pn,'Nišani',function(){pickOn=!pickOn;pickB.classList.toggle('on',pickOn);pickB.textContent=pickOn?'Klikni predmet na sceni…':'Nišani';document.body.classList.toggle('dl-pick',pickOn);});
   var rstB=mk(pn,'Vrati ovaj predmet',function(){if(selItem){delete cfg.shItems[selItem];save();Object.keys(ctr).forEach(function(k){try{ctr[k]();}catch(e){}});}});
   var cs=document.createElement('style');cs.textContent='body.dl-pick #scene,body.dl-pick #scene *{cursor:crosshair!important}';document.head.appendChild(cs);
+  var edB=mk(pn,'Crtaj senku predmeta (tačke)',function(){var on=!(window.CooksterShadowEdit&&CooksterShadowEdit.isOn());if(window.CooksterShadowEdit)CooksterShadowEdit.set(on);edB.classList.toggle('on',on);});
+  mk(pn,'Vrati crtež senke (ova tačka dana)',function(){var k=cfg.keys[selK].name,m={'Jutro':'jutro','Podne':'podne','Veče':'vece'}[k];if(selItem&&m&&window.CooksterSunShadow)CooksterSunShadow.reset(selItem,m);});
+  mk(pn,'Kopiraj crtež na sve tri tačke dana',function(){var k=cfg.keys[selK].name,m={'Jutro':'jutro','Podne':'podne','Veče':'vece'}[k],r=cfg.shPoly&&cfg.shPoly[selItem];if(r&&r[m]){['jutro','podne','vece'].forEach(function(q){r[q]=clone(r[m]);});save();}});
   var dummy={};
   function IS(){if(!selItem)return dummy;return cfg.shItems[selItem]||(cfg.shItems[selItem]={});}
   function irow(label,key,min,max,step,def,fm){row(label,'i_'+key,min,max,step,function(){var v=IS()[key];return v==null?def:v;},function(v){IS()[key]=v;},fm);}
@@ -389,7 +393,7 @@ btn.addEventListener('click',function(){var on=pn.style.display!=='block';pn.sty
 setInterval(function(){if(pn.style.display==='block')placeHandles();},300);
 
 setInterval(tick,250);
-window.CooksterDay={refresh:function(){lastSig='';render();try{litTick();}catch(e){}},refreshLight:function(){lastSig='';render();},minute:nowM,selectKey:function(i){if(!keyBtns.length)build();selectKey(i,true);},setMinute:function(m){st.minute=Math.max(0,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;lastSig='';render();chip();},pause:function(v){st.paused=v!==false;chip();},endDay:endDay,isClosed:function(){return st.closed;},day:function(){return st.day;},fmt:fmt,config:function(){return cfg;},itemSh:function(id){return cfg.shItems[id]||null;},phase:function(){return mixPhase((st.closed?1440:nowM())%1440);}};
+window.CooksterDay={saveCfg:function(){save();},sel:function(){return {item:selItem,label:selItemLabel,key:cfg.keys[selK].name};},panelOpen:function(){return pn.style.display==='block';},refresh:function(){lastSig='';render();try{litTick();}catch(e){}},refreshLight:function(){lastSig='';render();},minute:nowM,selectKey:function(i){if(!keyBtns.length)build();selectKey(i,true);},setMinute:function(m){st.minute=Math.max(0,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;lastSig='';render();chip();},pause:function(v){st.paused=v!==false;chip();},endDay:endDay,isClosed:function(){return st.closed;},day:function(){return st.day;},fmt:fmt,config:function(){return cfg;},itemSh:function(id){return cfg.shItems[id]||null;},phase:function(){return mixPhase((st.closed?1440:nowM())%1440);}};
 try{CooksterGrill&&CooksterGrill.boost&&CooksterGrill.boost(1+.5*cfg.fireNight);}catch(e){}
 setTimeout(function(){render();chip();},300);
 })();
