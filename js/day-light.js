@@ -20,13 +20,14 @@ var DEF={
     {name:'Noć',t:0,nw:1,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}
   ],
   itemLight2:.15,
-  fireNight:0.2
+  fireNight:0.2,
+  sh:{on:1,len:.9,op:.45,blur:2.5,flat:.7}
 };
 function clone(o){return JSON.parse(JSON.stringify(o));}
 var cfg=clone(DEF);
-try{var sv=JSON.parse(localStorage.getItem(KEY)||'null');if(sv&&sv.keys&&sv.keys.length===4){cfg=clone(DEF);if(sv.secPerHour)cfg.secPerHour=sv.secPerHour;if(sv.win)cfg.win=Object.assign(cfg.win,sv.win);if(sv.fireNight!=null)cfg.fireNight=sv.fireNight;if(sv.itemLight2!=null)cfg.itemLight2=sv.itemLight2;sv.keys.forEach(function(k,i){cfg.keys[i]=Object.assign(cfg.keys[i],k);});}}catch(e){}
+try{var sv=JSON.parse(localStorage.getItem(KEY)||'null');if(sv&&sv.keys&&sv.keys.length===4){cfg=clone(DEF);if(sv.secPerHour)cfg.secPerHour=sv.secPerHour;if(sv.win)cfg.win=Object.assign(cfg.win,sv.win);if(sv.fireNight!=null)cfg.fireNight=sv.fireNight;if(sv.itemLight2!=null)cfg.itemLight2=sv.itemLight2;if(sv.sh)cfg.sh=Object.assign(cfg.sh,sv.sh);sv.keys.forEach(function(k,i){cfg.keys[i]=Object.assign(cfg.keys[i],k);});}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(cfg));}catch(e){}}
-function mergeCfg(src){var c=clone(DEF);if(src.secPerHour)c.secPerHour=src.secPerHour;if(src.win)c.win=Object.assign(c.win,src.win);if(src.fireNight!=null)c.fireNight=src.fireNight;if(src.itemLight2!=null)c.itemLight2=src.itemLight2;if(src.keys&&src.keys.length===4)src.keys.forEach(function(k,i){c.keys[i]=Object.assign(c.keys[i],k);});return c;}
+function mergeCfg(src){var c=clone(DEF);if(src.secPerHour)c.secPerHour=src.secPerHour;if(src.win)c.win=Object.assign(c.win,src.win);if(src.fireNight!=null)c.fireNight=src.fireNight;if(src.itemLight2!=null)c.itemLight2=src.itemLight2;if(src.sh)c.sh=Object.assign(c.sh,src.sh);if(src.keys&&src.keys.length===4)src.keys.forEach(function(k,i){c.keys[i]=Object.assign(c.keys[i],k);});return c;}
 
 /* ---------- the clock ---------- */
 var st={minute:OPEN,paused:false,day:1,closed:false};
@@ -292,6 +293,12 @@ function build(){
   h=document.createElement('h4');h.textContent='Vatra';pn.appendChild(h);
   row('Predmeti u zraku su svetliji','il',0,1,.05,function(){return cfg.itemLight2;},function(v){cfg.itemLight2=v;});
   row('Vatra noću sija jače','fn',0,3,.1,function(){return cfg.fireNight;},function(v){cfg.fireNight=v;try{CooksterGrill.boost(1+.5*v);}catch(e){}},function(v){return (+v).toFixed(1)+'x';});
+  h=document.createElement('h4');h.textContent='Senke od sunca (odvojene od senki dodira)';pn.appendChild(h);
+  var sb=mk(pn,'Senke od sunca uključene',function(){cfg.sh.on=cfg.sh.on?0:1;sb.classList.toggle('on',!!cfg.sh.on);save();});sb.classList.toggle('on',!!cfg.sh.on);
+  row('Dužina senke','shl',0,2.5,.05,function(){return cfg.sh.len;},function(v){cfg.sh.len=v;});
+  row('Jačina senke','sho',0,1,.05,function(){return cfg.sh.op;},function(v){cfg.sh.op=v;});
+  row('Mekoća senke','shb',0,10,.5,function(){return cfg.sh.blur;},function(v){cfg.sh.blur=v;},function(v){return (+v).toFixed(1)+'px';});
+  row('Spljoštenost senke','shf',.1,1.2,.05,function(){return cfg.sh.flat;},function(v){cfg.sh.flat=v;});
   var b2=document.createElement('div');
   mk(b2,'Izvezi JSON',function(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'}));a.download='cookster-day-light.json';document.body.appendChild(a);a.click();setTimeout(function(){a.remove();},500);});
   var fi=document.createElement('input');fi.type='file';fi.accept='application/json';fi.style.display='none';
@@ -334,7 +341,7 @@ btn.addEventListener('click',function(){var on=pn.style.display!=='block';pn.sty
 setInterval(function(){if(pn.style.display==='block')placeHandles();},300);
 
 setInterval(tick,250);
-window.CooksterDay={minute:nowM,selectKey:function(i){if(!keyBtns.length)build();selectKey(i,true);},setMinute:function(m){st.minute=Math.max(0,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;lastSig='';render();chip();},pause:function(v){st.paused=v!==false;chip();},endDay:endDay,isClosed:function(){return st.closed;},day:function(){return st.day;},fmt:fmt,config:function(){return cfg;}};
+window.CooksterDay={minute:nowM,selectKey:function(i){if(!keyBtns.length)build();selectKey(i,true);},setMinute:function(m){st.minute=Math.max(0,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;lastSig='';render();chip();},pause:function(v){st.paused=v!==false;chip();},endDay:endDay,isClosed:function(){return st.closed;},day:function(){return st.day;},fmt:fmt,config:function(){return cfg;},phase:function(){return mixPhase((st.closed?1440:nowM())%1440);}};
 try{CooksterGrill&&CooksterGrill.boost&&CooksterGrill.boost(1+.5*cfg.fireNight);}catch(e){}
 setTimeout(function(){render();chip();},300);
 })();
