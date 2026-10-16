@@ -19,14 +19,14 @@ var DEF={
     {name:'Veče',t:1140,nw:0.6,c:'#4639fe',light:0.07,dark:0.28,shade:'#010223',sun:0.3,lx:432,ly:589,spread:0,alpha:0,blur:0,bc:'#000000'},
     {name:'Noć',t:0,nw:1,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}
   ],
-  itemLight:.35,
+  itemLight2:.15,
   fireNight:0.2
 };
 function clone(o){return JSON.parse(JSON.stringify(o));}
 var cfg=clone(DEF);
-try{var sv=JSON.parse(localStorage.getItem(KEY)||'null');if(sv&&sv.keys&&sv.keys.length===4){cfg=clone(DEF);if(sv.secPerHour)cfg.secPerHour=sv.secPerHour;if(sv.win)cfg.win=Object.assign(cfg.win,sv.win);if(sv.fireNight!=null)cfg.fireNight=sv.fireNight;if(sv.itemLight!=null)cfg.itemLight=sv.itemLight;sv.keys.forEach(function(k,i){cfg.keys[i]=Object.assign(cfg.keys[i],k);});}}catch(e){}
+try{var sv=JSON.parse(localStorage.getItem(KEY)||'null');if(sv&&sv.keys&&sv.keys.length===4){cfg=clone(DEF);if(sv.secPerHour)cfg.secPerHour=sv.secPerHour;if(sv.win)cfg.win=Object.assign(cfg.win,sv.win);if(sv.fireNight!=null)cfg.fireNight=sv.fireNight;if(sv.itemLight2!=null)cfg.itemLight2=sv.itemLight2;sv.keys.forEach(function(k,i){cfg.keys[i]=Object.assign(cfg.keys[i],k);});}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(cfg));}catch(e){}}
-function mergeCfg(src){var c=clone(DEF);if(src.secPerHour)c.secPerHour=src.secPerHour;if(src.win)c.win=Object.assign(c.win,src.win);if(src.fireNight!=null)c.fireNight=src.fireNight;if(src.itemLight!=null)c.itemLight=src.itemLight;if(src.keys&&src.keys.length===4)src.keys.forEach(function(k,i){c.keys[i]=Object.assign(c.keys[i],k);});return c;}
+function mergeCfg(src){var c=clone(DEF);if(src.secPerHour)c.secPerHour=src.secPerHour;if(src.win)c.win=Object.assign(c.win,src.win);if(src.fireNight!=null)c.fireNight=src.fireNight;if(src.itemLight2!=null)c.itemLight2=src.itemLight2;if(src.keys&&src.keys.length===4)src.keys.forEach(function(k,i){c.keys[i]=Object.assign(c.keys[i],k);});return c;}
 
 /* ---------- the clock ---------- */
 var st={minute:OPEN,paused:false,day:1,closed:false};
@@ -157,7 +157,7 @@ function render(){
 }
 
 /* ---------- the things in the shaft of the sun are lit ---------- */
-(function(){var st2=document.createElement('style');st2.textContent='.item.lit-sun:not(.container-target):not(.stir-ready-target):not(.pour-target-ready),.flour-pile.lit-sun{filter:brightness(var(--lit-b,1)) saturate(var(--lit-s,1)) sepia(var(--lit-w,0))}.placement-ghost .ghost-item-copy.lit-sun{filter:brightness(var(--lit-b,1)) saturate(var(--lit-s,1)) sepia(var(--lit-w,0))!important}';document.head.appendChild(st2);})();
+(function(){var st2=document.createElement('style');st2.textContent='.item.lit-sun:not(.container-target):not(.stir-ready-target):not(.pour-target-ready),.flour-pile.lit-sun{filter:brightness(var(--lit-b,1)) contrast(var(--lit-c,1)) saturate(var(--lit-s,1)) sepia(var(--lit-w,0))}.placement-ghost .ghost-item-copy.lit-sun{filter:brightness(var(--lit-b,1)) contrast(var(--lit-c,1)) saturate(var(--lit-s,1)) sepia(var(--lit-w,0))!important}';document.head.appendChild(st2);})();
 /* the things that are drawn ABOVE the dark layer (the item in the hand = its ghost, the pitcher that pours, the cloth, the picture of the sack) do not get the dark of the canvas, so they get the same dark as a filter:
    --amb-b is set on the page in render() from the dark of the time of day (the held thing looks as dark as the things lying around). */
 (function(){var st3=document.createElement('style');st3.textContent=
@@ -185,7 +185,7 @@ function litTick(){
   var list=((typeof window.items!=='undefined'&&window.items)||(typeof items!=='undefined'?items:[])||[]).slice();
   [].forEach.call(document.querySelectorAll('.flour-pile'),function(e){list.push(e);});      // the flour on the table is not an item, but it is lit too
   if(!list.length)return;
-  var P=mixPhase((st.closed?1440:nowM())%1440),w=cfg.win,on=P.alpha>.03&&(+cfg.itemLight||0)>.001;
+  var P=mixPhase((st.closed?1440:nowM())%1440),w=cfg.win,on=P.alpha>.03&&(+cfg.itemLight2||0)>.001;
   list.forEach(function(el){
     if(!el||!el.isConnected)return;
     var k=0;
@@ -195,8 +195,8 @@ function litTick(){
     var was=el._litK||0;
     if(Math.abs(k-was)<.02&&!(k===0&&was!==0))return;
     el._litK=k;
-    if(k>.02){el.classList.add('lit-sun');el.style.setProperty('--lit-b',(1+cfg.itemLight*k).toFixed(3));el.style.setProperty('--lit-s',(1+.12*k).toFixed(3));el.style.setProperty('--lit-w',(.08*k).toFixed(3));}
-    else{el.classList.remove('lit-sun');el.style.removeProperty('--lit-b');el.style.removeProperty('--lit-s');el.style.removeProperty('--lit-w');el._litK=0;}
+    if(k>.02){el.classList.add('lit-sun');el.style.setProperty('--lit-b',(1+cfg.itemLight2*k).toFixed(3));el.style.setProperty('--lit-s',(1+.04*k).toFixed(3));el.style.setProperty('--lit-w',(.03*k).toFixed(3));el.style.setProperty('--lit-c',(1-.05*k).toFixed(3));}
+    else{el.classList.remove('lit-sun');el.style.removeProperty('--lit-b');el.style.removeProperty('--lit-s');el.style.removeProperty('--lit-w');el.style.removeProperty('--lit-c');el._litK=0;}
   });
 }
 setInterval(litTick,300);
@@ -280,7 +280,7 @@ function build(){
   row('Prozor: donja tačka x','wx2',-200,600,5,function(){return cfg.win.x2;},function(v){cfg.win.x2=v;},function(v){return Math.round(v);});
   row('Prozor: donja tačka y','wy2',-100,700,5,function(){return cfg.win.y2;},function(v){cfg.win.y2=v;},function(v){return Math.round(v);});
   h=document.createElement('h4');h.textContent='Vatra';pn.appendChild(h);
-  row('Predmeti u zraku su svetliji','il',0,1,.05,function(){return cfg.itemLight;},function(v){cfg.itemLight=v;});
+  row('Predmeti u zraku su svetliji','il',0,1,.05,function(){return cfg.itemLight2;},function(v){cfg.itemLight2=v;});
   row('Vatra noću sija jače','fn',0,3,.1,function(){return cfg.fireNight;},function(v){cfg.fireNight=v;try{CooksterGrill.boost(1+.5*v);}catch(e){}},function(v){return (+v).toFixed(1)+'x';});
   var b2=document.createElement('div');
   mk(b2,'Izvezi JSON',function(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'}));a.download='cookster-day-light.json';document.body.appendChild(a);a.click();setTimeout(function(){a.remove();},500);});
