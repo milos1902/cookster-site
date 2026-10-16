@@ -2490,7 +2490,7 @@ function resolvedImpactConfig(el,action='drop'){
  else if(action==='peel'){sound='pickup';volume=.35;}
  else if(action==='step'){sound='waiterStep1';volume=.28;}
  else if(action==='open'||action==='close'){
-   const door=el===fireboxHotspot||el===ovenHotspot;
+   const door=el===fireboxHotspot||el===ovenHotspot||el?.id==='windowHot';
    if(door)sound=action==='open'?'stoveDoorOpen':'stoveDoorClose';
    else if(el?._lidMeta||isAjvarJar(el))sound=action==='open'?'lidOpen':'lidClose';
    volume=action==='open'?.50:.52;
@@ -2590,7 +2590,7 @@ function scheduleEarlyImpactSound(el,contactMs,action='drop'){const cfg=resolved
 window.addEventListener('click',e=>{
  const button=e.target?.closest?.('button,[role="button"],input[type="button"],input[type="submit"]');
  if(!button||button.disabled||button.getAttribute('aria-disabled')==='true'||
-    button.closest('.item,#fireboxHotspot,#ovenHotspot,.ss-preview-btn,[data-sound-preview]')||
+    button.closest('.item,#fireboxHotspot,#ovenHotspot,#windowHot,.ss-preview-btn,[data-sound-preview]')||
     /preslu[sš]aj|pauziraj/i.test((button.title||'')+' '+(button.getAttribute('aria-label')||'')))return;
  playImpactSound(buttonSoundTarget,'click');
 },true);
@@ -2603,7 +2603,7 @@ window.addEventListener('pointerover',e=>{
  if(button===lastHoverButton)return;
  lastHoverButton=button;
  if(button.disabled||button.getAttribute('aria-disabled')==='true'||
-    button.closest('.item,#fireboxHotspot,#ovenHotspot,.ss-preview-btn,[data-sound-preview]'))return;
+    button.closest('.item,#fireboxHotspot,#ovenHotspot,#windowHot,.ss-preview-btn,[data-sound-preview]'))return;
  playImpactSound(buttonSoundTarget,'hover');
 },true);
 /* ==========================================================================
@@ -2771,7 +2771,7 @@ const ssInspector=ssEl('div',{});
 function ssSel(){return selectedSoundItem?.isConnected?selectedSoundItem:null;}
 function ssSceneItems(){
  const items=[...scene.querySelectorAll('.item')].filter(el=>el.dataset.itemId&&el.style.display!=='none'&&el.offsetWidth>0);
- const hotspots=[fireboxHotspot,ovenHotspot].filter(el=>el?.isConnected);
+ const hotspots=[fireboxHotspot,ovenHotspot,document.getElementById('windowHot')].filter(el=>el?.isConnected);
  hotspots.forEach(el=>{if(!el.dataset.soundTarget)el.dataset.soundTarget=el.id;if(!el.dataset.label)el.dataset.label=el.id;});
  // every object that exists in the game, even when it is not on the scene right now
  const present=new Set(items.map(el=>el.dataset.itemId));
