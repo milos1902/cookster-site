@@ -134,6 +134,7 @@ function render(){
     tc.fillStyle=rgba(P.shade,1);tc.fillRect(0,0,tintC.width,tintC.height);tc.globalCompositeOperation='destination-in';tc.drawImage(sunI,0,0,tintC.width,tintC.height);
     cx.save();cx.setTransform(1,0,0,1,0,0);cx.globalAlpha=extra;cx.drawImage(tintC,0,0);cx.restore();
   }
+  try{ambMatrix(P);}catch(e){}
   try{var rs=document.documentElement.style,ab=clamp01(1-P.dark*.95*.98),haze=P.light*.5;rs.setProperty('--amb-b',Math.min(1.05,ab+haze*.35).toFixed(3));rs.setProperty('--amb-s',(1-P.dark*.25).toFixed(3));}catch(e){}
   var wl=winLayer();if(wl)wl.style.opacity=clamp01(P.nw).toFixed(3);
   // 2. the warm haze of the morning / the evening
@@ -159,7 +160,12 @@ function render(){
 /* the things that are drawn ABOVE the dark layer (the item in the hand = its ghost, the pitcher that pours, the cloth, the picture of the sack) do not get the dark of the canvas, so they get the same dark as a filter:
    --amb-b is set on the page in render() from the dark of the time of day (the held thing looks as dark as the things lying around). */
 (function(){var st3=document.createElement('style');st3.textContent=
- '.placement-ghost,#ppLayer,#clothLayer,.cookster-backpack-held-preview{filter:brightness(var(--amb-b,1)) saturate(var(--amb-s,1))}';document.head.appendChild(st3);})();
+ '.placement-ghost,#ppLayer,#clothLayer,.cookster-backpack-held-preview{filter:url(#dlAmb)}';document.head.appendChild(st3);
+  var sv=document.createElementNS('http://www.w3.org/2000/svg','svg');sv.setAttribute('width','0');sv.setAttribute('height','0');sv.style.cssText='position:absolute;width:0;height:0';
+  sv.innerHTML='<filter id="dlAmb" color-interpolation-filters="sRGB" x="-5%" y="-5%" width="110%" height="110%"><feColorMatrix id="dlAmbM" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"/></filter>';(document.body||document.documentElement).appendChild(sv);})();
+/* the same blend as the canvas: colour*(1-a) + shade*a (the dark of the time of day) + the warm haze; a feColorMatrix does it exactly */
+function ambMatrix(P){var m=document.getElementById('dlAmbM');if(!m)return;var a=clamp01(P.dark*.95),hz=clamp01(P.light*.55),k=(1-a)*(1-hz),r=(P.shade[0]*a*(1-hz)+P.c[0]*hz)/255,g=(P.shade[1]*a*(1-hz)+P.c[1]*hz)/255,b=(P.shade[2]*a*(1-hz)+P.c[2]*hz)/255;
+  m.setAttribute('values',k.toFixed(4)+' 0 0 0 '+r.toFixed(4)+'  0 '+k.toFixed(4)+' 0 0 '+g.toFixed(4)+'  0 0 '+k.toFixed(4)+' 0 '+b.toFixed(4)+'  0 0 0 1 0');}
 function litTick(){
   var list=((typeof window.items!=='undefined'&&window.items)||(typeof items!=='undefined'?items:[])||[]).slice();
   [].forEach.call(document.querySelectorAll('.flour-pile'),function(e){list.push(e);});      // the flour on the table is not an item, but it is lit too
