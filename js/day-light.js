@@ -11,15 +11,15 @@ var KEY='cookster.day-light.v2',OPEN=360,CLOSE=1440,W=1672,H=941,SC=.25;
    lx,ly = where the light falls on the floor (the centre of the far end of the shaft), spread = how much the shaft widens, alpha = how strong, blur = how soft, bc = its colour.
    Between two keys everything changes slowly (the sun moves from one place to the other). The window (the beginning of the shaft) is one for all keys. */
 var DEF={
-  secPerHour:60,
-  win:{x1:14,y1:30,x2:14,y2:330},
+  secPerHour:60,      // Miloš's export has 10 here (a test); the real default stays one real minute = one game hour
+  win:{x1:-12,y1:-17,x2:-9,y2:302},
   keys:[
-    {name:'Jutro',t:420,c:'#fec590',light:.23,dark:.29,shade:'#33210f',sun:1,lx:380,ly:640,spread:.5,alpha:.55,blur:36,bc:'#ffe9b0'},
-    {name:'Podne',t:720,c:'#fff4dc',light:.08,dark:.02,shade:'#2a2a2e',sun:1,lx:300,ly:760,spread:.45,alpha:.42,blur:36,bc:'#fff6dc'},
-    {name:'Veče',t:1140,c:'#ff9b57',light:.10,dark:.21,shade:'#3d1a0c',sun:1,lx:700,ly:600,spread:.55,alpha:.6,blur:40,bc:'#ffb070'},
-    {name:'Noć',t:0,c:'#192b52',light:0,dark:.48,shade:'#050c24',sun:0,lx:600,ly:700,spread:.5,alpha:0,blur:40,bc:'#bcd0ff'}
+    {name:'Jutro',t:360,c:'#ff932e',light:0.09,dark:0.12,shade:'#33210f',sun:1,lx:1277,ly:854,spread:2,alpha:0.52,blur:38,bc:'#ffddad'},
+    {name:'Podne',t:720,c:'#fff4dc',light:0,dark:0,shade:'#2a2a2e',sun:1,lx:614,ly:858,spread:1.1,alpha:0.37,blur:30,bc:'#fff6dc'},
+    {name:'Veče',t:1140,c:'#4639fe',light:0.07,dark:0.28,shade:'#010223',sun:0.3,lx:432,ly:589,spread:0,alpha:0,blur:0,bc:'#000000'},
+    {name:'Noć',t:0,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}
   ],
-  fireNight:1.6
+  fireNight:0.2
 };
 function clone(o){return JSON.parse(JSON.stringify(o));}
 var cfg=clone(DEF);
