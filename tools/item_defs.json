@@ -1,0 +1,422 @@
+[
+ {
+  "id": "serpa_velika",
+  "src": "assets/new_props/serpa_velika.png",
+  "w": 166,
+  "h": 128,
+  "label": "Velika šerpa"
+ },
+ {
+  "id": "tiganj_veliki",
+  "src": "assets/new_props/tiganj_veliki.png",
+  "w": 170,
+  "h": 160,
+  "label": "Veliki liveni tiganj"
+ },
+ {
+  "id": "tiganj_mali",
+  "src": "assets/new_props/tiganj_mali.png",
+  "w": 136,
+  "h": 150,
+  "label": "Mali tiganj"
+ },
+ {
+  "id": "vangla_srednja",
+  "src": "assets/new_props/vangla_srednja.png",
+  "w": 145,
+  "h": 120,
+  "label": "Srednja vangla"
+ },
+ {
+  "id": "vangla_mala",
+  "src": "assets/new_props/vangla_mala.png",
+  "w": 112,
+  "h": 100,
+  "label": "Mala vangla"
+ },
+ {
+  "id": "lavor_emajl_veliki",
+  "src": "assets/new_props/lavor_emajl_veliki.png",
+  "w": 273,
+  "h": 185,
+  "label": "Veliki emajlirani lavor"
+ },
+ {
+  "id": "vangla_velika",
+  "src": "assets/new_props/vangla_velika.png",
+  "w": 168,
+  "h": 142,
+  "label": "Velika vangla"
+ },
+ {
+  "id": "opanci",
+  "src": "assets/calibration_props/opanci.png",
+  "w": 178,
+  "h": 121,
+  "label": "Opanci"
+ },
+ {
+  "id": "cutura_srbija",
+  "src": "assets/calibration_props/cutura_srbija.png",
+  "w": 102,
+  "h": 136,
+  "label": "Čutura Srbija"
+ },
+ {
+  "id": "lampa_stona",
+  "src": "assets/calibration_props/lampa_stona.png",
+  "w": 86,
+  "h": 154,
+  "label": "Stona lampa"
+ },
+ {
+  "id": "lampa_petrolej",
+  "src": "assets/calibration_props/lampa_petrolej.png",
+  "w": 94,
+  "h": 154,
+  "label": "Petrolejska lampa"
+ },
+ {
+  "id": "metla",
+  "src": "assets/calibration_props/metla.png",
+  "w": 66,
+  "h": 225,
+  "label": "Metla"
+ },
+ {
+  "id": "zalivka",
+  "src": "assets/calibration_props/zalivka.png",
+  "w": 178,
+  "h": 123,
+  "label": "Zalivka"
+ },
+ {
+  "id": "pice_vino_crno_flasa",
+  "src": "assets/calibration_props/pice/vino_crno_flasa_v2.png",
+  "w": 36,
+  "h": 108,
+  "label": "Flaša crnog vina"
+ },
+ {
+  "id": "pice_vino_belo_flasa",
+  "src": "assets/calibration_props/pice/vino_belo_flasa_v2.png",
+  "w": 36,
+  "h": 108,
+  "label": "Flaša belog vina"
+ },
+ {
+  "id": "pice_soda_sifon",
+  "src": "assets/calibration_props/pice/soda_sifon_v2.png",
+  "w": 44,
+  "h": 100,
+  "label": "Soda voda (sifon)"
+ },
+ {
+  "id": "pice_casa_spricer",
+  "src": "assets/calibration_props/pice/casa_spricer.png",
+  "w": 34,
+  "h": 54,
+  "label": "Čaša za špricer (prazna)"
+ },
+ {
+  "id": "pice_casa_belo_vino",
+  "src": "assets/calibration_props/pice/casa_belo_vino_v2.png",
+  "w": 33,
+  "h": 62,
+  "label": "Čaša belog vina"
+ },
+ {
+  "id": "pice_casa_crno_vino",
+  "src": "assets/calibration_props/pice/casa_crno_vino_v2.png",
+  "w": 34,
+  "h": 63,
+  "label": "Čaša crnog vina"
+ },
+ {
+  "id": "kanta_set_zatvorena",
+  "src": "assets/calibration_props/kanta/korpa_0.webp",
+  "w": 144,
+  "h": 146,
+  "label": "Korpa za otpatke"
+ },
+ {
+  "id": "hoklica",
+  "src": "assets/calibration_props/hoklica.png",
+  "w": 160,
+  "h": 146,
+  "label": "Drvena hoklica"
+ },
+ {
+  "id": "tepih_etno",
+  "src": "assets/calibration_props/tepih_etno.png",
+  "w": 112,
+  "h": 210,
+  "label": "Etno tepih"
+ },
+ {
+  "id": "kal_01_dzak_brasna",
+  "src": "assets/calibration_props/kitchen_set_18/01_dzak_brasna.png?v=2",
+  "w": 145,
+  "h": 109,
+  "label": "Džak brašna"
+ },
+ {
+  "id": "kal_01_dzezva",
+  "src": "assets/calibration_props/kitchen_set_18/01_dzezva.png?v=2",
+  "w": 92,
+  "h": 110,
+  "label": "Džezva"
+ },
+ {
+  "id": "kal_01_flasa_ulja",
+  "src": "assets/calibration_props/kitchen_set_18/01_flasa_ulja.png?v=2",
+  "w": 48,
+  "h": 90,
+  "label": "Flaša ulja"
+ },
+ {
+  "id": "kal_01_hleb",
+  "src": "assets/calibration_props/kitchen_set_18/01_hleb.png",
+  "w": 155,
+  "h": 104,
+  "label": "Hleb"
+ },
+ {
+  "id": "kal_01_jaje",
+  "src": "assets/calibration_props/kitchen_set_18/01_jaje.png",
+  "w": 45,
+  "h": 55,
+  "label": "Jaje"
+ },
+ {
+  "id": "kal_01_kvasac",
+  "src": "assets/calibration_props/kitchen_set_18/01_kvasac.png",
+  "w": 75,
+  "h": 52,
+  "label": "Kvasac"
+ },
+ {
+  "id": "kal_krpa",
+  "src": "assets/calibration_props/krpa/krpa_ruka.webp?v=1",
+  "w": 143,
+  "h": 254,
+  "label": "Krpa za dizanje testa"
+ },
+ {
+  "id": "kal_testo_naraslo",
+  "src": "assets/flour/testo_kugla.webp?v=2",
+  "w": 96,
+  "h": 96,
+  "label": "Naraslo testo"
+ },
+ {
+  "id": "kal_01_okrugli_pleh",
+  "src": "assets/calibration_props/kitchen_set_18/01_okrugli_pleh.png",
+  "w": 190,
+  "h": 127,
+  "label": "Okrugli pleh"
+ },
+ {
+  "id": "kal_01_pravougaoni_pleh",
+  "src": "assets/calibration_props/kitchen_set_18/01_pravougaoni_pleh.png",
+  "w": 180,
+  "h": 115,
+  "label": "Pravougaoni pleh"
+ },
+ {
+  "id": "kal_01_solja_kafe",
+  "src": "assets/calibration_props/kitchen_set_18/01_solja_kafe.png",
+  "w": 90,
+  "h": 78,
+  "label": "Šolja kafe"
+ },
+ {
+  "id": "kal_01_tegla_mala",
+  "src": "assets/calibration_props/ajvar_jars/tegla_mala_prazna.png",
+  "w": 93,
+  "h": 105,
+  "label": "Mala tegla"
+ },
+ {
+  "id": "kal_01_tegla_velika",
+  "src": "assets/calibration_props/ajvar_jars/tegla_velika_prazna.png",
+  "w": 90,
+  "h": 126,
+  "label": "Velika tegla"
+ },
+ {
+  "id": "kal_02_cediljka",
+  "src": "assets/calibration_props/kitchen_set_18/02_cediljka.png",
+  "w": 175,
+  "h": 107,
+  "label": "Cediljka"
+ },
+ {
+  "id": "kal_02_cinija_mala",
+  "src": "assets/calibration_props/kitchen_set_18/02_cinija_mala.png",
+  "w": 115,
+  "h": 86,
+  "label": "Mala činija"
+ },
+ {
+  "id": "kal_02_cinija_velika",
+  "src": "assets/calibration_props/kitchen_set_18/02_cinija_velika.png",
+  "w": 150,
+  "h": 105,
+  "label": "Velika činija"
+ },
+ {
+  "id": "kal_02_drvena_kasika",
+  "src": "assets/calibration_props/kitchen_set_18/02_drvena_kasika.png",
+  "w": 46,
+  "h": 145,
+  "label": "Drvena kašika"
+ },
+ {
+  "id": "ticket_rail",
+  "src": "assets/calibration_props/narudzbine/ticket_rail_v2.webp",
+  "w": 420,
+  "h": 58,
+  "label": "Ticket rail za narudžbine"
+ },
+ {
+  "id": "zvonce_konobar",
+  "src": "assets/calibration_props/narudzbine/zvonce.webp",
+  "w": 82,
+  "h": 82,
+  "label": "Zvonce za konobara"
+ },
+ {
+  "id": "oval_tanjir",
+  "src": "assets/calibration_props/oval/oval_prazan.webp",
+  "w": 215,
+  "h": 160,
+  "label": "Oval (tanjir)"
+ },
+ {
+  "id": "posuda_za_kupus",
+  "src": "assets/calibration_props/posuda_za_kupus/posuda_prazna.webp",
+  "w": 119,
+  "h": 92,
+  "label": "Posuda za kupus"
+ },
+ {
+  "id": "zacin_paprika",
+  "src": "assets/calibration_props/zacini/paprika.webp",
+  "w": 46,
+  "h": 100,
+  "label": "Mlevena paprika"
+ },
+ {
+  "id": "zacin_tucana",
+  "src": "assets/calibration_props/zacini/tucana.webp",
+  "w": 46,
+  "h": 100,
+  "label": "Ljuta tucana paprika"
+ },
+ {
+  "id": "zacin_biber",
+  "src": "assets/calibration_props/zacini/biber.webp",
+  "w": 42,
+  "h": 100,
+  "label": "Biber"
+ },
+ {
+  "id": "zacin_so",
+  "src": "assets/calibration_props/zacini/so.webp",
+  "w": 44,
+  "h": 100,
+  "label": "So"
+ },
+ {
+  "id": "zacin_secer",
+  "src": "assets/calibration_props/zacini/secer.webp",
+  "w": 45,
+  "h": 100,
+  "label": "Šećer"
+ },
+ {
+  "id": "zacin_lovor",
+  "src": "assets/calibration_props/zacini/lovor.webp",
+  "w": 46,
+  "h": 100,
+  "label": "Lovorov list"
+ },
+ {
+  "id": "kal_02_duboki_tanjir",
+  "src": "assets/calibration_props/kitchen_set_18/02_duboki_tanjir.png",
+  "w": 160,
+  "h": 102,
+  "label": "Duboki tanjir"
+ },
+ {
+  "id": "kal_02_oklagija",
+  "src": "assets/calibration_props/kitchen_set_18/02_oklagija.png",
+  "w": 190,
+  "h": 30,
+  "label": "Oklagija"
+ },
+ {
+  "id": "kaca_prazna",
+  "src": "assets/calibration_props/kaca_za_kupus/kaca_prazna.webp",
+  "w": 190,
+  "h": 202,
+  "label": "Bačva za kiseljenje — prazna"
+ },
+ {
+  "id": "kaca_poklopac",
+  "src": "assets/calibration_props/kaca_za_kupus/kaca_poklopac.webp",
+  "w": 181,
+  "h": 194,
+  "label": "Poklopac bačve sa drškom"
+ },
+ {
+  "id": "kaca_sa_poklopcem",
+  "src": "assets/calibration_props/kaca_za_kupus/kaca_sa_poklopcem.webp",
+  "w": 196,
+  "h": 195,
+  "label": "Bačva za kiseljenje — sa poklopcem"
+ },
+ {
+  "id": "kal_02_tanjir_ravni",
+  "src": "assets/calibration_props/kitchen_set_18/02_tanjir_ravni.png",
+  "w": 160,
+  "h": 85,
+  "label": "Ravni tanjir"
+ },
+ {
+  "id": "paprika_parna_kesa",
+  "src": "assets/paprika_steam_bag/empty.png",
+  "w": 156,
+  "h": 156,
+  "label": "Kesa za potparivanje paprika"
+ },
+ {
+  "id": "bokal_stari",
+  "src": "assets/antique_water_pitcher.png",
+  "w": 160,
+  "h": 160,
+  "label": "Старински бокал"
+ },
+ {
+  "id": "tikva_za_vodu",
+  "src": "assets/hollowed_water_gourd.png",
+  "w": 145,
+  "h": 180,
+  "label": "Издубљена тиква"
+ },
+ {
+  "id": "nacve",
+  "src": "assets/flour/nacve.webp",
+  "w": 105,
+  "h": 196,
+  "label": "Naćve"
+ },
+ {
+  "id": "mlin_za_mesо",
+  "src": "assets/items/grinder_fixed/grinder_body.png",
+  "w": 158,
+  "h": 286,
+  "label": "Машина за млевење"
+ }
+]
