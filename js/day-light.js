@@ -341,7 +341,7 @@ function build(){
   var dummy={};
   function IS(){if(!selItem)return dummy;return cfg.shItems[selItem]||(cfg.shItems[selItem]={});}
   function irow(label,key,min,max,step,def,fm){row(label,'i_'+key,min,max,step,function(){var v=IS()[key];return v==null?def:v;},function(v){IS()[key]=v;},fm);}
-  irow('Dužina ×','l',0,3,.05,1);irow('Jačina ×','o',0,2,.05,1);irow('Smer + (stepeni)','a',-90,90,1,0,function(v){return Math.round(v)+'°';});
+  irow('Dužina ×','l',0,3,.05,1);irow('Jačina ×','o',0,2,.05,1);irow('Gradijent: dužina prelaza ×','g',.2,3,.05,1);irow('Smer + (stepeni)','a',-90,90,1,0,function(v){return Math.round(v)+'°';});
   irow('Pomeraj X','x',-150,150,1,0,function(v){return Math.round(v);});irow('Pomeraj Y','y',-150,150,1,0,function(v){return Math.round(v);});
   irow('Širina ×','w',.2,3,.05,1);irow('Visina ×','h',.1,3,.05,1);irow('Rotacija +','r',-90,90,1,0,function(v){return Math.round(v)+'°';});irow('Mekoća +','b',-5,10,.5,0,function(v){return (+v).toFixed(1)+'px';});
   ctr.itl=function(){itLab.textContent=selItem?('Izabran: '+selItemLabel):'Predmet nije izabran — pritisni Nišani i klikni predmet';};

@@ -26,8 +26,8 @@ function make(el,scene){
   df.appendChild(lg);sv.appendChild(df);pa.setAttribute('fill','url(#'+gid+')');sv.appendChild(pa);d.appendChild(sv);d._svg=sv;d._path=pa;d._grad=lg;
   scene.appendChild(d);return d;
 }
-/* the shadow drawn by the player: ~20 points round the thing; the left half of them are fixed to the thing (they never move), the right side has 5 handles that can be moved (js/shadow-editor.js);
-   the handles are kept for every key of the day (jutro / podne / vece) and flow between the keys with the clock. cfg.shPoly[itemId][key] = [[u,v] x5], u,v = the place in the box of the thing (0..1, may go out of it) */
+/* the shadow drawn by the player: ~20 points round the thing; 4 points on the left (they start under the thing) and 5 on the right, all of them can be moved (js/shadow-editor.js);
+   the handles are kept for every key of the day (jutro / podne / vece) and flow between the keys with the clock. cfg.shPoly[itemId][key] = [[u,v] x9] (4 left + 5 right), u,v = the place in the box of the thing (0..1, may go out of it) */
 var OUTL={};
 function getOutline(el,body){
   var id=el.dataset.itemId||'';if(OUTL[id])return OUTL[id];
@@ -42,15 +42,17 @@ function getOutline(el,body){
     for(var j=N/4;j<=3*N/4;j++){if(pts[j][0]<=cxn+.005)fixed.push(pts[j]);else right.push(pts[j]);}      // from the bottom, over the left side, to the top: fixed
     var rr=[];for(var k=3*N/4+1;k<N;k++)rr.push(pts[k]);for(var m=0;m<N/4;m++)rr.push(pts[m]);right=rr.concat([]);      // from the top, over the right side, to the bottom: here the handles start
     var hs=[];for(var q=0;q<5;q++)hs.push(right[Math.min(right.length-1,Math.round((q+.5)*right.length/5-.5))]);
-    return OUTL[id]={fixed:fixed,right:hs,ar:nw/nh};
+    var lf=[];for(var u=0;u<4;u++)lf.push(fixed[Math.min(fixed.length-1,Math.round((u+.5)*fixed.length/4-.5))]);
+    return OUTL[id]={left:lf,right:hs,ar:nw/nh};
   }catch(e){return null;}
 }
 var KN={jutro:'Jutro',podne:'Podne',vece:'Veče'};
 function handlesFor(cfg,id,key,o,el){      // the handles of one key: drawn by the player, or (till he draws) the right side of the outline pushed away by the shadow of that key
-  var sp=cfg.shPoly&&cfg.shPoly[id]&&cfg.shPoly[id][key];if(sp&&sp.length===5)return sp;
+  var ol=OUTL[id],sp=cfg.shPoly&&cfg.shPoly[id]&&cfg.shPoly[id][key];if(sp&&sp.length===9)return sp;      // 9 points: 4 on the left (from the bottom up), 5 on the right (from the top down)
+  if(sp&&sp.length===5)return ol.left.concat(sp);      // an older drawing: only the 5 right handles
   var kk=null;cfg.keys.forEach(function(k){if(k.name===KN[key])kk=k;});kk=kk||{shx:20,shy:8};
   var w=el.offsetWidth||1,h=el.offsetHeight||1,dx=((kk.shx||0)+((o&&o.x)||0)+(kk.shl||1)*14)/w,dy=((kk.shy||0)+((o&&o.y)||0)+(kk.shl||1)*5)/h;
-  return OUTL[id].right.map(function(p){return [p[0]+dx,p[1]+dy];});
+  return ol.left.map(function(p){return [p[0],p[1]];}).concat(ol.right.map(function(p){return [p[0]+dx,p[1]+dy];}));
 }
 function smoothPath(P){      // closed smooth curve through the points (Catmull-Rom → Bézier)
   var n=P.length,d='M'+P[0][0].toFixed(1)+' '+P[0][1].toFixed(1);
@@ -60,10 +62,10 @@ function smoothPath(P){      // closed smooth curve through the points (Catmull-
 }
 function polyPoints(cfg,el,body,wts,o){      // the points (px in the box of the thing) of the shadow now: {fixed:[], handles:[]}
   var id=el.dataset.itemId||'',ol=getOutline(el,body);if(!ol)return null;
-  var w=el.offsetWidth,h=el.offsetHeight,hs=[[0,0],[0,0],[0,0],[0,0],[0,0]],tw=0;
-  ['jutro','podne','vece'].forEach(function(k){var wk=wts[k];if(wk<.001)return;var H=handlesFor(cfg,id,k,o,el);for(var i=0;i<5;i++){hs[i][0]+=H[i][0]*wk;hs[i][1]+=H[i][1]*wk;}tw+=wk;});
+  var w=el.offsetWidth,h=el.offsetHeight,hs=[],tw=0;for(var z=0;z<9;z++)hs.push([0,0]);
+  ['jutro','podne','vece'].forEach(function(k){var wk=wts[k];if(wk<.001)return;var H=handlesFor(cfg,id,k,o,el);for(var i=0;i<9;i++){hs[i][0]+=H[i][0]*wk;hs[i][1]+=H[i][1]*wk;}tw+=wk;});
   if(tw<=0)return null;
-  return {fixed:ol.fixed.map(function(p){return [p[0]*w,p[1]*h];}),handles:hs.map(function(p){return [p[0]/tw*w,p[1]/tw*h];})};
+  return {pts:hs.map(function(p){return [p[0]/tw*w,p[1]/tw*h];})};
 }
 function tick(){
   var D=window.CooksterDay,scene=sceneEl();if(!D||!scene)return;
@@ -83,10 +85,10 @@ function tick(){
       if(pp){
         im.style.display='none';Object.keys(rec._baked).forEach(function(k){rec._baked[k].style.display='none';});
         rec._svg.style.display='block';rec._svg.setAttribute('width',el.offsetWidth);rec._svg.setAttribute('height',el.offsetHeight);
-        rec._path.setAttribute('d',smoothPath(pp.fixed.concat(pp.handles)));
-        var fx=0,fy=0,hx=0,hy=0;pp.fixed.forEach(function(q){fx+=q[0];fy+=q[1];});pp.handles.forEach(function(q){hx+=q[0];hy+=q[1];});fx/=pp.fixed.length;fy/=pp.fixed.length;hx/=5;hy/=5;
-        var gx=el.offsetWidth/2,gy=el.offsetHeight/2;      // the gradient goes from the middle of the thing to the middle of the handles
-        rec._grad.setAttribute('x1',gx.toFixed(1));rec._grad.setAttribute('y1',gy.toFixed(1));rec._grad.setAttribute('x2',(gx+(hx-gx)*1.5).toFixed(1));rec._grad.setAttribute('y2',(gy+(hy-gy)*1.5).toFixed(1));
+        rec._path.setAttribute('d',smoothPath(pp.pts));
+        var hx=0,hy=0;for(var z=4;z<9;z++){hx+=pp.pts[z][0];hy+=pp.pts[z][1];}hx/=5;hy/=5;
+        var gk=Math.max(.1,o0.g==null?1:+o0.g),gx=el.offsetWidth/2,gy=el.offsetHeight/2;      // the gradient goes from the middle of the thing to the middle of the handles
+        rec._grad.setAttribute('x1',gx.toFixed(1));rec._grad.setAttribute('y1',gy.toFixed(1));rec._grad.setAttribute('x2',(gx+(hx-gx)*1.5*gk).toFixed(1));rec._grad.setAttribute('y2',(gy+(hy-gy)*1.5*gk).toFixed(1));
         rec._svg.style.filter='blur('+Math.max(0,P.shb+(o0.b==null?0:+o0.b)).toFixed(1)+'px)';
         rec.style.left=el.offsetLeft+'px';rec.style.top=el.offsetTop+'px';rec.style.width=el.offsetWidth+'px';rec.style.height=el.offsetHeight+'px';
         rec.style.zIndex=String(Math.max(1,(parseInt(el.style.zIndex,10)||20)-2));rec.style.transform='none';
@@ -122,9 +124,9 @@ setInterval(tick,100);
 window.CooksterSunShadow={tick:tick,keyWeights:keyWeights,
   /* for the editor: the item, its fixed points and the handles of a key (in px of the box of the thing) */
   geom:function(el,key){var body=el.querySelector(':scope>img.body'),D=window.CooksterDay,cfg=D.config(),ol=getOutline(el,body);if(!ol)return null;var o=D.itemSh(el.dataset.itemId||'')||{},w=el.offsetWidth,h=el.offsetHeight,H=handlesFor(cfg,el.dataset.itemId||'',key,o,el);
-    return {fixed:ol.fixed.map(function(p){return [p[0]*w,p[1]*h];}),handles:H.map(function(p){return [p[0]*w,p[1]*h];}),w:w,h:h};},
+    return {pts:H.map(function(p){return [p[0]*w,p[1]*h];}),w:w,h:h};},
   setHandle:function(el,key,i,u,v){var D=window.CooksterDay,cfg=D.config(),id=el.dataset.itemId||'',body=el.querySelector(':scope>img.body');getOutline(el,body);cfg.shPoly=cfg.shPoly||{};
-    var rec=cfg.shPoly[id]=cfg.shPoly[id]||{};['jutro','podne','vece'].forEach(function(k){if(!rec[k]||rec[k].length!==5)rec[k]=handlesFor(cfg,id,k,D.itemSh(id)||{},el).map(function(p){return [p[0],p[1]];});});
+    var rec=cfg.shPoly[id]=cfg.shPoly[id]||{};['jutro','podne','vece'].forEach(function(k){if(!rec[k]||rec[k].length!==9)rec[k]=handlesFor(cfg,id,k,D.itemSh(id)||{},el).map(function(p){return [p[0],p[1]];});});
     rec[key][i]=[u,v];D.saveCfg();tick();},
   reset:function(id,key){var D=window.CooksterDay,cfg=D.config();if(!cfg.shPoly||!cfg.shPoly[id])return;if(key)delete cfg.shPoly[id][key];if(!key||!Object.keys(cfg.shPoly[id]).length)delete cfg.shPoly[id];D.saveCfg();tick();}};
 })();
