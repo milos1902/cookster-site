@@ -14,13 +14,14 @@ var DEF={
   secPerHour:60,      // Miloš's export has 10 here (a test); the real default stays one real minute = one game hour
   win:{x1:-12,y1:-17,x2:-9,y2:302},
   keys:[
-    {name:'Jutro',shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:1.7,sho:.5,sha:12,t:360,nw:0,c:'#ff932e',light:0.09,dark:0.12,shade:'#33210f',sun:1,lx:1277,ly:854,spread:2,alpha:0.52,blur:38,bc:'#ffddad'},
-    {name:'Podne',shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:.3,sho:.45,sha:50,t:720,nw:0,c:'#fff4dc',light:0,dark:0,shade:'#2a2a2e',sun:1,lx:614,ly:858,spread:1.1,alpha:0.37,blur:30,bc:'#fff6dc'},
-    {name:'Veče',shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:1.4,sho:.2,sha:75,t:1140,nw:0.6,c:'#4639fe',light:0.07,dark:0.28,shade:'#010223',sun:0.3,lx:432,ly:589,spread:0,alpha:0,blur:0,bc:'#000000'},
-    {name:'Noć',shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:0,sho:0,sha:45,t:0,nw:1,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}
-    ,{name:'Pred zoru',t:300,nw:1,shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:0,sho:0,sha:45,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}      // 0:00-5:00 the same as the night (constant dark), from 5:00 the sun starts to come
+    {name:'Jutro',shk:1,shx:26,shy:10,shw:1,shh:1,shr:0,shb:6,shl:1,sho:0.42,sha:15,t:360,nw:0,c:'#ff932e',light:0.09,dark:0.12,shade:'#33210f',sun:1,lx:1277,ly:854,spread:2,alpha:0.52,blur:38,bc:'#ffddad'},
+    {name:'Podne',shk:1,shx:10,shy:6,shw:1,shh:1,shr:0,shb:4,shl:1,sho:0.34,sha:50,t:720,nw:0,c:'#fff4dc',light:0,dark:0,shade:'#2a2a2e',sun:1,lx:614,ly:858,spread:1.1,alpha:0.37,blur:30,bc:'#fff6dc'},
+    {name:'Veče',shk:1,shx:36,shy:8,shw:1,shh:1,shr:0,shb:7,shl:1,sho:0.22,sha:75,t:1140,nw:0.6,c:'#4639fe',light:0.07,dark:0.28,shade:'#010223',sun:0.3,lx:432,ly:589,spread:0,alpha:0,blur:0,bc:'#000000'},
+    {name:'Noć',shk:1,shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:0,sho:0,sha:45,t:0,nw:1,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}
+    ,{name:'Pred zoru',shk:1,t:300,nw:1,shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:0,sho:0,sha:45,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}      // 0:00-5:00 the same as the night (constant dark), from 5:00 the sun starts to come
   ],
   shItems:{},
+  shV:2,      // version of the sun shadows' values: older saves get the new ones (a soft drop shadow, like the plate)
   win2:{open:1.35,closed:1},      // how strong the light of the sun is when the window is open / closed (a click on the window changes the light)
   itemLight2:.15,
   fireNight:0.2,
@@ -29,9 +30,10 @@ var DEF={
 function clone(o){return JSON.parse(JSON.stringify(o));}
 var cfg=clone(DEF);
 function applyCfg(c,sv){
-  if(sv.secPerHour)c.secPerHour=sv.secPerHour;if(sv.win)c.win=Object.assign(c.win,sv.win);if(sv.fireNight!=null)c.fireNight=sv.fireNight;if(sv.itemLight2!=null)c.itemLight2=sv.itemLight2;if(sv.sh)c.sh=Object.assign(c.sh,sv.sh);if(sv.win2)c.win2=Object.assign(c.win2,sv.win2);if(sv.shItems)c.shItems=clone(sv.shItems);
+  if(sv.secPerHour)c.secPerHour=sv.secPerHour;if(sv.win)c.win=Object.assign(c.win,sv.win);if(sv.fireNight!=null)c.fireNight=sv.fireNight;if(sv.itemLight2!=null)c.itemLight2=sv.itemLight2;if(sv.sh)c.sh=Object.assign(c.sh,sv.sh);if(sv.win2)c.win2=Object.assign(c.win2,sv.win2);if(sv.shItems)c.shItems=clone(sv.shItems);var oldSh=!(sv.shV>=2);
   var has5=false;
   (sv.keys||[]).forEach(function(k,i){var j=-1;c.keys.forEach(function(d,n){if(d.name===k.name)j=n;});if(j<0&&i<c.keys.length)j=i;if(j>=0){if(k.name==='Pred zoru')has5=true;var t=c.keys[j].t;Object.assign(c.keys[j],k);if(k.name==='Pred zoru'||c.keys[j].name==='Pred zoru')c.keys[j].name='Pred zoru';}});
+  if(oldSh){var sd=clone(DEF.keys);c.keys.forEach(function(k){sd.forEach(function(d){if(d.name===k.name){['shk','shl','sho','sha','shx','shy','shw','shh','shr','shb'].forEach(function(f){k[f]=d[f];});}});});}
   if(!has5){var nk=null,zk=null;c.keys.forEach(function(d){if(d.name==='Noć')nk=d;if(d.name==='Pred zoru')zk=d;});if(nk&&zk){var t=zk.t;Object.assign(zk,clone(nk));zk.name='Pred zoru';zk.t=t;}}      // an old save without the new key: before the dawn is as dark as the night he already set
   return c;}
 try{var sv=JSON.parse(localStorage.getItem(KEY)||'null');if(sv&&sv.keys&&sv.keys.length>=4){cfg=applyCfg(clone(DEF),sv);}}catch(e){}
@@ -75,7 +77,7 @@ function mixPhase0(m){      // m = game minute (0..1440): the values between the
   var t=ease(clamp01((m-aT)/Math.max(1,bT-aT)));
   function f(x,y){return x+(y-x)*t;}
   function mc(x,y){var p=hex(x),q=hex(y);return [f(p[0],q[0]),f(p[1],q[1]),f(p[2],q[2])];}
-  return {c:mc(a.c,b.c),shade:mc(a.shade,b.shade),bc:mc(a.bc,b.bc),light:f(a.light,b.light),dark:f(a.dark,b.dark),sun:f(a.sun,b.sun),nw:f(a.nw||0,b.nw||0),lx:f(a.lx,b.lx),shl:f(a.shl||0,b.shl||0),sho:f(a.sho||0,b.sho||0),sha:f(a.sha==null?45:a.sha,b.sha==null?45:b.sha),shx:f(a.shx||0,b.shx||0),shy:f(a.shy||0,b.shy||0),shw:f(a.shw==null?1:a.shw,b.shw==null?1:b.shw),shh:f(a.shh==null?1:a.shh,b.shh==null?1:b.shh),shr:f(a.shr||0,b.shr||0),shb:f(a.shb==null?2.5:a.shb,b.shb==null?2.5:b.shb),ly:f(a.ly,b.ly),spread:f(a.spread,b.spread),alpha:f(a.alpha,b.alpha),blur:f(a.blur,b.blur)};
+  return {c:mc(a.c,b.c),shade:mc(a.shade,b.shade),bc:mc(a.bc,b.bc),light:f(a.light,b.light),dark:f(a.dark,b.dark),sun:f(a.sun,b.sun),nw:f(a.nw||0,b.nw||0),lx:f(a.lx,b.lx),shl:f(a.shl||0,b.shl||0),shk:f(a.shk==null?0:a.shk,b.shk==null?0:b.shk),sho:f(a.sho||0,b.sho||0),sha:f(a.sha==null?45:a.sha,b.sha==null?45:b.sha),shx:f(a.shx||0,b.shx||0),shy:f(a.shy||0,b.shy||0),shw:f(a.shw==null?1:a.shw,b.shw==null?1:b.shw),shh:f(a.shh==null?1:a.shh,b.shh==null?1:b.shh),shr:f(a.shr||0,b.shr||0),shb:f(a.shb==null?2.5:a.shb,b.shb==null?2.5:b.shb),ly:f(a.ly,b.ly),spread:f(a.spread,b.spread),alpha:f(a.alpha,b.alpha),blur:f(a.blur,b.blur)};
 }
 function clamp01(v){return Math.max(0,Math.min(1,v));}
 function bell(h,s,p,e){return h<=s||h>=e?0:h<p?(h-s)/(p-s):(e-h)/(e-p);}
@@ -309,6 +311,7 @@ function build(){
   row('Vatra noću sija jače','fn',0,3,.1,function(){return cfg.fireNight;},function(v){cfg.fireNight=v;try{CooksterGrill.boost(1+.5*v);}catch(e){}},function(v){return (+v).toFixed(1)+'x';});
   h=document.createElement('h4');h.textContent='Senke od sunca (odvojene od senki dodira)';pn.appendChild(h);
   var sb=mk(pn,'Senke od sunca uključene',function(){cfg.sh.on=cfg.sh.on?0:1;sb.classList.toggle('on',!!cfg.sh.on);save();});sb.classList.toggle('on',!!cfg.sh.on);
+  row('Tip senke: 0 duga, 1 kao kap (za izabranu tačku)','shk',0,1,.05,function(){return K().shk;},function(v){K().shk=v;});
   row('Dužina senke (za izabranu tačku)','shl',0,3,.05,function(){return K().shl;},function(v){K().shl=v;});
   row('Jačina senke (za izabranu tačku)','sho',0,1,.05,function(){return K().sho;},function(v){K().sho=v;});
   row('Smer senke (0° desno, 90° dole)','sha',-30,150,5,function(){return K().sha;},function(v){K().sha=v;},function(v){return Math.round(v)+'°';});
