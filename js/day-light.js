@@ -14,10 +14,10 @@ var DEF={
   secPerHour:60,      // Miloš's export has 10 here (a test); the real default stays one real minute = one game hour
   win:{x1:-12,y1:-17,x2:-9,y2:302},
   keys:[
-    {name:'Jutro',t:360,c:'#ff932e',light:0.09,dark:0.12,shade:'#33210f',sun:1,lx:1277,ly:854,spread:2,alpha:0.52,blur:38,bc:'#ffddad'},
-    {name:'Podne',t:720,c:'#fff4dc',light:0,dark:0,shade:'#2a2a2e',sun:1,lx:614,ly:858,spread:1.1,alpha:0.37,blur:30,bc:'#fff6dc'},
-    {name:'Veče',t:1140,c:'#4639fe',light:0.07,dark:0.28,shade:'#010223',sun:0.3,lx:432,ly:589,spread:0,alpha:0,blur:0,bc:'#000000'},
-    {name:'Noć',t:0,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}
+    {name:'Jutro',t:360,nw:0,c:'#ff932e',light:0.09,dark:0.12,shade:'#33210f',sun:1,lx:1277,ly:854,spread:2,alpha:0.52,blur:38,bc:'#ffddad'},
+    {name:'Podne',t:720,nw:0,c:'#fff4dc',light:0,dark:0,shade:'#2a2a2e',sun:1,lx:614,ly:858,spread:1.1,alpha:0.37,blur:30,bc:'#fff6dc'},
+    {name:'Veče',t:1140,nw:0.6,c:'#4639fe',light:0.07,dark:0.28,shade:'#010223',sun:0.3,lx:432,ly:589,spread:0,alpha:0,blur:0,bc:'#000000'},
+    {name:'Noć',t:0,nw:1,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}
   ],
   fireNight:0.2
 };
@@ -62,7 +62,7 @@ function mixPhase(m){      // m = game minute (0..1440): the values between the 
   var t=ease(clamp01((m-aT)/Math.max(1,bT-aT)));
   function f(x,y){return x+(y-x)*t;}
   function mc(x,y){var p=hex(x),q=hex(y);return [f(p[0],q[0]),f(p[1],q[1]),f(p[2],q[2])];}
-  return {c:mc(a.c,b.c),shade:mc(a.shade,b.shade),bc:mc(a.bc,b.bc),light:f(a.light,b.light),dark:f(a.dark,b.dark),sun:f(a.sun,b.sun),lx:f(a.lx,b.lx),ly:f(a.ly,b.ly),spread:f(a.spread,b.spread),alpha:f(a.alpha,b.alpha),blur:f(a.blur,b.blur)};
+  return {c:mc(a.c,b.c),shade:mc(a.shade,b.shade),bc:mc(a.bc,b.bc),light:f(a.light,b.light),dark:f(a.dark,b.dark),sun:f(a.sun,b.sun),nw:f(a.nw||0,b.nw||0),lx:f(a.lx,b.lx),ly:f(a.ly,b.ly),spread:f(a.spread,b.spread),alpha:f(a.alpha,b.alpha),blur:f(a.blur,b.blur)};
 }
 function clamp01(v){return Math.max(0,Math.min(1,v));}
 function bell(h,s,p,e){return h<=s||h>=e?0:h<p?(h-s)/(p-s):(e-h)/(e-p);}
@@ -86,6 +86,18 @@ function sunlessLayer(){
   sunless=mk('daySunless',0,null);sc.insertBefore(sunless,sc.firstChild);
   sunless2=mk('daySunless2',25,OCC_CLIP);sc.appendChild(sunless2);      // over the occluder of the table, so the old picture does not show the sun in the floor left of the table
   return sunless;
+}
+/* the window at night: the same picture of the kitchen drawn with the night outside (assets/effects/kuhinja_prozor_noc.webp) is laid over the real one only inside a small mask around the window (window_zone_mask.png);
+   how much of it is seen is the key value "nw" (0 = the day outside, 1 = the night outside), so it melts in between two keys like the sun on the floor. */
+var NIGHTWIN='assets/effects/kuhinja_prozor_noc.webp?v=1',WZONE='assets/effects/window_zone_mask.png?v=1',winNight=null;
+function winLayer(){
+  var sc=document.getElementById('scene');if(!sc)return null;
+  if(winNight&&winNight.parentNode===sc)return winNight;
+  winNight=document.createElement('div');winNight.id='dayWinNight';
+  winNight.style.cssText='position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;pointer-events:none;z-index:0;opacity:0;background:url('+NIGHTWIN+') 0 0/100% 100% no-repeat;'+
+    '-webkit-mask-image:url('+WZONE+');mask-image:url('+WZONE+');-webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat';
+  if(sunless&&sunless.nextSibling)sc.insertBefore(winNight,sunless.nextSibling);else sc.appendChild(winNight);
+  return winNight;
 }
 function layer(){
   var sc=document.getElementById('scene');if(!sc)return false;
@@ -121,6 +133,7 @@ function render(){
     tc.fillStyle=rgba(P.shade,1);tc.fillRect(0,0,tintC.width,tintC.height);tc.globalCompositeOperation='destination-in';tc.drawImage(sunI,0,0,tintC.width,tintC.height);
     cx.save();cx.setTransform(1,0,0,1,0,0);cx.globalAlpha=extra;cx.drawImage(tintC,0,0);cx.restore();
   }
+  var wl=winLayer();if(wl)wl.style.opacity=clamp01(P.nw).toFixed(3);
   // 2. the warm haze of the morning / the evening
   if(P.light>.005){cx.fillStyle=rgba(P.c,P.light*.55);cx.fillRect(0,0,W,H);}
   // 3. the shaft of the sun: it comes IN through the window (the segment A-B) and falls on the floor at (lx,ly); the key values move it over the day
@@ -203,6 +216,7 @@ function build(){
   row('Sjaj (topla izmaglica)','light',0,.6,.01,function(){return K().light;},function(v){K().light=v;});
   row('Mrak','dark',0,.9,.01,function(){return K().dark;},function(v){K().dark=v;});
   row('Sunce na podu (naslikane mrlje)','sun',0,1,.05,function(){return K().sun;},function(v){K().sun=v;});
+  row('Prozor: noć napolju (0 = dan, 1 = noć)','nw',0,1,.05,function(){return K().nw||0;},function(v){K().nw=v;});
   h=document.createElement('h4');h.textContent='Sunčev zrak u ovoj tački';pn.appendChild(h);
   row('Gde pada: levo-desno','lx',-200,1672,5,function(){return K().lx;},function(v){K().lx=v;},function(v){return Math.round(v);});
   row('Gde pada: gore-dole','ly',-100,941,5,function(){return K().ly;},function(v){K().ly=v;},function(v){return Math.round(v);});
