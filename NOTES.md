@@ -929,3 +929,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Senke iz ChatGPT-a: tools/gpt_shadow_templates.py pravi šablone (predmet na čisto belom platnu 1536×1024), ChatGPT crta samo senku na belom, tools/import_gpt_shadow.py pretvara belu pozadinu u providnost, poravnava sa predmetom i upisuje u assets/shadows/meta.json (igra ih odmah koristi, kao pečene).
 
 - Crtanje senke: sada 9 pokretnih tačaka (4 leve, plave, na početku ispod predmeta + 5 desnih, narandžastih); stari crteži sa 5 tačaka se i dalje učitavaju. Novi klizač po predmetu 'Gradijent: dužina prelaza ×'.
+
+- Početne senke predmeta (shItems, shPoly, tri ključa senke) uzete iz Milošovog exporta (cookster-day-light_3.json).
