@@ -14,10 +14,10 @@ var DEF={
   secPerHour:60,      // Miloš's export has 10 here (a test); the real default stays one real minute = one game hour
   win:{x1:-12,y1:-17,x2:-9,y2:302},
   keys:[
-    {name:'Jutro',t:360,nw:0,c:'#ff932e',light:0.09,dark:0.12,shade:'#33210f',sun:1,lx:1277,ly:854,spread:2,alpha:0.52,blur:38,bc:'#ffddad'},
-    {name:'Podne',t:720,nw:0,c:'#fff4dc',light:0,dark:0,shade:'#2a2a2e',sun:1,lx:614,ly:858,spread:1.1,alpha:0.37,blur:30,bc:'#fff6dc'},
-    {name:'Veče',t:1140,nw:0.6,c:'#4639fe',light:0.07,dark:0.28,shade:'#010223',sun:0.3,lx:432,ly:589,spread:0,alpha:0,blur:0,bc:'#000000'},
-    {name:'Noć',t:0,nw:1,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}
+    {name:'Jutro',shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:1.7,sho:.5,sha:12,t:360,nw:0,c:'#ff932e',light:0.09,dark:0.12,shade:'#33210f',sun:1,lx:1277,ly:854,spread:2,alpha:0.52,blur:38,bc:'#ffddad'},
+    {name:'Podne',shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:.3,sho:.45,sha:50,t:720,nw:0,c:'#fff4dc',light:0,dark:0,shade:'#2a2a2e',sun:1,lx:614,ly:858,spread:1.1,alpha:0.37,blur:30,bc:'#fff6dc'},
+    {name:'Veče',shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:1.4,sho:.2,sha:75,t:1140,nw:0.6,c:'#4639fe',light:0.07,dark:0.28,shade:'#010223',sun:0.3,lx:432,ly:589,spread:0,alpha:0,blur:0,bc:'#000000'},
+    {name:'Noć',shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:0,sho:0,sha:45,t:0,nw:1,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}
   ],
   itemLight2:.15,
   fireNight:0.2,
@@ -64,7 +64,7 @@ function mixPhase(m){      // m = game minute (0..1440): the values between the 
   var t=ease(clamp01((m-aT)/Math.max(1,bT-aT)));
   function f(x,y){return x+(y-x)*t;}
   function mc(x,y){var p=hex(x),q=hex(y);return [f(p[0],q[0]),f(p[1],q[1]),f(p[2],q[2])];}
-  return {c:mc(a.c,b.c),shade:mc(a.shade,b.shade),bc:mc(a.bc,b.bc),light:f(a.light,b.light),dark:f(a.dark,b.dark),sun:f(a.sun,b.sun),nw:f(a.nw||0,b.nw||0),lx:f(a.lx,b.lx),ly:f(a.ly,b.ly),spread:f(a.spread,b.spread),alpha:f(a.alpha,b.alpha),blur:f(a.blur,b.blur)};
+  return {c:mc(a.c,b.c),shade:mc(a.shade,b.shade),bc:mc(a.bc,b.bc),light:f(a.light,b.light),dark:f(a.dark,b.dark),sun:f(a.sun,b.sun),nw:f(a.nw||0,b.nw||0),lx:f(a.lx,b.lx),shl:f(a.shl||0,b.shl||0),sho:f(a.sho||0,b.sho||0),sha:f(a.sha==null?45:a.sha,b.sha==null?45:b.sha),shx:f(a.shx||0,b.shx||0),shy:f(a.shy||0,b.shy||0),shw:f(a.shw==null?1:a.shw,b.shw==null?1:b.shw),shh:f(a.shh==null?1:a.shh,b.shh==null?1:b.shh),shr:f(a.shr||0,b.shr||0),shb:f(a.shb==null?2.5:a.shb,b.shb==null?2.5:b.shb),ly:f(a.ly,b.ly),spread:f(a.spread,b.spread),alpha:f(a.alpha,b.alpha),blur:f(a.blur,b.blur)};
 }
 function clamp01(v){return Math.max(0,Math.min(1,v));}
 function bell(h,s,p,e){return h<=s||h>=e?0:h<p?(h-s)/(p-s):(e-h)/(e-p);}
@@ -295,10 +295,15 @@ function build(){
   row('Vatra noću sija jače','fn',0,3,.1,function(){return cfg.fireNight;},function(v){cfg.fireNight=v;try{CooksterGrill.boost(1+.5*v);}catch(e){}},function(v){return (+v).toFixed(1)+'x';});
   h=document.createElement('h4');h.textContent='Senke od sunca (odvojene od senki dodira)';pn.appendChild(h);
   var sb=mk(pn,'Senke od sunca uključene',function(){cfg.sh.on=cfg.sh.on?0:1;sb.classList.toggle('on',!!cfg.sh.on);save();});sb.classList.toggle('on',!!cfg.sh.on);
-  row('Dužina senke','shl',0,2.5,.05,function(){return cfg.sh.len;},function(v){cfg.sh.len=v;});
-  row('Jačina senke','sho',0,1,.05,function(){return cfg.sh.op;},function(v){cfg.sh.op=v;});
-  row('Mekoća senke','shb',0,10,.5,function(){return cfg.sh.blur;},function(v){cfg.sh.blur=v;},function(v){return (+v).toFixed(1)+'px';});
-  row('Spljoštenost senke','shf',.1,1.2,.05,function(){return cfg.sh.flat;},function(v){cfg.sh.flat=v;});
+  row('Dužina senke (za izabranu tačku)','shl',0,3,.05,function(){return K().shl;},function(v){K().shl=v;});
+  row('Jačina senke (za izabranu tačku)','sho',0,1,.05,function(){return K().sho;},function(v){K().sho=v;});
+  row('Smer senke (0° desno, 90° dole)','sha',-30,150,5,function(){return K().sha;},function(v){K().sha=v;},function(v){return Math.round(v)+'°';});
+  row('Pomeraj X (za izabranu tačku)','shx',-200,200,1,function(){return K().shx;},function(v){K().shx=v;},function(v){return Math.round(v);});
+  row('Pomeraj Y (za izabranu tačku)','shy',-200,200,1,function(){return K().shy;},function(v){K().shy=v;},function(v){return Math.round(v);});
+  row('Širina senke','shw',.2,3,.05,function(){return K().shw;},function(v){K().shw=v;});
+  row('Visina / spljoštenost senke','shh',.1,3,.05,function(){return K().shh;},function(v){K().shh=v;});
+  row('Rotacija senke','shr',-90,90,1,function(){return K().shr;},function(v){K().shr=v;},function(v){return Math.round(v)+'°';});
+  row('Mekoća senke','shb',0,12,.5,function(){return K().shb;},function(v){K().shb=v;},function(v){return (+v).toFixed(1)+'px';});
   var b2=document.createElement('div');
   mk(b2,'Izvezi JSON',function(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'}));a.download='cookster-day-light.json';document.body.appendChild(a);a.click();setTimeout(function(){a.remove();},500);});
   var fi=document.createElement('input');fi.type='file';fi.accept='application/json';fi.style.display='none';

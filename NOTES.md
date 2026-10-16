@@ -902,3 +902,4 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Potpuno odvojen sistem od senki dodira (`_contactShadow` se ne dira): svaki predmet dobija tamnu spljoštenu kopiju slike u sopstvenom sloju `.sun-shadow` u #scene.
 - Dinamične: dugačke ujutru i uveče, kratke u podne; smer prati prozor→mesto gde zrak pada i menja se sa vremenom. Noću nestaju.
 - Podešavanje u alatu „Vreme i svetlo“: uključi/isključi, dužina, jačina, mekoća, spljoštenost (`cfg.sh`, čuva se i u JSON-u).
+- Senke od sunca su sada po tačkama dana (Jutro/Podne/Veče/Noć) u alatu: dužina, jačina, smer, pomeraj X/Y, širina, visina, rotacija, mekoća; između tačaka se glatko prelivaju sa satom.
