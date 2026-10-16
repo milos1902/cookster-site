@@ -10,7 +10,7 @@ function build(){
   if(box&&box.parentNode===sc)return true;
   box=document.createElement('div');box.id='windowOpen';
   box.style.cssText='position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;pointer-events:none;z-index:1;transform-origin:0 40%;will-change:transform,opacity;opacity:'+(open?1:0);
-  inner=document.createElement('div');inner.style.cssText='position:absolute;inset:0;background:url(assets/effects/prozor_otvoren.webp?v=1) 0 0/100% 100% no-repeat';
+  inner=document.createElement('div');inner.style.cssText='position:absolute;inset:0;background:url(assets/effects/prozor_otvoren.webp?v=4) 0 0/100% 100% no-repeat';
   box.appendChild(inner);
 sc.appendChild(box);
   hot=document.createElement('div');hot.id='windowHot';hot.title='Otvori / zatvori prozor';
