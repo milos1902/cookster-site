@@ -21,6 +21,7 @@ var DEF={
     ,{name:'Pred zoru',t:300,nw:1,shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:0,sho:0,sha:45,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}      // 0:00-5:00 the same as the night (constant dark), from 5:00 the sun starts to come
   ],
   shItems:{},
+  win2:{open:1.35,closed:1},      // how strong the light of the sun is when the window is open / closed (a click on the window changes the light)
   itemLight2:.15,
   fireNight:0.2,
   sh:{on:1,len:.9,op:.45,blur:2.5,flat:.7}
@@ -28,7 +29,7 @@ var DEF={
 function clone(o){return JSON.parse(JSON.stringify(o));}
 var cfg=clone(DEF);
 function applyCfg(c,sv){
-  if(sv.secPerHour)c.secPerHour=sv.secPerHour;if(sv.win)c.win=Object.assign(c.win,sv.win);if(sv.fireNight!=null)c.fireNight=sv.fireNight;if(sv.itemLight2!=null)c.itemLight2=sv.itemLight2;if(sv.sh)c.sh=Object.assign(c.sh,sv.sh);if(sv.shItems)c.shItems=clone(sv.shItems);
+  if(sv.secPerHour)c.secPerHour=sv.secPerHour;if(sv.win)c.win=Object.assign(c.win,sv.win);if(sv.fireNight!=null)c.fireNight=sv.fireNight;if(sv.itemLight2!=null)c.itemLight2=sv.itemLight2;if(sv.sh)c.sh=Object.assign(c.sh,sv.sh);if(sv.win2)c.win2=Object.assign(c.win2,sv.win2);if(sv.shItems)c.shItems=clone(sv.shItems);
   var has5=false;
   (sv.keys||[]).forEach(function(k,i){var j=-1;c.keys.forEach(function(d,n){if(d.name===k.name)j=n;});if(j<0&&i<c.keys.length)j=i;if(j>=0){if(k.name==='Pred zoru')has5=true;var t=c.keys[j].t;Object.assign(c.keys[j],k);if(k.name==='Pred zoru'||c.keys[j].name==='Pred zoru')c.keys[j].name='Pred zoru';}});
   if(!has5){var nk=null,zk=null;c.keys.forEach(function(d){if(d.name==='Noć')nk=d;if(d.name==='Pred zoru')zk=d;});if(nk&&zk){var t=zk.t;Object.assign(zk,clone(nk));zk.name='Pred zoru';zk.t=t;}}      // an old save without the new key: before the dawn is as dark as the night he already set
@@ -65,7 +66,9 @@ function endDay(){st.minute=OPEN;st.closed=false;st.paused=false;st.day++;
 
 /* ---------- the light ---------- */
 function ease(t){return t*t*(3-2*t);}
-function mixPhase(m){      // m = game minute (0..1440): the values between the two neighbouring keys (the day is a circle: after the last key come the first of the next day)
+function winLevel(){try{return window.CooksterWindow&&CooksterWindow.level?CooksterWindow.level():0;}catch(e){return 0;}}
+function mixPhase(m){var P=mixPhase0(m),w=winLevel(),w2=cfg.win2||{open:1.35,closed:1};P.alpha=P.alpha*(w2.closed+(w2.open-w2.closed)*w);P.winL=w;return P;}      // the window open lets in more sun (one value for the canvas and for the things in the shaft)
+function mixPhase0(m){      // m = game minute (0..1440): the values between the two neighbouring keys (the day is a circle: after the last key come the first of the next day)
   var ks=cfg.keys.slice().sort(function(a,b){return a.t-b.t;}),n=ks.length,a=ks[n-1],b=ks[0],aT=a.t-1440,bT=b.t,i;
   if(m>=ks[0].t){for(i=0;i<n;i++){var nx=ks[(i+1)%n],nT=nx.t+(i===n-1?1440:0);if(m>=ks[i].t&&m<=nT){a=ks[i];b=nx;aT=ks[i].t;bT=nT;break;}}}
   else{a=ks[n-1];b=ks[0];aT=a.t-1440;bT=b.t;}
@@ -80,7 +83,7 @@ function rgba(c,a){return 'rgba('+Math.round(c[0])+','+Math.round(c[1])+','+Math
 function grillLevel(){try{return window.CooksterGrill&&CooksterGrill.level?CooksterGrill.level():0;}catch(e){return 0;}}
 function stoveLevel(){try{return (stoveState.fireOn&&(+stoveState.fireLevel||0)>0)?Math.min(1,(+stoveState.fireLevel||0)/FIRE_MAX_LEVEL):0;}catch(e){return 0;}}
 function lusterLevel(){try{return window.CooksterLuster&&CooksterLuster.level?CooksterLuster.level():0;}catch(e){return 0;}}
-function fireSig(){return Math.round(grillLevel()*20)+'/'+Math.round(stoveLevel()*10)+'/'+Math.round(lusterLevel()*30);}
+function fireSig(){return Math.round(grillLevel()*20)+'/'+Math.round(stoveLevel()*10)+'/'+Math.round(lusterLevel()*30)+'/'+Math.round(winLevel()*30);}
 var cv=null,cx=null,tintC=null,sunI=new Image();sunI.src='assets/effects/sun_patches.png?v=1';
 /* the picture of the kitchen WITHOUT the sun on the floor (assets/effects/kuhinja_bez_sunca.webp, the same picture, drawn without the light of the window) lies over the real one inside a mask of the window light
    (assets/effects/sun_zone_mask.png) and it melts in while the sun goes away (evening, night, early morning). If that picture is not there, the patches are only darkened. */
@@ -329,6 +332,9 @@ function build(){
   ctr.itl=function(){itLab.textContent=selItem?('Izabran: '+selItemLabel):'Predmet nije izabran — pritisni Nišani i klikni predmet';};
   window.addEventListener('pointerdown',function(e){if(!pickOn||pn.contains(e.target))return;var el=e.target&&e.target.closest&&e.target.closest('.item');if(!el)return;e.preventDefault();e.stopImmediatePropagation();
     selItem=el.dataset.itemId||'';selItemLabel=el.dataset.label||selItem;pickOn=false;pickB.classList.remove('on');pickB.textContent='Nišani';document.body.classList.remove('dl-pick');Object.keys(ctr).forEach(function(k){try{ctr[k]();}catch(x){}});},true);
+  h=document.createElement('h4');h.textContent='Prozor (klik na prozor menja svetlo)';pn.appendChild(h);
+  row('Zrak sunca kad je prozor otvoren ×','wo',0,3,.05,function(){return cfg.win2.open;},function(v){cfg.win2.open=v;});
+  row('Zrak sunca kad je prozor zatvoren ×','wc',0,3,.05,function(){return cfg.win2.closed;},function(v){cfg.win2.closed=v;});
   var b2=document.createElement('div');
   mk(b2,'Izvezi JSON',function(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'}));a.download='cookster-day-light.json';document.body.appendChild(a);a.click();setTimeout(function(){a.remove();},500);});
   var fi=document.createElement('input');fi.type='file';fi.accept='application/json';fi.style.display='none';
