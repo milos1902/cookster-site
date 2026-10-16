@@ -156,7 +156,7 @@ function render(){
 }
 
 /* ---------- the things in the shaft of the sun are lit ---------- */
-(function(){var st2=document.createElement('style');st2.textContent='.item.lit-sun:not(.container-target):not(.stir-ready-target):not(.pour-target-ready),.flour-pile.lit-sun{filter:brightness(var(--lit-b,1)) saturate(var(--lit-s,1)) sepia(var(--lit-w,0))}';document.head.appendChild(st2);})();
+(function(){var st2=document.createElement('style');st2.textContent='.item.lit-sun:not(.container-target):not(.stir-ready-target):not(.pour-target-ready),.flour-pile.lit-sun{filter:brightness(var(--lit-b,1)) saturate(var(--lit-s,1)) sepia(var(--lit-w,0))}.placement-ghost .ghost-item-copy.lit-sun{filter:brightness(var(--lit-b,1)) saturate(var(--lit-s,1)) sepia(var(--lit-w,0))!important}';document.head.appendChild(st2);})();
 /* the things that are drawn ABOVE the dark layer (the item in the hand = its ghost, the pitcher that pours, the cloth, the picture of the sack) do not get the dark of the canvas, so they get the same dark as a filter:
    --amb-b is set on the page in render() from the dark of the time of day (the held thing looks as dark as the things lying around). */
 (function(){var st3=document.createElement('style');st3.textContent=
@@ -175,7 +175,7 @@ function litTick(){
   list.forEach(function(el){
     if(!el||!el.isConnected)return;
     var k=0;
-    if(on&&el!==(typeof holding!=='undefined'?holding:null)&&!el.classList.contains('ghost-item-copy')){
+    if(on&&el!==(typeof holding!=='undefined'?holding:null)){      // the copy that follows the mouse (ghost-item-copy) is lit too, it shows where the thing would lie
       var r=el.getBoundingClientRect(),c=screenToScene(r.left+r.width/2,r.top+r.height*.62),
           t=((c.x-mx)*dx+(c.y-my)*dy)/len2;                      // 0 = at the window, 1 = where the shaft falls
       if(t>0&&t<1.15){
