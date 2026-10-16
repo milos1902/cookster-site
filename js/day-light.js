@@ -6,25 +6,26 @@
 (function(){
 'use strict';
 if(window.CooksterDay)return;
-var KEY='cookster.day-light.v1',OPEN=360,CLOSE=1440,W=1672,H=941,SC=.25;
+var KEY='cookster.day-light.v2',OPEN=360,CLOSE=1440,W=1672,H=941,SC=.25;
+/* Four points in the 24 hours (the keys). Each key has the time, the colours and the dark of that moment, the sun on the floor (0..1: how much of the painted sun is seen) and the sun shaft:
+   lx,ly = where the light falls on the floor (the centre of the far end of the shaft), spread = how much the shaft widens, alpha = how strong, blur = how soft, bc = its colour.
+   Between two keys everything changes slowly (the sun moves from one place to the other). The window (the beginning of the shaft) is one for all keys. */
 var DEF={
   secPerHour:60,
-  phases:{
-    morning:{c:'#fec590',light:.23,dark:.29,shade:'#33210f'},
-    noon:{c:'#fff4dc',light:.08,dark:.02,shade:'#2a2a2e'},
-    evening:{c:'#ff9b57',light:.10,dark:.21,shade:'#3d1a0c'},
-    night:{c:'#192b52',light:0,dark:.48,shade:'#050c24'}
-  },
-  beam:{strength:.55,opacity:.5},
-  fireNight:1.6,
-  sunPatch:.65
+  win:{x1:14,y1:30,x2:14,y2:330},
+  keys:[
+    {name:'Jutro',t:420,c:'#fec590',light:.23,dark:.29,shade:'#33210f',sun:1,lx:380,ly:640,spread:.5,alpha:.55,blur:36,bc:'#ffe9b0'},
+    {name:'Podne',t:720,c:'#fff4dc',light:.08,dark:.02,shade:'#2a2a2e',sun:1,lx:300,ly:760,spread:.45,alpha:.42,blur:36,bc:'#fff6dc'},
+    {name:'Veče',t:1140,c:'#ff9b57',light:.10,dark:.21,shade:'#3d1a0c',sun:1,lx:700,ly:600,spread:.55,alpha:.6,blur:40,bc:'#ffb070'},
+    {name:'Noć',t:1320,c:'#192b52',light:0,dark:.48,shade:'#050c24',sun:0,lx:600,ly:700,spread:.5,alpha:0,blur:40,bc:'#bcd0ff'}
+  ],
+  fireNight:1.6
 };
-var PH=[['night','Noć',0],['morning','Jutro',7],['noon','Podne',12],['evening','Veče',19]];
 function clone(o){return JSON.parse(JSON.stringify(o));}
-function merge(a,b){for(var k in b){if(b[k]&&typeof b[k]==='object'&&!Array.isArray(b[k])){a[k]=merge(a[k]&&typeof a[k]==='object'?a[k]:{},b[k]);}else a[k]=b[k];}return a;}
 var cfg=clone(DEF);
-try{var sv=JSON.parse(localStorage.getItem(KEY)||'null');if(sv)merge(cfg,sv);}catch(e){}
+try{var sv=JSON.parse(localStorage.getItem(KEY)||'null');if(sv&&sv.keys&&sv.keys.length===4){cfg=clone(DEF);if(sv.secPerHour)cfg.secPerHour=sv.secPerHour;if(sv.win)cfg.win=Object.assign(cfg.win,sv.win);if(sv.fireNight!=null)cfg.fireNight=sv.fireNight;sv.keys.forEach(function(k,i){cfg.keys[i]=Object.assign(cfg.keys[i],k);});}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(cfg));}catch(e){}}
+function mergeCfg(src){var c=clone(DEF);if(src.secPerHour)c.secPerHour=src.secPerHour;if(src.win)c.win=Object.assign(c.win,src.win);if(src.fireNight!=null)c.fireNight=src.fireNight;if(src.keys&&src.keys.length===4)src.keys.forEach(function(k,i){c.keys[i]=Object.assign(c.keys[i],k);});return c;}
 
 /* ---------- the clock ---------- */
 var st={minute:OPEN,paused:false,day:1,closed:false};
@@ -54,13 +55,14 @@ function endDay(){st.minute=OPEN;st.closed=false;st.paused=false;st.day++;
 
 /* ---------- the light ---------- */
 function ease(t){return t*t*(3-2*t);}
-function mixPhase(h){
-  var pts=[[0,'night'],[7,'morning'],[12,'noon'],[19,'evening'],[24,'night']],a=pts[0],b=pts[1],i;
-  for(i=0;i<pts.length-1;i++)if(h>=pts[i][0]&&h<=pts[i+1][0]){a=pts[i];b=pts[i+1];break;}
-  var t=ease(Math.max(0,Math.min(1,(h-a[0])/(b[0]-a[0])))),A=cfg.phases[a[1]],B=cfg.phases[b[1]];
-  function m(x,y){return x+(y-x)*t;}
-  function mc(x,y){var p=hex(x),q=hex(y);return [m(p[0],q[0]),m(p[1],q[1]),m(p[2],q[2])];}
-  return {c:mc(A.c,B.c),shade:mc(A.shade,B.shade),light:m(A.light,B.light),dark:m(A.dark,B.dark)};
+function mixPhase(m){      // m = game minute (0..1440): the values between the two neighbouring keys (the day is a circle: after the last key come the first of the next day)
+  var ks=cfg.keys.slice().sort(function(a,b){return a.t-b.t;}),n=ks.length,a=ks[n-1],b=ks[0],aT=a.t-1440,bT=b.t,i;
+  if(m>=ks[0].t){for(i=0;i<n;i++){var nx=ks[(i+1)%n],nT=nx.t+(i===n-1?1440:0);if(m>=ks[i].t&&m<=nT){a=ks[i];b=nx;aT=ks[i].t;bT=nT;break;}}}
+  else{a=ks[n-1];b=ks[0];aT=a.t-1440;bT=b.t;}
+  var t=ease(clamp01((m-aT)/Math.max(1,bT-aT)));
+  function f(x,y){return x+(y-x)*t;}
+  function mc(x,y){var p=hex(x),q=hex(y);return [f(p[0],q[0]),f(p[1],q[1]),f(p[2],q[2])];}
+  return {c:mc(a.c,b.c),shade:mc(a.shade,b.shade),bc:mc(a.bc,b.bc),light:f(a.light,b.light),dark:f(a.dark,b.dark),sun:f(a.sun,b.sun),lx:f(a.lx,b.lx),ly:f(a.ly,b.ly),spread:f(a.spread,b.spread),alpha:f(a.alpha,b.alpha),blur:f(a.blur,b.blur)};
 }
 function clamp01(v){return Math.max(0,Math.min(1,v));}
 function bell(h,s,p,e){return h<=s||h>=e?0:h<p?(h-s)/(p-s):(e-h)/(e-p);}
@@ -106,13 +108,13 @@ function pool(x,y,rx,ry,carve,glow,col){
 }
 function render(){
   if(!layer())return;
-  var h=st.closed?24:(nowM()%1440)/60,P=mixPhase(h);
+  var m=st.closed?1440:nowM(),P=mixPhase(m%1440);
   cx.setTransform(1,0,0,1,0,0);cx.clearRect(0,0,cv.width,cv.height);cx.scale(SC,SC);
   // 1. the shade of the time of day (dark at night)
   cx.fillStyle=rgba(P.shade,P.dark*.95);cx.fillRect(0,0,W,H);
-  // 1b. the patches of sun that are painted on the floor go dark when there is no sun (night, early morning, late evening)
-  var dayF=clamp01(Math.min((h-5)/2,(21-h)/2)),extra=(1-dayF)*(+cfg.sunPatch||0);
-  var sl=sunlessLayer();if(sl){var op=sunlessOK?(1-dayF).toFixed(3):'0';sl.style.opacity=op;if(sunless2)sunless2.style.opacity=op;}
+  // 1b. the sun painted on the floor: the picture without the sun melts in when the sun goes away (key value "sun")
+  var dayF=clamp01(P.sun),extra=(1-dayF)*.65;
+  var slr=sunlessLayer();if(slr){var op=sunlessOK?(1-dayF).toFixed(3):'0';slr.style.opacity=op;if(sunless2)sunless2.style.opacity=op;}
   if(!sunlessOK&&extra>.01&&sunI.complete&&sunI.naturalWidth){
     if(!tintC){tintC=document.createElement('canvas');tintC.width=cv.width;tintC.height=cv.height;}
     var tc=tintC.getContext('2d');tc.setTransform(1,0,0,1,0,0);tc.globalCompositeOperation='source-over';tc.clearRect(0,0,tintC.width,tintC.height);
@@ -121,20 +123,20 @@ function render(){
   }
   // 2. the warm haze of the morning / the evening
   if(P.light>.005){cx.fillStyle=rgba(P.c,P.light*.55);cx.fillRect(0,0,W,H);}
-  // 3. the shaft of the sun from the window (it moves over the day: morning on the left, evening further to the right)
-  var dawn=bell(h,5,7.2,10.5),day=clamp01(Math.min((h-5)/2,(21-h)/2)),eve=bell(h,16.5,19,21.5);
-  var bi=clamp01((dawn*.92+day*.12+eve*.34)*(+cfg.beam.strength||0));
-  if(bi>.01){
-    var s=Math.max(-1,Math.min(1,(h-12)/7)),bx=W*.07+s*60,by=H*.04,bw=W*.54,bh=H*.92,sh=s*90,al=bi*(+cfg.beam.opacity||0);
-    cx.save();cx.filter='blur(3px)';
-    var g=cx.createLinearGradient(bx,by,bx+bw*.75+sh,by+bh);
-    g.addColorStop(0,'rgba(255,249,211,'+(al).toFixed(3)+')');g.addColorStop(.54,'rgba(255,211,120,'+(al*.4).toFixed(3)+')');g.addColorStop(1,'rgba(255,190,92,0)');
-    cx.fillStyle=g;cx.beginPath();cx.moveTo(bx,by);cx.lineTo(bx+bw*.38,by);cx.lineTo(bx+bw+sh,by+bh);cx.lineTo(bx+bw*.24+sh,by+bh);cx.closePath();cx.fill();cx.restore();
+  // 3. the shaft of the sun: it comes IN through the window (the segment A-B) and falls on the floor at (lx,ly); the key values move it over the day
+  if(P.alpha>.01){
+    var w=cfg.win,mx=(w.x1+w.x2)/2,my=(w.y1+w.y2)/2,dx=P.lx-mx,dy=P.ly-my,len=Math.hypot(dx,dy)||1,ux=dx/len,uy=dy/len;
+    var ax=w.x1+dx,ay=w.y1+dy,bx=w.x2+dx,by=w.y2+dy;                       // the far end: the window moved along the shaft
+    ax+=(w.x1-mx)*P.spread;ay+=(w.y1-my)*P.spread;bx+=(w.x2-mx)*P.spread;by+=(w.y2-my)*P.spread;   // and widened
+    cx.save();cx.filter='blur('+Math.max(0,P.blur*SC).toFixed(1)+'px)';
+    var g=cx.createLinearGradient(mx,my,P.lx,P.ly);
+    g.addColorStop(0,rgba(P.bc,P.alpha));g.addColorStop(.55,rgba(P.bc,P.alpha*.45));g.addColorStop(1,rgba(P.bc,0));
+    cx.fillStyle=g;cx.beginPath();cx.moveTo(w.x1,w.y1);cx.lineTo(w.x2,w.y2);cx.lineTo(bx,by);cx.lineTo(ax,ay);cx.closePath();cx.fill();cx.restore();
   }
   // 4. the fire shines: pools of light that cut the dark (the grill, the stove)
-  var nightF=clamp01(P.dark/.3)*(+cfg.fireNight||1),gl=grillLevel(),sl=stoveLevel();
+  var nightF=clamp01(P.dark/.3)*(+cfg.fireNight||1),gl=grillLevel(),stl=stoveLevel();
   if(gl>.02)pool(497,98,340,115,Math.min(1,gl*.95*nightF),gl*.22*nightF,[255,140,50]);
-  if(sl>.02)pool(1334,540,230,190,Math.min(1,sl*.75*nightF),sl*.16*nightF,[255,150,60]);
+  if(stl>.02)pool(1334,540,230,190,Math.min(1,stl*.75*nightF),stl*.16*nightF,[255,150,60]);
 }
 
 /* ---------- the clock on the screen ---------- */
@@ -150,66 +152,114 @@ function chip(){
 /* ---------- the tool ---------- */
 var css=document.createElement('style');
 css.textContent='#dlBtn{position:fixed;right:12px;bottom:132px;z-index:2147483500;border:2px solid #351b0d;border-radius:9px;background:#e8c27a;color:#351b0d;font:700 13px/1 system-ui,sans-serif;padding:9px 12px;cursor:pointer}'+
- '#dlPanel{position:fixed;left:12px;top:96px;z-index:2147483600;width:330px;max-height:calc(100vh - 120px);overflow:auto;background:rgba(36,22,10,.94);border:2px solid #7a5428;border-radius:10px;color:#f3e3c2;font:13px/1.35 system-ui,sans-serif;padding:10px;display:none}'+
- '#dlPanel label{display:block;margin:6px 0 0}#dlPanel input[type=range]{width:100%}#dlPanel select{width:100%;margin:4px 0}#dlPanel output{float:right;color:#ffd98a}#dlPanel h4{margin:10px 0 2px;color:#ffd98a;font-size:13px}'+
- '#dlPanel button{border:1px solid #351b0d;border-radius:7px;background:#e8c27a;color:#351b0d;font:700 12px/1 system-ui,sans-serif;padding:7px 9px;margin:6px 4px 0 0;cursor:pointer}#dlPanel small{display:block;margin-top:6px;opacity:.85}#dlPanel input[type=color]{width:44px;height:26px;padding:0;border:0;background:none;vertical-align:middle}';
+ '#dlPanel{position:fixed;right:12px;top:56px;z-index:2147483600;width:340px;max-height:calc(100vh - 230px);overflow:auto;background:rgba(36,22,10,.95);border:2px solid #7a5428;border-radius:10px;color:#f3e3c2;font:13px/1.35 system-ui,sans-serif;padding:10px;display:none}'+
+ '#dlPanel label{display:block;margin:6px 0 0}#dlPanel input[type=range]{width:100%}#dlPanel output{float:right;color:#ffd98a}#dlPanel h4{margin:12px 0 2px;color:#ffd98a;font-size:13px;border-top:1px solid #5b3d1c;padding-top:8px}'+
+ '#dlPanel button{border:1px solid #351b0d;border-radius:7px;background:#e8c27a;color:#351b0d;font:700 12px/1 system-ui,sans-serif;padding:7px 9px;margin:6px 4px 0 0;cursor:pointer}#dlPanel button.on{background:#ffe9a8;outline:2px solid #ffb12e}'+
+ '#dlPanel small{display:block;margin-top:6px;opacity:.85}#dlPanel input[type=color]{width:44px;height:26px;padding:0;border:0;background:none;vertical-align:middle}'+
+ '#dlHandles{position:fixed;left:0;top:0;width:0;height:0;z-index:2147483550}#dlHandles .dh{position:fixed;transform:translate(-50%,-50%);cursor:grab;font:700 11px/1 system-ui,sans-serif;color:#351b0d;text-align:center;user-select:none;touch-action:none}'+
+ '#dlHandles .dsun{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle,#fff6b0,#ffc83a 70%);border:3px solid #7a4b00;box-shadow:0 0 14px #ffd35c;line-height:28px;font-size:18px}'+
+ '#dlHandles .dwin{width:16px;height:16px;border-radius:3px;background:#7fd0ff;border:2px solid #0b3a5a}'+
+ '#dlHandles .dtag{position:fixed;transform:translate(-50%,0);padding:2px 6px;border-radius:6px;background:rgba(36,22,10,.85);color:#ffd98a;font:700 11px system-ui,sans-serif;pointer-events:none;white-space:nowrap}';
 document.head.appendChild(css);
 var btn=document.createElement('button');btn.id='dlBtn';btn.type='button';btn.textContent='☀ Vreme i svetlo';btn.setAttribute('data-tool-ui','1');
 var pn=document.createElement('div');pn.id='dlPanel';pn.setAttribute('data-tool-ui','1');
 document.body.appendChild(btn);document.body.appendChild(pn);
-var ctr={};
+var ctr={},selK=0,showH=true,hl=null,hSun=null,hA=null,hB=null,tagS=null,tagW=null;
+function K(){return cfg.keys[selK];}
 function row(label,key,min,max,step,get,set,fmtv){
   var l=document.createElement('label'),o=document.createElement('output'),i=document.createElement('input');i.type='range';i.min=min;i.max=max;i.step=step;
   l.appendChild(document.createTextNode(label));l.appendChild(o);pn.appendChild(l);pn.appendChild(i);
   function upd(){var v=get();i.value=v;o.textContent=fmtv?fmtv(v):(+v).toFixed(2);}
-  i.addEventListener('input',function(){set(+i.value);save();upd();lastSig='';render();chip();});
+  i.addEventListener('input',function(){set(+i.value);save();upd();lastSig='';render();chip();placeHandles();});
   ctr[key]=upd;upd();return i;
 }
-var phSel=null,colIn=null,shIn=null;
-function curPh(){return cfg.phases[phSel.value];}
+function colorRow(label,get,set){
+  var l=document.createElement('label');l.textContent=label+' ';var i=document.createElement('input');i.type='color';l.appendChild(i);pn.appendChild(l);
+  i.addEventListener('input',function(){set(i.value);save();lastSig='';render();});
+  ctr['c_'+label]=function(){i.value=toHex(hex(get()));};ctr['c_'+label]();
+}
+function hh(m){return fmt(m);}
+function jump(m){st.minute=Math.max(OPEN,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;st.paused=true;ctr.pp&&ctr.pp();lastSig='';render();chip();placeHandles();}
+function selectKey(i,go){selK=i;if(go)jump(Math.max(OPEN,Math.min(CLOSE-1,cfg.keys[i].t)));Object.keys(ctr).forEach(function(k){try{ctr[k]();}catch(e){}});markKeys();placeHandles();}
+var keyBtns=[];
+function markKeys(){keyBtns.forEach(function(b,i){b.classList.toggle('on',i===selK);b.textContent=cfg.keys[i].name+' '+hh(cfg.keys[i].t);});}
 function build(){
   pn.innerHTML='<b>Vreme i svetlo (kuhinja)</b>';
   var bar=document.createElement('div');
-  function mk(t,fn){var b=document.createElement('button');b.type='button';b.textContent=t;b.addEventListener('click',fn);bar.appendChild(b);return b;}
-  var pp=mk(st.paused?'▶ Pusti':'⏸ Pauza',function(){st.paused=!st.paused;pp.textContent=st.paused?'▶ Pusti':'⏸ Pauza';chip();});ctr.pp=function(){pp.textContent=st.paused?'▶ Pusti':'⏸ Pauza';};
-  mk('06:00',function(){jump(360);});mk('Podne',function(){jump(720);});mk('Veče 19:00',function(){jump(1140);});mk('Noć 23:00',function(){jump(1380);});
+  function mk(par,t,fn){var b=document.createElement('button');b.type='button';b.textContent=t;b.addEventListener('click',fn);par.appendChild(b);return b;}
+  var pp=mk(bar,st.paused?'▶ Pusti':'⏸ Pauza',function(){st.paused=!st.paused;ctr.pp();chip();});ctr.pp=function(){pp.textContent=st.paused?'▶ Pusti':'⏸ Pauza';};
+  mk(bar,'Novi dan (06:00)',function(){endDay();});
   pn.appendChild(bar);
-  row('Vreme','t',OPEN,CLOSE,5,function(){return st.minute;},function(v){st.minute=v;st.closed=v>=CLOSE;st.paused=true;ctr.pp();},function(v){return fmt(v>=1440?1440:v);});
+  row('Vreme','t',OPEN,CLOSE,5,function(){return st.minute;},function(v){st.minute=v;st.closed=v>=CLOSE;st.paused=true;ctr.pp();},function(v){return hh(v>=1440?1440:v);});
   row('Trajanje jednog sata u igri (s)','sph',10,180,5,function(){return cfg.secPerHour;},function(v){cfg.secPerHour=v;},function(v){return v+' s (dan = '+Math.round(v*18/6)/10+' min)';});
-  var h=document.createElement('h4');h.textContent='Doba dana';pn.appendChild(h);
-  phSel=document.createElement('select');PH.forEach(function(p){var o=document.createElement('option');o.value=p[0];o.textContent=p[1]+' ('+p[2]+':00)';phSel.appendChild(o);});phSel.value='evening';pn.appendChild(phSel);
-  var cl=document.createElement('label');cl.textContent='Boja svetla ';colIn=document.createElement('input');colIn.type='color';cl.appendChild(colIn);
-  var sl=document.createElement('label');sl.textContent='Boja mraka ';shIn=document.createElement('input');shIn.type='color';sl.appendChild(shIn);
-  pn.appendChild(cl);pn.appendChild(sl);
-  colIn.addEventListener('input',function(){curPh().c=colIn.value;save();lastSig='';render();});
-  shIn.addEventListener('input',function(){curPh().shade=shIn.value;save();lastSig='';render();});
-  row('Sjaj (topla izmaglica)','light',0,.6,.01,function(){return curPh().light;},function(v){curPh().light=v;});
-  row('Mrak','dark',0,.9,.01,function(){return curPh().dark;},function(v){curPh().dark=v;});
-  phSel.addEventListener('change',function(){syncPanel();});
-  h=document.createElement('h4');h.textContent='Sunce i vatra';pn.appendChild(h);
-  row('Jačina zraka sunca','bs',0,1.5,.05,function(){return cfg.beam.strength;},function(v){cfg.beam.strength=v;});
-  row('Providnost zraka','bo',0,1,.02,function(){return cfg.beam.opacity;},function(v){cfg.beam.opacity=v;});
-  row('Mrlje sunca na podu nestaju noću','sp',0,1,.05,function(){return cfg.sunPatch;},function(v){cfg.sunPatch=v;});
+  var h=document.createElement('h4');h.textContent='Četiri tačke u vremenu (klik = otvori tačku i idi na to vreme)';pn.appendChild(h);
+  var kb=document.createElement('div');keyBtns=[];cfg.keys.forEach(function(k,i){keyBtns.push(mk(kb,'',function(){selectKey(i,true);}));});pn.appendChild(kb);
+  row('Vreme ove tačke','kt',0,1425,15,function(){return K().t;},function(v){K().t=v;markKeys();},function(v){return hh(v);});
+  mk(pn,'Postavi tačku na trenutno vreme',function(){K().t=Math.round(st.minute/5)*5;save();selectKey(selK,false);lastSig='';render();});
+  h=document.createElement('h4');h.textContent='Svetlo u ovoj tački';pn.appendChild(h);
+  colorRow('Boja svetla',function(){return K().c;},function(v){K().c=v;});
+  colorRow('Boja mraka',function(){return K().shade;},function(v){K().shade=v;});
+  row('Sjaj (topla izmaglica)','light',0,.6,.01,function(){return K().light;},function(v){K().light=v;});
+  row('Mrak','dark',0,.9,.01,function(){return K().dark;},function(v){K().dark=v;});
+  row('Sunce na podu (naslikane mrlje)','sun',0,1,.05,function(){return K().sun;},function(v){K().sun=v;});
+  h=document.createElement('h4');h.textContent='Sunčev zrak u ovoj tački';pn.appendChild(h);
+  row('Gde pada: levo-desno','lx',-200,1672,5,function(){return K().lx;},function(v){K().lx=v;},function(v){return Math.round(v);});
+  row('Gde pada: gore-dole','ly',-100,941,5,function(){return K().ly;},function(v){K().ly=v;},function(v){return Math.round(v);});
+  row('Širenje zraka','sp',0,2,.05,function(){return K().spread;},function(v){K().spread=v;});
+  row('Jačina zraka','al',0,1,.01,function(){return K().alpha;},function(v){K().alpha=v;});
+  row('Mekoća (zamućenje)','bl',0,120,2,function(){return K().blur;},function(v){K().blur=v;},function(v){return Math.round(v);});
+  colorRow('Boja zraka',function(){return K().bc;},function(v){K().bc=v;});
+  h=document.createElement('h4');h.textContent='Prozor (odakle zrak ulazi)';pn.appendChild(h);
+  var hb=mk(pn,'Prikaži ručke na slici',function(){showH=!showH;hb.classList.toggle('on',showH);placeHandles();});hb.classList.add('on');
+  row('Prozor: gornja tačka x','wx1',-200,600,5,function(){return cfg.win.x1;},function(v){cfg.win.x1=v;},function(v){return Math.round(v);});
+  row('Prozor: gornja tačka y','wy1',-100,600,5,function(){return cfg.win.y1;},function(v){cfg.win.y1=v;},function(v){return Math.round(v);});
+  row('Prozor: donja tačka x','wx2',-200,600,5,function(){return cfg.win.x2;},function(v){cfg.win.x2=v;},function(v){return Math.round(v);});
+  row('Prozor: donja tačka y','wy2',-100,700,5,function(){return cfg.win.y2;},function(v){cfg.win.y2=v;},function(v){return Math.round(v);});
+  h=document.createElement('h4');h.textContent='Vatra';pn.appendChild(h);
   row('Vatra noću sija jače','fn',0,3,.1,function(){return cfg.fireNight;},function(v){cfg.fireNight=v;try{CooksterGrill.boost(1+.5*v);}catch(e){}},function(v){return (+v).toFixed(1)+'x';});
   var b2=document.createElement('div');
-  function mk2(t,fn){var b=document.createElement('button');b.type='button';b.textContent=t;b.addEventListener('click',fn);b2.appendChild(b);return b;}
-  mk2('Novi dan (06:00)',function(){endDay();});
-  mk2('Izvezi JSON',function(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'}));a.download='cookster-day-light.json';document.body.appendChild(a);a.click();setTimeout(function(){a.remove();},500);});
+  mk(b2,'Izvezi JSON',function(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'}));a.download='cookster-day-light.json';document.body.appendChild(a);a.click();setTimeout(function(){a.remove();},500);});
   var fi=document.createElement('input');fi.type='file';fi.accept='application/json';fi.style.display='none';
-  fi.addEventListener('change',function(){var f=fi.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{cfg=clone(DEF);merge(cfg,JSON.parse(r.result));save();syncPanel();lastSig='';render();chip();}catch(e){try{showToast('Fajl nije dobar.');}catch(x){}}};r.readAsText(f);fi.value='';});
-  mk2('Uvezi JSON',function(){fi.click();});b2.appendChild(fi);
-  mk2('Vrati početno',function(){cfg=clone(DEF);save();syncPanel();lastSig='';render();chip();});
+  fi.addEventListener('change',function(){var f=fi.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{cfg=mergeCfg(JSON.parse(r.result));save();selectKey(selK,false);lastSig='';render();chip();}catch(e){try{showToast('Fajl nije dobar.');}catch(x){}}};r.readAsText(f);fi.value='';});
+  mk(b2,'Uvezi JSON',function(){fi.click();});b2.appendChild(fi);
+  mk(b2,'Vrati početno',function(){cfg=clone(DEF);save();selectKey(selK,false);lastSig='';render();chip();});
   pn.appendChild(b2);
-  var sm=document.createElement('small');sm.textContent='Sat stoji dok je vreme pomereno ručno (pauza); „Pusti“ ga nastavlja. Posle 24:00 sat staje (kafana zatvorena).';pn.appendChild(sm);
-  syncPanel();
+  var sm=document.createElement('small');sm.textContent='Na slici: ☀ = gde pada zrak (prevlači), plavi kvadrati = prozor. Zrak ulazi kroz prozor i pada tamo gde je ☀. Između tačaka u vremenu sunce se lagano pomera. Vreme stoji (pauza) dok ga pomeraš ručno.';pn.appendChild(sm);
+  selectKey(selK,false);
 }
-function jump(m){st.minute=m;st.closed=false;st.paused=true;ctr.pp&&ctr.pp();lastSig='';render();chip();syncPanel();}
-function syncPanel(){if(!phSel)return;var p=curPh();colIn.value=toHex(hex(p.c));shIn.value=toHex(hex(p.shade));Object.keys(ctr).forEach(function(k){try{ctr[k]();}catch(e){}});}
-btn.addEventListener('click',function(){var on=pn.style.display!=='block';pn.style.display=on?'block':'none';if(on&&!phSel)build();});
+/* the handles on the picture: the sun (where the shaft falls) and the two ends of the window */
+function ensureHandles(){
+  if(hl&&hl.isConnected)return;
+  hl=document.createElement('div');hl.id='dlHandles';hl.setAttribute('data-tool-ui','1');document.body.appendChild(hl);
+  function mkh(cls,txt){var d=document.createElement('div');d.className='dh '+cls;d.textContent=txt||'';d.setAttribute('data-tool-ui','1');hl.appendChild(d);return d;}
+  hSun=mkh('dsun','☀');hA=mkh('dwin','');hB=mkh('dwin','');
+  tagS=document.createElement('div');tagS.className='dtag';hl.appendChild(tagS);tagW=document.createElement('div');tagW.className='dtag';hl.appendChild(tagW);
+  function drag(el,onMove){
+    el.addEventListener('pointerdown',function(e){e.preventDefault();e.stopPropagation();el.setPointerCapture(e.pointerId);
+      function mv(ev){var p=screenToScene(ev.clientX,ev.clientY);onMove(p);save();lastSig='';render();ctr&&Object.keys(ctr).forEach(function(k){try{ctr[k]();}catch(x){}});placeHandles();}
+      function up(){el.removeEventListener('pointermove',mv);el.removeEventListener('pointerup',up);}
+      el.addEventListener('pointermove',mv);el.addEventListener('pointerup',up);});
+    ['click','contextmenu','wheel','mousedown'].forEach(function(n){el.addEventListener(n,function(e){e.stopPropagation();});});
+  }
+  drag(hSun,function(p){K().lx=Math.round(Math.max(-200,Math.min(1672,p.x)));K().ly=Math.round(Math.max(-100,Math.min(941,p.y)));});
+  drag(hA,function(p){cfg.win.x1=Math.round(p.x);cfg.win.y1=Math.round(p.y);});
+  drag(hB,function(p){cfg.win.x2=Math.round(p.x);cfg.win.y2=Math.round(p.y);});
+}
+function placeHandles(){
+  var open=pn.style.display==='block'&&showH;
+  if(!open){if(hl)hl.style.display='none';return;}
+  ensureHandles();hl.style.display='block';
+  function at(el,x,y){var s=sceneToScreen(x,y);el.style.left=s.x+'px';el.style.top=s.y+'px';}
+  at(hSun,K().lx,K().ly);at(hA,cfg.win.x1,cfg.win.y1);at(hB,cfg.win.x2,cfg.win.y2);
+  var s1=sceneToScreen(K().lx,K().ly+24),s2=sceneToScreen((cfg.win.x1+cfg.win.x2)/2,Math.max(cfg.win.y1,cfg.win.y2)+14);
+  tagS.textContent='sunce · '+K().name+' '+hh(K().t);tagS.style.left=s1.x+'px';tagS.style.top=s1.y+'px';tagW.textContent='prozor';tagW.style.left=s2.x+'px';tagW.style.top=s2.y+'px';
+}
+btn.addEventListener('click',function(){var on=pn.style.display!=='block';pn.style.display=on?'block':'none';if(on&&!keyBtns.length)build();placeHandles();});
 ['pointerdown','pointerup','click','contextmenu','wheel'].forEach(function(n){pn.addEventListener(n,function(e){e.stopPropagation();},{passive:true});btn.addEventListener(n,function(e){e.stopPropagation();},{passive:true});});
+setInterval(function(){if(pn.style.display==='block')placeHandles();},300);
 
 setInterval(tick,250);
-window.CooksterDay={minute:nowM,setMinute:function(m){st.minute=Math.max(OPEN,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;lastSig='';render();chip();},pause:function(v){st.paused=v!==false;chip();},endDay:endDay,isClosed:function(){return st.closed;},day:function(){return st.day;},fmt:fmt,config:function(){return cfg;}};
+window.CooksterDay={minute:nowM,selectKey:function(i){if(!keyBtns.length)build();selectKey(i,true);},setMinute:function(m){st.minute=Math.max(OPEN,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;lastSig='';render();chip();},pause:function(v){st.paused=v!==false;chip();},endDay:endDay,isClosed:function(){return st.closed;},day:function(){return st.day;},fmt:fmt,config:function(){return cfg;}};
 try{CooksterGrill&&CooksterGrill.boost&&CooksterGrill.boost(1+.5*cfg.fireNight);}catch(e){}
 setTimeout(function(){render();chip();},300);
 })();
