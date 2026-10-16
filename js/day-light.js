@@ -20,7 +20,14 @@ var DEF={
     {name:'Noć',shk:1,shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:0,sho:0,sha:45,t:0,nw:1,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}
     ,{name:'Pred zoru',shk:1,t:300,nw:1,shx:0,shy:0,shw:1,shh:1,shr:0,shb:2.5,shl:0,sho:0,sha:45,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}      // 0:00-5:00 the same as the night (constant dark), from 5:00 the sun starts to come
   ],
-  shItems:{},
+  shItems:{      // the shadow of every thing is made on its own (the player's tuning in the tool wins over these)
+    kal_02_duboki_tanjir:{x:10,y:6,o:1.2,b:2},
+    kal_02_tanjir_ravni:{x:10,y:6,o:1.2,b:2},
+    oval_tanjir:{x:12,y:6,o:1.15,b:2},
+    tiganj_mali:{x:8,y:6,o:1.15,b:1},
+    tiganj_veliki:{x:12,y:7,o:1.15,w:1.02,b:1},
+    serpa_velika:{x:16,y:9,o:1.25,b:1}
+  },
   shV:2,      // version of the sun shadows' values: older saves get the new ones (a soft drop shadow, like the plate)
   win2:{open:1.35,closed:1},      // how strong the light of the sun is when the window is open / closed (a click on the window changes the light)
   itemLight2:.15,
@@ -30,7 +37,7 @@ var DEF={
 function clone(o){return JSON.parse(JSON.stringify(o));}
 var cfg=clone(DEF);
 function applyCfg(c,sv){
-  if(sv.secPerHour)c.secPerHour=sv.secPerHour;if(sv.win)c.win=Object.assign(c.win,sv.win);if(sv.fireNight!=null)c.fireNight=sv.fireNight;if(sv.itemLight2!=null)c.itemLight2=sv.itemLight2;if(sv.sh)c.sh=Object.assign(c.sh,sv.sh);if(sv.win2)c.win2=Object.assign(c.win2,sv.win2);if(sv.shItems)c.shItems=clone(sv.shItems);var oldSh=!(sv.shV>=2);
+  if(sv.secPerHour)c.secPerHour=sv.secPerHour;if(sv.win)c.win=Object.assign(c.win,sv.win);if(sv.fireNight!=null)c.fireNight=sv.fireNight;if(sv.itemLight2!=null)c.itemLight2=sv.itemLight2;if(sv.sh)c.sh=Object.assign(c.sh,sv.sh);if(sv.win2)c.win2=Object.assign(c.win2,sv.win2);if(sv.shItems)c.shItems=Object.assign(clone(DEF.shItems),clone(sv.shItems));var oldSh=!(sv.shV>=2);
   var has5=false;
   (sv.keys||[]).forEach(function(k,i){var j=-1;c.keys.forEach(function(d,n){if(d.name===k.name)j=n;});if(j<0&&i<c.keys.length)j=i;if(j>=0){if(k.name==='Pred zoru')has5=true;var t=c.keys[j].t;Object.assign(c.keys[j],k);if(k.name==='Pred zoru'||c.keys[j].name==='Pred zoru')c.keys[j].name='Pred zoru';}});
   if(oldSh){var sd=clone(DEF.keys);c.keys.forEach(function(k){sd.forEach(function(d){if(d.name===k.name){['shk','shl','sho','sha','shx','shy','shw','shh','shr','shb'].forEach(function(f){k[f]=d[f];});}});});}
