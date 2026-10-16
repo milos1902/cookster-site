@@ -7,10 +7,10 @@
 if(window.__toolsSwitch)return;window.__toolsSwitch=1;
 var KEY='cookster.tools-on',root=document.documentElement;
 // the buttons and panels of the tools: by id, by class, or by the text of the button (some tool buttons have no id)
-var IDS={ovBtn:1,ovPanel:1,nbBtn:1,nbPanel:1,tavernCalOpen:1,tiBtn:1,wsBtn:1,signToolBtn2:1,tcPanel:1};
+var IDS={ovBtn:1,ovPanel:1,nbBtn:1,nbPanel:1,tavernCalOpen:1,tiBtn:1,wsBtn:1,signToolBtn2:1,tcPanel:1,dlBtn:1,dlPanel:1};
 var CLASSES=['tc-reset'];
 var TEXTS=/^(тулови|✂ Animacije gostiju|👥 Pozovi društvo)$/;
-var PANELS=['nbPanel','ovPanel'];                     // panels that are closed when the tools are turned off
+var PANELS=['nbPanel','ovPanel','dlPanel'];                     // panels that are closed when the tools are turned off
 function on(){try{return localStorage.getItem(KEY)!=='0';}catch(e){return true;}}
 function tag(node){
   if(!node||node.nodeType!==1)return;

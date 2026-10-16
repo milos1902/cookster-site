@@ -6,7 +6,7 @@
 'use strict';
 if(window.CooksterGrill)return;
 var BURN=240,MAXB=480,GRILL_RECT={l:225,t:20,r:760,b:235};
-var level=0,target=0,left=0,last=0,run=false,t=0,effects=[];
+var level=0,target=0,left=0,last=0,run=false,t=0,effects=[],boost=1;      // boost: the embers twinkle stronger at night (set by day-light.js)
 
 /* one effect = a canvas over one picture of the grill: the twinkle of the embers (clipped by a mask) and the smoke.
    o: cx,cy,cw,ch = the canvas in the pixels of the scene picture (1672x941); mx,my = where the mask picture lies on the canvas; mask = its src; n = how many embers twinkle; k = the size (1 = the kitchen);
@@ -29,7 +29,7 @@ function makeEffect(o){
     for(var i=0;i<cells.length;i++){var c=cells[i];
       c.n+=(Math.random()-.5)*.12;c.n=Math.max(0,Math.min(1,c.n));
       var I=.5+.34*Math.sin(t*c.f+c.p)+.5*(c.n-.5);        // 0 = dark, 1 = bright
-      var a=hot?(I-.55)*1.15:(.42-I)*1.5;if(a<=.02)continue;a=Math.min(.9,a)*level;
+      var a=hot?(I-.55)*1.15:(.42-I)*1.5;if(a<=.02)continue;a=Math.min(.95,a*boost)*level;
       var g=ox.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r*(hot?1.25:1));
       if(hot){g.addColorStop(0,'rgba(255,196,90,'+a.toFixed(3)+')');g.addColorStop(.5,'rgba(255,120,30,'+(a*.55).toFixed(3)+')');g.addColorStop(1,'rgba(255,80,10,0)');}
       else{g.addColorStop(0,'rgba(40,10,2,'+a.toFixed(3)+')');g.addColorStop(1,'rgba(40,10,2,0)');}
@@ -44,7 +44,7 @@ function makeEffect(o){
       blots(false);cx.globalCompositeOperation='source-over';cx.drawImage(off,0,0);
       blots(true);cx.globalCompositeOperation='lighter';cx.drawImage(off,0,0);
       var gx=o.mx+o.mw*.5,gy=o.my+o.mh*.52,g=cx.createRadialGradient(gx,gy,10*o.k,gx,gy,o.mw*.46);      // the whole pit breathes a little
-      g.addColorStop(0,'rgba(255,120,30,'+((.05+.05*pulse)*level).toFixed(3)+')');g.addColorStop(1,'rgba(255,90,10,0)');
+      g.addColorStop(0,'rgba(255,120,30,'+((.05+.05*pulse)*level*boost).toFixed(3)+')');g.addColorStop(1,'rgba(255,90,10,0)');
       ox.globalCompositeOperation='source-over';ox.clearRect(0,0,o.cw,o.ch);ox.fillStyle=g;ox.fillRect(o.mx,o.my,o.mw,o.mh);
       ox.globalCompositeOperation='destination-in';ox.drawImage(pit,0,0);
       cx.globalCompositeOperation='lighter';cx.drawImage(off,0,0);cx.globalCompositeOperation='source-over';
@@ -102,5 +102,5 @@ window.addEventListener('pointerdown',function(e){
   try{CooksterPantryBridge.detachHeld();}catch(x){return;}
   set(true);try{showToast(left>BURN+5?'Roštilj gori još jače.':'Roštilj je zapaljen.');}catch(x){}
 },true);
-window.CooksterGrill={set:set,lit:function(){return target>0;},left:function(){return left;},zoomCanvas:zoomEffect,zoomSrc:function(lit){return lit?'assets/grill_zoom.webp?v=2':'assets/grill_zoom_off.webp?v=1';}};
+window.CooksterGrill={level:function(){return level;},boost:function(k){boost=Math.max(.5,Math.min(3,+k||1));},set:set,lit:function(){return target>0;},left:function(){return left;},zoomCanvas:zoomEffect,zoomSrc:function(lit){return lit?'assets/grill_zoom.webp?v=2':'assets/grill_zoom_off.webp?v=1';}};
 })();
