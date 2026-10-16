@@ -23,11 +23,10 @@ function draw(){
   svg.style.display='block';
   if(drag)return;      // while dragging the handles are not rebuilt (they follow the mouse)
   while(grp.firstChild)grp.removeChild(grp.firstChild);
-  var L=e.offsetLeft,T=e.offsetTop,pts=g.fixed.concat(g.handles).map(function(p){return (L+p[0]).toFixed(1)+','+(T+p[1]).toFixed(1);}).join(' ');
+  var L=e.offsetLeft,T=e.offsetTop,pts=g.pts.map(function(p){return (L+p[0]).toFixed(1)+','+(T+p[1]).toFixed(1);}).join(' ');
   grp.appendChild(el('polygon',{points:pts,fill:'rgba(255,170,40,.10)',stroke:'rgba(255,200,80,.8)','stroke-width':1.2,'stroke-dasharray':'4 3'}));
-  g.fixed.forEach(function(p){grp.appendChild(el('circle',{cx:L+p[0],cy:T+p[1],r:3,fill:'#58a6ff',stroke:'#fff','stroke-width':1}));});
-  g.handles.forEach(function(p,i){
-    var c=el('circle',{cx:L+p[0],cy:T+p[1],r:8,fill:'#ff9a1f',stroke:'#fff','stroke-width':2,style:'cursor:grab;pointer-events:auto'});c.setAttribute('data-tool-ui','1');
+  g.pts.forEach(function(p,i){
+    var c=el('circle',{cx:L+p[0],cy:T+p[1],r:8,fill:i<4?'#58a6ff':'#ff9a1f',stroke:'#fff','stroke-width':2,style:'cursor:grab;pointer-events:auto'});c.setAttribute('data-tool-ui','1');
     c.addEventListener('pointerdown',function(ev){ev.preventDefault();ev.stopPropagation();drag={i:i,c:c,e:e,key:key};try{c.setPointerCapture(ev.pointerId);}catch(x){}});
     c.addEventListener('pointermove',function(ev){if(!drag||drag.c!==c)return;var q=toScene(ev);c.setAttribute('cx',q.x);c.setAttribute('cy',q.y);CooksterSunShadow.setHandle(e,key,i,(q.x-e.offsetLeft)/e.offsetWidth,(q.y-e.offsetTop)/e.offsetHeight);});
     c.addEventListener('pointerup',function(ev){if(drag&&drag.c===c){drag=null;try{c.releasePointerCapture(ev.pointerId);}catch(x){}}});
