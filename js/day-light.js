@@ -19,13 +19,14 @@ var DEF={
     {name:'Veče',t:1140,nw:0.6,c:'#4639fe',light:0.07,dark:0.28,shade:'#010223',sun:0.3,lx:432,ly:589,spread:0,alpha:0,blur:0,bc:'#000000'},
     {name:'Noć',t:0,nw:1,c:'#192b52',light:0.22,dark:0.53,shade:'#050c24',sun:0,lx:600,ly:720,spread:0.5,alpha:0.68,blur:0,bc:'#bcd0ff'}
   ],
+  itemLight:.35,
   fireNight:0.2
 };
 function clone(o){return JSON.parse(JSON.stringify(o));}
 var cfg=clone(DEF);
-try{var sv=JSON.parse(localStorage.getItem(KEY)||'null');if(sv&&sv.keys&&sv.keys.length===4){cfg=clone(DEF);if(sv.secPerHour)cfg.secPerHour=sv.secPerHour;if(sv.win)cfg.win=Object.assign(cfg.win,sv.win);if(sv.fireNight!=null)cfg.fireNight=sv.fireNight;sv.keys.forEach(function(k,i){cfg.keys[i]=Object.assign(cfg.keys[i],k);});}}catch(e){}
+try{var sv=JSON.parse(localStorage.getItem(KEY)||'null');if(sv&&sv.keys&&sv.keys.length===4){cfg=clone(DEF);if(sv.secPerHour)cfg.secPerHour=sv.secPerHour;if(sv.win)cfg.win=Object.assign(cfg.win,sv.win);if(sv.fireNight!=null)cfg.fireNight=sv.fireNight;if(sv.itemLight!=null)cfg.itemLight=sv.itemLight;sv.keys.forEach(function(k,i){cfg.keys[i]=Object.assign(cfg.keys[i],k);});}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(cfg));}catch(e){}}
-function mergeCfg(src){var c=clone(DEF);if(src.secPerHour)c.secPerHour=src.secPerHour;if(src.win)c.win=Object.assign(c.win,src.win);if(src.fireNight!=null)c.fireNight=src.fireNight;if(src.keys&&src.keys.length===4)src.keys.forEach(function(k,i){c.keys[i]=Object.assign(c.keys[i],k);});return c;}
+function mergeCfg(src){var c=clone(DEF);if(src.secPerHour)c.secPerHour=src.secPerHour;if(src.win)c.win=Object.assign(c.win,src.win);if(src.fireNight!=null)c.fireNight=src.fireNight;if(src.itemLight!=null)c.itemLight=src.itemLight;if(src.keys&&src.keys.length===4)src.keys.forEach(function(k,i){c.keys[i]=Object.assign(c.keys[i],k);});return c;}
 
 /* ---------- the clock ---------- */
 var st={minute:OPEN,paused:false,day:1,closed:false};
@@ -152,6 +153,34 @@ function render(){
   if(stl>.02)pool(1334,540,230,190,Math.min(1,stl*.75*nightF),stl*.16*nightF,[255,150,60]);
 }
 
+/* ---------- the things in the shaft of the sun are lit ---------- */
+(function(){var st2=document.createElement('style');st2.textContent='.item.lit-sun>.body{filter:brightness(var(--lit-b,1)) saturate(var(--lit-s,1)) sepia(var(--lit-w,0))}';document.head.appendChild(st2);})();
+function litTick(){
+  var items=(typeof window.items!=='undefined'&&window.items)||(typeof items!=='undefined'?items:[]);if(!items||!items.length)return;
+  var P=mixPhase((st.closed?1440:nowM())%1440),w=cfg.win,on=P.alpha>.03&&(+cfg.itemLight||0)>.001;
+  var mx=(w.x1+w.x2)/2,my=(w.y1+w.y2)/2,dx=P.lx-mx,dy=P.ly-my,len2=dx*dx+dy*dy||1,len=Math.sqrt(len2);
+  items.forEach(function(el){
+    if(!el||!el.dataset||!el.isConnected)return;
+    var k=0;
+    if(on&&el!==(typeof holding!=='undefined'?holding:null)&&!el.classList.contains('ghost-item-copy')){
+      var r=el.getBoundingClientRect(),c=screenToScene(r.left+r.width/2,r.top+r.height*.62),
+          t=((c.x-mx)*dx+(c.y-my)*dy)/len2;                      // 0 = at the window, 1 = where the shaft falls
+      if(t>0&&t<1.15){
+        var px=(c.x-mx)-t*dx,py=(c.y-my)-t*dy,across=Math.abs(px*(-dy)/len+py*(dx/len)),                 // distance from the axis of the shaft
+            half=Math.hypot(w.x2-w.x1,w.y2-w.y1)/2+(Math.hypot(w.x2-w.x1,w.y2-w.y1)/2)*P.spread*t+60;      // half of the width of the shaft at that place (+ a soft edge)
+        var side=1-clamp01((across-(half-120))/120);
+        k=clamp01(side*clamp01(1.05-t*.55)*P.alpha/.55);
+      }
+    }
+    var was=el._litK||0;
+    if(Math.abs(k-was)<.02&&!(k===0&&was!==0))return;
+    el._litK=k;
+    if(k>.02){el.classList.add('lit-sun');el.style.setProperty('--lit-b',(1+cfg.itemLight*k).toFixed(3));el.style.setProperty('--lit-s',(1+.12*k).toFixed(3));el.style.setProperty('--lit-w',(.08*k).toFixed(3));}
+    else{el.classList.remove('lit-sun');el.style.removeProperty('--lit-b');el.style.removeProperty('--lit-s');el.style.removeProperty('--lit-w');el._litK=0;}
+  });
+}
+setInterval(litTick,300);
+
 /* ---------- the clock on the screen ---------- */
 var chipEl=null;
 function chip(){
@@ -231,6 +260,7 @@ function build(){
   row('Prozor: donja tačka x','wx2',-200,600,5,function(){return cfg.win.x2;},function(v){cfg.win.x2=v;},function(v){return Math.round(v);});
   row('Prozor: donja tačka y','wy2',-100,700,5,function(){return cfg.win.y2;},function(v){cfg.win.y2=v;},function(v){return Math.round(v);});
   h=document.createElement('h4');h.textContent='Vatra';pn.appendChild(h);
+  row('Predmeti u zraku su svetliji','il',0,1,.05,function(){return cfg.itemLight;},function(v){cfg.itemLight=v;});
   row('Vatra noću sija jače','fn',0,3,.1,function(){return cfg.fireNight;},function(v){cfg.fireNight=v;try{CooksterGrill.boost(1+.5*v);}catch(e){}},function(v){return (+v).toFixed(1)+'x';});
   var b2=document.createElement('div');
   mk(b2,'Izvezi JSON',function(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'}));a.download='cookster-day-light.json';document.body.appendChild(a);a.click();setTimeout(function(){a.remove();},500);});
