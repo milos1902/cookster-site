@@ -953,3 +953,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Ložište (ugašeno): sjaj prefarban bojom okoline (inpaint, prirodne boje) i uklonjena svetla traka pored vrata (slike firebox_open_off / firebox_base_no_door).
 
 - Senka predmeta u ruci se ažurira svaki frejm (ne na 0.1 s), a pri spuštanju se odmah sve iscrta (nema bljeska stare senke).
+
+- Ložište: dve pozadine — firebox_base_no_door.webp (sa odsjajem, dok vatra gori) i firebox_base_no_door_off.webp (bez odsjaja, vatra ugašena); menja se čim se vatra upali/ugasi.
