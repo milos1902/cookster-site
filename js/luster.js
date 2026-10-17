@@ -3,8 +3,7 @@
 (function(){
 if(window.CooksterLuster)return;
 var KEY='cooksterLusterOn',on=false,level=0,hot=null,X=702,Y=0,W=256,H=221,         // place in the scene (the chain is at x=830, the same as the middle of the table)
-    LAMPS=[[54,67,46,52],[200,67,46,52],[25,142,48,54],[231,150,50,56]],      // the four shades (centre x, y and size w, h in px of the picture); the middle bowl has no lamp, it does not glow
-    wrap=null,glows=[],halo=null;
+        wrap=null,glows=[],halo=null;
 function build(){
   var sc=document.getElementById('scene');if(!sc)return false;
   if(wrap&&wrap.parentNode===sc)return true;
@@ -15,10 +14,10 @@ function build(){
   gl.style.cssText='position:absolute;left:'+X+'px;top:'+Y+'px;width:'+W+'px;height:'+H+'px;pointer-events:none;z-index:90001;opacity:0;mix-blend-mode:screen';
   halo=document.createElement('div');halo.style.cssText='position:absolute;left:-105px;top:-72px;width:'+(W+210)+'px;height:'+(H+210)+'px;background:radial-gradient(ellipse at 50% 38%,rgba(255,196,110,.34),rgba(255,160,70,.14) 38%,rgba(255,150,60,0) 68%)';
   gl.appendChild(halo);
-  LAMPS.forEach(function(p){      // the whole shade glows (a warm light through the white glass) and a soft bloom round it
-    var b=document.createElement('div');b.style.cssText='position:absolute;left:'+(p[0]-p[2]*1.2)+'px;top:'+(p[1]-p[3]*1.1)+'px;width:'+(p[2]*2.4)+'px;height:'+(p[3]*2.2)+'px;border-radius:50%;background:radial-gradient(ellipse at 50% 50%,rgba(255,205,120,.55),rgba(255,180,90,.22) 45%,rgba(255,170,80,0) 70%)';
-    var d=document.createElement('div');d.style.cssText='position:absolute;left:'+(p[0]-p[2]/2)+'px;top:'+(p[1]-p[3]/2)+'px;width:'+p[2]+'px;height:'+p[3]+'px;border-radius:48% 48% 50% 50%;background:radial-gradient(ellipse at 50% 42%,rgba(255,245,200,.8),rgba(255,222,150,.62) 55%,rgba(255,200,110,.4) 82%,rgba(255,190,100,0) 100%)';
-    gl.appendChild(b);gl.appendChild(d);});
+  var MK='url(assets/effects/luster_lampe.png?v=1) 0 0/100% 100% no-repeat';      // the shape of the four shades (drawn by the player), the glow follows exactly this line
+  function shadeLayer(col,op,blurPx){var o=document.createElement('div');o.style.cssText='position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;opacity:'+op+(blurPx?';filter:blur('+blurPx+'px)':'');
+    var m=document.createElement('div');m.style.cssText='position:absolute;inset:0;background:'+col+';-webkit-mask:'+MK+';mask:'+MK;o.appendChild(m);return o;}
+  gl.appendChild(shadeLayer('rgb(255,190,100)',.75,14));gl.appendChild(shadeLayer('rgb(255,205,120)',.7,5));gl.appendChild(shadeLayer('rgb(255,238,185)',.8,0));
   sc.appendChild(gl);glows=[gl];
   hot=document.createElement('div');hot.id='lusterHot';hot.dataset.soundTarget='lusterHot';hot.dataset.soundActions='click';hot.dataset.label='Luster';      // only a name for the sound tool: the clicks are caught by the picture of the chandelier itself (below)
   hot.style.cssText='position:absolute;left:'+(X+W*.34)+'px;top:'+(Y+H*.42)+'px;width:'+(W*.34)+'px;height:'+(H*.34)+'px;pointer-events:none;border-radius:50%';
