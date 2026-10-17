@@ -939,3 +939,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Toolovi se više ne mogu probiti klikom: js/core/tool-shield.js sada blokira i 'click' i sve panele/dugmad alata (Vreme i svetlo itd.) i sve fiksne panele na najvišim slojevima.
 
 - tool-shield: i HUD dugmad (Piće, Pijaca, Kuhinjski elementi...), prozori (dialog/aria-modal) i prikaz ocene jela više ne propuštaju klik na scenu iza sebe.
+
+- tool-shield: sve što nije sama scena (#viewport) je čvrsto — bilo koji panel/dugme/prozor alata ili HUD-a ne propušta klik na scenu.
+
+- Luster: svaka od 4 sjenice zasvetli cela (topao sjaj kroz staklo + bloom oko nje); srednja činija ne svetli.
