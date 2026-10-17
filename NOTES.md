@@ -967,3 +967,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Prozorčić ložišta (zatvorena vratanca): isti video vatre u prozorčiću iznad noćnog mraka, noću sija jače (ostaje plamen); oko njega kratak jak glow koji se postepeno rastapa u gradijent.
 
 - Prozorčić: prikazuje pravi plamen iz ložišta (isto mesto i veličina kao video vatre unutra), ne smanjenu sliku.
+
+- Veliki levi krug na ploči šporeta se usijava kad vatra gori duže (~40 s do punog sjaja), hladi se ~30 s posle gašenja; noću daje malo svetla (js/stove-plates.js).
