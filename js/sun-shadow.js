@@ -30,8 +30,11 @@ function make(el,scene){
 /* the shadow drawn by the player: ~20 points round the thing; 4 points on the left (they start under the thing) and 5 on the right, all of them can be moved (js/shadow-editor.js);
    the handles are kept for every key of the day (jutro / podne / vece) and flow between the keys with the clock. cfg.shPoly[itemId][key] = [[u,v] x9] (4 left + 5 right), u,v = the place in the box of the thing (0..1, may go out of it) */
 var OUTL={};
-function surfaceClip(el){      // only the surfaces get shadows: the table (its polygon) and the top of the stove; what falls over the edge is lost
+function inPoly(x,y,P){var c=false;for(var i=0,j=P.length-1;i<P.length;j=i++){if((P[i].y>y)!==(P[j].y>y)&&x<(P[j].x-P[i].x)*(y-P[i].y)/(P[j].y-P[i].y)+P[i].x)c=!c;}return c;}
+function surfaceClip(el,held){      // only the surfaces get shadows: the table (its polygon) and the top of the stove; what falls over the edge is lost
   var z=el.dataset.surfaceZone||'',S=(typeof placementGeometry!=='undefined'&&placementGeometry.SURFACES)||null;if(!S)return 'none';
+  if(held){var fx=el.offsetLeft+el.offsetWidth/2,fy=el.offsetTop+el.offsetHeight,b=S.stove;      // in the hand: the surface under the item decides
+    if(S.tablePoly&&inPoly(fx,fy,S.tablePoly))z='table';else if(fx>=b.left&&fx<=b.right&&fy>=b.top&&fy<=b.bottom)z='stove';else return null;}
   if(z==='stove'){var b=S.stove;return 'polygon('+b.left+'px '+b.top+'px,'+b.right+'px '+b.top+'px,'+b.right+'px '+b.bottom+'px,'+b.left+'px '+b.bottom+'px)';}
   if(z===''||z==='table'||z==='board'){var P=S.tablePoly;if(P&&P.length)return 'polygon('+P.map(function(q){return q.x+'px '+q.y+'px';}).join(',')+')';}
   return 'none';
@@ -67,9 +70,9 @@ function smoothPath(P){      // closed smooth curve through the points (Catmull-
     d+='C'+(p1[0]+(p2[0]-p0[0])/6).toFixed(1)+' '+(p1[1]+(p2[1]-p0[1])/6).toFixed(1)+' '+(p2[0]-(p3[0]-p1[0])/6).toFixed(1)+' '+(p2[1]-(p3[1]-p1[1])/6).toFixed(1)+' '+p2[0].toFixed(1)+' '+p2[1].toFixed(1);}
   return d+'Z';
 }
-function polyPoints(cfg,el,body,wts,o){      // the points (px in the box of the thing) of the shadow now: {fixed:[], handles:[]}
+function polyPoints(cfg,el,body,wts,o,gb){      // the points (px in the box of the thing) of the shadow now: {fixed:[], handles:[]}
   var id=el.dataset.itemId||'',ol=getOutline(el,body);if(!ol)return null;
-  var w=el.offsetWidth,h=el.offsetHeight,hs=[],tw=0;for(var z=0;z<9;z++)hs.push([0,0]);
+  var w=(gb||el).offsetWidth,h=(gb||el).offsetHeight,hs=[],tw=0;for(var z=0;z<9;z++)hs.push([0,0]);
   ['jutro','podne','vece'].forEach(function(k){var wk=wts[k];if(wk<.001)return;var H=handlesFor(cfg,id,k,o,el);for(var i=0;i<9;i++){hs[i][0]+=H[i][0]*wk;hs[i][1]+=H[i][1]*wk;}tw+=wk;});
   if(tw<=0)return null;
   return {pts:hs.map(function(p){return [p[0]/tw*w,p[1]/tw*h];})};
@@ -82,44 +85,47 @@ function tick(){
   list.forEach(function(el){
     if(!el||!el.isConnected)return;
     var rec=map.get(el),body=el.querySelector(':scope>img.body');
-    var vis=str>.02&&P.sho>.01&&el!==hold&&body&&el.offsetWidth>0&&el.style.display!=='none'&&el.style.visibility!=='hidden'&&!el.classList.contains('in-oven');
+    var held=el===hold,G=typeof placementGhost!=='undefined'?placementGhost:null,gb=(held&&G&&G.style.display==='block'&&G.offsetWidth>4)?G:el;      // an item in the hand is hidden, its copy (the ghost) is seen: the shadow lies under the copy
+    var vis=str>.02&&P.sho>.01&&body&&el.offsetWidth>0&&el.style.display!=='none'&&(held?gb!==el:el.style.visibility!=='hidden')&&!el.classList.contains('in-oven');
     if(!vis){if(rec)rec.style.display='none';return;}
     if(!rec){rec=make(el,scene);map.set(el,rec);}
     seen.add(el);
-    rec._wrap.style.zIndex=String(Math.max(1,(parseInt(el.style.zIndex,10)||20)-2));rec._wrap.style.clipPath=surfaceClip(el);
+    var clip=surfaceClip(gb,held);      // an item in the hand also has its shadow (on the surface under it); if there is no surface under it there is no shadow
+    if(clip===null){if(rec)rec.style.display='none';return;}
+    rec._wrap.style.zIndex=String(Math.max(1,(parseInt(gb.style.zIndex,10)||20)-2));rec._wrap.style.clipPath=clip;
     var im=rec.firstChild,bm=META&&sh.baked!==0?META[el.dataset.itemId||'']:null,iid=el.dataset.itemId||'';
     if(cfg.shPoly&&cfg.shPoly[iid]){      // drawn by the player (points): this wins over the baked and the live shadow
-      var wts0=keyWeights(cfg,D.minute()%1440),o0=D.itemSh(iid)||{},pp=polyPoints(cfg,el,body,wts0,o0);
+      var wts0=keyWeights(cfg,D.minute()%1440),o0=D.itemSh(iid)||{},pp=polyPoints(cfg,el,body,wts0,o0,gb);
       if(pp){
         im.style.display='none';Object.keys(rec._baked).forEach(function(k){rec._baked[k].style.display='none';});
-        rec._svg.style.display='block';rec._svg.setAttribute('width',el.offsetWidth);rec._svg.setAttribute('height',el.offsetHeight);
+        rec._svg.style.display='block';rec._svg.setAttribute('width',gb.offsetWidth);rec._svg.setAttribute('height',gb.offsetHeight);
         rec._path.setAttribute('d',smoothPath(pp.pts));
         var hx=0,hy=0;for(var z=4;z<9;z++){hx+=pp.pts[z][0];hy+=pp.pts[z][1];}hx/=5;hy/=5;
-        var gk=Math.max(.1,o0.g==null?1:+o0.g),gx=el.offsetWidth/2,gy=el.offsetHeight/2;      // the gradient goes from the middle of the thing to the middle of the handles
+        var gk=Math.max(.1,o0.g==null?1:+o0.g),gx=gb.offsetWidth/2,gy=gb.offsetHeight/2;      // the gradient goes from the middle of the thing to the middle of the handles
         rec._grad.setAttribute('x1',gx.toFixed(1));rec._grad.setAttribute('y1',gy.toFixed(1));rec._grad.setAttribute('x2',(gx+(hx-gx)*1.5*gk).toFixed(1));rec._grad.setAttribute('y2',(gy+(hy-gy)*1.5*gk).toFixed(1));
         rec._svg.style.filter='blur('+Math.max(0,P.shb+(o0.b==null?0:+o0.b)).toFixed(1)+'px)';
-        rec.style.left=el.offsetLeft+'px';rec.style.top=el.offsetTop+'px';rec.style.width=el.offsetWidth+'px';rec.style.height=el.offsetHeight+'px';
-        rec.style.zIndex=String(Math.max(1,(parseInt(el.style.zIndex,10)||20)-2));rec.style.transform='none';
+        rec.style.left=gb.offsetLeft+'px';rec.style.top=gb.offsetTop+'px';rec.style.width=gb.offsetWidth+'px';rec.style.height=gb.offsetHeight+'px';
+        rec.style.zIndex=String(Math.max(1,(parseInt(gb.style.zIndex,10)||20)-2));rec.style.transform=held?gb.style.transform:'none';rec.style.transformOrigin=held?gb.style.transformOrigin:'';
         rec.style.opacity=Math.min(1,P.sho*1.7*(o0.o==null?1:+o0.o)*str).toFixed(3);rec.style.display='block';return;      // the gradient already makes it lighter toward the far end, so the strength is higher than that of the other kinds
       }
     }
     rec._svg.style.display='none';
     if(bm){      // the baked shadow: no live shear, only the pictures (the position is that of the thing)
-      var kk=el.offsetWidth/bm.sw,wts=keyWeights(cfg,D.minute()%1440),oo=D.itemSh(el.dataset.itemId||'')||{};
+      var kk=gb.offsetWidth/bm.sw,wts=keyWeights(cfg,D.minute()%1440),oo=D.itemSh(el.dataset.itemId||'')||{};
       im.style.display='none';
       ['jutro','podne','vece'].forEach(function(k){var b=rec._baked[k],m=bm.keys[k],wk=wts[k];
         if(!m||wk<.01){b.style.display='none';return;}
         if(b.getAttribute('src')!==m.file)b.src=m.file;
         b.style.display='block';b.style.left=(-m.ox*kk)+'px';b.style.top=(-m.oy*kk)+'px';b.style.width=(m.w*kk)+'px';b.style.height=(m.h*kk)+'px';b.style.opacity=wk.toFixed(3);});
-      rec.style.left=el.offsetLeft+'px';rec.style.top=el.offsetTop+'px';rec.style.width=el.offsetWidth+'px';rec.style.height=el.offsetHeight+'px';
-      rec.style.zIndex=String(Math.max(1,(parseInt(el.style.zIndex,10)||20)-2));rec.style.transform='none';
+      rec.style.left=gb.offsetLeft+'px';rec.style.top=gb.offsetTop+'px';rec.style.width=gb.offsetWidth+'px';rec.style.height=gb.offsetHeight+'px';
+      rec.style.zIndex=String(Math.max(1,(parseInt(gb.style.zIndex,10)||20)-2));rec.style.transform=held?gb.style.transform:'none';rec.style.transformOrigin=held?gb.style.transformOrigin:'';
       rec.style.opacity=(P.sho*(oo.o==null?1:+oo.o)*str).toFixed(3);rec.style.display='block';return;
     }
     Object.keys(rec._baked).forEach(function(k){rec._baked[k].style.display='none';});im.style.display='block';
     if(im.getAttribute('src')!==body.getAttribute('src'))im.src=body.getAttribute('src');
     var o=D.itemSh(el.dataset.itemId||'')||{},def=function(v,d){return v==null?d:+v;},
         len=P.shl*def(o.l,1),ar=(P.sha+def(o.a,0))*Math.PI/180,sx=Math.cos(ar)*len,sy=Math.max(.15,Math.sin(ar))*len*.7*P.shh*def(o.h,1);      // every key of the day has its own length, strength and direction; between the keys it flows with the clock
-    rec.style.left=el.offsetLeft+'px';rec.style.top=el.offsetTop+'px';rec.style.width=el.offsetWidth+'px';rec.style.height=el.offsetHeight+'px';
+    rec.style.left=gb.offsetLeft+'px';rec.style.top=gb.offsetTop+'px';rec.style.width=gb.offsetWidth+'px';rec.style.height=gb.offsetHeight+'px';
     rec.style.zIndex=String(Math.max(1,(parseInt(el.style.zIndex,10)||20)-2));
     rec.style.transform='translate('+(P.shx+def(o.x,0)).toFixed(1)+'px,'+(P.shy+def(o.y,0)).toFixed(1)+'px) rotate('+(P.shr+def(o.r,0)).toFixed(1)+'deg) scaleX('+(P.shw*def(o.w,1)).toFixed(3)+') matrix(1,0,'+(-sx*(1-P.shk)).toFixed(3)+','+(-sy*(1-P.shk)+P.shk).toFixed(3)+',0,0)';
     rec.style.opacity=(P.sho*def(o.o,1)*str).toFixed(3);
