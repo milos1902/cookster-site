@@ -90,9 +90,10 @@ function fbStep(){var k=Math.max(0,Math.min(1,(performance.now()-fbT0)/750));fbL
 setInterval(function(){var t=fbOpen();if(t!==fbTo){fbFrom=fbLevel;fbTo=t;fbT0=performance.now();if(!fbRun){fbRun=true;requestAnimationFrame(fbStep);}}},80);
 function stoveBase(){try{return (stoveState.fireOn&&(+stoveState.fireLevel||0)>0)?Math.min(1,(+stoveState.fireLevel||0)/FIRE_MAX_LEVEL):0;}catch(e){return 0;}}
 function stoveLevel(){return stoveBase()*fbLevel;}      // the door is open: the big pool of light
+function plateHeat(){try{return window.CooksterStovePlates?CooksterStovePlates.heat():0;}catch(e){return 0;}}
 function stoveGlass(){return stoveBase()*(1-fbLevel);}      // the door is closed: only the glow round the little window with the fire
 function lusterLevel(){try{return window.CooksterLuster&&CooksterLuster.level?CooksterLuster.level():0;}catch(e){return 0;}}
-function fireSig(){return Math.round(grillLevel()*20)+'/'+Math.round(stoveLevel()*10)+'.'+Math.round(stoveGlass()*10)+'/'+Math.round(lusterLevel()*30)+'/'+Math.round(winLevel()*30);}
+function fireSig(){return Math.round(grillLevel()*20)+'/'+Math.round(stoveLevel()*10)+'.'+Math.round(stoveGlass()*10)+'.'+Math.round(plateHeat()*10)+'/'+Math.round(lusterLevel()*30)+'/'+Math.round(winLevel()*30);}
 var cv=null,cx=null,tintC=null,sunI=new Image();sunI.src='assets/effects/sun_patches.png?v=1';
 /* the picture of the kitchen WITHOUT the sun on the floor (assets/effects/kuhinja_bez_sunca.webp, the same picture, drawn without the light of the window) lies over the real one inside a mask of the window light
    (assets/effects/sun_zone_mask.png) and it melts in while the sun goes away (evening, night, early morning). If that picture is not there, the patches are only darkened. */
@@ -177,6 +178,7 @@ function render(){
   if(gl>.02)pool(497,98,340,115,Math.min(1,gl*.95*nightF),gl*.22*nightF,[255,140,50]);
   var ll=lusterLevel(),dk=clamp01(P.dark/.25);      // the chandelier lights the whole room: a wide pool of warm light under it that cuts the dark (the more dark, the more it is seen)
   if(ll>.02){pool(830,360,820,500,Math.min(.9,ll*.8*dk),ll*.10*dk,[255,200,120]);pool(830,300,330,220,Math.min(.9,ll*.55*dk),ll*.12*dk,[255,210,140]);}
+  var ph=plateHeat();if(ph>.04){var nP=Math.min(1,nightF*3.5);pool(1343,322,105,78,Math.min(.6,ph*.7*nP),ph*.20*nP,[255,95,35]);}      // the hot plates give a little light at night
   var stg=stoveGlass(),nG=Math.min(1,nightF*3.5);if(stg>.02){pool(1330,484,62,54,Math.min(1,stg*1.2*nG),stg*.75*nG,[255,170,70]);pool(1330,488,125,105,Math.min(.9,stg*.8*nG),stg*.3*nG,[255,150,55]);pool(1330,500,260,185,Math.min(.6,stg*.5*nG),stg*.12*nG,[255,140,50]);}      // the door is closed: a nice glow round the little window (a little more at night) and a very little light outside
   if(stl>.02){pool(1334,525,150,125,Math.min(1,stl*.8*nightF),stl*.2*nightF,[255,150,60]);pool(1332,640,380,260,Math.min(.8,stl*.55*nightF),stl*.13*nightF,[255,140,50]);}      // the fire shines: a bright pool at the firebox and a wide soft one that lights the lower part (the floor)
 }
