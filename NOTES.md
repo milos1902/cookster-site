@@ -955,3 +955,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Senka predmeta u ruci se ažurira svaki frejm (ne na 0.1 s), a pri spuštanju se odmah sve iscrta (nema bljeska stare senke).
 
 - Ložište: dve pozadine — firebox_base_no_door.webp (sa odsjajem, dok vatra gori) i firebox_base_no_door_off.webp (bez odsjaja, vatra ugašena); menja se čim se vatra upali/ugasi.
+
+- Vatra u ložištu je sada video (Higgsfield, bez zvuka): assets/effects/loziste/fire_start (loži se, 1x), fire_loop (gori, petlja), fire_end (gasi se, ostaje žar); js/firebox-fire.js. Okvir ložišta se ne menja, samo otvor + malo odsjaja uz ivice. Žar ostaje posle gašenja (localStorage cooksterFireEmbers).
