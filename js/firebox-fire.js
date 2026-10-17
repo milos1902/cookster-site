@@ -36,7 +36,8 @@ function set(live){
     if(mode==='loop'||mode==='start')return;
     try{localStorage.removeItem(EMB);}catch(e){}
     if(mode===''){goLoop();return;}      // the page was opened with the fire already burning
-    mode='start';V.start.currentTime=0;play(V.start);show('start');return;
+    var warm=(mode==='embers'||mode==='end');      // the embers are already there: the wood catches without the cold start (the picture of the cold coals), the flames come up from the embers
+    mode='start';try{V.start.currentTime=warm?.85:0;}catch(e){}play(V.start);show('start');return;
   }
   if(mode==='loop'||mode==='start'){mode='end';V.end.currentTime=0;play(V.end);show('end');return;}
   if(mode===''){var e=false;try{e=localStorage.getItem(EMB)==='1';}catch(x){}
