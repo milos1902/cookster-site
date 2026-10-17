@@ -947,3 +947,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Luster: sjaj sjenica sada prati tačno liniju koju je Miloš nacrtao (assets/effects/luster_lampe.png, maska) umesto elipsi.
 
 - Senke su vidljive i za predmet u ruci: prati kopiju predmeta (placement ghost) i leži na površini ispod (sto/šporet); van površine nema senke.
+
+- Ložište: otvoreno sa ugašenom vatrom više nema nacrtani narandžasti sjaj na ivici vrata i na donjoj ivici (popravljene slike stove_states_v3/firebox_open_off i firebox_base_no_door).
