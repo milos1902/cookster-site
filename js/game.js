@@ -5814,7 +5814,7 @@ window.addEventListener('pointermove',e=>{
  miniVessel=v;placeMiniSpoon(e.clientX,e.clientY,v);document.body.classList.add('mini-spoon-on');
 },true);
 window.addEventListener('pointerdown',e=>{
- if(e.button!==0||holding||stirring||!miniVessel||!miniSpoon||miniSpoon.style.display==='none')return;
+ if(e.button!==0||holding||stirring||(window.CooksterIsToolUi&&CooksterIsToolUi(e.target))||!miniVessel||!miniSpoon||miniSpoon.style.display==='none')return;
  const v=foodVesselAt(e.clientX,e.clientY);if(!v||v!==miniVessel)return;
  e.stopImmediatePropagation();e.preventDefault();
  holding=miniSpoon;
