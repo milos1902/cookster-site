@@ -10,6 +10,8 @@ var TOOLS='.ls,#tavernCal,#tavernCalOpen,#tiTool,#tiBtn,#vesselFoodMaskTool,#ves
 var TYPES={click:1,pointerdown:1,mousedown:1,dblclick:1,contextmenu:1,wheel:1,touchstart:1,auxclick:1};
 function inTool(t){try{
   if(!t||!t.closest)return false;if(t.closest(TOOLS))return true;
+  if(t===document.body||t===document.documentElement)return false;
+  if(!t.closest('#viewport,#quickToolWheel,.edge-arrow'))return true;      // everything that is not the scene itself (panels, buttons, windows of any tool) is solid
   for(var e=t;e&&e!==document.body;e=e.parentElement){var cs=getComputedStyle(e);if(cs.position==='fixed'&&(parseInt(cs.zIndex,10)||0)>=2147483500&&cs.pointerEvents!=='none')return true;}   // any other fixed panel on the highest layers
   return false}catch(e){return false}}
 window.CooksterIsToolUi=inTool;
