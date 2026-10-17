@@ -961,3 +961,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Vatra (video): petlja skraćena na deo gde oba prednja plamička uvek gore (2.0–3.55 s klipa), blagi treperavi efekat svetla, meke ivice (10 px) i blagi blur da nema oštrog prelaza prema nacrtanom ložištu.
 
 - Svetlo vatre noću: glatkiji gradijent (kao sijalice), jak bazen kod ložišta + široki meki koji osvetli donji deo (pod); vidi se samo dok su vratanca ložišta otvorena (0.75 s smooth dolazi/odlazi). Zlatne čestice prašine noću u svetlu vatre (js/fire-dust.js). Roštilj: svetlucanje samo iznad rešetke (ne preko kamena) i mnogo slabije.
+
+- Ložište noću sa zatvorenim vratancima: topao glow oko prozorčića sa vatrom + vrlo malo svetla napolju; kad se vratanca otvore glow glatko prelazi u jači gradijent (0.75 s).
