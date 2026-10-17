@@ -29,7 +29,7 @@ function makeEffect(o){
     for(var i=0;i<cells.length;i++){var c=cells[i];
       c.n+=(Math.random()-.5)*.12;c.n=Math.max(0,Math.min(1,c.n));
       var I=.5+.34*Math.sin(t*c.f+c.p)+.5*(c.n-.5);        // 0 = dark, 1 = bright
-      var a=hot?(I-.55)*1.15:(.42-I)*1.5;if(a<=.02)continue;a=Math.min(.95,a*boost)*level;
+      var a=hot?(I-.55)*1.15:(.42-I)*1.5;if(a<=.02)continue;a=Math.min(.95,a*boost)*level*.45;
       var g=ox.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r*(hot?1.25:1));
       if(hot){g.addColorStop(0,'rgba(255,196,90,'+a.toFixed(3)+')');g.addColorStop(.5,'rgba(255,120,30,'+(a*.55).toFixed(3)+')');g.addColorStop(1,'rgba(255,80,10,0)');}
       else{g.addColorStop(0,'rgba(40,10,2,'+a.toFixed(3)+')');g.addColorStop(1,'rgba(40,10,2,0)');}
@@ -63,8 +63,8 @@ function build(){
   var sc0=document.getElementById('scene');if(!sc0)return false;
   var patch=document.createElement('img');patch.src='assets/effects/grill_coals_off.webp?v=1';patch.draggable=false;
   patch.style.cssText='position:absolute;left:230px;top:18px;width:540px;height:147px;opacity:1;transition:opacity 1.6s ease;pointer-events:none;z-index:2';
-  kitchen=makeEffect({cx:230,cy:0,cw:540,ch:165,mx:0,my:18,mw:540,mh:147,mask:'assets/effects/grill_embers_mask.png?v=2',n:90,k:1,sx0:60,sx1:480,sy:54,patch:patch});
-  kitchen.cv.style.cssText='position:absolute;left:230px;top:0;width:540px;height:165px;pointer-events:none;z-index:3';
+  kitchen=makeEffect({cx:230,cy:0,cw:540,ch:165,mx:0,my:18,mw:540,mh:147,mask:'assets/effects/grill_embers_mask.png?v=2',n:55,k:1,sx0:60,sx1:480,sy:54,patch:patch});
+  kitchen.cv.style.cssText='position:absolute;left:230px;top:0;width:540px;height:165px;pointer-events:none;z-index:3;clip-path:inset(0 0 52px 0)';      // only above the grate: the stones in front of it do not twinkle
   sc0.appendChild(patch);sc0.appendChild(kitchen.cv);effects.push(kitchen);return true;
 }
 /* the close-up of the grill: the canvas goes into the view (kitchen-fixtures.js) and follows the picture of the grill (same transform and opacity) */
