@@ -6,9 +6,13 @@
 (function(){
 'use strict';
 if(window.__toolShield)return;window.__toolShield=true;
-var TOOLS='.ls,#tavernCal,#tavernCalOpen,#tiTool,#tiBtn,#vesselFoodMaskTool,#vesselFoodMaskBtn,#uiButtonCalibrationPanel,#uiButtonCalibrationDockButton,#uiButtonCalibrationOverlay,.vfmm-card,.kitchen-elements-card,[data-tool-ui]';
-var TYPES={pointerdown:1,mousedown:1,dblclick:1,contextmenu:1,wheel:1,touchstart:1,auxclick:1};
-function inTool(t){try{return !!(t&&t.closest&&t.closest(TOOLS))}catch(e){return false}}
+var TOOLS='.ls,#tavernCal,#tavernCalOpen,#tiTool,#tiBtn,#vesselFoodMaskTool,#vesselFoodMaskBtn,#uiButtonCalibrationPanel,#uiButtonCalibrationDockButton,#uiButtonCalibrationOverlay,.vfmm-card,.kitchen-elements-card,[data-tool-ui],#dlPanel,#dlBtn,#dlHandles,#dayClock,#nbPanel,#nbBtn,#ovPanel,#ovBtn,#signTool,#signToolBtn2,#wsTool,#toolsSwitchBtn';
+var TYPES={click:1,pointerdown:1,mousedown:1,dblclick:1,contextmenu:1,wheel:1,touchstart:1,auxclick:1};
+function inTool(t){try{
+  if(!t||!t.closest)return false;if(t.closest(TOOLS))return true;
+  for(var e=t;e&&e!==document.body;e=e.parentElement){var cs=getComputedStyle(e);if(cs.position==='fixed'&&(parseInt(cs.zIndex,10)||0)>=2147483500&&cs.pointerEvents!=='none')return true;}   // any other fixed panel on the highest layers
+  return false}catch(e){return false}}
+window.CooksterIsToolUi=inTool;
 var proto=EventTarget.prototype,add=proto.addEventListener,rem=proto.removeEventListener,wrapped=new WeakMap();
 function isRoot(o){return o==null||o===window||o===document||o===document.documentElement||o===document.body}
 function wrapFor(fn){

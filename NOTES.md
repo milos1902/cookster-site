@@ -935,3 +935,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Mešanje bez kašike u ruci: iznad hrane u posudi (ništa u ruci) pojavi se mala kašičica na kursoru, držiš levi taster i mešaš (stara logika mešanja, js/game.js miniSpoon). Kašika u ruci više ne meša (kvasac u naćvama i dalje radi).
 - Senke predmeta se seku na ivici površine (sto = tablePoly, šporet = vrh šporeta), js/sun-shadow.js surfaceClip.
 - Početne senke ažurirane iz cookster-day-light_4.json.
+
+- Toolovi se više ne mogu probiti klikom: js/core/tool-shield.js sada blokira i 'click' i sve panele/dugmad alata (Vreme i svetlo itd.) i sve fiksne panele na najvišim slojevima.
