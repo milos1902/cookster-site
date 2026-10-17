@@ -1602,7 +1602,10 @@ const SCENE_BACKGROUNDS={
  fireOffClosed:'assets/stove_states_v3/fire_off_closed.webp'
 };
 const DOOR_OVERLAYS={open:'assets/stove_states/firebox_door_open.png',close:'assets/stove_states/firebox_door_closed.png'};
-const FIREBOX_BASE_NO_DOOR='assets/stove_states_v3/firebox_base_no_door.webp?v=3';
+const FIREBOX_BASE_NO_DOOR='assets/stove_states_v3/firebox_base_no_door.webp?v=4';      // with the glow of the fire on the edges (used while the fire burns)
+const FIREBOX_BASE_NO_DOOR_OFF='assets/stove_states_v3/firebox_base_no_door_off.webp?v=1';      // the same without the painted glow (the fire is out)
+let fireboxBaseApplied=null;
+function fireboxBaseSrc(){const live=!!(stoveState.fireOn&&(stoveState.fireLevel||0)>0);return live?FIREBOX_BASE_NO_DOOR:FIREBOX_BASE_NO_DOOR_OFF;}
 // Decode door layers before the first click so the old frame never lingers
 // while the browser fetches the PNG.
 Object.values({...SCENE_BACKGROUNDS,...DOOR_OVERLAYS}).forEach(src=>{const im=new Image();im.src=src;});
@@ -1770,7 +1773,7 @@ function applySceneBackground(src,transition='none'){
 function applyFireboxDoorTransition(opening){
  const layer=ensureFireboxDoorLayer();
  layer.getAnimations?.().forEach(a=>a.cancel());
- scene.style.backgroundImage=`url("${new URL(window.CooksterKitchenFx?CooksterKitchenFx.compose(FIREBOX_BASE_NO_DOOR):FIREBOX_BASE_NO_DOOR,document.baseURI).href}")`;
+ scene.style.backgroundImage=`url("${new URL(window.CooksterKitchenFx?CooksterKitchenFx.compose(fireboxBaseSrc()):fireboxBaseSrc(),document.baseURI).href}")`;
  layer.style.backgroundImage=`url("${new URL(DOOR_OVERLAYS[opening?'open':'close'],document.baseURI).href}")`;
  layer.style.display='block';layer.style.opacity='1';layer.style.transform='none';
  layer.style.transformOrigin=`${FIREBOX_HINGE_ORIGIN.x}px ${FIREBOX_HINGE_ORIGIN.y}px`;
@@ -1965,6 +1968,7 @@ function updateFireboxEffects(){
   fx.animatedFire.style.opacity=live?'1':'0';
   fx.glassFire.style.opacity=live&&!stoveState.fireboxOpen?'1':'0';   // the fire in the little window stays when the oven is open: the oven door is only a small picture over the oven
   fx.glow.classList.toggle('live',live);
+  const want=fireboxBaseSrc();if(fireboxBaseApplied&&want!==fireboxBaseApplied){fireboxBaseApplied=want;applySceneBackground(want,'none');}      // the fire is lit / put out: the picture with / without the painted glow
   fx.spark.classList.toggle('live',live);
 }
 
@@ -1978,7 +1982,7 @@ function syncOvenDoorPicture(){
 function applyCookstoveState(transition='none'){
  CooksterSave.schedule();
  syncOvenDoorPicture();
- applySceneBackground(FIREBOX_BASE_NO_DOOR,'none');
+ fireboxBaseApplied=fireboxBaseSrc();applySceneBackground(fireboxBaseApplied,'none');
  syncFireboxDoorLayer(!!stoveState.fireboxOpen,true);
  refreshCookstoveHeating(false);
  updateFireboxEffects();
