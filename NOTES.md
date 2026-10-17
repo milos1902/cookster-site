@@ -943,3 +943,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - tool-shield: sve što nije sama scena (#viewport) je čvrsto — bilo koji panel/dugme/prozor alata ili HUD-a ne propušta klik na scenu.
 
 - Luster: svaka od 4 sjenice zasvetli cela (topao sjaj kroz staklo + bloom oko nje); srednja činija ne svetli.
+
+- Luster: sjaj sjenica sada prati tačno liniju koju je Miloš nacrtao (assets/effects/luster_lampe.png, maska) umesto elipsi.
