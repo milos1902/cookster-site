@@ -84,7 +84,11 @@ function clamp01(v){return Math.max(0,Math.min(1,v));}
 function bell(h,s,p,e){return h<=s||h>=e?0:h<p?(h-s)/(p-s):(e-h)/(e-p);}
 function rgba(c,a){return 'rgba('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+','+Math.max(0,Math.min(1,a)).toFixed(3)+')';}
 function grillLevel(){try{return window.CooksterGrill&&CooksterGrill.level?CooksterGrill.level():0;}catch(e){return 0;}}
-function stoveLevel(){try{return (stoveState.fireOn&&(+stoveState.fireLevel||0)>0)?Math.min(1,(+stoveState.fireLevel||0)/FIRE_MAX_LEVEL):0;}catch(e){return 0;}}
+var fbLevel=0,fbFrom=0,fbTo=0,fbT0=0,fbRun=false;      // the light of the fire is seen only while the door of the firebox is open: it comes / goes in about 0.75 s (smooth)
+function fbOpen(){try{return stoveState.fireboxOpen?1:0;}catch(e){return 0;}}
+function fbStep(){var k=Math.max(0,Math.min(1,(performance.now()-fbT0)/750));fbLevel=fbFrom+(fbTo-fbFrom)*(k*k*(3-2*k));try{if(window.CooksterDay&&CooksterDay.refreshLight)CooksterDay.refreshLight();}catch(e){}if(k<1)requestAnimationFrame(fbStep);else fbRun=false;}
+setInterval(function(){var t=fbOpen();if(t!==fbTo){fbFrom=fbLevel;fbTo=t;fbT0=performance.now();if(!fbRun){fbRun=true;requestAnimationFrame(fbStep);}}},80);
+function stoveLevel(){try{return (stoveState.fireOn&&(+stoveState.fireLevel||0)>0)?Math.min(1,(+stoveState.fireLevel||0)/FIRE_MAX_LEVEL)*fbLevel:0;}catch(e){return 0;}}
 function lusterLevel(){try{return window.CooksterLuster&&CooksterLuster.level?CooksterLuster.level():0;}catch(e){return 0;}}
 function fireSig(){return Math.round(grillLevel()*20)+'/'+Math.round(stoveLevel()*10)+'/'+Math.round(lusterLevel()*30)+'/'+Math.round(winLevel()*30);}
 var cv=null,cx=null,tintC=null,sunI=new Image();sunI.src='assets/effects/sun_patches.png?v=1';
@@ -128,11 +132,11 @@ function pool(x,y,rx,ry,carve,glow,col){
   cx.save();cx.translate(x,y);cx.scale(1,ry/rx);
   var g=cx.createRadialGradient(0,0,0,0,0,rx);
   cx.globalCompositeOperation='destination-out';
-  g.addColorStop(0,'rgba(0,0,0,'+clamp01(carve).toFixed(3)+')');g.addColorStop(.55,'rgba(0,0,0,'+clamp01(carve*.6).toFixed(3)+')');g.addColorStop(1,'rgba(0,0,0,0)');
+  [[0,1],[.15,.93],[.3,.78],[.5,.52],[.7,.26],[.87,.09],[1,0]].forEach(function(q){g.addColorStop(q[0],'rgba(0,0,0,'+clamp01(carve*q[1]).toFixed(3)+')');});      // a smooth fall (like a lamp), not a flat disc
   cx.fillStyle=g;cx.beginPath();cx.arc(0,0,rx,0,Math.PI*2);cx.fill();
   cx.globalCompositeOperation='source-over';
   var g2=cx.createRadialGradient(0,0,0,0,0,rx);
-  g2.addColorStop(0,rgba(col,glow));g2.addColorStop(.5,rgba(col,glow*.45));g2.addColorStop(1,rgba(col,0));
+  [[0,1],[.2,.82],[.4,.52],[.62,.26],[.82,.09],[1,0]].forEach(function(q){g2.addColorStop(q[0],rgba(col,glow*q[1]));});
   cx.fillStyle=g2;cx.beginPath();cx.arc(0,0,rx,0,Math.PI*2);cx.fill();
   cx.restore();
 }
@@ -171,7 +175,7 @@ function render(){
   if(gl>.02)pool(497,98,340,115,Math.min(1,gl*.95*nightF),gl*.22*nightF,[255,140,50]);
   var ll=lusterLevel(),dk=clamp01(P.dark/.25);      // the chandelier lights the whole room: a wide pool of warm light under it that cuts the dark (the more dark, the more it is seen)
   if(ll>.02){pool(830,360,820,500,Math.min(.9,ll*.8*dk),ll*.10*dk,[255,200,120]);pool(830,300,330,220,Math.min(.9,ll*.55*dk),ll*.12*dk,[255,210,140]);}
-  if(stl>.02)pool(1334,540,230,190,Math.min(1,stl*.75*nightF),stl*.16*nightF,[255,150,60]);
+  if(stl>.02){pool(1334,525,150,125,Math.min(1,stl*.8*nightF),stl*.2*nightF,[255,150,60]);pool(1332,640,380,260,Math.min(.8,stl*.55*nightF),stl*.13*nightF,[255,140,50]);}      // the fire shines: a bright pool at the firebox and a wide soft one that lights the lower part (the floor)
 }
 
 /* ---------- the things in the shaft of the sun are lit ---------- */
@@ -386,7 +390,7 @@ btn.addEventListener('click',function(){var on=pn.style.display!=='block';pn.sty
 setInterval(function(){if(pn.style.display==='block')placeHandles();},300);
 
 setInterval(tick,250);
-window.CooksterDay={saveCfg:function(){save();},sel:function(){return {item:selItem,label:selItemLabel,key:cfg.keys[selK].name};},panelOpen:function(){return pn.style.display==='block';},refresh:function(){lastSig='';render();try{litTick();}catch(e){}},refreshLight:function(){lastSig='';render();},minute:nowM,selectKey:function(i){if(!keyBtns.length)build();selectKey(i,true);},setMinute:function(m){st.minute=Math.max(0,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;lastSig='';render();chip();},pause:function(v){st.paused=v!==false;chip();},endDay:endDay,isClosed:function(){return st.closed;},day:function(){return st.day;},fmt:fmt,config:function(){return cfg;},itemSh:function(id){return cfg.shItems[id]||null;},phase:function(){return mixPhase((st.closed?1440:nowM())%1440);}};
+window.CooksterDay={stoveLight:function(){return stoveLevel();},saveCfg:function(){save();},sel:function(){return {item:selItem,label:selItemLabel,key:cfg.keys[selK].name};},panelOpen:function(){return pn.style.display==='block';},refresh:function(){lastSig='';render();try{litTick();}catch(e){}},refreshLight:function(){lastSig='';render();},minute:nowM,selectKey:function(i){if(!keyBtns.length)build();selectKey(i,true);},setMinute:function(m){st.minute=Math.max(0,Math.min(CLOSE,m));st.closed=st.minute>=CLOSE;lastSig='';render();chip();},pause:function(v){st.paused=v!==false;chip();},endDay:endDay,isClosed:function(){return st.closed;},day:function(){return st.day;},fmt:fmt,config:function(){return cfg;},itemSh:function(id){return cfg.shItems[id]||null;},phase:function(){return mixPhase((st.closed?1440:nowM())%1440);}};
 try{CooksterGrill&&CooksterGrill.boost&&CooksterGrill.boost(1+.5*cfg.fireNight);}catch(e){}
 setTimeout(function(){render();chip();},300);
 })();

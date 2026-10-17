@@ -959,3 +959,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Vatra u ložištu je sada video (Higgsfield, bez zvuka): assets/effects/loziste/fire_start (loži se, 1x), fire_loop (gori, petlja), fire_end (gasi se, ostaje žar); js/firebox-fire.js. Okvir ložišta se ne menja, samo otvor + malo odsjaja uz ivice. Žar ostaje posle gašenja (localStorage cooksterFireEmbers).
 
 - Vatra (video): petlja skraćena na deo gde oba prednja plamička uvek gore (2.0–3.55 s klipa), blagi treperavi efekat svetla, meke ivice (10 px) i blagi blur da nema oštrog prelaza prema nacrtanom ložištu.
+
+- Svetlo vatre noću: glatkiji gradijent (kao sijalice), jak bazen kod ložišta + široki meki koji osvetli donji deo (pod); vidi se samo dok su vratanca ložišta otvorena (0.75 s smooth dolazi/odlazi). Zlatne čestice prašine noću u svetlu vatre (js/fire-dust.js). Roštilj: svetlucanje samo iznad rešetke (ne preko kamena) i mnogo slabije.
