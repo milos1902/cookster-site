@@ -1597,12 +1597,12 @@ new MutationObserver(purgeLegacyCloudLighting).observe(document.documentElement,
 
 const SCENE_BACKGROUNDS={
  fireOnClosed:'assets/stove_states_v3/fire_on_closed.webp',
- fireboxOpenOff:'assets/stove_states_v3/firebox_open_off.webp',
+ fireboxOpenOff:'assets/stove_states_v3/firebox_open_off.webp?v=3',
  fireboxOpenFire:'assets/stove_states_v3/firebox_open_fire.webp',
  fireOffClosed:'assets/stove_states_v3/fire_off_closed.webp'
 };
 const DOOR_OVERLAYS={open:'assets/stove_states/firebox_door_open.png',close:'assets/stove_states/firebox_door_closed.png'};
-const FIREBOX_BASE_NO_DOOR='assets/stove_states_v3/firebox_base_no_door.webp';
+const FIREBOX_BASE_NO_DOOR='assets/stove_states_v3/firebox_base_no_door.webp?v=3';
 // Decode door layers before the first click so the old frame never lingers
 // while the browser fetches the PNG.
 Object.values({...SCENE_BACKGROUNDS,...DOOR_OVERLAYS}).forEach(src=>{const im=new Image();im.src=src;});
