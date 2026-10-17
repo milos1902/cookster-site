@@ -25,6 +25,18 @@ function build(){
   V.end.addEventListener('ended',function(){if(mode==='end'){mode='embers';try{localStorage.setItem(EMB,'1');}catch(e){}}});
   return true;
 }
+/* the little window of the closed door: the same fire (the loop) in it, ABOVE the dark of the night, so that it really shines at night (day: calmer) */
+var GP='polygon(1299.860px 460.257px,1362.048px 459.945px,1358.923px 508.070px,1298.610px 507.445px)',gbox=null,gv=null,gOn=false;
+function buildGlass(){var sc=document.getElementById('scene');if(!sc)return false;if(gbox&&gbox.parentNode===sc)return true;
+  gbox=document.createElement('div');gbox.id='fireboxGlassVideo';gbox.setAttribute('aria-hidden','true');
+  gbox.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:90003;opacity:0;transition:opacity .5s ease-in-out;clip-path:'+GP;
+  gv=document.createElement('video');[['webm','video/webm'],['mp4','video/mp4']].forEach(function(t){var so=document.createElement('source');so.src='assets/effects/loziste/fire_loop.'+t[0]+'?v=2';so.type=t[1];gv.appendChild(so);});
+  gv.muted=true;gv.defaultMuted=true;gv.loop=true;gv.playsInline=true;gv.preload='auto';
+  gv.style.cssText='position:absolute;left:1297px;top:428px;width:68px;height:83px;object-fit:cover;pointer-events:none';
+  gbox.appendChild(gv);sc.appendChild(gbox);return true;}
+function glass(on){if(!buildGlass())return;on=!!on;if(on===gOn)return;gOn=on;gbox.style.opacity=on?'1':'0';if(on){try{var p=gv.play();if(p&&p.catch)p.catch(function(){});}catch(e){}}else setTimeout(function(){if(!gOn)try{gv.pause();}catch(e){}},600);}
+(function gl(){requestAnimationFrame(gl);if(!gOn||!gv)return;var n=0;try{n=Math.max(0,Math.min(1,CooksterDay.phase().dark/.3));}catch(e){}
+  var t=performance.now()/1000,f=1+.05*Math.sin(t*9.3)+.04*Math.sin(t*14.1+1.7);gv.style.filter='brightness('+((.62+.62*n)*f).toFixed(3)+') saturate('+(1+.15*n).toFixed(2)+')';})();
 function show(name){for(var k in V)V[k].style.opacity=(k===name)?'1':'0';}
 function play(v){try{var p=v.play();if(p&&p.catch)p.catch(function(){});}catch(e){}}
 /* a very small flicker of the light on the burning fire, so that the short loop does not look like a loop */
@@ -34,7 +46,8 @@ function embersShow(){      // the fire has burnt out: the last picture of the l
   var v=V.end,f=function(){try{v.currentTime=Math.max(0,(v.duration||3.5)-.04);}catch(e){}v.pause();show('end');};
   if(v.readyState>=1)f();else v.addEventListener('loadedmetadata',f,{once:true});
 }
-function set(live){
+function set(live,open){
+  glass(!!live&&!open);
   if(!build())return;
   live=!!live;
   if(live){
