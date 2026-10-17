@@ -77,9 +77,9 @@ function polyPoints(cfg,el,body,wts,o,gb){      // the points (px in the box of 
   if(tw<=0)return null;
   return {pts:hs.map(function(p){return [p[0]/tw*w,p[1]/tw*h];})};
 }
-function tick(){
+function tick(only){      // only: one thing (the one in the hand) is updated every frame, all of them every 0.1 s
   var D=window.CooksterDay,scene=sceneEl();if(!D||!scene)return;
-  var cfg=D.config(),sh=cfg.sh||{},P=D.phase(),list=(typeof items!=='undefined'&&items)||[],hold=(typeof holding!=='undefined')?holding:null;
+  var cfg=D.config(),sh=cfg.sh||{},P=D.phase(),list=only&&only.dataset?[only]:((typeof items!=='undefined'&&items)||[]),hold=(typeof holding!=='undefined')?holding:null;
   var w=cfg.win,mx=(w.x1+w.x2)/2,my=(w.y1+w.y2)/2,dx=P.lx-mx,dy=P.ly-my,L=Math.hypot(dx,dy)||1;dx/=L;dy/=L;
   var str=sh.on?1:0,seen=new Set();
   list.forEach(function(el){
@@ -132,9 +132,14 @@ function tick(){
     im.style.filter='brightness(0) blur('+Math.max(0,P.shb+def(o.b,0)).toFixed(1)+'px)';
     rec.style.display='block';
   });
+  if(only&&only.dataset)return;
   map.forEach(function(rec,el){if(!el.isConnected){rec._wrap.remove();map.delete(el);}else if(!seen.has(el))rec.style.display='none';});
 }
 setInterval(tick,100);
+var lastHold=null;      // the shadow of the thing in the hand follows its copy every frame (not every 0.1 s); when it is put down, everything is redrawn at once
+(function frame(){requestAnimationFrame(frame);var h=(typeof holding!=='undefined')?holding:null;
+  try{if(h)tick(h);else if(lastHold)tick();}catch(e){}
+  lastHold=h;})();
 window.CooksterSunShadow={tick:tick,keyWeights:keyWeights,
   /* for the editor: the item, its fixed points and the handles of a key (in px of the box of the thing) */
   geom:function(el,key){var body=el.querySelector(':scope>img.body'),D=window.CooksterDay,cfg=D.config(),ol=getOutline(el,body);if(!ol)return null;var o=D.itemSh(el.dataset.itemId||'')||{},w=el.offsetWidth,h=el.offsetHeight,H=handlesFor(cfg,el.dataset.itemId||'',key,o,el);
