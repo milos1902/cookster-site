@@ -6,7 +6,7 @@
 (function(){
 'use strict';
 if(window.__toolShield)return;window.__toolShield=true;
-var TOOLS='.ls,#tavernCal,#tavernCalOpen,#tiTool,#tiBtn,#vesselFoodMaskTool,#vesselFoodMaskBtn,#uiButtonCalibrationPanel,#uiButtonCalibrationDockButton,#uiButtonCalibrationOverlay,.vfmm-card,.kitchen-elements-card,[data-tool-ui],#dlPanel,#dlBtn,#dlHandles,#dayClock,#nbPanel,#nbBtn,#ovPanel,#ovBtn,#signTool,#signToolBtn2,#wsTool,#toolsSwitchBtn';
+var TOOLS='.ls,#tavernCal,#tavernCalOpen,#tiTool,#tiBtn,#vesselFoodMaskTool,#vesselFoodMaskBtn,#uiButtonCalibrationPanel,#uiButtonCalibrationDockButton,#uiButtonCalibrationOverlay,.vfmm-card,.kitchen-elements-card,[data-tool-ui],#dlPanel,#dlBtn,#dlHandles,#dayClock,#nbPanel,#nbBtn,#ovPanel,#ovBtn,#signTool,#signToolBtn2,#wsTool,#toolsSwitchBtn,#hud,#dishReport,#kitchenElementsScene,[aria-modal="true"],[role="dialog"]';
 var TYPES={click:1,pointerdown:1,mousedown:1,dblclick:1,contextmenu:1,wheel:1,touchstart:1,auxclick:1};
 function inTool(t){try{
   if(!t||!t.closest)return false;if(t.closest(TOOLS))return true;
