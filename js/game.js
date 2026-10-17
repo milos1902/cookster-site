@@ -1966,8 +1966,8 @@ function updateFireboxEffects(){
   const live=!!(stoveState.fireOn && (stoveState.fireLevel||0)>0);
   fx.staticFire.style.opacity=window.CooksterFireboxFire?'0':(live?'1':'0');      // the fire in the firebox is a video now (js/firebox-fire.js)
   fx.animatedFire.style.opacity=window.CooksterFireboxFire?'0':(live?'1':'0');
-  if(window.CooksterFireboxFire)CooksterFireboxFire.set(live);
-  fx.glassFire.style.opacity=live&&!stoveState.fireboxOpen?'1':'0';   // the fire in the little window stays when the oven is open: the oven door is only a small picture over the oven
+  if(window.CooksterFireboxFire)CooksterFireboxFire.set(live,!!stoveState.fireboxOpen);
+  fx.glassFire.style.opacity=window.CooksterFireboxFire?'0':(live&&!stoveState.fireboxOpen?'1':'0');   // the fire in the little window stays when the oven is open: the oven door is only a small picture over the oven
   fx.glow.classList.toggle('live',live);
   const want=fireboxBaseSrc();if(fireboxBaseApplied&&want!==fireboxBaseApplied){fireboxBaseApplied=want;applySceneBackground(want,'none');}      // the fire is lit / put out: the picture with / without the painted glow
   fx.spark.classList.toggle('live',live);
