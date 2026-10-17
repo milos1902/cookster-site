@@ -945,3 +945,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Luster: svaka od 4 sjenice zasvetli cela (topao sjaj kroz staklo + bloom oko nje); srednja činija ne svetli.
 
 - Luster: sjaj sjenica sada prati tačno liniju koju je Miloš nacrtao (assets/effects/luster_lampe.png, maska) umesto elipsi.
+
+- Senke su vidljive i za predmet u ruci: prati kopiju predmeta (placement ghost) i leži na površini ispod (sto/šporet); van površine nema senke.
