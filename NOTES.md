@@ -965,3 +965,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Ložište noću sa zatvorenim vratancima: topao glow oko prozorčića sa vatrom + vrlo malo svetla napolju; kad se vratanca otvore glow glatko prelazi u jači gradijent (0.75 s).
 
 - Prozorčić ložišta (zatvorena vratanca): isti video vatre u prozorčiću iznad noćnog mraka, noću sija jače (ostaje plamen); oko njega kratak jak glow koji se postepeno rastapa u gradijent.
+
+- Prozorčić: prikazuje pravi plamen iz ložišta (isto mesto i veličina kao video vatre unutra), ne smanjenu sliku.

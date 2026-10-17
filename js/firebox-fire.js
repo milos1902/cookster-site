@@ -32,7 +32,7 @@ function buildGlass(){var sc=document.getElementById('scene');if(!sc)return fals
   gbox.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:90003;opacity:0;transition:opacity .5s ease-in-out;clip-path:'+GP;
   gv=document.createElement('video');[['webm','video/webm'],['mp4','video/mp4']].forEach(function(t){var so=document.createElement('source');so.src='assets/effects/loziste/fire_loop.'+t[0]+'?v=2';so.type=t[1];gv.appendChild(so);});
   gv.muted=true;gv.defaultMuted=true;gv.loop=true;gv.playsInline=true;gv.preload='auto';
-  gv.style.cssText='position:absolute;left:1297px;top:428px;width:68px;height:83px;object-fit:cover;pointer-events:none';
+  gv.style.cssText='position:absolute;left:'+X+'px;top:'+Y+'px;width:'+W+'px;height:'+H+'px;pointer-events:none';      // the same place and size as the fire in the open firebox: the window shows the real flame behind it
   gbox.appendChild(gv);sc.appendChild(gbox);return true;}
 function glass(on){if(!buildGlass())return;on=!!on;if(on===gOn)return;gOn=on;gbox.style.opacity=on?'1':'0';if(on){try{var p=gv.play();if(p&&p.catch)p.catch(function(){});}catch(e){}}else setTimeout(function(){if(!gOn)try{gv.pause();}catch(e){}},600);}
 (function gl(){requestAnimationFrame(gl);if(!gOn||!gv)return;var n=0;try{n=Math.max(0,Math.min(1,CooksterDay.phase().dark/.3));}catch(e){}
