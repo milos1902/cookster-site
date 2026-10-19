@@ -6713,6 +6713,14 @@ function tweenItemPickup(el){
    {transform:'scale(1)',filter:'brightness(1)'}
  ],{key:'pickup',duration:180,easing:'cubic-bezier(.18,.78,.20,1)'});
 }
+/* Every item hangs 6 px above its place while it is carried (as the board does by itself), so letting it go is one short drop straight down onto the table: the item starts exactly where the picture of it was.
+   (Before, only the board did this: the others were first shown 6 px higher than their picture, so they jumped up and fell back = a hop.) */
+(function ghostLiftLoop(){
+ requestAnimationFrame(ghostLiftLoop);
+ const g=placementGhost;if(!g)return;
+ const want=(holding&&holding.dataset&&holding.dataset.itemId!=='daska'&&g.style.display==='block')?'0 -6px':'';
+ if(g.style.translate!==want)g.style.translate=want;
+})();
 function tweenItemDrop(el){
  const body=el?.querySelector?.('.body');
  if(!body||!window.CooksterTween)return;
