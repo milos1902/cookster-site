@@ -28,7 +28,7 @@ function make(el,scene){
   wr.appendChild(d);scene.appendChild(wr);d._wrap=wr;return d;
 }
 /* the shadow drawn by the player: ~20 points round the thing; 4 points on the left (they start under the thing) and 5 on the right, all of them can be moved (js/shadow-editor.js);
-   the handles are kept for every key of the day (jutro / podne / vece) and flow between the keys with the clock. cfg.shPoly[itemId][key] = [[u,v] x9] (4 left + 5 right), u,v = the place in the box of the thing (0..1, may go out of it) */
+   the handles are kept for every key of the day (jutro / podne / vece) and flow between the keys with the clock (only the morning and the noon are drawn; after the noon the shape of the noon stays and fades away). cfg.shPoly[itemId][key] = [[u,v] x9] (4 left + 5 right), u,v = the place in the box of the thing (0..1, may go out of it) */
 var OUTL={};
 function inPoly(x,y,P){var c=false;for(var i=0,j=P.length-1;i<P.length;j=i++){if((P[i].y>y)!==(P[j].y>y)&&x<(P[j].x-P[i].x)*(y-P[i].y)/(P[j].y-P[i].y)+P[i].x)c=!c;}return c;}
 function surfaceClip(el,held){      // only the surfaces get shadows: the table (its polygon) and the top of the stove; what falls over the edge is lost
@@ -73,7 +73,7 @@ function smoothPath(P){      // closed smooth curve through the points (Catmull-
 function polyPoints(cfg,el,body,wts,o,gb){      // the points (px in the box of the thing) of the shadow now: {fixed:[], handles:[]}
   var id=el.dataset.itemId||'',ol=getOutline(el,body);if(!ol)return null;
   var w=(gb||el).offsetWidth,h=(gb||el).offsetHeight,hs=[],tw=0;for(var z=0;z<9;z++)hs.push([0,0]);
-  ['jutro','podne','vece'].forEach(function(k){var wk=wts[k];if(wk<.001)return;var H=handlesFor(cfg,id,k,o,el);for(var i=0;i<9;i++){hs[i][0]+=H[i][0]*wk;hs[i][1]+=H[i][1]*wk;}tw+=wk;});
+  ['jutro','podne','vece'].forEach(function(k){var wk=wts[k];if(wk<.001)return;var H=handlesFor(cfg,id,k==='vece'?'podne':k,o,el);for(var i=0;i<9;i++){hs[i][0]+=H[i][0]*wk;hs[i][1]+=H[i][1]*wk;}tw+=wk;});
   if(tw<=0)return null;
   return {pts:hs.map(function(p){return [p[0]/tw*w,p[1]/tw*h];})};
 }
@@ -145,7 +145,7 @@ window.CooksterSunShadow={tick:tick,keyWeights:keyWeights,
   geom:function(el,key){var body=el.querySelector(':scope>img.body'),D=window.CooksterDay,cfg=D.config(),ol=getOutline(el,body);if(!ol)return null;var o=D.itemSh(el.dataset.itemId||'')||{},w=el.offsetWidth,h=el.offsetHeight,H=handlesFor(cfg,el.dataset.itemId||'',key,o,el);
     return {pts:H.map(function(p){return [p[0]*w,p[1]*h];}),w:w,h:h};},
   setHandle:function(el,key,i,u,v){var D=window.CooksterDay,cfg=D.config(),id=el.dataset.itemId||'',body=el.querySelector(':scope>img.body');getOutline(el,body);cfg.shPoly=cfg.shPoly||{};
-    var rec=cfg.shPoly[id]=cfg.shPoly[id]||{};['jutro','podne','vece'].forEach(function(k){if(!rec[k]||rec[k].length!==9)rec[k]=handlesFor(cfg,id,k,D.itemSh(id)||{},el).map(function(p){return [p[0],p[1]];});});
+    var rec=cfg.shPoly[id]=cfg.shPoly[id]||{};['jutro','podne'].forEach(function(k){if(!rec[k]||rec[k].length!==9)rec[k]=handlesFor(cfg,id,k,D.itemSh(id)||{},el).map(function(p){return [p[0],p[1]];});});
     rec[key][i]=[u,v];D.saveCfg();tick();},
   reset:function(id,key){var D=window.CooksterDay,cfg=D.config();if(!cfg.shPoly||!cfg.shPoly[id])return;if(key)delete cfg.shPoly[id][key];if(!key||!Object.keys(cfg.shPoly[id]).length)delete cfg.shPoly[id];D.saveCfg();tick();}};
 })();

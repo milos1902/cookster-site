@@ -39,7 +39,7 @@ function glass(live,open){      // the video of the window runs all the time the
   if(!buildGlass())return;live=!!live;var show=live&&!open;
   if(live){try{if(gv.paused){var p=gv.play();if(p&&p.catch)p.catch(function(){});}}catch(e){}}else if(!gOn){try{gv.pause();}catch(e){}}
   if(show===gOn)return;gOn=show;clearTimeout(gT);
-  if(show){gT=setTimeout(function(){if(gOn){gbox.style.transition='opacity .25s ease-out';gbox.style.opacity='1';}},650);}      // the door needs ~0.65 s to close, then the fire is in the window at once (no black window)
+  if(show){gbox.style.transition='opacity .2s ease-out';gbox.style.opacity='1';}      // the fire is in the window at once, as the door starts to close (no black window)
   else{gbox.style.transition='opacity .15s ease-in';gbox.style.opacity='0';if(!live)gT=setTimeout(function(){if(!gOn){try{gv.pause();}catch(e){}}},400);}}
 (function gl(){requestAnimationFrame(gl);if(!gOn||!gv)return;var n=0;try{n=Math.max(0,Math.min(1,CooksterDay.phase().dark/.3));}catch(e){}
   var t=performance.now()/1000,f=1+.05*Math.sin(t*9.3)+.04*Math.sin(t*14.1+1.7);gv.style.filter='brightness('+((.62+.62*n)*f).toFixed(3)+') saturate('+(1+.15*n).toFixed(2)+')';})();

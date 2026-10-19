@@ -973,3 +973,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Ispravljen bug: usijavanje velikog kruga na šporetu nije radilo (greška u js/stove-plates.js); sada gori crveno posle ~40 s.
 - Prvo loženje: obe slike ložišta se unapred dekodiraju (nema bljeska cele slike).
 - Prozorčić: video vatre radi stalno dok vatra gori; kad se vratanca zatvore vatra se pojavi odmah (nema crnog prozorčića).
+
+- Senke: tačke se crtaju samo za Jutro i Podne (Veče/Noć/Pred zoru nemaju crtež; posle podneva oblik podneva ostaje i bledi). Dugme 'Kopiraj crtež na jutro i podne'. Početne senke iz cookster-day-light.json (b4a157f7).
+- Prozorčić ložišta: vatra se pojavi odmah čim počne zatvaranje vratanaca (bez crnog prozorčića).

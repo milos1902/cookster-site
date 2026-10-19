@@ -4,7 +4,7 @@
    The shadow is made in js/sun-shadow.js, it is darkest near the thing and melts into transparency at the far end. */
 (function(){
 if(window.CooksterShadowEdit)return;
-var on=false,svg=null,grp=null,drag=null,KM={'Jutro':'jutro','Podne':'podne','Veče':'vece'};
+var on=false,svg=null,grp=null,drag=null,KM={'Jutro':'jutro','Podne':'podne'}      // only the morning and the noon have shadows to draw;
 function scene(){return document.getElementById('scene');}
 function findEl(id){var L=(typeof items!=='undefined'&&items)||[];for(var i=0;i<L.length;i++){var e=L[i];if(e&&e.isConnected&&e.offsetWidth>0&&(e.dataset.itemId||'')===id)return e;}return null;}
 function build(){
