@@ -980,3 +980,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Senka ne nestaje pri spuštanju predmeta na sto (nije više 'u ruci' čim je predmet spušten, iako ga igra još kratko vodi kao holding).
 
 - Mešanje: komadići hrane (i jaje) u tiganju/šerpi se više ne odbijaju od ivice nego klize uz nju (ukloni se samo brzina ka ivici, bez opruge i bez prigušenja; stvarna normala ivice umesto pravca ka centru) — js/piece-sim.js (softEdge, wall), js/egg-sim.js (pull).
+
+- Spuštanje svih predmeta na sto je isto kao kod daske: jedno kratko spuštanje (6 px, 125 ms) pravo dole, bez odskoka (uklonjen dropBounce hop i squash/prsten za šerpe).
+- Prozorčić ložišta: slika se svaki frejm kopira iz videa vatre koji gori u ložištu (canvas), pa nikad nije crn.

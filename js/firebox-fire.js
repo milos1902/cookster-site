@@ -26,23 +26,21 @@ function build(){
   return true;
 }
 /* the little window of the closed door: the same fire (the loop) in it, ABOVE the dark of the night, so that it really shines at night (day: calmer) */
-var GP='polygon(1299.860px 460.257px,1362.048px 459.945px,1358.923px 508.070px,1298.610px 507.445px)',gbox=null,gv=null,gOn=false;
+var GP='polygon(1299.860px 460.257px,1362.048px 459.945px,1358.923px 508.070px,1298.610px 507.445px)',gbox=null,gc=null,gx=null,gOn=false,gT=0;
 function buildGlass(){var sc=document.getElementById('scene');if(!sc)return false;if(gbox&&gbox.parentNode===sc)return true;
   gbox=document.createElement('div');gbox.id='fireboxGlassVideo';gbox.setAttribute('aria-hidden','true');
-  gbox.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:90003;opacity:0;transition:opacity .5s ease-in-out;clip-path:'+GP;
-  gv=document.createElement('video');[['webm','video/webm'],['mp4','video/mp4']].forEach(function(t){var so=document.createElement('source');so.src='assets/effects/loziste/fire_loop.'+t[0]+'?v=2';so.type=t[1];gv.appendChild(so);});
-  gv.muted=true;gv.defaultMuted=true;gv.loop=true;gv.playsInline=true;gv.preload='auto';
-  gv.style.cssText='position:absolute;left:'+X+'px;top:'+Y+'px;width:'+W+'px;height:'+H+'px;pointer-events:none';      // the same place and size as the fire in the open firebox: the window shows the real flame behind it
-  gbox.appendChild(gv);sc.appendChild(gbox);return true;}
-var gT=0;
-function glass(live,open){      // the video of the window runs all the time the fire burns (so it is warm when the door closes); it is only shown when the door is closed
-  if(!buildGlass())return;live=!!live;var show=live&&!open;
-  if(live){try{if(gv.paused){var p=gv.play();if(p&&p.catch)p.catch(function(){});}}catch(e){}}else if(!gOn){try{gv.pause();}catch(e){}}
-  if(show===gOn)return;gOn=show;clearTimeout(gT);
-  if(show){gbox.style.transition='opacity .2s ease-out';gbox.style.opacity='1';}      // the fire is in the window at once, as the door starts to close (no black window)
-  else{gbox.style.transition='opacity .15s ease-in';gbox.style.opacity='0';if(!live)gT=setTimeout(function(){if(!gOn){try{gv.pause();}catch(e){}}},400);}}
-(function gl(){requestAnimationFrame(gl);if(!gOn||!gv)return;var n=0;try{n=Math.max(0,Math.min(1,CooksterDay.phase().dark/.3));}catch(e){}
-  var t=performance.now()/1000,f=1+.05*Math.sin(t*9.3)+.04*Math.sin(t*14.1+1.7);gv.style.filter='brightness('+((.62+.62*n)*f).toFixed(3)+') saturate('+(1+.15*n).toFixed(2)+')';})();
+  gbox.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:90003;opacity:0;transition:opacity .2s ease-out;clip-path:'+GP;
+  gc=document.createElement('canvas');gc.width=240;gc.height=295;gx=gc.getContext('2d');      // the picture of the window is copied every frame from the fire that burns in the firebox (the same flame, never a black window)
+  gc.style.cssText='position:absolute;left:'+X+'px;top:'+Y+'px;width:'+W+'px;height:'+H+'px;pointer-events:none';
+  gbox.appendChild(gc);sc.appendChild(gbox);return true;}
+function glass(live,open){
+  if(!buildGlass())return;var show=!!live&&!open;if(show===gOn)return;gOn=show;
+  gbox.style.transition=show?'opacity .2s ease-out':'opacity .15s ease-in';gbox.style.opacity=show?'1':'0';}
+(function gl(){requestAnimationFrame(gl);if(!gOn||!gx)return;
+  var v=(mode==='loop')?V.loop:((mode==='start')?V.start:null);
+  if(v&&v.readyState>=2){try{gx.drawImage(v,0,0,240,295);}catch(e){}}
+  var n=0;try{n=Math.max(0,Math.min(1,CooksterDay.phase().dark/.3));}catch(e){}
+  var t=performance.now()/1000,f=1+.05*Math.sin(t*9.3)+.04*Math.sin(t*14.1+1.7);gc.style.filter='brightness('+((.62+.62*n)*f).toFixed(3)+') saturate('+(1+.15*n).toFixed(2)+')';})();
 function show(name){for(var k in V)V[k].style.opacity=(k===name)?'1':'0';}
 function play(v){try{var p=v.play();if(p&&p.catch)p.catch(function(){});}catch(e){}}
 /* a very small flicker of the light on the burning fire, so that the short loop does not look like a loop */
