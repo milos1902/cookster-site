@@ -34,7 +34,13 @@ function buildGlass(){var sc=document.getElementById('scene');if(!sc)return fals
   gv.muted=true;gv.defaultMuted=true;gv.loop=true;gv.playsInline=true;gv.preload='auto';
   gv.style.cssText='position:absolute;left:'+X+'px;top:'+Y+'px;width:'+W+'px;height:'+H+'px;pointer-events:none';      // the same place and size as the fire in the open firebox: the window shows the real flame behind it
   gbox.appendChild(gv);sc.appendChild(gbox);return true;}
-function glass(on){if(!buildGlass())return;on=!!on;if(on===gOn)return;gOn=on;gbox.style.opacity=on?'1':'0';if(on){try{var p=gv.play();if(p&&p.catch)p.catch(function(){});}catch(e){}}else setTimeout(function(){if(!gOn)try{gv.pause();}catch(e){}},600);}
+var gT=0;
+function glass(live,open){      // the video of the window runs all the time the fire burns (so it is warm when the door closes); it is only shown when the door is closed
+  if(!buildGlass())return;live=!!live;var show=live&&!open;
+  if(live){try{if(gv.paused){var p=gv.play();if(p&&p.catch)p.catch(function(){});}}catch(e){}}else if(!gOn){try{gv.pause();}catch(e){}}
+  if(show===gOn)return;gOn=show;clearTimeout(gT);
+  if(show){gT=setTimeout(function(){if(gOn){gbox.style.transition='opacity .25s ease-out';gbox.style.opacity='1';}},650);}      // the door needs ~0.65 s to close, then the fire is in the window at once (no black window)
+  else{gbox.style.transition='opacity .15s ease-in';gbox.style.opacity='0';if(!live)gT=setTimeout(function(){if(!gOn){try{gv.pause();}catch(e){}}},400);}}
 (function gl(){requestAnimationFrame(gl);if(!gOn||!gv)return;var n=0;try{n=Math.max(0,Math.min(1,CooksterDay.phase().dark/.3));}catch(e){}
   var t=performance.now()/1000,f=1+.05*Math.sin(t*9.3)+.04*Math.sin(t*14.1+1.7);gv.style.filter='brightness('+((.62+.62*n)*f).toFixed(3)+') saturate('+(1+.15*n).toFixed(2)+')';})();
 function show(name){for(var k in V)V[k].style.opacity=(k===name)?'1':'0';}
@@ -47,7 +53,7 @@ function embersShow(){      // the fire has burnt out: the last picture of the l
   if(v.readyState>=1)f();else v.addEventListener('loadedmetadata',f,{once:true});
 }
 function set(live,open){
-  glass(!!live&&!open);
+  glass(live,open);
   if(!build())return;
   live=!!live;
   if(live){

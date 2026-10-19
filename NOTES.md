@@ -969,3 +969,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Prozorčić: prikazuje pravi plamen iz ložišta (isto mesto i veličina kao video vatre unutra), ne smanjenu sliku.
 
 - Veliki levi krug na ploči šporeta se usijava kad vatra gori duže (~40 s do punog sjaja), hladi se ~30 s posle gašenja; noću daje malo svetla (js/stove-plates.js).
+
+- Ispravljen bug: usijavanje velikog kruga na šporetu nije radilo (greška u js/stove-plates.js); sada gori crveno posle ~40 s.
+- Prvo loženje: obe slike ložišta se unapred dekodiraju (nema bljeska cele slike).
+- Prozorčić: video vatre radi stalno dok vatra gori; kad se vratanca zatvore vatra se pojavi odmah (nema crnog prozorčića).
