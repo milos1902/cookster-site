@@ -1007,3 +1007,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Vreme: uklonjeno 'oblačno'; ostaju sunce, kiša, nevreme, sneg (i u alatu i u zvucima napolju).
 
 - Alat 'Vreme i svetlo': dugmad Sunce / Kiša / Nevreme / Sneg; svako vreme ima svoje osvetljenje po tačkama dana (jutro, podne, veče, noć, pred zoru); cfg.wx[vreme][tačka] čuva samo ono što je Miloš menjao (ostalo su početne vrednosti: kiša/nevreme tamnije bez zraka, sneg hladno). Dugmad 'Vrati ovu tačku / celo vreme na početno'. Svetlo glatko prelazi iz jednog vremena u drugo (težine u js/weather.js).
+
+- Gornja polja po tačkama koje je Miloš obeležio: ikonica tačno u centru kruga, ime vremena centrirano između kruga i kraja trake (najveća slova koja staju), dan + mesec u malom polju tačno između dve tačke, u dugom polju samo sat (najveći što staje, bez 'Dan N').
