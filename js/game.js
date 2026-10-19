@@ -2445,7 +2445,7 @@ const tavernAmbientTarget=makeSoundTarget('__ambient_tavern','Ambijent kafane �
 tavernAmbientTarget.dataset.soundActions='amb0,amb2,amb5,amb12,guestIn';
 const kitchenAmbientTarget=makeSoundTarget('__ambient_kitchen','Ambijent kuhinje — jutro, dan, veče','ambMorning');
 kitchenAmbientTarget.dataset.soundActions='ambMorning,ambDay,ambEvening';
-const windowAmbientTarget=makeSoundTarget('__ambient_window','Ambijent napolju (dok je prozor otvoren) — sunce, kiša, nevreme, grom','ambSun');
+const windowAmbientTarget=makeSoundTarget('__ambient_window','Ambijent napolju (čuje se i kroz zatvoren prozor, tiše; kad se otvori, glasnije) — sunce, kiša, nevreme, grom','ambSun');
 windowAmbientTarget.dataset.soundActions='ambSun,ambRain,ambStorm,ambSnow,thunder';
 window.CooksterSound={scrub:scrubMove,scrubStop:scrubStop,door:doorPlay,doorHit:DOOR_HIT,targets:{door:doorSoundTarget,doorGuest:doorGuestSoundTarget,note:orderNoteSoundTarget,waiter:waiterServeSoundTarget,ambTavern:tavernAmbientTarget,ambWindow:windowAmbientTarget,ambKitchen:kitchenAmbientTarget},
   playKey:(key,vol)=>playSfx(key,Math.max(0,Math.min(1,+vol||0)),true),
@@ -2596,7 +2596,7 @@ let ambLast=performance.now();
 function ambWindowDesired(){
  try{
   if(window.CooksterTavern&&window.CooksterTavern.isOpen)return null;
-  if(!(window.CooksterWindow&&CooksterWindow.isOpen()&&window.CooksterWeather))return null;
+  if(!window.CooksterWeather)return null;      // the weather outside is heard all the time: through the closed window quieter, through the open window louder
   return[windowAmbientTarget,{sunce:'ambSun',kisa:'ambRain',nevreme:'ambStorm',sneg:'ambSnow'}[CooksterWeather.kind()]||'ambSun'];
  }catch(_){return null;}
 }
@@ -2616,7 +2616,8 @@ setInterval(()=>{
   if(t)wants.set(t.id,cfg);
  });
  for(let i=ambTracks.length-1;i>=0;i--){
-  const t=ambTracks[i],cfg=wants.get(t.id),on=!!cfg,goal=on?Math.max(0,Math.min(1,+cfg.volume||0)):0;
+  const t=ambTracks[i],cfg=wants.get(t.id),on=!!cfg;let goal=on?Math.max(0,Math.min(1,+cfg.volume||0)):0;
+  if(on&&t.target==='__ambient_window'){let wl=0;try{wl=CooksterWindow.level();}catch(e){}goal*=.3+.7*Math.max(0,Math.min(1,wl));}      // the window closed: the sound outside is muffled (30 %), open: full
   const step=dt/AMB_FADE*Math.max(.3,Math.min(1,+((cfg&&cfg.volume)||.58)));
   t.vol=t.vol<goal?Math.min(goal,t.vol+step):Math.max(goal,t.vol-step);
   try{t.audio.volume=t.vol;if(on&&t.audio.paused)t.audio.play().catch(()=>{});}catch(_){}
@@ -2690,7 +2691,7 @@ ssStyle.textContent=`
 document.head.appendChild(ssStyle);
 
 /* --- state --- */
-const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slam','Zalupljivanje vrata'],['scrubLeft','Ribanje: miš ide ulevo'],['scrubRight','Ribanje: miš ide udesno'],['scrubUp','Ribanje: miš ide gore'],['scrubDown','Ribanje: miš ide dole'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje papirića na šiljak'],['fall','Pad papirića sa šiljka'],['ring','Zvoni (kad ga dodirneš)'],['sprinkle','Sipaj (začin)'],['pour','Sipaj (ulje)'],['pourOut','Presipaj u drugu posudu'],['throw','Bacanje u kantu'],['empty','Pražnjenje kante'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara'],['eat','Gost jede (svaki zalogaj)'],['step','Koraci konobara (svaki korak)'],['amb0','Kafana prazna (petlja)'],['amb2','Kafana: do 3 gosta (petlja)'],['amb5','Kafana: 4–8 gostiju (petlja)'],['amb12','Kafana puna: 9+ gostiju (petlja)'],['guestIn','Ulazak gostiju u kafanu'],['ambMorning','Kuhinja: jutro (petlja)'],['ambDay','Kuhinja: dan (petlja)'],['ambEvening','Kuhinja: veče (petlja)'],['ambSun','Napolje: sunčano (petlja, prozor otvoren)'],['ambRain','Napolje: kiša (petlja, prozor otvoren)'],['ambStorm','Napolje: nevreme (petlja, prozor otvoren)'],['ambSnow','Napolje: sneg (petlja, prozor otvoren)'],['thunder','Napolje: grom (jednom, kad sevne)']];
+const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slam','Zalupljivanje vrata'],['scrubLeft','Ribanje: miš ide ulevo'],['scrubRight','Ribanje: miš ide udesno'],['scrubUp','Ribanje: miš ide gore'],['scrubDown','Ribanje: miš ide dole'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje papirića na šiljak'],['fall','Pad papirića sa šiljka'],['ring','Zvoni (kad ga dodirneš)'],['sprinkle','Sipaj (začin)'],['pour','Sipaj (ulje)'],['pourOut','Presipaj u drugu posudu'],['throw','Bacanje u kantu'],['empty','Pražnjenje kante'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara'],['eat','Gost jede (svaki zalogaj)'],['step','Koraci konobara (svaki korak)'],['amb0','Kafana prazna (petlja)'],['amb2','Kafana: do 3 gosta (petlja)'],['amb5','Kafana: 4–8 gostiju (petlja)'],['amb12','Kafana puna: 9+ gostiju (petlja)'],['guestIn','Ulazak gostiju u kafanu'],['ambMorning','Kuhinja: jutro (petlja)'],['ambDay','Kuhinja: dan (petlja)'],['ambEvening','Kuhinja: veče (petlja)'],['ambSun','Napolje: sunčano (petlja)'],['ambRain','Napolje: kiša (petlja)'],['ambStorm','Napolje: nevreme (petlja)'],['ambSnow','Napolje: sneg (petlja)'],['thunder','Napolje: grom (jednom, kad sevne)']];
 const ssState={open:false,tab:'objekti',action:'drop',query:'',libQuery:'',libOpen:false};
 
 /* --- helpers (reuse ls* from light-studio) --- */
