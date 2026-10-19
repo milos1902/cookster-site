@@ -3,7 +3,7 @@
    "Pusti" plays the sound and flashes at the chosen places (the same as in the game). The flashes are kept for every sound (localStorage); the game (js/weather.js) uses them. */
 (function(){
 if(window.CooksterThunderTool)return;
-var KEY='cookster.thunder.v1',DB={},cur=null,sel=-1,wv=null,W=720,H=150,panel=null,cv=null,cx=null,sl=null,info=null,selEl=null,playing=null,drag=null;
+var libSel=null,KEY='cookster.thunder.v1',DB={},cur=null,sel=-1,wv=null,W=720,H=150,panel=null,cv=null,cx=null,sl=null,info=null,selEl=null,playing=null,drag=null;
 try{DB=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){DB={};}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
 function list(){try{return CooksterSound.thunderList();}catch(e){return [];}}
@@ -31,6 +31,12 @@ function build(){
   panel.style.cssText='position:fixed;left:50%;bottom:70px;transform:translateX(-50%);z-index:2147483600;width:'+(W+28)+'px;background:rgba(36,22,10,.96);border:2px solid #351b0d;border-radius:12px;padding:10px 14px;color:#f3e3c2;font:12px/1.35 system-ui,sans-serif;display:none;box-shadow:0 10px 40px rgba(0,0,0,.6)';
   panel.innerHTML='<b style="font-size:14px">⚡ Grom — gde će da bljesne</b> <span id="thClose" style="float:right;cursor:pointer;font-size:16px">✕</span><div style="margin:6px 0 4px">Zvuk: <select id="thSel" style="background:#2a1a0e;color:#f3e3c2;border:1px solid #6a4a22;border-radius:6px;padding:2px 6px"></select></div>';
   cv=document.createElement('canvas');cv.width=W;cv.height=H;cv.style.cssText='display:block;width:'+W+'px;height:'+H+'px;border-radius:8px;cursor:crosshair;touch-action:none';panel.appendChild(cv);cx=cv.getContext('2d');
+  var lib=document.createElement('div');lib.style.cssText='display:flex;gap:6px;align-items:center;margin:6px 0 2px;flex-wrap:wrap';panel.insertBefore(lib,cv);
+  function lbtn(t,fn){var b=document.createElement('button');b.type='button';b.textContent=t;b.style.cssText='background:#4a3a1e;color:#fff1cf;border:1px solid #351b0d;border-radius:8px;padding:4px 9px;cursor:pointer;font:700 11px system-ui';b.addEventListener('click',fn);lib.appendChild(b);return b;}
+  lbtn('⬇ Uvezi zvukove za nevreme iz alata Zvuk',function(){var s=[];try{s=CooksterSound.stormSounds();}catch(e){}var n=0;s.forEach(function(k){if(CooksterSound.addThunder(k))n++;});fill();setCur(0);msg(s.length?('Uvezeno: '+s.length+' zvuk(ova).'):'U alatu Zvuk (Ambijent napolju → Napolje: nevreme) nema zvukova.');});
+  libSel=document.createElement('select');libSel.style.cssText='background:#2a1a0e;color:#f3e3c2;border:1px solid #6a4a22;border-radius:6px;padding:2px 6px;max-width:220px';lib.appendChild(libSel);
+  lbtn('+ Dodaj iz biblioteke',function(){var k=libSel.value;if(k&&CooksterSound.addThunder(k)){fill();setCur(Math.max(0,list().findIndex(function(x){return x.key===k;})));msg('Dodat zvuk.');}});
+  lbtn('− Ukloni ovaj zvuk iz groma',function(){if(cur&&CooksterSound.removeThunder(cur.key)){fill();setCur(0);msg('Uklonjen iz groma.');}});
   var row=document.createElement('div');row.style.cssText='display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap';panel.appendChild(row);
   function btn(t,fn){var b=document.createElement('button');b.type='button';b.textContent=t;b.style.cssText='background:#6a4a22;color:#fff1cf;border:1px solid #351b0d;border-radius:8px;padding:5px 10px;cursor:pointer;font:700 12px system-ui';b.addEventListener('click',fn);row.appendChild(b);return b;}
   btn('▶ Pusti zvuk i bljesak',play);btn('■ Stop',stop);btn('⚡ Probni bljesak',function(){if(sel>=0&&marks())CooksterWeather.flash(marks()[sel].a);else CooksterWeather.flash(.7);});
@@ -63,7 +69,8 @@ function play(){
     if(!a.ended)requestAnimationFrame(loop);else{playing=null;draw();}})();
 }
 function stop(){if(playing){try{playing.pause();}catch(e){}playing=null;}draw();}
-function fill(){var l=list();selEl.innerHTML='';l.forEach(function(x,i){var o=document.createElement('option');o.value=i;o.textContent=(x.key.replace('custom:','')||x.key);selEl.appendChild(o);});if(!l.length){var o=document.createElement('option');o.textContent='(nema zvuka)';selEl.appendChild(o);}}
+function msg(s){if(info){info.textContent=s;setTimeout(function(){draw();},2500);}}
+function fill(){if(libSel&&!libSel.options.length){try{CooksterSound.soundLibrary().forEach(function(x){var o=document.createElement('option');o.value=x.key;o.textContent=x.name+(x.custom?' ✦':'');libSel.appendChild(o);});}catch(e){}}var l=list();selEl.innerHTML='';l.forEach(function(x,i){var o=document.createElement('option');o.value=i;o.textContent=CooksterSound.soundName(x.key);selEl.appendChild(o);});if(!l.length){var o=document.createElement('option');o.textContent='(nema zvuka)';selEl.appendChild(o);}}
 function show(v){build();panel.style.display=v?'block':'none';if(v){fill();setCur(0);}else stop();}
 var btnOpen=null;
 function mkBtn(){if(btnOpen||!document.body)return;btnOpen=document.createElement('button');btnOpen.type='button';btnOpen.id='thBtn';btnOpen.setAttribute('data-tool-ui','1');btnOpen.textContent='⚡ Grom';
