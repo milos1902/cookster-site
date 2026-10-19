@@ -2449,6 +2449,8 @@ const windowAmbientTarget=makeSoundTarget('__ambient_window','Ambijent napolju (
 windowAmbientTarget.dataset.soundActions='ambSun,ambRain,ambStorm,ambSnow,thunder';
 window.CooksterSound={scrub:scrubMove,scrubStop:scrubStop,door:doorPlay,doorHit:DOOR_HIT,targets:{door:doorSoundTarget,doorGuest:doorGuestSoundTarget,note:orderNoteSoundTarget,waiter:waiterServeSoundTarget,ambTavern:tavernAmbientTarget,ambWindow:windowAmbientTarget,ambKitchen:kitchenAmbientTarget},
   playKey:(key,vol)=>playSfx(key,Math.max(0,Math.min(1,+vol||0)),true),
+  // the thunder of the storm: picks the sound that the player set in the tool "Zvuk" (Ambijent napolju -> grom); the caller (js/weather.js) flashes the lightning in the same moment as the sound is heard
+  thunderSrc:()=>{try{const cfg=resolvedImpactConfig(windowAmbientTarget,'thunder'),sound=pickActionSound(windowAmbientTarget,'thunder',cfg);if(!sound)return null;const stored=sound.startsWith('custom:')?importedAudio[sound.slice(7)]:null,src=sound.startsWith('custom:')?(typeof stored==='string'?stored:stored?.src):SFX[sound];return src?{key:sound,src:src,vol:Math.max(0,Math.min(1,+cfg.volume||0))}:null;}catch(_){return null;}},
   play:(name,action)=>{const t=window.CooksterSound.targets[name];return t?playImpactSound(t,action):false;}};
 // one virtual sound target per vegetable/fruit type: cutting and putting into a vessel share it
 const produceSoundTargets={};
@@ -2557,6 +2559,24 @@ function playImpactSound(el,action='drop',opt){
  const play=()=>playSfx(sound,Math.max(0,Math.min(1,+cfg.volume||0)),true);
  if(wait) setTimeout(play,wait);else play();return true;
 }
+// a loop without a gap: the sound is decoded once and played by the audio engine as a buffer that repeats itself (an <audio loop> makes a pause of about half a second at the end of every round)
+const loopBufCache={};
+let loopCtx=null;
+function sfxSrcOf(key){const stored=key?.startsWith('custom:')?importedAudio[key.slice(7)]:null;return key?.startsWith('custom:')?(typeof stored==='string'?stored:stored?.src):SFX[key];}
+function playLoopGapless(key){
+ const src=sfxSrcOf(key);if(!src)return null;
+ const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;
+ loopCtx=loopCtx||new AC();
+ const gain=loopCtx.createGain();gain.gain.value=0;gain.connect(loopCtx.destination);
+ const shim={loop:true,paused:false,_v:0,_src:null,_dead:false,
+   get volume(){return this._v;},set volume(v){this._v=v;gain.gain.value=v;},
+   pause(){this.paused=true;this._dead=true;try{this._src&&this._src.stop();}catch(e){}try{gain.disconnect();}catch(e){}},
+   play(){return Promise.resolve();}};
+ const start=buf=>{if(shim._dead)return;const s=loopCtx.createBufferSource();s.buffer=buf;s.loop=true;s.connect(gain);s.start(0);shim._src=s;};
+ if(loopCtx.state==='suspended')loopCtx.resume().catch(()=>{});
+ (loopBufCache[src]||(loopBufCache[src]=fetch(src).then(r=>r.arrayBuffer()).then(b=>loopCtx.decodeAudioData(b)))).then(start).catch(()=>{delete loopBufCache[src];});
+ return shim;
+}
 // ---- ambient engine: one looping sound at a time, with a 1 second fade when it changes (kitchen <-> tavern, or fewer / more guests) ----
 const AMB_FADE=1;                                                    // seconds
 const ambTracks=[];                                                  // {id,audio,vol(now),want}
@@ -2590,7 +2610,7 @@ setInterval(()=>{
   if(!list.length)return;
   let t=ambTracks.find(x=>x.target===d[0].dataset.soundTarget&&x.action===d[1]&&list.includes(x.sound));
   if(!t){
-   const sound=list[Math.floor(Math.random()*list.length)],a=playSfx(sound,0,true);
+   const sound=list[Math.floor(Math.random()*list.length)],a=playLoopGapless(sound)||playSfx(sound,0,true);
    if(a){a.loop=true;t={id:d[0].dataset.soundTarget+'|'+d[1]+'|'+Date.now(),target:d[0].dataset.soundTarget,action:d[1],sound,audio:a,vol:0};ambTracks.push(t);}
   }
   if(t)wants.set(t.id,cfg);
