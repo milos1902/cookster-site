@@ -6,7 +6,7 @@
 (function(){
 if(window.CooksterWeather)return;
 var NAMES={sunce:'Sunčano',oblaci:'Oblačno',kisa:'Kiša',nevreme:'Nevreme',sneg:'Sneg'},ICON={sunce:'☀️',oblaci:'☁️',kisa:'🌧️',nevreme:'⛈️',sneg:'❄️'},
-    TARGET={sunce:{sun:1,dark:0,rain:0,storm:0,snow:0},oblaci:{sun:.6,dark:.02,rain:0,storm:0,snow:0},kisa:{sun:.4,dark:.05,rain:1,storm:0,snow:0},nevreme:{sun:.14,dark:.12,rain:1,storm:1,snow:0},sneg:{sun:.4,dark:.04,rain:0,storm:0,snow:1}},
+    TARGET={sunce:{sun:1,dark:0,rain:0,storm:0,snow:0},oblaci:{sun:0,dark:.03,rain:0,storm:0,snow:0},kisa:{sun:0,dark:.065,rain:1,storm:0,snow:0},nevreme:{sun:0,dark:.15,rain:1,storm:1,snow:0},sneg:{sun:0,dark:.07,rain:0,storm:0,snow:1}},      // sun = the rays of the sun (the painted sun on the floor and the shaft from the window): only when it is sunny; dark = how much darker the whole scene is (sunny is the lightest, the storm the darkest)
     MONTHS=['januar','februar','mart','april','maj','jun','jul','avgust','septembar','oktobar','novembar','decembar'],MDAYS=[31,28,31,30,31,30,31,31,30,31,30,31],
     START={m:0,d:1},      // the game starts on the 1st of January
     forced=null,cur={sun:1,dark:0,rain:0,storm:0,snow:0},kind='sunce',lastRef=0,nextFlash=0;
