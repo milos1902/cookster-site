@@ -34,9 +34,16 @@ function setKind(k){
 var flashT=0;
 function lightning(){
   var sc=document.getElementById('scene');if(!sc)return;
-  var f=document.createElement('div');f.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:95000;background:#dfe8ff;opacity:0';sc.appendChild(f);
-  try{f.animate([{opacity:0},{opacity:.42,offset:.08},{opacity:.05,offset:.22},{opacity:.34,offset:.34},{opacity:0}],{duration:520,easing:'ease-out'}).onfinish=function(){f.remove();};}catch(e){f.remove();}
-  setTimeout(function(){f.remove();},800);
+  var wl=0;try{wl=window.CooksterWindow?CooksterWindow.level():0;}catch(e){}
+  var k=.4+.6*wl;      // through the open window the flash is much stronger than through the closed one
+  var f=document.createElement('div');f.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:95000;opacity:0;mix-blend-mode:screen;'+
+    'background:radial-gradient(ellipse 360px 520px at 10px 190px,rgba(235,242,255,1) 0,rgba(205,222,255,.75) 35%,rgba(170,195,255,.28) 70%,rgba(150,180,255,0) 100%),'+
+    'linear-gradient(105deg,rgba(220,232,255,.55) 0,rgba(200,220,255,.30) 38%,rgba(190,210,255,0) 70%),rgba(190,208,255,.20)';
+  sc.appendChild(f);
+  var o=Math.min(1,.95*k);
+  try{f.animate([{opacity:0},{opacity:o,offset:.05},{opacity:o*.15,offset:.16},{opacity:o*.9,offset:.26},{opacity:o*.1,offset:.38},{opacity:o*.55,offset:.47},{opacity:0}],{duration:760,easing:'ease-out'}).onfinish=function(){f.remove();};}catch(e){f.remove();}
+  setTimeout(function(){f.remove();},1100);
+  try{if(window.CooksterLuster&&CooksterLuster.flicker)CooksterLuster.flicker();}catch(e){}      // the chandelier loses the power for a moment
   setTimeout(function(){try{CooksterSound.play('ambWindow','thunder');}catch(e){}},400+Math.random()*1400);
 }
 /* the rain on the window (the strip on the left of the scene) */
