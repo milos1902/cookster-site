@@ -1026,3 +1026,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Alat Grom: dugme 'Uvezi zvukove za nevreme iz alata Zvuk' (kopira zvukove iz Ambijent napolju → nevreme u listu groma), izbor bilo kog zvuka iz biblioteke + 'Dodaj', i 'Ukloni ovaj zvuk iz groma'. Spaja se sa alatom Zvuk (akcija thunder).
 
 - Grom: igra sama bira JEDAN zvuk po udaru (nikad isti dvaput zaredom), i novi grom čeka da prethodni zvuk završi (nema preklapanja više zvukova odjednom).
+
+- Uklonjen alat 'Grom' (thunder-tool.js). Grom sada: jedan zvuk, bez preklapanja, i vrlo slab bljesak kroz prozor samo na najglasnijem mestu zvuka (automatski), bez treperenja lustera. Zvuk napolju: kad se vreme promeni, stari zvuk nestaje za pola sekunde.
