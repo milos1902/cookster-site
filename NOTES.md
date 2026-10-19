@@ -1013,3 +1013,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Knjiga Baba Savkine recepte više nije gore levo: leži (nagnuta, u perspektivi) na crvenom sanduku dole levo; klik je i dalje otvara.
 
 - Grom: blesak kroz prozor jači (plavo-beli talas sa leve strane, jači kad je prozor otvoren) + luster treperi / gubi struju ~1.5 s (CooksterLuster.flicker) kad sevne.
+
+- Grom: bljesak je vezan za zvuk grmljavine — kad se čuje grom (zvuk iz alata Zvuk, Ambijent napolju → grom), igra analizira zvuk i bljesne tačno na najglasnijim mestima; ako zvuk nije postavljen, samo bljesne.
+- Ambijent petlje (kuhinja, kafana, napolje) sada idu bez pauze na kraju kruga: dekodirani buffer sa loop umesto <audio loop> (playLoopGapless).

@@ -32,10 +32,24 @@ function setKind(k){
   try{if(window.CooksterSound&&k!=='nevreme')flashT=0;}catch(e){}
 }
 var flashT=0;
-function lightning(){
+var envCache={};
+function envelope(src){      // where the thunder sound is the loudest (the moments of the flashes): the peaks of its loudness, from the audio file itself
+  if(envCache[src])return envCache[src];
+  return envCache[src]=fetch(src).then(function(r){return r.arrayBuffer();}).then(function(buf){
+    var AC=window.AudioContext||window.webkitAudioContext,ac=new AC();return ac.decodeAudioData(buf).then(function(ab){try{ac.close();}catch(e){}
+      var d=ab.getChannelData(0),sr=ab.sampleRate,win=Math.floor(sr*.02),n=Math.floor(d.length/win),e=new Float32Array(n),mx=0;
+      for(var i=0;i<n;i++){var s=0;for(var j=0;j<win;j+=4){var v=d[i*win+j];s+=v*v;}e[i]=Math.sqrt(s/(win/4));if(e[i]>mx)mx=e[i];}
+      var sm=new Float32Array(n);for(i=0;i<n;i++){var a=0,c=0;for(j=-2;j<=2;j++){if(i+j>=0&&i+j<n){a+=e[i+j];c++;}}sm[i]=a/c;}
+      var peaks=[],last=-9;
+      for(i=1;i<n-1;i++){if(sm[i]>mx*.4&&sm[i]>=sm[i-1]&&sm[i]>=sm[i+1]){var t=i*.02;if(t-last>.45){peaks.push({t:t,a:Math.min(1,sm[i]/mx)});last=t;}else if(peaks.length&&sm[i]>peaks[peaks.length-1].a*mx){peaks[peaks.length-1]={t:t,a:Math.min(1,sm[i]/mx)};last=t;}}}
+      if(!peaks.length)peaks.push({t:0,a:1});
+      return {dur:ab.duration,peaks:peaks.slice(0,6)};});
+  }).catch(function(){return null;});
+}
+function flash(power){
   var sc=document.getElementById('scene');if(!sc)return;
   var wl=0;try{wl=window.CooksterWindow?CooksterWindow.level():0;}catch(e){}
-  var k=.4+.6*wl;      // through the open window the flash is much stronger than through the closed one
+  var k=(.4+.6*wl)*power;      // through the open window the flash is much stronger than through the closed one
   var f=document.createElement('div');f.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:95000;opacity:0;mix-blend-mode:screen;'+
     'background:radial-gradient(ellipse 360px 520px at 10px 190px,rgba(235,242,255,1) 0,rgba(205,222,255,.75) 35%,rgba(170,195,255,.28) 70%,rgba(150,180,255,0) 100%),'+
     'linear-gradient(105deg,rgba(220,232,255,.55) 0,rgba(200,220,255,.30) 38%,rgba(190,210,255,0) 70%),rgba(190,208,255,.20)';
@@ -44,7 +58,15 @@ function lightning(){
   try{f.animate([{opacity:0},{opacity:o,offset:.05},{opacity:o*.15,offset:.16},{opacity:o*.9,offset:.26},{opacity:o*.1,offset:.38},{opacity:o*.55,offset:.47},{opacity:0}],{duration:760,easing:'ease-out'}).onfinish=function(){f.remove();};}catch(e){f.remove();}
   setTimeout(function(){f.remove();},1100);
   try{if(window.CooksterLuster&&CooksterLuster.flicker)CooksterLuster.flicker();}catch(e){}      // the chandelier loses the power for a moment
-  setTimeout(function(){try{CooksterSound.play('ambWindow','thunder');}catch(e){}},400+Math.random()*1400);
+}
+function lightning(){
+  var th=null;try{th=CooksterSound.thunderSrc();}catch(e){}
+  if(!th){flash(1);return;}      // no thunder sound is set: only the flash
+  envelope(th.src).then(function(env){
+    var a=null;try{a=CooksterSound.playKey(th.key,th.vol);}catch(e){}      // the sound starts now and the flashes come at the loudest moments of it: you see the lightning exactly when you hear the thunder
+    var peaks=env?env.peaks:[{t:0,a:1}];
+    peaks.forEach(function(p){setTimeout(function(){flash(.55+.45*p.a);},Math.max(0,p.t*1000-25));});
+  });
 }
 /* the rain on the window (the strip on the left of the scene) */
 var cv=null,cx=null,drops=[];
