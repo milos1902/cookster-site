@@ -1020,3 +1020,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Zvuk napolju (ambijent vremena) se čuje stalno: kroz zatvoren prozor na 30% jačine, kad se prozor otvori glatko ide do pune jačine.
 
 - Alat Zvuk: za Prozor sada ima i dugme 'Lomljenje saksije (prozor)' (akcija break) pored Otvaranja i Zatvaranja; nove akcije napolje (sunce/kiša/nevreme/sneg/grom) i break se ne pojavljuju kod drugih predmeta.
+
+- Novi alat '⚡ Grom' (js/thunder-tool.js, dugme desno dole): slika zvuka groma; klik = novi bljesak, prevlačenje = vreme i jačina, dvoklik = brisanje; Pusti zvuk i bljesak; Predloži iz zvuka; čuva se po zvuku (localStorage cookster.thunder.v1). Igra (weather.js) bljesne tačno na Milošovim mestima, jači bljesak = jače svetlo i treperenje lustera.

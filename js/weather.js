@@ -46,7 +46,7 @@ function envelope(src){      // where the thunder sound is the loudest (the mome
       return {dur:ab.duration,peaks:peaks.slice(0,6)};});
   }).catch(function(){return null;});
 }
-function flash(power){
+function flash(power,flick){
   var sc=document.getElementById('scene');if(!sc)return;
   var wl=0;try{wl=window.CooksterWindow?CooksterWindow.level():0;}catch(e){}
   var k=(.4+.6*wl)*power;      // through the open window the flash is much stronger than through the closed one
@@ -57,15 +57,26 @@ function flash(power){
   var o=Math.min(1,.95*k);
   try{f.animate([{opacity:0},{opacity:o,offset:.05},{opacity:o*.15,offset:.16},{opacity:o*.9,offset:.26},{opacity:o*.1,offset:.38},{opacity:o*.55,offset:.47},{opacity:0}],{duration:760,easing:'ease-out'}).onfinish=function(){f.remove();};}catch(e){f.remove();}
   setTimeout(function(){f.remove();},1100);
-  try{if(window.CooksterLuster&&CooksterLuster.flicker)CooksterLuster.flicker();}catch(e){}      // the chandelier loses the power for a moment
+  if(flick!==false)try{if(window.CooksterLuster&&CooksterLuster.flicker)CooksterLuster.flicker();}catch(e){}      // the chandelier loses the power for a moment (only at the stronger flashes)
 }
+function wave(src,cols){      // the picture of the sound for the tool: the loudest sample in every column
+  return fetch(src).then(function(r){return r.arrayBuffer();}).then(function(buf){var AC=window.AudioContext||window.webkitAudioContext,ac=new AC();
+    return ac.decodeAudioData(buf).then(function(ab){try{ac.close();}catch(e){}var d=ab.getChannelData(0),n=d.length,out=new Float32Array(cols),step=n/cols;
+      for(var i=0;i<cols;i++){var m=0,s=Math.floor(i*step),e=Math.floor((i+1)*step);for(var j=s;j<e;j+=Math.max(1,Math.floor((e-s)/40))){var v=Math.abs(d[j]);if(v>m)m=v;}out[i]=m;}
+      return {dur:ab.duration,peaks:out};});}).catch(function(){return null;});
+}
+function markersFor(src,env){      // the flashes of this sound: the ones the player placed in the tool "Grom", or (till he places them) the loudest places of the sound
+  var m=null;try{m=window.CooksterThunderTool?CooksterThunderTool.get(src):null;}catch(e){}
+  if(m)return m;
+  return (env?env.peaks:[{t:0,a:1}]).map(function(p){return {t:p.t,a:p.a};});
+}
+function flashPower(a){return .3+.7*a;}
 function lightning(){
   var th=null;try{th=CooksterSound.thunderSrc();}catch(e){}
   if(!th){flash(1);return;}      // no thunder sound is set: only the flash
   envelope(th.src).then(function(env){
-    var a=null;try{a=CooksterSound.playKey(th.key,th.vol);}catch(e){}      // the sound starts now and the flashes come at the loudest moments of it: you see the lightning exactly when you hear the thunder
-    var peaks=env?env.peaks:[{t:0,a:1}];
-    peaks.forEach(function(p){setTimeout(function(){flash(.55+.45*p.a);},Math.max(0,p.t*1000-25));});
+    try{CooksterSound.playKey(th.key,th.vol);}catch(e){}
+    markersFor(th.src,env).forEach(function(p){setTimeout(function(){flash(flashPower(p.a),p.a>=.45);},Math.max(0,p.t*1000-25));});      // the sound starts now and every flash comes at the moment that was chosen
   });
 }
 /* the rain on the window (the strip on the left of the scene) */
@@ -142,5 +153,5 @@ function frame(now){
 requestAnimationFrame(frame);
 window.CooksterWeather={kind:function(){return kind;},name:function(){return NAMES[kind];},icon:function(){return ICON[kind];},
   weights:function(){return wt;},sunF:function(){return cur.sun;},darkAdd:function(){return cur.dark;},rain:function(){return cur.rain;},snow:function(){return cur.snow;},storm:function(){return cur.storm;},
-  force:function(k){forced=(k&&TARGET[k])?k:null;},forced:function(){return forced;},date:function(){return dateOf(dayNow());},lightning:lightning};
+  force:function(k){forced=(k&&TARGET[k])?k:null;},forced:function(){return forced;},date:function(){return dateOf(dayNow());},lightning:lightning,flash:function(a){flash(flashPower(a),a>=.45);},wave:wave,autoPeaks:function(src){return envelope(src).then(function(e){return e?e.peaks:[];});}};
 })();

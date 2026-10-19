@@ -2450,6 +2450,7 @@ windowAmbientTarget.dataset.soundActions='ambSun,ambRain,ambStorm,ambSnow,thunde
 window.CooksterSound={scrub:scrubMove,scrubStop:scrubStop,door:doorPlay,doorHit:DOOR_HIT,targets:{door:doorSoundTarget,doorGuest:doorGuestSoundTarget,note:orderNoteSoundTarget,waiter:waiterServeSoundTarget,ambTavern:tavernAmbientTarget,ambWindow:windowAmbientTarget,ambKitchen:kitchenAmbientTarget},
   playKey:(key,vol)=>playSfx(key,Math.max(0,Math.min(1,+vol||0)),true),
   // the thunder of the storm: picks the sound that the player set in the tool "Zvuk" (Ambijent napolju -> grom); the caller (js/weather.js) flashes the lightning in the same moment as the sound is heard
+  thunderList:()=>{try{const cfg=resolvedImpactConfig(windowAmbientTarget,'thunder');return (cfg.variants||[]).filter(Boolean).map(k=>({key:k,src:sfxSrcOf(k),vol:Math.max(0,Math.min(1,+cfg.volume||0))})).filter(x=>x.src);}catch(_){return [];}},
   thunderSrc:()=>{try{const cfg=resolvedImpactConfig(windowAmbientTarget,'thunder'),sound=pickActionSound(windowAmbientTarget,'thunder',cfg);if(!sound)return null;const stored=sound.startsWith('custom:')?importedAudio[sound.slice(7)]:null,src=sound.startsWith('custom:')?(typeof stored==='string'?stored:stored?.src):SFX[sound];return src?{key:sound,src:src,vol:Math.max(0,Math.min(1,+cfg.volume||0))}:null;}catch(_){return null;}},
   play:(name,action)=>{const t=window.CooksterSound.targets[name];return t?playImpactSound(t,action):false;}};
 // one virtual sound target per vegetable/fruit type: cutting and putting into a vessel share it
