@@ -57,10 +57,12 @@ function rainDraw(dt){
   cx.stroke();}
 }
 /* the fields at the top: the ring (the icon of the weather) with the name of the weather beside it on the wooden strip; the small field (the date); the long field (the time on the left, the day of the game on the right) */
+var FONT="'Lilita One','Alegreya SC',Georgia,serif";      // a chunky game font (assets/fonts/LilitaOne-Regular.ttf, SIL Open Font License)
+(function(){var st=document.createElement('style');st.textContent="@font-face{font-family:'Lilita One';src:url('assets/fonts/LilitaOne-Regular.ttf') format('truetype');font-display:swap}";document.head.appendChild(st);})();
 var hudR=null,hudN=null,hudA=null,hudB=null;
 function hudBuild(){
   if(hudA&&hudA.isConnected)return;
-  function mk(){var d=document.createElement('div');d.setAttribute('data-tool-ui','1');d.style.cssText='position:fixed;pointer-events:none;z-index:2147483100;display:flex;align-items:center;justify-content:center;text-align:center;color:#3a2210;font:800 12px/1.05 Georgia,serif;text-shadow:0 1px 0 rgba(255,244,214,.6);white-space:nowrap;overflow:hidden';document.body.appendChild(d);return d;}
+  function mk(){var d=document.createElement('div');d.setAttribute('data-tool-ui','1');d.style.cssText='position:fixed;pointer-events:none;z-index:2147483100;display:flex;align-items:center;justify-content:center;text-align:center;color:#3a2210;font:400 12px/1 '+FONT+';text-shadow:0 1px 0 rgba(255,244,214,.6);white-space:nowrap;overflow:hidden';document.body.appendChild(d);return d;}
   hudR=mk();hudN=mk();hudA=mk();hudB=mk();hudA.style.flexDirection='column';hudN.style.justifyContent='flex-start';hudN.style.color='#fff1cf';hudN.style.textShadow='0 1px 2px rgba(40,18,6,.85)';
 }
 function night(m){return m<330||m>=1140;}
@@ -73,17 +75,17 @@ function hudUpdate(){
   if(ring&&ring.isConnected&&ring.getBoundingClientRect().width){
     var r=ring.getBoundingClientRect(),k=r.width/197;
     function put(el,x0,x1,y0,y1){el.style.display='flex';el.style.left=(r.left+r.width*x0)+'px';el.style.width=(r.width*(x1-x0))+'px';el.style.top=(r.top+r.height*y0)+'px';el.style.height=(r.height*(y1-y0))+'px';}
-    put(hudR,.12,.30,.30,.68);hudR.innerHTML='<span style="font-size:'+(19*k).toFixed(1)+'px;line-height:1">'+icon+'</span>';      // the icon inside the ring
-    put(hudN,.36,.94,.34,.64);hudN.innerHTML='<span style="font-size:'+(14*k).toFixed(1)+'px;letter-spacing:.02em">'+name+'</span>';      // the name of the weather on the strip beside the ring
+    put(hudR,.12,.30,.30,.68);hudR.innerHTML='<span style="font-size:'+(25*k).toFixed(1)+'px;line-height:1">'+icon+'</span>';      // the icon inside the ring
+    put(hudN,.36,.94,.34,.64);hudN.innerHTML='<span style="font-size:'+(21*k).toFixed(1)+'px;letter-spacing:.02em">'+name+'</span>';      // the name of the weather on the strip beside the ring
   }else hide([hudR,hudN]);
   if(two&&two.isConnected&&two.getBoundingClientRect().width){
     var q=two.getBoundingClientRect(),kk=q.width/238;
     function put2(el,x0,x1,y0,y1){el.style.display='flex';el.style.left=(q.left+q.width*x0)+'px';el.style.width=(q.width*(x1-x0))+'px';el.style.top=(q.top+q.height*y0)+'px';el.style.height=(q.height*(y1-y0))+'px';}
     put2(hudA,.12,.29,.365,.62);put2(hudB,.31,.90,.365,.62);
     var dt=dateOf(dayNow()),tm='--:--';try{tm=CooksterDay.fmt(m);}catch(e){}
-    hudA.innerHTML='<span style="font-size:'+(15*kk).toFixed(1)+'px">'+dt.d+'</span><span style="font-size:'+(8.5*kk).toFixed(1)+'px;letter-spacing:.04em;text-transform:uppercase">'+MONTHS[dt.m].slice(0,3)+'</span>';
+    hudA.innerHTML='<span style="font-size:'+(23*kk).toFixed(1)+'px">'+dt.d+'</span><span style="font-size:'+(12*kk).toFixed(1)+'px;letter-spacing:.04em;text-transform:uppercase">'+MONTHS[dt.m].slice(0,3)+'</span>';
     hudB.style.justifyContent='space-between';hudB.style.padding='0 '+(8*kk).toFixed(1)+'px';
-    hudB.innerHTML='<span style="font-size:'+(13*kk).toFixed(1)+'px">'+tm+'</span><span style="font-size:'+(12*kk).toFixed(1)+'px">Dan '+dayNow()+'</span>';      // the time on the left, the day of the game on the right
+    hudB.innerHTML='<span style="font-size:'+(21*kk).toFixed(1)+'px">'+tm+'</span><span style="font-size:'+(19*kk).toFixed(1)+'px">Dan '+dayNow()+'</span>';      // the time on the left, the day of the game on the right
   }else hide([hudA,hudB]);
 }
 var last=performance.now(),hudT=0;
