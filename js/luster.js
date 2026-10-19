@@ -48,14 +48,19 @@ function set(v,sound){on=!!v;lGo();try{localStorage.setItem(KEY,on?'1':'0');}cat
   if(sound){try{if(typeof playImpactSound==='function'&&hot)playImpactSound(hot,'click');}catch(e){}}}
 function tick(){      // the lamps glow smoothly (about half a second), as much as the chandelier is switched on
   if(!build())return;
-  glows[0].style.opacity=level.toFixed(3);
+  glows[0].style.opacity=(level*fl).toFixed(3);
 }
 try{on=localStorage.getItem(KEY)==='1';level=on?1:0;}catch(e){}
 /* switching on / off is almost instant (0.12 s / 0.1 s: one or two frames when the page is slow) and only the light is redrawn (not the lighting of every item), so it does not stutter */
+var fl=1,flT=0,flRun=false;      // the flicker (a thunder strikes): the lamps lose the power for a moment, they twinkle and come back
+function flStep(){var t=(performance.now()-flT)/1000;if(t>1.5){fl=1;flRun=false;tick();try{CooksterDay.refreshLight();}catch(e){}return;}
+  var p=[[0,1],[.06,.15],[.14,.9],[.22,.05],[.32,.7],[.42,.1],[.55,.85],[.7,.4],[.85,.95],[1.1,.8],[1.5,1]],v=1;for(var i=1;i<p.length;i++)if(t<=p[i][0]){var a=p[i-1],b=p[i],u=(t-a[0])/(b[0]-a[0]);v=a[1]+(b[1]-a[1])*u;break;}
+  fl=v;tick();try{CooksterDay.refreshLight();}catch(e){}requestAnimationFrame(flStep);}
+function flicker(){if(level<.05)return;flT=performance.now();if(!flRun){flRun=true;requestAnimationFrame(flStep);}}
 var lFrom=level,lTo=level,lT0=0,lDur=400,lRun=false;
 function lStep(){var k=Math.max(0,Math.min(1,(performance.now()-lT0)/lDur));level=lFrom+(lTo-lFrom)*(k*k*(3-2*k));tick();try{if(window.CooksterDay&&CooksterDay.refreshLight)CooksterDay.refreshLight();}catch(e){}if(k<1)requestAnimationFrame(lStep);else lRun=false;}
 function lGo(){lFrom=level;lTo=on?1:0;lT0=performance.now();lDur=on?120:100;if(!lRun){lRun=true;requestAnimationFrame(lStep);}}
 setInterval(tick,300);
 window.addEventListener('load',function(){setTimeout(function(){build();tick();},300);});
-window.CooksterLuster={toggle:toggle,set:function(v){set(v,true);},isOn:function(){return on;},level:function(){return level;}};
+window.CooksterLuster={toggle:toggle,set:function(v){set(v,true);},isOn:function(){return on;},level:function(){return level*fl;},flicker:flicker};
 })();

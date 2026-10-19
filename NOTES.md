@@ -1011,3 +1011,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Gornja polja po tačkama koje je Miloš obeležio: ikonica tačno u centru kruga, ime vremena centrirano između kruga i kraja trake (najveća slova koja staju), dan + mesec u malom polju tačno između dve tačke, u dugom polju samo sat (najveći što staje, bez 'Dan N').
 
 - Knjiga Baba Savkine recepte više nije gore levo: leži (nagnuta, u perspektivi) na crvenom sanduku dole levo; klik je i dalje otvara.
+
+- Grom: blesak kroz prozor jači (plavo-beli talas sa leve strane, jači kad je prozor otvoren) + luster treperi / gubi struju ~1.5 s (CooksterLuster.flicker) kad sevne.
