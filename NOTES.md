@@ -993,3 +993,11 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Zvuk napolju dok je prozor otvoren: novi ambijent 'Ambijent napolju' u alatu Zvuk (ambSun / ambRain / ambStorm petlje + thunder), fade 1 s; prozor ima i otvaranje, zatvaranje i padanje saksije (break).
 
 - Gornja polja: u kružiću je ikonica vremena (☀️ ☁️ 🌧️ ⛈️ ❄️, noću 🌙), pored na drvenoj traci ime (Sunčano/Oblačno/Kiša/Nevreme/Sneg; noću Vedro); mali kvadrat = datum (počinje 1. januar); veliko polje = vreme levo i 'Dan N' desno. Dodati oblaci i sneg (zimi), sneg na prozoru, novi zvuci napolju ambCloud i ambSnow.
+
+- Gornja polja: veća slova i font Lilita One (assets/fonts/LilitaOne-Regular.ttf); izbor drugih fontova čeka Miloša.
+
+- Font gornjih polja: Paytone One (isti izgled kao Lilita One, ali ima č ć š ž đ); Lilita One uklonjen.
+
+- Gornja polja: ikonice vremena u kružiću podignute ~5 px.
+
+- Ikonice vremena u kružiću: podignute 2 px od originala (spušteno 1 px u odnosu na sliku od Miloša).
