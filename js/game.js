@@ -15885,6 +15885,8 @@ showToast(window.__COOKSTER_EXPLICIT_LOAD__?'Sačuvana igra je učitana.':'Nova 
       filter:drop-shadow(0 8px 12px rgba(0,0,0,.2));
     }
     #savkaBookRoot .savka-book-tab img{width:100%;height:100%;object-fit:contain;object-position:left center;display:block}
+    #savkaBookRoot .savka-book-tab img.savka-tab-cover{object-position:center;transform:perspective(420px) rotateX(58deg) rotateZ(-9deg);transform-origin:50% 55%;filter:drop-shadow(0 6px 5px rgba(0,0,0,.45))}      /* the book lies flat on the red chest (bottom left) */
+    #savkaBookRoot .savka-book-tab:hover img.savka-tab-cover{filter:drop-shadow(0 6px 5px rgba(0,0,0,.45)) brightness(1.12)}
 
     #savkaBookRoot .savka-book-shell{
       position:absolute; left:18px; top:122px; width:455px; height:650px;
@@ -16044,6 +16046,13 @@ showToast(window.__COOKSTER_EXPLICIT_LOAD__?'Sačuvana igra je učitana.':'Nova 
       </div>
     `;
     document.body.appendChild(root);
+    // the book lies on the red chest at the bottom left of the kitchen (scene place: the middle (56, 668), about 84 px wide): it follows the size of the scene
+    (function placeSavkaTab(){
+      const sc=document.getElementById('scene'),tab=root.querySelector('.savka-book-tab');
+      if(sc&&tab){const r=sc.getBoundingClientRect();if(r.width>10){const k=r.width/1672,w=84*k,h=108*k,cx=r.left+56*k,cy=r.top+668*k;
+        tab.style.left=(cx-w/2).toFixed(1)+'px';tab.style.top=(cy-h/2-84).toFixed(1)+'px';tab.style.width=w.toFixed(1)+'px';tab.style.height=h.toFixed(1)+'px';}}
+      setTimeout(placeSavkaTab,400);
+    })();
 
     ['pointerdown','pointerup','pointermove','mousedown','mouseup','click','dblclick','wheel','contextmenu','touchstart','touchmove','touchend'].forEach(type=>{
       root.addEventListener(type,e=>{
