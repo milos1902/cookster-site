@@ -1018,3 +1018,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Ambijent petlje (kuhinja, kafana, napolje) sada idu bez pauze na kraju kruga: dekodirani buffer sa loop umesto <audio loop> (playLoopGapless).
 
 - Zvuk napolju (ambijent vremena) se čuje stalno: kroz zatvoren prozor na 30% jačine, kad se prozor otvori glatko ide do pune jačine.
+
+- Alat Zvuk: za Prozor sada ima i dugme 'Lomljenje saksije (prozor)' (akcija break) pored Otvaranja i Zatvaranja; nove akcije napolje (sunce/kiša/nevreme/sneg/grom) i break se ne pojavljuju kod drugih predmeta.
