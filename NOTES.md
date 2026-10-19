@@ -1024,3 +1024,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Novi alat '⚡ Grom' (js/thunder-tool.js, dugme desno dole): slika zvuka groma; klik = novi bljesak, prevlačenje = vreme i jačina, dvoklik = brisanje; Pusti zvuk i bljesak; Predloži iz zvuka; čuva se po zvuku (localStorage cookster.thunder.v1). Igra (weather.js) bljesne tačno na Milošovim mestima, jači bljesak = jače svetlo i treperenje lustera.
 
 - Alat Grom: dugme 'Uvezi zvukove za nevreme iz alata Zvuk' (kopira zvukove iz Ambijent napolju → nevreme u listu groma), izbor bilo kog zvuka iz biblioteke + 'Dodaj', i 'Ukloni ovaj zvuk iz groma'. Spaja se sa alatom Zvuk (akcija thunder).
+
+- Grom: igra sama bira JEDAN zvuk po udaru (nikad isti dvaput zaredom), i novi grom čeka da prethodni zvuk završi (nema preklapanja više zvukova odjednom).

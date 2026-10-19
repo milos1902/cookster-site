@@ -32,7 +32,7 @@ function setKind(k){
   try{if(window.CooksterSound&&k!=='nevreme')flashT=0;}catch(e){}
 }
 var flashT=0;
-var envCache={};
+var envCache={},thunderBusy=0;
 function envelope(src){      // where the thunder sound is the loudest (the moments of the flashes): the peaks of its loudness, from the audio file itself
   if(envCache[src])return envCache[src];
   return envCache[src]=fetch(src).then(function(r){return r.arrayBuffer();}).then(function(buf){
@@ -75,6 +75,7 @@ function lightning(){
   var th=null;try{th=CooksterSound.thunderSrc();}catch(e){}
   if(!th){flash(1);return;}      // no thunder sound is set: only the flash
   envelope(th.src).then(function(env){
+    thunderBusy=performance.now()+((env&&env.dur)||4)*1000+800;      // one thunder at a time: the next lightning waits till this sound ends
     try{CooksterSound.playKey(th.key,th.vol);}catch(e){}
     markersFor(th.src,env).forEach(function(p){setTimeout(function(){flash(flashPower(p.a),p.a>=.45);},Math.max(0,p.t*1000-25));});      // the sound starts now and every flash comes at the moment that was chosen
   });
@@ -147,11 +148,11 @@ function frame(now){
   ['sunce','kisa','nevreme','sneg'].forEach(function(n){var o=wt[n],g=(n===kind)?1:0;wt[n]=o+(g-o)*a;if(Math.abs(wt[n]-g)<.002)wt[n]=g;ch=Math.max(ch,Math.abs(wt[n]-o));});      // the weights of the weathers: the lighting flows slowly from one weather to the other
   rainDraw(dt);
   if(ch>.0004&&now-lastRef>120){lastRef=now;try{if(window.CooksterDay&&CooksterDay.refreshLight)CooksterDay.refreshLight();}catch(e){}}
-  if(kind==='nevreme'){if(!nextFlash)nextFlash=now+5000+Math.random()*9000;if(now>nextFlash){nextFlash=now+6000+Math.random()*14000;lightning();}}else nextFlash=0;
+  if(kind==='nevreme'){if(!nextFlash)nextFlash=now+5000+Math.random()*9000;if(now>nextFlash){if(now<thunderBusy){nextFlash=thunderBusy+1500+Math.random()*4000;}else{nextFlash=now+6000+Math.random()*14000;lightning();}}}else nextFlash=0;
   if(now-hudT>400){hudT=now;try{hudUpdate();}catch(e){}}
 }
 requestAnimationFrame(frame);
 window.CooksterWeather={kind:function(){return kind;},name:function(){return NAMES[kind];},icon:function(){return ICON[kind];},
   weights:function(){return wt;},sunF:function(){return cur.sun;},darkAdd:function(){return cur.dark;},rain:function(){return cur.rain;},snow:function(){return cur.snow;},storm:function(){return cur.storm;},
-  force:function(k){forced=(k&&TARGET[k])?k:null;},forced:function(){return forced;},date:function(){return dateOf(dayNow());},lightning:lightning,flash:function(a){flash(flashPower(a),a>=.45);},wave:wave,autoPeaks:function(src){return envelope(src).then(function(e){return e?e.peaks:[];});}};
+  force:function(k){forced=(k&&TARGET[k])?k:null;},forced:function(){return forced;},date:function(){return dateOf(dayNow());},lightning:lightning,busy:function(){return performance.now()<thunderBusy;},flash:function(a){flash(flashPower(a),a>=.45);},wave:wave,autoPeaks:function(src){return envelope(src).then(function(e){return e?e.peaks:[];});}};
 })();
