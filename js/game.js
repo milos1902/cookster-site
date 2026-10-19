@@ -8101,7 +8101,7 @@ function tryPlaceHeldAtCandidate(el){
  // reveal the real item at that exact X position, only a few pixels above the
  // surface, then let it settle straight down. Never fly in from the retired
  // hand/carry position.
- const dropLift=Math.max(6,Math.min(10,(cand.h||70)*.055));
+ const dropLift=6;      // the same short drop for every item (as the board): 6 px, straight down
  const dropMs=125;
  const impactAction=cand.zone==='table'?'dropTable':cand.zone==='stove'?'dropStove':'drop';
  const earlyImpactScheduled=scheduleEarlyImpactSound(el,dropMs,impactAction);
@@ -15041,32 +15041,7 @@ function popArtPuffForCookware(el){
   }
 }
 
-function playPotTableImpactVisual(el){
- if(!el)return;
- const body=el.querySelector?.('.body');
- if(body){
-   body.getAnimations?.().forEach(a=>a.cancel());
-   body.animate([
-     {transform:'scaleX(1) scaleY(1)',offset:0},
-     {transform:'scaleX(1.035) scaleY(.96)',offset:.30},
-     {transform:'scaleX(.998) scaleY(1.006)',offset:.72},
-     {transform:'scaleX(1) scaleY(1)',offset:1}
-   ],{duration:240,easing:'cubic-bezier(.20,.70,.24,1)'});
- }
- const cx=+el.dataset.cx||0,by=+el.dataset.by||0;
- const w=Math.max(72,(+el.offsetWidth||180)*.68);
- const snap=document.createElement('div');
- snap.setAttribute('aria-hidden','true');
- Object.assign(snap.style,{position:'absolute',left:`${cx}px`,top:`${by-3}px`,width:`${w}px`,height:'14px',border:'3px solid rgba(255,255,255,.92)',borderRadius:'50%',pointerEvents:'none',zIndex:String(Math.max(1,(+el.style.zIndex||1)-1)),transform:'translate(-50%,-50%) scale(.74)',boxShadow:'0 1px 0 rgba(45,25,14,.55)'});
- scene.appendChild(snap);
- const anim=snap.animate([
-   {opacity:0,transform:'translate(-50%,-50%) scale(.68)'},
-   {opacity:1,transform:'translate(-50%,-50%) scale(1)',offset:.24},
-   {opacity:0,transform:'translate(-50%,-50%) scale(1.16)'}
- ],{duration:95,easing:'ease-out'});
- anim.onfinish=()=>snap.remove();
- setTimeout(()=>snap.remove(),140);
-}
+function playPotTableImpactVisual(el){}      // no extra squash / ring for the pots: every item lands the same way as the board (one short drop straight down)
 function dropBounce(el){
  if(snapProfileFor(el))return;
  const a=+(el.dataset.angle||0);
@@ -15076,12 +15051,11 @@ function dropBounce(el){
  const base=`rotate(${a}deg) scaleY(${flatten})`;
  try{
    el.animate([
-     {transform:`${base} translateY(-12px)`,offset:0},
-     {transform:`${base} translateY(2px)`,offset:.72},
+     {transform:`${base} translateY(-6px)`,offset:0},
      {transform:`${base} translateY(0px)`,offset:1}
    ],{
-     duration:210,
-     easing:'cubic-bezier(.18,.72,.24,1)'
+     duration:125,
+     easing:'cubic-bezier(.18,.78,.24,1)'
    });
  }catch{}
 }
