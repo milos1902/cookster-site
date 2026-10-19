@@ -2446,7 +2446,7 @@ tavernAmbientTarget.dataset.soundActions='amb0,amb2,amb5,amb12,guestIn';
 const kitchenAmbientTarget=makeSoundTarget('__ambient_kitchen','Ambijent kuhinje — jutro, dan, veče','ambMorning');
 kitchenAmbientTarget.dataset.soundActions='ambMorning,ambDay,ambEvening';
 const windowAmbientTarget=makeSoundTarget('__ambient_window','Ambijent napolju (dok je prozor otvoren) — sunce, kiša, nevreme, grom','ambSun');
-windowAmbientTarget.dataset.soundActions='ambSun,ambCloud,ambRain,ambStorm,ambSnow,thunder';
+windowAmbientTarget.dataset.soundActions='ambSun,ambRain,ambStorm,ambSnow,thunder';
 window.CooksterSound={scrub:scrubMove,scrubStop:scrubStop,door:doorPlay,doorHit:DOOR_HIT,targets:{door:doorSoundTarget,doorGuest:doorGuestSoundTarget,note:orderNoteSoundTarget,waiter:waiterServeSoundTarget,ambTavern:tavernAmbientTarget,ambWindow:windowAmbientTarget,ambKitchen:kitchenAmbientTarget},
   playKey:(key,vol)=>playSfx(key,Math.max(0,Math.min(1,+vol||0)),true),
   play:(name,action)=>{const t=window.CooksterSound.targets[name];return t?playImpactSound(t,action):false;}};
@@ -2577,7 +2577,7 @@ function ambWindowDesired(){
  try{
   if(window.CooksterTavern&&window.CooksterTavern.isOpen)return null;
   if(!(window.CooksterWindow&&CooksterWindow.isOpen()&&window.CooksterWeather))return null;
-  return[windowAmbientTarget,{sunce:'ambSun',oblaci:'ambCloud',kisa:'ambRain',nevreme:'ambStorm',sneg:'ambSnow'}[CooksterWeather.kind()]||'ambSun'];
+  return[windowAmbientTarget,{sunce:'ambSun',kisa:'ambRain',nevreme:'ambStorm',sneg:'ambSnow'}[CooksterWeather.kind()]||'ambSun'];
  }catch(_){return null;}
 }
 setInterval(()=>{
@@ -2670,7 +2670,7 @@ ssStyle.textContent=`
 document.head.appendChild(ssStyle);
 
 /* --- state --- */
-const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slam','Zalupljivanje vrata'],['scrubLeft','Ribanje: miš ide ulevo'],['scrubRight','Ribanje: miš ide udesno'],['scrubUp','Ribanje: miš ide gore'],['scrubDown','Ribanje: miš ide dole'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje papirića na šiljak'],['fall','Pad papirića sa šiljka'],['ring','Zvoni (kad ga dodirneš)'],['sprinkle','Sipaj (začin)'],['pour','Sipaj (ulje)'],['pourOut','Presipaj u drugu posudu'],['throw','Bacanje u kantu'],['empty','Pražnjenje kante'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara'],['eat','Gost jede (svaki zalogaj)'],['step','Koraci konobara (svaki korak)'],['amb0','Kafana prazna (petlja)'],['amb2','Kafana: do 3 gosta (petlja)'],['amb5','Kafana: 4–8 gostiju (petlja)'],['amb12','Kafana puna: 9+ gostiju (petlja)'],['guestIn','Ulazak gostiju u kafanu'],['ambMorning','Kuhinja: jutro (petlja)'],['ambDay','Kuhinja: dan (petlja)'],['ambEvening','Kuhinja: veče (petlja)'],['ambSun','Napolje: sunčano (petlja, prozor otvoren)'],['ambCloud','Napolje: oblačno (petlja, prozor otvoren)'],['ambRain','Napolje: kiša (petlja, prozor otvoren)'],['ambStorm','Napolje: nevreme (petlja, prozor otvoren)'],['ambSnow','Napolje: sneg (petlja, prozor otvoren)'],['thunder','Napolje: grom (jednom, kad sevne)']];
+const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['slam','Zalupljivanje vrata'],['scrubLeft','Ribanje: miš ide ulevo'],['scrubRight','Ribanje: miš ide udesno'],['scrubUp','Ribanje: miš ide gore'],['scrubDown','Ribanje: miš ide dole'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje papirića na šiljak'],['fall','Pad papirića sa šiljka'],['ring','Zvoni (kad ga dodirneš)'],['sprinkle','Sipaj (začin)'],['pour','Sipaj (ulje)'],['pourOut','Presipaj u drugu posudu'],['throw','Bacanje u kantu'],['empty','Pražnjenje kante'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara'],['eat','Gost jede (svaki zalogaj)'],['step','Koraci konobara (svaki korak)'],['amb0','Kafana prazna (petlja)'],['amb2','Kafana: do 3 gosta (petlja)'],['amb5','Kafana: 4–8 gostiju (petlja)'],['amb12','Kafana puna: 9+ gostiju (petlja)'],['guestIn','Ulazak gostiju u kafanu'],['ambMorning','Kuhinja: jutro (petlja)'],['ambDay','Kuhinja: dan (petlja)'],['ambEvening','Kuhinja: veče (petlja)'],['ambSun','Napolje: sunčano (petlja, prozor otvoren)'],['ambRain','Napolje: kiša (petlja, prozor otvoren)'],['ambStorm','Napolje: nevreme (petlja, prozor otvoren)'],['ambSnow','Napolje: sneg (petlja, prozor otvoren)'],['thunder','Napolje: grom (jednom, kad sevne)']];
 const ssState={open:false,tab:'objekti',action:'drop',query:'',libQuery:'',libOpen:false};
 
 /* --- helpers (reuse ls* from light-studio) --- */

@@ -5,17 +5,17 @@
    - The two fields at the top (the wooden strip "dva polja"): the small one shows the date (day and month), the long one the time and the weather. */
 (function(){
 if(window.CooksterWeather)return;
-var NAMES={sunce:'Sunčano',oblaci:'Oblačno',kisa:'Kiša',nevreme:'Nevreme',sneg:'Sneg'},ICON={sunce:'☀️',oblaci:'☁️',kisa:'🌧️',nevreme:'⛈️',sneg:'❄️'},
-    TARGET={sunce:{sun:1,dark:0,rain:0,storm:0,snow:0},oblaci:{sun:0,dark:.03,rain:0,storm:0,snow:0},kisa:{sun:0,dark:.065,rain:1,storm:0,snow:0},nevreme:{sun:0,dark:.15,rain:1,storm:1,snow:0},sneg:{sun:0,dark:.07,rain:0,storm:0,snow:1}},      // sun = the rays of the sun (the painted sun on the floor and the shaft from the window): only when it is sunny; dark = how much darker the whole scene is (sunny is the lightest, the storm the darkest)
+var NAMES={sunce:'Sunčano',kisa:'Kiša',nevreme:'Nevreme',sneg:'Sneg'},ICON={sunce:'☀️',kisa:'🌧️',nevreme:'⛈️',sneg:'❄️'},
+    TARGET={sunce:{sun:1,dark:0,rain:0,storm:0,snow:0},kisa:{sun:0,dark:.065,rain:1,storm:0,snow:0},nevreme:{sun:0,dark:.15,rain:1,storm:1,snow:0},sneg:{sun:0,dark:.07,rain:0,storm:0,snow:1}},      // sun = the rays of the sun (the painted sun on the floor and the shaft from the window): only when it is sunny; dark = how much darker the whole scene is (sunny is the lightest, the storm the darkest)
     MONTHS=['januar','februar','mart','april','maj','jun','jul','avgust','septembar','oktobar','novembar','decembar'],MDAYS=[31,28,31,30,31,30,31,31,30,31,30,31],
     START={m:0,d:1},      // the game starts on the 1st of January
     forced=null,cur={sun:1,dark:0,rain:0,storm:0,snow:0},kind='sunce',lastRef=0,nextFlash=0;
 function hash(n){n=(n^61)^(n>>>16);n=(n+(n<<3))|0;n=n^(n>>>4);n=Math.imul(n,0x27d4eb2d);n=n^(n>>>15);return (n>>>0)/4294967296;}
 function pick(r,prev,month){      // the weather depends on the season: snow only in winter, storms rather in spring / summer
   var w=(month===11||month===0||month===1),su=(month>=5&&month<=7),cuts;
-  // cumulative limits: sunce, oblaci, sneg, kisa, (the rest = nevreme)
-  if(w)cuts=[.22,.52,.88,.97];else if(su)cuts=[.52,.67,.67,.85];else cuts=[.34,.58,.58,.88];
-  var k=r<cuts[0]?'sunce':r<cuts[1]?'oblaci':r<cuts[2]?'sneg':r<cuts[3]?'kisa':'nevreme';
+  // cumulative limits: sunce, sneg, kisa (the rest = nevreme)
+  if(w)cuts=[.30,.85,.96];else if(su)cuts=[.60,.60,.86];else cuts=[.46,.46,.84];
+  var k=r<cuts[0]?'sunce':r<cuts[1]?'sneg':r<cuts[2]?'kisa':'nevreme';
   if(prev==='sunce'&&k==='nevreme')k='kisa';
   return k;
 }
