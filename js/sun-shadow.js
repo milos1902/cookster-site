@@ -85,8 +85,8 @@ function tick(only){      // only: one thing (the one in the hand) is updated ev
   list.forEach(function(el){
     if(!el||!el.isConnected)return;
     var rec=map.get(el),body=el.querySelector(':scope>img.body');
-    var held=el===hold,G=typeof placementGhost!=='undefined'?placementGhost:null,gb=(held&&G&&G.style.display==='block'&&G.offsetWidth>4)?G:el;      // an item in the hand is hidden, its copy (the ghost) is seen: the shadow lies under the copy
-    var vis=str>.02&&P.sho>.01&&body&&el.offsetWidth>0&&el.style.display!=='none'&&(held?gb!==el:el.style.visibility!=='hidden')&&!el.classList.contains('in-oven');
+    var isH=el===hold&&el.classList.contains('held'),G=typeof placementGhost!=='undefined'?placementGhost:null,held=isH&&!!G&&G.style.display==='block'&&G.offsetWidth>4,gb=held?G:el;      // 'held' only while it is really carried (after the click it is on the table at once, even if the game still has it as `holding` for a moment)      // an item in the hand is hidden, its copy (the ghost) is seen: the shadow lies under the copy
+    var vis=str>.02&&P.sho>.01&&body&&el.offsetWidth>0&&el.style.display!=='none'&&(held||(!isH&&el.style.visibility!=='hidden'))&&!el.classList.contains('in-oven');
     if(!vis){if(rec)rec.style.display='none';return;}
     if(!rec){rec=make(el,scene);map.set(el,rec);}
     seen.add(el);

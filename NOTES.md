@@ -976,3 +976,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 - Senke: tačke se crtaju samo za Jutro i Podne (Veče/Noć/Pred zoru nemaju crtež; posle podneva oblik podneva ostaje i bledi). Dugme 'Kopiraj crtež na jutro i podne'. Početne senke iz cookster-day-light.json (b4a157f7).
 - Prozorčić ložišta: vatra se pojavi odmah čim počne zatvaranje vratanaca (bez crnog prozorčića).
+
+- Senka ne nestaje pri spuštanju predmeta na sto (nije više 'u ruci' čim je predmet spušten, iako ga igra još kratko vodi kao holding).
