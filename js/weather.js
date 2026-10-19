@@ -57,8 +57,8 @@ function rainDraw(dt){
   cx.stroke();}
 }
 /* the fields at the top: the ring (the icon of the weather) with the name of the weather beside it on the wooden strip; the small field (the date); the long field (the time on the left, the day of the game on the right) */
-var FONT="'Lilita One','Alegreya SC',Georgia,serif";      // a chunky game font (assets/fonts/LilitaOne-Regular.ttf, SIL Open Font License)
-(function(){var st=document.createElement('style');st.textContent="@font-face{font-family:'Lilita One';src:url('assets/fonts/LilitaOne-Regular.ttf') format('truetype');font-display:swap}";document.head.appendChild(st);})();
+var FONT="'Paytone One','Lilita One',Georgia,serif";      // a chunky game font with all our letters (č ć š ž đ): assets/fonts/PaytoneOne-Regular.ttf (SIL Open Font License)
+(function(){var st=document.createElement('style');st.textContent="@font-face{font-family:'Paytone One';src:url('assets/fonts/PaytoneOne-Regular.ttf') format('truetype');font-display:swap}";document.head.appendChild(st);})();
 var hudR=null,hudN=null,hudA=null,hudB=null;
 function hudBuild(){
   if(hudA&&hudA.isConnected)return;

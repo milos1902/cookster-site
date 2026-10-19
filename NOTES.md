@@ -995,3 +995,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Gornja polja: u kružiću je ikonica vremena (☀️ ☁️ 🌧️ ⛈️ ❄️, noću 🌙), pored na drvenoj traci ime (Sunčano/Oblačno/Kiša/Nevreme/Sneg; noću Vedro); mali kvadrat = datum (počinje 1. januar); veliko polje = vreme levo i 'Dan N' desno. Dodati oblaci i sneg (zimi), sneg na prozoru, novi zvuci napolju ambCloud i ambSnow.
 
 - Gornja polja: veća slova i font Lilita One (assets/fonts/LilitaOne-Regular.ttf); izbor drugih fontova čeka Miloša.
+
+- Font gornjih polja: Paytone One (isti izgled kao Lilita One, ali ima č ć š ž đ); Lilita One uklonjen.
