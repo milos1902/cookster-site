@@ -983,3 +983,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 - Spuštanje svih predmeta na sto je isto kao kod daske: jedno kratko spuštanje (6 px, 125 ms) pravo dole, bez odskoka (uklonjen dropBounce hop i squash/prsten za šerpe).
 - Prozorčić ložišta: slika se svaki frejm kopira iz videa vatre koji gori u ložištu (canvas), pa nikad nije crn.
+
+- Odskok pri spuštanju: svi predmeti (osim daske, koja to već ima) lebde 6 px iznad mesta dok se nose (ghost translate), pa je puštanje jedno kratko spuštanje pravo dole; ranije je predmet bio prikazan 6 px više od svoje slike pa je 'skočio gore' i pao nazad.
