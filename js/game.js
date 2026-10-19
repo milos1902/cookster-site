@@ -1605,6 +1605,7 @@ const DOOR_OVERLAYS={open:'assets/stove_states/firebox_door_open.png',close:'ass
 const FIREBOX_BASE_NO_DOOR='assets/stove_states_v3/firebox_base_no_door.webp?v=4';      // with the glow of the fire on the edges (used while the fire burns)
 const FIREBOX_BASE_NO_DOOR_OFF='assets/stove_states_v3/firebox_base_no_door_off.webp?v=1';      // the same without the painted glow (the fire is out)
 let fireboxBaseApplied=null;
+window.__fbPre=[FIREBOX_BASE_NO_DOOR,FIREBOX_BASE_NO_DOOR_OFF].map(src=>{const im=new Image();im.src=src;if(im.decode)im.decode().catch(()=>{});return im;});      // both pictures are decoded in advance: the switch (the fire is lit / out) does not flash the whole picture
 function fireboxBaseSrc(){const live=!!(stoveState.fireOn&&(stoveState.fireLevel||0)>0);return live?FIREBOX_BASE_NO_DOOR:FIREBOX_BASE_NO_DOOR_OFF;}
 // Decode door layers before the first click so the old frame never lingers
 // while the browser fetches the PNG.

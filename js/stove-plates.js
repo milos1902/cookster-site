@@ -3,11 +3,11 @@
    at night js/day-light.js adds a little light round them (CooksterStovePlates.heat()). */
 (function(){
 if(window.CooksterStovePlates)return;
-var PL=[{x:1343,y:322,rx:80,ry:60}]      // only the big plate on the left,heat=0,els=[],last=0,lastRef=0,lastShown=-1;
+var PL=[{x:1343,y:322,rx:80,ry:60}],heat=0,els=[],last=0,lastRef=0,lastShown=-1;      // only the big plate on the left
 function build(){var sc=document.getElementById('scene');if(!sc)return false;if(els.length&&els[0].parentNode===sc)return true;els=[];
   PL.forEach(function(p){var d=document.createElement('div');d.className='stove-plate-glow';
     d.style.cssText='position:absolute;left:'+(p.x-p.rx)+'px;top:'+(p.y-p.ry)+'px;width:'+(p.rx*2)+'px;height:'+(p.ry*2)+'px;border-radius:50%;pointer-events:none;z-index:2;opacity:0;mix-blend-mode:screen;'+
-      'background:radial-gradient(ellipse at 50% 50%,rgba(255,70,20,.28) 0,rgba(255,80,20,.20) 38%,rgba(255,120,30,.62) 66%,rgba(255,90,20,.35) 84%,rgba(255,60,10,0) 100%)';
+      'background:radial-gradient(ellipse at 50% 50%,rgba(255,40,10,.34) 0,rgba(255,50,12,.26) 38%,rgba(255,85,20,.85) 66%,rgba(255,60,15,.45) 84%,rgba(255,40,8,0) 100%)';
     sc.appendChild(d);els.push(d);});return true;}
 function burning(){try{return stoveState.fireOn&&(+stoveState.fireLevel||0)>0?Math.min(1,(+stoveState.fireLevel||0)/FIRE_MAX_LEVEL):0;}catch(e){return 0;}}
 function frame(now){requestAnimationFrame(frame);var dt=Math.min(.1,(now-last)/1000||.016);last=now;
