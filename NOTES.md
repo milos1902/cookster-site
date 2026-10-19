@@ -991,3 +991,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Vreme napolju (js/weather.js): sunce / kiša / nevreme po satu i danu (svaka 3 sata može da ostane ili da se promeni); utiče na svetlo (manje sunca, mračnije), kiša na prozoru, munje i grom u nevremenu. Dugme u alatu 'Vreme napolju: automatski/sunce/kiša/nevreme'.
 - Kalendar: igra počinje 1. maja; mali kvadratić gore = datum (dan i mesec), dugi = sat i vreme napolju.
 - Zvuk napolju dok je prozor otvoren: novi ambijent 'Ambijent napolju' u alatu Zvuk (ambSun / ambRain / ambStorm petlje + thunder), fade 1 s; prozor ima i otvaranje, zatvaranje i padanje saksije (break).
+
+- Gornja polja: u kružiću je ikonica vremena (☀️ ☁️ 🌧️ ⛈️ ❄️, noću 🌙), pored na drvenoj traci ime (Sunčano/Oblačno/Kiša/Nevreme/Sneg; noću Vedro); mali kvadrat = datum (počinje 1. januar); veliko polje = vreme levo i 'Dan N' desno. Dodati oblaci i sneg (zimi), sneg na prozoru, novi zvuci napolju ambCloud i ambSnow.
