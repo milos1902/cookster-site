@@ -2450,12 +2450,6 @@ windowAmbientTarget.dataset.soundActions='ambSun,ambRain,ambStorm,ambSnow,thunde
 window.CooksterSound={scrub:scrubMove,scrubStop:scrubStop,door:doorPlay,doorHit:DOOR_HIT,targets:{door:doorSoundTarget,doorGuest:doorGuestSoundTarget,note:orderNoteSoundTarget,waiter:waiterServeSoundTarget,ambTavern:tavernAmbientTarget,ambWindow:windowAmbientTarget,ambKitchen:kitchenAmbientTarget},
   playKey:(key,vol)=>playSfx(key,Math.max(0,Math.min(1,+vol||0)),true),
   // the thunder of the storm: picks the sound that the player set in the tool "Zvuk" (Ambijent napolju -> grom); the caller (js/weather.js) flashes the lightning in the same moment as the sound is heard
-  soundLibrary:()=>{try{const b=Object.keys(SFX).filter(k=>!isLibrarySoundDeleted(k)).map(k=>({key:k,name:k,custom:false}));const c=Object.keys(importedAudio).map(id=>({key:'custom:'+id,name:ssAudioName('custom:'+id),custom:true}));return [...c,...b];}catch(_){return [];}},
-  soundName:(k)=>{try{return k.startsWith('custom:')?ssAudioName(k):k;}catch(_){return k;}},
-  stormSounds:()=>{try{const cfg=resolvedImpactConfig(windowAmbientTarget,'ambStorm');return (cfg.variants||[]).filter(Boolean);}catch(_){return [];}},
-  addThunder:(key)=>{try{if(!key)return false;const k=ssObjKey(windowAmbientTarget),record=ensureSoundActionRecord(k),draft=record.actions.thunder||{...resolvedImpactConfig(windowAmbientTarget,'thunder'),variants:[...((resolvedImpactConfig(windowAmbientTarget,'thunder').variants)||[])]};if(!draft.variants)draft.variants=[];if(!draft.variants.includes(key))draft.variants.push(key);record.actions.thunder=draft;impactSounds[k]=record;persistImpactSounds();return true;}catch(_){return false;}},
-  removeThunder:(key)=>{try{const k=ssObjKey(windowAmbientTarget),record=ensureSoundActionRecord(k),draft=record.actions.thunder;if(!draft||!draft.variants)return false;draft.variants=draft.variants.filter(v=>v!==key);impactSounds[k]=record;persistImpactSounds();return true;}catch(_){return false;}},
-  thunderList:()=>{try{const cfg=resolvedImpactConfig(windowAmbientTarget,'thunder');return (cfg.variants||[]).filter(Boolean).map(k=>({key:k,src:sfxSrcOf(k),vol:Math.max(0,Math.min(1,+cfg.volume||0))})).filter(x=>x.src);}catch(_){return [];}},
   thunderSrc:()=>{try{const cfg=resolvedImpactConfig(windowAmbientTarget,'thunder');let sound=pickActionSound(windowAmbientTarget,'thunder',cfg);const vs=(cfg.variants||[]).filter(Boolean);if(vs.length>1&&sound===window.__lastThunder){const o=vs.filter(v=>v!==sound);sound=o[Math.floor(Math.random()*o.length)];}window.__lastThunder=sound;if(!sound)return null;const stored=sound.startsWith('custom:')?importedAudio[sound.slice(7)]:null,src=sound.startsWith('custom:')?(typeof stored==='string'?stored:stored?.src):SFX[sound];return src?{key:sound,src:src,vol:Math.max(0,Math.min(1,+cfg.volume||0))}:null;}catch(_){return null;}},
   play:(name,action)=>{const t=window.CooksterSound.targets[name];return t?playImpactSound(t,action):false;}};
 // one virtual sound target per vegetable/fruit type: cutting and putting into a vessel share it
@@ -2623,6 +2617,7 @@ setInterval(()=>{
  });
  for(let i=ambTracks.length-1;i>=0;i--){
   const t=ambTracks[i],cfg=wants.get(t.id),on=!!cfg;let goal=on?Math.max(0,Math.min(1,+cfg.volume||0)):0;
+  if(!on&&t.target==='__ambient_window'&&t.vol>0){t.vol=Math.max(0,t.vol-dt*1.5);}      // the weather outside changed: the old sound outside dies out fast (about half a second)
   if(on&&t.target==='__ambient_window'){let wl=0;try{wl=CooksterWindow.level();}catch(e){}goal*=.3+.7*Math.max(0,Math.min(1,wl));}      // the window closed: the sound outside is muffled (30 %), open: full
   const step=dt/AMB_FADE*Math.max(.3,Math.min(1,+((cfg&&cfg.volume)||.58)));
   t.vol=t.vol<goal?Math.min(goal,t.vol+step):Math.max(goal,t.vol-step);

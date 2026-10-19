@@ -65,19 +65,18 @@ function wave(src,cols){      // the picture of the sound for the tool: the loud
       for(var i=0;i<cols;i++){var m=0,s=Math.floor(i*step),e=Math.floor((i+1)*step);for(var j=s;j<e;j+=Math.max(1,Math.floor((e-s)/40))){var v=Math.abs(d[j]);if(v>m)m=v;}out[i]=m;}
       return {dur:ab.duration,peaks:out};});}).catch(function(){return null;});
 }
-function markersFor(src,env){      // the flashes of this sound: the ones the player placed in the tool "Grom", or (till he places them) the loudest places of the sound
-  var m=null;try{m=window.CooksterThunderTool?CooksterThunderTool.get(src):null;}catch(e){}
-  if(m)return m;
-  return (env?env.peaks:[{t:0,a:1}]).map(function(p){return {t:p.t,a:p.a};});
+function markersFor(src,env){      // only a very light flash: at the loudest place of the thunder sound (found from the sound itself), nowhere else
+  var pk=(env&&env.peaks?env.peaks:[{t:0,a:1}]).slice().sort(function(x,y){return y.a-x.a;})[0]||{t:0,a:1};
+  return [{t:pk.t,a:.15}];
 }
 function flashPower(a){return .3+.7*a;}
 function lightning(){
   var th=null;try{th=CooksterSound.thunderSrc();}catch(e){}
-  if(!th){flash(1);return;}      // no thunder sound is set: only the flash
+  if(!th){flash(.3,false);return;}      // no thunder sound is set: only a light flash
   envelope(th.src).then(function(env){
     thunderBusy=performance.now()+((env&&env.dur)||4)*1000+800;      // one thunder at a time: the next lightning waits till this sound ends
     try{CooksterSound.playKey(th.key,th.vol);}catch(e){}
-    markersFor(th.src,env).forEach(function(p){setTimeout(function(){flash(flashPower(p.a),p.a>=.45);},Math.max(0,p.t*1000-25));});      // the sound starts now and every flash comes at the moment that was chosen
+    markersFor(th.src,env).forEach(function(p){setTimeout(function(){flash(flashPower(p.a)*.6,false);},Math.max(0,p.t*1000-25));});      // a faint light through the window exactly at the loudest peak of the sound
   });
 }
 /* the rain on the window (the strip on the left of the scene) */
@@ -154,5 +153,5 @@ function frame(now){
 requestAnimationFrame(frame);
 window.CooksterWeather={kind:function(){return kind;},name:function(){return NAMES[kind];},icon:function(){return ICON[kind];},
   weights:function(){return wt;},sunF:function(){return cur.sun;},darkAdd:function(){return cur.dark;},rain:function(){return cur.rain;},snow:function(){return cur.snow;},storm:function(){return cur.storm;},
-  force:function(k){forced=(k&&TARGET[k])?k:null;},forced:function(){return forced;},date:function(){return dateOf(dayNow());},lightning:lightning,busy:function(){return performance.now()<thunderBusy;},flash:function(a){flash(flashPower(a),a>=.45);},wave:wave,autoPeaks:function(src){return envelope(src).then(function(e){return e?e.peaks:[];});}};
+  force:function(k){forced=(k&&TARGET[k])?k:null;},forced:function(){return forced;},date:function(){return dateOf(dayNow());},lightning:lightning,busy:function(){return performance.now()<thunderBusy;}};
 })();
