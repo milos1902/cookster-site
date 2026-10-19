@@ -22,6 +22,7 @@ var DEF={
   ],
   shItems:{"kal_02_duboki_tanjir":{"h":2.95,"y":-66,"l":0.4,"a":11,"o":0.8,"x":-2,"w":1.5,"b":-1.5,"g":0.9},"kal_02_tanjir_ravni":{"x":10,"y":6,"o":1.2,"b":2},"oval_tanjir":{"x":12,"y":6,"o":1.15,"b":2},"tiganj_mali":{"l":1.6,"a":39,"y":-52,"r":90,"x":86,"w":0.65,"h":3,"b":-3.5,"o":0.8,"g":0.9},"tiganj_veliki":{"x":12,"y":7,"o":1.15,"w":1.02,"b":-2,"g":0.85},"serpa_velika":{"x":-37,"y":-69,"o":1.3,"b":0,"w":1.25,"h":1.55,"a":-1,"l":1.4,"g":0.85},"kaca_prazna":{"h":3,"w":2.45,"l":0.25},"nacve":{"w":1.45,"h":1.8,"l":0.35,"r":74,"x":17,"y":-77},"daska":{"y":-27,"h":0.95,"w":1.1,"x":8,"a":5,"o":1.3,"b":-4.5,"g":0.8,"l":1.15},"ticket_rail":{}},      // the shadow of every thing is made on its own (Miloš's tuning from his export)
   shPoly:{"serpa_velika":{"podne":[[0.39426191681424494,0.9736871966370914],[0.35149001760264226,0.7491362701752229],[0.33858865208690764,0.36782924493239927],[0.4676023072442542,0.2546941934867263],[0.9947923047466631,0.5828523138233973],[1.0544060237945017,0.7044023643495094],[1.0118247959031885,0.8959357772997462],[0.903952351911862,1.0395858370124242],[0.7421436859248726,1.1169358691654043]],"jutro":[[0.30211844567281265,0.9626236051494981],[0.2667914955790647,0.7382488262064886],[0.4038062100016049,0.5112536035966869],[0.7138983274911734,0.42966277489013766],[1.5823186950365773,0.8354110561560945],[1.6565015467520516,1.0323498494133772],[1.5016851605632366,1.292141449029367],[1.2858605421399287,1.3557813795356657],[0.9297852447307468,1.2098750743965114]]},"tiganj_mali":{"jutro":[[0.4007008168125026,0.781961984785453],[0.15179869802993698,0.6094773970949662],[0.28492548792795996,0.3832119827756608],[0.6083389205951892,0.1896068390603794],[1.5521345912746884,0.6442242933983985],[1.5097600917747922,0.7771124723587426],[1.45968113782037,0.8855212499316547],[1.2516608675481535,0.9554623967528888],[1.035936142821411,0.9834388554813821]],"podne":[[0.42332490087162006,0.7487338104360557],[0.15179869802993698,0.6094773970949662],[0.28492548792795996,0.3832119827756608],[0.6687732563320039,0.15942721661124792],[1.0792057026226631,0.3979890679715642],[1.1205932695488832,0.5280449247609941],[1.10467497457726,0.6783316926065575],[1.0027978867588736,0.7534750765293394],[0.8499822550312928,0.8083875493959873]]},"kal_02_duboki_tanjir":{"jutro":[[0.5416525440118924,1.0961950596354473],[0.32910206094784017,0.9207147846599656],[0.6946447128862033,0.6980466955887509],[0.8772585699025022,0.38257527473515396],[1.276361824429926,0.6980466955887509],[1.435618872620551,0.8781919712563477],[1.4020582700314896,1.0770696162285611],[1.248994593374698,1.2826667812327806],[1.0115227955105717,1.3483806071163058]],"podne":[[0.3613614657615166,0.9800534770292881],[0.15062217358436483,0.7945652002060166],[0.3699523856738722,0.3818694164835537],[0.7774020063059488,0.18725000688506804],[1.0886619662688204,0.4289583819290376],[1.1133162205233056,0.6561642544703691],[0.9992902945963124,0.8785359595108209],[0.8636918961966458,1.0187268170363226],[0.6541307350335245,1.0719026595459962]]},"daska":{"jutro":[[0.26210387640964544,0.9093456349508828],[0.34790563316895445,0.681612806876359],[0.3089901610090995,0.21872358752914856],[0.7330776826920065,0.18005293434010672],[0.8388531362706468,0.24450657201961953],[0.8473941099570218,0.48963251681857767],[0.852518694168847,0.7075222455287629],[0.8456859152197467,0.8936363888020457],[0.8295661193861333,1.0391715871550327]],"podne":[[0.5138837866756751,0.8432458836196067],[0.34492456171486974,0.8660738968182042],[0.3863023310930262,0.4916944803612114],[0.5949152517078985,0.5053912882803696],[0.7793911401855126,0.24971754045608183],[0.7967116938842693,0.4285214569944889],[0.8080450327332561,0.6048440736705066],[0.8080450327332561,0.7849182353821846],[0.7967116938842693,0.9537377619868826]]},"tiganj_veliki":{"jutro":[[0.25409725924603865,0.7810711132725936],[0.46316059792138947,0.5966567169289505],[0.660507398975939,0.4763186867557061],[0.8454348924400278,0.24902644722710807],[1.3160192093104508,0.5739972584033827],[1.4268253805413587,0.744792452985252],[1.3822328428325779,0.942628553677027],[1.2243554019889378,1.0358905270612908],[0.9931777207536081,1.0298736255526293]],"podne":[[0.38015672470448303,0.7614997167025163],[0.38770904033633885,0.5532788266644949],[0.37260440907262643,0.30501545777300765],[0.5889757784184113,0.11888507678375276],[1.184564664331124,0.4702223589787267],[1.180052627316634,0.595356185513923],[1.1439563312007117,0.7493670489418571],[0.9815229986790627,0.8985650728876681],[0.7649452219835311,0.9803833440837578]]}},      // the shadows drawn by the player: itemId -> {jutro,podne: 9 points [u,v]} (only the morning and the noon have a drawing: js/shadow-editor.js, js/sun-shadow.js)
+  wx:{},      // the lighting of every weather (kisa, nevreme, sneg) per key of the day: wx[weather][key name] = only the fields that the player changed in the tool (the sunny weather is the keys themselves)
   shV:2,      // version of the sun shadows' values: older saves get the new ones (a soft drop shadow, like the plate)
   win2:{open:1.35,closed:1},      // how strong the light of the sun is when the window is open / closed (a click on the window changes the light)
   itemLight2:.15,
@@ -36,6 +37,7 @@ function applyCfg(c,sv){
   (sv.keys||[]).forEach(function(k,i){var j=-1;c.keys.forEach(function(d,n){if(d.name===k.name)j=n;});if(j<0&&i<c.keys.length)j=i;if(j>=0){if(k.name==='Pred zoru')has5=true;var t=c.keys[j].t;Object.assign(c.keys[j],k);if(k.name==='Pred zoru'||c.keys[j].name==='Pred zoru')c.keys[j].name='Pred zoru';}});
   if(oldSh){var sd=clone(DEF.keys);c.keys.forEach(function(k){sd.forEach(function(d){if(d.name===k.name){['shk','shl','sho','sha','shx','shy','shw','shh','shr','shb'].forEach(function(f){k[f]=d[f];});}});});}
   if(!has5){var nk=null,zk=null;c.keys.forEach(function(d){if(d.name==='Noć')nk=d;if(d.name==='Pred zoru')zk=d;});if(nk&&zk){var t=zk.t;Object.assign(zk,clone(nk));zk.name='Pred zoru';zk.t=t;}}      // an old save without the new key: before the dawn is as dark as the night he already set
+  if(sv.wx)c.wx=clone(sv.wx);
   return c;}
 try{var sv=JSON.parse(localStorage.getItem(KEY)||'null');if(sv&&sv.keys&&sv.keys.length>=4){cfg=applyCfg(clone(DEF),sv);}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(cfg));}catch(e){}}
@@ -70,19 +72,38 @@ function endDay(){st.minute=OPEN;st.closed=false;st.paused=false;st.day++;
 /* ---------- the light ---------- */
 function ease(t){return t*t*(3-2*t);}
 function winLevel(){try{return window.CooksterWindow&&CooksterWindow.level?CooksterWindow.level():0;}catch(e){return 0;}}
-function weatherSun(){try{return window.CooksterWeather?CooksterWeather.sunF():1;}catch(e){return 1;}}
-function weatherDark(){try{return window.CooksterWeather?CooksterWeather.darkAdd():0;}catch(e){return 0;}}
-function mixPhase(m){var P=mixPhase0(m),w=winLevel(),w2=cfg.win2||{open:1.35,closed:1};P.alpha=P.alpha*(w2.closed+(w2.open-w2.closed)*w);P.winL=w;
-  var ws=weatherSun(),wd=weatherDark();      // clouds, rain and storm: less sun in the shaft, on the floor and in the shadows, and a little darker
-  if(ws<.999||wd>.001){P.alpha*=ws;P.sun*=ws;P.sho*=ws;P.light*=(.35+.65*ws);P.dark=Math.min(.7,P.dark+wd*clamp01(1-P.dark*2));}      // no sun rays when it is cloudy / rain / storm / snow; the whole scene is a little darker (the storm the most)
-  var sn=0;try{sn=window.CooksterWeather?CooksterWeather.snow():0;}catch(e){}
-  if(sn>.01){      // snow: the coldest colour (a blue-white light, a blue shade)
-    var mx=function(a,b,k){return [a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k,a[2]+(b[2]-a[2])*k];};
-    P.c=mx(P.c,[150,190,255],Math.min(1,sn));P.light=P.light*(1-sn*.4)+.32*sn;P.shade=mx(P.shade,[24,50,120],.85*sn);P.bc=mx(P.bc,[200,220,255],sn);
-  }
-  return P;}      // the window open lets in more sun (one value for the canvas and for the things in the shaft)
-function mixPhase0(m){      // m = game minute (0..1440): the values between the two neighbouring keys (the day is a circle: after the last key come the first of the next day)
-  var ks=cfg.keys.slice().sort(function(a,b){return a.t-b.t;}),n=ks.length,a=ks[n-1],b=ks[0],aT=a.t-1440,bT=b.t,i;
+var WXK=['sunce','kisa','nevreme','sneg'],WXADD={kisa:.065,nevreme:.15,sneg:.07};
+function mxc(a,b,k){return [a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k,a[2]+(b[2]-a[2])*k];}
+/* the first values of the lighting in rain / storm / snow (the player changes them in the tool: cfg.wx): no rays and no shadows of the sun, a darker scene (the storm the darkest), the snow the coldest */
+function wxDefaults(kind,k){
+  var d={alpha:0,sun:0,sho:0},ad=WXADD[kind]||0;
+  d.dark=+Math.min(.7,k.dark+ad*clamp01(1-k.dark*2)).toFixed(3);
+  if(kind==='sneg'){d.c=toHex(mxc(hex(k.c),[150,190,255],1));d.shade=toHex(mxc(hex(k.shade),[24,50,120],.85));d.bc=toHex(mxc(hex(k.bc),[200,220,255],1));d.light=+(k.light*.6+.32).toFixed(3);}
+  else d.light=+(k.light*.35).toFixed(3);
+  return d;
+}
+function weatherKeys(kind){
+  if(kind==='sunce'||!kind)return cfg.keys;
+  var ov=(cfg.wx&&cfg.wx[kind])||{};
+  return cfg.keys.map(function(k){return Object.assign({},k,wxDefaults(kind,k),ov[k.name]||{});});
+}
+function wxWeights(){try{return window.CooksterWeather?CooksterWeather.weights():null;}catch(e){return null;}}
+function blendP(list){      // the values of the lighting of the weathers that are mixed (the weather changes slowly, so the light flows from one to the other)
+  var tw=0;list.forEach(function(x){tw+=x[0];});var out={},first=list[0][1];
+  Object.keys(first).forEach(function(f){var v=first[f];
+    if(Array.isArray(v))out[f]=v.map(function(_,i){var a=0;list.forEach(function(x){a+=x[0]*x[1][f][i];});return a/tw;});
+    else if(typeof v==='number'){var a=0;list.forEach(function(x){a+=x[0]*x[1][f];});out[f]=a/tw;}else out[f]=v;});
+  return out;
+}
+function mixPhase(m){
+  var W=wxWeights(),P;
+  if(!W||W.sunce>.999)P=mixPhase0(m);
+  else{var list=[];WXK.forEach(function(k){if(W[k]>.002)list.push([W[k],mixPhase0(m,weatherKeys(k))]);});P=list.length?blendP(list):mixPhase0(m);}
+  var w=winLevel(),w2=cfg.win2||{open:1.35,closed:1};P.alpha=P.alpha*(w2.closed+(w2.open-w2.closed)*w);P.winL=w;      // the window open lets in more sun (one value for the canvas and the lighting of the things)
+  return P;
+}
+function mixPhase0(m,keysIn){      // m = game minute (0..1440): the values between the two neighbouring keys (the day is a circle: after the last key come the first of the next day)
+  var ks=(keysIn||cfg.keys).slice().sort(function(a,b){return a.t-b.t;}),n=ks.length,a=ks[n-1],b=ks[0],aT=a.t-1440,bT=b.t,i;
   if(m>=ks[0].t){for(i=0;i<n;i++){var nx=ks[(i+1)%n],nT=nx.t+(i===n-1?1440:0);if(m>=ks[i].t&&m<=nT){a=ks[i];b=nx;aT=ks[i].t;bT=nT;break;}}}
   else{a=ks[n-1];b=ks[0];aT=a.t-1440;bT=b.t;}
   var t=ease(clamp01((m-aT)/Math.max(1,bT-aT)));
@@ -103,7 +124,8 @@ function stoveLevel(){return stoveBase()*fbLevel;}      // the door is open: the
 function plateHeat(){try{return window.CooksterStovePlates?CooksterStovePlates.heat():0;}catch(e){return 0;}}
 function stoveGlass(){return stoveBase()*(1-fbLevel);}      // the door is closed: only the glow round the little window with the fire
 function lusterLevel(){try{return window.CooksterLuster&&CooksterLuster.level?CooksterLuster.level():0;}catch(e){return 0;}}
-function fireSig(){return Math.round(grillLevel()*20)+'/'+Math.round(stoveLevel()*10)+'.'+Math.round(stoveGlass()*10)+'.'+Math.round(plateHeat()*10)+'/'+Math.round(lusterLevel()*30)+'/'+Math.round(winLevel()*30)+'/'+Math.round(weatherSun()*40)+'.'+Math.round(weatherDark()*100);}
+function wxSig(){var W=wxWeights();return W?['kisa','nevreme','sneg'].map(function(k){return Math.round(W[k]*40);}).join('.'):'';}
+function fireSig(){return Math.round(grillLevel()*20)+'/'+Math.round(stoveLevel()*10)+'.'+Math.round(stoveGlass()*10)+'.'+Math.round(plateHeat()*10)+'/'+Math.round(lusterLevel()*30)+'/'+Math.round(winLevel()*30)+'/'+wxSig();}
 var cv=null,cx=null,tintC=null,sunI=new Image();sunI.src='assets/effects/sun_patches.png?v=1';
 /* the picture of the kitchen WITHOUT the sun on the floor (assets/effects/kuhinja_bez_sunca.webp, the same picture, drawn without the light of the window) lies over the real one inside a mask of the window light
    (assets/effects/sun_zone_mask.png) and it melts in while the sun goes away (evening, night, early morning). If that picture is not there, the patches are only darkened. */
@@ -274,7 +296,14 @@ var btn=document.createElement('button');btn.id='dlBtn';btn.type='button';btn.te
 var pn=document.createElement('div');pn.id='dlPanel';pn.setAttribute('data-tool-ui','1');
 document.body.appendChild(btn);document.body.appendChild(pn);
 var pickOn=false,selItem='',selItemLabel='',ctr={},selK=0,showH=true,hl=null,hSun=null,hA=null,hB=null,tagS=null,tagW=null;
-function K(){return cfg.keys[selK];}
+var selW='sunce';      // the weather that is edited in the tool (sunce = the keys themselves; the others keep only what is changed: cfg.wx)
+function K(){
+  var base=cfg.keys[selK];if(selW==='sunce')return base;
+  return new Proxy(base,{
+    get:function(t,p){if(p==='t'||p==='name')return t[p];var w=weatherKeys(selW)[selK];return w?w[p]:t[p];},
+    set:function(t,p,v){if(p==='t'||p==='name'){t[p]=v;return true;}cfg.wx=cfg.wx||{};var o=cfg.wx[selW]=cfg.wx[selW]||{},kk=o[t.name]=o[t.name]||{};kk[p]=v;return true;}
+  });
+}
 function row(label,key,min,max,step,get,set,fmtv){
   var l=document.createElement('label'),o=document.createElement('output'),i=document.createElement('input');i.type='range';i.min=min;i.max=max;i.step=step;
   l.appendChild(document.createTextNode(label));l.appendChild(o);pn.appendChild(l);pn.appendChild(i);
@@ -302,6 +331,13 @@ function build(){
   pn.appendChild(bar);
   row('Vreme (celih 24 h za podešavanje)','t',0,CLOSE,5,function(){return st.minute;},function(v){st.minute=v;st.closed=v>=CLOSE;st.paused=true;ctr.pp();},function(v){return hh(v>=1440?1440:v);});
   row('Trajanje jednog sata u igri (s)','sph',10,180,5,function(){return cfg.secPerHour;},function(v){cfg.secPerHour=v;},function(v){return v+' s (dan = '+Math.round(v*18/6)/10+' min)';});
+  var h=document.createElement('h4');h.textContent='Vreme napolju koje podešavaš (svetlo svakog vremena je posebno)';pn.appendChild(h);
+  var wb=document.createElement('div'),wxBtns={};[['sunce','☀ Sunce'],['kisa','🌧 Kiša'],['nevreme','⛈ Nevreme'],['sneg','❄ Sneg']].forEach(function(q){wxBtns[q[0]]=mk(wb,q[1],function(){
+    selW=q[0];try{CooksterWeather.force(q[0]);}catch(e){}markWx();Object.keys(ctr).forEach(function(k){try{ctr[k]();}catch(e){}});lastSig='';render();chip();placeHandles();});});
+  pn.appendChild(wb);
+  function markWx(){Object.keys(wxBtns).forEach(function(k){wxBtns[k].classList.toggle('on',k===selW);});}markWx();
+  mk(pn,'Vrati ovu tačku za ovo vreme na početno',function(){if(selW!=='sunce'&&cfg.wx&&cfg.wx[selW]){delete cfg.wx[selW][cfg.keys[selK].name];save();Object.keys(ctr).forEach(function(k){try{ctr[k]();}catch(e){}});lastSig='';render();}});
+  mk(pn,'Vrati celo ovo vreme na početno',function(){if(selW!=='sunce'&&cfg.wx){delete cfg.wx[selW];save();Object.keys(ctr).forEach(function(k){try{ctr[k]();}catch(e){}});lastSig='';render();}});
   var h=document.createElement('h4');h.textContent='Četiri tačke u vremenu (klik = otvori tačku i idi na to vreme)';pn.appendChild(h);
   var kb=document.createElement('div');keyBtns=[];cfg.keys.forEach(function(k,i){keyBtns.push(mk(kb,'',function(){selectKey(i,true);}));});pn.appendChild(kb);
   row('Vreme ove tačke','kt',0,1425,15,function(){return K().t;},function(v){K().t=v;markKeys();},function(v){return hh(v);});

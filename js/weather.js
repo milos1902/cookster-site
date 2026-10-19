@@ -9,7 +9,7 @@ var NAMES={sunce:'Sunčano',kisa:'Kiša',nevreme:'Nevreme',sneg:'Sneg'},ICON={su
     TARGET={sunce:{sun:1,dark:0,rain:0,storm:0,snow:0},kisa:{sun:0,dark:.065,rain:1,storm:0,snow:0},nevreme:{sun:0,dark:.15,rain:1,storm:1,snow:0},sneg:{sun:0,dark:.07,rain:0,storm:0,snow:1}},      // sun = the rays of the sun (the painted sun on the floor and the shaft from the window): only when it is sunny; dark = how much darker the whole scene is (sunny is the lightest, the storm the darkest)
     MONTHS=['januar','februar','mart','april','maj','jun','jul','avgust','septembar','oktobar','novembar','decembar'],MDAYS=[31,28,31,30,31,30,31,31,30,31,30,31],
     START={m:0,d:1},      // the game starts on the 1st of January
-    forced=null,cur={sun:1,dark:0,rain:0,storm:0,snow:0},kind='sunce',lastRef=0,nextFlash=0;
+    forced=null,cur={sun:1,dark:0,rain:0,storm:0,snow:0},kind='sunce',lastRef=0,nextFlash=0,wt={sunce:1,kisa:0,nevreme:0,sneg:0};
 function hash(n){n=(n^61)^(n>>>16);n=(n+(n<<3))|0;n=n^(n>>>4);n=Math.imul(n,0x27d4eb2d);n=n^(n>>>15);return (n>>>0)/4294967296;}
 function pick(r,prev,month){      // the weather depends on the season: snow only in winter, storms rather in spring / summer
   var w=(month===11||month===0||month===1),su=(month>=5&&month<=7),cuts;
@@ -94,6 +94,7 @@ function frame(now){
   var k=forced||kindAt(dayNow(),minNow());setKind(k);
   var t=TARGET[kind],a=1-Math.exp(-dt/2.5),ch=0;      // the light follows the weather slowly (a few seconds), not in a jump
   ['sun','dark','rain','storm','snow'].forEach(function(n){var o=cur[n];cur[n]=o+(t[n]-o)*a;ch=Math.max(ch,Math.abs(cur[n]-o));});
+  ['sunce','kisa','nevreme','sneg'].forEach(function(n){var o=wt[n],g=(n===kind)?1:0;wt[n]=o+(g-o)*a;if(Math.abs(wt[n]-g)<.002)wt[n]=g;ch=Math.max(ch,Math.abs(wt[n]-o));});      // the weights of the weathers: the lighting flows slowly from one weather to the other
   rainDraw(dt);
   if(ch>.0004&&now-lastRef>120){lastRef=now;try{if(window.CooksterDay&&CooksterDay.refreshLight)CooksterDay.refreshLight();}catch(e){}}
   if(kind==='nevreme'){if(!nextFlash)nextFlash=now+5000+Math.random()*9000;if(now>nextFlash){nextFlash=now+6000+Math.random()*14000;lightning();}}else nextFlash=0;
@@ -101,6 +102,6 @@ function frame(now){
 }
 requestAnimationFrame(frame);
 window.CooksterWeather={kind:function(){return kind;},name:function(){return NAMES[kind];},icon:function(){return ICON[kind];},
-  sunF:function(){return cur.sun;},darkAdd:function(){return cur.dark;},rain:function(){return cur.rain;},snow:function(){return cur.snow;},storm:function(){return cur.storm;},
+  weights:function(){return wt;},sunF:function(){return cur.sun;},darkAdd:function(){return cur.dark;},rain:function(){return cur.rain;},snow:function(){return cur.snow;},storm:function(){return cur.storm;},
   force:function(k){forced=(k&&TARGET[k])?k:null;},forced:function(){return forced;},date:function(){return dateOf(dayNow());},lightning:lightning};
 })();
