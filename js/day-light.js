@@ -74,7 +74,12 @@ function weatherSun(){try{return window.CooksterWeather?CooksterWeather.sunF():1
 function weatherDark(){try{return window.CooksterWeather?CooksterWeather.darkAdd():0;}catch(e){return 0;}}
 function mixPhase(m){var P=mixPhase0(m),w=winLevel(),w2=cfg.win2||{open:1.35,closed:1};P.alpha=P.alpha*(w2.closed+(w2.open-w2.closed)*w);P.winL=w;
   var ws=weatherSun(),wd=weatherDark();      // clouds, rain and storm: less sun in the shaft, on the floor and in the shadows, and a little darker
-  if(ws<.999||wd>.001){P.alpha*=ws;P.sun*=(.25+.75*ws);P.sho*=(.2+.8*ws);P.light*=(.3+.7*ws);P.dark=Math.min(.7,P.dark+wd*clamp01(1-P.dark*2));}
+  if(ws<.999||wd>.001){P.alpha*=ws;P.sun*=ws;P.sho*=ws;P.light*=(.35+.65*ws);P.dark=Math.min(.7,P.dark+wd*clamp01(1-P.dark*2));}      // no sun rays when it is cloudy / rain / storm / snow; the whole scene is a little darker (the storm the most)
+  var sn=0;try{sn=window.CooksterWeather?CooksterWeather.snow():0;}catch(e){}
+  if(sn>.01){      // snow: the coldest colour (a blue-white light, a blue shade)
+    var mx=function(a,b,k){return [a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k,a[2]+(b[2]-a[2])*k];};
+    P.c=mx(P.c,[150,190,255],Math.min(1,sn));P.light=P.light*(1-sn*.4)+.32*sn;P.shade=mx(P.shade,[24,50,120],.85*sn);P.bc=mx(P.bc,[200,220,255],sn);
+  }
   return P;}      // the window open lets in more sun (one value for the canvas and for the things in the shaft)
 function mixPhase0(m){      // m = game minute (0..1440): the values between the two neighbouring keys (the day is a circle: after the last key come the first of the next day)
   var ks=cfg.keys.slice().sort(function(a,b){return a.t-b.t;}),n=ks.length,a=ks[n-1],b=ks[0],aT=a.t-1440,bT=b.t,i;
@@ -357,7 +362,7 @@ function build(){
   h=document.createElement('h4');h.textContent='Prozor (klik na prozor menja svetlo)';pn.appendChild(h);
   row('Zrak sunca kad je prozor otvoren ×','wo',0,3,.05,function(){return cfg.win2.open;},function(v){cfg.win2.open=v;});
   row('Zrak sunca kad je prozor zatvoren ×','wc',0,3,.05,function(){return cfg.win2.closed;},function(v){cfg.win2.closed=v;});
-  var wxB=mk(pn,'Vreme napolju: automatski',function(){var seq=[null,'sunce','oblaci','kisa','nevreme','sneg'],i=(seq.indexOf(CooksterWeather.forced())+1)%seq.length;CooksterWeather.force(seq[i]);wxB.textContent='Vreme napolju: '+(seq[i]?{sunce:'sunce',oblaci:'oblačno',kisa:'kiša',nevreme:'nevreme',sneg:'sneg'}[seq[i]]:'automatski');});
+  var wxB=mk(pn,'Vreme napolju: automatski',function(){var seq=[null,'sunce','kisa','nevreme','sneg'],i=(seq.indexOf(CooksterWeather.forced())+1)%seq.length;CooksterWeather.force(seq[i]);wxB.textContent='Vreme napolju: '+(seq[i]?{sunce:'sunce',kisa:'kiša',nevreme:'nevreme',sneg:'sneg'}[seq[i]]:'automatski');});
   mk(pn,'Vrati samo senke na početne',function(){var sd=clone(DEF.keys);cfg.keys.forEach(function(k){sd.forEach(function(d){if(d.name===k.name){['shk','shl','sho','sha','shx','shy','shw','shh','shr','shb'].forEach(function(f){k[f]=d[f];});}});});cfg.shItems=clone(DEF.shItems);cfg.sh=clone(DEF.sh);save();selectKey(selK,false);lastSig='';render();chip();});      // the lighting, the times and the window stay as they are
   var b2=document.createElement('div');
   mk(b2,'Izvezi JSON',function(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'}));a.download='cookster-day-light.json';document.body.appendChild(a);a.click();setTimeout(function(){a.remove();},500);});

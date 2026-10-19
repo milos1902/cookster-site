@@ -1001,3 +1001,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Gornja polja: ikonice vremena u kružiću podignute ~5 px.
 
 - Ikonice vremena u kružiću: podignute 2 px od originala (spušteno 1 px u odnosu na sliku od Miloša).
+
+- Osvetljenje po vremenu: zraci sunca na podu i iz prozora samo kad je sunčano; senke predmeta samo kad je sunčano; scena je najsvetlija sunčano, pa oblačno, kiša, a najtamnija u nevremenu; sneg je najhladnije boje (plavo-bela).
+
+- Vreme: uklonjeno 'oblačno'; ostaju sunce, kiša, nevreme, sneg (i u alatu i u zvucima napolju).
