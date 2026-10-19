@@ -1016,3 +1016,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 - Grom: bljesak je vezan za zvuk grmljavine — kad se čuje grom (zvuk iz alata Zvuk, Ambijent napolju → grom), igra analizira zvuk i bljesne tačno na najglasnijim mestima; ako zvuk nije postavljen, samo bljesne.
 - Ambijent petlje (kuhinja, kafana, napolje) sada idu bez pauze na kraju kruga: dekodirani buffer sa loop umesto <audio loop> (playLoopGapless).
+
+- Zvuk napolju (ambijent vremena) se čuje stalno: kroz zatvoren prozor na 30% jačine, kad se prozor otvori glatko ide do pune jačine.
