@@ -283,27 +283,31 @@
     // a soft edge: a moving piece that comes near the outline is turned along it and pushed gently back, like a spring, instead of hitting a wall
     softEdge(p){
       const sp=Math.abs(p.vx)+Math.abs(p.vy);if(sp<.004)return;
-      const e=this.nearEdge(p.x,p.y),m=Math.max(5,p.r*1.1);
+      const e=this.nearEdge(p.x,p.y),m=Math.max(6,p.r*1.3);
       if(e.d>=m||!this.inside(p.x,p.y))return;
-      let nx=this.cx-e.x,ny=this.cy-e.y;const nl=Math.hypot(nx,ny)||1;nx/=nl;ny/=nl;   // inwards
-      const t=1-e.d/m,vn=p.vx*nx+p.vy*ny;
-      if(vn<0){const k=.55*t;p.vx-=nx*vn*k;p.vy-=ny*vn*k;}   // only the part of the speed that goes towards the edge is taken away; the part along the edge stays
-      p.vx+=nx*.012*t*t;p.vy+=ny*.012*t*t;
+      // the true inward normal of the edge at this place (from the nearest point of the outline to the piece)
+      let nx=p.x-e.x,ny=p.y-e.y;const nl=Math.hypot(nx,ny);
+      if(nl<1e-4){nx=this.cx-e.x;ny=this.cy-e.y;}
+      const l=Math.hypot(nx,ny)||1;nx/=l;ny/=l;
+      const vn=p.vx*nx+p.vy*ny;
+      // only the part of the speed that goes into the edge is taken away (more and more the closer it is), nothing pushes it back: the piece slides along the edge, it never bounces
+      if(vn<0){const k=Math.min(1,1.2*(1-e.d/m)+.15);p.vx-=nx*vn*k;p.vy-=ny*vn*k;}
     }
     wall(p){
-      if(this.inside(p.x,p.y)){
-        // keep clear of the edge by about the piece's own radius
-        return;
-      }
-      // outside: move to the nearest point on the outline, then a little way back in
+      if(this.inside(p.x,p.y))return;
+      // outside: put it on the outline (a little inside) and take away only the speed that goes out; the speed along the edge stays (it slides, no bounce, no damping)
       const poly=this.poly;let bx=p.x,by=p.y,bd=1e9;
       for(let i=0;i<poly.length;i++){
         const a=poly[i],b=poly[(i+1)%poly.length],ex=b.x-a.x,ey=b.y-a.y,l2=ex*ex+ey*ey||1;
         const tt=Math.max(0,Math.min(1,((p.x-a.x)*ex+(p.y-a.y)*ey)/l2)),qx=a.x+ex*tt,qy=a.y+ey*tt,d=(p.x-qx)**2+(p.y-qy)**2;
         if(d<bd){bd=d;bx=qx;by=qy;}
       }
-      const dx=this.cx-bx,dy=this.cy-by,dl=Math.hypot(dx,dy)||1,inset=Math.min(p.r*.35,3);
-      p.x=bx+dx/dl*inset;p.y=by+dy/dl*inset;{const nx=dx/dl,ny=dy/dl,vn=p.vx*nx+p.vy*ny;if(vn<0){p.vx-=nx*vn;p.vy-=ny*vn;}p.vx*=.9;p.vy*=.9;}
+      let nx=bx-p.x,ny=by-p.y;const dl0=Math.hypot(nx,ny);      // inwards: from the piece to the nearest point of the outline
+      if(dl0<1e-4){nx=this.cx-bx;ny=this.cy-by;}
+      const dl=Math.hypot(nx,ny)||1;nx/=dl;ny/=dl;
+      const inset=Math.min(p.r*.35,3);
+      p.x=bx+nx*inset;p.y=by+ny*inset;
+      const vn=p.vx*nx+p.vy*ny;if(vn<0){p.vx-=nx*vn;p.vy-=ny*vn;}
     }
     collide(ps,push,range){
       // spatial hash (numeric keys, buckets reused between calls) so ~150 pieces stay cheap and nothing is allocated per frame
