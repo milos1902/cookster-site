@@ -987,3 +987,7 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Odskok pri spuštanju: svi predmeti (osim daske, koja to već ima) lebde 6 px iznad mesta dok se nose (ghost translate), pa je puštanje jedno kratko spuštanje pravo dole; ranije je predmet bio prikazan 6 px više od svoje slike pa je 'skočio gore' i pao nazad.
 
 - Podizanje predmeta: nema više 'dva predmeta' pri kliku — podizanje od 6 px se postavlja zajedno sa slikom predmeta (setGhostPoseStyles), pre nego što se kopija za ruksak sinhronizuje.
+
+- Vreme napolju (js/weather.js): sunce / kiša / nevreme po satu i danu (svaka 3 sata može da ostane ili da se promeni); utiče na svetlo (manje sunca, mračnije), kiša na prozoru, munje i grom u nevremenu. Dugme u alatu 'Vreme napolju: automatski/sunce/kiša/nevreme'.
+- Kalendar: igra počinje 1. maja; mali kvadratić gore = datum (dan i mesec), dugi = sat i vreme napolju.
+- Zvuk napolju dok je prozor otvoren: novi ambijent 'Ambijent napolju' u alatu Zvuk (ambSun / ambRain / ambStorm petlje + thunder), fade 1 s; prozor ima i otvaranje, zatvaranje i padanje saksije (break).

@@ -70,7 +70,12 @@ function endDay(){st.minute=OPEN;st.closed=false;st.paused=false;st.day++;
 /* ---------- the light ---------- */
 function ease(t){return t*t*(3-2*t);}
 function winLevel(){try{return window.CooksterWindow&&CooksterWindow.level?CooksterWindow.level():0;}catch(e){return 0;}}
-function mixPhase(m){var P=mixPhase0(m),w=winLevel(),w2=cfg.win2||{open:1.35,closed:1};P.alpha=P.alpha*(w2.closed+(w2.open-w2.closed)*w);P.winL=w;return P;}      // the window open lets in more sun (one value for the canvas and for the things in the shaft)
+function weatherSun(){try{return window.CooksterWeather?CooksterWeather.sunF():1;}catch(e){return 1;}}
+function weatherDark(){try{return window.CooksterWeather?CooksterWeather.darkAdd():0;}catch(e){return 0;}}
+function mixPhase(m){var P=mixPhase0(m),w=winLevel(),w2=cfg.win2||{open:1.35,closed:1};P.alpha=P.alpha*(w2.closed+(w2.open-w2.closed)*w);P.winL=w;
+  var ws=weatherSun(),wd=weatherDark();      // clouds, rain and storm: less sun in the shaft, on the floor and in the shadows, and a little darker
+  if(ws<.999||wd>.001){P.alpha*=ws;P.sun*=(.25+.75*ws);P.sho*=(.2+.8*ws);P.light*=(.3+.7*ws);P.dark=Math.min(.7,P.dark+wd*clamp01(1-P.dark*2));}
+  return P;}      // the window open lets in more sun (one value for the canvas and for the things in the shaft)
 function mixPhase0(m){      // m = game minute (0..1440): the values between the two neighbouring keys (the day is a circle: after the last key come the first of the next day)
   var ks=cfg.keys.slice().sort(function(a,b){return a.t-b.t;}),n=ks.length,a=ks[n-1],b=ks[0],aT=a.t-1440,bT=b.t,i;
   if(m>=ks[0].t){for(i=0;i<n;i++){var nx=ks[(i+1)%n],nT=nx.t+(i===n-1?1440:0);if(m>=ks[i].t&&m<=nT){a=ks[i];b=nx;aT=ks[i].t;bT=nT;break;}}}
@@ -93,7 +98,7 @@ function stoveLevel(){return stoveBase()*fbLevel;}      // the door is open: the
 function plateHeat(){try{return window.CooksterStovePlates?CooksterStovePlates.heat():0;}catch(e){return 0;}}
 function stoveGlass(){return stoveBase()*(1-fbLevel);}      // the door is closed: only the glow round the little window with the fire
 function lusterLevel(){try{return window.CooksterLuster&&CooksterLuster.level?CooksterLuster.level():0;}catch(e){return 0;}}
-function fireSig(){return Math.round(grillLevel()*20)+'/'+Math.round(stoveLevel()*10)+'.'+Math.round(stoveGlass()*10)+'.'+Math.round(plateHeat()*10)+'/'+Math.round(lusterLevel()*30)+'/'+Math.round(winLevel()*30);}
+function fireSig(){return Math.round(grillLevel()*20)+'/'+Math.round(stoveLevel()*10)+'.'+Math.round(stoveGlass()*10)+'.'+Math.round(plateHeat()*10)+'/'+Math.round(lusterLevel()*30)+'/'+Math.round(winLevel()*30)+'/'+Math.round(weatherSun()*40)+'.'+Math.round(weatherDark()*100);}
 var cv=null,cx=null,tintC=null,sunI=new Image();sunI.src='assets/effects/sun_patches.png?v=1';
 /* the picture of the kitchen WITHOUT the sun on the floor (assets/effects/kuhinja_bez_sunca.webp, the same picture, drawn without the light of the window) lies over the real one inside a mask of the window light
    (assets/effects/sun_zone_mask.png) and it melts in while the sun goes away (evening, night, early morning). If that picture is not there, the patches are only darkened. */
@@ -352,6 +357,7 @@ function build(){
   h=document.createElement('h4');h.textContent='Prozor (klik na prozor menja svetlo)';pn.appendChild(h);
   row('Zrak sunca kad je prozor otvoren ×','wo',0,3,.05,function(){return cfg.win2.open;},function(v){cfg.win2.open=v;});
   row('Zrak sunca kad je prozor zatvoren ×','wc',0,3,.05,function(){return cfg.win2.closed;},function(v){cfg.win2.closed=v;});
+  var wxB=mk(pn,'Vreme napolju: automatski',function(){var seq=[null,'sunce','kisa','nevreme'],i=(seq.indexOf(CooksterWeather.forced())+1)%seq.length;CooksterWeather.force(seq[i]);wxB.textContent='Vreme napolju: '+(seq[i]?{sunce:'sunce',kisa:'kiša',nevreme:'nevreme'}[seq[i]]:'automatski');});
   mk(pn,'Vrati samo senke na početne',function(){var sd=clone(DEF.keys);cfg.keys.forEach(function(k){sd.forEach(function(d){if(d.name===k.name){['shk','shl','sho','sha','shx','shy','shw','shh','shr','shb'].forEach(function(f){k[f]=d[f];});}});});cfg.shItems=clone(DEF.shItems);cfg.sh=clone(DEF.sh);save();selectKey(selK,false);lastSig='';render();chip();});      // the lighting, the times and the window stay as they are
   var b2=document.createElement('div');
   mk(b2,'Izvezi JSON',function(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'}));a.download='cookster-day-light.json';document.body.appendChild(a);a.click();setTimeout(function(){a.remove();},500);});
