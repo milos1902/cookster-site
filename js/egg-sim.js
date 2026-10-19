@@ -91,7 +91,15 @@ function loadCurd(i){let e=curdImgs[i];if(e)return e;e=curdImgs[i]={img:new Imag
       }
       return{x:this.cx,y:this.cy};
     }
-    pull(p){for(let i=0;i<14&&!this.inside(p.x,p.y);i++){p.x+=(this.cx-p.x)*.2;p.y+=(this.cy-p.y)*.2;}p.vx*=.5;p.vy*=.5;}
+    pull(p){      // outside the food area: onto the outline (a little inside) and only the speed that goes out is taken away, so it slides along the edge (no bounce)
+      const poly=this.poly;let bx=p.x,by=p.y,bd=1e9;
+      for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length],ex=b.x-a.x,ey=b.y-a.y,l2=ex*ex+ey*ey||1,
+        tt=Math.max(0,Math.min(1,((p.x-a.x)*ex+(p.y-a.y)*ey)/l2)),qx=a.x+ex*tt,qy=a.y+ey*tt,d=(p.x-qx)**2+(p.y-qy)**2;if(d<bd){bd=d;bx=qx;by=qy;}}
+      let nx=bx-p.x,ny=by-p.y;if(Math.hypot(nx,ny)<1e-4){nx=this.cx-bx;ny=this.cy-by;}
+      const l=Math.hypot(nx,ny)||1;nx/=l;ny/=l;p.x=bx+nx*1.5;p.y=by+ny*1.5;
+      const vn=p.vx*nx+p.vy*ny;if(vn<0){p.vx-=nx*vn;p.vy-=ny*vn;}
+      if(!this.inside(p.x,p.y)){p.x+=(this.cx-p.x)*.2;p.y+=(this.cy-p.y)*.2;}
+    }
     // one group of patches per egg of the model; all eggs of a batch share the `curd` of the batch
     sync(){
       this.region();
