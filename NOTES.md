@@ -985,3 +985,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Prozorčić ložišta: slika se svaki frejm kopira iz videa vatre koji gori u ložištu (canvas), pa nikad nije crn.
 
 - Odskok pri spuštanju: svi predmeti (osim daske, koja to već ima) lebde 6 px iznad mesta dok se nose (ghost translate), pa je puštanje jedno kratko spuštanje pravo dole; ranije je predmet bio prikazan 6 px više od svoje slike pa je 'skočio gore' i pao nazad.
+
+- Podizanje predmeta: nema više 'dva predmeta' pri kliku — podizanje od 6 px se postavlja zajedno sa slikom predmeta (setGhostPoseStyles), pre nego što se kopija za ruksak sinhronizuje.

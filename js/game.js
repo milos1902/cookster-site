@@ -7818,6 +7818,7 @@ function setGhostPoseStyles(ghost,pose){
  ghost.style.transformOrigin='50% 90%';
  ghost.style.transform=`perspective(1200px) rotateX(${pose.tilt}deg) rotateZ(${pose.angle}deg) scaleY(${Number.isFinite(+pose.flatten)?+pose.flatten:1})`;
  ghost.style.zIndex=String(pose.z);
+ ghost.style.translate=(holding&&holding.dataset&&holding.dataset.itemId!=='daska')?'0 -6px':'';      // the carried item hangs 6 px above its place (set here, before the copy for the backpack is synced, so there are never two pictures at different heights)
  syncBackpackHeldPreview(ghost);
 }
 
