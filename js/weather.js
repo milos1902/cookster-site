@@ -75,7 +75,7 @@ function hudUpdate(){
   if(ring&&ring.isConnected&&ring.getBoundingClientRect().width){
     var r=ring.getBoundingClientRect(),k=r.width/197;
     function put(el,x0,x1,y0,y1){el.style.display='flex';el.style.left=(r.left+r.width*x0)+'px';el.style.width=(r.width*(x1-x0))+'px';el.style.top=(r.top+r.height*y0)+'px';el.style.height=(r.height*(y1-y0))+'px';}
-    put(hudR,.12,.30,.30,.68);hudR.innerHTML='<span style="font-size:'+(25*k).toFixed(1)+'px;line-height:1">'+icon+'</span>';      // the icon inside the ring
+    put(hudR,.12,.30,.262,.642);hudR.innerHTML='<span style="font-size:'+(25*k).toFixed(1)+'px;line-height:1">'+icon+'</span>';      // the icon inside the ring
     put(hudN,.36,.94,.34,.64);hudN.innerHTML='<span style="font-size:'+(21*k).toFixed(1)+'px;letter-spacing:.02em">'+name+'</span>';      // the name of the weather on the strip beside the ring
   }else hide([hudR,hudN]);
   if(two&&two.isConnected&&two.getBoundingClientRect().width){

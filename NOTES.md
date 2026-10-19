@@ -997,3 +997,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Gornja polja: veća slova i font Lilita One (assets/fonts/LilitaOne-Regular.ttf); izbor drugih fontova čeka Miloša.
 
 - Font gornjih polja: Paytone One (isti izgled kao Lilita One, ali ima č ć š ž đ); Lilita One uklonjen.
+
+- Gornja polja: ikonice vremena u kružiću podignute ~5 px.
