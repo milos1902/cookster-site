@@ -66,26 +66,36 @@ function hudBuild(){
   hudR=mk();hudN=mk();hudA=mk();hudB=mk();hudA.style.flexDirection='column';hudN.style.justifyContent='flex-start';hudN.style.color='#fff1cf';hudN.style.textShadow='0 1px 2px rgba(40,18,6,.85)';
 }
 function night(m){return m<330||m>=1140;}
+/* the places of the texts are marked by the player with dots (fractions of the picture of the strip): the centre of the ring (the icon), the middle between the ring and the end of the strip (the name),
+   the middle between the two dots of the small field (the day above, the month under it), the middle of the long field (the time only) */
+var PT={iconC:[.2108,.4812],nameL:.3194,nameR:.9251,nameY:.4834,dateL:.1102,dateR:.2828,dateY:.4955,timeL:.3107,timeR:.891,timeY:.4919};
+function fit(el,text,maxW,maxH,k){      // the biggest letters that still fit between the dots (measured, not guessed)
+  el.style.fontSize='100px';el.textContent=text;var w=el.scrollWidth||1,h=100;
+  var f=Math.min(100*maxW/w,maxH/1.05);el.style.fontSize=Math.max(6,f).toFixed(1)+'px';
+}
 function hudUpdate(){
   hudBuild();var all=[hudR,hudN,hudA,hudB];
   var ring=document.querySelector('img.ui-overlay-element[src*="drvena_traka_krug"]'),two=document.querySelector('img.ui-overlay-element[src*="dva_polja"]');
   function hide(l){l.forEach(function(e){e.style.display='none';});}
   var m=minNow(),icon=ICON[kind],name=NAMES[kind];
   if(kind==='sunce'&&night(m)){icon='🌙';name='Vedro';}
+  function boxAt(el,r,cx,cy,w,h){el.style.display='flex';el.style.justifyContent='center';el.style.alignItems='center';el.style.padding='0';el.style.width=w+'px';el.style.height=h+'px';el.style.left=(r.left+r.width*cx-w/2)+'px';el.style.top=(r.top+r.height*cy-h/2)+'px';}
   if(ring&&ring.isConnected&&ring.getBoundingClientRect().width){
     var r=ring.getBoundingClientRect(),k=r.width/197;
-    function put(el,x0,x1,y0,y1){el.style.display='flex';el.style.left=(r.left+r.width*x0)+'px';el.style.width=(r.width*(x1-x0))+'px';el.style.top=(r.top+r.height*y0)+'px';el.style.height=(r.height*(y1-y0))+'px';}
-    put(hudR,.12,.30,.285,.665);hudR.innerHTML='<span style="font-size:'+(25*k).toFixed(1)+'px;line-height:1">'+icon+'</span>';      // the icon inside the ring
-    put(hudN,.36,.94,.34,.64);hudN.innerHTML='<span style="font-size:'+(21*k).toFixed(1)+'px;letter-spacing:.02em">'+name+'</span>';      // the name of the weather on the strip beside the ring
+    boxAt(hudR,r,PT.iconC[0],PT.iconC[1],36*k,36*k);hudR.innerHTML='';var ic=document.createElement('span');ic.style.cssText='line-height:1;display:block';ic.textContent=icon;hudR.appendChild(ic);ic.style.fontSize=(25*k).toFixed(1)+'px';
+    var nw=r.width*(PT.nameR-PT.nameL),nh=r.height*.3;
+    boxAt(hudN,r,(PT.nameL+PT.nameR)/2,PT.nameY,nw,nh);var ns=document.createElement('span');ns.style.cssText='line-height:1;display:block;white-space:nowrap';hudN.innerHTML='';hudN.appendChild(ns);
+    ns.style.fontSize='100px';ns.textContent=name;var wN=ns.getBoundingClientRect().width||1;ns.style.fontSize=Math.min(100*nw*.9/wN,nh*.8).toFixed(1)+'px';      // centred between the ring and the end of the strip, as big as it fits
   }else hide([hudR,hudN]);
   if(two&&two.isConnected&&two.getBoundingClientRect().width){
-    var q=two.getBoundingClientRect(),kk=q.width/238;
-    function put2(el,x0,x1,y0,y1){el.style.display='flex';el.style.left=(q.left+q.width*x0)+'px';el.style.width=(q.width*(x1-x0))+'px';el.style.top=(q.top+q.height*y0)+'px';el.style.height=(q.height*(y1-y0))+'px';}
-    put2(hudA,.12,.29,.365,.62);put2(hudB,.31,.90,.365,.62);
-    var dt=dateOf(dayNow()),tm='--:--';try{tm=CooksterDay.fmt(m);}catch(e){}
-    hudA.innerHTML='<span style="font-size:'+(23*kk).toFixed(1)+'px">'+dt.d+'</span><span style="font-size:'+(12*kk).toFixed(1)+'px;letter-spacing:.04em;text-transform:uppercase">'+MONTHS[dt.m].slice(0,3)+'</span>';
-    hudB.style.justifyContent='space-between';hudB.style.padding='0 '+(8*kk).toFixed(1)+'px';
-    hudB.innerHTML='<span style="font-size:'+(21*kk).toFixed(1)+'px">'+tm+'</span><span style="font-size:'+(19*kk).toFixed(1)+'px">Dan '+dayNow()+'</span>';      // the time on the left, the day of the game on the right
+    var q=two.getBoundingClientRect(),kk=q.width/238,dt=dateOf(dayNow()),tm='--:--';try{tm=CooksterDay.fmt(m);}catch(e){}
+    var dw=q.width*(PT.dateR-PT.dateL),dh=q.height*.34;
+    boxAt(hudA,q,(PT.dateL+PT.dateR)/2,PT.dateY,dw,dh);hudA.style.flexDirection='column';
+    hudA.innerHTML='<span style="font-size:'+(24*kk).toFixed(1)+'px;line-height:1">'+dt.d+'</span><span style="font-size:'+(12*kk).toFixed(1)+'px;line-height:1;letter-spacing:.04em;text-transform:uppercase;margin-top:'+(1*kk).toFixed(1)+'px">'+MONTHS[dt.m].slice(0,3)+'</span>';
+    var tw=q.width*(PT.timeR-PT.timeL),th=q.height*.3;
+    boxAt(hudB,q,(PT.timeL+PT.timeR)/2,PT.timeY,tw,th);hudB.style.flexDirection='row';
+    var ts=document.createElement('span');ts.style.cssText='line-height:1;display:block;white-space:nowrap';hudB.innerHTML='';hudB.appendChild(ts);ts.style.fontSize='100px';ts.textContent=tm;var wT=ts.getBoundingClientRect().width||1;
+    ts.style.fontSize=Math.min(100*tw*.94/wT,th*1.0).toFixed(1)+'px';      // only the time, the biggest that fits between the dots
   }else hide([hudA,hudB]);
 }
 var last=performance.now(),hudT=0;
