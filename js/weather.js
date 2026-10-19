@@ -5,16 +5,23 @@
    - The two fields at the top (the wooden strip "dva polja"): the small one shows the date (day and month), the long one the time and the weather. */
 (function(){
 if(window.CooksterWeather)return;
-var NAMES={sunce:'Sunčano',kisa:'Kiša',nevreme:'Nevreme'},ICON={sunce:'☀️',kisa:'🌧️',nevreme:'⛈️'},
-    TARGET={sunce:{sun:1,dark:0,rain:0,storm:0},kisa:{sun:.4,dark:.05,rain:1,storm:0},nevreme:{sun:.14,dark:.12,rain:1,storm:1}},
+var NAMES={sunce:'Sunčano',oblaci:'Oblačno',kisa:'Kiša',nevreme:'Nevreme',sneg:'Sneg'},ICON={sunce:'☀️',oblaci:'☁️',kisa:'🌧️',nevreme:'⛈️',sneg:'❄️'},
+    TARGET={sunce:{sun:1,dark:0,rain:0,storm:0,snow:0},oblaci:{sun:.6,dark:.02,rain:0,storm:0,snow:0},kisa:{sun:.4,dark:.05,rain:1,storm:0,snow:0},nevreme:{sun:.14,dark:.12,rain:1,storm:1,snow:0},sneg:{sun:.4,dark:.04,rain:0,storm:0,snow:1}},
     MONTHS=['januar','februar','mart','april','maj','jun','jul','avgust','septembar','oktobar','novembar','decembar'],MDAYS=[31,28,31,30,31,30,31,31,30,31,30,31],
-    START={m:4,d:1},      // the game starts on the 1st of May
-    forced=null,cur={sun:1,dark:0,rain:0,storm:0},kind='sunce',lastRef=0,nextFlash=0;
+    START={m:0,d:1},      // the game starts on the 1st of January
+    forced=null,cur={sun:1,dark:0,rain:0,storm:0,snow:0},kind='sunce',lastRef=0,nextFlash=0;
 function hash(n){n=(n^61)^(n>>>16);n=(n+(n<<3))|0;n=n^(n>>>4);n=Math.imul(n,0x27d4eb2d);n=n^(n>>>15);return (n>>>0)/4294967296;}
-function pick(r,prev){var k=r<.52?'sunce':r<.86?'kisa':'nevreme';if(prev==='sunce'&&k==='nevreme')k='kisa';return k;}
+function pick(r,prev,month){      // the weather depends on the season: snow only in winter, storms rather in spring / summer
+  var w=(month===11||month===0||month===1),su=(month>=5&&month<=7),cuts;
+  // cumulative limits: sunce, oblaci, sneg, kisa, (the rest = nevreme)
+  if(w)cuts=[.22,.52,.88,.97];else if(su)cuts=[.52,.67,.67,.85];else cuts=[.34,.58,.58,.88];
+  var k=r<cuts[0]?'sunce':r<cuts[1]?'oblaci':r<cuts[2]?'sneg':r<cuts[3]?'kisa':'nevreme';
+  if(prev==='sunce'&&k==='nevreme')k='kisa';
+  return k;
+}
 function kindAt(day,minute){      // a chain through the day: it mostly stays as it was, sometimes it changes
-  var b=Math.max(0,Math.min(7,Math.floor(minute/180))),s=pick(hash(day*131+7),'');
-  for(var i=1;i<=b;i++){if(hash(day*977+i*13)>=.58)s=pick(hash(day*389+i*29),s);}
+  var b=Math.max(0,Math.min(7,Math.floor(minute/180))),m=dateOf(day).m,s=pick(hash(day*131+7),'',m);
+  for(var i=1;i<=b;i++){if(hash(day*977+i*13)>=.58)s=pick(hash(day*389+i*29),s,m);}
   return s;
 }
 function dayNow(){try{return Math.max(1,+CooksterState.player.day||1);}catch(e){return 1;}}
@@ -37,41 +44,54 @@ var cv=null,cx=null,drops=[];
 function rainBuild(){var sc=document.getElementById('scene');if(!sc)return false;if(cv&&cv.parentNode===sc)return true;
   cv=document.createElement('canvas');cv.id='weatherRain';cv.width=48;cv.height=410;cv.style.cssText='position:absolute;left:0;top:0;width:48px;height:410px;pointer-events:none;z-index:69000;opacity:0;transition:opacity .6s';sc.appendChild(cv);cx=cv.getContext('2d');return true;}
 function rainDraw(dt){
-  if(!rainBuild())return;var r=cur.rain;cv.style.opacity=r>.02?'1':'0';if(r<=.02&&!drops.length)return;
+  if(!rainBuild())return;var r=Math.max(cur.rain,cur.snow);cv.style.opacity=r>.02?'1':'0';if(r<=.02&&!drops.length)return;
   cx.clearRect(0,0,48,410);
-  var want=Math.round(34*r*(1+cur.storm*.8));
-  while(drops.length<want)drops.push({x:Math.random()*40,y:Math.random()*410,v:380+Math.random()*260,l:7+Math.random()*10});
+  var snow=cur.snow>cur.rain,want=Math.round((snow?26:34)*r*(1+cur.storm*.8));
+  while(drops.length<want)drops.push({x:Math.random()*48,y:Math.random()*410,v:snow?(26+Math.random()*30):(380+Math.random()*260),l:7+Math.random()*10,p:Math.random()*6.28});
   if(drops.length>want)drops.length=want;
+  if(snow){cx.fillStyle='rgba(255,255,255,.85)';var tt=performance.now()/1000;
+    drops.forEach(function(d){d.y+=d.v*dt;d.x+=Math.sin(tt*1.3+d.p)*10*dt;if(d.y>414){d.y=-4;d.x=Math.random()*48;}cx.beginPath();cx.arc(d.x,d.y,1.3+(d.p%1)*1.1,0,6.2832);cx.fill();});
+  }else{
   cx.strokeStyle='rgba(205,220,255,.55)';cx.lineWidth=1;cx.beginPath();
   drops.forEach(function(d){d.y+=d.v*dt;d.x-=d.v*dt*.22;if(d.y>410||d.x<-6){d.y=-d.l;d.x=Math.random()*48;}cx.moveTo(d.x,d.y);cx.lineTo(d.x+d.l*.22,d.y-d.l);});
-  cx.stroke();
+  cx.stroke();}
 }
-/* the two fields at the top */
-var hudA=null,hudB=null;
+/* the fields at the top: the ring (the icon of the weather) with the name of the weather beside it on the wooden strip; the small field (the date); the long field (the time on the left, the day of the game on the right) */
+var hudR=null,hudN=null,hudA=null,hudB=null;
 function hudBuild(){
   if(hudA&&hudA.isConnected)return;
-  function mk(){var d=document.createElement('div');d.setAttribute('data-tool-ui','1');d.style.cssText='position:fixed;pointer-events:none;z-index:2147483100;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#3a2210;font:800 12px/1.05 Georgia,serif;text-shadow:0 1px 0 rgba(255,244,214,.6);white-space:nowrap;overflow:hidden';document.body.appendChild(d);return d;}
-  hudA=mk();hudB=mk();
+  function mk(){var d=document.createElement('div');d.setAttribute('data-tool-ui','1');d.style.cssText='position:fixed;pointer-events:none;z-index:2147483100;display:flex;align-items:center;justify-content:center;text-align:center;color:#3a2210;font:800 12px/1.05 Georgia,serif;text-shadow:0 1px 0 rgba(255,244,214,.6);white-space:nowrap;overflow:hidden';document.body.appendChild(d);return d;}
+  hudR=mk();hudN=mk();hudA=mk();hudB=mk();hudA.style.flexDirection='column';hudN.style.justifyContent='flex-start';hudN.style.color='#fff1cf';hudN.style.textShadow='0 1px 2px rgba(40,18,6,.85)';
 }
+function night(m){return m<330||m>=1140;}
 function hudUpdate(){
-  hudBuild();
-  var img=document.querySelector('img.ui-overlay-element[src*="dva_polja"]');
-  if(!img||!img.isConnected){hudA.style.display=hudB.style.display='none';return;}
-  var r=img.getBoundingClientRect();if(!r.width){hudA.style.display=hudB.style.display='none';return;}
-  hudA.style.display=hudB.style.display='flex';
-  function put(el,x0,x1,y0,y1){el.style.left=(r.left+r.width*x0)+'px';el.style.width=(r.width*(x1-x0))+'px';el.style.top=(r.top+r.height*y0)+'px';el.style.height=(r.height*(y1-y0))+'px';}
-  put(hudA,.12,.29,.365,.62);put(hudB,.31,.90,.365,.62);      // the small field (the date) and the long field (the time and the weather)
-  var dt=dateOf(dayNow()),k=r.width/238;
-  hudA.innerHTML='<span style="font-size:'+(15*k).toFixed(1)+'px">'+dt.d+'</span><span style="font-size:'+(8.5*k).toFixed(1)+'px;letter-spacing:.04em;text-transform:uppercase">'+MONTHS[dt.m].slice(0,3)+'</span>';
-  var tm='--:--';try{tm=CooksterDay.fmt(minNow());}catch(e){}
-  hudB.innerHTML='<span style="font-size:'+(12.5*k).toFixed(1)+'px">'+tm+' · '+ICON[kind]+' '+NAMES[kind]+'</span><span style="font-size:'+(8.5*k).toFixed(1)+'px;opacity:.8">'+dt.d+'. '+MONTHS[dt.m]+' · dan '+dayNow()+'</span>';
+  hudBuild();var all=[hudR,hudN,hudA,hudB];
+  var ring=document.querySelector('img.ui-overlay-element[src*="drvena_traka_krug"]'),two=document.querySelector('img.ui-overlay-element[src*="dva_polja"]');
+  function hide(l){l.forEach(function(e){e.style.display='none';});}
+  var m=minNow(),icon=ICON[kind],name=NAMES[kind];
+  if(kind==='sunce'&&night(m)){icon='🌙';name='Vedro';}
+  if(ring&&ring.isConnected&&ring.getBoundingClientRect().width){
+    var r=ring.getBoundingClientRect(),k=r.width/197;
+    function put(el,x0,x1,y0,y1){el.style.display='flex';el.style.left=(r.left+r.width*x0)+'px';el.style.width=(r.width*(x1-x0))+'px';el.style.top=(r.top+r.height*y0)+'px';el.style.height=(r.height*(y1-y0))+'px';}
+    put(hudR,.12,.30,.30,.68);hudR.innerHTML='<span style="font-size:'+(19*k).toFixed(1)+'px;line-height:1">'+icon+'</span>';      // the icon inside the ring
+    put(hudN,.36,.94,.34,.64);hudN.innerHTML='<span style="font-size:'+(14*k).toFixed(1)+'px;letter-spacing:.02em">'+name+'</span>';      // the name of the weather on the strip beside the ring
+  }else hide([hudR,hudN]);
+  if(two&&two.isConnected&&two.getBoundingClientRect().width){
+    var q=two.getBoundingClientRect(),kk=q.width/238;
+    function put2(el,x0,x1,y0,y1){el.style.display='flex';el.style.left=(q.left+q.width*x0)+'px';el.style.width=(q.width*(x1-x0))+'px';el.style.top=(q.top+q.height*y0)+'px';el.style.height=(q.height*(y1-y0))+'px';}
+    put2(hudA,.12,.29,.365,.62);put2(hudB,.31,.90,.365,.62);
+    var dt=dateOf(dayNow()),tm='--:--';try{tm=CooksterDay.fmt(m);}catch(e){}
+    hudA.innerHTML='<span style="font-size:'+(15*kk).toFixed(1)+'px">'+dt.d+'</span><span style="font-size:'+(8.5*kk).toFixed(1)+'px;letter-spacing:.04em;text-transform:uppercase">'+MONTHS[dt.m].slice(0,3)+'</span>';
+    hudB.style.justifyContent='space-between';hudB.style.padding='0 '+(8*kk).toFixed(1)+'px';
+    hudB.innerHTML='<span style="font-size:'+(13*kk).toFixed(1)+'px">'+tm+'</span><span style="font-size:'+(12*kk).toFixed(1)+'px">Dan '+dayNow()+'</span>';      // the time on the left, the day of the game on the right
+  }else hide([hudA,hudB]);
 }
 var last=performance.now(),hudT=0;
 function frame(now){
   requestAnimationFrame(frame);var dt=Math.min(.1,(now-last)/1000);last=now;
   var k=forced||kindAt(dayNow(),minNow());setKind(k);
   var t=TARGET[kind],a=1-Math.exp(-dt/2.5),ch=0;      // the light follows the weather slowly (a few seconds), not in a jump
-  ['sun','dark','rain','storm'].forEach(function(n){var o=cur[n];cur[n]=o+(t[n]-o)*a;ch=Math.max(ch,Math.abs(cur[n]-o));});
+  ['sun','dark','rain','storm','snow'].forEach(function(n){var o=cur[n];cur[n]=o+(t[n]-o)*a;ch=Math.max(ch,Math.abs(cur[n]-o));});
   rainDraw(dt);
   if(ch>.0004&&now-lastRef>120){lastRef=now;try{if(window.CooksterDay&&CooksterDay.refreshLight)CooksterDay.refreshLight();}catch(e){}}
   if(kind==='nevreme'){if(!nextFlash)nextFlash=now+5000+Math.random()*9000;if(now>nextFlash){nextFlash=now+6000+Math.random()*14000;lightning();}}else nextFlash=0;
@@ -79,6 +99,6 @@ function frame(now){
 }
 requestAnimationFrame(frame);
 window.CooksterWeather={kind:function(){return kind;},name:function(){return NAMES[kind];},icon:function(){return ICON[kind];},
-  sunF:function(){return cur.sun;},darkAdd:function(){return cur.dark;},rain:function(){return cur.rain;},storm:function(){return cur.storm;},
+  sunF:function(){return cur.sun;},darkAdd:function(){return cur.dark;},rain:function(){return cur.rain;},snow:function(){return cur.snow;},storm:function(){return cur.storm;},
   force:function(k){forced=(k&&TARGET[k])?k:null;},forced:function(){return forced;},date:function(){return dateOf(dayNow());},lightning:lightning};
 })();
