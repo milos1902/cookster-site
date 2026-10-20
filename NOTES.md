@@ -1032,3 +1032,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Lasta na prozoru (js/swallow.js, assets/effects/lasta/lasta_1.webm): klip iz Higgsfielda, izdvojena samo lasta (poređenjem sa praznim kadrom, sa senkom), boja prilagođena sceni (manji kontrast, žućkasto). Dolazi samo kad je sunčano jutro (06–11h), prozor otvoren, na ~45–120 s; nestaje ako se vreme/prozor promeni.
 
 - Lasta: dolazi 6–14 s čim su ispunjeni uslovi (sunčano jutro 06–12h + otvoren prozor), pa na svakih 25–60 s.
+
+## Old spice bottles removed from vessels
+- Salt/oil/spice amounts are no longer drawn as a bottle picture inside pans, plates, bowls (renderFoodContents skips staple entries; staple content entries carry no src; contentSrc removed from STAPLES). New drawer jars unchanged.
