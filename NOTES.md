@@ -1030,3 +1030,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Uklonjen alat 'Grom' (thunder-tool.js). Grom sada: jedan zvuk, bez preklapanja, i vrlo slab bljesak kroz prozor samo na najglasnijem mestu zvuka (automatski), bez treperenja lustera. Zvuk napolju: kad se vreme promeni, stari zvuk nestaje za pola sekunde.
 
 - Lasta na prozoru (js/swallow.js, assets/effects/lasta/lasta_1.webm): klip iz Higgsfielda, izdvojena samo lasta (poređenjem sa praznim kadrom, sa senkom), boja prilagođena sceni (manji kontrast, žućkasto). Dolazi samo kad je sunčano jutro (06–11h), prozor otvoren, na ~45–120 s; nestaje ako se vreme/prozor promeni.
+
+- Lasta: dolazi 6–14 s čim su ispunjeni uslovi (sunčano jutro 06–12h + otvoren prozor), pa na svakih 25–60 s.
