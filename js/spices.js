@@ -56,6 +56,21 @@
     try{const c=containerAt(mouse.x,mouse.y);if(c)return c;
       const s=screenToScene(mouse.x,mouse.y);return window.CooksterFlour&&CooksterFlour.troughAt?CooksterFlour.troughAt(s.x,s.y):null;}catch(_){return null;}
   }
+  // a vessel under the cursor, or the nearest one whose edge is closer than NEAR px: the jar starts to tilt before it is above the middle
+  const NEAR=110;
+  function vesselNear(jar){
+    const c=vesselUnder(jar);if(c)return c;
+    let best=null,bd=NEAR;
+    try{for(const it of (window.items||items)){
+      if(!it||it===jar||!isContainerItem(it))continue;
+      const wrap=(isPanItem(it)?it._panContent:it._vesselContent)||it,r=wrap.getBoundingClientRect();
+      if(!r.width)continue;
+      const dx=Math.max(r.left-mouse.x,0,mouse.x-r.right),dy=Math.max(r.top-mouse.y,0,mouse.y-r.bottom),d=Math.hypot(dx,dy);
+      if(d<bd){bd=d;best=it;}
+    }}catch(_){}
+    if(best)return best;
+    try{const s=screenToScene(mouse.x,mouse.y);return window.CooksterFlour&&CooksterFlour.troughAt?CooksterFlour.troughAt(s.x,s.y):null;}catch(_){return null;}
+  }
   // where the lid (the open mouth) of the tilted jar is on the screen: the visible jar is the placement ghost, turned by `tilt` around its pivot
   function lidPoint(jar){
     const g=[...document.querySelectorAll('.ghost-item-copy')].find(x=>x.querySelector('img[src*="calibration_props/zacini/"]'));
@@ -107,10 +122,10 @@
       document.querySelectorAll('.ghost-item-copy').forEach(g=>{if(g.querySelector('img[src*="calibration_props/zacini/"]'))g.remove();});
       return;
     }
-    const target=vesselUnder(jar);
-    // over the kneading trough the jar tilts away from the side it comes from (from the left: pours to the right)
-    const isTr=!!target&&target.dataset&&target.dataset.itemId==='nacve';
-    const goal=target?38*(isTr&&mouse.x>target.getBoundingClientRect().left+target.getBoundingClientRect().width/2?-1:1):0;
+    const target=vesselNear(jar);
+    // the jar tilts away from the side it comes from (from the left: pours to the right, from the right: pours to the left)
+    const tr=target?target.getBoundingClientRect():null;
+    const goal=target?38*(mouse.x>tr.left+tr.width/2?-1:1):0;
     tilt+=(goal-tilt)*.18;
     jar.style.rotate=tilt.toFixed(1)+'deg';
     document.querySelectorAll('.ghost-item-copy').forEach(g=>{if(g.querySelector('img[src*="calibration_props/zacini/"]'))g.style.rotate=tilt.toFixed(1)+'deg';});
@@ -122,7 +137,7 @@
     if(e.button!==0)return;
     const jar=(typeof holding!=='undefined'&&holding&&spiceOf(holding))?holding:null;
     if(!jar)return;
-    const target=vesselUnder(jar);
+    const target=vesselNear(jar);
     if(!target||Math.abs(tilt)<12)return;
     e.preventDefault();e.stopImmediatePropagation();
     const kind=spiceOf(jar);
