@@ -330,8 +330,8 @@ window.CooksterCatalog = Object.freeze({
     Object.freeze({id:'ajvar_poklopac_mali',type:'prop',subtype:'calibration_prop',label:'Poklopac male tegle',src:'assets/calibration_props/ajvar_jars/poklopac_mali.png',w:85,h:62,snapProfile:'flat',shadowProfile:'tiny'})
   ]),
   STAPLES: Object.freeze({
-    ulje:Object.freeze({id:'ulje',label:'Ulje',src:'assets/new_props/zacin_2.png',contentSrc:'assets/new_props/zacin_2.png',price:120,w:62,h:92,uses:5,placement:['table','pan']}),
-    so:Object.freeze({id:'so',label:'So',src:'assets/new_props/zacin_1.png',contentSrc:'assets/new_props/zacin_1.png',price:60,w:58,h:82,uses:8,placement:['table','pan']})
+    ulje:Object.freeze({id:'ulje',label:'Ulje',src:'assets/new_props/zacin_2.png',price:120,w:62,h:92,uses:5,placement:['table','pan']}),
+    so:Object.freeze({id:'so',label:'So',src:'assets/new_props/zacin_1.png',price:60,w:58,h:82,uses:8,placement:['table','pan']})
   }),
   COLLISION: Object.freeze({
     occupiedProfiles: Object.freeze({

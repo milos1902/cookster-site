@@ -8504,7 +8504,7 @@ function ingredientVisualMeta(item){
   }
   if(item?.dataset?.staple==='1'){
     const key=item.dataset.stapleKey||'',def=CooksterCatalog.STAPLES?.[key]||{};
-    return {key,type:'staple',label:def.label||item.dataset.label||key,src:def.contentSrc||def.src||item.querySelector('.body')?.getAttribute('src')||''};
+    return {key,type:'staple',label:def.label||item.dataset.label||key,src:''};
   }
   if(item?.dataset?.ingredient==='1'){
     const key=item.dataset.ingredientKey||item.dataset.itemId||'ingredient';
@@ -9064,7 +9064,7 @@ function addOilAmountToVessel(vessel,amount){
     const def=CooksterCatalog.STAPLES?.ulje||{};
     const prev=model.items?.ulje||{
       count:0,type:'staple',label:def.label||'Ulje',
-      src:def.contentSrc||def.src||'',form:'',baseKey:'',cutState:''
+      src:'',form:'',baseKey:'',cutState:''
     };
     model.items??={};
     model.items.ulje={...prev,count:Math.max(0,+prev.count||0)+add,type:'staple'};
@@ -9508,7 +9508,7 @@ function stapleContainerMeta(modelKey,count){
       count:Math.max(0,+count||0),
       type:'staple',
       label:def.label||catalogKey,
-      src:def.contentSrc||def.src||'',
+      src:'',
       form:'',
       baseKey:'',
       cutState:''
@@ -13637,6 +13637,8 @@ function fadeFoodLayers(wrap,oldLayer,nextLayer,duration){
 }
 function renderFoodContents(wrap,counts,stage=1,metaItems={},batches=[],heat=0,mixLevel=0,vesselArg=null){
   if(!wrap)return;
+  // salt / oil / spices are only amounts: no bottle picture is ever drawn inside a vessel
+  if(counts&&metaItems){counts={...counts};for(const k of Object.keys(counts))if(metaItems[k]?.type==='staple')delete counts[k];}
   const groundItems=Object.values(GROUND_VEGETABLES)
     .filter(def=>(+counts?.[def.key]||0)>0);
   const groundKey=groundItems.map(def=>`${def.key}:${+counts[def.key]}`).join('|');
