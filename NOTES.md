@@ -1035,3 +1035,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Old spice bottles removed from vessels
 - Salt/oil/spice amounts are no longer drawn as a bottle picture inside pans, plates, bowls (renderFoodContents skips staple entries; staple content entries carry no src; contentSrc removed from STAPLES). New drawer jars unchanged.
+
+- Kiseli kupus: seckan kiseli kupus (E) opet ima sliku gomile iz posude za kupus (`kupus_kiseli_gomila.webp`), kao u činiji za kupus; vraćeno na zahtev. `catalog.js?v=3.36`.
