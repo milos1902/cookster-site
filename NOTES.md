@@ -1039,3 +1039,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Kiseli kupus: seckan kiseli kupus (E) opet ima sliku gomile iz posude za kupus (`kupus_kiseli_gomila.webp`), kao u činiji za kupus; vraćeno na zahtev. `catalog.js?v=3.36`.
 
 - Začini: tegla se naginje ranije (kad je kursor na manje od 110 px od posude, ne tek iznad nje) i uvek na stranu suprotnu od one sa koje dolazi (sa desne strane se naginje ulevo). Klik doziranja radi i u toj zoni. `spices.js?v=17`. Isprobano samo da se igra učita bez grešaka; naginjanje nisam isprobao u igri.
+
+- Kiša i sneg padaju samo napolju (levo od linije koju je Miloš nacrtao oko otvorenog prozora): `RAIN_AREA` u `weather.js?v=19` (tačke u pikselima scene; izdvojene iz njegove slike, poređeno sa prikazom igre pa linija pada na rub stakla). Ista linija važi i kad je prozor zatvoren.
