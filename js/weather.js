@@ -83,9 +83,11 @@ function lightning(){
 var cv=null,cx=null,drops=[];
 function rainBuild(){var sc=document.getElementById('scene');if(!sc)return false;if(cv&&cv.parentNode===sc)return true;
   cv=document.createElement('canvas');cv.id='weatherRain';cv.width=48;cv.height=410;cv.style.cssText='position:absolute;left:0;top:0;width:48px;height:410px;pointer-events:none;z-index:69000;opacity:0;transition:opacity .6s';sc.appendChild(cv);cx=cv.getContext('2d');return true;}
+// the rain / snow falls only outside the window: to the left of the line drawn by the owner (scene px); right of it are the open sash and the wall
+var RAIN_AREA=[[-2,0],[6,0],[12,40],[24,100],[34,130],[52,172],[39,195],[14,215],[9,240],[0,278],[-2,278]];
 function rainDraw(dt){
   if(!rainBuild())return;var r=Math.max(cur.rain,cur.snow);cv.style.opacity=r>.02?'1':'0';if(r<=.02&&!drops.length)return;
-  cx.clearRect(0,0,48,410);
+  cx.clearRect(0,0,48,410);cx.save();cx.beginPath();RAIN_AREA.forEach(function(q,i){i?cx.lineTo(q[0],q[1]):cx.moveTo(q[0],q[1]);});cx.closePath();cx.clip();
   var snow=cur.snow>cur.rain,want=Math.round((snow?26:34)*r*(1+cur.storm*.8));
   while(drops.length<want)drops.push({x:Math.random()*48,y:Math.random()*410,v:snow?(26+Math.random()*30):(380+Math.random()*260),l:7+Math.random()*10,p:Math.random()*6.28});
   if(drops.length>want)drops.length=want;
@@ -95,6 +97,7 @@ function rainDraw(dt){
   cx.strokeStyle='rgba(205,220,255,.55)';cx.lineWidth=1;cx.beginPath();
   drops.forEach(function(d){d.y+=d.v*dt;d.x-=d.v*dt*.22;if(d.y>410||d.x<-6){d.y=-d.l;d.x=Math.random()*48;}cx.moveTo(d.x,d.y);cx.lineTo(d.x+d.l*.22,d.y-d.l);});
   cx.stroke();}
+  cx.restore();
 }
 /* the fields at the top: the ring (the icon of the weather) with the name of the weather beside it on the wooden strip; the small field (the date); the long field (the time on the left, the day of the game on the right) */
 var FONT="'Paytone One','Lilita One',Georgia,serif";      // a chunky game font with all our letters (č ć š ž đ): assets/fonts/PaytoneOne-Regular.ttf (SIL Open Font License)
