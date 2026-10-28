@@ -360,6 +360,17 @@ ul.ing li{display:flex;gap:8px;align-items:center;border-bottom:1px dashed var(-
 ul.ing label{flex:1;min-width:0;border-bottom:0}
 a.cena{flex:0 0 auto;font-size:.85rem;font-weight:700;color:var(--red);text-decoration:none;border:1.5px solid var(--red);border-radius:999px;padding:5px 12px;white-space:nowrap}
 </style>
+<style>
+.cats,.rlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;padding-top:4px}
+.cats[hidden],.rlist[hidden]{display:none}
+.rlist .nc,.cats .nc{flex:none;width:auto;min-width:0}
+button.nc{border:0;padding:0;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.nc .t h3{font-size:.95rem;line-height:1.2}
+.nc .img.noimg .grad{display:none}
+.nc .img.noimg .t{color:var(--ink)}
+.nc .img.noimg .t h3{text-shadow:none}
+.cats #all-btn{grid-column:1/-1}
+</style>
 </head>
 <body>
 <div id="app"><div class="in">
@@ -762,8 +773,7 @@ var monthName=MONTHS[now.getMonth()];
 /* ---------- Kartice ---------- */
 function pic(r){return IMG[r.id]?'<img alt="" src="'+IMG[r.id]+'">':'<span class="ph0"></span>'}
 function card(r){
-  return '<a class="rcard" href="#recept-'+r.id+'"><div class="img'+(IMG[r.id]?'':' noimg')+'">'+pic(r)+'<div class="grad"></div><div class="t"><h3>'+esc(r.n)+'</h3></div></div>'+
-    '<div class="meta"><span class="tag">'+esc(r.c)+'</span><span>'+esc(r.t)+' · '+esc(r.s)+'</span></div></a>';
+  return '<a class="nc" href="#recept-'+r.id+'"><div class="img'+(IMG[r.id]?'':' noimg')+'">'+pic(r)+'<div class="grad"></div><div class="t"><h3>'+esc(r.n)+'</h3><small>'+esc(r.t)+'</small></div></div></a>';
 }
 function renderHome(){
   $('#mc-img').src=IMG.sarma;
@@ -800,11 +810,10 @@ function renderList(){
   if(catsMode){
     $('#cats').innerHTML=CATS.slice(1).map(function(c){
       var n=R.filter(function(r){return r.c===c}).length;
-      return '<button class="cat" type="button" data-c="'+esc(c)+'" style="border:0;padding:0;text-align:left;width:100%"><div class="img"><img alt="" src="'+IMG[CI[c]]+'"><div class="grad"></div>'+
-        '<span class="cnt">'+n+' '+(n===1?'recept':n<5?'recepta':'recepata')+'</span>'+
-        '<div class="t"><h2>'+esc(c)+'</h2><p>'+esc(CD[c])+'</p></div><span class="chev">›</span></div></button>';
+      return '<button class="nc cc" type="button" data-c="'+esc(c)+'"><div class="img"><img alt="" src="'+IMG[CI[c]]+'"><div class="grad"></div>'+
+        '<div class="t"><h3>'+esc(c)+'</h3><small>'+n+' '+(n===1?'recept':n<5?'recepta':'recepata')+'</small></div></div></button>';
     }).join('')+'<button class="btn" id="all-btn" type="button">Prikaži sva jela</button>';
-    $$('#cats .cat').forEach(function(el){el.addEventListener('click',function(){cat=el.getAttribute('data-c');catsOn=false;renderList();window.scrollTo(0,0)})});
+    $$('#cats .cc').forEach(function(el){el.addEventListener('click',function(){cat=el.getAttribute('data-c');catsOn=false;renderList();window.scrollTo(0,0)})});
     $('#all-btn').onclick=function(){cat='Sve';catsOn=false;renderList()};
     return;
   }
