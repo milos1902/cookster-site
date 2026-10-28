@@ -831,8 +831,8 @@ function renderDetail(id){
     '<button class="btn" id="b-save" type="button">'+(saved?'♥ Sačuvano u profilu':'♡ Sačuvaj recept')+'</button>'+
     '<p class="free">'+(id==='sarma'?'Ovaj recept je besplatan.':state.member?'Član si: svi koraci su otključani.':'Prva dva koraka su besplatna, ostalo je za članove.')+'</p>'+
     '<div class="card"><h2>Sastojci</h2><ul class="ing" style="margin-top:8px">'+
-    r.i.map(function(x,k){var sl=cenaSlug(x);return '<li><label><input type="checkbox" data-k="'+k+'"'+(ch.indexOf(k)>-1?' checked':'')+'><span>'+esc(x)+'</span></label>'+(sl?'<a class="cena" href="https://cenoteka.rs/'+sl+'/" target="_blank" rel="noopener">Cene ›</a>':'')+'</li>'}).join('')+
-    '</ul>'+(r.i.some(function(x){return cenaSlug(x)})?'<p class="note" style="margin-top:10px">„Cene" otvara sajt Cenoteka, gde vidiš cene u prodavnicama.</p>':'')+'<button class="btn" id="b-share" type="button" style="margin-top:14px;width:100%">Podeli sastojke</button><p class="note" style="margin-top:8px;text-align:center">Šalje se samo ono što nisi označio kvačicom.</p></div>'+
+    r.i.map(function(x,k){var u=cenaUrl(x);return '<li><label><input type="checkbox" data-k="'+k+'"'+(ch.indexOf(k)>-1?' checked':'')+'><span>'+esc(x)+'</span></label>'+(u?'<a class="cena" href="'+u+'" target="_blank" rel="noopener">Cene ›</a>':'')+'</li>'}).join('')+
+    '</ul>'+(r.i.some(function(x){return cenaQuery(x)})?'<p class="note" style="margin-top:10px">„Cene" otvara sajt Cenoteka, gde vidiš cene u prodavnicama.</p>':'')+'<button class="btn" id="b-share" type="button" style="margin-top:14px;width:100%">Podeli sastojke</button><p class="note" style="margin-top:8px;text-align:center">Šalje se samo ono što nisi označio kvačicom.</p></div>'+
     '<div class="card"><h2>Priprema</h2><ol class="steps" style="margin-top:12px">'+
     r.st.map(function(x){return '<li><span>'+esc(x)+'</span></li>'}).join('')+'</ol></div>'+
     (r.tip?'<div class="tip">'+esc(r.tip)+'</div>':'')+'<div id="rq"></div></div>';
@@ -910,26 +910,60 @@ function renderPay(){
   $('#pay-go').onclick=function(){state.member=true;save();PAYM='done';renderPay();window.scrollTo(0,0)};
 }
 
-/* ---------- Cene (veza na Cenoteku, samo potvrđene stranice) ---------- */
-function cenaSlug(txt){
-  var t=txt.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  if(/brasn/.test(t))return 'brasno';
-  if(/jaj/.test(t))return 'jaja';
-  if(/mlek/.test(t)&&!/kisel/.test(t))return 'mleko';
-  if(/\bulj/.test(t))return 'ulje';
-  if(/secer/.test(t))return 'secer';
-  if(/pirin/.test(t))return 'pirinac';
-  if(/kisel/.test(t)&&/kupus/.test(t))return 'kiseli-kupus';
-  if(/bel\w* luk/.test(t))return 'beli-luk';
-  if(/\bluk/.test(t))return 'p/crni-luk-1kg';
-  if(/\bsira?\b/.test(t))return 'sir';
-  if(/kvasc|kvasac/.test(t))return 'kvasac';
-  if(/grah|pasulj|tetovac/.test(t))return 'pasulj';
-  if(/sirc/.test(t))return 'sirce';
-  if(/limun/.test(t))return 'limun';
-  if(/slanin/.test(t))return 'slanina';
-  return '';
+/* ---------- Cene: pretraga na Cenoteci za bilo koji sastojak ---------- */
+var CENE_RULES=[
+  [/mleven\w*\s*mes/,'mleveno meso'],
+  [/kisel\w*\s*kupus/,'kiseli kupus'],
+  [/kupus/,'kupus'],
+  [/kisel\w*\s*mlek/,'kiselo mleko'],
+  [/mlek/,'mleko'],
+  [/brasn/,'brašno'],
+  [/jaj/,'jaja'],
+  [/\bulj/,'ulje'],
+  [/secer/,'šećer'],
+  [/pirin/,'pirinač'],
+  [/krompir/,'krompir'],
+  [/bel\w*\s*luk/,'beli luk'],
+  [/\bluk/,'luk'],
+  [/\bsira?\b/,'sir'],
+  [/kvasc|kvasac/,'kvasac'],
+  [/grah|pasulj|tetov/,'pasulj'],
+  [/sirc/,'sirće'],
+  [/limun/,'limun'],
+  [/slanin/,'slanina'],
+  [/suvo\s*mes/,'suvo meso'],
+  [/rebr|rebar/,'rebra'],
+  [/jagnj/,'jagnjetina'],
+  [/\bsoli?\b/,'so'],
+  [/biber/,'biber'],
+  [/lovor/,'lovor'],
+  [/alj?ev/,'aleva paprika'],
+  [/slatk\w*\s*paprik/,'slatka paprika'],
+  [/paprik/,'paprika'],
+  [/patlid/,'patlidžan'],
+  [/paradajz/,'paradajz'],
+  [/ruzmarin/,'ruzmarin'],
+  [/kopr\b|kopra/,'kopar'],
+  [/spanac/,'spanać'],
+  [/kopriv/,'kopriva'],
+  [/zelj/,'zelje'],
+  [/visnj|visan/,'višnje'],
+  [/prasak\s*za\s*pecivo/,'prašak za pecivo'],
+  [/\bkor[ae]?\b|\bkora\b/,'kore za pitu'],
+  [/\bmast/,'mast'],
+  [/mesovit\w*\s*povrc|povrc/,'povrće']
+];
+function cenaQuery(txt){
+  var t=txt.toLowerCase().replace(/\([^)]*\)/g,' ');
+  if(t.indexOf(':')>-1)t=t.split(':').pop();
+  var n=t.normalize('NFD').replace(/[̀-ͯ]/g,'');
+  for(var i=0;i<CENE_RULES.length;i++){if(CENE_RULES[i][0].test(n))return CENE_RULES[i][1]}
+  if(/\bvod/.test(n))return '';
+  var w=n.replace(/[0-9.,\/]+/g,' ').replace(/\b(g|kg|ml|l|dl|kasika|kasike|kasicica|kasicice|cen|cena|glavica|glavice|grana|grane|lista|litar|kocka|prstohvat|nekoliko|po|zelji|ceo|za|od|pola|sok|krupn\w*|mlad\w*|cvrst\w*|domac\w*|beli\w*|crn\w*|crven\w*)\b/g,' ').replace(/\s+/g,' ').trim();
+  return w.split(' ').slice(0,2).join(' ');
 }
+function cenaUrl(txt){var q=cenaQuery(txt);return q?'https://cenoteka.rs/search?q='+encodeURIComponent(q):''}
+
 /* ---------- Podeli sastojke ---------- */
 function copyText(t){
   if(navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(t)}
