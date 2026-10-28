@@ -355,6 +355,11 @@ select{width:auto;max-width:100%;min-height:38px;padding:0 10px;font-size:13px}
 .zoomed .menu{max-height:calc((100dvh - 12px) / var(--z))!important}
 </style>
 <style></style>
+<style>
+ul.ing li{display:flex;gap:8px;align-items:center;border-bottom:1px dashed var(--line)}
+ul.ing label{flex:1;min-width:0;border-bottom:0}
+a.cena{flex:0 0 auto;font-size:.85rem;font-weight:700;color:var(--red);text-decoration:none;border:1.5px solid var(--red);border-radius:999px;padding:5px 12px;white-space:nowrap}
+</style>
 </head>
 <body>
 <div id="app"><div class="in">
@@ -826,8 +831,8 @@ function renderDetail(id){
     '<button class="btn" id="b-save" type="button">'+(saved?'♥ Sačuvano u profilu':'♡ Sačuvaj recept')+'</button>'+
     '<p class="free">'+(id==='sarma'?'Ovaj recept je besplatan.':state.member?'Član si: svi koraci su otključani.':'Prva dva koraka su besplatna, ostalo je za članove.')+'</p>'+
     '<div class="card"><h2>Sastojci</h2><ul class="ing" style="margin-top:8px">'+
-    r.i.map(function(x,k){return '<li><label><input type="checkbox" data-k="'+k+'"'+(ch.indexOf(k)>-1?' checked':'')+'><span>'+esc(x)+'</span></label></li>'}).join('')+
-    '</ul><button class="btn" id="b-share" type="button" style="margin-top:14px;width:100%">Podeli sastojke</button><p class="note" style="margin-top:8px;text-align:center">Šalje se samo ono što nisi označio kvačicom.</p></div>'+
+    r.i.map(function(x,k){var sl=cenaSlug(x);return '<li><label><input type="checkbox" data-k="'+k+'"'+(ch.indexOf(k)>-1?' checked':'')+'><span>'+esc(x)+'</span></label>'+(sl?'<a class="cena" href="https://cenoteka.rs/'+sl+'/" target="_blank" rel="noopener">Cene ›</a>':'')+'</li>'}).join('')+
+    '</ul>'+(r.i.some(function(x){return cenaSlug(x)})?'<p class="note" style="margin-top:10px">„Cene" otvara sajt Cenoteka, gde vidiš cene u prodavnicama.</p>':'')+'<button class="btn" id="b-share" type="button" style="margin-top:14px;width:100%">Podeli sastojke</button><p class="note" style="margin-top:8px;text-align:center">Šalje se samo ono što nisi označio kvačicom.</p></div>'+
     '<div class="card"><h2>Priprema</h2><ol class="steps" style="margin-top:12px">'+
     r.st.map(function(x){return '<li><span>'+esc(x)+'</span></li>'}).join('')+'</ol></div>'+
     (r.tip?'<div class="tip">'+esc(r.tip)+'</div>':'')+'<div id="rq"></div></div>';
@@ -905,6 +910,14 @@ function renderPay(){
   $('#pay-go').onclick=function(){state.member=true;save();PAYM='done';renderPay();window.scrollTo(0,0)};
 }
 
+/* ---------- Cene (veza na Cenoteku, samo potvrđene stranice) ---------- */
+function cenaSlug(txt){
+  var t=txt.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if(/brasn/.test(t))return 'brasno';
+  if(/jaj/.test(t))return 'jaja';
+  if(/mlek/.test(t)&&!/kisel/.test(t))return 'mleko';
+  return '';
+}
 /* ---------- Podeli sastojke ---------- */
 function copyText(t){
   if(navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(t)}
