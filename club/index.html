@@ -611,17 +611,9 @@ select{width:auto;max-width:100%;min-height:38px;padding:0 10px;font-size:13px}
         <a class="card tile" href="#clanstvo"><b>Članstvo</b><small id="p-clan"></small></a>
         <a class="card tile" href="#lista"><b>Lista za kupovinu</b><small id="p-lista"></small></a>
       </div>
-      <div class="card">
-        <h2>Značke</h2>
-        <div class="badges" id="medals" style="margin-top:12px"></div>
-      </div>
       <div>
-        <div class="sectionhead"><h2>Sačuvani recepti</h2></div>
+        <div class="sectionhead"><h2>Moji sačuvani recepti</h2></div>
         <div class="rlist" id="saved"></div>
-      </div>
-      <div>
-        <div class="sectionhead"><h2>Skuvano</h2></div>
-        <div class="rlist" id="done"></div>
       </div>
       <a class="btn" href="#o-meni" style="justify-self:start">Nešto o meni</a>
     </div>
@@ -637,7 +629,7 @@ select{width:auto;max-width:100%;min-height:38px;padding:0 10px;font-size:13px}
  <a class="mi" href="#zajednica"><span class="ic" style="background:rgba(125,46,46,.1);color:#7D2E2E"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.6"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M15 15.5a5 5 0 0 1 6 4.5"/></svg></span><span><b>Zajednica</b><small>Fotografije, pitanja i izazov meseca.</small></span></a>
  <a class="mi" href="#humanitarno"><span class="ic" style="background:rgba(181,74,26,.1);color:#B54A1A"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.4-9 9-9 9z"/></svg></span><span><b>Naše dobro delo</b><small>Kad se trpeza širi, nek' se širi i dobro.</small></span></a>
  <a class="mi" href="#clanstvo"><span class="ic" style="background:rgba(176,128,96,.15);color:#b08060"><svg viewBox="0 0 24 24"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.2 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/></svg></span><span><b>Članstvo</b><small>200 din mesečno, otkazuješ kad hoćeš.</small></span></a>
- <a class="mi" href="#profil"><span class="ic" style="background:rgba(125,46,46,.1);color:#7D2E2E"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span><span><b>Moj profil</b><small>Značke, sačuvano i skuvano.</small></span></a>
+ <a class="mi" href="#profil"><span class="ic" style="background:rgba(125,46,46,.1);color:#7D2E2E"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span><span><b>Moj profil</b><small>Sačuvani recepti i članstvo.</small></span></a>
  <a class="mi" href="#o-meni"><span class="ic" style="background:rgba(181,74,26,.1);color:#B54A1A"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg></span><span><b>Nešto o meni</b><small>Ko stoji iza Kluba.</small></span></a>
  <div style="height:12px"></div>
 </div>
@@ -833,34 +825,29 @@ $('#q').addEventListener('input',renderList);
 function renderDetail(id){
   var r=byId(id), box=$('#detail');
   if(!r){box.innerHTML='<div class="empty" style="margin-top:12px">Recept nije pronađen.</div>';return}
-  var saved=state.saved.indexOf(id)>-1, cooked=state.cooked.indexOf(id)>-1;
+  var saved=state.saved.indexOf(id)>-1;
   var ch=state.checked[id]||[];
   box.innerHTML='<div class="stack" style="margin-top:6px">'+(IMG[id]?'<img class="hero-img" alt="" src="'+IMG[id]+'">':'')+
     '<div><span class="eyebrow">'+esc(r.c)+'</span><h1 style="margin-top:4px">'+esc(r.n)+'</h1>'+
     '<p style="color:var(--text);margin-top:6px">'+esc(r.t)+' · '+esc(r.s)+'</p></div>'+
-    '<div class="row"><a class="btn red" href="#kuvaj-'+id+'">▶ Kuvaj sa mnom</a><button class="btn small" id="b-save" type="button">'+(saved?'Sačuvano':'Sačuvaj')+'</button><button class="btn small" id="b-list" type="button">'+(state.list.indexOf(id)>-1?'Na listi':'Dodaj u listu')+'</button>'+
-    '<button class="btn small red" id="b-cook" type="button">'+(cooked?'Skuvano':'Skuvao sam')+'</button></div>'+
+    '<a class="btn red" style="min-height:56px;font-size:1.1rem" href="#kuvaj-'+id+'">▶ Kuvaj sa mnom</a>'+
+    '<button class="btn" id="b-save" type="button">'+(saved?'♥ Sačuvano u profilu':'♡ Sačuvaj recept')+'</button>'+
     '<p class="free">'+(id==='sarma'?'Ovaj recept je besplatan.':state.member?'Član si: svi koraci su otključani.':'Prva dva koraka su besplatna, ostalo je za članove.')+'</p>'+
     '<div class="card"><h2>Sastojci</h2><ul class="ing" style="margin-top:8px">'+
     r.i.map(function(x,k){return '<li><label><input type="checkbox" data-k="'+k+'"'+(ch.indexOf(k)>-1?' checked':'')+'><span>'+esc(x)+'</span></label></li>'}).join('')+
-    '</ul></div>'+
+    '</ul><button class="btn small" id="b-list" type="button" style="margin-top:12px">'+(state.list.indexOf(id)>-1?'✓ Na listi za kupovinu':'+ Dodaj u listu za kupovinu')+'</button></div>'+
     '<div class="card"><h2>Priprema</h2><ol class="steps" style="margin-top:12px">'+
     r.st.map(function(x){return '<li><span>'+esc(x)+'</span></li>'}).join('')+'</ol></div>'+
     (r.tip?'<div class="tip">'+esc(r.tip)+'</div>':'')+'<div id="rq"></div></div>';
   renderRQ(id);
   $('#b-list').onclick=function(){
     var k=state.list.indexOf(id);
-    if(k>-1){state.list.splice(k,1);toast('Uklonjeno sa liste za kupovinu')}else{state.list.push(id);toast('Dodato u listu za kupovinu')}
+    if(k>-1){state.list.splice(k,1);toast('Uklonjeno sa liste za kupovinu')}else{state.list.push(id);toast('Sastojci su na listi za kupovinu')}
     save();renderDetail(id);
   };
   $('#b-save').onclick=function(){
     var k=state.saved.indexOf(id);
-    if(k>-1){state.saved.splice(k,1);toast('Uklonjeno iz sačuvanih')}else{state.saved.push(id);toast('Sačuvano u profilu')}
-    save();renderDetail(id);
-  };
-  $('#b-cook').onclick=function(){
-    var k=state.cooked.indexOf(id);
-    if(k>-1)state.cooked.splice(k,1);else{state.cooked.push(id);toast('Zabeleženo: skuvao si '+r.n)}
+    if(k>-1){state.saved.splice(k,1);toast('Uklonjeno iz sačuvanih')}else{state.saved.push(id);toast('Sačuvano. Nalazi se u Moj profil.')}
     save();renderDetail(id);
   };
   $$('#detail input[type=checkbox]').forEach(function(cb){cb.addEventListener('change',function(){
@@ -952,17 +939,8 @@ function renderProfile(){
   $('#p-badge').textContent=state.member?'Član Kluba':'Nisi član';
   $('#p-clan').textContent=state.member?'Aktivno, 200 din mesečno':'Postani član za 200 din';
   $('#p-lista').textContent=state.list.length?(state.list.length===1?'1 recept':state.list.length<5?state.list.length+' recepta':state.list.length+' recepata'):'Prazna';
-  var cooked=state.cooked.length, saved=state.saved.length;
-  var M=[
-    {t:'Prvo jelo',v:1,k:cooked},{t:'Pet jela',v:5,k:cooked},{t:'Svih '+R.length,v:R.length,k:cooked},
-    {t:'Sakupljač',v:3,k:saved}
-  ];
-  $('#medals').innerHTML=M.map(function(m){return '<div class="medal'+(m.k>=m.v?'':' off')+'"><b>'+m.v+'</b>'+esc(m.t)+'</div>'}).join('')+
-    '<p style="color:var(--text);flex-basis:100%;font-size:.9rem">Skuvano: '+cooked+' · Sačuvano: '+saved+'</p>';
   var items=state.saved.map(byId).filter(Boolean);
-  $('#saved').innerHTML=items.length?items.map(card).join(''):'<div class="empty" style="grid-column:1/-1">Još nema sačuvanih recepata. Otvori recept i izaberi „Sačuvaj".</div>';
-  var dn=state.cooked.map(byId).filter(Boolean);
-  $('#done').innerHTML=dn.length?dn.map(card).join(''):'<div class="empty" style="grid-column:1/-1">Još nisi skuvao nijedno jelo.</div>';
+  $('#saved').innerHTML=items.length?items.map(card).join(''):'<div class="empty" style="grid-column:1/-1">Još nema sačuvanih recepata. Otvori recept i pritisni „Sačuvaj recept".</div>';
 }
 
 /* ---------- Kuvaj sa mnom ---------- */
@@ -1008,7 +986,7 @@ function cookTick(){
 function cookGo(d){
   var n=C.i+d;
   if(n<0)return;
-  if(n>=C.st.length){state.cooked.indexOf(C.r.id)<0&&state.cooked.push(C.r.id);save();toast('Gotovo! Zabeleženo: skuvao si '+C.r.n);location.hash='#recept-'+C.r.id;return}
+  if(n>=C.st.length){state.cooked.indexOf(C.r.id)<0&&state.cooked.push(C.r.id);save();toast('Gotovo! Prijatno uz '+C.r.n);location.hash='#recept-'+C.r.id;return}
   if(!state.member&&C.r.id!=='sarma'&&n>=2){C.play=false;$('#c-lock').hidden=false;return}
   C.i=n;cookRender();
 }
