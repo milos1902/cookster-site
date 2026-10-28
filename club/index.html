@@ -335,6 +335,25 @@ select{width:auto;max-width:100%;min-height:38px;padding:0 10px;font-size:13px}
 .zthumbs img:first-child{margin-left:0}
 .rq h2{margin-bottom:10px}
 </style><style>@media (min-width:700px){#app,.cook-col{max-width:430px}}</style>
+<script>
+/* Ako telefon prikazuje stranicu u "desktop" širini (npr. 980 px), uvećaj sadržaj da popuni ekran. */
+(function(){try{
+  var sw=Math.min(screen.width,screen.height);
+  if(navigator.maxTouchPoints>0&&sw<=600&&window.innerWidth>sw*1.3){
+    var z=window.innerWidth/sw;
+    document.documentElement.style.zoom=z;
+    document.documentElement.style.setProperty('--z',z);
+    document.documentElement.classList.add('zoomed');
+  }
+}catch(e){}})();
+</script>
+<style>
+.zoomed #app,.zoomed .cook-col{max-width:none!important}
+.zoomed #app,.zoomed .in{min-height:calc(100dvh / var(--z))!important}
+.zoomed .cook-col{height:calc(100dvh / var(--z))!important}
+.zoomed .cook-panel{max-height:calc(52dvh / var(--z))!important}
+.zoomed .menu{max-height:calc((100dvh - 12px) / var(--z))!important}
+</style>
 </head>
 <body>
 <div id="app"><div class="in">
