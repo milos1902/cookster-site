@@ -1,5 +1,5 @@
 /* Cookster Club: jednostavan service worker. Aplikacija radi i bez interneta. */
-const CACHE = 'cookster-club-v5';
+const CACHE = 'cookster-club-v7';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
