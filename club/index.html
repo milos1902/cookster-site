@@ -354,7 +354,7 @@ select{width:auto;max-width:100%;min-height:38px;padding:0 10px;font-size:13px}
 .zoomed .cook-panel{max-height:calc(52dvh / var(--z))!important}
 .zoomed .menu{max-height:calc((100dvh - 12px) / var(--z))!important}
 </style>
-<style>.shopacts{display:grid;grid-template-columns:1fr auto;gap:10px}.shopacts .btn{min-height:54px;font-size:1.05rem}</style>
+<style></style>
 </head>
 <body>
 <div id="app"><div class="in">
@@ -398,7 +398,7 @@ select{width:auto;max-width:100%;min-height:38px;padding:0 10px;font-size:13px}
    <h2 style="margin:22px 0 14px">Kako radi</h2>
    <ol class="how">
     <li><span>1</span><div><b>Izaberi recept</b><p>Stara jela iz cele Srbije, novi svakog meseca.</p></div></li>
-    <li><span>2</span><div><b>Kuvaj uz video</b><p>Svaki korak je kratak video. Ideš svojim tempom, uz tajmer i listu za kupovinu.</p></div></li>
+    <li><span>2</span><div><b>Kuvaj uz video</b><p>Svaki korak je kratak video. Ideš svojim tempom, uz tajmer.</p></div></li>
     <li><span>3</span><div><b>Pomozi usput</b><p>Četvrtina članarine svakog meseca ide ustanovi, a uplatu pokazujemo na videu.</p></div></li>
    </ol>
 
@@ -498,7 +498,7 @@ select{width:auto;max-width:100%;min-height:38px;padding:0 10px;font-size:13px}
         <ul class="ticks">
           <li>Svi recepti sa video koracima, „Kuvaj sa mnom"</li>
           <li>Novi recept svakog meseca</li>
-          <li>Lista za kupovinu i tajmer pri kuvanju</li>
+          <li>Tajmer pri kuvanju i deljenje sastojaka</li>
           <li>Glasanje za ustanovu kojoj ide novac</li>
           <li>Video uplate i potvrde banke</li>
         </ul>
@@ -518,13 +518,6 @@ select{width:auto;max-width:100%;min-height:38px;padding:0 10px;font-size:13px}
   <section class="view" id="v-naplata" data-view="naplata">
     <h1 class="pg">Naplata</h1>
     <div class="stack" style="margin-top:16px" id="pay"></div>
-  </section>
-
-  <!-- LISTA -->
-  <section class="view" id="v-lista" data-view="lista">
-    <h1 class="pg">Lista za kupovinu</h1>
-    <p class="sub" style="margin-top:6px">Sastojci iz recepata koje dodaš.</p>
-    <div class="stack" style="margin-top:16px" id="shop"></div>
   </section>
 
   <!-- O MENI -->
@@ -610,7 +603,6 @@ select{width:auto;max-width:100%;min-height:38px;padding:0 10px;font-size:13px}
     <div class="stack" style="margin-top:18px">
       <div class="grid3">
         <a class="card tile" href="#clanstvo"><b>Članstvo</b><small id="p-clan"></small></a>
-        <a class="card tile" href="#lista"><b>Lista za kupovinu</b><small id="p-lista"></small></a>
       </div>
       <div>
         <div class="sectionhead"><h2>Moji sačuvani recepti</h2></div>
@@ -626,7 +618,6 @@ select{width:auto;max-width:100%;min-height:38px;padding:0 10px;font-size:13px}
  <div class="mh"><b>Klub</b><button id="menu-x" type="button">Zatvori</button></div>
  <a class="mi" href="#pocetna"><span class="ic" style="background:rgba(181,74,26,.1);color:#B54A1A"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span><span><b>Početna</b><small>Recept meseca i kategorije.</small></span></a>
  <a class="mi" href="#recepti"><span class="ic" style="background:rgba(125,46,46,.1);color:#7D2E2E"><svg viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></svg></span><span><b>Svi recepti</b><small>Pretraga po jelu i sastojku.</small></span></a>
- <a class="mi" href="#lista"><span class="ic" style="background:rgba(125,46,46,.1);color:#7D2E2E"><svg viewBox="0 0 24 24"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6L5 3H2"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/></svg></span><span><b>Lista za kupovinu</b><small>Sastojci iz izabranih recepata.</small></span></a>
  <a class="mi" href="#zajednica"><span class="ic" style="background:rgba(125,46,46,.1);color:#7D2E2E"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.6"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M15 15.5a5 5 0 0 1 6 4.5"/></svg></span><span><b>Zajednica</b><small>Fotografije, pitanja i izazov meseca.</small></span></a>
  <a class="mi" href="#humanitarno"><span class="ic" style="background:rgba(181,74,26,.1);color:#B54A1A"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.4-9 9-9 9z"/></svg></span><span><b>Naše dobro delo</b><small>Kad se trpeza širi, nek' se širi i dobro.</small></span></a>
  <a class="mi" href="#clanstvo"><span class="ic" style="background:rgba(176,128,96,.15);color:#b08060"><svg viewBox="0 0 24 24"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.2 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/></svg></span><span><b>Članstvo</b><small>200 din mesečno, otkazuješ kad hoćeš.</small></span></a>
@@ -836,16 +827,12 @@ function renderDetail(id){
     '<p class="free">'+(id==='sarma'?'Ovaj recept je besplatan.':state.member?'Član si: svi koraci su otključani.':'Prva dva koraka su besplatna, ostalo je za članove.')+'</p>'+
     '<div class="card"><h2>Sastojci</h2><ul class="ing" style="margin-top:8px">'+
     r.i.map(function(x,k){return '<li><label><input type="checkbox" data-k="'+k+'"'+(ch.indexOf(k)>-1?' checked':'')+'><span>'+esc(x)+'</span></label></li>'}).join('')+
-    '</ul><button class="btn small" id="b-list" type="button" style="margin-top:12px">'+(state.list.indexOf(id)>-1?'✓ Na listi za kupovinu':'+ Lista za kupovinu')+'</button></div>'+
+    '</ul><button class="btn" id="b-share" type="button" style="margin-top:14px;width:100%">Podeli sastojke</button><p class="note" style="margin-top:8px;text-align:center">Šalje se samo ono što nisi označio kvačicom.</p></div>'+
     '<div class="card"><h2>Priprema</h2><ol class="steps" style="margin-top:12px">'+
     r.st.map(function(x){return '<li><span>'+esc(x)+'</span></li>'}).join('')+'</ol></div>'+
     (r.tip?'<div class="tip">'+esc(r.tip)+'</div>':'')+'<div id="rq"></div></div>';
   renderRQ(id);
-  $('#b-list').onclick=function(){
-    var k=state.list.indexOf(id);
-    if(k>-1){state.list.splice(k,1);toast('Uklonjeno sa liste za kupovinu')}else{state.list.push(id);toast('Sastojci su na listi za kupovinu')}
-    save();renderDetail(id);
-  };
+  $('#b-share').onclick=function(){shareIngredients(id)};
   $('#b-save').onclick=function(){
     var k=state.saved.indexOf(id);
     if(k>-1){state.saved.splice(k,1);toast('Uklonjeno iz sačuvanih')}else{state.saved.push(id);toast('Sačuvano. Nalazi se u Moj profil.')}
@@ -918,36 +905,7 @@ function renderPay(){
   $('#pay-go').onclick=function(){state.member=true;save();PAYM='done';renderPay();window.scrollTo(0,0)};
 }
 
-/* ---------- Lista za kupovinu ---------- */
-function renderShop(){
-  var box=$('#shop');
-  var rs=state.list.map(byId).filter(Boolean);
-  if(!rs.length){box.innerHTML='<div class="empty">Lista je prazna. Otvori recept i pritisni „Lista za kupovinu".<br><a class="btn small" href="#recepti" style="margin-top:10px">Svi recepti</a></div>';return}
-  box.innerHTML='<div class="shopacts"><button class="btn red" id="sh-share" type="button">Podeli</button><button class="btn" id="sh-copy" type="button">Kopiraj</button></div>'+
-    '<p class="note" style="margin:0">Deli se ono što još nisi označio kao kupljeno.</p>'+rs.map(function(r){
-    var ch=state.shop[r.id]||[];
-    return '<div class="card shopcard"><div class="row spread"><h3>'+esc(r.n)+'</h3><button class="rm" data-id="'+r.id+'" type="button">Ukloni</button></div>'+
-      '<ul class="ing" style="margin-top:6px">'+r.i.map(function(x,k){return '<li><label><input type="checkbox" data-r="'+r.id+'" data-k="'+k+'"'+(ch.indexOf(k)>-1?' checked':'')+'><span>'+esc(x)+'</span></label></li>'}).join('')+'</ul></div>';
-  }).join('');
-  $('#sh-share').onclick=shareShop;
-  $('#sh-copy').onclick=copyShop;
-  $$('#shop .rm').forEach(function(b){b.onclick=function(){var id=b.getAttribute('data-id');state.list.splice(state.list.indexOf(id),1);save();renderShop();toast('Uklonjeno sa liste')}});
-  $$('#shop input[type=checkbox]').forEach(function(cb){cb.addEventListener('change',function(){
-    var id=cb.getAttribute('data-r'),k=+cb.getAttribute('data-k'),a=state.shop[id]||[],p=a.indexOf(k);
-    if(cb.checked&&p<0)a.push(k);if(!cb.checked&&p>-1)a.splice(p,1);state.shop[id]=a;save();
-  })});
-}
-
-
-function shopText(){
-  var out=['Lista za kupovinu',''];
-  state.list.map(byId).filter(Boolean).forEach(function(r){
-    var ch=state.shop[r.id]||[];
-    var items=r.i.filter(function(x,k){return ch.indexOf(k)<0});
-    if(items.length){out.push(r.n+':');items.forEach(function(x){out.push('• '+x)});out.push('')}
-  });
-  return out.join('\n').trim();
-}
+/* ---------- Podeli sastojke ---------- */
 function copyText(t){
   if(navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(t)}
   return new Promise(function(ok,no){
@@ -955,21 +913,21 @@ function copyText(t){
     try{document.execCommand('copy')?ok():no()}catch(e){no(e)}document.body.removeChild(ta);
   });
 }
-function copyShop(){
-  var t=shopText();if(t==='Lista za kupovinu'){toast('Sve je već kupljeno');return}
-  copyText(t).then(function(){toast('Lista je kopirana. Nalepi je u poruku.')},function(){toast('Kopiranje nije uspelo')});
+function shareIngredients(id){
+  var r=byId(id);if(!r)return;
+  var ch=state.checked[id]||[];
+  var items=r.i.filter(function(x,k){return ch.indexOf(k)<0});
+  if(!items.length){toast('Svi sastojci su označeni');return}
+  var t='Sastojci za '+r.n+':\n'+items.map(function(x){return '• '+x}).join('\n');
+  var fallback=function(){copyText(t).then(function(){toast('Sastojci su kopirani. Nalepi ih u poruku.')},function(){toast('Kopiranje nije uspelo')})};
+  if(navigator.share){navigator.share({title:r.n,text:t}).catch(function(e){if(e&&e.name!=='AbortError')fallback()})}
+  else fallback();
 }
-function shareShop(){
-  var t=shopText();if(t==='Lista za kupovinu'){toast('Sve je već kupljeno');return}
-  if(navigator.share){
-    navigator.share({title:'Lista za kupovinu',text:t}).catch(function(e){if(e&&e.name!=='AbortError')copyShop()});
-  }else{copyShop()}
-}
+
 /* ---------- Profil ---------- */
 function renderProfile(){
   $('#p-badge').textContent=state.member?'Član Kluba':'Nisi član';
   $('#p-clan').textContent=state.member?'Aktivno, 200 din mesečno':'Postani član za 200 din';
-  $('#p-lista').textContent=state.list.length?(state.list.length===1?'1 recept':state.list.length<5?state.list.length+' recepta':state.list.length+' recepata'):'Prazna';
   var items=state.saved.map(byId).filter(Boolean);
   $('#saved').innerHTML=items.length?items.map(card).join(''):'<div class="empty" style="grid-column:1/-1">Još nema sačuvanih recepata. Otvori recept i pritisni „Sačuvaj recept".</div>';
 }
@@ -1183,7 +1141,7 @@ function route(){
   var cid='';
   if(h.indexOf('recept-')===0){view='recept';rid=h.slice(7)}
   if(h.indexOf('kuvaj-')===0){view='recept';rid=h.slice(6);cid=rid}
-  if(['pocetna','recepti','recept','humanitarno','profil','clanstvo','naplata','lista','o-meni','welcome','zajednica'].indexOf(view)<0)view='pocetna';
+  if(['pocetna','recepti','recept','humanitarno','profil','clanstvo','naplata','o-meni','welcome','zajednica'].indexOf(view)<0)view='pocetna';
   if(!state.seen&&view!=='welcome'){location.hash='#welcome';return}
   $$('section.view').forEach(function(s){s.classList.toggle('on',s.getAttribute('data-view')===view)});
   var tab=view==='recept'?'recepti':view;
@@ -1197,7 +1155,6 @@ function route(){
   if(view==='profil')renderProfile();
   if(view==='clanstvo')renderClanstvo();
   if(view==='naplata'){PAYM=state.member&&PAYM==='done'?'done':'kartica';renderPay()}
-  if(view==='lista')renderShop();
   if(view==='zajednica')renderZ();
   document.body.classList.toggle('home',view==='pocetna');document.body.classList.toggle('welc',view==='welcome');closeMenu();
   window.scrollTo(0,0);
