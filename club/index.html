@@ -916,6 +916,20 @@ function cenaSlug(txt){
   if(/brasn/.test(t))return 'brasno';
   if(/jaj/.test(t))return 'jaja';
   if(/mlek/.test(t)&&!/kisel/.test(t))return 'mleko';
+  if(/\bulj/.test(t))return 'ulje';
+  if(/secer/.test(t))return 'secer';
+  if(/pirin/.test(t))return 'pirinac';
+  if(/mleven/.test(t))return 'mleveno-meso';
+  if(/kisel/.test(t)&&/kupus/.test(t))return 'kiseli-kupus';
+  if(/krompir/.test(t))return 'krompir';
+  if(/bel\w* luk/.test(t))return 'beli-luk';
+  if(/\bluk/.test(t))return 'luk';
+  if(/\bsira?\b/.test(t))return 'sir';
+  if(/kvasc|kvasac/.test(t))return 'kvasac';
+  if(/grah|pasulj|tetovac/.test(t))return 'pasulj';
+  if(/sirc/.test(t))return 'sirce';
+  if(/limun/.test(t))return 'limun';
+  if(/slanin/.test(t))return 'slanina';
   return '';
 }
 /* ---------- Podeli sastojke ---------- */
