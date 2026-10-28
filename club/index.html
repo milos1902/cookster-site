@@ -354,6 +354,7 @@ select{width:auto;max-width:100%;min-height:38px;padding:0 10px;font-size:13px}
 .zoomed .cook-panel{max-height:calc(52dvh / var(--z))!important}
 .zoomed .menu{max-height:calc((100dvh - 12px) / var(--z))!important}
 </style>
+<style>.shopacts{display:grid;grid-template-columns:1fr auto;gap:10px}.shopacts .btn{min-height:54px;font-size:1.05rem}</style>
 </head>
 <body>
 <div id="app"><div class="in">
@@ -835,7 +836,7 @@ function renderDetail(id){
     '<p class="free">'+(id==='sarma'?'Ovaj recept je besplatan.':state.member?'Član si: svi koraci su otključani.':'Prva dva koraka su besplatna, ostalo je za članove.')+'</p>'+
     '<div class="card"><h2>Sastojci</h2><ul class="ing" style="margin-top:8px">'+
     r.i.map(function(x,k){return '<li><label><input type="checkbox" data-k="'+k+'"'+(ch.indexOf(k)>-1?' checked':'')+'><span>'+esc(x)+'</span></label></li>'}).join('')+
-    '</ul><button class="btn small" id="b-list" type="button" style="margin-top:12px">'+(state.list.indexOf(id)>-1?'✓ Na listi za kupovinu':'+ Dodaj u listu za kupovinu')+'</button></div>'+
+    '</ul><button class="btn small" id="b-list" type="button" style="margin-top:12px">'+(state.list.indexOf(id)>-1?'✓ Na listi za kupovinu':'+ Lista za kupovinu')+'</button></div>'+
     '<div class="card"><h2>Priprema</h2><ol class="steps" style="margin-top:12px">'+
     r.st.map(function(x){return '<li><span>'+esc(x)+'</span></li>'}).join('')+'</ol></div>'+
     (r.tip?'<div class="tip">'+esc(r.tip)+'</div>':'')+'<div id="rq"></div></div>';
@@ -921,12 +922,15 @@ function renderPay(){
 function renderShop(){
   var box=$('#shop');
   var rs=state.list.map(byId).filter(Boolean);
-  if(!rs.length){box.innerHTML='<div class="empty">Lista je prazna. Otvori recept i izaberi „Dodaj u listu".<br><a class="btn small" href="#recepti" style="margin-top:10px">Svi recepti</a></div>';return}
-  box.innerHTML=rs.map(function(r){
+  if(!rs.length){box.innerHTML='<div class="empty">Lista je prazna. Otvori recept i pritisni „Lista za kupovinu".<br><a class="btn small" href="#recepti" style="margin-top:10px">Svi recepti</a></div>';return}
+  box.innerHTML='<div class="shopacts"><button class="btn red" id="sh-share" type="button">Podeli</button><button class="btn" id="sh-copy" type="button">Kopiraj</button></div>'+
+    '<p class="note" style="margin:0">Deli se ono što još nisi označio kao kupljeno.</p>'+rs.map(function(r){
     var ch=state.shop[r.id]||[];
     return '<div class="card shopcard"><div class="row spread"><h3>'+esc(r.n)+'</h3><button class="rm" data-id="'+r.id+'" type="button">Ukloni</button></div>'+
       '<ul class="ing" style="margin-top:6px">'+r.i.map(function(x,k){return '<li><label><input type="checkbox" data-r="'+r.id+'" data-k="'+k+'"'+(ch.indexOf(k)>-1?' checked':'')+'><span>'+esc(x)+'</span></label></li>'}).join('')+'</ul></div>';
   }).join('');
+  $('#sh-share').onclick=shareShop;
+  $('#sh-copy').onclick=copyShop;
   $$('#shop .rm').forEach(function(b){b.onclick=function(){var id=b.getAttribute('data-id');state.list.splice(state.list.indexOf(id),1);save();renderShop();toast('Uklonjeno sa liste')}});
   $$('#shop input[type=checkbox]').forEach(function(cb){cb.addEventListener('change',function(){
     var id=cb.getAttribute('data-r'),k=+cb.getAttribute('data-k'),a=state.shop[id]||[],p=a.indexOf(k);
@@ -934,6 +938,33 @@ function renderShop(){
   })});
 }
 
+
+function shopText(){
+  var out=['Lista za kupovinu',''];
+  state.list.map(byId).filter(Boolean).forEach(function(r){
+    var ch=state.shop[r.id]||[];
+    var items=r.i.filter(function(x,k){return ch.indexOf(k)<0});
+    if(items.length){out.push(r.n+':');items.forEach(function(x){out.push('• '+x)});out.push('')}
+  });
+  return out.join('\n').trim();
+}
+function copyText(t){
+  if(navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(t)}
+  return new Promise(function(ok,no){
+    var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy')?ok():no()}catch(e){no(e)}document.body.removeChild(ta);
+  });
+}
+function copyShop(){
+  var t=shopText();if(t==='Lista za kupovinu'){toast('Sve je već kupljeno');return}
+  copyText(t).then(function(){toast('Lista je kopirana. Nalepi je u poruku.')},function(){toast('Kopiranje nije uspelo')});
+}
+function shareShop(){
+  var t=shopText();if(t==='Lista za kupovinu'){toast('Sve je već kupljeno');return}
+  if(navigator.share){
+    navigator.share({title:'Lista za kupovinu',text:t}).catch(function(e){if(e&&e.name!=='AbortError')copyShop()});
+  }else{copyShop()}
+}
 /* ---------- Profil ---------- */
 function renderProfile(){
   $('#p-badge').textContent=state.member?'Član Kluba':'Nisi član';
