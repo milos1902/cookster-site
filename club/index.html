@@ -421,6 +421,7 @@ button.nc{border:0;padding:0;background:none;text-align:left;font:inherit;color:
 .sheet[hidden],.sheet-bd[hidden]{display:none}
 .sheet ol{margin:12px 0 0;padding-left:22px;display:grid;gap:10px;font-size:1.02rem}
 </style>
+<script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__instEv=e;if(window.__instCb)window.__instCb()});</script>
 </head>
 <body>
 <div id="app"><div class="in">
@@ -1421,7 +1422,7 @@ $('#cal-prev').addEventListener('click',function(){calM=D(calM.getFullYear(),cal
 $('#cal-next').addEventListener('click',function(){calM=D(calM.getFullYear(),calM.getMonth()+2,1);renderCal()});
 
 /* ---------- Instalacija aplikacije ---------- */
-var instEv=null;
+var instEv=window.__instEv||null;window.__instCb=function(){instEv=window.__instEv;renderInst()};
 function isStandalone(){return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true}
 function isIOS(){return /iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}
 function instHidden(){try{var t=+localStorage.getItem('klub.inst.x')||0;return Date.now()-t<14*864e5||localStorage.getItem('klub.inst.done')==='1'}catch(e){return false}}
@@ -1430,19 +1431,28 @@ function renderInst(){
   $('#inst-menu').hidden=!show;
   $('#inst-card').hidden=!(show&&!instHidden());
 }
+function isInApp(){return /viber|fban|fbav|fb_iab|instagram|messenger|; wv\)/i.test(navigator.userAgent)}
 function openInstSheet(){
-  $('#inst-steps').innerHTML=isIOS()
+  $('#inst-steps').innerHTML=isInApp()
+    ?'<p class="note">Ovaj link je otvoren unutar druge aplikacije (Viber, Facebook...), a ona ne može da instalira.</p><ol><li>Pritisni tri tačkice (⋮) gore desno.</li><li>Izaberi <b>Otvori u pregledaču</b> (Open in browser / Open in Chrome).</li><li>Kad se otvori Chrome, pritisni <b>Instaliraj</b>.</li></ol>'
+    :isIOS()
     ?'<p class="note">Na iPhone-u se instalira iz Safari-ja:</p><ol><li>Pritisni dugme za deljenje (kvadrat sa strelicom) na dnu ekrana.</li><li>Izaberi <b>Dodaj na početni ekran</b> (Add to Home Screen).</li><li>Pritisni <b>Dodaj</b> (Add).</li></ol>'
     :'<p class="note">Ako se instalacija ne pokrene sama:</p><ol><li>Pritisni tri tačkice (⋮) gore desno u Chrome-u.</li><li>Izaberi <b>Install app</b> (Instaliraj aplikaciju).</li><li>Pritisni <b>Install</b>.</li></ol>';
   $('#inst-bd').hidden=false;$('#inst-sheet').hidden=false;
 }
 function closeInstSheet(){$('#inst-bd').hidden=true;$('#inst-sheet').hidden=true}
+function openInChrome(){
+  var u=location.host+location.pathname+location.search+location.hash;
+  location.href='intent://'+u+'#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url='+encodeURIComponent(location.href)+';end';
+  setTimeout(function(){if(!document.hidden)openInstSheet()},1800);
+}
 function doInstall(){
+  if(isInApp()&&/android/i.test(navigator.userAgent)&&!instEv){openInChrome();return}
   if(instEv){var ev=instEv;instEv=null;ev.prompt();(ev.userChoice||Promise.resolve()).then(function(c){if(c&&c.outcome==='accepted'){try{localStorage.setItem('klub.inst.done','1')}catch(e){}}renderInst()});return}
   openInstSheet();
 }
-window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();instEv=e;renderInst()});
 window.addEventListener('appinstalled',function(){try{localStorage.setItem('klub.inst.done','1')}catch(e){}renderInst()});
+if(isInApp()&&!isIOS()){$('#inst-btn').textContent='Otvori u Chrome-u';$('#inst-card p').textContent='Ovde ne može da se instalira. Otvori u pravom Chrome-u.'}
 $('#inst-btn').addEventListener('click',doInstall);
 $('#inst-menu').addEventListener('click',function(e){e.preventDefault();closeMenu();doInstall()});
 $('#inst-x').addEventListener('click',function(){try{localStorage.setItem('klub.inst.x',String(Date.now()))}catch(e){}renderInst()});
