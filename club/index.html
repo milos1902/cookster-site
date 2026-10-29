@@ -1425,11 +1425,13 @@ $('#cal-next').addEventListener('click',function(){calM=D(calM.getFullYear(),cal
 var instEv=window.__instEv||null;window.__instCb=function(){instEv=window.__instEv;renderInst()};
 function isStandalone(){return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true}
 function isIOS(){return /iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}
-function instHidden(){try{var t=+localStorage.getItem('klub.inst.x')||0;return Date.now()-t<14*864e5||localStorage.getItem('klub.inst.done')==='1'}catch(e){return false}}
+function instHidden(){try{var t=+localStorage.getItem('klub.inst.x')||0;return Date.now()-t<14*864e5}catch(e){return false}}
 function renderInst(){
-  var show=!isStandalone()&&(function(){try{return localStorage.getItem('klub.inst.done')!=='1'}catch(e){return true}})();
+  var show=!isStandalone();
   $('#inst-menu').hidden=!show;
-  $('#inst-card').hidden=!(show&&!instHidden());
+  var inapp=isInApp()&&!isIOS();
+  $('#inst-menu').querySelector('b').textContent=inapp?'Otvori u Chrome-u':'Instaliraj aplikaciju';
+  $('#inst-card').hidden=!(show&&(instEv||!instHidden()));
 }
 function isInApp(){return /viber|fban|fbav|fb_iab|instagram|messenger|; wv\)/i.test(navigator.userAgent)}
 function openInstSheet(){
