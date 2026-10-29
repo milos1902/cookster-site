@@ -1441,11 +1441,18 @@ function openInstSheet(){
   $('#inst-bd').hidden=false;$('#inst-sheet').hidden=false;
 }
 function closeInstSheet(){$('#inst-bd').hidden=true;$('#inst-sheet').hidden=true}
+function openInChrome(){
+  var u=location.host+location.pathname+location.search+location.hash;
+  location.href='intent://'+u+'#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url='+encodeURIComponent(location.href)+';end';
+  setTimeout(function(){if(!document.hidden)openInstSheet()},1800);
+}
 function doInstall(){
+  if(isInApp()&&/android/i.test(navigator.userAgent)&&!instEv){openInChrome();return}
   if(instEv){var ev=instEv;instEv=null;ev.prompt();(ev.userChoice||Promise.resolve()).then(function(c){if(c&&c.outcome==='accepted'){try{localStorage.setItem('klub.inst.done','1')}catch(e){}}renderInst()});return}
   openInstSheet();
 }
 window.addEventListener('appinstalled',function(){try{localStorage.setItem('klub.inst.done','1')}catch(e){}renderInst()});
+if(isInApp()&&!isIOS()){$('#inst-btn').textContent='Otvori u Chrome-u';$('#inst-card p').textContent='Ovde ne može da se instalira. Otvori u pravom Chrome-u.'}
 $('#inst-btn').addEventListener('click',doInstall);
 $('#inst-menu').addEventListener('click',function(e){e.preventDefault();closeMenu();doInstall()});
 $('#inst-x').addEventListener('click',function(){try{localStorage.setItem('klub.inst.x',String(Date.now()))}catch(e){}renderInst()});
