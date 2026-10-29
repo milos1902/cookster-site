@@ -402,6 +402,7 @@ button.nc{border:0;padding:0;background:none;text-align:left;font:inherit;color:
 .evn b{font-size:1.05rem}
 .evn p{font-size:.95rem;color:var(--text);margin-top:2px}
 .chips2{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.chips2 span{font-size:.9rem;font-weight:600;color:var(--text);border:1.5px dashed rgba(122,92,62,.45);border-radius:999px;padding:6px 12px}
 .chips2 a{font-size:.9rem;font-weight:600;color:var(--red);text-decoration:none;border:1.5px solid var(--red);border-radius:999px;padding:6px 12px}
 .nxt{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer;background:none;border-left:0;border-right:0;border-top:0;width:100%;text-align:left;font:inherit;color:inherit}
 .nxt:last-child{border-bottom:0}
@@ -1304,36 +1305,38 @@ function orthEaster(y){
   var a=y%4,b=y%7,c=y%19,d=(19*c+15)%30,e=(2*a+4*b-d+34)%7,m=Math.floor((d+e+114)/31),dd=(d+e+114)%31+1;
   return new Date(y,m-1,dd+13);
 }
-var K_SLAVA=['sarma','gibanica','pogaca','jagnje','tulumbe'];
-var K_POST=['prebranac','pogaca','ajvar','tursija','kupus','visnje'];
+var K_SLAVA=['Žito (koljivo)','Slavski kolač','sarma','Pečenica','Pileća supa sa rezancima','Ruska salata','Sir i kajmak','gibanica','pogaca','tulumbe'];
+var K_SLAVAPOST=['Žito (koljivo)','Slavski kolač','prebranac','Posna sarma','Pečena riba','Grašak sa pirinčem','zeljanica','ajvar','Orasnice'];
+var K_POST=['prebranac','Posna sarma','Pečena riba','Posni pasulj','Grah salata','Posna pita sa tikvom','pogaca','ajvar','tursija','kupus','Orasnice','visnje'];
+var K_RIBA=['Šaran na tavi','Riba sa roštilja','Riblja čorba','Pastrmka iz rerne','Posna sarma','prebranac'];
 var K_FIX=[
- [1,6,'Badnji dan','post','Dan uoči Božića. Posni dan.',K_POST],
- [1,7,'Božić','hol','Rođenje Hristovo.',['sarma','pogaca','jagnje']],
+ [1,6,'Badnji dan','post','Dan uoči Božića. Posni dan.',['prebranac','Pečena riba','Posna sarma','Grah salata','Orasi, med i suvo voće','Pogača za Badnje veče','Pečeni krompir i luk']],
+ [1,7,'Božić','hol','Rođenje Hristovo.',['Česnica','Pečeno prase','sarma','Pečenica','Pileća supa sa rezancima','Ruska salata','Sir i kajmak','Sitni kolači i orasnice']],
  [1,9,'Sveti Stefan (Stevanjdan)','slava','Krsna slava.'],
- [1,14,'Sveti Vasilije (Vasilijevdan)','slava','Srpska Nova godina. Krsna slava.'],
+ [1,14,'Sveti Vasilije (Vasilijevdan)','slava','Srpska Nova godina. Krsna slava.',['Žito (koljivo)','Slavski kolač','Pečenica','sarma','Pita sa sirom','Ruska salata','Vasiličina pogača','Kolači']],
  [1,18,'Krstovdan','post','Strogi posni dan uoči Bogojavljenja.',K_POST],
- [1,19,'Bogojavljenje','hol','Krštenje Gospodnje.'],
+ [1,19,'Bogojavljenje','hol','Krštenje Gospodnje.',['Riblja čorba','Pastrmka iz rerne','prebranac','Posni kolač sa orasima','Čaj sa medom']],
  [1,20,'Sveti Jovan (Jovanjdan)','slava','Krsna slava.'],
- [1,27,'Sveti Sava (Savindan)','slava','Školska slava. Krsna slava.'],
- [2,14,'Sveti Trifun (Trifundan)','slava','Zaštitnik vinogradara. Krsna slava.'],
+ [1,27,'Sveti Sava (Savindan)','slava','Školska slava. Krsna slava. Ako je sreda ili petak, slavi se posno.'],
+ [2,14,'Sveti Trifun (Trifundan)','slava','Zaštitnik vinogradara. Krsna slava.',['Pečeno meso uz crno vino','Pita sa sirom','sarma','Pečeni krompir','Žito (koljivo)','Slavski kolač']],
  [2,15,'Sretenje','hol','Sretenje Gospodnje.'],
- [4,7,'Blagovesti','hol','Dozvoljena je riba, i u Velikom postu.'],
- [5,6,'Sveti Đorđe (Đurđevdan)','slava','Krsna slava.'],
- [6,28,'Vidovdan','hol','Dan sećanja na kosovsku bitku.'],
- [7,12,'Sveti Petar i Pavle (Petrovdan)','slava','Krsna slava.'],
+ [4,7,'Blagovesti','hol','Dozvoljena je riba, i u Velikom postu.',K_RIBA],
+ [5,6,'Sveti Đorđe (Đurđevdan)','slava','Krsna slava.',['jagnje','Jagnjeća čorba','Mlad luk i mlad sir','Proja','Pita sa koprivom','zeljanica','Slavski kolač','Salata od zelene salate']],
+ [6,28,'Vidovdan','hol','Dan sećanja na kosovsku bitku.',['Čorba od mladog graška','Pečena piletina','Pita sa višnjama','Salata od mladog kupusa']],
+ [7,12,'Sveti Petar i Pavle (Petrovdan)','slava','Krsna slava.',['Piletina ispod sača','Čorba od mladog povrća','Pita sa sirom','Pita sa trešnjama','Žito (koljivo)','Slavski kolač']],
  [7,26,'Sveti arhanđel Gavrilo','slava','Krsna slava.'],
- [8,2,'Sveti Ilija (Ilindan)','slava','Krsna slava.'],
+ [8,2,'Sveti Ilija (Ilindan)','slava','Krsna slava.',['Jagnjetina ispod sača','Pečena paprika sa kajmakom','paprike','musaka','Pita sa sirom','Pita sa višnjama','Žito (koljivo)','Slavski kolač']],
  [8,9,'Sveti Pantelejmon','slava','Krsna slava.'],
- [8,19,'Preobraženje','hol','Preobraženje Gospodnje.'],
- [8,28,'Velika Gospojina','hol','Uspenje Presvete Bogorodice.'],
+ [8,19,'Preobraženje','hol','Preobraženje Gospodnje. Blagosiljaju se prvi plodovi i grožđe.',['Grožđe i jabuke','Pita sa jabukama','Pečena paprika','Posna musaka od krompira','Kolač sa orasima']],
+ [8,28,'Velika Gospojina','hol','Uspenje Presvete Bogorodice. Kraj Gospojinskog posta.',['Pečena piletina','Paprike','Čorba od povrća','Pita sa sirom','Pita sa višnjama','Kolači od oraha']],
  [9,11,'Usekovanje glave Jovana Krstitelja','post','Strogi posni dan.',K_POST],
- [9,21,'Mala Gospojina','hol','Rođenje Presvete Bogorodice.'],
+ [9,21,'Mala Gospojina','hol','Rođenje Presvete Bogorodice.',['Pečena patka sa mlincima','Čorba od povrća','Pita sa tikvom','Pita sa jabukama','Slatko od šljiva']],
  [9,27,'Krstovdan','post','Strogi posni dan.',K_POST],
- [10,27,'Sveta Petka','slava','Krsna slava.'],
+ [10,27,'Sveta Petka','slava','Krsna slava. Ako je sreda ili petak, slavi se posno.'],
  [10,31,'Sveti Luka','slava','Krsna slava.'],
- [11,8,'Sveti Dimitrije (Mitrovdan)','slava','Krsna slava.'],
- [11,21,'Sveti arhanđel Mihailo (Aranđelovdan)','slava','Krsna slava.'],
- [12,19,'Sveti Nikola (Nikoljdan)','slava','Krsna slava.']
+ [11,8,'Sveti Dimitrije (Mitrovdan)','slava','Krsna slava.',['Pečenje od svinjetine','sarma','Pasulj sa suvim mesom','Pita sa tikvom','Pita od jabuka','Žito (koljivo)','Slavski kolač','Ruska salata']],
+ [11,21,'Sveti arhanđel Mihailo (Aranđelovdan)','slava','Krsna slava.',['Pečeno prase','sarma','Pileća supa sa rezancima','Ruska salata','Sir i kajmak','gibanica','Žito (koljivo)','Slavski kolač']],
+ [12,19,'Sveti Nikola (Nikoljdan)','slava','Krsna slava. Pada u Božićni post, pa je trpeza posna: riba.',['Šaran na tavi','Riblja čorba','Riba sa roštilja','Pastrmka iz rerne','Posna sarma','Žito (koljivo)','Slavski kolač','Orasnice']]
 ];
 var KAL_CACHE={};
 function kalYear(y){
@@ -1341,15 +1344,15 @@ function kalYear(y){
   var ev={},add=function(dt,o){var k=kdate(dt);(ev[k]=ev[k]||[]).push(o)};
   K_FIX.forEach(function(f){add(D(y,f[0],f[1]),{n:f[2],t:f[3],note:f[4],rec:f[5]||(f[3]==='post'?K_POST:K_SLAVA)})});
   var E=orthEaster(y);
-  [[-8,'Lazareva subota','hol','Dan pre Cveti.'],
-   [-7,'Cveti','hol','Ulazak Gospodnji u Jerusalim. Dozvoljena je riba.'],
+  [[-8,'Lazareva subota','hol','Dan pre Cveti. Peku se lazarice.',['Lazarice (kolačići)','Riba','Posni kolač']],
+   [-7,'Cveti','hol','Ulazak Gospodnji u Jerusalim. Dozvoljena je riba.',K_RIBA],
    [-2,'Veliki petak','post','Najstrožiji posni dan u godini.',K_POST],
    [-1,'Velika subota','post','Posni dan, dan pred Vaskrs.',K_POST],
-   [0,'Vaskrs (Uskrs)','hol','Vaskrsenje Hristovo. Počinje Svetla sedmica bez posta.',['pogaca','gibanica','sarma','jagnje','tulumbe']],
-   [1,'Vaskršnji ponedeljak','hol','Drugi dan Vaskrsa.'],
+   [0,'Vaskrs (Uskrs)','hol','Vaskrsenje Hristovo. Počinje Svetla sedmica bez posta.',['Farbana jaja','Vaskršnja pogača','Pečeno jagnje','Šunka','Sir i kajmak','Mlad luk i salata','Pita sa sirom','sarma','Vaskršnji kolač','tulumbe']],
+   [1,'Vaskršnji ponedeljak','hol','Drugi dan Vaskrsa.',['Jagnjeća čorba','Pečeno meso','Pita sa sirom','Šunka i jaja','Kolači']],
    [2,'Vaskršnji utorak','hol','Treći dan Vaskrsa.'],
-   [39,'Spasovdan','hol','Vaznesenje Gospodnje.'],
-   [49,'Duhovi','hol','Silazak Svetog Duha.'],
+   [39,'Spasovdan','hol','Vaznesenje Gospodnje.',['Pečeno jagnje','Čorba od povrća','Pita sa sirom','Pita sa jagodama','Salata od mladog luka']],
+   [49,'Duhovi','hol','Silazak Svetog Duha.',['Pečeno jagnje','Jagnjeća čorba','zeljanica','Pita sa koprivom','Salata sa mladim lukom','Kolač sa jagodama']],
    [50,'Duhovski ponedeljak','hol','Drugi dan Duhova.']
   ].forEach(function(m){add(addD(E,m[0]),{n:m[1],t:m[2],note:m[3],rec:m[4]||K_SLAVA})});
   var P=[
@@ -1390,7 +1393,7 @@ function renderCal(){
   $$('#cal .day').forEach(function(b){b.addEventListener('click',function(){var p=b.getAttribute('data-d').split('-');calSel=D(+p[0],+p[1],+p[2]);if(calSel.getMonth()!==calM.getMonth())calM=D(calSel.getFullYear(),calSel.getMonth()+1,1);renderCal()})});
   renderCalDay();renderCalNext(today);
 }
-function recChips(list){return '<div class="chips2">'+list.map(function(id){var r=byId(id);return r?'<a href="#recept-'+id+'">'+esc(r.n)+' ›</a>':''}).join('')+'</div>'}
+function recChips(list){return '<div class="chips2">'+list.map(function(id){var r=byId(id);return r?'<a href="#recept-'+id+'">'+esc(r.n)+' ›</a>':'<span>'+esc(id)+'</span>'}).join('')+'</div>'}
 function renderCalDay(){
   var d=calSel,inf=kalInfo(d),box=$('#cal-day');
   var h='<h3>'+DANI[d.getDay()]+', '+d.getDate()+'. '+MESECI[d.getMonth()]+' '+d.getFullYear()+'.</h3><div style="margin-top:8px">';
@@ -1402,9 +1405,10 @@ function renderCalDay(){
   if(!inf.evs.length)h+='<p class="note">Nema slave ni praznika na ovaj dan.</p>';
   var slavaPost=inf.post&&holEv.some(function(e){return e.t==='slava'});
   if(slavaPost)h+='<p class="note" style="color:var(--red);font-weight:600">Slava u posni dan: posna trpeza.</p>';
-  var rec=inf.post?(fastEv[0]&&fastEv[0].rec||K_POST):(holEv[0]&&holEv[0].rec||null);
+  var okPost=holEv.filter(function(e){return /Cveti|Lazareva|Blagovesti|Preobraženje/.test(e.n)})[0];
+  var rec=inf.post?(fastEv[0]&&fastEv[0].rec||okPost&&okPost.rec||K_POST):(holEv[0]&&holEv[0].rec||null);
   if(rec&&holEv.length&&!inf.post)h+='<p class="note" style="margin-top:12px">Šta se kuva:</p>'+recChips(rec);
-  else if(inf.post)h+='<p class="note" style="margin-top:12px">Posna jela iz Kluba:</p>'+recChips(slavaPost?K_POST:(rec||K_POST));
+  else if(inf.post)h+='<p class="note" style="margin-top:12px">Posna jela iz Kluba:</p>'+recChips(slavaPost?(holEv.filter(function(e){return /Nikol/.test(e.n)})[0]||{rec:K_SLAVAPOST}).rec:(rec||K_POST));
   box.innerHTML=h;
 }
 function renderCalNext(today){
@@ -1425,11 +1429,13 @@ $('#cal-next').addEventListener('click',function(){calM=D(calM.getFullYear(),cal
 var instEv=window.__instEv||null;window.__instCb=function(){instEv=window.__instEv;renderInst()};
 function isStandalone(){return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true}
 function isIOS(){return /iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}
-function instHidden(){try{var t=+localStorage.getItem('klub.inst.x')||0;return Date.now()-t<14*864e5||localStorage.getItem('klub.inst.done')==='1'}catch(e){return false}}
+function instHidden(){try{var t=+localStorage.getItem('klub.inst.x')||0;return Date.now()-t<14*864e5}catch(e){return false}}
 function renderInst(){
-  var show=!isStandalone()&&(function(){try{return localStorage.getItem('klub.inst.done')!=='1'}catch(e){return true}})();
+  var show=!isStandalone();
   $('#inst-menu').hidden=!show;
-  $('#inst-card').hidden=!(show&&!instHidden());
+  var inapp=isInApp()&&!isIOS();
+  $('#inst-menu').querySelector('b').textContent=inapp?'Otvori u Chrome-u':'Instaliraj aplikaciju';
+  $('#inst-card').hidden=!(show&&(instEv||!instHidden()));
 }
 function isInApp(){return /viber|fban|fbav|fb_iab|instagram|messenger|; wv\)/i.test(navigator.userAgent)}
 function openInstSheet(){
