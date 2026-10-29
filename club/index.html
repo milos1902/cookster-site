@@ -371,6 +371,56 @@ button.nc{border:0;padding:0;background:none;text-align:left;font:inherit;color:
 .nc .img.noimg .t h3{text-shadow:none}
 .cats #all-btn{grid-column:1/-1}
 </style>
+<style>
+.calhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.calhead h2{font-size:1.3rem;text-transform:capitalize;text-align:center;flex:1}
+.calnav{width:52px;height:52px;border-radius:50%;border:1.5px solid var(--red);background:var(--card);color:var(--red);font-size:1.8rem;line-height:1}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .dow{text-align:center;font-size:.8rem;font-weight:700;color:var(--soft);padding:4px 0}
+.cal .dow.we{color:var(--red)}
+.cal button.day{position:relative;min-height:52px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);font:inherit;font-size:1.05rem;font-weight:600;color:var(--ink);padding:0}
+.cal button.day.out{opacity:.35}
+.cal button.day.fast{background:#e5efdf;border-color:#c8dcbe}
+.cal button.day.hol{color:var(--red)}
+.cal button.day.hol::after{content:"";position:absolute;bottom:5px;left:50%;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:var(--red)}
+.cal button.day.today{outline:2.5px solid var(--ink);outline-offset:-2px}
+.cal button.day.sel{background:var(--red);border-color:var(--red);color:#fff}
+.cal button.day.sel.hol::after{background:#fff}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.85rem;color:var(--text)}
+.legend span{display:flex;align-items:center;gap:6px}
+.lg{display:inline-block;width:16px;height:16px;border-radius:5px;border:1.5px solid var(--line)}
+.lg.red{background:var(--card);border-color:var(--red);box-shadow:inset 0 -4px 0 -1px var(--red)}
+.lg.fast{background:#e5efdf;border-color:#c8dcbe}
+.lg.today{background:var(--card);border:2.5px solid var(--ink)}
+#cal-day h3{font-size:1.25rem}
+.pill2{display:inline-block;font-size:.78rem;font-weight:700;letter-spacing:.04em;border-radius:999px;padding:3px 10px;margin:0 6px 6px 0}
+.pill2.fast{background:#e5efdf;color:#34663b}
+.pill2.hol{background:var(--tint);color:var(--red)}
+.pill2.meat{background:var(--outer);color:var(--text)}
+.evn{padding:10px 0;border-bottom:1px solid var(--line)}
+.evn:last-child{border-bottom:0}
+.evn b{font-size:1.05rem}
+.evn p{font-size:.95rem;color:var(--text);margin-top:2px}
+.chips2{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.chips2 a{font-size:.9rem;font-weight:600;color:var(--red);text-decoration:none;border:1.5px solid var(--red);border-radius:999px;padding:6px 12px}
+.nxt{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer;background:none;border-left:0;border-right:0;border-top:0;width:100%;text-align:left;font:inherit;color:inherit}
+.nxt:last-child{border-bottom:0}
+.nxt b{display:block;font-size:1.02rem}
+.nxt small{color:var(--text)}
+.nxt .cd{font-weight:700;color:var(--red);white-space:nowrap}
+</style>
+<style>
+.instcard{display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center;position:relative;background:var(--card);border:1.5px solid var(--red);border-radius:16px;padding:12px 40px 12px 12px;margin-top:14px}
+.instcard[hidden]{display:none}
+.instcard img{width:48px;height:48px;border-radius:12px}
+.instcard b{font-size:1rem}
+.instcard p{font-size:.85rem;color:var(--text);line-height:1.3;margin-top:2px}
+.instx{position:absolute;top:2px;right:2px;width:36px;height:36px;border:0;background:none;color:var(--soft);font-size:1rem}
+.sheet-bd{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.5)}
+.sheet{position:fixed;z-index:91;left:50%;bottom:0;transform:translateX(-50%);width:min(430px,100%);background:var(--bg);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 30px rgba(0,0,0,.25)}
+.sheet[hidden],.sheet-bd[hidden]{display:none}
+.sheet ol{margin:12px 0 0;padding-left:22px;display:grid;gap:10px;font-size:1.02rem}
+</style>
 </head>
 <body>
 <div id="app"><div class="in">
@@ -398,6 +448,12 @@ button.nc{border:0;padding:0;background:none;text-align:left;font:inherit;color:
     <div class="mc-t"><span class="eyebrow">Recept meseca</span><b>Sarma</b><small>9 video koraka · 3 sata</small></div>
     <span class="mc-go">›</span>
    </a>
+   <div class="instcard" id="inst-card" hidden>
+    <img src="icons/icon-192.png?v=3" alt="">
+    <div><b>Instaliraj aplikaciju</b><p>Otvara se kao prava aplikacija, bez Chrome-a.</p></div>
+    <button class="btn red small" id="inst-btn" type="button">Instaliraj</button>
+    <button class="instx" id="inst-x" type="button" aria-label="Ne sada">✕</button>
+   </div>
 
    <div class="stats3">
     <div><b id="s-rec">0</b><small>recepata</small></div>
@@ -569,6 +625,31 @@ button.nc{border:0;padding:0;background:none;text-align:left;font:inherit;color:
     <button class="bigbtn" id="w-go" type="button">Uđi u Klub →</button>
   </section>
 
+  <!-- KALENDAR -->
+  <section class="view" id="v-kalendar" data-view="kalendar">
+    <h1 class="pg">Kalendar običaja</h1>
+    <p class="sub" style="margin-top:6px">Slave, praznici i postovi po crkvenom kalendaru.</p>
+    <div class="stack" style="margin-top:14px">
+      <div class="calhead">
+        <button class="calnav" id="cal-prev" type="button" aria-label="Prethodni mesec">‹</button>
+        <h2 id="cal-title"></h2>
+        <button class="calnav" id="cal-next" type="button" aria-label="Sledeći mesec">›</button>
+      </div>
+      <div class="cal" id="cal" role="grid" aria-label="Kalendar"></div>
+      <div class="legend">
+        <span><i class="lg red"></i>Slava ili praznik</span>
+        <span><i class="lg fast"></i>Posni dan</span>
+        <span><i class="lg today"></i>Danas</span>
+      </div>
+      <div class="card" id="cal-day"></div>
+      <div>
+        <div class="sectionhead"><h2>Sledeće slave i praznici</h2></div>
+        <div id="cal-next-list" class="card" style="padding:6px 16px"></div>
+      </div>
+      <p class="mini">Datumi su po crkvenom (julijanskom) kalendaru Srpske pravoslavne crkve, preračunati u gregorijanski. Za tačnost proveri zvanični crkveni kalendar.</p>
+    </div>
+  </section>
+
   <!-- ZAJEDNICA -->
   <section class="view" id="v-zajednica" data-view="zajednica">
     <h1 class="pg">Zajednica</h1>
@@ -629,11 +710,19 @@ button.nc{border:0;padding:0;background:none;text-align:left;font:inherit;color:
   </section>
 </div></div>
 
+<div class="sheet-bd" id="inst-bd" hidden></div>
+<div class="sheet" id="inst-sheet" hidden role="dialog" aria-label="Kako da instaliraš aplikaciju">
+ <h3>Kako da instaliraš aplikaciju</h3>
+ <div id="inst-steps"></div>
+ <button class="btn red" id="inst-close" type="button" style="width:100%;margin-top:14px">Razumem</button>
+</div>
 <div class="menu-bd" id="menu-bd" hidden></div>
 <div class="menu" id="menu" hidden>
  <div class="mh"><b>Klub</b><button id="menu-x" type="button">Zatvori</button></div>
+  <a class="mi" href="#" id="inst-menu" hidden><span class="ic" style="background:rgba(181,74,26,.12);color:#B54A1A"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg></span><span><b>Instaliraj aplikaciju</b><small>Ikonica na početnom ekranu telefona.</small></span></a>
  <a class="mi" href="#pocetna"><span class="ic" style="background:rgba(181,74,26,.1);color:#B54A1A"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span><span><b>Početna</b><small>Recept meseca i kategorije.</small></span></a>
  <a class="mi" href="#recepti"><span class="ic" style="background:rgba(125,46,46,.1);color:#7D2E2E"><svg viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></svg></span><span><b>Svi recepti</b><small>Pretraga po jelu i sastojku.</small></span></a>
+ <a class="mi" href="#kalendar"><span class="ic" style="background:rgba(181,74,26,.1);color:#B54A1A"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span><span><b>Kalendar običaja</b><small>Slave, praznici i postovi.</small></span></a>
  <a class="mi" href="#zajednica"><span class="ic" style="background:rgba(125,46,46,.1);color:#7D2E2E"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.6"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M15 15.5a5 5 0 0 1 6 4.5"/></svg></span><span><b>Zajednica</b><small>Fotografije, pitanja i izazov meseca.</small></span></a>
  <a class="mi" href="#humanitarno"><span class="ic" style="background:rgba(181,74,26,.1);color:#B54A1A"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.4-9 9-9 9z"/></svg></span><span><b>Naše dobro delo</b><small>Kad se trpeza širi, nek' se širi i dobro.</small></span></a>
  <a class="mi" href="#clanstvo"><span class="ic" style="background:rgba(176,128,96,.15);color:#b08060"><svg viewBox="0 0 24 24"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.2 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/></svg></span><span><b>Članstvo</b><small>200 din mesečno, otkazuješ kad hoćeš.</small></span></a>
@@ -1203,13 +1292,171 @@ $('#c-ask').addEventListener('click',function(){
   PRE={t:'q',r:C.r.id,x:'Korak '+(C.i+1)+' ('+C.st[C.i].t+'): '};location.hash='#zajednica';
 });
 
+/* ---------- Kalendar običaja ---------- */
+var MESECI=['januar','februar','mart','april','maj','jun','jul','avgust','septembar','oktobar','novembar','decembar'];
+var DANI=['nedelja','ponedeljak','utorak','sreda','četvrtak','petak','subota'];
+function D(y,m,d){return new Date(y,m-1,d)}
+function addD(dt,n){return new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()+n)}
+function kdate(dt){return dt.getFullYear()+'-'+(dt.getMonth()+1)+'-'+dt.getDate()}
+function dayDiff(a,b){return Math.round((D(b.getFullYear(),b.getMonth()+1,b.getDate())-D(a.getFullYear(),a.getMonth()+1,a.getDate()))/864e5)}
+function orthEaster(y){
+  var a=y%4,b=y%7,c=y%19,d=(19*c+15)%30,e=(2*a+4*b-d+34)%7,m=Math.floor((d+e+114)/31),dd=(d+e+114)%31+1;
+  return new Date(y,m-1,dd+13);
+}
+var K_SLAVA=['sarma','gibanica','pogaca','jagnje','tulumbe'];
+var K_POST=['prebranac','pogaca','ajvar','tursija','kupus','visnje'];
+var K_FIX=[
+ [1,6,'Badnji dan','post','Dan uoči Božića. Posni dan.',K_POST],
+ [1,7,'Božić','hol','Rođenje Hristovo.',['sarma','pogaca','jagnje']],
+ [1,9,'Sveti Stefan (Stevanjdan)','slava','Krsna slava.'],
+ [1,14,'Sveti Vasilije (Vasilijevdan)','slava','Srpska Nova godina. Krsna slava.'],
+ [1,18,'Krstovdan','post','Strogi posni dan uoči Bogojavljenja.',K_POST],
+ [1,19,'Bogojavljenje','hol','Krštenje Gospodnje.'],
+ [1,20,'Sveti Jovan (Jovanjdan)','slava','Krsna slava.'],
+ [1,27,'Sveti Sava (Savindan)','slava','Školska slava. Krsna slava.'],
+ [2,14,'Sveti Trifun (Trifundan)','slava','Zaštitnik vinogradara. Krsna slava.'],
+ [2,15,'Sretenje','hol','Sretenje Gospodnje.'],
+ [4,7,'Blagovesti','hol','Dozvoljena je riba, i u Velikom postu.'],
+ [5,6,'Sveti Đorđe (Đurđevdan)','slava','Krsna slava.'],
+ [6,28,'Vidovdan','hol','Dan sećanja na kosovsku bitku.'],
+ [7,12,'Sveti Petar i Pavle (Petrovdan)','slava','Krsna slava.'],
+ [7,26,'Sveti arhanđel Gavrilo','slava','Krsna slava.'],
+ [8,2,'Sveti Ilija (Ilindan)','slava','Krsna slava.'],
+ [8,9,'Sveti Pantelejmon','slava','Krsna slava.'],
+ [8,19,'Preobraženje','hol','Preobraženje Gospodnje.'],
+ [8,28,'Velika Gospojina','hol','Uspenje Presvete Bogorodice.'],
+ [9,11,'Usekovanje glave Jovana Krstitelja','post','Strogi posni dan.',K_POST],
+ [9,21,'Mala Gospojina','hol','Rođenje Presvete Bogorodice.'],
+ [9,27,'Krstovdan','post','Strogi posni dan.',K_POST],
+ [10,27,'Sveta Petka','slava','Krsna slava.'],
+ [10,31,'Sveti Luka','slava','Krsna slava.'],
+ [11,8,'Sveti Dimitrije (Mitrovdan)','slava','Krsna slava.'],
+ [11,21,'Sveti arhanđel Mihailo (Aranđelovdan)','slava','Krsna slava.'],
+ [12,19,'Sveti Nikola (Nikoljdan)','slava','Krsna slava.']
+];
+var KAL_CACHE={};
+function kalYear(y){
+  if(KAL_CACHE[y])return KAL_CACHE[y];
+  var ev={},add=function(dt,o){var k=kdate(dt);(ev[k]=ev[k]||[]).push(o)};
+  K_FIX.forEach(function(f){add(D(y,f[0],f[1]),{n:f[2],t:f[3],note:f[4],rec:f[5]||(f[3]==='post'?K_POST:K_SLAVA)})});
+  var E=orthEaster(y);
+  [[-8,'Lazareva subota','hol','Dan pre Cveti.'],
+   [-7,'Cveti','hol','Ulazak Gospodnji u Jerusalim. Dozvoljena je riba.'],
+   [-2,'Veliki petak','post','Najstrožiji posni dan u godini.',K_POST],
+   [-1,'Velika subota','post','Posni dan, dan pred Vaskrs.',K_POST],
+   [0,'Vaskrs (Uskrs)','hol','Vaskrsenje Hristovo. Počinje Svetla sedmica bez posta.',['pogaca','gibanica','sarma','jagnje','tulumbe']],
+   [1,'Vaskršnji ponedeljak','hol','Drugi dan Vaskrsa.'],
+   [2,'Vaskršnji utorak','hol','Treći dan Vaskrsa.'],
+   [39,'Spasovdan','hol','Vaznesenje Gospodnje.'],
+   [49,'Duhovi','hol','Silazak Svetog Duha.'],
+   [50,'Duhovski ponedeljak','hol','Drugi dan Duhova.']
+  ].forEach(function(m){add(addD(E,m[0]),{n:m[1],t:m[2],note:m[3],rec:m[4]||K_SLAVA})});
+  var P=[
+   {n:'Božićni post',s:D(y,11,28),e:D(y+1,1,6)},
+   {n:'Božićni post',s:D(y-1,11,28),e:D(y,1,6)},
+   {n:'Veliki post',s:addD(E,-48),e:addD(E,-1)},
+   {n:'Gospojinski post',s:D(y,8,14),e:D(y,8,27)}
+  ];
+  var ps=addD(E,57);if(ps<=D(y,7,11))P.push({n:'Petrovski post',s:ps,e:D(y,7,11)});
+  var free=[[D(y,1,7),D(y,1,17)],[E,addD(E,6)],[addD(E,49),addD(E,55)],[addD(E,-70),addD(E,-64)]];
+  return KAL_CACHE[y]={ev:ev,P:P,free:free,E:E};
+}
+function kalInfo(dt){
+  var Y=kalYear(dt.getFullYear()),evs=Y.ev[kdate(dt)]||[];
+  var post='',pk='';
+  for(var i=0;i<Y.P.length;i++){if(dt>=Y.P[i].s&&dt<=Y.P[i].e){post=Y.P[i].n;pk='period';break}}
+  if(!post){evs.forEach(function(e){if(e.t==='post'){post=e.n;pk='strogi'}})}
+  if(!post){
+    var w=dt.getDay(),inFree=Y.free.some(function(r){return dt>=r[0]&&dt<=r[1]});
+    if((w===3||w===5)&&!inFree){post='Sreda i petak su posni dani';pk='wf'}
+  }
+  return {evs:evs,post:post,pk:pk};
+}
+var calM=new Date(),calSel=new Date();calM=D(calM.getFullYear(),calM.getMonth()+1,1);
+function renderCal(){
+  var t=new Date(),today=D(t.getFullYear(),t.getMonth()+1,t.getDate());
+  $('#cal-title').textContent=MESECI[calM.getMonth()]+' '+calM.getFullYear();
+  var first=D(calM.getFullYear(),calM.getMonth()+1,1),off=(first.getDay()+6)%7,html='';
+  ['pon','uto','sre','čet','pet','sub','ned'].forEach(function(d,i){html+='<div class="dow'+(i>4?' we':'')+'">'+d+'</div>'});
+  for(var i=0;i<42;i++){
+    var dt=addD(first,i-off),inf=kalInfo(dt),out=dt.getMonth()!==calM.getMonth();
+    if(i>=35&&out&&i%7===0)break;
+    var hol=inf.evs.some(function(e){return e.t!=='post'});
+    var cls='day'+(out?' out':'')+(inf.post?' fast':'')+(hol?' hol':'')+(dt.getTime()===today.getTime()?' today':'')+(dt.getTime()===D(calSel.getFullYear(),calSel.getMonth()+1,calSel.getDate()).getTime()?' sel':'');
+    html+='<button type="button" role="gridcell" class="'+cls+'" data-d="'+dt.getFullYear()+'-'+(dt.getMonth()+1)+'-'+dt.getDate()+'" aria-label="'+dt.getDate()+'. '+MESECI[dt.getMonth()]+(inf.post?', posni dan':'')+(hol?', slava ili praznik':'')+'">'+dt.getDate()+'</button>';
+  }
+  $('#cal').innerHTML=html;
+  $$('#cal .day').forEach(function(b){b.addEventListener('click',function(){var p=b.getAttribute('data-d').split('-');calSel=D(+p[0],+p[1],+p[2]);if(calSel.getMonth()!==calM.getMonth())calM=D(calSel.getFullYear(),calSel.getMonth()+1,1);renderCal()})});
+  renderCalDay();renderCalNext(today);
+}
+function recChips(list){return '<div class="chips2">'+list.map(function(id){var r=byId(id);return r?'<a href="#recept-'+id+'">'+esc(r.n)+' ›</a>':''}).join('')+'</div>'}
+function renderCalDay(){
+  var d=calSel,inf=kalInfo(d),box=$('#cal-day');
+  var h='<h3>'+DANI[d.getDay()]+', '+d.getDate()+'. '+MESECI[d.getMonth()]+' '+d.getFullYear()+'.</h3><div style="margin-top:8px">';
+  h+=inf.post?'<span class="pill2 fast">Posni dan</span>':'<span class="pill2 meat">Mrsni dan</span>';
+  if(inf.post)h+='<span class="pill2 meat">'+esc(inf.post)+'</span>';
+  h+='</div>';
+  var holEv=inf.evs.filter(function(e){return e.t!=='post'}),fastEv=inf.evs.filter(function(e){return e.t==='post'});
+  inf.evs.forEach(function(e){h+='<div class="evn"><b>'+esc(e.n)+'</b>'+(e.t==='slava'?' <span class="pill2 hol">Slava</span>':e.t==='hol'?' <span class="pill2 hol">Praznik</span>':'')+'<p>'+esc(e.note)+'</p></div>'});
+  if(!inf.evs.length)h+='<p class="note">Nema slave ni praznika na ovaj dan.</p>';
+  var slavaPost=inf.post&&holEv.some(function(e){return e.t==='slava'});
+  if(slavaPost)h+='<p class="note" style="color:var(--red);font-weight:600">Slava u posni dan: posna trpeza.</p>';
+  var rec=inf.post?(fastEv[0]&&fastEv[0].rec||K_POST):(holEv[0]&&holEv[0].rec||null);
+  if(rec&&holEv.length&&!inf.post)h+='<p class="note" style="margin-top:12px">Šta se kuva:</p>'+recChips(rec);
+  else if(inf.post)h+='<p class="note" style="margin-top:12px">Posna jela iz Kluba:</p>'+recChips(slavaPost?K_POST:(rec||K_POST));
+  box.innerHTML=h;
+}
+function renderCalNext(today){
+  var out=[];
+  for(var i=0;i<400&&out.length<5;i++){
+    var dt=addD(today,i),inf=kalInfo(dt);
+    inf.evs.forEach(function(e){if(e.t!=='post'&&out.length<5)out.push({dt:dt,e:e,n:i})});
+  }
+  $('#cal-next-list').innerHTML=out.map(function(o){
+    return '<button class="nxt" type="button" data-d="'+o.dt.getFullYear()+'-'+(o.dt.getMonth()+1)+'-'+o.dt.getDate()+'"><span><b>'+esc(o.e.n)+'</b><small>'+DANI[o.dt.getDay()]+', '+o.dt.getDate()+'. '+MESECI[o.dt.getMonth()]+'</small></span><span class="cd">'+(o.n===0?'danas':o.n===1?'sutra':'za '+o.n+' d.')+'</span></button>';
+  }).join('');
+  $$('#cal-next-list .nxt').forEach(function(b){b.addEventListener('click',function(){var p=b.getAttribute('data-d').split('-');calSel=D(+p[0],+p[1],+p[2]);calM=D(calSel.getFullYear(),calSel.getMonth()+1,1);renderCal();window.scrollTo(0,0)})});
+}
+$('#cal-prev').addEventListener('click',function(){calM=D(calM.getFullYear(),calM.getMonth(),1);renderCal()});
+$('#cal-next').addEventListener('click',function(){calM=D(calM.getFullYear(),calM.getMonth()+2,1);renderCal()});
+
+/* ---------- Instalacija aplikacije ---------- */
+var instEv=null;
+function isStandalone(){return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true}
+function isIOS(){return /iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}
+function instHidden(){try{var t=+localStorage.getItem('klub.inst.x')||0;return Date.now()-t<14*864e5||localStorage.getItem('klub.inst.done')==='1'}catch(e){return false}}
+function renderInst(){
+  var show=!isStandalone()&&(function(){try{return localStorage.getItem('klub.inst.done')!=='1'}catch(e){return true}})();
+  $('#inst-menu').hidden=!show;
+  $('#inst-card').hidden=!(show&&!instHidden());
+}
+function openInstSheet(){
+  $('#inst-steps').innerHTML=isIOS()
+    ?'<p class="note">Na iPhone-u se instalira iz Safari-ja:</p><ol><li>Pritisni dugme za deljenje (kvadrat sa strelicom) na dnu ekrana.</li><li>Izaberi <b>Dodaj na početni ekran</b> (Add to Home Screen).</li><li>Pritisni <b>Dodaj</b> (Add).</li></ol>'
+    :'<p class="note">Ako se instalacija ne pokrene sama:</p><ol><li>Pritisni tri tačkice (⋮) gore desno u Chrome-u.</li><li>Izaberi <b>Install app</b> (Instaliraj aplikaciju).</li><li>Pritisni <b>Install</b>.</li></ol>';
+  $('#inst-bd').hidden=false;$('#inst-sheet').hidden=false;
+}
+function closeInstSheet(){$('#inst-bd').hidden=true;$('#inst-sheet').hidden=true}
+function doInstall(){
+  if(instEv){var ev=instEv;instEv=null;ev.prompt();(ev.userChoice||Promise.resolve()).then(function(c){if(c&&c.outcome==='accepted'){try{localStorage.setItem('klub.inst.done','1')}catch(e){}}renderInst()});return}
+  openInstSheet();
+}
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();instEv=e;renderInst()});
+window.addEventListener('appinstalled',function(){try{localStorage.setItem('klub.inst.done','1')}catch(e){}renderInst()});
+$('#inst-btn').addEventListener('click',doInstall);
+$('#inst-menu').addEventListener('click',function(e){e.preventDefault();closeMenu();doInstall()});
+$('#inst-x').addEventListener('click',function(){try{localStorage.setItem('klub.inst.x',String(Date.now()))}catch(e){}renderInst()});
+$('#inst-close').addEventListener('click',closeInstSheet);
+$('#inst-bd').addEventListener('click',closeInstSheet);
+renderInst();
+
 /* ---------- Putanje ---------- */
 function route(){
   var h=(location.hash||'#pocetna').slice(1), view=h, rid='';
   var cid='';
   if(h.indexOf('recept-')===0){view='recept';rid=h.slice(7)}
   if(h.indexOf('kuvaj-')===0){view='recept';rid=h.slice(6);cid=rid}
-  if(['pocetna','recepti','recept','humanitarno','profil','clanstvo','naplata','o-meni','welcome','zajednica'].indexOf(view)<0)view='pocetna';
+  if(['pocetna','recepti','recept','humanitarno','profil','clanstvo','naplata','o-meni','welcome','zajednica','kalendar'].indexOf(view)<0)view='pocetna';
   if(!state.seen&&view!=='welcome'){location.hash='#welcome';return}
   $$('section.view').forEach(function(s){s.classList.toggle('on',s.getAttribute('data-view')===view)});
   var tab=view==='recept'?'recepti':view;
@@ -1224,6 +1471,7 @@ function route(){
   if(view==='clanstvo')renderClanstvo();
   if(view==='naplata'){PAYM=state.member&&PAYM==='done'?'done':'kartica';renderPay()}
   if(view==='zajednica')renderZ();
+  if(view==='kalendar'){calSel=new Date();calM=D(calSel.getFullYear(),calSel.getMonth()+1,1);renderCal()}
   document.body.classList.toggle('home',view==='pocetna');document.body.classList.toggle('welc',view==='welcome');closeMenu();
   window.scrollTo(0,0);
 }
