@@ -158,8 +158,10 @@ ol.steps li::before{content:counter(s);display:grid;place-items:center;width:30p
 .cook-video img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.62)}
 .cook-video .ph0{opacity:.35}
 .cook-video video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%;background:#000}
-.cook-ov{position:absolute;left:50%;bottom:44px;transform:translateX(-50%);max-width:88%;min-height:56px;padding:0 24px;display:flex;align-items:center;justify-content:center;border-radius:16px;background:var(--red);color:#fff;font-family:inherit;font-weight:700;font-size:16px;line-height:1.25;text-align:center;box-shadow:0 4px 6px -1px rgba(0,0,0,.2);pointer-events:none;animation:ovin .35s ease-out}
-@keyframes ovin{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+.cook-ovs{position:absolute;left:50%;bottom:44px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;max-width:88%;pointer-events:none}
+.cook-ov{padding:6px 14px;border-radius:12px;background:var(--red);color:#fff;font-family:inherit;font-weight:700;font-size:16px;line-height:1.25;text-align:center;box-shadow:0 4px 6px -1px rgba(0,0,0,.2);animation:ovin .35s ease-out}
+.cook-ovt{border:0;pointer-events:auto;cursor:pointer}
+@keyframes ovin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .cook-ph{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:8px;text-align:center;padding:16px;color:#fff;text-shadow:0 1px 6px #000;pointer-events:none}
 .cook-ph .play{width:64px;height:64px;border-radius:50%;border:2px solid #fff;display:grid;place-items:center;font-size:1.5rem;background:rgba(0,0,0,.35)}
 .cook-ph small{font-size:12px;opacity:.9}
@@ -742,7 +744,7 @@ button.nc{border:0;padding:0;background:none;text-align:left;font:inherit;color:
   <div class="cook-video" id="c-video">
    <div id="c-pic"></div>
    <video id="c-vid" playsinline preload="auto" hidden></video>
-   <div class="cook-ov" id="c-ov" hidden></div>
+   <div class="cook-ovs" id="c-ovs"><div class="cook-ov" id="c-ov" hidden></div><button class="cook-ov cook-ovt" id="c-ovt" type="button" hidden></button></div>
    <div class="cook-ph"><div class="play" id="c-playico">▶</div><small id="c-file"></small></div>
    <button class="rb tl" id="c-prev" type="button" aria-label="Prethodni korak">←</button>
    <div class="ticker" id="c-count"></div>
@@ -1134,7 +1136,7 @@ function cookRender(){
   $('#c-seg').innerHTML=C.st.map(function(_,k){return '<i class="'+(k<C.i?'done':k===C.i?'now':'')+'"></i>'}).join('');
   $('#c-pic').innerHTML=pic(r).replace('class="ph"','class="ph" style="position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;margin:0;border:0"');
   $('#c-file').textContent=r.id+'-korak'+(C.i+1)+'.mp4';
-  var ov=$('#c-ov');ov.hidden=true;if(s.v&&s.q){ov.textContent=s.q;void ov.offsetWidth;ov.hidden=false}
+  $('#c-ov').hidden=true;$('#c-ovt').hidden=true;C.ovq=s.v&&s.q?s.q:'';C.qa=s.qa||0;C.ovtm=!!(s.v&&stepMin(s));C.ta=s.ta||0;
   var vd=$('#c-vid');
   if(s.v){vd.hidden=false;vd.src=s.v;vd.currentTime=0;$('#c-pic').hidden=true;$('.cook-ph').hidden=true;var pp=vd.play();if(pp&&pp.catch)pp.catch(function(){C.play=false;$('#c-play').textContent='▶';$('#c-playico').textContent='▶';$('.cook-ph').hidden=false})}
   else{vd.pause();vd.removeAttribute('src');vd.hidden=true;$('#c-pic').hidden=false;$('.cook-ph').hidden=false}
@@ -1146,14 +1148,21 @@ function cookRender(){
   var m=stepMin(s), tb=$('#c-timer');
   tb.hidden=!m;
   if(m){C.tl=m*60;clearInterval(C.tv);C.tv=null;tb.textContent='Tajmer '+m+' min'}
+  ovUpdate(0);
   var pb=$('#c-prob');pb.hidden=!s.p;if(s.p)pb.textContent='Problem: '+s.p.l;
   $('#c-sheet').hidden=true;$('#c-lock').hidden=true;
   C.t=0;C.play=true;$('#c-next').hidden=true;$('#c-play').textContent='❚❚';$('#c-playico').textContent='❚❚';
   $('#c-bar').style.width='0';
 }
+function ovUpdate(t){
+  var ov=$('#c-ov'),ot=$('#c-ovt');
+  if(C.ovq&&ov.hidden&&t>=C.qa){ov.textContent=C.ovq;ov.hidden=false}
+  if(C.ovtm&&ot.hidden&&t>=C.ta){ot.textContent=$('#c-timer').textContent;ot.hidden=false}
+}
 function cookTick(){
   var vd=$('#c-vid');
   if(!vd.hidden){
+    ovUpdate(vd.currentTime);
     var d=vd.duration||C.dur;
     $('#c-bar').style.width=Math.min(100,vd.currentTime/d*100)+'%';
     if(vd.ended){C.play=false;$('#c-playico').textContent='↻';$('#c-play').textContent='↻';if(C.i<C.st.length-1)$('#c-next').hidden=false}
@@ -1178,7 +1187,7 @@ function openCook(id){
   C.iv=setInterval(cookTick,100);
   try{if(navigator.wakeLock)navigator.wakeLock.request('screen').catch(function(){})}catch(e){}
 }
-function closeCook(){cookStop();var v0=$('#c-vid');$('#c-ov').hidden=true;v0.pause();v0.removeAttribute('src');v0.hidden=true;document.body.style.overflow='';$('#cook').hidden=true}
+function closeCook(){cookStop();var v0=$('#c-vid');$('#c-ov').hidden=true;$('#c-ovt').hidden=true;v0.pause();v0.removeAttribute('src');v0.hidden=true;document.body.style.overflow='';$('#cook').hidden=true}
 $('#c-close').addEventListener('click',function(){location.hash='#recept-'+C.r.id});
 $('#c-prev').addEventListener('click',function(){cookGo(-1)});
 $('#c-nxt').addEventListener('click',function(){cookGo(1)});
@@ -1227,6 +1236,8 @@ $('#menu-btn').addEventListener('click',openMenu);
 $('#menu-x').addEventListener('click',closeMenu);
 $('#menu-bd').addEventListener('click',closeMenu);
 $$('#menu a.mi').forEach(function(a){a.addEventListener('click',closeMenu)});
+$('#c-ovt').addEventListener('click',function(){$('#c-timer').click()});
+new MutationObserver(function(){$('#c-ovt').textContent=$('#c-timer').textContent}).observe($('#c-timer'),{childList:true,characterData:true,subtree:true});
 $('#c-video').addEventListener('click',function(e){if(e.target.closest('button'))return;$('#c-play').click()});
 $('#c-join').addEventListener('click',function(){location.hash='#clanstvo'});
 $('#c-lback').addEventListener('click',function(){location.hash='#recept-'+C.r.id});
