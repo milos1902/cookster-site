@@ -1431,8 +1431,11 @@ function renderInst(){
   $('#inst-menu').hidden=!show;
   $('#inst-card').hidden=!(show&&!instHidden());
 }
+function isInApp(){return /viber|fban|fbav|fb_iab|instagram|messenger|; wv\)/i.test(navigator.userAgent)}
 function openInstSheet(){
-  $('#inst-steps').innerHTML=isIOS()
+  $('#inst-steps').innerHTML=isInApp()
+    ?'<p class="note">Ovaj link je otvoren unutar druge aplikacije (Viber, Facebook...), a ona ne može da instalira.</p><ol><li>Pritisni tri tačkice (⋮) gore desno.</li><li>Izaberi <b>Otvori u pregledaču</b> (Open in browser / Open in Chrome).</li><li>Kad se otvori Chrome, pritisni <b>Instaliraj</b>.</li></ol>'
+    :isIOS()
     ?'<p class="note">Na iPhone-u se instalira iz Safari-ja:</p><ol><li>Pritisni dugme za deljenje (kvadrat sa strelicom) na dnu ekrana.</li><li>Izaberi <b>Dodaj na početni ekran</b> (Add to Home Screen).</li><li>Pritisni <b>Dodaj</b> (Add).</li></ol>'
     :'<p class="note">Ako se instalacija ne pokrene sama:</p><ol><li>Pritisni tri tačkice (⋮) gore desno u Chrome-u.</li><li>Izaberi <b>Install app</b> (Instaliraj aplikaciju).</li><li>Pritisni <b>Install</b>.</li></ol>';
   $('#inst-bd').hidden=false;$('#inst-sheet').hidden=false;
