@@ -157,6 +157,9 @@ ol.steps li::before{content:counter(s);display:grid;place-items:center;width:30p
 .cook-video{position:relative;flex:1;min-height:0;background:#000;overflow:hidden;cursor:pointer}
 .cook-video img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.62)}
 .cook-video .ph0{opacity:.35}
+.cook-video video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+.cook-ov{position:absolute;left:50%;bottom:44px;transform:translateX(-50%);max-width:88%;padding:10px 18px;border-radius:14px;background:rgba(0,0,0,.62);color:#fff;font-weight:700;font-size:1.35rem;line-height:1.25;text-align:center;text-shadow:0 1px 4px #000;pointer-events:none;animation:ovin .35s ease-out}
+@keyframes ovin{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
 .cook-ph{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:8px;text-align:center;padding:16px;color:#fff;text-shadow:0 1px 6px #000;pointer-events:none}
 .cook-ph .play{width:64px;height:64px;border-radius:50%;border:2px solid #fff;display:grid;place-items:center;font-size:1.5rem;background:rgba(0,0,0,.35)}
 .cook-ph small{font-size:12px;opacity:.9}
@@ -738,6 +741,8 @@ button.nc{border:0;padding:0;background:none;text-align:left;font:inherit;color:
   <div class="cook-seg" id="c-seg"></div>
   <div class="cook-video" id="c-video">
    <div id="c-pic"></div>
+   <video id="c-vid" playsinline preload="auto" hidden></video>
+   <div class="cook-ov" id="c-ov" hidden></div>
    <div class="cook-ph"><div class="play" id="c-playico">▶</div><small id="c-file"></small></div>
    <button class="rb tl" id="c-prev" type="button" aria-label="Prethodni korak">←</button>
    <div class="ticker" id="c-count"></div>
@@ -805,6 +810,10 @@ var R=[
  i:['500 g mlade koprive','1 krompir','1 glavica luka','2 kašike ulja','1 kašika brašna','1 jaje','So'],
  st:['Koprivu poparite ključalom vodom i iseckajte.','Na ulju zaprži luk i brašno, dodajte koprivu i krompir isečen na kockice.','Zalijte sa 1,5 litra vode i kuvajte 25 minuta.','Na kraju umešajte razmućeno jaje i odmah skinite sa vatre.'],
  tip:''},
+{id:'orasnice',n:'Orasnice',c:'Kolači',t:'50 min',s:'26 komada',
+ i:['2 bjelanjka sobne temperature','Prstohvat soli','250 g šećera u prahu','100 g mlevenih badema','200 g mlevenih oraha','270 g grubo seckanih oraha za valjanje'],
+ st:['Zagrejte rernu na 180 °C. Bjelanjke sa solju miksajte 1 do 2 minuta.','Dodajte šećer u prahu u 2 do 3 puta i miksajte još 4 do 5 minuta dok smesa ne bude gusta i sjajna.','Špatulom umešajte mlevene bademe i orahe. Mokrim rukama oblikujte male potkovice.','Uvaljajte ih u seckane orahe, poređajte na papir za pečenje i odmah spustite rernu na 110 °C. Pecite oko 35 minuta i ostavite da se potpuno ohlade na plehu.'],
+ tip:'Orasnice se drže 7 do 10 dana u zatvorenoj posudi i vremenom postaju sve mekše.'},
 {id:'tulumbe',n:'Tulumbe',c:'Kolači',t:'1 sat',s:'20 komada',
  i:['250 ml vode','100 ml ulja','200 g brašna','4 jaja','Prstohvat soli','Ulje za prženje','Sirup: 400 g šećera, 400 ml vode, sok od pola limuna'],
  st:['Vodu, ulje i so zagrejte do ključanja, umešajte brašno i kuvajte uz mešanje dok se testo ne odvoji od zida.','Ohladite, pa jedno po jedno umešajte jaja.','Pomoću špricva ili kašike pustite prste testa u vruće ulje i pecite do zlatne boje.','Za sirup kuvajte šećer, vodu i limun 10 minuta. Vruće tulumbe prelijte hladnim sirupom.'],
@@ -834,6 +843,18 @@ var SARMA_STEPS=[
 {t:'Motanje',d:'Stavi kašiku fila na list i uvij. Savij strane ka sredini.'},
 {t:'Slaganje u šerpu',d:'Na dno kupus i suvo meso, pa sarme gusto jednu uz drugu. Dodaj lovor.'},
 {t:'Kuvanje i služenje',d:'Zalij vodom i kuvaj na tihoj vatri. Ne meša se, samo protresi šerpu.',min:150}
+];
+var ORASNICE_STEPS=[
+{t:'Rerna',d:'Uključi rernu na 180 °C. Pripremi pleh sa papirom za pečenje.',q:'Rerna 180 °C',v:'video/orasnice-korak1.mp4'},
+{t:'Bjelanjci',d:'Dva bjelanjka sobne temperature stavi u činiju sa prstohvatom soli. Miksaj 1 do 2 minuta.',q:'2 bjelanjka, prstohvat soli',v:'video/orasnice-korak2.mp4'},
+{t:'Šećer',d:'Dodaj 250 g šećera u prahu, u 2 do 3 puta. Svaki put ga prvo umešaj kašikom, pa tek onda uključi mikser.',q:'250 g šećera u prahu',v:'video/orasnice-korak3.mp4'},
+{t:'Mućenje',d:'Miksaj još 4 do 5 minuta, dok smesa ne postane gusta i sjajna.',v:'video/orasnice-korak4.mp4'},
+{t:'Orasi i bademi',d:'Špatulom umešaj 100 g mlevenih badema i 200 g mlevenih oraha. Smesa treba da ostane mekana.',q:'100 g badema, 200 g oraha',p:{l:'Smesa je previše rijetka',r:'Ohladi je desetak minuta pre oblikovanja.'},v:'video/orasnice-korak5.mp4'},
+{t:'Seckani orasi',d:'U posebnu činiju stavi 270 g grubo seckanih oraha za valjanje.',q:'270 g seckanih oraha',v:'video/orasnice-korak6.mp4'},
+{t:'Oblikovanje',d:'Pokvasi ruke. Kašikom uzmi malo smese i oblikuj malu potkovicu.',v:'video/orasnice-korak7.mp4'},
+{t:'Valjanje',d:'Uvaljaj svaku potkovicu u seckane orahe i poređaj je na pleh. Dobićeš oko 26 do 27 komada.',v:'video/orasnice-korak8.mp4'},
+{t:'Pečenje',d:'Stavi pleh u rernu i odmah spusti temperaturu na 110 °C. Peci oko 35 minuta. Za mekši centar proveri već posle 25 minuta.',q:'110 °C, oko 35 minuta',min:35,p:{l:'Kolačići su se raširili',r:'Bjelanjci nisu bili dovoljno umućeni. Sledeći put miksaj dok smesa ne bude gusta i sjajna.'},v:'video/orasnice-korak9.mp4'},
+{t:'Hlađenje',d:'Ostavi ih da se potpuno ohlade na istom plehu pre nego što ih pomeriš, da ne puknu. Drže se 7 do 10 dana u zatvorenoj posudi.',v:'video/orasnice-korak10.mp4'}
 ];
 var cat='Sve';
 var CATS=['Sve','Čorbe','Pite','Glavna jela','Zimnica','Kolači'];
@@ -1095,6 +1116,7 @@ function renderProfile(){
 var C={r:null,st:[],i:0,play:true,t:0,dur:10,iv:null,tl:0,tv:null};
 function stepsFor(r){
   if(r.id==='sarma')return SARMA_STEPS;
+  if(r.id==='orasnice')return ORASNICE_STEPS;
   var a=[{t:'Uvod',d:'Danas kuvamo: '+r.n+'. Pripremi sastojke i krećemo.'}];
   r.st.forEach(function(x,k){a.push({t:'Korak '+(k+1),d:x})});
   a.push({t:'Služenje',d:'Gotovo je. Prijatno!'});return a;
@@ -1112,6 +1134,10 @@ function cookRender(){
   $('#c-seg').innerHTML=C.st.map(function(_,k){return '<i class="'+(k<C.i?'done':k===C.i?'now':'')+'"></i>'}).join('');
   $('#c-pic').innerHTML=pic(r).replace('class="ph"','class="ph" style="position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;margin:0;border:0"');
   $('#c-file').textContent=r.id+'-korak'+(C.i+1)+'.mp4';
+  var ov=$('#c-ov');ov.hidden=true;if(s.v&&s.q){ov.textContent=s.q;void ov.offsetWidth;ov.hidden=false}
+  var vd=$('#c-vid');
+  if(s.v){vd.hidden=false;vd.src=s.v;vd.currentTime=0;$('#c-pic').hidden=true;$('.cook-ph').hidden=true;var pp=vd.play();if(pp&&pp.catch)pp.catch(function(){C.play=false;$('#c-play').textContent='▶';$('#c-playico').textContent='▶';$('.cook-ph').hidden=false})}
+  else{vd.pause();vd.removeAttribute('src');vd.hidden=true;$('#c-pic').hidden=false;$('.cook-ph').hidden=false}
   $('#c-title').textContent=s.t;
   $('#c-desc').textContent=s.d;
   $('#c-qty').textContent=s.q||'';
@@ -1126,6 +1152,13 @@ function cookRender(){
   $('#c-bar').style.width='0';
 }
 function cookTick(){
+  var vd=$('#c-vid');
+  if(!vd.hidden){
+    var d=vd.duration||C.dur;
+    $('#c-bar').style.width=Math.min(100,vd.currentTime/d*100)+'%';
+    if(vd.ended){C.play=false;$('#c-playico').textContent='↻';$('#c-play').textContent='↻';if(C.i<C.st.length-1)$('#c-next').hidden=false}
+    return;
+  }
   if(!C.play)return;
   C.t+=0.1;$('#c-bar').style.width=Math.min(100,C.t/C.dur*100)+'%';
   if(C.t>=C.dur){C.play=false;$('#c-playico').textContent='↻';$('#c-play').textContent='↻';
@@ -1145,12 +1178,18 @@ function openCook(id){
   C.iv=setInterval(cookTick,100);
   try{if(navigator.wakeLock)navigator.wakeLock.request('screen').catch(function(){})}catch(e){}
 }
-function closeCook(){cookStop();document.body.style.overflow='';$('#cook').hidden=true}
+function closeCook(){cookStop();var v0=$('#c-vid');$('#c-ov').hidden=true;v0.pause();v0.removeAttribute('src');v0.hidden=true;document.body.style.overflow='';$('#cook').hidden=true}
 $('#c-close').addEventListener('click',function(){location.hash='#recept-'+C.r.id});
 $('#c-prev').addEventListener('click',function(){cookGo(-1)});
 $('#c-nxt').addEventListener('click',function(){cookGo(1)});
 $('#c-next2').addEventListener('click',function(){cookGo(1)});
 $('#c-play').addEventListener('click',function(){
+  var vd=$('#c-vid');
+  if(!vd.hidden){
+    if(vd.ended){vd.currentTime=0;$('#c-next').hidden=true}
+    if(vd.paused||vd.ended){vd.play();C.play=true}else{vd.pause();C.play=false}
+    $('#c-play').textContent=C.play?'❚❚':'▶';$('#c-playico').textContent=C.play?'❚❚':'▶';return;
+  }
   if(C.t>=C.dur){C.t=0;$('#c-next').hidden=true}
   C.play=!C.play;$('#c-play').textContent=C.play?'❚❚':'▶';$('#c-playico').textContent=C.play?'❚❚':'▶';
 });

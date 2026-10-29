@@ -1,5 +1,5 @@
 /* Cookster Club: jednostavan service worker. Aplikacija radi i bez interneta. */
-const CACHE = 'cookster-club-v27';
+const CACHE = 'cookster-club-v28';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -19,6 +19,7 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   const isFont = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
   if (url.origin !== location.origin && !isFont) return;
+  if (url.pathname.endsWith('.mp4')) return; // video ide direktno sa mreže (delimično učitavanje)
 
   if (req.mode === 'navigate') {
     // stranica: prvo mreža (nova verzija), pa keš kad nema interneta
