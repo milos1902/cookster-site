@@ -200,8 +200,10 @@
       this.region();
       const want=new Set(),created=[];
       for(const part of parts){
-        const units=Math.min(MAX_UNITS,Math.max(1,Math.round(part.count||1)));
+        // a part of a unit (a ladle of food) shows only that part of the pieces of a unit, so the food in a vessel grows little by little (the pieces that are there stay)
+        const cnt=Math.max(.04,+part.count||1),units=Math.min(MAX_UNITS,Math.max(1,Math.ceil(cnt-1e-6)));
         for(let u=0;u<units;u++){
+          const uw=Math.min(1,cnt-u);
           const entry=loadAtlas(part.atlas[u%part.atlas.length]);
           entry.part=part;
           const m=entry.meta;if(!m||!Array.isArray(m.p))continue;      // (a picture that is still loading has no pieces yet: they appear when it is ready)
@@ -212,7 +214,7 @@
           const off=UNIT_OFFSETS[u%UNIT_OFFSETS.length];
           const mult=FOOT[part.kind]||1,copies=Math.ceil(mult);
           for(let cp=0;cp<copies;cp++)m.p.forEach((q,i)=>{
-            const wgt=Math.min(1,mult-cp);
+            const wgt=Math.min(1,mult-cp,uw);
             if(wgt<1&&hashFrac(i+1,u+1,cp+1)>=wgt)return;   // a unit of a small vegetable keeps only part of its pieces
             const id=`${part.storageKey}|${u}|${i}${cp?'|'+cp:''}`;
             want.add(id);
@@ -505,6 +507,7 @@
   function kick(){if(!running){running=true;requestAnimationFrame(tick);}}
 
   window.CooksterPieceSim={
+    foot:FOOT,      // how much of the bottom of a vessel one unit of every vegetable covers (the ladle uses it)
     // called while a food layer is built: parts = cut ingredients that carry atlases
     append(layer,parts,stage,vessel){
       if(!layer||!vessel||!parts?.length)return;

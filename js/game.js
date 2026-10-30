@@ -6387,7 +6387,16 @@ function scoopAjvarLadle(ladle,vessel){
 }
 
 // ---- the ladle takes real food out of any vessel (a part of what is in it) and shows it in the bowl of the ladle; a click on another vessel pours it there ----
-const LADLE_UNITS=.5;              // how much one ladle holds (in the units of food, one vegetable = 1)
+const LADLE_COVER=.22;             // one ladle covers about a sixth of the bottom of a vessel (a full pan takes about six ladles)
+function ladleFoodUnits(payload){      // the food of a payload in the units of the bottom it covers
+ let t=0;const foot=window.CooksterPieceSim?.foot||{};
+ for(const [k,e] of Object.entries(payload?.items||{})){
+  if(e?.type==='staple')continue;
+  const base=String(e?.baseKey||k).replace(/_(diced|celo|sliced).*$/,'');
+  t+=Math.max(0,+e?.count||0)*(foot[base]||1);
+ }
+ return t;
+}
 // a picture of the food as it looks in the vessel (colours, how cooked, how mixed): a piece of the food canvas of the vessel, cut to the shape of the bowl of the ladle
 function ladleSnapshot(vessel){
  try{
@@ -6437,7 +6446,7 @@ function scoopLadle(ladle,vessel){
  if(vesselHasClosedLid(vessel)){showToast('Skini poklopac sa posude.');return true;}
  const shot=ladleSnapshot(vessel);
  const full=vesselTransferPayload(vessel),food=Math.max(0,+full.foodCount||0);
- const f=food>0?Math.min(1,LADLE_UNITS/food):1;
+ const cover=ladleFoodUnits(full),f=cover>0?Math.min(1,LADLE_COVER/cover):1;
  const load=f<.999?scalePourPayload(full,f):{...full,fraction:1};
  ladle.dataset.ladleLoad=JSON.stringify(load);
  if(shot)ladle.dataset.ladleShot=shot;else delete ladle.dataset.ladleShot;
