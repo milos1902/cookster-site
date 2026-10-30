@@ -446,8 +446,7 @@
         if(bl[1]>0&&e.cooked?.well){g.globalAlpha=bl[1];g.drawImage(e.cooked.well,p.sx,p.sy,p.sw,p.sh,dx,dy,dw,dh);}
         g.globalAlpha=1;g.restore();
       }
-      // the settled layer lies deeper: a little darker than the loose pieces on top
-      g.fillStyle='rgba(30,10,0,.32)';g.fill();
+      // (no dark fill over the settled layer: it made a dark mask on the bottom of every vessel)
       g.restore();
     }
     draw(){
