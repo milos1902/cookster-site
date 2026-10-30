@@ -9933,6 +9933,14 @@ function beginPourTransfer(source,target){
   const payload=verdict.payload;
   try{playImpactSound(source,'pourOut');}catch(_){}
   pouring=true;
+  // the pose of the held vessel (where the ghost is now) must be read BEFORE the ghost is hidden, which clears it: otherwise the pour starts from the place the vessel was taken from
+  const liveGhost=(placementGhostMotion&&placementGhostMotion.key===source&&placementGhostMotion.pose)||null;
+  const heldPose0=liveGhost&&Number.isFinite(+liveGhost.cx)&&Number.isFinite(+liveGhost.by)
+    ?{cx:+liveGhost.cx,by:+liveGhost.by,vis:+liveGhost.vis||((+liveGhost.w||0)/Math.max(1,+source.dataset.baseW||1))||+source.dataset.vis||1,angle:liveGhost.angle}
+    :(placementState?.candidate||null);
+  const mouseAtStart=screenToScene(mouse.x,mouse.y);
+  try{if(source._contactShadow)source._contactShadow.style.visibility='hidden';}catch(_){}
+  source.dataset.noSunShadow='1';
   clearPourTarget();
   hidePlacementGhost();hideOriginGhost();
 
@@ -9940,7 +9948,7 @@ function beginPourTransfer(source,target){
  // the cursor. Reveal the real vessel at that same cursor pose before starting
  // the pour. Revealing it at its old hand pose made the source disappear near
  // the receiver and then pop in from the bottom of the screen.
- const ghostPose=placementState?.candidate;
+ const ghostPose=heldPose0;
  const sourceStart=ghostPose&&Number.isFinite(+ghostPose.cx)&&Number.isFinite(+ghostPose.by)
    ? ghostPose
    : {cx:+source.dataset.cx||0,by:+source.dataset.by||0,vis:+source.dataset.vis||1};
@@ -9999,7 +10007,9 @@ function beginPourTransfer(source,target){
 
   setTimeout(()=>{
     source.style.transition='left 270ms cubic-bezier(.18,.72,.22,1), top 270ms cubic-bezier(.18,.72,.22,1), width 270ms ease-out, height 270ms ease-out, transform 270ms ease-out';
-    const returnPose=placementState?.candidate||sourceStart;
+    // back to the cursor (the vessel is still held): the same distance from the cursor as when the pour started, not to the place it was taken from
+    const mNow=screenToScene(mouse.x,mouse.y);
+    const returnPose={...sourceStart,cx:sourceStart.cx+(mNow.x-mouseAtStart.x),by:sourceStart.by+(mNow.y-mouseAtStart.y)};
     setPose(source,returnPose.cx,returnPose.by,returnPose.vis||1);
     source.style.transformOrigin='50% 50%';
     source.style.transform=`perspective(1200px) rotateX(${itemTiltValue(source,source.dataset.tilt||0)*.45}deg) rotateZ(${+(returnPose.angle??baseAngle+carryAngle)}deg)`;
@@ -10010,6 +10020,7 @@ function beginPourTransfer(source,target){
     source.classList.remove('pouring-source');
     target.classList.remove('pouring-receiver');
     pouring=false;
+    delete source.dataset.noSunShadow;try{if(source._contactShadow)source._contactShadow.style.visibility='';}catch(_){}
 
     // Return to the normal held-item model: real item hidden, placement ghost visible.
     // If the source is no longer the held item for any reason, leave it visible.
