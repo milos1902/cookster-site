@@ -15886,12 +15886,6 @@ showToast(window.__COOKSTER_EXPLICIT_LOAD__?'Sačuvana igra je učitana.':'Nova 
       font-family:Georgia,"Times New Roman",serif;
     }
     #savkaBookRoot.savka-open{pointer-events:auto}
-    #savkaBookRoot .savka-side-fade{
-      position:absolute; inset:0 auto 0 0; width:148px;
-      background:linear-gradient(90deg,rgba(37,22,14,.88),rgba(37,22,14,.58) 52%,rgba(37,22,14,0) 100%);
-      border-radius:0 24px 24px 0; opacity:.9; pointer-events:none;
-    }
-     #savkaBookRoot.savka-open .savka-side-fade,
      #savkaBookRoot.savka-open .savka-header-label,
      #savkaBookRoot.savka-open .savka-book-controls,
      #savkaBookRoot.savka-open .savka-close,
@@ -16041,7 +16035,6 @@ showToast(window.__COOKSTER_EXPLICIT_LOAD__?'Sačuvana igra je učitana.':'Nova 
     const root=document.createElement('div');
     root.id='savkaBookRoot';
     root.innerHTML=`
-      <div class="savka-side-fade" aria-hidden="true"></div>
       <button class="savka-book-tab" type="button" aria-label="Otvori Baba Savkinu knjigu recepata" title="Baba Savkina knjiga recepata">
         <img class="savka-tab-cover" src="${SAVKA_BOOK_COVER}" alt="Baba Savkina knjiga recepata">
       </button>

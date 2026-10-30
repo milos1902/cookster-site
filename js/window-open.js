@@ -7,7 +7,7 @@
 (function(){
 if(window.CooksterWindow)return;
 var KEY='cooksterWindowOpen',W=176,H=440,open=false,anim=null,box=null,inner=null,hot=null,lvl=open?1:0,vid=null,cv=null,gl=null,tex=null,prog=null,vidT=0,playing=false,broke=false,CLIP_W=706,CLIP_H=941,BREAK_AT=1.27,CLIP_RATE=1.2,FADE_AT=2.2,FADE_END=3.0;      // the clip covers the part of the scene (0,0)-(706,941), BREAK_AT = the second of the clip when the pot hits the floor
-try{open=localStorage.getItem(KEY)==='1';}catch(e){}
+try{localStorage.setItem(KEY,'0');}catch(e){}      // the window is always closed when the game starts (the choice is no longer remembered between visits)
 function build(){
   var sc=document.getElementById('scene');if(!sc)return false;
   if(box&&box.parentNode===sc)return true;
