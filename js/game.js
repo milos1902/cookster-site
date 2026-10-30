@@ -6518,22 +6518,80 @@ function beginLadleScoop(ladle,vessel){
  },1300);
  return true;
 }
-function pourLadleInto(ladle,target){
- if(!isAjvarLadle(ladle)||!ladle.dataset.ladleLoad||!target||!isContainerItem(target))return false;
- let payload;try{payload=JSON.parse(ladle.dataset.ladleLoad);}catch(_){delete ladle.dataset.ladleLoad;renderLadleLoad(ladle);return true;}
- if(vesselHasClosedLid(target)){showToast('Skini poklopac sa posude.');return true;}
- if(isHeatableCookwareItem(target)&&CooksterPan.read(target).burnt){showToast('Posuda je zagorela — prvo je operi.');return true;}
+// what a ladle can pour into a vessel: {part,rest,payload} or {error}
+function ladlePourPlan(ladle,target){
+ if(!isAjvarLadle(ladle)||!ladle.dataset.ladleLoad||!target||!isContainerItem(target))return {error:'invalid'};
+ let payload;try{payload=JSON.parse(ladle.dataset.ladleLoad);}catch(_){delete ladle.dataset.ladleLoad;delete ladle.dataset.ladleShot;renderLadleLoad(ladle);return {error:'invalid'};}
+ if(vesselHasClosedLid(target))return {error:'Skini poklopac sa posude.'};
+ if(isHeatableCookwareItem(target)&&CooksterPan.read(target).burnt)return {error:'Posuda je zagorela — prvo je operi.'};
  const food=Math.max(0,+payload.foodCount||0),room=Math.max(0,containerCapacity(target)-containerTotal(target));
  let part=payload,rest=null;
  if(food>room+1e-6){
-  if(room<.05){showToast('Posuda je puna.');return true;}
+  if(room<.05)return {error:'Posuda je puna.'};
   const f=room/food;part=scalePourPayload(payload,f);rest=scalePourPayload(payload,1-f);
  }
- if(isHeatableCookwareItem(target))mergePayloadIntoHeatable(target,part);else mergePayloadIntoContainer(target,part);
- if(rest)ladle.dataset.ladleLoad=JSON.stringify(rest);else{delete ladle.dataset.ladleLoad;delete ladle.dataset.ladleShot;}
+ return {part,rest,payload};
+}
+function applyLadlePour(ladle,target,plan){
+ if(isHeatableCookwareItem(target))mergePayloadIntoHeatable(target,plan.part);else mergePayloadIntoContainer(target,plan.part);
+ if(plan.rest)ladle.dataset.ladleLoad=JSON.stringify(plan.rest);else{delete ladle.dataset.ladleLoad;delete ladle.dataset.ladleShot;}
  renderLadleLoad(ladle);renderCookwareContents(target);if(isHeatableCookwareItem(target))updateCookingStatus(target);
  try{playImpactSound(target,'putIn');}catch(_){}
- CooksterSave.schedule();return true;
+ CooksterSave.schedule();
+}
+function pourLadleInto(ladle,target){
+ const plan=ladlePourPlan(ladle,target);
+ if(plan.error){if(plan.error!=='invalid')showToast(plan.error);return plan.error!=='invalid';}
+ applyLadlePour(ladle,target,plan);
+ if(holding===ladle&&!pouring)updatePlacementGhost();      // the picture of the ladle in the hand is made again at once (not only when the mouse moves)
+ return true;
+}
+// the ladle goes over the vessel, tips over, the food falls into it, then the ladle comes back to the cursor
+function beginLadlePour(ladle,target){
+ if(pouring||!ladle||!target)return false;
+ const plan=ladlePourPlan(ladle,target);
+ if(plan.error){if(plan.error!=='invalid')showToast(plan.error);return true;}
+ pouring=true;
+ const live=(placementGhostMotion&&placementGhostMotion.key===ladle&&placementGhostMotion.pose)||null;
+ const h0=live&&Number.isFinite(+live.cx)&&Number.isFinite(+live.by)
+  ?{cx:+live.cx,by:+live.by,vis:+live.vis||((+live.w||0)/Math.max(1,+ladle.dataset.baseW||1))||+ladle.dataset.vis||1,angle:+live.angle||0}
+  :(placementState?.candidate||{cx:+ladle.dataset.cx||0,by:+ladle.dataset.by||0,vis:+ladle.dataset.vis||1,angle:0});
+ const mouseAtStart=screenToScene(mouse.x,mouse.y);
+ try{if(ladle._contactShadow)ladle._contactShadow.style.visibility='hidden';}catch(_){}
+ ladle.dataset.noSunShadow='1';
+ clearPourTarget();hidePlacementGhost();hideOriginGhost();
+ const vis=h0.vis||1,w=(+ladle.dataset.baseW||112)*vis,h=(+ladle.dataset.baseH||112)*vis;
+ const tv=+target.dataset.vis||1,tcx=+target.dataset.cx||0,tby=+target.dataset.by||0,tmid=tby-(+target.dataset.baseH||100)*tv*.5;
+ const over=(dy,ang)=>({cx:tcx+w*.17,by:tmid+h*.30+dy,angle:ang});
+ const tr=ms=>`left ${ms}ms cubic-bezier(.3,.1,.3,1), top ${ms}ms cubic-bezier(.3,.1,.3,1), transform ${ms}ms cubic-bezier(.3,.1,.3,1)`;
+ const oldTransition=ladle.style.transition||'';
+ const go=(pose,ms)=>{
+  ladle.style.transition=tr(ms);
+  setPose(ladle,pose.cx,pose.by,vis);
+  ladle.style.transformOrigin='33% 70%';
+  ladle.style.transform=`perspective(1200px) rotateZ(${pose.angle}deg)`;
+ };
+ setPose(ladle,h0.cx,h0.by,vis);ladle.style.transformOrigin='33% 70%';ladle.style.transform=`rotateZ(${+h0.angle||0}deg)`;
+ ladle.style.visibility='visible';ladle.classList.add('pouring-source');
+ requestAnimationFrame(()=>requestAnimationFrame(()=>go(over(-34*vis,-4),300)));      // over the vessel
+ setTimeout(()=>go(over(-30*vis,-62),340),350);                                        // tips over
+ setTimeout(()=>{try{spawnPourParticles(ladle,target,plan.payload);playSfxVariant('metalDrop',.12);}catch(_){}},520);      // the food falls
+ setTimeout(()=>{applyLadlePour(ladle,target,plan);popArtPuff(tcx,tby-18*tv,Math.max(.4,tv*.5));},780);         // it is in the vessel, the bowl is empty
+ setTimeout(()=>go(over(-34*vis,-4),280),900);                                          // upright again
+ setTimeout(()=>{
+  const m=screenToScene(mouse.x,mouse.y);
+  go({cx:h0.cx+(m.x-mouseAtStart.x),by:h0.by+(m.y-mouseAtStart.y),angle:+h0.angle||0},280);
+ },1230);
+ setTimeout(()=>{
+  ladle.style.transition=oldTransition;ladle.classList.remove('pouring-source');
+  delete ladle.dataset.noSunShadow;try{if(ladle._contactShadow)ladle._contactShadow.style.visibility='';}catch(_){}
+  pouring=false;
+  if(holding===ladle)ladle.style.visibility='';
+  updatePlacementGhost();
+  if(holding===ladle)ladle.style.visibility='hidden';
+  updatePourTarget();updateHover();
+ },1560);
+ return true;
 }
 function fillAjvarJar(jar,ladle){
  if(!isAjvarJar(jar)||!isAjvarLadle(ladle))return false;
@@ -15749,7 +15807,7 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
     if(isAjvarLadle(holding)){
       if(it&&isAjvarJar(it)){fillAjvarJar(it,holding);return;}
       const lv=(it&&isContainerItem(it))?it:containerAt(e.clientX,e.clientY);
-      if(lv&&holding.dataset.ladleLoad){pourLadleInto(holding,lv);return;}
+      if(lv&&holding.dataset.ladleLoad){beginLadlePour(holding,lv);return;}
       if(lv){
         const ajv=isHeatableCookwareItem(lv)&&(lv.dataset.ajvarBatchMl!==undefined||(items.some(isAjvarJar)&&ajvarSourceIsCooked(lv)));
         if(ajv)scoopAjvarLadle(holding,lv);else beginLadleScoop(holding,lv);
