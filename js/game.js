@@ -6385,6 +6385,62 @@ function scoopAjvarLadle(ladle,vessel){
  CooksterSave.schedule();
  return true;
 }
+
+// ---- the ladle takes real food out of any vessel (a part of what is in it) and shows it in the bowl of the ladle; a click on another vessel pours it there ----
+const LADLE_UNITS=.5;              // how much one ladle holds (in the units of food, one vegetable = 1)
+function renderLadleLoad(ladle){
+ if(!isAjvarLadle(ladle))return;
+ let box=ladle.querySelector('.ladle-load');
+ let payload=null;try{payload=ladle.dataset.ladleLoad?JSON.parse(ladle.dataset.ladleLoad):null;}catch(_){}
+ if(!payload){box?.remove();return;}
+ if(!box){
+  box=document.createElement('span');box.className='ladle-load';
+  Object.assign(box.style,{position:'absolute',left:'13%',top:'61%',width:'42%',height:'18%',borderRadius:'50%',transform:'rotate(-9deg)',
+   overflow:'hidden',zIndex:'5',pointerEvents:'none',boxShadow:'inset 0 1px 3px rgba(45,14,5,.55)',background:'rgba(70,40,20,.45)'});
+  ladle.appendChild(box);
+ }
+ box.innerHTML='';
+ const seen=new Set(),list=[];
+ for(const c of pourParticleSources(payload)){if(seen.has(c.key))continue;seen.add(c.key);list.push(c);}
+ let n=list.length;
+ list.forEach((c,i)=>{      // every kind of food in its own strip of the bowl
+  const d=document.createElement('span');
+  Object.assign(d.style,{position:'absolute',top:'0',bottom:'0',left:(i*100/n)+'%',width:(100/n+1)+'%',backgroundImage:`url("${c.src}")`,backgroundSize:'260% auto',backgroundPosition:`${30+i*25}% ${40+i*10}%`,backgroundRepeat:'no-repeat'});
+  box.appendChild(d);
+ });
+ if(!n)box.style.background='rgba(214,170,98,.85)';
+}
+function scoopLadle(ladle,vessel){
+ if(!isAjvarLadle(ladle)||!vessel||!isContainerItem(vessel))return false;
+ if(ladle.dataset.ladleLoad){showToast('Kutlača je već puna.');return true;}
+ if(vesselTransferAmount(vessel)<=0){showToast('Posuda je prazna.');return true;}
+ if(vesselHasClosedLid(vessel)){showToast('Skini poklopac sa posude.');return true;}
+ const full=vesselTransferPayload(vessel),food=Math.max(0,+full.foodCount||0);
+ const f=food>0?Math.min(1,LADLE_UNITS/food):1;
+ const load=f<.999?scalePourPayload(full,f):{...full,fraction:1};
+ ladle.dataset.ladleLoad=JSON.stringify(load);
+ if(f<.999)keepRestAfterPour(vessel,f);else clearVesselAfterPour(vessel);
+ renderCookwareContents(vessel);if(isHeatableCookwareItem(vessel))updateCookingStatus(vessel);
+ renderLadleLoad(ladle);try{playImpactSound(vessel,'pourOut');}catch(_){}
+ CooksterSave.schedule();return true;
+}
+function pourLadleInto(ladle,target){
+ if(!isAjvarLadle(ladle)||!ladle.dataset.ladleLoad||!target||!isContainerItem(target))return false;
+ let payload;try{payload=JSON.parse(ladle.dataset.ladleLoad);}catch(_){delete ladle.dataset.ladleLoad;renderLadleLoad(ladle);return true;}
+ if(vesselHasClosedLid(target)){showToast('Skini poklopac sa posude.');return true;}
+ if(isHeatableCookwareItem(target)&&CooksterPan.read(target).burnt){showToast('Posuda je zagorela — prvo je operi.');return true;}
+ const food=Math.max(0,+payload.foodCount||0),room=Math.max(0,containerCapacity(target)-containerTotal(target));
+ let part=payload,rest=null;
+ if(food>room+1e-6){
+  if(room<.05){showToast('Posuda je puna.');return true;}
+  const f=room/food;part=scalePourPayload(payload,f);rest=scalePourPayload(payload,1-f);
+ }
+ if(isHeatableCookwareItem(target))mergePayloadIntoHeatable(target,part);else mergePayloadIntoContainer(target,part);
+ if(rest)ladle.dataset.ladleLoad=JSON.stringify(rest);else delete ladle.dataset.ladleLoad;
+ renderLadleLoad(ladle);renderCookwareContents(target);if(isHeatableCookwareItem(target))updateCookingStatus(target);
+ try{playImpactSound(target,'putIn');}catch(_){}
+ CooksterSave.schedule();return true;
+}
 function fillAjvarJar(jar,ladle){
  if(!isAjvarJar(jar)||!isAjvarLadle(ladle))return false;
  if(jar.dataset.ajvarClosed==='1'){ajvarJarNotice('Ova tegla je već zatvorena.');return true;}
@@ -10896,7 +10952,7 @@ function openKitchenElements(mode){
 
 function serializeWorldItem(el){
  const body=el.querySelector('.body');
-  const keep=['inOven','inFlour','inWater','waterTemp','inYeast','inSugar','inStir','inStarter','inYeastDead','inWaterT','inCloth','inRise','inMix','inShape','inMesh','inMeshS','inBall','flour','water','soak','dirt','hadFood','ingredient','ingredientKey','trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','cutStyle','ovalN','ovalItems','ovalOil','ovalParsley','ovalSeed','ovalExtras','srvItems','srvOil','srvParsley','srvSeed','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','basketWoodLog','firewood'];
+  const keep=['ladleLoad','inOven','inFlour','inWater','waterTemp','inYeast','inSugar','inStir','inStarter','inYeastDead','inWaterT','inCloth','inRise','inMix','inShape','inMesh','inMeshS','inBall','flour','water','soak','dirt','hadFood','ingredient','ingredientKey','trashN','spices','kupusHalf','kacaHalf','spikeN','spikeHang','plateFill','kacaT0','kacaPh','kacaWater','kacaN','kacaLid','kacaP','kacaDay0','kacaRuined','fermentPhase','pieceAtlas','crate','vegKey','count','vegetable','cutState','attachedToBoard','boardRelX','boardRelY','boardRelAngle','embeddedKnife','surfaceZone','stoveZone','onCookstove','onStove','readyAnnounced','renderBucket','panContents','panIngredientMeta','staple','stapleKey','uses','quickTool','panVegKey','collisionProfile','collisionCandidateProfile','onStoveTop','roastProgress','roastPhase','directHeatProgress','baseProduceLabel','container','vesselSubtype','containerContents','marketBag','marketProductKey','marketProductLabel','quantityKg','quantityMode','quantityValue','quantityBunches','cameraYaw','creatorShelfSlot','calibrationBag','bagCount','bagClosed','bagClosedAt','bagSteamed','steamedPepper','readyToPeel','peelHits','peeled','choppedRoastedUnpeeledEggplant','cutStyle','ovalN','ovalItems','ovalOil','ovalParsley','ovalSeed','ovalExtras','srvItems','srvOil','srvParsley','srvSeed','ajvarJar','jarredDish','ajvarFill','ajvarClosed','ajvarLadleFull','ajvarSourceInstanceId','grinderQueue','grinderQueued','grinderProgress','backpackIconScale','basketWoodLog','firewood'];
  const data={};
  for(const k of keep)if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
  for(const k of ['ajvarMl','ajvarBatchMl'])if(el.dataset[k]!==undefined)data[k]=el.dataset[k];
@@ -10949,7 +11005,7 @@ function restoreWorldItem(saved){
  try{window.CooksterVesselWater?.sync(el);if(el.dataset.dirt==='1')window.CooksterVesselDirt?.update(el,1,false);}catch(_){}
   if(el.dataset.itemId==='kaca_prazna'&&window.CooksterKaca)CooksterKaca.refresh(el);
   if(isAjvarJar(el))renderAjvarJar(el);
-  if(isAjvarLadle(el))renderAjvarLadle(el);
+  if(isAjvarLadle(el)){renderAjvarLadle(el);renderLadleLoad(el);}
   if(el.dataset.inOven==='1'){el.dataset.fixedVis=String(+el.dataset.vis||.8);moveItemToOvenLayer(el);}
  if(isPaprikaSteamBag(el))renderPaprikaSteamBag(el);
  if(el.dataset.steamedPepper==='1'||(isWholeStraight(el)&&el.dataset.peeled==='1'))renderPaprikaPeelState(el);
@@ -15586,7 +15642,13 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
    if(picking||pouring||oilPouring)return;
     if(isAjvarLadle(holding)){
       if(it&&isAjvarJar(it)){fillAjvarJar(it,holding);return;}
-      if(it&&isHeatableCookwareItem(it)){scoopAjvarLadle(holding,it);return;}
+      const lv=(it&&isContainerItem(it))?it:containerAt(e.clientX,e.clientY);
+      if(lv&&holding.dataset.ladleLoad){pourLadleInto(holding,lv);return;}
+      if(lv){
+        const ajv=isHeatableCookwareItem(lv)&&(lv.dataset.ajvarBatchMl!==undefined||(items.some(isAjvarJar)&&ajvarSourceIsCooked(lv)));
+        if(ajv)scoopAjvarLadle(holding,lv);else scoopLadle(holding,lv);
+        return;
+      }
     }
     if(isRoastedPepperForSteamBag(holding)&&it&&isPaprikaSteamBag(it)){
       if(addRoastedPepperToSteamBag(it,holding))return;
