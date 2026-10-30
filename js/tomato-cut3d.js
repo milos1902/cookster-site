@@ -797,8 +797,8 @@
         sprites.push({img:sc,w,h,ax:SZ/2-x0,ay:SZ/2-y0,x:b.pos.x*PU,y:b.pos.z*PU,r:Math.max(w,h)/2,rot:0});
       }
       if(!sprites.length){try{br.dispose();}catch(_){}return null;}
-      // long vegetables (eggplant, cucumber) are drawn with small pieces, so a few cuts look like very little on the board: the pieces are repeated (turned differently) up to MIN_SHOWN, the same food looks like a fuller heap
-      if(cfg.refD&&sprites.length<MIN_SHOWN){
+      // the hand cut (C) often gives few pieces, so a few cuts look like very little on the board (the quick cut E fills the picture): the pieces are repeated (turned differently) up to MIN_SHOWN, the same food looks like a fuller heap
+      if(sprites.length<MIN_SHOWN){
         const base=sprites.slice();
         for(let i=0;sprites.length<MIN_SHOWN;i++){const o=base[i%base.length];sprites.push({...o,x:o.x+(Math.random()-.5)*o.r*3,y:o.y+(Math.random()-.5)*o.r*3,rot:0});}
       }
