@@ -15662,7 +15662,7 @@ document.getElementById('kitchenElementsBtn')?.addEventListener('click',()=>open
 document.getElementById('drinksBtn')?.addEventListener('click',()=>openKitchenElements('drinks'));
 document.getElementById('kitchenElementsClose')?.addEventListener('click',closeKitchenElements);
 document.getElementById('kitchenElementsScene')?.addEventListener('pointerdown',e=>{if(e.target.id==='kitchenElementsScene')closeKitchenElements();});
-document.getElementById('serveBtn').onclick=serveDish;
+
 document.getElementById('saveBtn')?.addEventListener('click',()=>{
  const ok=CooksterSave.save();
  showToast(ok?'Igra je ručno sačuvana.':'Čuvanje nije uspelo.');
@@ -15672,8 +15672,6 @@ document.getElementById('loadBtn')?.addEventListener('click',()=>{
  showToast('Učitavam sačuvanu igru...');
  setTimeout(()=>CooksterSave.requestLoad(),120);
 });
-document.getElementById('dishClose').onclick=()=>{const r=document.getElementById('dishReport');r.classList.remove('open');r.setAttribute('aria-hidden','true')};
-initRecipeChooser();
 document.getElementById('closeModal').onclick=()=>{playSfx('ui',.22);modalShade.style.display='none'};
 modalShade.addEventListener('pointerdown',e=>{if(e.target===modalShade)modalShade.style.display='none'});
 
