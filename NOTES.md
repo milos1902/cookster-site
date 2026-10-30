@@ -1059,3 +1059,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Patlidžan/krastavac posle 3D sečenja (C pa E): ako ima manje od 60 komadića, komadići se ponavljaju (različito okrenuti) da gomila na dasci izgleda puna (`MIN_SHOWN` u `tomato-cut3d.js?v=28`). Veličina komadića je ista. Nisam isprobao sečenje u igri (WebGL), samo da se kod učitava. Tamna maska ispod patlidžana u posudi: uzrok nije nađen, čeka sliku.
 
 - Cela gornja ploča šporeta greje kad vatra gori: posuđe bilo gde na ploči (ne samo iznad dve ringle) se zagreva i kuva, i može ih biti koliko god ih staje (`ensureVesselStoveZone` u `game.js?v=3.180`; van ringle ne zauzima ringlu, `stoveZone` se ne postavlja). Isprobano headless sa tri posude na različitim mestima: sve tri greju. Crveno žarenje velike plotne (`stove-plates.js`) nije menjano.
+
+- Sečenje sa C: gomila na dasci se puni (komadići se ponavljaju do 60) za SVO povrće, ne samo patlidžan/krastavac (kupus je i dalje izgledao prazno). `tomato-cut3d.js?v=29`. Nije isprobano u igri (WebGL).
