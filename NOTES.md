@@ -1049,3 +1049,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Igra počinje 1. jula (leto), ne 1. januara: `START` u `weather.js?v=20`. Prvi dan je sunčan.
 
 - Drvene trake sa vremenom (prognoza i datum/sat) vidljive i u špajzu, bašti i kafani: `weather.js?v=21` crta njihove kopije iznad tih scena (u kuhinji ostaju originali, pa ih svetlo i dalje tamni). Isprobano u sve tri scene.
+
+- Zatamnjeni providni deo uz prozor (`savka-side-fade`, ostatak stare knjige recepata) obrisan. `game.js?v=3.178`.
+- Prozor je uvek zatvoren kad se igra pokrene (otvorenost se više ne pamti između poseta). `window-open.js?v=30`.
