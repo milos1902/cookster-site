@@ -19,7 +19,7 @@
   // Set to null to go back to days (SOUR_DAYS).
   const SOUR_SECS=[0,10,20];
   // TEST: a barrel full of sour cabbage is always in the kitchen (it refills itself). Set to false to go back to normal play.
-  const TEST_ALWAYS_SOUR=true;
+  const TEST_ALWAYS_SOUR=false;
   // closed-barrel picture (C) -> frame of the empty barrel picture (P): P = 1.08*C - (34,50)
   const toPx=cx=>(1.08*cx-34)/527*100,toPy=cy=>(1.08*cy-50)/560*100;
   const FRONT_POLY=[[0,558],[0,30],[126,30],[126,176],[150,210],[200,222],[250,229],[300,231],[350,229],[400,222],[440,210],[449,190],[449,30],[560,30],[560,558]]

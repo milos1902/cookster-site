@@ -1042,3 +1042,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 - Link za pokazivanje igre: `index.html?demo=1` sakriva sve alate, prekidač „Alati", „Napredak · JSON" i sat sa vremenom (ništa se ne pamti; obični link je isti kao pre). `tools-switch.js?v=3`.
 - Kiša i sneg padaju samo napolju (levo od linije koju je Miloš nacrtao oko otvorenog prozora): `RAIN_AREA` u `weather.js?v=19` (tačke u pikselima scene; izdvojene iz njegove slike, poređeno sa prikazom igre pa linija pada na rub stakla). Ista linija važi i kad je prozor zatvoren.
+
+- Bure sa kiselim kupusom više se ne pojavljuje samo na početku igre: `TEST_ALWAYS_SOUR=false` u `kaca.js?v=20` (bio je test režim koji je uvek stavljao punu bačvu i dopunjavao je). Bačva se i dalje može uzeti kao predmet (`kaca_prazna`).
