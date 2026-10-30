@@ -6412,6 +6412,17 @@ function ladleSnapshot(vessel){
   return o.toDataURL('image/png');
  }catch(_){return '';}
 }
+// where the food lies in the bowl of the ladle (parts of the picture of the ladle); the tool "Kutlača" (js/ladle-tool.js) changes it and keeps it in the browser
+const LADLE_BOX_DEFAULT={l:11.5,t:60.5,w:44.5,h:20,r:-8};
+function ladleBoxCfg(){
+ let c={};try{c=JSON.parse(localStorage.getItem('cookster.ladle-load.v1')||'{}')||{};}catch(_){}
+ return {...LADLE_BOX_DEFAULT,...Object.fromEntries(Object.entries(c).filter(([,v])=>Number.isFinite(+v)).map(([k,v])=>[k,+v]))};
+}
+function styleLadleLoadBox(box){
+ const c=ladleBoxCfg();
+ box.style.left=c.l+'%';box.style.top=c.t+'%';box.style.width=c.w+'%';box.style.height=c.h+'%';box.style.transform=`rotate(${c.r}deg)`;
+}
+window.CooksterLadleBox={cfg:ladleBoxCfg,defaults:LADLE_BOX_DEFAULT,refresh(){document.querySelectorAll('.ladle-load').forEach(styleLadleLoadBox);}};
 function renderLadleLoad(ladle){
  if(!isAjvarLadle(ladle))return;
  let box=ladle.querySelector('.ladle-load');
@@ -6419,10 +6430,10 @@ function renderLadleLoad(ladle){
  if(!payload){box?.remove();return;}
  if(!box){
   box=document.createElement('span');box.className='ladle-load';
-  Object.assign(box.style,{position:'absolute',left:'13%',top:'61%',width:'42%',height:'18%',borderRadius:'50%',transform:'rotate(-9deg)',
-   overflow:'hidden',zIndex:'5',pointerEvents:'none',boxShadow:'inset 0 1px 3px rgba(45,14,5,.55)',});
+  Object.assign(box.style,{position:'absolute',borderRadius:'50%',overflow:'hidden',zIndex:'5',pointerEvents:'none',boxShadow:'inset 0 2px 5px rgba(45,14,5,.6),0 0 0 1px rgba(255,214,150,.35)'});
   ladle.appendChild(box);
  }
+ styleLadleLoadBox(box);
  box.innerHTML='';
  if(ladle.dataset.ladleShot){
   box.style.background=`url("${ladle.dataset.ladleShot}") center/100% 100% no-repeat`;
@@ -6454,6 +6465,58 @@ function scoopLadle(ladle,vessel){
  renderCookwareContents(vessel);if(isHeatableCookwareItem(vessel))updateCookingStatus(vessel);
  renderLadleLoad(ladle);try{playImpactSound(vessel,'pourOut');}catch(_){}
  CooksterSave.schedule();return true;
+}
+function ladleScoopBlock(ladle,vessel){
+ if(ladle.dataset.ladleLoad)return 'Kutlača je već puna.';
+ if(vesselTransferAmount(vessel)<=0)return 'Posuda je prazna.';
+ if(vesselHasClosedLid(vessel))return 'Skini poklopac sa posude.';
+ return '';
+}
+// the held ladle goes over the food, dips into it, comes up full and comes back to the cursor
+function beginLadleScoop(ladle,vessel){
+ if(pouring||!ladle||!vessel)return false;
+ const why=ladleScoopBlock(ladle,vessel);if(why){showToast(why);return true;}
+ pouring=true;
+ const live=(placementGhostMotion&&placementGhostMotion.key===ladle&&placementGhostMotion.pose)||null;
+ const h0=live&&Number.isFinite(+live.cx)&&Number.isFinite(+live.by)
+  ?{cx:+live.cx,by:+live.by,vis:+live.vis||((+live.w||0)/Math.max(1,+ladle.dataset.baseW||1))||+ladle.dataset.vis||1,angle:+live.angle||0}
+  :(placementState?.candidate||{cx:+ladle.dataset.cx||0,by:+ladle.dataset.by||0,vis:+ladle.dataset.vis||1,angle:0});
+ const mouseAtStart=screenToScene(mouse.x,mouse.y);
+ try{if(ladle._contactShadow)ladle._contactShadow.style.visibility='hidden';}catch(_){}
+ ladle.dataset.noSunShadow='1';
+ clearPourTarget();hidePlacementGhost();hideOriginGhost();
+ const vis=h0.vis||1,w=(+ladle.dataset.baseW||112)*vis,h=(+ladle.dataset.baseH||112)*vis;
+ const tv=+vessel.dataset.vis||1,tcx=+vessel.dataset.cx||0,tby=+vessel.dataset.by||0,tmid=tby-(+vessel.dataset.baseH||100)*tv*.5;
+ // the bowl of the ladle (about 33% / 70% of its picture) goes over the middle of the food
+ const over=(dy,ang)=>({cx:tcx+w*.17,by:tmid+h*.30+dy,angle:ang});
+ const tr=ms=>`left ${ms}ms cubic-bezier(.3,.1,.3,1), top ${ms}ms cubic-bezier(.3,.1,.3,1), transform ${ms}ms cubic-bezier(.3,.1,.3,1)`;
+ const oldTransition=ladle.style.transition||'';
+ const go=(pose,ms)=>{
+  ladle.style.transition=tr(ms);
+  setPose(ladle,pose.cx,pose.by,vis);
+  ladle.style.transformOrigin='33% 70%';
+  ladle.style.transform=`perspective(1200px) rotateZ(${pose.angle}deg)`;
+ };
+ setPose(ladle,h0.cx,h0.by,vis);ladle.style.transformOrigin='33% 70%';ladle.style.transform=`rotateZ(${+h0.angle||0}deg)`;
+ ladle.style.visibility='visible';ladle.classList.add('pouring-source');
+ requestAnimationFrame(()=>requestAnimationFrame(()=>go(over(-26*vis,-10),300)));
+ setTimeout(()=>go(over(4*vis,16),280),340);                       // dips into the food
+ setTimeout(()=>{try{playImpactSound(vessel,'pourOut');}catch(_){}scoopLadle(ladle,vessel);},520);        // the food is in the bowl
+ setTimeout(()=>go(over(-24*vis,-8),300),640);                     // comes up full
+ setTimeout(()=>{
+  const m=screenToScene(mouse.x,mouse.y);
+  go({cx:h0.cx+(m.x-mouseAtStart.x),by:h0.by+(m.y-mouseAtStart.y),angle:+h0.angle||0},280);
+ },990);
+ setTimeout(()=>{
+  ladle.style.transition=oldTransition;ladle.classList.remove('pouring-source');
+  delete ladle.dataset.noSunShadow;try{if(ladle._contactShadow)ladle._contactShadow.style.visibility='';}catch(_){}
+  pouring=false;
+  if(holding===ladle)ladle.style.visibility='';
+  updatePlacementGhost();
+  if(holding===ladle)ladle.style.visibility='hidden';
+  updatePourTarget();updateHover();
+ },1300);
+ return true;
 }
 function pourLadleInto(ladle,target){
  if(!isAjvarLadle(ladle)||!ladle.dataset.ladleLoad||!target||!isContainerItem(target))return false;
@@ -6761,6 +6824,7 @@ function ghostKeyFor(el){
    el.querySelector('.body')?.getAttribute('src')||'',
    el.dataset.cutState||'',
    el.dataset.count||'',
+   el.dataset.ladleLoad?('ll'+el.dataset.ladleLoad.length+(el.dataset.ladleShot||'').length):'',
    el.dataset.water||'',el.dataset.dirt||'',
    renderedContents??(el.dataset.panContents||''),
    renderedContents??(el.dataset.containerContents||''),
@@ -15688,7 +15752,7 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
       if(lv&&holding.dataset.ladleLoad){pourLadleInto(holding,lv);return;}
       if(lv){
         const ajv=isHeatableCookwareItem(lv)&&(lv.dataset.ajvarBatchMl!==undefined||(items.some(isAjvarJar)&&ajvarSourceIsCooked(lv)));
-        if(ajv)scoopAjvarLadle(holding,lv);else scoopLadle(holding,lv);
+        if(ajv)scoopAjvarLadle(holding,lv);else beginLadleScoop(holding,lv);
         return;
       }
     }
