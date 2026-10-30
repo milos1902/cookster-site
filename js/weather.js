@@ -116,10 +116,26 @@ function fit(el,text,maxW,maxH,k){      // the biggest letters that still fit be
   el.style.fontSize='100px';el.textContent=text;var w=el.scrollWidth||1,h=100;
   var f=Math.min(100*maxW/w,maxH/1.05);el.style.fontSize=Math.max(6,f).toFixed(1)+'px';
 }
+// in the pantry, the garden and the tavern the wooden strips of the kitchen are covered by the scene: the same two strips are shown again (copies) under the texts
+var stripC=null,stripD=null;
+function stripCopies(ring,two){
+  var away=document.body.classList.contains('pantry-open')||document.body.classList.contains('garden-open')||document.body.classList.contains('market-open');
+  try{if(window.CooksterTavern&&CooksterTavern.isOpen===true)away=true;}catch(e){}
+  function one(cp,src,img){
+    if(!cp){cp=document.createElement('img');cp.setAttribute('data-tool-ui','1');cp.draggable=false;cp.style.cssText='position:fixed;pointer-events:none;z-index:2147483090;display:none;object-fit:contain';document.body.appendChild(cp);}
+    var ok=away&&img&&img.isConnected&&img.getBoundingClientRect().width;
+    if(!ok){cp.style.display='none';return cp;}
+    var r=img.getBoundingClientRect();if(cp.src!==img.src)cp.src=img.src;
+    cp.style.display='block';cp.style.left=r.left+'px';cp.style.top=r.top+'px';cp.style.width=r.width+'px';cp.style.height=r.height+'px';
+    return cp;
+  }
+  stripC=one(stripC,0,ring);stripD=one(stripD,0,two);
+}
 function hudUpdate(){
   hudBuild();var all=[hudR,hudN,hudA,hudB];
   var ring=document.querySelector('img.ui-overlay-element[src*="drvena_traka_krug"]'),two=document.querySelector('img.ui-overlay-element[src*="dva_polja"]');
   function hide(l){l.forEach(function(e){e.style.display='none';});}
+  stripCopies(ring,two);
   var m=minNow(),icon=ICON[kind],name=NAMES[kind];
   if(kind==='sunce'&&night(m)){icon='🌙';name='Vedro';}
   function boxAt(el,r,cx,cy,w,h){el.style.display='flex';el.style.justifyContent='center';el.style.alignItems='center';el.style.padding='0';el.style.width=w+'px';el.style.height=h+'px';el.style.left=(r.left+r.width*cx-w/2)+'px';el.style.top=(r.top+r.height*cy-h/2)+'px';}

@@ -1047,3 +1047,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 - Gosti više ne govore (osim narudžbina): `gsay` samo menja ugled bez oblačića; isključene priče, scene i razgovori između gostiju i pozdrav pri ulasku (`tavern-scene.js?v=177`). Ostao: oblačić narudžbine, pitanje konobara za sto i ocena jela posle služenja.
 - Igra počinje 1. jula (leto), ne 1. januara: `START` u `weather.js?v=20`. Prvi dan je sunčan.
+
+- Drvene trake sa vremenom (prognoza i datum/sat) vidljive i u špajzu, bašti i kafani: `weather.js?v=21` crta njihove kopije iznad tih scena (u kuhinji ostaju originali, pa ih svetlo i dalje tamni). Isprobano u sve tri scene.
