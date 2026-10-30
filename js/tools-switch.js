@@ -11,7 +11,9 @@ var IDS={ovBtn:1,ovPanel:1,nbBtn:1,nbPanel:1,tavernCalOpen:1,tiBtn:1,wsBtn:1,sig
 var CLASSES=['tc-reset'];
 var TEXTS=/^(тулови|✂ Animacije gostiju|👥 Pozovi društvo)$/;
 var PANELS=['nbPanel','ovPanel','dlPanel'];                     // panels that are closed when the tools are turned off
-function on(){try{return localStorage.getItem(KEY)!=='0';}catch(e){return true;}}
+// the link ...index.html?demo : for showing the game to other people: every tool and the tool switch are hidden (nothing is stored, the normal link is unchanged)
+var DEMO=/[?&]demo(=|&|$)/.test(location.search);if(DEMO)root.classList.add('demo');
+function on(){if(DEMO)return false;try{return localStorage.getItem(KEY)!=='0';}catch(e){return true;}}
 function tag(node){
   if(!node||node.nodeType!==1)return;
   var list=[node].concat([].slice.call(node.querySelectorAll?node.querySelectorAll('button,div[aria-label],a'):[]));
@@ -24,6 +26,7 @@ function tag(node){
 var css=document.createElement('style');
 css.textContent='html.tools-off [data-cookster-tool]{display:none!important}'+
  '#toolsSwitchBtn{position:fixed;left:925px;top:10px;z-index:2147483600;border:2px solid #351b0d;border-radius:12px;background:#e8c27a;color:#351b0d;font:700 12px/1 system-ui,sans-serif;padding:6px 10px;cursor:pointer;opacity:.9}'+
+ 'html.demo #toolsSwitchBtn,html.demo #saveTransfer,html.demo #dayClock{display:none!important}'+
  '#toolsSwitchBtn:hover{opacity:1}#toolsSwitchBtn.off{background:#cfc6b4;color:#6b5a44}';
 document.head.appendChild(css);
 var btn=document.createElement('button');btn.id='toolsSwitchBtn';btn.type='button';btn.setAttribute('data-tool-ui','1');
