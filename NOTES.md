@@ -1039,3 +1039,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Kiseli kupus: seckan kiseli kupus (E) opet ima sliku gomile iz posude za kupus (`kupus_kiseli_gomila.webp`), kao u činiji za kupus; vraćeno na zahtev. `catalog.js?v=3.36`.
 
 - Začini: tegla se naginje ranije (kad je kursor na manje od 110 px od posude, ne tek iznad nje) i uvek na stranu suprotnu od one sa koje dolazi (sa desne strane se naginje ulevo). Klik doziranja radi i u toj zoni. `spices.js?v=17`. Isprobano samo da se igra učita bez grešaka; naginjanje nisam isprobao u igri.
+
+- Link za pokazivanje igre: `index.html?demo=1` sakriva sve alate, prekidač „Alati", „Napredak · JSON" i sat sa vremenom (ništa se ne pamti; obični link je isti kao pre). `tools-switch.js?v=3`.
