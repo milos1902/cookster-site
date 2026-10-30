@@ -1054,3 +1054,4 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Prozor je uvek zatvoren kad se igra pokrene (otvorenost se više ne pamti između poseta). `window-open.js?v=30`.
 
 - Alati se vraćaju: običan link (bez `?demo`) opet pokazuje sve alate; jednokratno se uključuju svima koji su ih imali sakrivene (`tools-switch.js?v=4`). Alati se sklanjaju na kraju (link `?demo=1` ili prekidač „Alati").
+- Obrisani dugme „Oceni jelo" (`serveBtn`), „Izaberi recept" (`recipeBtn`) i kartica ocene jela (`dishReport`) iz `index.html` i poziv `initRecipeChooser()`; funkcije `serveDish` i `showDishReport` ostaju u `game.js` (nedostupne). Pažnja: `serveDish` je bio jedino mesto koje je prelazilo u sledeći dan (Dan +1, nagrada); posle ovoga dan se ne menja dok se ne napravi „Završi dan". `game.js?v=3.179`.
