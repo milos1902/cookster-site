@@ -5,7 +5,7 @@
    Left drag = cut, right drag = turn the tomato (the board stays still). E bakes the pieces into the same atlas the 2D game uses. */
 (function(){
   'use strict';
-  const SNAP={w:300,h:237},MIN_SHOWN=26;
+  const SNAP={w:300,h:237},MIN_SHOWN=60;
   let T=null,active=null;
   const RX=1,RY=.84;
   // per-vegetable settings: shape, textures, the pictures of the inside, and (onion) the peeling step
