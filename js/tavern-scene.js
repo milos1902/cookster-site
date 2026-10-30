@@ -571,7 +571,7 @@ function setOpenForGuests(v){openForGuests=!!v;try{localStorage.setItem(OPEN_KEY
 // --- the guest says something and the reputation changes: a speech bubble over his head (also used for the complaints and the praise)
 function gsay(g,text,delta,kind){
   var rep=null;try{if(delta&&window.CooksterQuality)rep=window.CooksterQuality.addReputation(delta)}catch(e){}
-  say2(g,[text,delta||0,rep,kind]);
+  // the guests do not talk any more (only the orders are spoken): the reputation changes silently, there is no speech bubble
 }
 // the speech bubble comes out only when the film of the speaking guest starts (he talks / drinks: kind 'pij', he calls the waiter: kind 'doziv');
 // if the guest is in the middle of another film, the words wait until it is over
@@ -625,7 +625,7 @@ function step(dt){
       if(dp<.6&&g.holdFor<4){g.held=true;try{window.CooksterTavernClean.autoDoor()}catch(e){}continue}
       g.held=false;g.entered=true;
     }
-    if(g.mode==='in'&&!g.greeted&&!g.visit){g.greeted=true;try{window.CooksterTavernClean.autoDoor()}catch(e){}if(Math.random()<.12&&state==='tavern'&&clock-greetAt>35){greetAt=clock;greetGuest(g)}}
+    if(g.mode==='in'&&!g.greeted&&!g.visit){g.greeted=true;try{window.CooksterTavernClean.autoDoor()}catch(e){}}
     if(g.mode==='in'||g.mode==='out'||g.mode==='go'){
       if(Math.hypot(g.x-DOOR.x,g.y-DOOR.y)<230){try{window.CooksterTavernClean.autoDoor()}catch(e){}}      // somebody comes in or leaves: the door stays open while he is at it
       var tgt=g.path[g.pi];
@@ -878,7 +878,7 @@ function tickRemarks(dt){                             // now and then a guest sa
   if(opts.length)pick(opts)();
 }
 function tickMess(dt){
-  tickRemarks(dt);tickStory(dt);tickScenes(dt);tickConv(dt);
+  tickRemarks(dt);      // (the stories, the scenes and the talk between the guests are switched off)
   try{if(window.CooksterAshtrays)window.CooksterAshtrays.tick(dt)}catch(e){}
   var seatedAt=[0,0,0],cl=cleanTables();
   guests.forEach(function(g){if(g.mode==='seated')seatedAt[g.seat.table]=(seatedAt[g.seat.table]||0)+1});

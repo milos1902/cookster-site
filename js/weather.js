@@ -8,7 +8,7 @@ if(window.CooksterWeather)return;
 var NAMES={sunce:'Sunčano',kisa:'Kiša',nevreme:'Nevreme',sneg:'Sneg'},ICON={sunce:'☀️',kisa:'🌧️',nevreme:'⛈️',sneg:'❄️'},
     TARGET={sunce:{sun:1,dark:0,rain:0,storm:0,snow:0},kisa:{sun:0,dark:.065,rain:1,storm:0,snow:0},nevreme:{sun:0,dark:.15,rain:1,storm:1,snow:0},sneg:{sun:0,dark:.07,rain:0,storm:0,snow:1}},      // sun = the rays of the sun (the painted sun on the floor and the shaft from the window): only when it is sunny; dark = how much darker the whole scene is (sunny is the lightest, the storm the darkest)
     MONTHS=['januar','februar','mart','april','maj','jun','jul','avgust','septembar','oktobar','novembar','decembar'],MDAYS=[31,28,31,30,31,30,31,31,30,31,30,31],
-    START={m:0,d:1},      // the game starts on the 1st of January
+    START={m:6,d:1},      // the game starts on the 1st of July (summer)
     forced=null,cur={sun:1,dark:0,rain:0,storm:0,snow:0},kind='sunce',lastRef=0,nextFlash=0,wt={sunce:1,kisa:0,nevreme:0,sneg:0};
 function hash(n){n=(n^61)^(n>>>16);n=(n+(n<<3))|0;n=n^(n>>>4);n=Math.imul(n,0x27d4eb2d);n=n^(n>>>15);return (n>>>0)/4294967296;}
 function pick(r,prev,month){      // the weather depends on the season: snow only in winter, storms rather in spring / summer

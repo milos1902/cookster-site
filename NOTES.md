@@ -1044,3 +1044,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Kiša i sneg padaju samo napolju (levo od linije koju je Miloš nacrtao oko otvorenog prozora): `RAIN_AREA` u `weather.js?v=19` (tačke u pikselima scene; izdvojene iz njegove slike, poređeno sa prikazom igre pa linija pada na rub stakla). Ista linija važi i kad je prozor zatvoren.
 
 - Bure sa kiselim kupusom više se ne pojavljuje samo na početku igre: `TEST_ALWAYS_SOUR=false` u `kaca.js?v=20` (bio je test režim koji je uvek stavljao punu bačvu i dopunjavao je). Bačva se i dalje može uzeti kao predmet (`kaca_prazna`).
+
+- Gosti više ne govore (osim narudžbina): `gsay` samo menja ugled bez oblačića; isključene priče, scene i razgovori između gostiju i pozdrav pri ulasku (`tavern-scene.js?v=177`). Ostao: oblačić narudžbine, pitanje konobara za sto i ocena jela posle služenja.
+- Igra počinje 1. jula (leto), ne 1. januara: `START` u `weather.js?v=20`. Prvi dan je sunčan.
