@@ -1063,3 +1063,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Sečenje sa C: gomila na dasci se puni (komadići se ponavljaju do 60) za SVO povrće, ne samo patlidžan/krastavac (kupus je i dalje izgledao prazno). `tomato-cut3d.js?v=29`. Nije isprobano u igri (WebGL).
 
 - Kutlača uzima hranu iz BILO KOJE posude (`scoopLadle` u `game.js?v=3.181`): deo (pola jedinice hrane) prelazi u kutlaču i vidi se u činiji kutlače (svaka vrsta hrane u svom delu, slika te hrane); klik na drugu posudu je presipa (`pourLadleInto`, poštuje kapacitet, ostatak ostaje u kutlači). Stanje se čuva (`ladleLoad`). Stari tok za ajvar ostaje samo kad postoji tegla za ajvar i skuvano jelo u šerpi. Isprobano headless: uzimanje, prikaz, presipanje u tanjir; nije isprobano mišem u igri.
+
+- Crna maska na dnu posude: uklonjeno tamno popunjavanje (`rgba(30,10,0,.32)`) preko donjeg sloja isečenog povrća u `drawBedNow` (`piece-sim.js?v=30`); to je bila providna crna mrlja ispod hrane u svakom tiganju/posudi. Proveren piksel-po-piksel: pored hrane dno tiganja je isto kao u praznom.
