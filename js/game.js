@@ -7049,9 +7049,12 @@ function ensureVesselStoveZone(vessel){
    }
  }
 
- if(best)vessel.dataset.stoveZone=best.id;
- else delete vessel.dataset.stoveZone;
- return best;
+ if(best){vessel.dataset.stoveZone=best.id;return best;}
+ // the whole top plate of the stove is hot when the fire burns: cookware that stands anywhere on it cooks too (it does not take a ring)
+ delete vessel.dataset.stoveZone;
+ let near=null,nd=Infinity;
+ for(const z of zones){if(!z)continue;const d=Math.hypot(p.x-z.cx,p.y-z.cy);if(d<nd){nd=d;near=z;}}
+ return near?{...near,label:'ploča šporeta',free:true}:null;
 }
 function vesselIsPhysicallyOnStove(vessel){
  if(!vessel||!isHeatableCookwareItem(vessel)||isVesselHeld(vessel))return false;
