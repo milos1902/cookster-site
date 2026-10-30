@@ -1052,3 +1052,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 - Zatamnjeni providni deo uz prozor (`savka-side-fade`, ostatak stare knjige recepata) obrisan. `game.js?v=3.178`.
 - Prozor je uvek zatvoren kad se igra pokrene (otvorenost se više ne pamti između poseta). `window-open.js?v=30`.
+
+- Alati se vraćaju: običan link (bez `?demo`) opet pokazuje sve alate; jednokratno se uključuju svima koji su ih imali sakrivene (`tools-switch.js?v=4`). Alati se sklanjaju na kraju (link `?demo=1` ili prekidač „Alati").

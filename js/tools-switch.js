@@ -13,6 +13,8 @@ var TEXTS=/^(тулови|✂ Animacije gostiju|👥 Pozovi društvo)$/;
 var PANELS=['nbPanel','ovPanel','dlPanel'];                     // panels that are closed when the tools are turned off
 // the link ...index.html?demo : for showing the game to other people: every tool and the tool switch are hidden (nothing is stored, the normal link is unchanged)
 var DEMO=/[?&]demo(=|&|$)/.test(location.search);if(DEMO)root.classList.add('demo');
+// one time: the tools are turned on again for everybody who had them hidden (they are needed while the game is being finished)
+try{if(!DEMO&&!localStorage.getItem('cookster.tools-back1')){localStorage.setItem('cookster.tools-back1','1');localStorage.setItem(KEY,'1');}}catch(e){}
 function on(){if(DEMO)return false;try{return localStorage.getItem(KEY)!=='0';}catch(e){return true;}}
 function tag(node){
   if(!node||node.nodeType!==1)return;
