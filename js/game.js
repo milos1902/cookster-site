@@ -6107,7 +6107,7 @@ function heldPreviewPoseFor(el){
  const isBoard=id==='daska';
  const isPan=isPanItem(el);
  const isCrate=el?.dataset?.crate==='1';
- const isLongTool=id==='kasika_mesanje'||id==='noz';
+ const isLongTool=id==='kasika_mesanje'||id==='noz'||id==='metla';
  const isSmallTool=id==='sundjer';
  const isQuickWheelHand=id==='noz'||id==='sundjer'||id==='metla';
  const sx=innerWidth*(id==='sundjer'?0.835:(isQuickWheelHand?0.845:(isLongTool?0.88:(isSmallTool?0.88:0.845))));
@@ -6119,6 +6119,7 @@ function heldPreviewPoseFor(el){
  if(isPan)targetScreenW=innerWidth*0.25;
  else if(isBoard||isCrate)targetScreenW=innerWidth*0.24;
  else if(id==='noz'){targetScreenW=innerWidth*0.136;targetScreenH=innerHeight*0.056;}
+ else if(id==='metla'){targetScreenW=innerWidth*0.08;targetScreenH=innerHeight*0.40;}
  else if(isLongTool){targetScreenW=innerWidth*0.10;targetScreenH=innerHeight*0.30;}
  else if(isSmallTool){targetScreenW=innerWidth*0.105;targetScreenH=innerHeight*0.10;}
  const visByW=(targetScreenW/Math.max(.001,scale))/bw;
@@ -11703,7 +11704,7 @@ function removeItem(el){if(el?._panStatus?.classList?.contains('cookster-cooking
 function isQuickToolItem(el){return !!el&&el.dataset.quickTool==='1'}
 function quickToolSlotDef(id){return QUICK_TOOL_SLOTS.find(s=>s.id===id)||null}
 function quickToolItemDef(id){
- if(id==='metla')return {id:'metla',type:'tool',subtype:'mop',label:'metla',src:'assets/ui/metla.png',x:1180,y:330,w:88,h:190,snapProfile:'flat',shadowProfile:'tiny',placement:['table','floor']};
+ if(id==='metla')return {id:'metla',type:'tool',subtype:'mop',label:'metla',src:'assets/calibration_props/metla.png',x:1180,y:330,w:66,h:225,snapProfile:'flat',shadowProfile:'tiny',placement:['table','floor']};
  const def=itemsData.find(d=>d.id===id)||null;
  return def?{...def}:null;
 }
@@ -14424,16 +14425,24 @@ function beginCleaning(stain,e){
 function positionCleaningSponge(e){
  if(!holding||!isCleaningTool(holding))return;
  const p=screenToScene(e.clientX,e.clientY);
- const vis=Math.max(.92,Math.min(1.12,perspectiveAt(p.y)));
+ const broom=holding.dataset.itemId==='metla';
+ const vis=broom?Math.max(1.3,Math.min(1.7,perspectiveAt(p.y)*1.12)):Math.max(.92,Math.min(1.12,perspectiveAt(p.y)));
  const w=(+holding.dataset.baseW||74)*vis,h=(+holding.dataset.baseH||45)*vis;
  holding.dataset.cx=String(p.x);holding.dataset.by=String(p.y+h*.35);holding.dataset.vis=String(vis);
  holding.style.width=w+'px';holding.style.height=h+'px';
+ if(broom){      // the bristles are at the cursor, the broom leans with the sweep
+  const vx=p.x-(holding._bx??p.x);holding._bx=p.x;holding._tilt=(holding._tilt||0)*.8+Math.max(-14,Math.min(14,vx*.9))*.2;
+  holding.style.left=(p.x-w*.5)+'px';holding.style.top=(p.y-h*.9)+'px';
+  holding.style.transformOrigin='50% 90%';holding.style.transform=`rotate(${(holding._tilt||0).toFixed(1)}deg)`;
+ }else{
  holding.style.left=(p.x-w*.50)+'px';holding.style.top=(p.y-h*.52)+'px';
  holding.style.transformOrigin='50% 50%';holding.style.transform=`rotate(${+(holding.dataset.angle||-8)}deg)`;
+ }
  holding.style.zIndex='12050';
  if(holding._contactShadow)holding._contactShadow.style.opacity='0';
 }
 function updateCleaning(e){
+ if(cleaning&&!cleanStainEl&&holding&&isCleaningTool(holding)&&window.CooksterKitchenClean){positionCleaningSponge(e);CooksterKitchenClean.move(e);return;}      // the dirty kitchen: the whole floor / the walls are wiped, not one stain
  if(!cleaning||!cleanStainEl||!holding||!isCleaningTool(holding))return;
  positionCleaningSponge(e);
  if(!cleanStainEl.isConnected){endCleaning();return;}
@@ -14494,6 +14503,7 @@ function washWaterAway(vessel){
  }catch(_){}
 }
 function endCleaning(finished=false){
+ try{window.CooksterKitchenClean?.end?.();}catch(_){}
  if(cleanStainEl&&cleanStainEl.isConnected)cleanStainEl.classList.remove('scrubbing');
  if(holding)holding.classList.remove('cleaning-tool');
  cleaning=false;cleanStainEl=null;cleanPointerId=null;
@@ -15838,6 +15848,7 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
      }
    }
    if(isCleaningTool(holding)){const stain=stainAt(e.clientX,e.clientY);if(stain&&beginCleaning(stain,e))return;}
+   if(isCleaningTool(holding)&&window.CooksterKitchenClean?.active?.()&&CooksterKitchenClean.begin(e)){cleaning=true;cleanStainEl=null;cleanPointerId=e.pointerId;cleanLastX=e.clientX;cleanLastY=e.clientY;holding.classList.add('cleaning-tool');hidePlacementGhost();hideOriginGhost();positionCleaningSponge(e);return;}
    if(isIngredientItem(holding)&&commitHeldIngredientToVessel(holding,e.clientX,e.clientY))return;
    if(holding.dataset.vegetable==='1'){
      const targetCrate=crateAt(e.clientX,e.clientY,holding.dataset.vegKey);
