@@ -125,6 +125,7 @@ function endIntro(){
 }
 function startIntro(){
   if(introActive)return;introActive=true;
+  try{if(window.CooksterKitchenClean)CooksterKitchenClean.restart();}catch(e){}      // a new game: the kitchen is dirty again
   panel.style.display='none';bye.style.display='none';
   skip.classList.add('show');                                   // "Preskoči" stays in the corner the whole time
   dark.style.opacity='1';                                       // 1) the screen goes dark (0.7 s)
