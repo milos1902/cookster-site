@@ -20,17 +20,33 @@ if(!startClean&&stored&&stored.length>100){                       // levels save
   try{var s=atob(stored);if(s.length===GW*GH)for(var i=0;i<s.length;i++)level[i]=s.charCodeAt(i)/3;}catch(e){}
 }
 // ---------- the zones: 1 = floor (broom), 2 = everything else (sponge) ----------
+// taken from the tool "Kalibracija scene": the floor is the zone "Pod"; the table top, the legs, the stove, the chest, the sink, the chimneys ... are cut out of it.
+// Everything under and beside the table that is floor stays floor (the broom cleans it).
 (function(){
   var cz=document.createElement('canvas');cz.width=GW;cz.height=GH;var g=cz.getContext('2d');
-  var P=(typeof placementGeometry!=='undefined'&&placementGeometry.SURFACES)||{};
-  function poly(pts,col){if(!pts||!pts.length)return;g.fillStyle=col;g.beginPath();pts.forEach(function(q,i){var x=q.x/CELL,y=q.y/CELL;i?g.lineTo(x,y):g.moveTo(x,y);});g.closePath();g.fill();}
-  g.fillStyle='#00f';g.fillRect(0,0,GW,GH);                       // blue = everything else
-  poly(P.floorPoly,'#f00');                                       // red = floor
-  g.fillStyle='#00f';
-  function rect(x0,y0,x1,y1){g.fillRect(x0/CELL,y0/CELL,(x1-x0)/CELL,(y1-y0)/CELL);}
-  poly(P.tablePoly,'#00f');rect(1205,230,W,700);rect(0,625,190,H);rect(370,570,1260,780);       // table top, stove, the chest, the table with its drawers and legs
+  var S=window.CooksterSceneSurfaces,SF=(typeof placementGeometry!=='undefined'&&placementGeometry.SURFACES)||{};
+  function zoneOf(id){try{return S&&S.calibratedZone?S.calibratedZone(id):null;}catch(e){return null;}}
+  function path(pts){g.beginPath();pts.forEach(function(q,i){var x=q.x/CELL,y=q.y/CELL;i?g.lineTo(x,y):g.moveTo(x,y);});g.closePath();g.fill();}
+  function fillZone(id,col,fallback){
+    var z=zoneOf(id);g.fillStyle=col;
+    if(z&&z.top&&z.top.length>2){
+      path(z.top);
+      if(z.bottom&&z.bottom.length===z.top.length){                       // a volume: the top, the bottom and the sides
+        path(z.bottom);for(var i=0;i<z.top.length;i++){var j=(i+1)%z.top.length;path([z.top[i],z.top[j],z.bottom[j],z.bottom[i]]);}
+      }
+    }else if(fallback&&fallback.length)path(fallback);
+  }
+  g.fillStyle='#00f';g.fillRect(0,0,GW,GH);                                // blue = everything else (sponge)
+  fillZone('floor','#f00',SF.floorPoly);                                  // red = floor (broom)
+  g.fillStyle='#f00';path([{x:228,y:236},{x:452,y:228},{x:440,y:336},{x:86,y:340},{x:132,y:326},{x:212,y:326}]);   // the floor between the pile of logs and the table (the zone "Pod" starts lower)
+  ['table','left-leg','right-leg','cabinet-left','stove-left','stove-right','stove-upper-left','chimney-left','chimney-right','woodpile-left','back','sink-rim','sink','sink-front'].forEach(function(id){
+    fillZone(id,'#00f',id==='table'?SF.tablePoly:null);
+  });
+  g.fillStyle='#f00';path([{x:752,y:146},{x:1268,y:146},{x:1286,y:234},{x:752,y:234}]);   // the floor between the saloon doors and the table (the zone "Gornja zona" covered it)
+  g.fillStyle='#00f';path([{x:478,y:592},{x:1174,y:592},{x:1172,y:690},{x:480,y:692}]);   // the drawers of the table (the front of the table between the legs): the sponge
+  g.fillStyle='#00f';g.fillRect(1220/CELL,235/CELL,(W-1220)/CELL,(668-235)/CELL);   // the body of the stove (no zone of its own)
   var d=g.getImageData(0,0,GW,GH).data;
-  for(var i=0;i<GW*GH;i++)zone[i]=d[i*4]>128?1:2;
+  for(var i=0;i<GW*GH;i++)zone[i]=d[i*4]>128&&d[i*4+2]<128?1:2;
 })();
 
 // ---------- the picture ----------
@@ -146,6 +162,7 @@ function finish(){
 window.CooksterKitchenClean={
   active:function(){return !startClean&&!finish.done;},
   progress:progress,
+  zoneMap:function(){var c=document.createElement('canvas');c.width=GW;c.height=GH;var x=c.getContext('2d'),im=x.createImageData(GW,GH);for(var i=0;i<GW*GH;i++){var f=zone[i]===1;im.data[i*4]=f?255:0;im.data[i*4+1]=f?60:120;im.data[i*4+2]=f?60:255;im.data[i*4+3]=110;}x.putImageData(im,0,0);return c.toDataURL();},
   // called by the game when the left button goes down with the broom or the sponge in the hand; true = the cleaning has started
   begin:function(e){
     if(startClean||finish.done)return false;tool=toolId();if(!BRUSH[tool])return false;
