@@ -1085,3 +1085,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Zone čišćenja kuhinje se sada čitaju iz alata „Kalibracija scene" (`kitchen-clean.js?v=3`): pod = zona „Pod" (tvoja sačuvana kalibracija ima prednost), a iz njega su izrezani gornja ploča i ivica stola (sa debljinom), leva i desna nogica, donja leva komodica, ploče šporeta, dimnjaci, predmet pored gornjeg šporeta, gornja zona, sudopera i njena ivica, plus telo šporeta (nema svoju zonu). Sve ispod i levo od stola što je pod čisti se metlom. `CooksterKitchenClean.zoneMap()` vraća sliku zona (crveno = pod / metla, plavo = sunđer) radi provere.
 
 - Zona poda proširena iznad kalibrisane zone „Pod": pod između gomile drva i stola (od oko x 228, y 236 do stola) se sada čisti metlom (`kitchen-clean.js?v=4`).
+
+- Zone čišćenja (`kitchen-clean.js?v=6`): dodate ručne zone za pod ispred šporeta (zona sunđera ide do y 668), fioke stola (sunđer) i pod između saloon vrata i stola (metla). Ove ručne poligone treba skinuti kad stigne izvoz tvoje „Kalibracije scene" (dugme „Kopiraj sve").

@@ -42,7 +42,9 @@ if(!startClean&&stored&&stored.length>100){                       // levels save
   ['table','left-leg','right-leg','cabinet-left','stove-left','stove-right','stove-upper-left','chimney-left','chimney-right','woodpile-left','back','sink-rim','sink','sink-front'].forEach(function(id){
     fillZone(id,'#00f',id==='table'?SF.tablePoly:null);
   });
-  g.fillStyle='#00f';g.fillRect(1205/CELL,235/CELL,(W-1205)/CELL,(700-235)/CELL);   // the body of the stove (no zone of its own)
+  g.fillStyle='#f00';path([{x:752,y:146},{x:1268,y:146},{x:1286,y:234},{x:752,y:234}]);   // the floor between the saloon doors and the table (the zone "Gornja zona" covered it)
+  g.fillStyle='#00f';path([{x:478,y:592},{x:1174,y:592},{x:1172,y:690},{x:480,y:692}]);   // the drawers of the table (the front of the table between the legs): the sponge
+  g.fillStyle='#00f';g.fillRect(1220/CELL,235/CELL,(W-1220)/CELL,(668-235)/CELL);   // the body of the stove (no zone of its own)
   var d=g.getImageData(0,0,GW,GH).data;
   for(var i=0;i<GW*GH;i++)zone[i]=d[i*4]>128&&d[i*4+2]<128?1:2;
 })();
