@@ -38,6 +38,7 @@ if(!startClean&&stored&&stored.length>100){                       // levels save
   }
   g.fillStyle='#00f';g.fillRect(0,0,GW,GH);                                // blue = everything else (sponge)
   fillZone('floor','#f00',SF.floorPoly);                                  // red = floor (broom)
+  g.fillStyle='#f00';path([{x:228,y:236},{x:452,y:228},{x:440,y:336},{x:86,y:340},{x:132,y:326},{x:212,y:326}]);   // the floor between the pile of logs and the table (the zone "Pod" starts lower)
   ['table','left-leg','right-leg','cabinet-left','stove-left','stove-right','stove-upper-left','chimney-left','chimney-right','woodpile-left','back','sink-rim','sink','sink-front'].forEach(function(id){
     fillZone(id,'#00f',id==='table'?SF.tablePoly:null);
   });
