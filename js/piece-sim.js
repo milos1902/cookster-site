@@ -180,9 +180,14 @@
       // and grows from there (the same shape, larger) up to the whole calibrated area when the vessel is full.
       const full=this.fullPoly;
       const lvl=Math.min(1,this.fill||1);   // 1 = the floor is covered (then the food only gets higher): one small heap at the start, the whole area when the floor is covered
-      const hx=this.homeX!=null?this.homeX:this.fullCx,hy=this.homeY!=null?this.homeY:this.fullCy;
-      const sc=lvl>=1?1:Math.sqrt(Math.max(.16,lvl));
-      const poly=sc>=1?full:full.map(q=>({x:hx+(q.x-hx)*sc,y:hy+(q.y-hy)*sc}));
+      // the food fills the vessel from the lowest part upwards: the area it may occupy is the part of the calibrated area below a level line that climbs with the amount of food
+      let poly=full;
+      if(lvl<1){
+        const target=Math.max(.16,lvl)*Sim.measure(full).area;
+        let lo=Math.min(...full.map(q=>q.y)),hi=Math.max(...full.map(q=>q.y));
+        for(let i=0;i<20;i++){const mid=(lo+hi)/2;if(Sim.measure(Sim.clip(full,mid)).area>target)lo=mid;else hi=mid;}
+        const c=Sim.clip(full,hi);if(c.length>=3)poly=c;
+      }
       if(poly.length<3)return;
       const m=Sim.measure(poly);
       this.poly=poly;this.cx=m.cx;this.cy=m.cy;this.area=m.area;this.bedSpots=null;
