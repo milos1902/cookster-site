@@ -1108,3 +1108,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Panel „☕ Kuvanje kafe" levo kad je džezva u kuhinji: dodaj vodu (do 3), dodaj kafu (1 kašičica po šoljici), šporet zagreva, pena od .7, skini u .8-1, preko 1 kafa pobegne. Sipaj → šoljice na stolu (`dataset.q` dobra/slaba/jaka).
 - Stanje je na džezvi (`cw`,`cs`,`ct`,`cpeak`). API `CooksterKafa`.
 - Ne postoji još: slika pene na džezvi (samo smeđa kapa), zvuk, mešanje, ulaz u cenu/ocenu gosta.
+
+## Hrana u tiganju puni dno od najniže tačke (`js/piece-sim.js?v=33`)
+- `applyLevel`: dok dno nije pokriveno (`fill<1`), komadi smeju samo ispod linije nivoa koja se diže odozdo naviše sa količinom hrane (ranije: mala gomila oko žute tačke, pa se širi, pa je ostajala gore). Pun sud i dalje koristi celu kalibrisanu površinu.
