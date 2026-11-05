@@ -1097,3 +1097,8 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Istraga v5 (bez zagonetki)
 - Zagonetke izbačene. Igrač sam zaključuje iz razgovora: Mileva/Radovan (tepih petkom, čudna daska) → ćilim; Ljubica (Savka pre svanuća sama palila vatru i prosejavala pepeo) → šporet.
+
+## Jutarnje porudžbine (kafa, rakija)
+- `pickOrderKeys` u `tavern-scene.js`: od 6:00 do 11:00 gosti sve više naručuju kafu i rakiju (do ~95% u 6:00), posle toga stari izbor (vino, jela).
+- Novi predmeti: `pice_solja_kafa` (privremeno slika šolje iz kuhinje), `pice_casa_rakija` (privremena generisana čašica). Porudžbine `kafa` i `rakija` u `kitchen-orders.js`.
+- Fale: prave šoljice za kafu, poslužavnik, kuvanje kafe u džezvi (sledeći korak).

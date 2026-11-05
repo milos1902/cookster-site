@@ -6,7 +6,7 @@
 'use strict';
 var T=window.CooksterTavern,room=document.getElementById('tavernScene');
 if(!T||!room||window.CooksterTableItemsTool||!T.tableItems)return;
-var ITEMS=[['dish','Činija sa kupusom'],['pice_vino_crno_flasa','Flaša crnog vina'],['pice_vino_belo_flasa','Flaša belog vina'],['pice_soda_sifon','Soda voda (sifon)'],['pice_casa_spricer','Čaša za špricer'],['pice_casa_belo_vino','Čaša belog vina'],['pice_casa_crno_vino','Čaša crnog vina'],['pepeljara','Pepeljara (veličina, boja, senka; bez položaja)']];
+var ITEMS=[['dish','Činija sa kupusom'],['pice_casa_rakija','Čašica rakije'],['pice_solja_kafa','Šolja kafe'],['pice_vino_crno_flasa','Flaša crnog vina'],['pice_vino_belo_flasa','Flaša belog vina'],['pice_soda_sifon','Soda voda (sifon)'],['pice_casa_spricer','Čaša za špricer'],['pice_casa_belo_vino','Čaša belog vina'],['pice_casa_crno_vino','Čaša crnog vina'],['pepeljara','Pepeljara (veličina, boja, senka; bez položaja)']];
 var NOPOS={pepeljara:1};      // these have no place on a table: the pepeljara stands where the player puts it, the waiter and the guests walk; here only size, colours and the shadow are chosen (for all of them)
 var imgs={},key='dish',table=0,seat=0,scope='seat',ui={},cv,g,img=null,imgKey=null,room_img=new Image(),drag=false;
 room_img.src=T.roomSrc;
