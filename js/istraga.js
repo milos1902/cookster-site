@@ -13,6 +13,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 var RIDDLE=['Imam pruge, a nisam zebra.','Svi me gaze, a ja se ne ljutim.','Bakine tajne ne drže se u ormanu,','nego tamo gde svako nogom prođe, a ne vidi.'];
 
 // ---------- the talks: node = {t: what he says, o: [{q: what you ask, go: next node (null = end), set: a flag, clue: a note for the notebook}]} ----------
+var RIDDLE2=['Grejem sve oko sebe, a sam sam hladan.','Hranim te, a ne jedem.','Ono što tražiš leži pod mojim pepelom.'];
 var TREE={
  4:{name:'Stojan',start:function(){return 's0';},nodes:{
   s0:{t:'Savkin unuče! Mislio sam da te više nikad neću videti u ovoj kafani. Šta te muči?',o:[
@@ -67,6 +68,33 @@ var TREE={
     {q:'Hvala, deda.',go:null,clue:'Radovan: Savka je imala stvar sa prugama na kojoj se stajalo, a nikad se nije gledalo pod njom.'}]}
  }}
 };
+TREE[3]={name:'Mića',start:function(){return S.f.mica?'c5':(S.f.fragment?'c0':'ccold');},nodes:{
+  ccold:{t:'Drva, drva... Ne vidiš da radim? Dođi kad imaš nešto za mene.',o:[{q:'Doći ću.',go:null}]},
+  c0:{t:'Savkin unuče. Vidim po licu da si našao nešto. Drva sam joj nosio trideset zima. Šta bi?',o:[
+    {q:'Našao sam pola recepta ispod tepiha.',go:'c1'},
+    {q:'Jeste li videli Putnika?',go:'c3'},
+    {q:'Kakva je bila Savka?',go:'c2'}]},
+  c1:{t:'Pola, kažeš. Onda znam ko ima drugu polovinu. Savka nikad ništa nije zapisivala na jedno mesto. Papriku je kupovala samo od Ljubice, a Ljubica pamti sve što je Savka ikad rekla.',o:[
+    {q:'Gde da nađem Ljubicu?',go:null,set:'mica',clue:'Mića: drugu polovinu zna Ljubica, ona je Savki prodavala papriku. Nađi je u kafani.'},
+    {q:'Zašto baš ona?',go:'c1a'}]},
+  c1a:{t:'Zato što je Savka znala: ko prodaje začin, taj zna šta je u gulašu. A svoju tajnu je ostavila onome ko je ne bi iskoristio.',o:[
+    {q:'Gde da nađem Ljubicu?',go:null,set:'mica',clue:'Mića: drugu polovinu zna Ljubica, ona je Savki prodavala papriku. Nađi je u kafani.'}]},
+  c2:{t:'Stroga, ali pravedna. Ni jedno parče hleba nije bacila.',o:[{q:'Vratimo se.',go:'c0'}]},
+  c3:{t:'Jednom je stajao kraj mog drvarnika. Ništa nije rekao. Samo je gledao u kuću.',o:[{q:'Vratimo se.',go:'c0'}]},
+  c5:{t:'Ljubica ti je prava osoba. Pitaj je za papriku.',o:[{q:'Hvala.',go:null}]}
+ }};
+TREE[5]={name:'Ljubica',start:function(){return S.f.riddle2?'l5':(S.f.mica?'l0':'lcold');},nodes:{
+  lcold:{t:'Ja ne pričam sa nepoznatima o Savki. Da te je neko poslao, rekla bih.',o:[{q:'Razumem.',go:null}]},
+  l0:{t:'Mića te je poslao, vidim. Savka je kod mene kupovala samo slatku papriku. Šta si našao?',o:[
+    {q:'Pola recepta. Gde je druga polovina?',go:'l1'},
+    {q:'Znate li ko je Putnik?',go:'l3'}]},
+  l1:{t:'Nije bilo lako izvući to iz nje. Ostavila mi je jednu zagonetku, da je dam samo onome ko je našao prvu polovinu. Slušaj dobro.',o:[
+    {q:'Slušam.',go:'l2'}]},
+  l2:{t:RIDDLE2.join(' '),o:[
+    {q:'Hvala, razmislicu.',go:null,set:'riddle2',clue:'Zagonetka od Ljubice: "'+RIDDLE2.join(' ')+'"'}]},
+  l3:{t:'Jednom je pitao za papriku. Kupio nije. Samo je gledao kako se pakuje.',o:[{q:'Vratimo se.',go:'l0'}]},
+  l5:{t:'Ako te zbuni, nemoj tražiti daleko. Najtopliji deo kuhinje ne mora da bude najbliži.',o:[{q:'Hvala.',go:null}]}
+ }};
 var GENERIC={name:'Gost',start:function(){return 'g0';},nodes:{g0:{t:'Ja samo svratih na piće. Za Savku čujem tek sad, ali pitaj Stojana, on sve zna.',o:[{q:'Hvala.',go:null}]}}};
 
 // ---------- the pictures and the sounds of the screen ----------
@@ -161,24 +189,29 @@ setInterval(function(){
   var T=window.CooksterTavern;if(!T||!T.isOpen||S.found)return;
   if(Date.now()<spawnAt)return;
   var have={};(T.guestsList?T.guestsList():[]).forEach(function(g){have[g.ch]=1;});
-  var want=!S.f.stojan?[4]:(!S.f.riddle?[4,8]:[4,8,6]);
+  var want=!S.f.stojan?[4]:(!S.f.riddle?[4,8]:[4,8,6]);if(S.f.fragment)want=want.concat([3]);if(S.f.mica)want=want.concat([5]);
   for(var i=0;i<want.length;i++)if(!have[want[i]]){var g=T.spawnChar&&T.spawnChar(want[i]);if(g){spawnAt=Date.now()+5000;return;}}
 },1500);
 
 // ---------- the notebook ----------
 function goal(){
   if(S.found)return 'Prva stranica je u knjizi. (Sledeće stranice dolaze u sledećoj verziji igre.)';
+  if(S.f.riddle2)return 'Reši Ljubicinu zagonetku. U kuhinji klikni „Pregledaj“ pa klikni na mesto koje misliš.';
+  if(S.f.mica)return 'Mića te je poslao Ljubici. Nađi je u kafani i pitaj je za drugu polovinu.';
+  if(S.f.fragment)return 'Našao si pola recepta. Na poleđini piše da drugu polovinu zna neko ko je Savki nosio drva. Nađi Mićin trag u kafani.';
   if(S.f.riddle)return 'Reši Milevinu zagonetku. U kuhinji klikni „Pregledaj“ pa klikni na mesto gde misliš da je stranica.';
   if(S.f.stojan)return 'Stojan te je poslao Mileva. Nađi je u kafani (sedi sama) i pitaj je.';
   return 'Nađi prvu stranicu bakine knjige. U kafani klikni desnim na gosta, pa „Pitaj gosta“. Počni od Stojana.';
 }
+function canLook(){return !S.found&&((S.f.riddle&&!S.f.fragment)||S.f.riddle2);}
 function refresh(){
   var h='<h4>📓 Beležnica</h4><div class="go"><b>Cilj:</b> '+goal()+'</div>';
-  if(S.f.riddle)h+='<div class="rd">'+RIDDLE.join('<br>')+'</div>';
+  if(S.f.riddle&&!S.f.fragment)h+='<div class="rd">'+RIDDLE.join('<br>')+'</div>';
+  if(S.f.riddle2&&!S.found)h+='<div class="rd">'+RIDDLE2.join('<br>')+'</div>';
   if(S.clues.length){h+='<b>Tragovi:</b><ul style="padding-left:18px;margin:6px 0">'+S.clues.slice().reverse().map(function(c){return '<li>'+c.replace(/</g,'&lt;')+'</li>';}).join('')+'</ul>';}
   else h+='<i>Još nema tragova.</i>';
   book.innerHTML=h;
-  look.style.display=(S.f.riddle&&!S.found)?'block':'none';
+  look.style.display=canLook()?'block':'none';
 }
 btn.onclick=function(){book.style.display=book.style.display==='block'?'none':'block';refresh();};
 
@@ -198,7 +231,7 @@ var ZONES=[   // [x0,y0,x1,y1,id,remark] in the pixels of the scene (1672 x 941)
  [1528,452,1672,712,'towel','Krpa na ručki. Nema ničega iza nje.']
 ];
 var lookOn=false;
-function setLook(on){lookOn=!!on&&S.f.riddle&&!S.found;look.classList.toggle('on',lookOn);document.body.classList.toggle('istraga-look',lookOn);if(lookOn)say('Klikni na mesto koje pregledaš. Ponovo „Pregledaj“ prekida.',2600);}
+function setLook(on){lookOn=!!on&&canLook();look.classList.toggle('on',lookOn);document.body.classList.toggle('istraga-look',lookOn);if(lookOn)say('Klikni na mesto koje pregledaš. Ponovo „Pregledaj“ prekida.',2600);}
 look.onclick=function(){setLook(!lookOn);};
 function kitchenVisible(){
   var T=window.CooksterTavern;if(T&&T.isOpen)return false;
@@ -212,15 +245,28 @@ window.addEventListener('pointerdown',function(e){
   var p;try{p=screenToScene(e.clientX,e.clientY);}catch(x){return;}
   for(var i=0;i<ZONES.length;i++){var z=ZONES[i];
     if(p.x>=z[0]&&p.x<=z[2]&&p.y>=z[1]&&p.y<=z[3]){
-      if(z[4]==='rug'){foundPage();return;}
+      var stage2=!!S.f.riddle2;
+      if(z[4]==='rug'&&!stage2){foundFragment();return;}
+      if(z[4]==='rug'){say('Tepih je već pregledan. Tu je bila samo prva polovina.',3200);return;}
+      if(z[4]==='stove'&&stage2){foundPage();return;}
       S.wrong=(S.wrong||0)+1;save();say(z[5]+(S.wrong>=5?'  (Nagoveštaj: pitaj deda Radovana.)':''),3600);return;
     }
   }
   S.wrong=(S.wrong||0)+1;save();say('Ovde nema ničega.');
 },true);
+function foundFragment(){
+  S.f.fragment=true;S.clues.push('Ispod tepiha: pola recepta. Na poleđini: „Ostatak sam poverila onima koji me nisu izdali. Pitaj onoga ko mi je nosio drva.“');save();setLook(false);refresh();
+  found.innerHTML='<div class="pg"><h3>Pocepana stranica</h3>'+
+   'Govedine 1 kilogram, luka koliko i mesa, slatke pap<span style="opacity:.4">~~~~~~~~</span><br><br>'+
+   '<i>(Ostatak je odsečen.)</i><br><br>'+
+   'Na poleđini, Savkinim rukopisom: <b>„Ostatak sam poverila onima koji me nisu izdali. Pitaj onoga ko mi je nosio drva.“</b><br><br>'+
+   '<button type="button">Stavi u beležnicu</button></div>';
+  found.style.display='flex';
+  found.querySelector('button').onclick=function(){found.style.display='none';say('Samo polovina! Ko je Savki nosio drva?',4200);};
+}
 function foundPage(){
   S.found=true;save();setLook(false);refresh();
-  found.innerHTML='<div class="pg"><h3>Savkin gulaš</h3>'+
+  found.innerHTML='<div class="pg"><h3>Savkin gulaš</h3><i>Obe polovine su sastavljene.</i><br><br>'+
    'Govedine 1 kilogram, luka koliko i mesa, slatke paprike kašičicu, soli koliko treba, lovorov list i malo ulja.<br><br>'+
    'Luk pirjaj dok ne postane zlatan i mek, pa tek onda stavi meso. Ne žuri. Gulaš ne trpi nestrpljenje, a kuvaj ga srcem.<br><br>'+
    '<span style="display:block;text-align:right">— Savka</span>'+
@@ -229,7 +275,7 @@ function foundPage(){
   found.querySelector('button').onclick=function(){found.style.display='none';say('Stranica je u knjizi. Recept „Savkin gulaš“ je otključan.',4200);try{window.dispatchEvent(new CustomEvent('cookster:page-found',{detail:{id:'gulas'}}));}catch(x){}};
 }
 // the button "Pregledaj" is shown only in the kitchen
-setInterval(function(){look.style.display=(S.f.riddle&&!S.found&&kitchenVisible())?'block':'none';if(!kitchenVisible())setLook(false);},600);
+setInterval(function(){look.style.display=(canLook()&&kitchenVisible())?'block':'none';if(!kitchenVisible())setLook(false);},600);
 
 setInterval(function(){if(cur&&!inTavern())closeTalk();},300);      // you left the tavern (the kitchen, the garden ...): the talk ends
 window.addEventListener('keydown',function(e){if(e.key==='Escape'){if(cur)closeTalk();else if(lookOn)setLook(false);}},true);
