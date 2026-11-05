@@ -1,5 +1,5 @@
 /* Kuvanje kafe u džezvi.
-   Džezva (kal_01_dzezva) + voda + mlevena kafa (predmet "Mlevena kafa (tegla)" iz menija Piće) -> na šporet -> pena se diže -> skini sa vatre u pravom trenutku -> sipaj u šoljice.
+   Džezva (kal_01_dzezva) + voda + mlevena kafa (predmet "Posuda za kafu" iz menija Piće) -> na šporet -> pena se diže -> skini sa vatre u pravom trenutku -> sipaj u šoljice.
    Stanje je na samoj džezvi (dataset): cw = šoljica vode (0-3), cs = kašičica kafe, ct = zagrejanost 0..1, cpeak = najviše što je dostigla.
    Preslabo (peak < .55): voda sa kafom, nije skuvana. Dobro (.8 - 1): kafa sa penom. Pređe 1: kafa pobegne preko ivice, sve se baca. */
 (function(){
@@ -52,7 +52,7 @@ function act(a){
   if(a==='w'){if(el.dataset.cdone==='1'){say('Džezva je već puna skuvane kafe. Prvo je sipaj.');return;}if(w>=MAXW){say('Džezva je puna.');return;}el.dataset.cw=String(w+1);say('Dodata voda: '+(w+1)+' šoljica.');}
   else if(a==='c'){
     if(!w){say('Prvo dodaj vodu.');return;}
-    if(!jars().length){say('Nemaš kafu. Uzmi „Mlevena kafa (tegla)“ iz menija Piće.');return;}
+    if(!jars().length){say('Nemaš kafu. Uzmi „Posuda za kafu“ iz menija Piće.');return;}
     if(onFire(el)&&n(el,'ct')>.3){say('Kafa se ne sipa u vrelu vodu. Skini džezvu sa vatre.');return;}
     if(s>=MAXW+1){say('To je previše kafe.');return;}el.dataset.cs=String(s+1);say('Dodata kašičica kafe.');
   }
