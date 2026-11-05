@@ -1110,4 +1110,4 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Ne postoji još: slika pene na džezvi (samo smeđa kapa), zvuk, mešanje, ulaz u cenu/ocenu gosta.
 
 ## Hrana u tiganju puni dno od najniže tačke (`js/piece-sim.js?v=33`)
-- `applyLevel`: dok dno nije pokriveno (`fill<1`), komadi smeju samo ispod linije nivoa koja se diže odozdo naviše sa količinom hrane (ranije: mala gomila oko žute tačke, pa se širi, pa je ostajala gore). Pun sud i dalje koristi celu kalibrisanu površinu.
+- `applyLevel`: hrana raste kao ista celokupna okrugla gomila oko tačke blizu dna suda (ne polovina površine). Kad je pun, cela kalibrisana površina.
