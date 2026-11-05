@@ -1102,3 +1102,9 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - `pickOrderKeys` u `tavern-scene.js`: od 6:00 do 11:00 gosti sve više naručuju kafu i rakiju (do ~95% u 6:00), posle toga stari izbor (vino, jela).
 - Novi predmeti: `pice_solja_kafa` (privremeno slika šolje iz kuhinje), `pice_casa_rakija` (privremena generisana čašica). Porudžbine `kafa` i `rakija` u `kitchen-orders.js`.
 - Fale: prave šoljice za kafu, poslužavnik, kuvanje kafe u džezvi (sledeći korak).
+
+## Kuvanje kafe (`js/kafa.js`)
+- Džezva (`kal_01_dzezva`) + mlevena kafa (`kafa_mlevena`, privremeno slika male tegle, meni „Piće") + šoljice (`pice_solja_kafa`).
+- Panel „☕ Kuvanje kafe" levo kad je džezva u kuhinji: dodaj vodu (do 3), dodaj kafu (1 kašičica po šoljici), šporet zagreva, pena od .7, skini u .8-1, preko 1 kafa pobegne. Sipaj → šoljice na stolu (`dataset.q` dobra/slaba/jaka).
+- Stanje je na džezvi (`cw`,`cs`,`ct`,`cpeak`). API `CooksterKafa`.
+- Ne postoji još: slika pene na džezvi (samo smeđa kapa), zvuk, mešanje, ulaz u cenu/ocenu gosta.
