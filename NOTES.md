@@ -1094,3 +1094,6 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Ćilim više ne otključava recept: daje pocepanu stranicu (pola recepta) i trag „pitaj onoga ko mi je nosio drva“.
 - Lanac: Stojan → Mileva (zagonetka 1) → ćilim (pola) → Mića (drvar) → Ljubica (zagonetka 2: šporet) → cela stranica „Savkin gulaš“.
 - Novi tokovi u `js/istraga.js`: flagovi `fragment`, `mica`, `riddle2`; gosti 3 i 5 se pojavljuju po flagovima.
+
+## Istraga v5 (bez zagonetki)
+- Zagonetke izbačene. Igrač sam zaključuje iz razgovora: Mileva/Radovan (tepih petkom, čudna daska) → ćilim; Ljubica (Savka pre svanuća sama palila vatru i prosejavala pepeo) → šporet.

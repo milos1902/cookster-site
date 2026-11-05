@@ -10,10 +10,8 @@ function load(){try{var d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&d.
 var S=load();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 
-var RIDDLE=['Imam pruge, a nisam zebra.','Svi me gaze, a ja se ne ljutim.','Bakine tajne ne drže se u ormanu,','nego tamo gde svako nogom prođe, a ne vidi.'];
 
 // ---------- the talks: node = {t: what he says, o: [{q: what you ask, go: next node (null = end), set: a flag, clue: a note for the notebook}]} ----------
-var RIDDLE2=['Grejem sve oko sebe, a sam sam hladan.','Hranim te, a ne jedem.','Ono što tražiš leži pod mojim pepelom.'];
 var TREE={
  4:{name:'Stojan',start:function(){return 's0';},nodes:{
   s0:{t:'Savkin unuče! Mislio sam da te više nikad neću videti u ovoj kafani. Šta te muči?',o:[
@@ -41,31 +39,31 @@ var TREE={
     {q:'Šta znate o bakinoj knjizi?',go:'m1'},
     {q:'Šta je baka krila u kući?',go:'m2'},
     {q:'Jeste li videli Putnika?',go:'m3'}]},
-  m1:{t:'Kad je ona umrla, nešto je nestalo iz kuće. Ali ne sve! Savka je za svaku skrivenu stvar pravila pesmicu, da ne zaboravi gde je šta. Ja pamtim samo jednu.',o:[
-    {q:'Recite mi tu pesmicu.',go:'m4'},
-    {q:'A ostale?',go:'m1b'}]},
-  m1b:{t:'Ostale su otišle s njom. Ima samo ova jedna, i meni je ostala u glavi.',o:[
-    {q:'Recite mi tu pesmicu.',go:'m4'}]},
-  m4:{t:RIDDLE.join(' '),o:[
-    {q:'Šta to znači?',go:'m4a',set:'riddle',clue:'Zagonetka od Mileve: "'+RIDDLE.join(' ')+'"'}]},
-  m4a:{t:'To ti ne smem reći, dete. Savka je govorila: ko ne zna da gleda, taj ne zna ni da jede. Pogledaj dobro kuhinju.',o:[
+  m1:{t:'Kad je ona umrla, neko je noću upao u kuću. Ja sam prva videla svetlo. Tražio je po celoj kući, a ja sam znala da neće naći ništa.',o:[
+    {q:'Šta je tražio?',go:'m1b'},
+    {q:'A gde je Savka držala tajne?',go:'m4'}]},
+  m1b:{t:'Ništa vredno. Stranac je prevrnuo ormane, sanduk, fioke, sve što bi iko pretražio. A nije našao ništa, jer Savka nikad nije držala tajne tamo gde se traži.',o:[
+    {q:'A gde ih je držala?',go:'m4'}]},
+  m4:{t:'Ja ti kažem samo ono što sam videla. Svakog petka ujutru Savka bi sama izvukla onaj veliki tepih na sredini kuhinje, istresla ga i vratila na isto mesto. Nikome nije dala da ga takne. Čudno, zar ne? Za običan tepih.',o:[
+    {q:'Mislite da je nešto ispod njega?',go:'m4a',set:'riddle',clue:'Mileva: Savka je svakog petka sama istresala veliki tepih na sredini kuhinje i nikom nije dala da ga takne.'}]},
+  m4a:{t:'Ništa ja ne mislim, dete. Samo kažem šta sam videla. Zaključke izvuci sam. A ako hoćeš još svedoka, pitaj deda Radovana.',o:[
     {q:'Hvala, pogledaću.',go:null}]},
   m2:{t:'Ona je znala da je tajna najsigurnija na vidnom mestu. Zato nikad nije ništa zaključavala.',o:[
     {q:'Vratimo se knjizi.',go:'m0',clue:'Mileva: Savka nikad nije ništa zaključavala, tajne je držala na vidnom mestu.'}]},
   m3:{t:'Samo u senci. Ostavlja znake kredom, videla sam jedan na kapiji. Dok sam sela s vama, ništa ne primećujem više.',o:[
     {q:'Vratimo se knjizi.',go:'m0'}]},
-  m5:{t:'Ako ne možeš da rešiš pesmicu, pogledaj kuhinju kao da hodaš po njoj prvi put. A ako zapneš, pitaj deda Radovana, on je kod nje jeo petkom.',o:[
+  m5:{t:'Rekla sam ti šta sam videla, tepih petkom. Ako ti treba još jedan svedok, pitaj deda Radovana, on je kod nje jeo petkom.',o:[
     {q:'Hvala.',go:null}]}
  }},
  6:{name:'Deda Radovan',start:function(){return 'r0';},nodes:{
   r0:{t:'E, mladiću! Moja Stana opet će da dođe po mene, ali pre toga... šta bi hteo od starog Radovana?',o:[
     {q:'Kakva je bila Savkina kuhinja?',go:'r1'},
     {q:'Ima li nešto što ste videli oko kuće?',go:'r2'},
-    {q:'Mileva mi je dala jednu pesmicu o prugama.',go:'r3',show:function(){return !!S.f.riddle;}}]},
+    {q:'Mileva kaže da je Savka petkom istresala tepih.',go:'r3',show:function(){return !!S.f.riddle;}}]},
   r1:{t:'Topla! Gulaš joj je mirisao do kapije. Petkom sam sedeo kod nje na klupi pored peći.',o:[{q:'Vratimo se.',go:'r0'}]},
   r2:{t:'Jedne noći sam video svetlo u njenoj kuhinji. Ma tražio je neko ono što ne postoji, jer Savka nikad nije držala ništa vredno tamo gde bi neko tražio.',o:[{q:'Vratimo se.',go:'r0'}]},
-  r3:{t:'Pruge, pruge... Savka je imala jednu stvar sa prugama koju je volela više nego sat. Na njoj sam stajao, a nikad nisam pogledao pod nju.',o:[
-    {q:'Hvala, deda.',go:null,clue:'Radovan: Savka je imala stvar sa prugama na kojoj se stajalo, a nikad se nije gledalo pod njom.'}]}
+  r3:{t:'Tačno tako! Nije dala ni meni da stanem na njega pre nego što je ona prošla. Jednom sam se spotakao o ivicu i video da je pod njim jedna daska drugačija od ostalih. Savka me je pogledala tako da sam više nikad nije pomenuo.',o:[
+    {q:'Hvala, deda.',go:null,clue:'Radovan: ispod tepiha je jedna daska drugačija od ostalih, a Savka nije dala da se o njoj priča.'}]}
  }}
 };
 TREE[3]={name:'Mića',start:function(){return S.f.mica?'c5':(S.f.fragment?'c0':'ccold');},nodes:{
@@ -88,12 +86,12 @@ TREE[5]={name:'Ljubica',start:function(){return S.f.riddle2?'l5':(S.f.mica?'l0':
   l0:{t:'Mića te je poslao, vidim. Savka je kod mene kupovala samo slatku papriku. Šta si našao?',o:[
     {q:'Pola recepta. Gde je druga polovina?',go:'l1'},
     {q:'Znate li ko je Putnik?',go:'l3'}]},
-  l1:{t:'Nije bilo lako izvući to iz nje. Ostavila mi je jednu zagonetku, da je dam samo onome ko je našao prvu polovinu. Slušaj dobro.',o:[
-    {q:'Slušam.',go:'l2'}]},
-  l2:{t:RIDDLE2.join(' '),o:[
-    {q:'Hvala, razmislicu.',go:null,set:'riddle2',clue:'Zagonetka od Ljubice: "'+RIDDLE2.join(' ')+'"'}]},
+  l1:{t:'Pola, kažeš. Savka je jednom rekla da je ono najvažnije držala tamo gde je i sama bila najranije. Svakog jutra, pre svanuća, ona je palila vatru i sama čistila pepeo. Nikome nije dala ni da priđe tom delu kuhinje.',o:[
+    {q:'Pre svanuća? A šta je tamo radila?',go:'l2'}]},
+  l2:{t:'Ne znam šta je radila, samo da je pepeo prosejavala kao da nešto traži, ili kao da nešto čuva. Jednom je rekla: „Sve što je zaista važno ostaje u toplom.“',o:[
+    {q:'Hvala, razmisliću.',go:null,set:'riddle2',clue:'Ljubica: Savka je svako jutro pre svanuća sama palila vatru i prosejavala pepeo, nikom nije dala da priđe. „Sve što je važno ostaje u toplom.“'}]},
   l3:{t:'Jednom je pitao za papriku. Kupio nije. Samo je gledao kako se pakuje.',o:[{q:'Vratimo se.',go:'l0'}]},
-  l5:{t:'Ako te zbuni, nemoj tražiti daleko. Najtopliji deo kuhinje ne mora da bude najbliži.',o:[{q:'Hvala.',go:null}]}
+  l5:{t:'Rekla sam ti sve što znam. Savkino jutro je počinjalo vatrom. Ostalo je na tebi.',o:[{q:'Hvala.',go:null}]}
  }};
 var GENERIC={name:'Gost',start:function(){return 'g0';},nodes:{g0:{t:'Ja samo svratih na piće. Za Savku čujem tek sad, ali pitaj Stojana, on sve zna.',o:[{q:'Hvala.',go:null}]}}};
 
@@ -196,18 +194,16 @@ setInterval(function(){
 // ---------- the notebook ----------
 function goal(){
   if(S.found)return 'Prva stranica je u knjizi. (Sledeće stranice dolaze u sledećoj verziji igre.)';
-  if(S.f.riddle2)return 'Reši Ljubicinu zagonetku. U kuhinji klikni „Pregledaj“ pa klikni na mesto koje misliš.';
+  if(S.f.riddle2)return 'Razmisli šta ti je Ljubica ispričala o Savkinom jutru. U kuhinji klikni „Pregledaj“ pa klikni na mesto za koje misliš da je drugi deo.';
   if(S.f.mica)return 'Mića te je poslao Ljubici. Nađi je u kafani i pitaj je za drugu polovinu.';
   if(S.f.fragment)return 'Našao si pola recepta. Na poleđini piše da drugu polovinu zna neko ko je Savki nosio drva. Nađi Mićin trag u kafani.';
-  if(S.f.riddle)return 'Reši Milevinu zagonetku. U kuhinji klikni „Pregledaj“ pa klikni na mesto gde misliš da je stranica.';
+  if(S.f.riddle)return 'Razmisli šta su ti rekli Mileva i drugi o Savki. U kuhinji klikni „Pregledaj“ pa klikni na mesto za koje misliš da je stranica.';
   if(S.f.stojan)return 'Stojan te je poslao Mileva. Nađi je u kafani (sedi sama) i pitaj je.';
   return 'Nađi prvu stranicu bakine knjige. U kafani klikni desnim na gosta, pa „Pitaj gosta“. Počni od Stojana.';
 }
 function canLook(){return !S.found&&((S.f.riddle&&!S.f.fragment)||S.f.riddle2);}
 function refresh(){
   var h='<h4>📓 Beležnica</h4><div class="go"><b>Cilj:</b> '+goal()+'</div>';
-  if(S.f.riddle&&!S.f.fragment)h+='<div class="rd">'+RIDDLE.join('<br>')+'</div>';
-  if(S.f.riddle2&&!S.found)h+='<div class="rd">'+RIDDLE2.join('<br>')+'</div>';
   if(S.clues.length){h+='<b>Tragovi:</b><ul style="padding-left:18px;margin:6px 0">'+S.clues.slice().reverse().map(function(c){return '<li>'+c.replace(/</g,'&lt;')+'</li>';}).join('')+'</ul>';}
   else h+='<i>Još nema tragova.</i>';
   book.innerHTML=h;
@@ -249,7 +245,7 @@ window.addEventListener('pointerdown',function(e){
       if(z[4]==='rug'&&!stage2){foundFragment();return;}
       if(z[4]==='rug'){say('Tepih je već pregledan. Tu je bila samo prva polovina.',3200);return;}
       if(z[4]==='stove'&&stage2){foundPage();return;}
-      S.wrong=(S.wrong||0)+1;save();say(z[5]+(S.wrong>=5?'  (Nagoveštaj: pitaj deda Radovana.)':''),3600);return;
+      S.wrong=(S.wrong||0)+1;save();say(z[5]+(S.wrong>=5?'  (Nagoveštaj: vrati se i ponovo pročitaj tragove u beležnici.)':''),3600);return;
     }
   }
   S.wrong=(S.wrong||0)+1;save();say('Ovde nema ničega.');
