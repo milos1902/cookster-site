@@ -10,7 +10,7 @@ if(!scene||window.CooksterOrders)return;
 var W=1672,H=941,KEY='cookster.kitchen-orders.v1',WAITER='assets/tavern/waiter/waiter_walks',NOTE_IMG='assets/ui/order_note_table.webp?v=1',NOTE_BIG='assets/ui/order_note_big.webp?v=1';
 var ITEM={name:'Kiseli kupus',extra:'ulje, tucana paprika',cyr:'Кисели купус',cyrExtra:'уље, туцана паприка'};           // the default dish
 // everything a guest can order: a dish (the bowl), or drinks (the bottles and glasses from "Piće" that the player puts on the table)
-var ITEM_NAMES={pice_vino_crno_flasa:'flaša crnog vina',pice_vino_belo_flasa:'flaša belog vina',pice_soda_sifon:'soda',pice_casa_spricer:'čaša za špricer',pice_casa_belo_vino:'čaša belog vina',pice_casa_crno_vino:'čaša crnog vina'};
+var ITEM_NAMES={pice_vino_crno_flasa:'flaša crnog vina',pice_vino_belo_flasa:'flaša belog vina',pice_soda_sifon:'soda',pice_casa_spricer:'čaša za špricer',pice_casa_belo_vino:'čaša belog vina',pice_casa_crno_vino:'čaša crnog vina',pice_casa_rakija:'čašica rakije',pice_solja_kafa:'šolja kafe'};
 var ORDERS={
   kupus:{name:'Kiseli kupus',extra:'ulje, tucana paprika',cyr:'Кисели купус',cyrExtra:'уље, туцана паприка'},
   paprike:{name:'Belolučane paprike',extra:'zelena i crvena paprika, beli luk, ulje',cyr:'Белолучане паприке',cyrExtra:'зелена и црвена паприка, бели лук, уље'},
@@ -18,7 +18,9 @@ var ORDERS={
   crno_casa:{name:'Čaša crnog vina',extra:'',cyr:'Чаша црног вина',cyrExtra:'',items:['pice_casa_crno_vino']},
   belo_casa:{name:'Čaša belog vina',extra:'',cyr:'Чаша белог вина',cyrExtra:'',items:['pice_casa_belo_vino']},
   crno_flasa:{name:'Flaša crnog vina',extra:'',cyr:'Флаша црног вина',cyrExtra:'',items:['pice_vino_crno_flasa']},
-  belo_flasa:{name:'Flaša belog vina',extra:'',cyr:'Флаша белог вина',cyrExtra:'',items:['pice_vino_belo_flasa']}
+  belo_flasa:{name:'Flaša belog vina',extra:'',cyr:'Флаша белог вина',cyrExtra:'',items:['pice_vino_belo_flasa']},
+  kafa:{name:'Kafa',extra:'',cyr:'Кафа',cyrExtra:'',items:['pice_solja_kafa']},
+  rakija:{name:'Rakija',extra:'',cyr:'Ракија',cyrExtra:'',items:['pice_casa_rakija']}
 };
 // a bottle of wine comes with a glass for a spritzer (men) or a wine glass (women)
 function makeOrder(key,woman){
@@ -105,7 +107,7 @@ function noteLines(n){
   return[{name:n.name,extra:n.extra,cyr:n.cyr,cyrExtra:n.cyrExtra,items:n.items||null,key:n.key,seatId:n.seatId,req:n.req||null}];
 }
 // the rows that are written on the paper: a "kilo na kilo" is written once (wine, soda) and the glasses of the whole table are counted together below it ("3 x čaša za špricer")
-var GLASS_CYR={pice_casa_spricer:'Чаша за шприцер',pice_casa_belo_vino:'Чаша белог вина',pice_casa_crno_vino:'Чаша црног вина'};
+var GLASS_CYR={pice_casa_spricer:'Чаша за шприцер',pice_casa_belo_vino:'Чаша белог вина',pice_casa_crno_vino:'Чаша црног вина',pice_casa_rakija:'Чашица ракије',pice_solja_kafa:'Шоља кафе'};
 function displayRows(L,ok){
   var rows=[],gl={},order=[];
   function addGlass(id,i){if(!gl[id])gl[id]={q:0,done:true};order.indexOf(id)<0&&order.push(id);gl[id].q++;if(!(ok&&ok[i]))gl[id].done=false}

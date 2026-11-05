@@ -1089,3 +1089,22 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - Zone čišćenja (`kitchen-clean.js?v=6`): dodate ručne zone za pod ispred šporeta (zona sunđera ide do y 668), fioke stola (sunđer) i pod između saloon vrata i stola (metla). Ove ručne poligone treba skinuti kad stigne izvoz tvoje „Kalibracije scene" (dugme „Kopiraj sve").
 
 - Istraga, prva stranica (`js/istraga.js?v=3`; priča u `docs/PRICA.md`): u kafani desni klik na gosta → „Pitaj gosta" → tri pitanja, odgovor, pa nova tri pitanja. Lanac: Stojan (sedi uvek, šalje na Milevu) → Mileva (tek posle Stojana daje zagonetku o prugama) → deda Radovan (nagoveštaj, tek posle zagonetke). Zagonetka se rešava u kuhinji: dugme „🔍 Pregledaj" (samo kad zagonetka postoji i tek u kuhinji), klik na mesto: stranica je ispod ćilima; ostala mesta (sanduk, luster, šporet, sudopera, roštilj, drva, prozor, sto, fioke, vrata, krpa) daju kratku napomenu, posle 5 promašaja stiže nagoveštaj o Radovanu. Nađena stranica: „Savkin gulaš" (modal sa rukopisom), događaj `cookster:page-found` {id:'gulas'} (još nije vezan za meni/recepte). Razgovor radi samo dok je igrač u kafani (izlazak ga zatvara); svedoci (Stojan, Mileva, Radovan) sami dolaze u kafanu (`CooksterTavern.spawnChar(ch)` u `tavern-scene.js?v=178`). Beležnica (📓 gore desno): cilj, zagonetka i tragovi. Stanje: `cookster.istraga.v1`, „Nova igra" ga briše. Isprobano headless: ceo lanac, pregled, nalaženje stranice.
+
+## Istraga v4 (duži lanac)
+- Ćilim više ne otključava recept: daje pocepanu stranicu (pola recepta) i trag „pitaj onoga ko mi je nosio drva“.
+- Lanac: Stojan → Mileva (zagonetka 1) → ćilim (pola) → Mića (drvar) → Ljubica (zagonetka 2: šporet) → cela stranica „Savkin gulaš“.
+- Novi tokovi u `js/istraga.js`: flagovi `fragment`, `mica`, `riddle2`; gosti 3 i 5 se pojavljuju po flagovima.
+
+## Istraga v5 (bez zagonetki)
+- Zagonetke izbačene. Igrač sam zaključuje iz razgovora: Mileva/Radovan (tepih petkom, čudna daska) → ćilim; Ljubica (Savka pre svanuća sama palila vatru i prosejavala pepeo) → šporet.
+
+## Jutarnje porudžbine (kafa, rakija)
+- `pickOrderKeys` u `tavern-scene.js`: od 6:00 do 11:00 gosti sve više naručuju kafu i rakiju (do ~95% u 6:00), posle toga stari izbor (vino, jela).
+- Novi predmeti: `pice_solja_kafa` (privremeno slika šolje iz kuhinje), `pice_casa_rakija` (privremena generisana čašica). Porudžbine `kafa` i `rakija` u `kitchen-orders.js`.
+- Fale: prave šoljice za kafu, poslužavnik, kuvanje kafe u džezvi (sledeći korak).
+
+## Kuvanje kafe (`js/kafa.js`)
+- Džezva (`kal_01_dzezva`) + mlevena kafa (`kafa_mlevena`, privremeno slika male tegle, meni „Piće") + šoljice (`pice_solja_kafa`).
+- Panel „☕ Kuvanje kafe" levo kad je džezva u kuhinji: dodaj vodu (do 3), dodaj kafu (1 kašičica po šoljici), šporet zagreva, pena od .7, skini u .8-1, preko 1 kafa pobegne. Sipaj → šoljice na stolu (`dataset.q` dobra/slaba/jaka).
+- Stanje je na džezvi (`cw`,`cs`,`ct`,`cpeak`). API `CooksterKafa`.
+- Ne postoji još: slika pene na džezvi (samo smeđa kapa), zvuk, mešanje, ulaz u cenu/ocenu gosta.

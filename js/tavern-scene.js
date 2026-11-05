@@ -954,7 +954,21 @@ function ensureWaiter(){
   return waiter;
 }
 var WOMEN={2:1,5:1,8:1,10:1};                        // which of the ten characters are women (they order wine by the glass, men "kilo na kilo")
-function pickOrderKeys(g){                            // what one guest orders: one thing, or a dish together with a drink (every combination can happen)
+function morningness(){          // 1 at the opening (6:00), falls to 0 at 11:00: how much the guests want a coffee or a brandy
+  var D=window.CooksterDay,m=D&&D.minute?D.minute():600;
+  return m<360?1:(m>=660?0:1-(m-360)/300);
+}
+function pickOrderKeys(g){
+  var mo=morningness();
+  if(mo>0){            // in the morning: mostly coffee and brandy (each guest his own), later it fades into the usual wine and dishes
+    var q=Math.random();
+    if(q<.5*mo+.1*(mo>0?1:0)*mo)return ['kafa'];
+    if(q<.5*mo+.35*mo)return ['rakija'];
+    if(q<.5*mo+.35*mo+.1*mo)return ['kafa','rakija'];
+  }
+  return pickOrderKeysDay(g);
+}
+function pickOrderKeysDay(g){                            // what one guest orders: one thing, or a dish together with a drink (every combination can happen)
   var r=Math.random(),w=!!WOMEN[g.ch],drink=w?(Math.random()<.5?'crno_casa':'belo_casa'):(Math.random()<.6?'kilo':(Math.random()<.5?'belo_flasa':'crno_flasa'));
   if(g.grp&&g.grp.size>1){                              // a company shares ONE bottle (red, white or "kilo na kilo"), everybody gets his own glass
     if(g.grp.wine===undefined)g.grp.wine=Math.random()<.55?['crno_flasa','belo_flasa','kilo'][Math.floor(Math.random()*3)]:null;
