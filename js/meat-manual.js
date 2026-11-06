@@ -19,7 +19,7 @@
     }
     return hit;
   }
-  const targetOnBoard=()=>onBoard('snicla')||onBoard('parce');
+  const targetOnBoard=()=>onBoard('snicla');      // a piece of meat is cut in 3D (js/tomato-cut3d.js); the manual cut here is for a slice (into pieces)
   function close(apply){
     if(!st)return;const s=st;st=null;cancelAnimationFrame(s.raf);s.root.style.opacity='0';setTimeout(()=>s.root.remove(),220);
     if(apply!==false&&s.mode==='snicla'&&s.frags.length>1&&(window.items||[]).includes(s.target))window.meatFinishSnicla(s.target,s.frags);

@@ -14996,12 +14996,11 @@ window.addEventListener('keyup',e=>{if(e.key==='e'||e.key==='E')cancelPeelHold()
 window.addEventListener('blur',cancelPeelHold);
 function beginCutAction(mode='dice'){
  if(isCutting)return;
- {const t0=findCutTargetOnBoard();if(mode==='slices'&&t0&&VEGETABLES[t0.dataset.vegKey]?.meat==='parce'&&window.CooksterMeatManual){window.CooksterMeatManual.toggle(t0);return;}}
  const board=getBoardEl();
  const knife=getKnifeEl();
  const target=findCutTargetOnBoard();
  if(!board||!knife||!target){showToast('Stavi sastojak na dasku.');return;}
- if(mode==='slices'&&!VEGETABLES[target.dataset.vegKey]?.meat&&window.CooksterTomatoCut?.supports(target)){
+ if(mode==='slices'&&(!VEGETABLES[target.dataset.vegKey]?.meat||VEGETABLES[target.dataset.vegKey]?.meat==='parce')&&(window.CooksterTomatoCut?.supports(target)||window.CooksterTomatoCut3D?.supports(target))){
    const def=VEGETABLES[target.dataset.vegKey]||{};
    if(def.src&&def.slicedSrc){
      const cutCallbacks={board,onCutSound(){playImpactSound(vegSoundTarget(target),'cut');},onPeelSound(){playImpactSound(peelSoundTarget,'peel');},onDone(src,atlas){

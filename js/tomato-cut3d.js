@@ -14,6 +14,7 @@
     patlidzan:{shape:'eggplant',label:'patlidžana',skin:'assets/market_veg/patlidzan_koza.webp',caps:['patlidzan_presek_1','patlidzan_presek_2','patlidzan_presek_3','patlidzan_presek_4','patlidzan_presek_5'],refD:1,calyx:true,calyxImg:'assets/market_veg/patlidzan_casica.webp',calyxAt:[-1.1,.06,0],fill:'#efe6c4',capFill:'#ece3c0',tile:2,rough:.32,clear:.5},
     krastavac:{shape:'cucumber',label:'krastavca',skin:'assets/market_veg/krastavac_koza.webp',caps:['krastavac_presek_1','krastavac_presek_2','krastavac_presek_3','krastavac_presek_4','krastavac_presek_5','krastavac_presek_uzduz'],longCap:true,refD:.72,calyx:false,fill:'#d8ebc3',capFill:'#d6e9c0',tile:2,rough:.3,clear:.45},
     kupus:{shape:'cabbage',label:'kupusa',skin:'assets/market_veg/kupus.png',skinPlanar:true,caps:['kupus_sv_presek_1','kupus_sv_presek_2','kupus_sv_presek_3','kupus_sv_presek_4','kupus_sv_presek_5','kupus_sv_srz'],coreCap:true,calyx:false,fill:'#8fbd45',capFill:'#e3edbd',tile:1,rough:.5,clear:.15},
+    junetina:{shape:'beef',label:'junetine',skin:'assets/meat/3d/junetina_povrsina.webp',skinTiled:true,capDir:'assets/meat/3d/',caps:['junetina_presek_1','junetina_presek_2','junetina_presek_3'],calyx:false,fill:'#a1201b',capFill:'#b0231d',rough:.6,clear:.12,refD:1.2},
     luk:{shape:'onion',label:'luka',skin:'assets/market_veg/luk_koza.webp',caps:['luk_presek_1','luk_presek_2'],calyx:false,fill:'#f3e3b4',capFill:'#f0e0b0',tile:2,rough:.5,clear:.2,mirror:true,peel:true,peelPile:['luk_kora_1','luk_kora_2','luk_kora_3']}
   };
 
@@ -58,6 +59,15 @@
         // a cucumber lies on the board along x: a long, almost cylindrical body with round ends and a gentle bend
         const rs=.36*(1-.07*y)*(r>1e-5?Math.pow(r,-.6):0);   // r^.4 instead of r: straight sides, round ends
         pos.setXYZ(i,-y*1.7,x*rs,z*rs+.14*(1-y*y));
+        continue;
+      }
+      if(shape==='beef'){
+        // a piece of beef: a rounded block (a superellipsoid), a bit irregular, the skin picture is laid on it from above and below (planar), the sides stretch it a little (it reads as muscle fibres)
+        const e=.52,sg=v=>v<0?-1:1,px=sg(x)*Math.pow(Math.abs(x),e),py=sg(y)*Math.pow(Math.abs(y),.6),pz=sg(z)*Math.pow(Math.abs(z),e);
+        const wob=1+.06*Math.sin(ang*3+.7)+.04*Math.cos(ang*5+y*2);
+        const X=px*1.55*wob,Z=pz*1.1*(1+.05*Math.cos(ang*2+.3)),Y=py*.62;
+        geo.attributes.uv.setXY(i,.5+X*.3,.5-Z*.3);
+        pos.setXYZ(i,X,Y,Z);
         continue;
       }
       if(shape==='cabbage'){
@@ -233,7 +243,7 @@
     const pileVariant=cfg.peelPile?Math.floor(Math.random()*cfg.peelPile.length):0;
     const pileImg=cfg.peelPile?await loadImg('assets/market_veg/'+cfg.peelPile[pileVariant]+'.webp').catch(()=>null):null;
     const [capImgs,skinImg,boardImg]=await Promise.all([
-      Promise.all(cfg.caps.map(n=>loadImg('assets/market_veg/'+n+'.webp').catch(()=>null))),
+      Promise.all(cfg.caps.map(n=>loadImg((cfg.capDir||'assets/market_veg/')+n+'.webp').catch(()=>null))),
       loadImg(cfg.skin).catch(()=>null),
       loadImg('assets/new_props/daska.png').catch(()=>null)]);
     let peeled=!cfg.peel;
@@ -301,6 +311,11 @@
           g.drawImage(skinImg,-bx.x0*sw-1024*.04,-bx.y0*sh-1024*.04,sw,sh);
         }
         const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;return t;
+      }
+      if(cfg.skinTiled){      // a seamless picture repeated over the piece
+        const c=document.createElement('canvas');c.width=c.height=1024;const g=c.getContext('2d');g.fillStyle=cfg.fill;g.fillRect(0,0,1024,1024);
+        if(skinImg)g.drawImage(skinImg,0,0,1024,1024);
+        const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=8;return t;
       }
       const c=document.createElement('canvas');c.width=1024;c.height=512;const g=c.getContext('2d');
       g.fillStyle=cfg.fill;g.fillRect(0,0,1024,512);
@@ -662,9 +677,11 @@
       g.restore();
     }
     // right drag: the tomato itself turns (the board and camera stay put). Sideways = spin, up/down = tip it (whole tomato only)
+    let turnOnly=null;      // meat: only the piece that was clicked with the right button is turned, the cut-off pieces stay where they are
     function turnPieces(dyaw,dpitch){
-      const qy=new Q().setFromAxisAngle(new V3(0,1,0),dyaw),qx=new Q().setFromAxisAngle(new V3(1,0,0),pieces.length===1?dpitch:0);
-      for(const b of pieces){
+      const one=cfg.shape==='beef'&&turnOnly&&pieces.includes(turnOnly);
+      const qy=new Q().setFromAxisAngle(new V3(0,1,0),dyaw),qx=new Q().setFromAxisAngle(new V3(1,0,0),(pieces.length===1||one)?dpitch:0);
+      for(const b of (one?[turnOnly]:pieces)){
         b.quat.premultiply(qx).premultiply(qy).normalize();
         // keep it resting on the board
         let low=1e9;
@@ -676,7 +693,7 @@
     // does the knife line (screen space) pass right through this piece, from one side to the other?
     const toScreen=v=>{const q=v.clone().project(camera);return {x:(q.x+1)/2*innerWidth,y:(1-q.y)/2*innerHeight};};
     function crosses(p,a,b){
-      if(cfg.shape==='eggplant'||cfg.shape==='cucumber'){
+      if(cfg.shape==='eggplant'||cfg.shape==='cucumber'||cfg.shape==='beef'){
         // a long vegetable: its bounding sphere is much bigger than the vegetable, so look at the real shape on the screen:
         // the knife line must pass through it (points of the piece on both sides of the line) and start and end outside of it
         const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L;
@@ -700,7 +717,19 @@
     cv.addEventListener('pointerdown',e=>{
       if(!ready||!peeled)return;
       cv.setPointerCapture(e.pointerId);
-      if(e.button===2){orbit={x:e.clientX,y:e.clientY,t:performance.now(),vy:0,vp:0};spin.y=0;spin.p=0;return;}
+      if(e.button===2){
+        if(cfg.shape==='beef'){      // which piece is under the pointer (the nearest to the camera); none under it: the biggest one
+          try{
+            const rc=new THREE.Raycaster(),nd=new V3((e.clientX/innerWidth)*2-1,-(e.clientY/innerHeight)*2+1,.5).unproject(camera);
+            rc.set(camera.position,nd.sub(camera.position).normalize());
+            let hit=null,hd=1e9;
+            for(const b of pieces){b.mesh.updateMatrixWorld(true);const r=rc.intersectObject(b.mesh,false);if(r.length&&r[0].distance<hd){hd=r[0].distance;hit=b;}}
+            if(!hit){let bv=-1;for(const b of pieces){const v=b.V||b.radius||0;if(v>bv){bv=v;hit=b;}}}
+            turnOnly=hit;
+          }catch(_){turnOnly=null;}
+        }else turnOnly=null;
+        orbit={x:e.clientX,y:e.clientY,t:performance.now(),vy:0,vp:0};spin.y=0;spin.p=0;return;
+      }
       if(e.button===0){stroke={id:++strokeId,start:pt(e),cut:false};trailPts.push({x:e.clientX,y:e.clientY,t:performance.now()});}
     });
     let lastChop=0;
