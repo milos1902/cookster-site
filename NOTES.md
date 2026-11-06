@@ -1126,3 +1126,8 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Šnicla na dasci se seče pre ostatka parčeta (`findCutTargetOnBoard`) i daje **6 komada** (slika `junetina_k6_*`: sirovo, pečeno, dobro pečeno), isti put kao seckano povrće, pa ide u tiganj (`addIngredientToContainer`).
 - Debela šnicla = 1 jedinica, tanka = 0,6. Celo parče ≈ 6 debelih ili 10 tankih šnicli.
 - Nije: svinjetina, mesara, pečeni/kuvani pojedinačni komadi u piece-sim, mleveno meso/oblikovanje.
+
+## Ručno sečenje mesa (`js/meat-manual.js`)
+- **C** nad parčetom mesa na dasci otvara ručno sečenje, **C** ponovo (ili Esc ili „Gotovo (C)") zatvara. **E** je i dalje brzo automatsko sečenje.
+- Povučeš nož odozgo nadole preko mesa: rez uzima šniclu od NAJBLIŽE ivice do reza. Širina je deo cele širine parčeta: < 5% pretanko, < 14% tanka, do 34% debela, preko toga „preširoko". Svaki rez je jedna šnicla, a parče je kraće (`meatSliceFraction` u `game.js`, `meatClipL/R`).
+- Šnicla na dasci se seče na 6 komada (E), kao ranije.

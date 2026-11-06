@@ -12295,12 +12295,17 @@ function findCutTargetOnBoard(){
  return first;
 }
 // meat: one cut from the top of the piece takes ONE slice (E = thick, C = thin); the piece gets smaller. Cutting a slice then gives 6 pieces (the normal cut path).
-function meatSliceOff(target,mode){
- const key=target.dataset.vegKey||'junetina',thin=mode==='slices',unit=thin?.6:1;
+function meatSliceOff(target,mode){      // the quick cut (E thick / C thin in the old way): takes a slice of a fixed width from the right
+ return meatSliceFraction(target,mode==='slices'?.1:.1667,'right');
+}
+// meat: take one slice of width w (a part of the ORIGINAL width of the piece) from the left or the right edge of what is left; thin < .14 <= thick
+function meatSliceFraction(target,w,side='right'){
+ const key=target.dataset.vegKey||'junetina',thin=w<.14;
  const sk=key+(thin?'_snicla_tanka':'_snicla_debela'),def=VEGETABLES[sk];
  if(!def)return 'Nema šnicle za ovo meso.';
- let left=+(target.dataset.meatLeft||6);
- left=Math.max(0,left-unit);
+ let L=+(target.dataset.meatClipL||0),R=+(target.dataset.meatClipR||0);
+ const room=Math.max(0,1-L-R);w=Math.min(w,room);
+ if(w<.03)return 'Pretanko za šniclu.';
  const n=+(target.dataset.meatSlices||0),cx=+target.dataset.cx,by=+target.dataset.by,vis=+target.dataset.vis||1;
  const dx=78*vis+(n%3)*8,dy=(n%3)*16;
  const el=makeItem({id:'veg_'+sk+'_'+Date.now(),label:def.label,src:def.src,x:cx+dx-def.w/2,y:by-dy-def.h,w:def.w,h:def.h,z:++zCounter,snapProfile:'produce'});
@@ -12315,11 +12320,10 @@ function meatSliceOff(target,mode){
    el.dataset.boardRelAngle='0';el.dataset.attachedToBoard='1';syncOneBoardAttachment(el,bd);
  }
  target.dataset.meatSlices=String(n+1);
- if(left<=.05){removeItem(target);}
- else{
-   target.dataset.meatLeft=String(left);
-   const body=target.querySelector('.body');if(body)body.style.clipPath=`inset(0 ${((1-left/6)*100).toFixed(1)}% 0 0)`;     // the piece is shorter by what was cut off
- }
+ if(side==='left')L+=w;else R+=w;
+ target.dataset.meatClipL=String(L);target.dataset.meatClipR=String(R);target.dataset.meatLeft=String(6*Math.max(0,1-L-R));
+ if(1-L-R<=.05){removeItem(target);}
+ else{const body=target.querySelector('.body');if(body)body.style.clipPath=`inset(0 ${(R*100).toFixed(1)}% 0 ${(L*100).toFixed(1)}%)`;}      // the piece is shorter by what was cut off
  CooksterSave.schedule();
  return thin?'Odrezana je tanka šnicla.':'Odrezana je debela šnicla.';
 }
@@ -14877,6 +14881,7 @@ window.addEventListener('keyup',e=>{if(e.key==='e'||e.key==='E')cancelPeelHold()
 window.addEventListener('blur',cancelPeelHold);
 function beginCutAction(mode='dice'){
  if(isCutting)return;
+ {const t0=findCutTargetOnBoard();if(mode==='slices'&&t0&&VEGETABLES[t0.dataset.vegKey]?.meat==='parce'&&window.CooksterMeatManual){window.CooksterMeatManual.toggle(t0);return;}}
  const board=getBoardEl();
  const knife=getKnifeEl();
  const target=findCutTargetOnBoard();
