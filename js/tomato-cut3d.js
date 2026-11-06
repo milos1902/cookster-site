@@ -14,7 +14,9 @@
     patlidzan:{shape:'eggplant',label:'patlidžana',skin:'assets/market_veg/patlidzan_koza.webp',caps:['patlidzan_presek_1','patlidzan_presek_2','patlidzan_presek_3','patlidzan_presek_4','patlidzan_presek_5'],refD:1,calyx:true,calyxImg:'assets/market_veg/patlidzan_casica.webp',calyxAt:[-1.1,.06,0],fill:'#efe6c4',capFill:'#ece3c0',tile:2,rough:.32,clear:.5},
     krastavac:{shape:'cucumber',label:'krastavca',skin:'assets/market_veg/krastavac_koza.webp',caps:['krastavac_presek_1','krastavac_presek_2','krastavac_presek_3','krastavac_presek_4','krastavac_presek_5','krastavac_presek_uzduz'],longCap:true,refD:.72,calyx:false,fill:'#d8ebc3',capFill:'#d6e9c0',tile:2,rough:.3,clear:.45},
     kupus:{shape:'cabbage',label:'kupusa',skin:'assets/market_veg/kupus.png',skinPlanar:true,caps:['kupus_sv_presek_1','kupus_sv_presek_2','kupus_sv_presek_3','kupus_sv_presek_4','kupus_sv_presek_5','kupus_sv_srz'],coreCap:true,calyx:false,fill:'#8fbd45',capFill:'#e3edbd',tile:1,rough:.5,clear:.15},
-    junetina:{shape:'beef',label:'junetine',skin:'assets/meat/3d/junetina_povrsina.webp',skinTiled:true,capDir:'assets/meat/3d/',caps:['junetina_presek_1','junetina_presek_2','junetina_presek_3'],calyx:false,fill:'#a1201b',capFill:'#b0231d',rough:.6,clear:.12,refD:1.2},
+    junetina:{shape:'beef',oneCut:true,label:'junetine',skin:'assets/meat/3d/junetina_povrsina.webp',skinTiled:true,capDir:'assets/meat/3d/',caps:['junetina_presek_1','junetina_presek_2','junetina_presek_3'],calyx:false,fill:'#a1201b',capFill:'#b0231d',rough:.6,clear:.12,refD:1.2},
+    junetina_snicla_debela:{shape:'slab',label:'šnicle',skin:'assets/meat/3d/junetina_povrsina.webp',skinTiled:true,capDir:'assets/meat/3d/',caps:['junetina_presek_1','junetina_presek_2','junetina_presek_3'],calyx:false,fill:'#a1201b',capFill:'#b0231d',rough:.6,clear:.12,refD:1.2},
+    junetina_snicla_tanka:{shape:'slab',label:'šnicle',skin:'assets/meat/3d/junetina_povrsina.webp',skinTiled:true,capDir:'assets/meat/3d/',caps:['junetina_presek_1','junetina_presek_2','junetina_presek_3'],calyx:false,fill:'#a1201b',capFill:'#b0231d',rough:.6,clear:.12,refD:1.2},
     luk:{shape:'onion',label:'luka',skin:'assets/market_veg/luk_koza.webp',caps:['luk_presek_1','luk_presek_2'],calyx:false,fill:'#f3e3b4',capFill:'#f0e0b0',tile:2,rough:.5,clear:.2,mirror:true,peel:true,peelPile:['luk_kora_1','luk_kora_2','luk_kora_3']}
   };
 
@@ -59,6 +61,14 @@
         // a cucumber lies on the board along x: a long, almost cylindrical body with round ends and a gentle bend
         const rs=.36*(1-.07*y)*(r>1e-5?Math.pow(r,-.6):0);   // r^.4 instead of r: straight sides, round ends
         pos.setXYZ(i,-y*1.7,x*rs,z*rs+.14*(1-y*y));
+        continue;
+      }
+      if(shape==='slab'){
+        // a slice of meat: a flat, roundish slab lying on the board (the picture of the meat is laid on it from above)
+        const sg=v=>v<0?-1:1,px=sg(x)*Math.pow(Math.abs(x),.75),pz=sg(z)*Math.pow(Math.abs(z),.75),wob=1+.05*Math.sin(ang*3+1.1)+.03*Math.cos(ang*5);
+        const X=px*1.3*wob,Z=pz*1.0*(1+.04*Math.cos(ang*2)),Y=sg(y)*Math.pow(Math.abs(y),.5)*.3;
+        geo.attributes.uv.setXY(i,.5+X*.3,.5-Z*.3);
+        pos.setXYZ(i,X,Y,Z);
         continue;
       }
       if(shape==='beef'){
@@ -256,7 +266,7 @@
     const trail=document.createElement('canvas');trail.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none';
     const hint=document.createElement('div');
     hint.style.cssText='position:fixed;left:50%;bottom:14px;transform:translateX(-50%);color:#fff3d6;font:15px system-ui,sans-serif;text-shadow:0 1px 3px #000;text-align:center;max-width:90vw';
-    hint.textContent=cfg.peel?'Luk sa korom ne može da se seče: klikni „Očisti luk“. E = vrati dasku na sto.':'Levi klik i povuci nož preko '+cfg.label+' · desni klik i povuci = okreni · E = gotovo, daska se vraća na sto';
+    hint.textContent=cfg.oneCut?'Povuci nož JEDNOM preko mesa (samo jedan rez) · desni klik i povuci = okreni komad · E = gotovo, ispadaju tri debele šnicle':cfg.peel?'Luk sa korom ne može da se seče: klikni „Očisti luk“. E = vrati dasku na sto.':'Levi klik i povuci nož preko '+cfg.label+' · desni klik i povuci = okreni · E = gotovo, daska se vraća na sto';
     for(const ev of ['pointerdown','pointerup','pointermove','mousedown','mouseup','mousemove','click','dblclick','touchstart','touchmove','touchend','contextmenu','wheel'])
       root.addEventListener(ev,e=>{e.stopPropagation();if(ev==='contextmenu')e.preventDefault();});
     // the board is the game's own picture, flat behind the 3D canvas; the stage (picture + canvas) moves as one
@@ -683,7 +693,7 @@
     // right drag: the tomato itself turns (the board and camera stay put). Sideways = spin, up/down = tip it (whole tomato only)
     let turnOnly=null;      // meat: only the piece that was clicked with the right button is turned, the cut-off pieces stay where they are
     function turnPieces(dyaw,dpitch){
-      const one=cfg.shape==='beef'&&turnOnly&&pieces.includes(turnOnly);
+      const one=(cfg.shape==='beef'||cfg.shape==='slab')&&turnOnly&&pieces.includes(turnOnly);
       const qy=new Q().setFromAxisAngle(new V3(0,1,0),dyaw),qx=new Q().setFromAxisAngle(new V3(1,0,0),(pieces.length===1||one)?dpitch:0);
       for(const b of (one?[turnOnly]:pieces)){
         b.quat.premultiply(qx).premultiply(qy).normalize();
@@ -697,7 +707,7 @@
     // does the knife line (screen space) pass right through this piece, from one side to the other?
     const toScreen=v=>{const q=v.clone().project(camera);return {x:(q.x+1)/2*innerWidth,y:(1-q.y)/2*innerHeight};};
     function crosses(p,a,b){
-      if(cfg.shape==='eggplant'||cfg.shape==='cucumber'||cfg.shape==='beef'){
+      if(cfg.shape==='eggplant'||cfg.shape==='cucumber'||cfg.shape==='beef'||cfg.shape==='slab'){
         // a long vegetable: its bounding sphere is much bigger than the vegetable, so look at the real shape on the screen:
         // the knife line must pass through it (points of the piece on both sides of the line) and start and end outside of it
         const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L;
@@ -722,7 +732,7 @@
       if(!ready||!peeled)return;
       cv.setPointerCapture(e.pointerId);
       if(e.button===2){
-        if(cfg.shape==='beef'){      // which piece is under the pointer (the nearest to the camera); none under it: the biggest one
+        if(cfg.shape==='beef'||cfg.shape==='slab'){      // which piece is under the pointer (the nearest to the camera); none under it: the biggest one
           try{
             const rc=new THREE.Raycaster(),nd=new V3((e.clientX/innerWidth)*2-1,-(e.clientY/innerHeight)*2+1,.5).unproject(camera);
             rc.set(camera.position,nd.sub(camera.position).normalize());
@@ -751,6 +761,7 @@
       const steps=Math.max(2,Math.ceil(dd0/6)),now0=performance.now();
       trailPts=[];for(let i=0;i<=steps;i++)trailPts.push({x:s0.x+(p.x-s0.x)*i/steps,y:s0.y+(p.y-s0.y)*i/steps,t:now0});
       // cut every piece the line has gone right through (pieces cut by this stroke are left alone)
+      if(cfg.oneCut&&cuts>=1&&!stroke.cut)return;      // a piece of meat: only ONE cut
       const id=stroke.id;
       const d1=toRay(s0),d2=toRay(p),n=d1.clone().cross(d2).normalize(),dd=n.dot(camera.position);
       const k=cutWith(n,dd,q=>q.stroke!==id&&crosses(q,s0,p),id);

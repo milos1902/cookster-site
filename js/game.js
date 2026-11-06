@@ -6734,7 +6734,11 @@ function boardCenterSnapCandidate(el,cand){
  // so the ingredient itself (not its anchor) lands in the board center.
  const localY=Math.min(bh*.31,Math.max(8,h*.46));
  const a=(+board.dataset.angle||0)*Math.PI/180,cs=Math.cos(a),sn=Math.sin(a);
- const cx=bcx-(localY*sn);
+ // meat: it snaps to the side of the board that is free (the pile of slices lies on the right: the new one goes to the left, and the other way round)
+ let sideX=0;
+ if(VEGETABLES[el.dataset.vegKey]?.meat){let R=0,L=0;for(const o of items){if(o===el||o.dataset.attachedToBoard!=='1'||!VEGETABLES[o.dataset.vegKey]?.meat)continue;if((+o.dataset.boardRelX||0)>0)R++;else L++;}
+   if(R>L)sideX=-.17*bw;else if(L>R)sideX=.17*bw;}
+ const cx=bcx+sideX*cs-(localY*sn);
  const by=bcy+(localY*cs);
  return {
    ...cand,boardSnap:true,cx,by,vis,w,h,
@@ -12380,22 +12384,17 @@ function meatSpawnSlice(target,thin,n){
 }
 // the 3D cut of a piece of meat: every cut-off part becomes a slice (thin or thick by its size); the biggest part stays as the piece if it is still big
 function meatFrom3DCut(target,pieces){
- const tot=pieces.reduce((t,q)=>t+q.V,0)||1,sorted=[...pieces].sort((a,b)=>b.V-a.V);
- const keepBig=sorted.length>1&&sorted[0].V/tot>.4;
+ // ONE cut of a piece of meat gives THREE thick slices (a half of the piece); what is left stays as the piece, the last bit becomes slices
+ let prev=1;try{const Q0=JSON.parse(target.dataset.meatPoly||'null');if(Array.isArray(Q0)&&Q0.length>=3){const xs=Q0.map(q=>q[0]);prev=Math.max(...xs)-Math.min(...xs);}}catch(_){}
+ const want=Math.max(1,Math.min(3,Math.round(prev*6)));
  let n=+(target.dataset.meatSlices||0),made=0;
- sorted.forEach((q,i)=>{
-  if(i===0&&keepBig)return;
-  const f=q.V/tot;if(f<.035)return;
-  if(meatSpawnSlice(target,f<.16,n+made))made++;
- });
+ for(let i=0;i<want;i++)if(meatSpawnSlice(target,false,n+made))made++;
  target.dataset.meatSlices=String(n+made);
- if(keepBig){
-  let prev=1;try{const Q0=JSON.parse(target.dataset.meatPoly||'null');if(Array.isArray(Q0)&&Q0.length>=3){const xs=Q0.map(q=>q[0]);prev=Math.max(...xs)-Math.min(...xs);}}catch(_){}
-  const frac=Math.max(.12,Math.min(.95,prev*sorted[0].V/tot)),P=[[0,0],[frac,0],[frac,1],[0,1]];
-  target.dataset.meatPoly=JSON.stringify(P);target.dataset.meatLeft=String(6*frac);meatApplyCrop(target,P);
- }else removeItem(target);
+ const left=prev-made/6;
+ if(left>=.1){const P=[[0,0],[left,0],[left,1],[0,1]];target.dataset.meatPoly=JSON.stringify(P);target.dataset.meatLeft=String(6*left);meatApplyCrop(target,P);}
+ else removeItem(target);
  CooksterSave.schedule();updateHover();
- return made?(made+(made===1?' šnicla.':' šnicle.')):'Ništa upotrebljivo, rezovi su preuski.';
+ return made+(made===1?' debela šnicla.':' debele šnicle.');
 }
 window.meatFrom3DCut=meatFrom3DCut;
 // make one slice item (thin or thick) next to the meat, and keep what is left of the piece
@@ -15038,7 +15037,7 @@ function beginCutAction(mode='dice'){
  const knife=getKnifeEl();
  const target=findCutTargetOnBoard();
  if(!board||!knife||!target){showToast('Stavi sastojak na dasku.');return;}
- if(mode==='slices'&&(!VEGETABLES[target.dataset.vegKey]?.meat||VEGETABLES[target.dataset.vegKey]?.meat==='parce')&&(window.CooksterTomatoCut?.supports(target)||window.CooksterTomatoCut3D?.supports(target))){
+ if(mode==='slices'&&(!VEGETABLES[target.dataset.vegKey]?.meat||VEGETABLES[target.dataset.vegKey]?.meat==='parce'||VEGETABLES[target.dataset.vegKey]?.meat==='snicla')&&(window.CooksterTomatoCut?.supports(target)||window.CooksterTomatoCut3D?.supports(target))){
    const def=VEGETABLES[target.dataset.vegKey]||{};
    if(def.src&&def.slicedSrc){
      let meatPcs=null;
