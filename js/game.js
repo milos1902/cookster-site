@@ -10255,6 +10255,16 @@ function addIngredientToContainer(item,vessel){
    return true;
  }
 
+ {      // meat: a whole slice stays where the player dropped it (the picture of the vessel uses it, see appendWholeProduce)
+   const mdef=VEGETABLES[meta.baseKey];
+   if(mdef?.meat&&meta.key.endsWith('_celo')){
+     const wrap=vessel._panContent||vessel._vesselContent;let r=wrap?.getBoundingClientRect?.();if(!r||r.width<4)r=vessel.getBoundingClientRect();      // the picture of the contents is the same box as the vessel
+     if(r&&r.width>4&&r.height>4){
+       const idx=Math.max(0,Math.round(+(heatable?CooksterPan.counts(vessel)[meta.key]:CooksterContainer.read?.(vessel)?.items?.[meta.key]?.count)||0));
+       vessel._meatDrops=vessel._meatDrops||{};(vessel._meatDrops[meta.key]=vessel._meatDrops[meta.key]||[])[idx]={fx:(mouse.x-r.left)/r.width,fy:(mouse.y-r.top)/r.height};
+     }
+   }
+ }
  if(heatable){
    if(meta.type==='staple'){
      const uses=+item.dataset.uses||0;if(uses<=0){showToast('Pakovanje je prazno.');return true}
@@ -12532,9 +12542,17 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
   if(!expanded.length)return;
   if(bigTrayVessel(vessel)){
     const lay=trayPepperLayout(expanded.length,vessel,Math.max(...expanded.map(e=>+VEGETABLES[e.baseKey]?.w||70)));
+    const meatSeen={};
     expanded.forEach((entry,i)=>{
       const src=wholeProduceSource(entry.baseKey,entry.meta);if(!src)return;
-      const L=lay[i],img=document.createElement('img');
+      let L=lay[i];const img=document.createElement('img');
+      const mdef=VEGETABLES[entry.baseKey];
+      if(mdef?.meat){      // meat: where the player dropped it, in its own shape and in the size it has on the board
+        meatSeen[entry.key]=(meatSeen[entry.key]||0);const dr=vessel?._meatDrops?.[entry.key]?.[meatSeen[entry.key]++];
+        const wrap=vessel?._vesselContent||vessel?._panContent||null,Wd=(wrap&&wrap.clientWidth)||vessel?.offsetWidth||190,vv=+vessel?.dataset?.vis||1;
+        L={x:dr?Math.max(30,Math.min(70,dr.fx*100)):L.x,y:dr?Math.max(32,Math.min(68,dr.fy*100)):L.y,w:Math.min(60,(+mdef.w||60)*vv/Wd*100),rot:((meatSeen[entry.key]*53)%21)-10};
+        img.style.height='auto';img.style.objectFit='contain';
+      }
       img.className='whole-produce-piece';img.dataset.entryKey=entry.key;img.src=src;img.alt='';img.draggable=false;
       img.style.left=L.x.toFixed(2)+'%';img.style.top=L.y.toFixed(2)+'%';img.style.width=L.w.toFixed(2)+'%';
       img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String(22+i);
@@ -12556,6 +12574,7 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
   const stageFilters=['','brightness(.97) saturate(.98)','brightness(.93) saturate(.96)','brightness(.88) saturate(.92) sepia(.05)','brightness(.80) saturate(.87) sepia(.10)','brightness(.68) saturate(.78) sepia(.20)',''];
   const visible=Math.min((+stage||1)>=7?6:10,expanded.length);
   const pose=layouts[Math.min(8,visible)]||layouts[8];
+  const meatSeen={};
 
   for(let i=0;i<visible;i++){
     const entry=expanded[i];
@@ -12572,10 +12591,17 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
     y=50+(y-50)*fs.scaleY-fs.rise*.56-stackLevel*fs.stackGap*.58;
     w*=.88+.12*Math.sqrt(Math.max(.05,fs.ratio||.05));
 
+    const mdef=VEGETABLES[entry.baseKey];
+    if(mdef?.meat){      // meat: where the player dropped it, in its own shape (not the fixed layout of vegetables)
+      meatSeen[entry.key]=(meatSeen[entry.key]||0);const dr=vessel?._meatDrops?.[entry.key]?.[meatSeen[entry.key]++];
+      if(dr){x=Math.max(30,Math.min(70,dr.fx*100));y=Math.max(32,Math.min(66,dr.fy*100));}
+      rot=((meatSeen[entry.key]*53)%21)-10;w=mdef.panW||38;
+    }
     const src=wholeProduceSource(entry.baseKey,entry.meta);
     if(!src)continue;
     const img=document.createElement('img');
     img.className='whole-produce-piece';
+    if(mdef?.meat){img.style.height='auto';img.style.objectFit='contain';}
     img.dataset.entryKey=entry.key;
     img.dataset.stackLevel=String(stackLevel);
     img.src=src;img.alt='';img.draggable=false;

@@ -1136,3 +1136,7 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Ostatak parčeta se posle reza isečen/zaobljen (`meatRoundedCrop` u `game.js`: blur alfe + prag), pa ivica reza nije oštra. Isto u prozoru za sečenje.
 - Šnicle stoje na dasci u jednoj gomili (jedna preko druge), nikad van daske. U prozoru za sečenje su velike kao parče (270 do 300 px), a u igri 104×70.
 - Ostatak parčeta ostaje običan predmet koji može da se uzme. Vraćanje u špajz još ne postoji.
+
+## Meso u tiganju stoji gde je spušteno (`appendWholeProduce` u `game.js`)
+- Cela šnicla (`junetina_snicla_*_celo`) u posudi više nema fiksan raspored povrća i ne menja oblik: crta se u svom obliku i veličini kakvu ima na dasci, na mestu gde je igrač spustio (`vessel._meatDrops` se puni u `addIngredientToContainer`, po indeksu komada).
+- Važi za meso (`VEGETABLES[...].meat`). Povrće i dalje koristi raspored (isto ponašanje kao ranije). Ne pomera se mešanjem.
