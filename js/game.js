@@ -12304,47 +12304,67 @@ function findCutTargetOnBoard(){
  }
  return first;
 }
-// meat: the piece that is left after a cut: its picture is cropped and the corners of the cut edge are rounded (blur of the alpha + threshold)
+// ---------- meat: cutting with any line (the manual cut, js/meat-manual.js) ----------
+// A piece of meat is a convex polygon in the coordinates of its picture (0..1). A cut splits it by a line: the smaller part is a slice, the bigger one is what is left.
 const meatImgCache={};
 function meatLoadImg(src){return meatImgCache[src]||(meatImgCache[src]=new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;}));}
-function meatRoundedCrop(img,L,R,rad){
- const w=img.naturalWidth,h=img.naturalHeight,sx=Math.round(L*w),sw=Math.max(8,Math.round((1-L-R)*w));
- const c=document.createElement('canvas');c.width=sw;c.height=h;const g=c.getContext('2d');g.drawImage(img,sx,0,sw,h,0,0,sw,h);
- const b=document.createElement('canvas');b.width=sw;b.height=h;const bg=b.getContext('2d');bg.filter=`blur(${rad}px)`;bg.drawImage(c,0,0);
- const od=g.getImageData(0,0,sw,h),bd=bg.getImageData(0,0,sw,h),o=od.data,q=bd.data;
- for(let i=0;i<o.length;i+=4){const a=q[i+3]/255,t=Math.max(0,Math.min(1,(a-.43)/.14));o[i+3]=Math.round(o[i+3]*t);}
- g.putImageData(od,0,0);return c;
+function meatPolyArea(P){let a=0;for(let i=0;i<P.length;i++){const q=P[(i+1)%P.length];a+=P[i][0]*q[1]-q[0]*P[i][1];}return Math.abs(a)/2;}
+function meatPolyBox(P){const xs=P.map(q=>q[0]),ys=P.map(q=>q[1]);return {x0:Math.min(...xs),y0:Math.min(...ys),x1:Math.max(...xs),y1:Math.max(...ys)};}
+// the part of the polygon with f(x,y)>=0 where f is the side of the line (x1,y1)-(x2,y2)
+function meatClipSide(P,x1,y1,x2,y2,sign){
+ const f=q=>sign*((q[0]-x1)*(y2-y1)-(q[1]-y1)*(x2-x1)),out=[];
+ for(let i=0;i<P.length;i++){
+  const a=P[i],b=P[(i+1)%P.length],fa=f(a),fb=f(b);
+  if(fa>=0)out.push(a);
+  if((fa>0&&fb<0)||(fa<0&&fb>0)){const t=fa/(fa-fb);out.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]);}
+ }
+ return out.length>=3?out:null;
 }
-window.meatRoundedCrop=meatRoundedCrop;window.meatLoadImg=meatLoadImg;
-async function meatApplyCrop(target,L,R){
+function meatSplit(P,x1,y1,x2,y2){return [meatClipSide(P,x1,y1,x2,y2,1),meatClipSide(P,x1,y1,x2,y2,-1)];}
+// the picture of a part of the meat: cropped to the polygon, the corners rounded (blur of the mask + threshold), cut edges stay straight
+function meatPolyCrop(img,P,rad){
+ const w=img.naturalWidth,h=img.naturalHeight,bb=meatPolyBox(P);
+ const sx=Math.floor(bb.x0*w),sy=Math.floor(bb.y0*h),sw=Math.max(8,Math.ceil((bb.x1-bb.x0)*w)),sh=Math.max(8,Math.ceil((bb.y1-bb.y0)*h));
+ const c=document.createElement('canvas');c.width=sw;c.height=sh;const g=c.getContext('2d');g.drawImage(img,sx,sy,sw,sh,0,0,sw,sh);
+ const m=document.createElement('canvas');m.width=sw;m.height=sh;const mg=m.getContext('2d');mg.fillStyle='#fff';mg.beginPath();
+ P.forEach((q,i)=>{const X=q[0]*w-sx,Y=q[1]*h-sy;if(i)mg.lineTo(X,Y);else mg.moveTo(X,Y);});mg.closePath();mg.fill();
+ const b=document.createElement('canvas');b.width=sw;b.height=sh;const bg=b.getContext('2d');bg.filter=`blur(${rad}px)`;bg.drawImage(m,0,0);
+ const od=g.getImageData(0,0,sw,sh),bd=bg.getImageData(0,0,sw,sh),o=od.data,q=bd.data;
+ for(let i=0;i<o.length;i+=4){const a=q[i+3]/255,t=Math.max(0,Math.min(1,(a-.43)/.14));o[i+3]=Math.round(o[i+3]*t);}
+ g.putImageData(od,0,0);return {canvas:c,box:bb};
+}
+window.meatLoadImg=meatLoadImg;window.meatPolyCrop=meatPolyCrop;window.meatSplit=meatSplit;window.meatPolyArea=meatPolyArea;window.meatPolyBox=meatPolyBox;
+const MEAT_RECT=()=>[[0,0],[1,0],[1,1],[0,1]];
+function meatPoly(target){try{const j=JSON.parse(target.dataset.meatPoly||'null');if(Array.isArray(j)&&j.length>=3)return j;}catch(_){}return MEAT_RECT();}
+// the rest of the meat after a cut: a new picture, a new size, and it stays where it was (only the cut-off part is gone)
+async function meatApplyCrop(target,P){
  try{
   const body=target.querySelector('.body');if(!body||!target.isConnected)return;
-  if(!target.dataset.meatSrc0){target.dataset.meatSrc0=body.getAttribute('src')||body.src;target.dataset.meatW0=target.dataset.baseW||'92';}
+  if(!target.dataset.meatSrc0){target.dataset.meatSrc0=body.getAttribute('src')||body.src;target.dataset.meatW0=target.dataset.baseW||'72';target.dataset.meatH0=target.dataset.baseH||'60';target.dataset.meatCx0=target.dataset.cx;target.dataset.meatBy0=target.dataset.by;}
   const img=await meatLoadImg(target.dataset.meatSrc0);
-  const cv=meatRoundedCrop(img,L,R,Math.max(4,Math.round(img.naturalWidth*.06))),url=cv.toDataURL('image/png');
-  const w0=+target.dataset.meatW0||92,oldL=+(target.dataset.meatShownL||0),oldR=+(target.dataset.meatShownR||0);
-  const vis=+target.dataset.vis||1,shift=((L-oldL)-(R-oldR))/2*w0*vis;      // the rest of the meat stays where it was
+  const {canvas,box}=meatPolyCrop(img,P,Math.max(4,Math.round(img.naturalWidth*.05))),url=canvas.toDataURL('image/png');
+  const w0=+target.dataset.meatW0||72,h0=+target.dataset.meatH0||60,vis=+target.dataset.vis||1,cx0=+target.dataset.meatCx0,by0=+target.dataset.meatBy0;
   body.style.clipPath='none';body.src=url;
   const sh=target._contactShadow?.querySelector('img');if(sh)sh.src=url;
-  target.dataset.baseW=String(w0*(1-L-R));target.dataset.meatShownL=String(L);target.dataset.meatShownR=String(R);
-  setPose(target,(+target.dataset.cx)+shift,+target.dataset.by,vis);
+  target.dataset.baseW=String(w0*(box.x1-box.x0));target.dataset.baseH=String(h0*(box.y1-box.y0));
+  setPose(target,cx0+(((box.x0+box.x1)/2)-.5)*w0*vis,by0-(1-box.y1)*h0*vis,vis);
   const bd=getBoardEl();
-  if(bd&&target.dataset.attachedToBoard==='1'){target.dataset.boardRelX=String(-.25+(parseFloat(target.style.width)||40)/(2*Math.max(1,bd.offsetWidth))+.012);target.dataset.boardRelY=String(+target.dataset.boardRelY||.55);syncOneBoardAttachment(target,bd);}      // the rest of the meat is on the left, the slices on the right: nothing lies on top of the meat
+  if(bd&&target.dataset.attachedToBoard==='1'){target.dataset.boardRelX=String(-.25+(parseFloat(target.style.width)||40)/(2*Math.max(1,bd.offsetWidth))+.012);target.dataset.boardRelY=String(+target.dataset.boardRelY||.55);syncOneBoardAttachment(target,bd);}      // the rest of the meat is on the left, the slices on the right
   CooksterSave.schedule();
  }catch(e){}
 }
-// meat: one cut from the top of the piece takes ONE slice (E = thick, C = thin); the piece gets smaller. Cutting a slice then gives 6 pieces (the normal cut path).
-function meatSliceOff(target,mode){      // the quick cut (E thick / C thin in the old way): takes a slice of a fixed width from the right
- return meatSliceFraction(target,mode==='slices'?.1:.1667,'right');
+// the quick cut (E thick / old C thin): a slice of a fixed width from the right edge
+function meatSliceOff(target,mode){
+ const P=meatPoly(target),bb=meatPolyBox(P),w=(mode==='slices'?.1:.1667),x=bb.x1-w;
+ const [A,B]=meatSplit(P,x,0,x,1);      // A: one side of the line, B: the other
+ const right=(A&&A[0][0]>=x-1e-9&&A.every(q=>q[0]>=x-1e-9))?A:B,left=right===A?B:A;
+ return meatSlicePoly(target,left,right,w<.14);
 }
-// meat: take one slice of width w (a part of the ORIGINAL width of the piece) from the left or the right edge of what is left; thin < .14 <= thick
-function meatSliceFraction(target,w,side='right'){
- const key=target.dataset.vegKey||'junetina',thin=w<.14;
- const sk=key+(thin?'_snicla_tanka':'_snicla_debela'),def=VEGETABLES[sk];
+// make one slice item (thin or thick) next to the meat, and keep what is left of the piece
+function meatSlicePoly(target,keep,slice,thin){
+ const key=target.dataset.vegKey||'junetina',sk=key+(thin?'_snicla_tanka':'_snicla_debela'),def=VEGETABLES[sk];
  if(!def)return 'Nema šnicle za ovo meso.';
- let L=+(target.dataset.meatClipL||0),R=+(target.dataset.meatClipR||0);
- const room=Math.max(0,1-L-R);w=Math.min(w,room);
- if(w<.03)return 'Pretanko za šniclu.';
+ if(!keep||!slice)return 'Rez ne ide kroz meso.';
  const n=+(target.dataset.meatSlices||0),cx=+target.dataset.cx,by=+target.dataset.by,vis=+target.dataset.vis||1;
  const bd=getBoardEl(),onBoard=!!bd&&target.dataset.attachedToBoard==='1';
  const dx=78*vis+(n%3)*8,dy=(n%3)*16;
@@ -12352,21 +12372,60 @@ function meatSliceFraction(target,w,side='right'){
  if(!el)return 'Šnicla nije mogla da se napravi.';
  el.dataset.vegetable='1';el.dataset.collisionProfile='vegetable';el.dataset.vegKey=sk;el.dataset.cutState='whole';
  setPose(el,cx+dx,by-dy,vis);
- if(onBoard){      // the slices lie in a row at the front edge of the board, never outside of it
-   // the slices lie one on top of the other, in one pile on the right side of the board (every new slice is a bit higher)
+ if(onBoard){      // the slices lie one on top of the other, in one pile on the right side of the board (every new slice is a bit higher)
    const bw=Math.max(1,bd.offsetWidth),halfVis=.25,wpx=parseFloat(el.style.width)||def.w*vis;      // the board picture is about half of its box wide
-   el.dataset.boardRelX=String(halfVis-wpx/(2*bw)-.012+((n%3)-1)*.006);          // the slices stand at the right edge of the board, in a pile
+   el.dataset.boardRelX=String(halfVis-wpx/(2*bw)-.012+((n%3)-1)*.006);
    el.dataset.boardRelY=String(Math.max(.3,.66-n*.04));
    el.dataset.boardRelAngle='0';el.dataset.attachedToBoard='1';syncOneBoardAttachment(el,bd);
  }
  target.dataset.meatSlices=String(n+1);
- if(side==='left')L+=w;else R+=w;
- target.dataset.meatClipL=String(L);target.dataset.meatClipR=String(R);target.dataset.meatLeft=String(6*Math.max(0,1-L-R));
- if(1-L-R<=.05){removeItem(target);}
- else meatApplyCrop(target,L,R);
+ const left=meatPolyArea(keep);target.dataset.meatLeft=String(6*left);
+ if(left<=.22){      // what is left is too small to cut: it becomes the last slice (a bit bigger), and the piece is gone
+   const lk=key+'_snicla_debela',ld=VEGETABLES[lk],sc=1.25;
+   if(ld){
+     const el2=makeItem({id:'veg_'+lk+'_last_'+Date.now(),label:'Debela šnicla',src:ld.src,x:cx+dx-ld.w*sc/2,y:by-dy-ld.h*sc,w:ld.w*sc,h:ld.h*sc,z:++zCounter,snapProfile:'produce'});
+     if(el2){
+       el2.dataset.vegetable='1';el2.dataset.collisionProfile='vegetable';el2.dataset.vegKey=lk;el2.dataset.cutState='whole';setPose(el2,cx-8*vis,by-4*vis,vis);
+       if(onBoard){const bw=Math.max(1,bd.offsetWidth),wpx=parseFloat(el2.style.width)||ld.w*sc*vis;el2.dataset.boardRelX=String(-.25+wpx/(2*bw)+.012);el2.dataset.boardRelY=String(+target.dataset.boardRelY||.62);el2.dataset.boardRelAngle='0';el2.dataset.attachedToBoard='1';syncOneBoardAttachment(el2,bd);}
+     }
+   }
+   removeItem(target);CooksterSave.schedule();
+   return 'Odrezana je šnicla, a ostatak je postao poslednja šnicla.';
+ }
+ target.dataset.meatPoly=JSON.stringify(keep);meatApplyCrop(target,keep);
  CooksterSave.schedule();
  return thin?'Odrezana je tanka šnicla.':'Odrezana je debela šnicla.';
 }
+// a slice cut by hand into pieces: the pieces become the pile of this item (a picture of the heap + an atlas of single pieces, the same as the C cut of a tomato),
+// so in a vessel every piece moves on its own
+async function meatFinishSnicla(target,frags){
+ try{
+  const def=VEGETABLES[target.dataset.vegKey]||{},img=await meatLoadImg(def.src),W=img.naturalWidth,H=img.naturalHeight,S=300/W,PAD=10;
+  const rad=Math.max(3,Math.round(W*.02)),crops=frags.map(P=>meatPolyCrop(img,P,rad));
+  const cells=crops.map(c=>({c,w:Math.ceil(c.canvas.width*S+PAD*2),h:Math.ceil(c.canvas.height*S+PAD*2)}));
+  let x=0,y=0,rowH=0,usedW=0;const maxW=480;
+  for(const c of cells){if(x+c.w>maxW){x=0;y+=rowH;rowH=0;}c.sx=x;c.sy=y;x+=c.w;rowH=Math.max(rowH,c.h);usedW=Math.max(usedW,x);}
+  const AW=Math.max(8,usedW),AH=Math.max(8,y+rowH),sheet=document.createElement('canvas');sheet.width=AW;sheet.height=AH;const sg=sheet.getContext('2d');
+  const heap=document.createElement('canvas');heap.width=Math.round(300+PAD*2);heap.height=Math.round(H*S+PAD*2);const hg=heap.getContext('2d');
+  const meta={W:Math.round(300*10)/10,H:Math.round(H*S*10)/10,p:[]};
+  cells.forEach((c,i)=>{
+   const cw=c.c.canvas.width*S,ch=c.c.canvas.height*S,bb=c.c.box;
+   sg.drawImage(c.c.canvas,c.sx+PAD,c.sy+PAD,cw,ch);
+   // in the heap picture every piece lies where it was, a little apart from the others
+   const mx=(bb.x0+bb.x1)/2-.5,my=(bb.y0+bb.y1)/2-.5,gx=mx*14,gy=my*14;
+   hg.drawImage(c.c.canvas,PAD+bb.x0*W*S+gx,PAD+bb.y0*H*S+gy,cw,ch);
+   meta.p.push([c.sx,c.sy,c.w,c.h,Math.round(c.w/2*10)/10,Math.round(c.h/2*10)/10,Math.round(mx*300*10)/10,Math.round(my*H*S*10)/10,Math.round((Math.random()-.5)*600)/1000]);
+  });
+  const atlas=sheet.toDataURL('image/png')+'#'+JSON.stringify(meta),heapUrl=heap.toDataURL('image/png');
+  if(!target.isConnected)return;
+  const msg=setVegetableDiced(target);
+  const body=target.querySelector('.body');if(body)body.src=heapUrl;
+  const sh=target._contactShadow?.querySelector('img');if(sh)sh.src=heapUrl;
+  target.dataset.pieceAtlas=atlas;target.dataset.cutStyle='manual';target.dataset.label=`${def.label||'Šnicla'} na ${frags.length} komada`;
+  CooksterSave.schedule();updateHover();showToast(msg);
+ }catch(e){}
+}
+window.meatSlicePoly=meatSlicePoly;window.meatFinishSnicla=meatFinishSnicla;window.meatSliceOff=meatSliceOff;
 function getPanCounts(pan){ return CooksterPan.counts(pan); }
 function getPanTotalCount(pan){ return CooksterPan.total(pan); }
 function panIngredientAsset(kind,doneness=0,burnt=false){

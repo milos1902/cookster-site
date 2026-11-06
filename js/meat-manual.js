@@ -1,70 +1,93 @@
-/* Cookster: ručno sečenje mesa. C otvara (nad parčetom mesa na dasci), C ponovo zatvara. Povučeš nož odozgo nadole preko mesa:
-   rez uzima šniclu od NAJBLIŽE ivice do reza (blizu ivice = tanka, dalje = debela). Svaki rez je jedna šnicla, a parče postaje kraće.
-   Širina šnicle je deo CELE širine parčeta (game.js: meatSliceFraction). E ostaje brzo automatsko sečenje. */
+/* Cookster: ručno sečenje mesa. C otvara (nad mesom na dasci), C ponovo zatvara.
+   - PARČE mesa: povučeš nož pod bilo kojim uglom preko mesa. Manji deo koji rez odvoji je šnicla (tanka ili debela, po debljini), ostatak ostaje onakav
+     kakav je posle reza. Kad ostatak postane sitan, pretvori se u poslednju šniclu.
+   - ŠNICLA: povučeš nekoliko linija preko nje (bilo koji ugao), a kad zatvoriš (C), isečeni delovi postaju komadi mesa (svaki komad se u posudi kreće sam).
+   Geometrija i predmeti su u game.js (meatSlicePoly, meatFinishSnicla). */
 (function(){
   'use strict';
-  const W=1280,H=720,MW=340,GAP=.02,THIN=.14,MAXW=.34,MINW=.05,BOARD={w:426*1.9,h:285*1.9};
+  const W=1280,H=720,BOARD={w:426*1.9,h:285*1.9},THIN=.14,MAXT=.34,MINT=.05,MWP=340,MWS=520;
   let st=null;
   const cache={};
   function load(src){return cache[src]||(cache[src]=new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;}));}
-  function pieceOnBoard(){
+  function defOf(el){return (window.CooksterCatalog&&CooksterCatalog.VEGETABLES||{})[el.dataset.vegKey]||null;}
+  function onBoard(kind){
+    let hit=null;
     for(const el of (window.items||[])){
-      if(el.dataset.attachedToBoard!=='1')continue;
-      const d=(window.CooksterCatalog&&CooksterCatalog.VEGETABLES||{})[el.dataset.vegKey];
-      if(d&&d.meat==='parce')return el;
+      if(el.dataset.attachedToBoard!=='1'||el.dataset.vegetable!=='1')continue;
+      const d=defOf(el);
+      if(d&&d.meat===kind&&(kind!=='snicla'||el.dataset.cutState==='whole'))hit=el;       // the newest one
     }
-    return null;
+    return hit;
   }
-  function close(){
+  const targetOnBoard=()=>onBoard('snicla')||onBoard('parce');
+  function close(apply){
     if(!st)return;const s=st;st=null;cancelAnimationFrame(s.raf);s.root.style.opacity='0';setTimeout(()=>s.root.remove(),220);
+    if(apply!==false&&s.mode==='snicla'&&s.frags.length>1&&(window.items||[]).includes(s.target))window.meatFinishSnicla(s.target,s.frags);
   }
+  const P=(a,ox,oy,mw,mh)=>[(a.x-ox)/mw,(a.y-oy)/mh];
   async function open(target){
     if(st)return;
+    const d=defOf(target),mode=d&&d.meat==='snicla'?'snicla':'parce';
     const body=target.querySelector('.body');
-    const src=(body&&body.src)||'assets/meat/junetina_parce.png';
-    const [meat,board,imThin,imThick]=await Promise.all([load(src),load('assets/new_props/daska.png'),load('assets/meat/junetina_snicla_tanka.png'),load('assets/meat/junetina_snicla_debela.png')]);
+    const src=mode==='snicla'?d.src:(target.dataset.meatSrc0||(body&&body.src)||'assets/meat/junetina_parce.png');
+    const [img,board]=await Promise.all([load(src),load('assets/new_props/daska.png')]);
+    const [imThin,imThick]=await Promise.all([load('assets/meat/junetina_snicla_tanka.png'),load('assets/meat/junetina_snicla_debela.png')]);
     const root=document.createElement('div');root.setAttribute('data-tool-ui','1');
     root.style.cssText='position:fixed;inset:0;z-index:30000;background:rgba(18,9,3,.62);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s';
     const cv=document.createElement('canvas');cv.width=W;cv.height=H;cv.style.cssText='max-width:100vw;max-height:100vh;touch-action:none;cursor:crosshair';
     const bar=document.createElement('div');bar.style.cssText='position:fixed;left:50%;top:14px;transform:translateX(-50%);display:flex;gap:8px;z-index:1;font:15px system-ui,sans-serif';
     const hint=document.createElement('div');hint.style.cssText='position:fixed;left:50%;bottom:14px;transform:translateX(-50%);color:#fff3d6;font:15px system-ui,sans-serif;text-shadow:0 1px 3px #000;text-align:center;max-width:90vw';
-    hint.textContent='Povuci nož odozgo nadole preko mesa. Blizu ivice = tanka šnicla, dalje = debela. Svaki rez je jedna šnicla. C ili „Gotovo“ zatvara.';
-    const btn=document.createElement('button');btn.textContent='Gotovo (C)';btn.style.cssText='font:inherit;padding:8px 14px;border-radius:10px;border:2px solid #4a2a12;background:#f1d9a6;color:#3a1d0a;cursor:pointer';btn.onclick=close;bar.appendChild(btn);
+    hint.textContent=mode==='snicla'
+      ?'Povuci nož preko šnicle, pod bilo kojim uglom, koliko puta hoćeš. Kad zatvoriš (C), delovi postaju komadi mesa.'
+      :'Povuci nož preko mesa, pod bilo kojim uglom. Odvojeni deo je šnicla (tanka ili debela). C ili „Gotovo“ zatvara.';
+    const mk=(t,fn)=>{const b=document.createElement('button');b.textContent=t;b.style.cssText='font:inherit;padding:8px 14px;border-radius:10px;border:2px solid #4a2a12;background:#f1d9a6;color:#3a1d0a;cursor:pointer';b.onclick=fn;bar.appendChild(b);};
+    mk('Gotovo (C)',()=>close());
     for(const ev of ['pointerdown','pointerup','pointermove','mousedown','mouseup','mousemove','click','dblclick','touchstart','touchmove','touchend','contextmenu','wheel'])root.addEventListener(ev,e=>e.stopPropagation());
     root.append(cv,bar,hint);document.body.appendChild(root);requestAnimationFrame(()=>{root.style.opacity='1';});
-    const MH=MW*meat.height/meat.width,cx=W/2,cy=H/2-10,x0=cx-BOARD.w/2+55,top=cy-MH/2,g=cv.getContext('2d');
-    const s=st={root,target,raf:0,stroke:null,cur:null,cuts:[]};
-    const LR=()=>[+(target.dataset.meatClipL||0),+(target.dataset.meatClipR||0)];
+    const g=cv.getContext('2d'),cx=W/2,cy=H/2-10;
+    const MW=mode==='snicla'?MWS:MWP,MH=MW*img.naturalHeight/img.naturalWidth,ox=mode==='snicla'?cx-MW/2:cx-BOARD.w/2+55,oy=cy-MH/2;
+    const s=st={root,target,mode,raf:0,stroke:null,cur:null,cuts:[],frags:[[[0,0],[1,0],[1,1],[0,1]]],crops:{}};
+    let poly=(()=>{try{const j=JSON.parse(target.dataset.meatPoly||'null');if(Array.isArray(j)&&j.length>=3)return j;}catch(_){}return [[0,0],[1,0],[1,1],[0,1]];})();
     const pos=e=>{const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};};
+    const area=window.meatPolyArea,split=window.meatSplit;
+    function chord(small,p1,p2){      // length (px) of the cut inside the meat
+      const dx=p2[0]-p1[0],dy=p2[1]-p1[1],len=Math.hypot(dx,dy)||1,hits=[];
+      for(const q of small){const f=Math.abs((q[0]-p1[0])*dy-(q[1]-p1[1])*dx)/len;if(f<1e-5)hits.push(q);}
+      if(hits.length<2)return 0;let m=0;for(let i=0;i<hits.length;i++)for(let j=i+1;j<hits.length;j++)m=Math.max(m,Math.hypot((hits[i][0]-hits[j][0])*MW,(hits[i][1]-hits[j][1])*MH));return m;
+    }
     function measure(a,b){
-      const dx=b.x-a.x,dy=b.y-a.y;
-      if(Math.hypot(dx,dy)<30)return null;
-      if(Math.abs(dy)<Math.abs(dx)*1.1)return{ok:false,label:'Seci odozgo nadole'};
-      if(Math.min(a.y,b.y)>cy||Math.max(a.y,b.y)<cy)return{ok:false,label:'Rez mora da prođe preko mesa'};
-      const f=(a.x+dx*(cy-a.y)/dy-x0)/MW,[L,R]=LR();
-      if(f<=L+GAP||f>=1-R-GAP)return{ok:false,label:'Rez je van mesa ili na samoj ivici'};
-      const wl=f-L,wr=(1-R)-f,left=wl<=wr,w=left?wl:wr;
-      if(w<MINW)return{ok:false,label:'Pretanko'};
-      if(w>MAXW)return{ok:false,label:'Preširoko, rez bliže ivici'};
-      return{ok:true,f,w,side:left?'left':'right',label:w<THIN?'Tanka šnicla':'Debela šnicla'};
+      if(Math.hypot(b.x-a.x,b.y-a.y)<30)return null;
+      const p1=P(a,ox,oy,MW,MH),p2=P(b,ox,oy,MW,MH);
+      if(mode==='snicla'){
+        let any=false;const out=[];
+        for(const f of s.frags){const [A,B]=split(f,p1[0],p1[1],p2[0],p2[1]);if(A&&B&&area(A)>=.015&&area(B)>=.015){out.push(A,B);any=true;}else out.push(f);}
+        return any?{ok:true,frags:out,label:'Rez'}:{ok:false,label:'Rez mora da prođe kroz šniclu'};
+      }
+      const [A,B]=split(poly,p1[0],p1[1],p2[0],p2[1]);
+      if(!A||!B)return{ok:false,label:'Rez mora da prođe kroz meso'};
+      const aA=area(A),aB=area(B),small=aA<=aB?A:B,keep=small===A?B:A,as=Math.min(aA,aB);
+      const ch=chord(small,p1,p2),t=ch>0?(as*MW*MH/ch)/MW:Math.sqrt(as);
+      if(t<MINT)return{ok:false,label:'Pretanko'};
+      if(t>MAXT)return{ok:false,label:'Preširoko, rez bliže ivici'};
+      return{ok:true,keep,small,thin:t<THIN,label:t<THIN?'Tanka šnicla':'Debela šnicla'};
+    }
+    function cropOf(poly2,key){
+      if(!s.crops[key]&&window.meatPolyCrop)s.crops[key]=window.meatPolyCrop(img,poly2,Math.max(4,Math.round(img.naturalWidth*(mode==='snicla'?.02:.05))));
+      return s.crops[key];
     }
     function frame(){
       g.clearRect(0,0,W,H);
       g.save();g.shadowColor='rgba(0,0,0,.5)';g.shadowBlur=30;g.shadowOffsetY=14;g.drawImage(board,cx-BOARD.w/2,cy-BOARD.h/2+10,BOARD.w,BOARD.h);g.restore();
-      const [L,R]=LR(),sw=(1-L-R);
-      if(sw>0){g.save();g.shadowColor='rgba(0,0,0,.35)';g.shadowBlur=14;g.shadowOffsetY=8;
-        // the cut edge is rounded at the top and the bottom (a soft cut, not a razor line)
-        const key=L.toFixed(3)+'|'+R.toFixed(3);
-        if(s.cropKey!==key&&window.meatRoundedCrop){s.crop=window.meatRoundedCrop(meat,L,R,Math.max(4,Math.round(meat.naturalWidth*.06)));s.cropKey=key;}
-        if(s.crop)g.drawImage(s.crop,x0+L*MW,top,sw*MW,MH);else g.drawImage(meat,L*meat.width,0,sw*meat.width,meat.height,x0+L*MW,top,sw*MW,MH);
-        g.restore();}
-      // what was cut off (small slices lined up on the right of the board)
-      // what was cut off lies on the board, as a pile on its right side (as big as the piece: a slice has the face of the piece)
-      s.cuts.forEach((c,i)=>{const im=c.thin?imThin:imThick,w=c.thin?270:300,h=w*im.height/im.width;
-        const x=cx+10+i*26,y=cy+BOARD.h/2-h-34-i*30;
-        g.save();g.shadowColor='rgba(0,0,0,.45)';g.shadowBlur=10;g.shadowOffsetY=5;g.drawImage(im,Math.min(cx+BOARD.w/2-w-6,x),y,w,h);g.restore();});
-
-
+      if(mode==='snicla'){
+        s.frags.forEach((f,i)=>{const c=cropOf(f,i+':'+JSON.stringify(f));if(!c)return;const bb=c.box,mx=(bb.x0+bb.x1)/2-.5,my=(bb.y0+bb.y1)/2-.5,l=Math.hypot(mx,my)||1,gap=s.frags.length>1?7:0;
+          g.save();g.shadowColor='rgba(0,0,0,.4)';g.shadowBlur=10;g.shadowOffsetY=5;g.drawImage(c.canvas,ox+bb.x0*MW+mx/l*gap,oy+bb.y0*MH+my/l*gap,(bb.x1-bb.x0)*MW,(bb.y1-bb.y0)*MH);g.restore();});
+      }else{
+        const c=cropOf(poly,JSON.stringify(poly));
+        if(c){const bb=c.box;g.save();g.shadowColor='rgba(0,0,0,.35)';g.shadowBlur=14;g.shadowOffsetY=8;g.drawImage(c.canvas,ox+bb.x0*MW,oy+bb.y0*MH,(bb.x1-bb.x0)*MW,(bb.y1-bb.y0)*MH);g.restore();}
+        // what was cut off lies on the board, as a pile on its right side (as big as the piece)
+        s.cuts.forEach((k,i)=>{const im=k.thin?imThin:imThick,w=k.thin?270:300,h=w*im.height/im.width,x=cx+10+i*26,y=cy+BOARD.h/2-h-34-i*30;
+          g.save();g.shadowColor='rgba(0,0,0,.45)';g.shadowBlur=10;g.shadowOffsetY=5;g.drawImage(im,Math.min(cx+BOARD.w/2-w-6,x),y,w,h);g.restore();});
+      }
       if(s.cur&&s.stroke){
         g.save();g.strokeStyle='#fff';g.lineWidth=3;g.shadowColor='#8c6bff';g.shadowBlur=14;g.setLineDash([10,6]);
         g.beginPath();g.moveTo(s.stroke.x,s.stroke.y);g.lineTo(s.cur.x,s.cur.y);g.stroke();g.restore();
@@ -81,11 +104,12 @@
       if(!s.stroke)return;const m=s.cur?measure(s.stroke,s.cur):null;s.stroke=null;
       if(!m)return;
       if(!m.ok){hint.textContent=m.label+'.';return;}
-      const msg=window.meatSliceFraction(target,m.w,m.side);
       try{window.playChop&&playChop();}catch(_){}
-      s.cuts.push({thin:m.w<THIN});
+      if(mode==='snicla'){s.frags=m.frags;hint.textContent='Delova: '+s.frags.length+'. Seci dalje, ili C da dobiješ komade.';return;}
+      const msg=window.meatSlicePoly(target,m.keep,m.small,m.thin);
+      s.cuts.push({thin:m.thin});poly=m.keep;
       hint.textContent=msg+' Nastavi, ili C za kraj.';
-      if(!(window.items||[]).includes(target))close();
+      if(!(window.items||[]).includes(target))close(false);
     });
     cv.addEventListener('pointercancel',()=>{s.stroke=null;});
   }
@@ -93,15 +117,15 @@
   window.addEventListener('keydown',e=>{
     if(!(e.key==='c'||e.key==='C'||e.key==='с'||e.key==='С'||e.code==='KeyC')||e.repeat||e.ctrlKey||e.metaKey||/^(INPUT|TEXTAREA|SELECT)$/.test(e.target&&e.target.tagName||''))return;
     if(st){e.preventDefault();e.stopImmediatePropagation();close();return;}
-    const t=pieceOnBoard();
+    const t=targetOnBoard();
     if(t){e.preventDefault();e.stopImmediatePropagation();open(t);}
   },true);
-  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&st){e.stopPropagation();close();}},true);
-  // a visible button next to the keyboard: it appears when a piece of meat lies on the board
+  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&st){e.stopPropagation();close(false);}},true);
+  // a visible button: it appears when meat lies on the board
   const btn=document.createElement('button');btn.type='button';btn.setAttribute('data-tool-ui','1');btn.textContent='✂ Ručno sečenje mesa (C)';
   btn.style.cssText='position:fixed;left:14px;top:230px;z-index:8000;display:none;padding:8px 12px;border-radius:10px;border:2px solid #4a2a12;background:#f1d9a6;color:#3a1d0a;font:14px system-ui,sans-serif;cursor:pointer;box-shadow:0 3px 10px #0006';
-  btn.onclick=()=>{const t=pieceOnBoard();if(t)open(t);};
+  btn.onclick=()=>{const t=targetOnBoard();if(t)open(t);};
   document.body.appendChild(btn);
-  setInterval(()=>{let ok=false;try{ok=!st&&!!pieceOnBoard()&&!document.body.classList.contains('pantry-open')&&!document.body.classList.contains('garden-open')&&!document.body.classList.contains('market-open');}catch(_){}btn.style.display=ok?'block':'none';},500);
+  setInterval(()=>{let ok=false;try{const b=document.body.classList;ok=!st&&!!targetOnBoard()&&!b.contains('pantry-open')&&!b.contains('garden-open')&&!b.contains('market-open');}catch(_){}btn.style.display=ok?'block':'none';},500);
   window.CooksterMeatManual={toggle:t=>{if(st)close();else open(t);},isOpen:()=>!!st};
 })();
