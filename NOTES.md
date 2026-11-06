@@ -1131,3 +1131,8 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - **C** nad parčetom mesa na dasci otvara ručno sečenje, **C** ponovo (ili Esc ili „Gotovo (C)") zatvara. **E** je i dalje brzo automatsko sečenje.
 - Povučeš nož odozgo nadole preko mesa: rez uzima šniclu od NAJBLIŽE ivice do reza. Širina je deo cele širine parčeta: < 5% pretanko, < 14% tanka, do 34% debela, preko toga „preširoko". Svaki rez je jedna šnicla, a parče je kraće (`meatSliceFraction` u `game.js`, `meatClipL/R`).
 - Šnicla na dasci se seče na 6 komada (E), kao ranije.
+
+## Ručno sečenje mesa: ispravke
+- Ostatak parčeta se posle reza isečen/zaobljen (`meatRoundedCrop` u `game.js`: blur alfe + prag), pa ivica reza nije oštra. Isto u prozoru za sečenje.
+- Šnicle stoje na dasci u jednoj gomili (jedna preko druge), nikad van daske. U prozoru za sečenje su velike kao parče (270 do 300 px), a u igri 104×70.
+- Ostatak parčeta ostaje običan predmet koji može da se uzme. Vraćanje u špajz još ne postoji.
