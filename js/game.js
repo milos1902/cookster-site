@@ -4972,7 +4972,7 @@ const SINK_PRODUCE_SLOTS=[
 let simLast=performance.now();
 const COOK_SIM_INTERVAL=.050; // 20 Hz thermal model; rendering remains rAF-driven where needed.
 const marketQty=CooksterState.market;
-const KNIFE_PARK={relX:0.22,relY:0.27,relAngle:-18};
+const KNIFE_PARK={relX:0.16,relY:0.30,relAngle:-18};
 let cameraIndex=0;
 let cameraX=CENTER_OFFSET;
 
@@ -6722,9 +6722,9 @@ function boardCenterSnapCandidate(el,cand){
  if(!cand?.board||!isBoardCuttableItem(el))return cand;
  const board=cand.board;
  const bw=Math.max(1,board.offsetWidth),bh=Math.max(1,board.offsetHeight);
- const bcx=+board.dataset.cx||0;
+ const bcx=(+board.dataset.cx||0)-.105*bw;      // the middle of the wide part of the board (the handle is on the right)
  const btop=parseFloat(board.style.top)||((+board.dataset.by||0)-bh);
- const bcy=btop+bh/2;
+ const bcy=btop+bh*.45;
  let vis=surfaceScaleFor(el,'board',bcy);
  if(el.dataset.vegetable==='1'&&el.dataset.vegKey==='paradajz')vis*=1.15;
  if(el.dataset.vegetable==='1'&&el.dataset.vegKey==='paprika'&&el.dataset.cutState!=='sliced')vis*=1.10;
@@ -6737,7 +6737,7 @@ function boardCenterSnapCandidate(el,cand){
  // meat: it snaps to the side of the board that is free (the pile of slices lies on the right: the new one goes to the left, and the other way round)
  let sideX=0;
  if(VEGETABLES[el.dataset.vegKey]?.meat){let R=0,L=0;for(const o of items){if(o===el||o.dataset.attachedToBoard!=='1'||!VEGETABLES[o.dataset.vegKey]?.meat)continue;if((+o.dataset.boardRelX||0)>0)R++;else L++;}
-   if(R>L)sideX=-.17*bw;else if(L>R)sideX=.17*bw;}
+   if(R>L)sideX=-.19*bw;else if(L>R)sideX=.19*bw;}
  const cx=bcx+sideX*cs-(localY*sn);
  const by=bcy+(localY*cs);
  return {
@@ -6840,7 +6840,7 @@ function ensureKnifeAlwaysOnBoard(board=getBoardEl()){
 }
 
 // Top working surface: used for snapping ingredients onto the board.
-function getBoardPoly(board){if(!board)return null;const w=board.offsetWidth,h=board.offsetHeight,left=parseFloat(board.style.left),top=parseFloat(board.style.top);return[{x:left+w*.13,y:top+h*.33},{x:left+w*.87,y:top+h*.20},{x:left+w*.84,y:top+h*.72},{x:left+w*.16,y:top+h*.86}]}
+function getBoardPoly(board){if(!board)return null;const w=board.offsetWidth,h=board.offsetHeight,left=parseFloat(board.style.left),top=parseFloat(board.style.top);return[{x:left+w*.04,y:top+h*.14},{x:left+w*.75,y:top+h*.11},{x:left+w*.74,y:top+h*.80},{x:left+w*.05,y:top+h*.80}]}
 // Pixel-perfect board selection: transparent PNG pixels are never selectable.
 function prepareBoardAlphaHit(board){
  if(!board||board._alphaReady)return;
@@ -8510,7 +8510,7 @@ function setPose(el,cx,by,vis){
  }else if(pr){
    el.style.transformOrigin=`50% ${Math.round(pr.anchorY*100)}%`;
  }
- el.style.transform=itemPoseTransform(el,ang,flatten,tilt);
+ el.style.transform=el.dataset.itemId==='daska'?`rotateZ(${ang}deg)`:itemPoseTransform(el,ang,flatten,tilt);      // the board picture is already drawn in perspective: no extra tilt
  let z=Math.max(+el.dataset.zBase||1,Math.floor(by));
  const board=getBoardEl();
  const attachedToBoard=el.dataset.itemId!=='daska'&&board&&el.dataset.attachedToBoard==='1';
@@ -8549,7 +8549,10 @@ function setPose(el,cx,by,vis){
      const calibrated=contactShadowCalibrationFor(el);
      const cfg=calibrated||{x:0,y:0,width:.72,height:.07,opacity:.52,blur:.8,angle:.6};
      if(el.dataset.itemId==='daska'){
-       styleBoardContactShadow(contact,cfg,w,h,cx,by,ang,held);
+       // the board has a soft flat shadow of its own outline under it (the picture of the board is already in perspective)
+       const img=contact.querySelector('img');if(img)img.style.display='block';
+       contact.style.background='';contact.style.borderRadius='';
+       {const bs=window.CooksterBoardShadow?CooksterBoardShadow.get():{x:-3,y:7,width:1.01,height:.3,opacity:.5,blur:3.5};styleCalibratedContactShadow(contact,{x:bs.x,y:bs.y,width:bs.width,height:bs.height,opacity:held?bs.opacity*.55:bs.opacity,blur:bs.blur,angle:0},w,h,cx,by,ang,held);}
      }else{
        const img=contact.querySelector('img');
        if(img)img.style.display='block';
@@ -12353,7 +12356,7 @@ async function meatApplyCrop(target,P){
   target.dataset.baseW=String(w0*(box.x1-box.x0));target.dataset.baseH=String(h0*(box.y1-box.y0));
   setPose(target,cx0+(((box.x0+box.x1)/2)-.5)*w0*vis,by0-(1-box.y1)*h0*vis,vis);
   const bd=getBoardEl();
-  if(bd&&target.dataset.attachedToBoard==='1'){target.dataset.boardRelX=String(-.25+(parseFloat(target.style.width)||40)/(2*Math.max(1,bd.offsetWidth))+.012);target.dataset.boardRelY=String(+target.dataset.boardRelY||.55);syncOneBoardAttachment(target,bd);}      // the rest of the meat is on the left, the slices on the right
+  if(bd&&target.dataset.attachedToBoard==='1'){target.dataset.boardRelX=String(-.44+(parseFloat(target.style.width)||40)/(2*Math.max(1,bd.offsetWidth))+.012);target.dataset.boardRelY=String(+target.dataset.boardRelY||.55);syncOneBoardAttachment(target,bd);}      // the rest of the meat is on the left, the slices on the right
   CooksterSave.schedule();
  }catch(e){}
 }
@@ -12376,8 +12379,8 @@ function meatSpawnSlice(target,thin,n){
  setPose(el,cx+dx,by-dy,vis);
  if(onBoard){
    const bw=Math.max(1,bd.offsetWidth),wpx=parseFloat(el.style.width)||def.w*vis;
-   el.dataset.boardRelX=String(.25-wpx/(2*bw)-.012+((n%3)-1)*.006);
-   el.dataset.boardRelY=String(Math.max(.3,.66-n*.04));
+   el.dataset.boardRelX=String(.24-wpx/(2*bw)-.012+((n%3)-1)*.006);
+   el.dataset.boardRelY=String(Math.max(.25,.58-n*.03));
    el.dataset.boardRelAngle='0';el.dataset.attachedToBoard='1';syncOneBoardAttachment(el,bd);
  }
  return el;
@@ -12411,8 +12414,8 @@ function meatSlicePoly(target,keep,slice,thin){
  setPose(el,cx+dx,by-dy,vis);
  if(onBoard){      // the slices lie one on top of the other, in one pile on the right side of the board (every new slice is a bit higher)
    const bw=Math.max(1,bd.offsetWidth),halfVis=.25,wpx=parseFloat(el.style.width)||def.w*vis;      // the board picture is about half of its box wide
-   el.dataset.boardRelX=String(halfVis-wpx/(2*bw)-.012+((n%3)-1)*.006);
-   el.dataset.boardRelY=String(Math.max(.3,.66-n*.04));
+   el.dataset.boardRelX=String(.24-wpx/(2*bw)-.012+((n%3)-1)*.006);
+   el.dataset.boardRelY=String(Math.max(.25,.58-n*.03));
    el.dataset.boardRelAngle='0';el.dataset.attachedToBoard='1';syncOneBoardAttachment(el,bd);
  }
  target.dataset.meatSlices=String(n+1);
