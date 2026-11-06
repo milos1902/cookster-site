@@ -22,7 +22,7 @@
     if(st)return;
     const body=target.querySelector('.body');
     const src=(body&&body.src)||'assets/meat/junetina_parce.png';
-    const [meat,board]=await Promise.all([load(src),load('assets/new_props/daska.png')]);
+    const [meat,board,imThin,imThick]=await Promise.all([load(src),load('assets/new_props/daska.png'),load('assets/meat/junetina_snicla_tanka.png'),load('assets/meat/junetina_snicla_debela.png')]);
     const root=document.createElement('div');root.setAttribute('data-tool-ui','1');
     root.style.cssText='position:fixed;inset:0;z-index:30000;background:rgba(18,9,3,.62);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s';
     const cv=document.createElement('canvas');cv.width=W;cv.height=H;cv.style.cssText='max-width:100vw;max-height:100vh;touch-action:none;cursor:crosshair';
@@ -55,7 +55,8 @@
       if(sw>0){g.save();g.shadowColor='rgba(0,0,0,.35)';g.shadowBlur=14;g.shadowOffsetY=8;
         g.drawImage(meat,L*meat.width,0,sw*meat.width,meat.height,x0+L*MW,top,sw*MW,MH);g.restore();}
       // what was cut off (small slices lined up on the right of the board)
-      s.cuts.forEach((c,i)=>{g.fillStyle=c.thin?'#c0392b':'#a02b20';const w=c.thin?22:36;g.fillRect(cx+BOARD.w/2+12+(i%6)*40,cy-BOARD.h/2+30+Math.floor(i/6)*60,w,48);});
+      s.cuts.forEach((c,i)=>{const im=c.thin?imThin:imThick,w=130,h=w*im.height/im.width,x=cx+BOARD.w/2+10,y=cy+BOARD.h/2-60-i*30-h*.2;
+        g.save();g.shadowColor='rgba(0,0,0,.45)';g.shadowBlur=8;g.shadowOffsetY=4;g.drawImage(im,Math.min(W-w-6,x),Math.max(6,y),w,h);g.restore();});
       if(s.cur&&s.stroke){
         g.save();g.strokeStyle='#fff';g.lineWidth=3;g.shadowColor='#8c6bff';g.shadowBlur=14;g.setLineDash([10,6]);
         g.beginPath();g.moveTo(s.stroke.x,s.stroke.y);g.lineTo(s.cur.x,s.cur.y);g.stroke();g.restore();
