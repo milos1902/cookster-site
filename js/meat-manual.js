@@ -82,11 +82,17 @@
   }
   // C opens and closes the manual cut (capture: before the game's own C key)
   window.addEventListener('keydown',e=>{
-    if(!(e.key==='c'||e.key==='C')||e.repeat||e.ctrlKey||e.metaKey||/^(INPUT|TEXTAREA|SELECT)$/.test(e.target&&e.target.tagName||''))return;
+    if(!(e.key==='c'||e.key==='C'||e.key==='с'||e.key==='С'||e.code==='KeyC')||e.repeat||e.ctrlKey||e.metaKey||/^(INPUT|TEXTAREA|SELECT)$/.test(e.target&&e.target.tagName||''))return;
     if(st){e.preventDefault();e.stopImmediatePropagation();close();return;}
     const t=pieceOnBoard();
     if(t){e.preventDefault();e.stopImmediatePropagation();open(t);}
   },true);
   window.addEventListener('keydown',e=>{if(e.key==='Escape'&&st){e.stopPropagation();close();}},true);
+  // a visible button next to the keyboard: it appears when a piece of meat lies on the board
+  const btn=document.createElement('button');btn.type='button';btn.setAttribute('data-tool-ui','1');btn.textContent='✂ Ručno sečenje mesa (C)';
+  btn.style.cssText='position:fixed;left:14px;top:230px;z-index:8000;display:none;padding:8px 12px;border-radius:10px;border:2px solid #4a2a12;background:#f1d9a6;color:#3a1d0a;font:14px system-ui,sans-serif;cursor:pointer;box-shadow:0 3px 10px #0006';
+  btn.onclick=()=>{const t=pieceOnBoard();if(t)open(t);};
+  document.body.appendChild(btn);
+  setInterval(()=>{let ok=false;try{ok=!st&&!!pieceOnBoard()&&!document.body.classList.contains('pantry-open')&&!document.body.classList.contains('garden-open')&&!document.body.classList.contains('market-open');}catch(_){}btn.style.display=ok?'block':'none';},500);
   window.CooksterMeatManual={toggle:t=>{if(st)close();else open(t);},isOpen:()=>!!st};
 })();
