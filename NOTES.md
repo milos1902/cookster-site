@@ -1176,3 +1176,7 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Daska više nema CSS nagib (`setPose`: samo `rotateZ`), jer je slika već u perspektivi. `getBoardPoly` = široki deo daske; snap centar = sredina širokog dela (`boardCenterSnapCandidate`); nož stoji u gornjem delu (`KNIFE_PARK`).
 - Šnicle idu u gomilu desno u širokom delu, ostatak parčeta levo (`meatSpawnSlice`, `meatSlicePoly`, `meatApplyCrop`).
 - Senka ispod daske je mekana silueta (ne pravougaonik); dugme „🎚 Senka daske" (levo) ima klizače (providnost, zamućenost, širina, visina, pomeranje), pamti se u `cookster.board-shadow` (`js/board-shadow-tool.js`).
+
+## Senka daske zaključana
+- Alat „Senka daske" se više ne vidi u igri (samo na linku sa `?senka`). Senka koristi vrednosti sačuvane u pregledaču (`cookster.board-shadow`), a ako ih nema, podrazumevane.
+- Kad se daska podigne, više ne ostaje druga (tamna pravougaona) senka: `updateHeldContactShadowFromPose` za dasku koristi istu mekanu senku (`styleBoardSoftShadow`) na mestu gde će sleteti.

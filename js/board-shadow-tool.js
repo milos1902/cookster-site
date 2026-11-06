@@ -1,4 +1,5 @@
-/* Cookster: alat „Senka daske" (dugme levo na ekranu): klizači za senku ispod daske (providnost, zamućenost, širina, visina, pomeranje). Pamti se u ovom pregledaču
+/* Cookster: senka daske je ZAKLJUČANA na vrednostima koje su sačuvane u ovom pregledaču (cookster.board-shadow). Alat sa klizačima (dugme „Senka daske") se pokazuje samo na linku sa ?senka.
+   Ranije: alat „Senka daske" (dugme levo na ekranu): klizači za senku ispod daske (providnost, zamućenost, širina, visina, pomeranje). Pamti se u ovom pregledaču
    (cookster.board-shadow). Dugme „Vrati" vraća podrazumevane vrednosti. Sakriva se kad su Alati isključeni. */
 (function(){
   'use strict';
@@ -17,6 +18,7 @@
   panel.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.k;if(!k)return;S[k]=+e.target.value;save();sync();repose();});
   panel.querySelector('[data-reset]').onclick=()=>{S={...DEF};save();sync();repose();};
   btn.onclick=()=>{panel.style.display=panel.style.display==='block'?'none':'block';sync();};
+  if(!/[?&]senka(=|&|$)/.test(location.search))return;      // the tool is off in the game (the shadow is locked); it appears only with ?senka
   document.body.append(btn,panel);
   setInterval(()=>{const b=document.body.classList,hide=b.contains('pantry-open')||b.contains('garden-open')||b.contains('market-open');btn.style.display=hide?'none':'block';if(hide)panel.style.display='none';},700);
 })();
