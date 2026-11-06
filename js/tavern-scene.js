@@ -1059,6 +1059,7 @@ function stepWaiter(dt){
       var ovIm=null;if(c.kind==='oval'&&c.img){ovIm=new Image();ovIm.src=c.img}
       dishes.push({table:w.table,kind:c.kind||'plain',im:ovIm,items:c.items||null,secs:secs,t:0,eatT:0,bite:0,phase:'eating',seatId:eatSeat,x:sv?sv.x:null,y:sv?sv.y:null});
       var ev=c.ev||null,rep=ev&&window.CooksterQuality?window.CooksterQuality.addReputation(ev.score):null;
+      try{if(window.CooksterDayReport)window.CooksterDayReport.record(c.kind,ev)}catch(e){}
       reactions.push({table:w.table,t:0,ev:ev,rep:rep,delta:ev?ev.score:0});
       });
       w.carry=null;w.carryList=null;

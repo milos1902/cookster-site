@@ -6134,6 +6134,7 @@ function updateCursor(){cursor.style.left=mouse.x+'px';cursor.style.top=mouse.y+
 function showToast(t){return}
 function setMoney(v){if(FREE_MODE&&v<money)v=money;money=v;CooksterState.player.money=v;moneyEl.textContent=FREE_MODE?'Sve je besplatno':`Novac: ${money} дин`;if(marketMoneyLive)marketMoneyLive.textContent=FREE_MODE?'besplatno':`${money} дин`;CooksterSave.schedule()}
 if(FREE_MODE)setMoney(money);
+window.CooksterAddMoney=function(d){setMoney(money+d)};
 function updateDayUI(){const el=document.getElementById('day');if(el)el.textContent=`Dan ${CooksterState.player.day||1}`}
 function activeRecipe(){
  const recipes=CooksterCatalog.RECIPES||{};
