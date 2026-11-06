@@ -1166,3 +1166,7 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Desni klik u 3D okreće samo komad na koji se klikne.
 - Snap na dasku: meso se hvata na onu stranu daske koja je slobodna (gomila šnicli desno -> nova ide levo i obrnuto), da ne pada preko gomile (`boardCenterSnapCandidate`).
 - Obrisan `js/meat-manual.js` (ručno sečenje odozgo).
+
+## Meso: samo E, desni klik vraća u frižider (`js/meat-menu.js`)
+- **C** za meso je isključen (`beginCutAction`: poruka „Meso se seče tasterom E"). 3D kod za meso ostaje u `tomato-cut3d.js`, ali se više ne poziva.
+- **E** nad parčetom odseče jednu šniclu (parče kraće). **Desni klik** na parče mesa otvara „🧊 Vrati meso u frižider": parče nestaje, šnicla ostaje (`js/meat-menu.js`). **E** nad šniclom daje komade.

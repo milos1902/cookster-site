@@ -15033,6 +15033,7 @@ window.addEventListener('keyup',e=>{if(e.key==='e'||e.key==='E')cancelPeelHold()
 window.addEventListener('blur',cancelPeelHold);
 function beginCutAction(mode='dice'){
  if(isCutting)return;
+ {const t0=findCutTargetOnBoard();if(mode==='slices'&&t0&&VEGETABLES[t0.dataset.vegKey]?.meat){showToast('Meso se seče tasterom E.');return;}}      // meat is cut only with E (C is off for meat)
  const board=getBoardEl();
  const knife=getKnifeEl();
  const target=findCutTargetOnBoard();
