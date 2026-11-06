@@ -19,7 +19,7 @@ Ovo pročitaj prvo, pa `NOTES.md`, pa `docs/PRICA.md`.
 - Džezva je dodata u `ownedKitchenEquipment`.
 
 ## Plan (moja preporuka, Miloš se složio sa pravcem)
-1. Jedna petlja: **dan u kafani** (jutro kafa i rakija, podne jela, veče vino), dugme „Završi dan" i pregled dana.
+1. Jedna petlja: **dan u kafani** (jutro kafa i rakija, podne jela, veče vino), dugme „Završi dan" i pregled dana. **GOTOVO** (`js/day-report.js`).
 2. Prvi dan kao vodič (jedna stvar odjednom), jedna rečenica cilja gore.
 3. Kvalitet jela/kafe utiče na gosta (napojnica, ugled).
 4. Priča po danima: jedan trag dnevno.

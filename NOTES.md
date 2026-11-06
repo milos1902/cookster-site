@@ -1111,3 +1111,5 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 
 ## Hrana u tiganju puni dno od najniže tačke (`js/piece-sim.js?v=33`)
 - `applyLevel`: hrana raste kao ista celokupna okrugla gomila oko tačke blizu dna suda (ne polovina površine). Kad je pun, cela kalibrisana površina.
+
+Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan" ispod sata (kafana se zatvara, vreme ide na 24:00) i pregled dana: poslužena jela, pića, zarada (jelo 300, piće 120, savršeno +50, jako loše pola cene), ocena gostiju (1–5 zvezdica iz `ev.score`), promena ugleda. U ponoć se pregled otvara sam. „Novi dan (06:00)" zove `CooksterDay.endDay()` i briše brojače (`cookster.day-report.v1`). Konobar zove `record(kind, ev)` u `tavern-scene.js` kad spusti jelo/piće; zarada ide u novac preko `CooksterAddMoney` (game.js; dok je FREE_MODE novac samo raste).
