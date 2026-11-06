@@ -1146,3 +1146,9 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Kad ostatak padne na 22% ili manje, pretvara se u **poslednju šniclu** (veća, 1,25×) i parče nestaje (`meatSlicePoly`).
 - **C** nad šniclom na dasci otvara sečenje šnicle: linije pod bilo kojim uglom dele je na delove; kad zatvoriš (C), šnicla postaje „na N komada" (`meatFinishSnicla`): slika gomile + atlas pojedinačnih komada (`dataset.pieceAtlas`, isti put kao C-rez paradajza), pa se u posudi svaki komad kreće sam. Esc odbacuje sečenje.
 - C bira najnoviju šniclu na dasci, ako je nema onda parče.
+
+## 3D sečenje mesa (junetina) u `js/tomato-cut3d.js`
+- Isti 3D sistem kao paradajz/luk: oblik `beef` (zaobljen blok, superelipsoid, mala nepravilnost), planarna tekstura površine (`assets/meat/3d/junetina_povrsina.webp`, ponavlja se), tri preseka (`junetina_presek_1..3`). Slike su iz ChatGPT-a (`assets/meat_src/`).
+- **C** nad parčetom mesa na dasci otvara 3D sečenje (`beginCutAction` -> `CooksterTomatoCut3D.start`): levi klik i povlačenje seče po ravni kroz kameru, **desni klik okreće samo komad na koji si kliknuo** (ostali isečeni delovi ostaju; `turnOnly`), **E** = gotovo, delovi postaju komadi mesa u tiganju (atlas, kao paradajz). `crosses` za meso koristi uzorke (kao patlidžan).
+- **E** na dasci (bez 3D prozora) je i dalje brzo sečenje u šnicle. Ručno sečenje šnicle na komade (C nad šniclom) je `js/meat-manual.js`.
+- Još nije: svinjetina u 3D (treba iste tri vrste slika), slike „sirov/pečen/kuvan" po komadu u tiganju su sastavljene kodom (`junetina_diced*.png`).
