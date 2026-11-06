@@ -328,6 +328,14 @@ function styleCalibratedContactShadow(contact,cfg,w,h,cx,by,ang,held=false){
  }
  return true;
 }
+// the soft shadow of the board (the same while it rests and while it is carried to its landing place); the numbers come from CooksterBoardShadow (js/board-shadow-tool.js, locked)
+function styleBoardSoftShadow(contact,w,h,cx,by,ang,held){
+ if(!contact)return;
+ const img=contact.querySelector('img');if(img)img.style.display='block';
+ contact.style.background='';contact.style.borderRadius='';
+ const bs=window.CooksterBoardShadow?CooksterBoardShadow.get():{x:-3,y:7,width:1.01,height:.3,opacity:.5,blur:3.5};
+ styleCalibratedContactShadow(contact,{x:bs.x,y:bs.y,width:bs.width,height:bs.height,opacity:held?bs.opacity*.55:bs.opacity,blur:bs.blur,angle:0},w,h,cx,by,ang,held);
+}
 function styleBoardContactShadow(contact,cfg,w,h,cx,by,ang,held=false){
  if(!contact||!cfg)return false;
  const sx=Math.max(.05,+cfg.width||.72);
@@ -8083,7 +8091,7 @@ function updateHeldContactShadowFromPose(el,pose,surfaceOverride=null){
  const ang=Number.isFinite(+pose.angle)?+pose.angle:(+el.dataset.angle||0);
  el._contactShadow.style.visibility='';
  if(el.dataset.itemId==='daska'){
-  styleBoardContactShadow(el._contactShadow,cfg,w,h,cx,by,ang,false);
+  styleBoardSoftShadow(el._contactShadow,w,h,cx,by,ang,true);      // the carried board: the same soft shadow at its landing place (no second, dark rectangle)
  }else{
   const img=el._contactShadow.querySelector('img');
   if(img)img.style.display='block';
@@ -8549,10 +8557,7 @@ function setPose(el,cx,by,vis){
      const calibrated=contactShadowCalibrationFor(el);
      const cfg=calibrated||{x:0,y:0,width:.72,height:.07,opacity:.52,blur:.8,angle:.6};
      if(el.dataset.itemId==='daska'){
-       // the board has a soft flat shadow of its own outline under it (the picture of the board is already in perspective)
-       const img=contact.querySelector('img');if(img)img.style.display='block';
-       contact.style.background='';contact.style.borderRadius='';
-       {const bs=window.CooksterBoardShadow?CooksterBoardShadow.get():{x:-3,y:7,width:1.01,height:.3,opacity:.5,blur:3.5};styleCalibratedContactShadow(contact,{x:bs.x,y:bs.y,width:bs.width,height:bs.height,opacity:held?bs.opacity*.55:bs.opacity,blur:bs.blur,angle:0},w,h,cx,by,ang,held);}
+       styleBoardSoftShadow(contact,w,h,cx,by,ang,held);      // the board has a soft flat shadow of its own outline under it
      }else{
        const img=contact.querySelector('img');
        if(img)img.style.display='block';
