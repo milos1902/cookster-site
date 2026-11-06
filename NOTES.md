@@ -1113,3 +1113,10 @@ Kad serving.js nacrta sliku posude, sakriva staru masku prednjeg zida (ona je U-
 - `applyLevel`: hrana raste kao ista celokupna okrugla gomila oko tačke blizu dna suda (ne polovina površine). Kad je pun, cela kalibrisana površina.
 
 Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan" ispod sata (kafana se zatvara, vreme ide na 24:00) i pregled dana: poslužena jela, pića, zarada (jelo 300, piće 120, savršeno +50, jako loše pola cene), ocena gostiju (1–5 zvezdica iz `ev.score`), promena ugleda. U ponoć se pregled otvara sam. „Novi dan (06:00)" zove `CooksterDay.endDay()` i briše brojače (`cookster.day-report.v1`). Konobar zove `record(kind, ev)` u `tavern-scene.js` kad spusti jelo/piće; zarada ide u novac preko `CooksterAddMoney` (game.js; dok je FREE_MODE novac samo raste).
+
+## Meso (prva verzija: junetina)
+- Slike: `assets/meat_src/` (izvorne iz ChatGPT-a), `assets/meat/` (obrađene, providne, isečene na pojedinačne komade).
+- Junetina je kuhinjski element „Junetina (parče)" (`meso_junetina` u `catalog.js`, `infinite:true`, `meatKey`), uzima se u „Moja kuhinja". `spawnKitchenEquipment` ga pravi kao povrće (`vegetable`, `vegKey:'junetina'`), pa se seče istim sistemom na dasci.
+- Sečenje: ceo komad -> prvo sečenje daje šnicle (`setVegetableSliced`), drugo daje komade (`setVegetableDiced`). `VEGETABLES.junetina` ima `meat:true` (tržnica ga ne prikazuje; mesara dolazi kasnije).
+- Slike za faze su sastavljene kodom: `junetina_secena.png` (4 šnicle), `junetina_diced*.png` (gomila od 15 komada: sirovi, pečeni, pečeni potamnjeni).
+- Još nije: postepeno sečenje (jedna šnicla po rezu, 6 komada po šnicli), debljina po razmaku reza, ubacivanje u tiganj i pečenje (provera), svinjetina, mesara, mleveno meso/oblikovanje.
