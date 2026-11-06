@@ -1156,3 +1156,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## 3D sečenje mesa daje šnicle (ne komade)
 - Posle 3D sečenja parčeta (C, E za kraj) svaki odsečeni deo postaje **šnicla** na dasci (tanka ako je manji od ~16% parčeta, inače debela; delovi manji od 3,5% se odbacuju). Najveći deo ostaje kao parče ako je veći od 40%. (`meatFrom3DCut`, `meatSpawnSlice` u `game.js`; `cb.onPieces` / `cb.meatSlices` u `tomato-cut3d.js`.)
 - Komadi nastaju tek kad se šnicla seče (E brzo = 6 komada, C = ručno sečenje šnicle, `js/meat-manual.js`).
+
+## 3D sečenje ostatka parčeta
+- Kad se već isečeno parče (`meatPoly`) ponovo otvori na C, 3D telo je široko koliko je ostalo (`cfg.shape==='beef'` u `tomato-cut3d.js`), a ne ceo komad iznova. `meatFrom3DCut` množi proporciju sa prethodnom, pa ostatak posle više sečenja pravilno opada.

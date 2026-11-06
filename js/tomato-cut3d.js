@@ -431,6 +431,10 @@
         scale=Math.max(.3,Math.min(3,target.w/(xmax-xmin)));
       }
       const tris=vegTris(cfg.shape,scale);
+      if(cfg.shape==='beef'){      // what is left of a piece of meat that was cut before: the 3D piece is as wide as what is left (not the whole piece again)
+        try{const P=JSON.parse(el.dataset.meatPoly||'null');if(Array.isArray(P)&&P.length>=3){const xs=P.map(q=>q[0]),fr=Math.max(.15,Math.min(1,Math.max(...xs)-Math.min(...xs)));
+          if(fr<.999){for(const t of tris)for(const v of t.v)v[0]*=fr;}}}catch(_){}
+      }
       let low=1e9;for(const t of tris)for(const v of t.v)low=Math.min(low,v[1]);
       addPiece(tris,new THREE.Vector3(0,0,0),new THREE.Quaternion(),new THREE.Vector3(),new THREE.Vector3(),cfg.calyx?(cfg.calyxAt?cfg.calyxAt.map(v=>v*scale):[0,.64*scale,0]):null);
       const b=pieces[pieces.length-1];

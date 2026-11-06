@@ -12390,7 +12390,8 @@ function meatFrom3DCut(target,pieces){
  });
  target.dataset.meatSlices=String(n+made);
  if(keepBig){
-  const frac=Math.max(.2,Math.min(.95,sorted[0].V/tot)),P=[[0,0],[frac,0],[frac,1],[0,1]];
+  let prev=1;try{const Q0=JSON.parse(target.dataset.meatPoly||'null');if(Array.isArray(Q0)&&Q0.length>=3){const xs=Q0.map(q=>q[0]);prev=Math.max(...xs)-Math.min(...xs);}}catch(_){}
+  const frac=Math.max(.12,Math.min(.95,prev*sorted[0].V/tot)),P=[[0,0],[frac,0],[frac,1],[0,1]];
   target.dataset.meatPoly=JSON.stringify(P);target.dataset.meatLeft=String(6*frac);meatApplyCrop(target,P);
  }else removeItem(target);
  CooksterSave.schedule();updateHover();
