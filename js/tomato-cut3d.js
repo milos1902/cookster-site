@@ -878,7 +878,8 @@
     function finish(){
       if(closed||!ready)return;
       if(!peeled||!cuts){cancel();return;}
-      const baked=bake();
+      try{cb.onPieces&&cb.onPieces(pieces.map(b=>({V:b.V||0,r:b.radius||0})));}catch(_){}      // the pieces that were cut (volume of each)
+      const baked=cfg.shape==='beef'&&cb.meatSlices?{heap:'',atlas:''}:bake();      // meat: the pieces become slices (items), no baking
       if(baked)cb.onDone(baked.heap,baked.atlas);
       close();
     }

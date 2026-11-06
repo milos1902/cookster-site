@@ -12360,6 +12360,43 @@ function meatSliceOff(target,mode){
  const right=(A&&A[0][0]>=x-1e-9&&A.every(q=>q[0]>=x-1e-9))?A:B,left=right===A?B:A;
  return meatSlicePoly(target,left,right,w<.14);
 }
+// one slice item (thin or thick) on the board (a pile on the right side), nothing else changes
+function meatSpawnSlice(target,thin,n){
+ const key=target.dataset.vegKey||'junetina',sk=key+(thin?'_snicla_tanka':'_snicla_debela'),def=VEGETABLES[sk];
+ if(!def)return null;
+ const cx=+target.dataset.cx,by=+target.dataset.by,vis=+target.dataset.vis||1,bd=getBoardEl(),onBoard=!!bd&&target.dataset.attachedToBoard==='1';
+ const dx=78*vis+(n%3)*8,dy=(n%3)*16;
+ const el=makeItem({id:'veg_'+sk+'_'+Date.now()+'_'+n,label:def.label,src:def.src,x:cx+dx-def.w/2,y:by-dy-def.h,w:def.w,h:def.h,z:++zCounter,snapProfile:'produce'});
+ if(!el)return null;
+ el.dataset.vegetable='1';el.dataset.collisionProfile='vegetable';el.dataset.vegKey=sk;el.dataset.cutState='whole';
+ setPose(el,cx+dx,by-dy,vis);
+ if(onBoard){
+   const bw=Math.max(1,bd.offsetWidth),wpx=parseFloat(el.style.width)||def.w*vis;
+   el.dataset.boardRelX=String(.25-wpx/(2*bw)-.012+((n%3)-1)*.006);
+   el.dataset.boardRelY=String(Math.max(.3,.66-n*.04));
+   el.dataset.boardRelAngle='0';el.dataset.attachedToBoard='1';syncOneBoardAttachment(el,bd);
+ }
+ return el;
+}
+// the 3D cut of a piece of meat: every cut-off part becomes a slice (thin or thick by its size); the biggest part stays as the piece if it is still big
+function meatFrom3DCut(target,pieces){
+ const tot=pieces.reduce((t,q)=>t+q.V,0)||1,sorted=[...pieces].sort((a,b)=>b.V-a.V);
+ const keepBig=sorted.length>1&&sorted[0].V/tot>.4;
+ let n=+(target.dataset.meatSlices||0),made=0;
+ sorted.forEach((q,i)=>{
+  if(i===0&&keepBig)return;
+  const f=q.V/tot;if(f<.035)return;
+  if(meatSpawnSlice(target,f<.16,n+made))made++;
+ });
+ target.dataset.meatSlices=String(n+made);
+ if(keepBig){
+  const frac=Math.max(.2,Math.min(.95,sorted[0].V/tot)),P=[[0,0],[frac,0],[frac,1],[0,1]];
+  target.dataset.meatPoly=JSON.stringify(P);target.dataset.meatLeft=String(6*frac);meatApplyCrop(target,P);
+ }else removeItem(target);
+ CooksterSave.schedule();updateHover();
+ return made?(made+(made===1?' šnicla.':' šnicle.')):'Ništa upotrebljivo, rezovi su preuski.';
+}
+window.meatFrom3DCut=meatFrom3DCut;
 // make one slice item (thin or thick) next to the meat, and keep what is left of the piece
 function meatSlicePoly(target,keep,slice,thin){
  const key=target.dataset.vegKey||'junetina',sk=key+(thin?'_snicla_tanka':'_snicla_debela'),def=VEGETABLES[sk];
@@ -15003,7 +15040,9 @@ function beginCutAction(mode='dice'){
  if(mode==='slices'&&(!VEGETABLES[target.dataset.vegKey]?.meat||VEGETABLES[target.dataset.vegKey]?.meat==='parce')&&(window.CooksterTomatoCut?.supports(target)||window.CooksterTomatoCut3D?.supports(target))){
    const def=VEGETABLES[target.dataset.vegKey]||{};
    if(def.src&&def.slicedSrc){
-     const cutCallbacks={board,onCutSound(){playImpactSound(vegSoundTarget(target),'cut');},onPeelSound(){playImpactSound(peelSoundTarget,'peel');},onDone(src,atlas){
+     let meatPcs=null;
+     const cutCallbacks={board,meatSlices:def.meat==='parce',onPieces(pc){meatPcs=pc;},onCutSound(){playImpactSound(vegSoundTarget(target),'cut');},onPeelSound(){playImpactSound(peelSoundTarget,'peel');},onDone(src,atlas){
+       if(def.meat==='parce'&&meatPcs){showToast(meatFrom3DCut(target,meatPcs));return;}      // meat: the cut parts are slices on the board, the pieces come from cutting a slice
        spawnSourHalf(target);
        showToast(setVegetableDiced(target));
        target.dataset.cutStyle='slices';target.dataset.label=String(target.dataset.label||'').replace(/sitno seckan[a-z]*/i,'isečen na kolutove');   // the pieces are what the player cut: they are served as pieces, not scattered

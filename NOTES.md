@@ -1152,3 +1152,7 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - **C** nad parčetom mesa na dasci otvara 3D sečenje (`beginCutAction` -> `CooksterTomatoCut3D.start`): levi klik i povlačenje seče po ravni kroz kameru, **desni klik okreće samo komad na koji si kliknuo** (ostali isečeni delovi ostaju; `turnOnly`), **E** = gotovo, delovi postaju komadi mesa u tiganju (atlas, kao paradajz). `crosses` za meso koristi uzorke (kao patlidžan).
 - **E** na dasci (bez 3D prozora) je i dalje brzo sečenje u šnicle. Ručno sečenje šnicle na komade (C nad šniclom) je `js/meat-manual.js`.
 - Još nije: svinjetina u 3D (treba iste tri vrste slika), slike „sirov/pečen/kuvan" po komadu u tiganju su sastavljene kodom (`junetina_diced*.png`).
+
+## 3D sečenje mesa daje šnicle (ne komade)
+- Posle 3D sečenja parčeta (C, E za kraj) svaki odsečeni deo postaje **šnicla** na dasci (tanka ako je manji od ~16% parčeta, inače debela; delovi manji od 3,5% se odbacuju). Najveći deo ostaje kao parče ako je veći od 40%. (`meatFrom3DCut`, `meatSpawnSlice` u `game.js`; `cb.onPieces` / `cb.meatSlices` u `tomato-cut3d.js`.)
+- Komadi nastaju tek kad se šnicla seče (E brzo = 6 komada, C = ručno sečenje šnicle, `js/meat-manual.js`).
