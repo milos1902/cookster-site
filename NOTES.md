@@ -1120,3 +1120,9 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Sečenje: ceo komad -> prvo sečenje daje šnicle (`setVegetableSliced`), drugo daje komade (`setVegetableDiced`). `VEGETABLES.junetina` ima `meat:true` (tržnica ga ne prikazuje; mesara dolazi kasnije).
 - Slike za faze su sastavljene kodom: `junetina_secena.png` (4 šnicle), `junetina_diced*.png` (gomila od 15 komada: sirovi, pečeni, pečeni potamnjeni).
 - Još nije: postepeno sečenje (jedna šnicla po rezu, 6 komada po šnicli), debljina po razmaku reza, ubacivanje u tiganj i pečenje (provera), svinjetina, mesara, mleveno meso/oblikovanje.
+
+## Meso: jedan rez = jedna šnicla, šnicla = 6 komada
+- Parče junetine (`meso_junetina`, `meatLeft` = 6 jedinica) na dasci: **E** odseče jednu **debelu** šniclu, **C** jednu **tanku** (`meatSliceOff` u `game.js`). Parče postaje kraće (clip-path), šnicla je poseban predmet (`junetina_snicla_debela` / `_tanka` u `VEGETABLES`, `meat:'snicla'`).
+- Šnicla na dasci se seče pre ostatka parčeta (`findCutTargetOnBoard`) i daje **6 komada** (slika `junetina_k6_*`: sirovo, pečeno, dobro pečeno), isti put kao seckano povrće, pa ide u tiganj (`addIngredientToContainer`).
+- Debela šnicla = 1 jedinica, tanka = 0,6. Celo parče ≈ 6 debelih ili 10 tankih šnicli.
+- Nije: svinjetina, mesara, pečeni/kuvani pojedinačni komadi u piece-sim, mleveno meso/oblikovanje.
