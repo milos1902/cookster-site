@@ -1140,3 +1140,9 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Meso u tiganju stoji gde je spušteno (`appendWholeProduce` u `game.js`)
 - Cela šnicla (`junetina_snicla_*_celo`) u posudi više nema fiksan raspored povrća i ne menja oblik: crta se u svom obliku i veličini kakvu ima na dasci, na mestu gde je igrač spustio (`vessel._meatDrops` se puni u `addIngredientToContainer`, po indeksu komada).
 - Važi za meso (`VEGETABLES[...].meat`). Povrće i dalje koristi raspored (isto ponašanje kao ranije). Ne pomera se mešanjem.
+
+## Ručno sečenje mesa pod bilo kojim uglom + šnicla na komade (`js/meat-manual.js`, `game.js`)
+- Parče mesa je konveksan poligon u koordinatama slike (`meatPoly`); rez je prava linija pod bilo kojim uglom (`meatSplit`). Manji deo je šnicla (debljina = površina / dužina reza: < 5% pretanko, < 14% tanka, do 34% debela), ostatak je isečena slika sa zaobljenim ivicama (`meatPolyCrop`, `meatApplyCrop`).
+- Kad ostatak padne na 22% ili manje, pretvara se u **poslednju šniclu** (veća, 1,25×) i parče nestaje (`meatSlicePoly`).
+- **C** nad šniclom na dasci otvara sečenje šnicle: linije pod bilo kojim uglom dele je na delove; kad zatvoriš (C), šnicla postaje „na N komada" (`meatFinishSnicla`): slika gomile + atlas pojedinačnih komada (`dataset.pieceAtlas`, isti put kao C-rez paradajza), pa se u posudi svaki komad kreće sam. Esc odbacuje sečenje.
+- C bira najnoviju šniclu na dasci, ako je nema onda parče.
