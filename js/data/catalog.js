@@ -330,7 +330,7 @@ window.CooksterCatalog = Object.freeze({
     })
   }),
   ITEMS: Object.freeze([
-    Object.freeze({id:'daska',type:'tool',subtype:'board',label:'daska',src:'assets/new_props/daska_nova.png?v=1',x:482,y:378,w:420,h:169,snapProfile:'board',placement:['table']}),
+    Object.freeze({id:'daska',type:'tool',subtype:'board',label:'daska',src:'assets/new_props/daska_nova.png?v=1',x:482,y:378,w:294,h:118,snapProfile:'board',placement:['table']}),
     Object.freeze({id:'noz',type:'tool',subtype:'knife',label:'nož',src:'assets/noz.png',x:650,y:410,w:176,h:31,snapProfile:'flat',placement:['table']}),
     Object.freeze({id:'kasika_mesanje',type:'tool',subtype:'stir_spoon',label:'drvena kašika',src:'assets/new_props/kasika_1.png?v=2',x:1148,y:450,w:58,h:142,angle:178,snapProfile:'flat',shadowProfile:'tiny',placement:['table','pan']}),
     Object.freeze({id:'kutlaca_ajvar',type:'tool',subtype:'ajvar_ladle',label:'drvena kutlača za ajvar',src:'assets/calibration_props/ajvar_jars/kutlaca_ajvar.png',x:1238,y:446,w:112,h:112,angle:0,snapProfile:'flat',shadowProfile:'tiny',placement:['table','pan']}),
