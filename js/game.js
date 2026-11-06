@@ -12318,6 +12318,8 @@ async function meatApplyCrop(target,L,R){
   const sh=target._contactShadow?.querySelector('img');if(sh)sh.src=url;
   target.dataset.baseW=String(w0*(1-L-R));target.dataset.meatShownL=String(L);target.dataset.meatShownR=String(R);
   setPose(target,(+target.dataset.cx)+shift,+target.dataset.by,vis);
+  const bd=getBoardEl();
+  if(bd&&target.dataset.attachedToBoard==='1'){target.dataset.boardRelX=String(-.25+(parseFloat(target.style.width)||40)/(2*Math.max(1,bd.offsetWidth))+.012);target.dataset.boardRelY=String(+target.dataset.boardRelY||.55);syncOneBoardAttachment(target,bd);}      // the rest of the meat is on the left, the slices on the right: nothing lies on top of the meat
   CooksterSave.schedule();
  }catch(e){}
 }
@@ -12342,8 +12344,9 @@ function meatSliceFraction(target,w,side='right'){
  setPose(el,cx+dx,by-dy,vis);
  if(onBoard){      // the slices lie in a row at the front edge of the board, never outside of it
    // the slices lie one on top of the other, in one pile on the right side of the board (every new slice is a bit higher)
-   el.dataset.boardRelX=String(.2+((n%3)-1)*.012);
-   el.dataset.boardRelY=String(Math.max(.28,.74-n*.045));
+   const bw=Math.max(1,bd.offsetWidth),halfVis=.25,wpx=parseFloat(el.style.width)||def.w*vis;      // the board picture is about half of its box wide
+   el.dataset.boardRelX=String(halfVis-wpx/(2*bw)-.012+((n%3)-1)*.006);          // the slices stand at the right edge of the board, in a pile
+   el.dataset.boardRelY=String(Math.max(.3,.66-n*.04));
    el.dataset.boardRelAngle='0';el.dataset.attachedToBoard='1';syncOneBoardAttachment(el,bd);
  }
  target.dataset.meatSlices=String(n+1);
