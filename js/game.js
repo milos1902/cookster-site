@@ -10910,7 +10910,7 @@ function spawnKitchenEquipment(id,hold=true,slotOverride=null){
    z:++zCounter
  });
  el.dataset.surfaceZone='table';
- if(def.meatKey){el.dataset.vegetable='1';el.dataset.collisionProfile='vegetable';el.dataset.vegKey=def.meatKey;el.dataset.cutState='whole';}   // meat is cut on the board like a vegetable: whole piece, slices, cut pieces
+ if(def.meatKey){el.dataset.vegetable='1';el.dataset.collisionProfile='vegetable';el.dataset.vegKey=def.meatKey;el.dataset.cutState='whole';el.dataset.meatLeft='6';}   // meat is cut on the board like a vegetable: whole piece, slices, cut pieces
  if(OBJECT_CALIBRATION_MODE){
    el.dataset.calibrationCopy='1';
    el.dataset.calibrationTemplate=def.id;
@@ -12285,12 +12285,43 @@ function takeOneFromCrate(crate){
 }
 
 function findCutTargetOnBoard(){
+ let first=null;
  for(const el of items){
    if(el.dataset.attachedToBoard!=='1')continue;
    if(!isBoardCuttableItem(el))continue;
-   return el;
+   if(VEGETABLES[el.dataset.vegKey]?.meat==='snicla')return el;       // a slice is cut before the rest of the meat
+   if(!first)first=el;
  }
- return null;
+ return first;
+}
+// meat: one cut from the top of the piece takes ONE slice (E = thick, C = thin); the piece gets smaller. Cutting a slice then gives 6 pieces (the normal cut path).
+function meatSliceOff(target,mode){
+ const key=target.dataset.vegKey||'junetina',thin=mode==='slices',unit=thin?.6:1;
+ const sk=key+(thin?'_snicla_tanka':'_snicla_debela'),def=VEGETABLES[sk];
+ if(!def)return 'Nema šnicle za ovo meso.';
+ let left=+(target.dataset.meatLeft||6);
+ left=Math.max(0,left-unit);
+ const n=+(target.dataset.meatSlices||0),cx=+target.dataset.cx,by=+target.dataset.by,vis=+target.dataset.vis||1;
+ const dx=78*vis+(n%3)*8,dy=(n%3)*16;
+ const el=makeItem({id:'veg_'+sk+'_'+Date.now(),label:def.label,src:def.src,x:cx+dx-def.w/2,y:by-dy-def.h,w:def.w,h:def.h,z:++zCounter,snapProfile:'produce'});
+ if(!el)return 'Šnicla nije mogla da se napravi.';
+ el.dataset.vegetable='1';el.dataset.collisionProfile='vegetable';el.dataset.vegKey=sk;el.dataset.cutState='whole';
+ setPose(el,cx+dx,by-dy,vis);
+ const bd=getBoardEl();
+ if(bd&&target.dataset.attachedToBoard==='1'){
+   const bw=Math.max(1,bd.offsetWidth);
+   el.dataset.boardRelX=String(Math.min(.45,Math.max(-.45,(cx+dx-(+bd.dataset.cx))/bw)));
+   el.dataset.boardRelY=String((+target.dataset.boardRelY||.5)-dy/Math.max(1,bd.offsetHeight));
+   el.dataset.boardRelAngle='0';el.dataset.attachedToBoard='1';syncOneBoardAttachment(el,bd);
+ }
+ target.dataset.meatSlices=String(n+1);
+ if(left<=.05){removeItem(target);}
+ else{
+   target.dataset.meatLeft=String(left);
+   const body=target.querySelector('.body');if(body)body.style.clipPath=`inset(0 ${((1-left/6)*100).toFixed(1)}% 0 0)`;     // the piece is shorter by what was cut off
+ }
+ CooksterSave.schedule();
+ return thin?'Odrezana je tanka šnicla.':'Odrezana je debela šnicla.';
 }
 function getPanCounts(pan){ return CooksterPan.counts(pan); }
 function getPanTotalCount(pan){ return CooksterPan.total(pan); }
@@ -14850,7 +14881,7 @@ function beginCutAction(mode='dice'){
  const knife=getKnifeEl();
  const target=findCutTargetOnBoard();
  if(!board||!knife||!target){showToast('Stavi sastojak na dasku.');return;}
- if(mode==='slices'&&window.CooksterTomatoCut?.supports(target)){
+ if(mode==='slices'&&!VEGETABLES[target.dataset.vegKey]?.meat&&window.CooksterTomatoCut?.supports(target)){
    const def=VEGETABLES[target.dataset.vegKey]||{};
    if(def.src&&def.slicedSrc){
      const cutCallbacks={board,onCutSound(){playImpactSound(vegSoundTarget(target),'cut');},onPeelSound(){playImpactSound(peelSoundTarget,'peel');},onDone(src,atlas){
@@ -14921,7 +14952,7 @@ function beginCutAction(mode='dice'){
      // v198.5.78: skip the intermediate "sliced" stage when the vegetable
      // has diced art (all 13 currently do) — one cut, straight to kockice.
      spawnSourHalf(target);
-     showToast((mode==='slices'||!targetDef.dicedSrc||targetDef.meat)?setVegetableSliced(target):setVegetableDiced(target));      // meat: the piece is cut into slices first, then a slice into pieces (two passes)
+     showToast(targetDef.meat==='parce'?meatSliceOff(target,mode):((mode==='slices'&&!targetDef.meat)||!targetDef.dicedSrc)?setVegetableSliced(target):setVegetableDiced(target));      // meat: one cut of the piece = ONE slice (E thick, C thin); cutting a slice = 6 pieces
    }else if(beforeState==='sliced'){
      // Still supported so any vegetable/save that predates this change (or
      // has no diced art) can finish the old two-step path.
