@@ -1159,3 +1159,10 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## 3D sečenje ostatka parčeta
 - Kad se već isečeno parče (`meatPoly`) ponovo otvori na C, 3D telo je široko koliko je ostalo (`cfg.shape==='beef'` u `tomato-cut3d.js`), a ne ceo komad iznova. `meatFrom3DCut` množi proporciju sa prethodnom, pa ostatak posle više sečenja pravilno opada.
+
+## Meso: nova logika (jedan rez = tri debele šnicle, šnicla je 3D)
+- Parče mesa na dasci: **C** otvara 3D, dozvoljen je samo **JEDAN rez** (`oneCut` u `tomato-cut3d.js`); **E** = gotovo i na dasci se pojave **tri debele šnicle** (`meatFrom3DCut`). Ostatak ostaje kao parče (kraće), zadnji ostatak postaje šnicle. Tankih šnicli se više ne pravi.
+- Šnicla na dasci: **C** otvara 3D šnicle (oblik `slab`, ravna ploča) sa više rezova, **E** = gotovo, komadi (atlas, kao povrće). **E** bez 3D prozora = brzih 6 komada.
+- Desni klik u 3D okreće samo komad na koji se klikne.
+- Snap na dasku: meso se hvata na onu stranu daske koja je slobodna (gomila šnicli desno -> nova ide levo i obrnuto), da ne pada preko gomile (`boardCenterSnapCandidate`).
+- Obrisan `js/meat-manual.js` (ručno sečenje odozgo).

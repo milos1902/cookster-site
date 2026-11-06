@@ -91,6 +91,7 @@ window.CooksterCatalog = Object.freeze({
     junetina_snicla_debela: Object.freeze({
       id: 'junetina_snicla_debela',
       meat: 'snicla',
+      slicedSrc: 'assets/meat/junetina_snicla_debela.png',
       panW: 40,
       label: 'Debela šnicla',
       src: 'assets/meat/junetina_snicla_debela.png',
@@ -113,6 +114,7 @@ window.CooksterCatalog = Object.freeze({
     junetina_snicla_tanka: Object.freeze({
       id: 'junetina_snicla_tanka',
       meat: 'snicla',
+      slicedSrc: 'assets/meat/junetina_snicla_tanka.png',
       panW: 36,
       label: 'Tanka šnicla',
       src: 'assets/meat/junetina_snicla_tanka.png',
