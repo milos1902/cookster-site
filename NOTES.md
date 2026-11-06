@@ -1170,3 +1170,9 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Meso: samo E, desni klik vraća u frižider (`js/meat-menu.js`)
 - **C** za meso je isključen (`beginCutAction`: poruka „Meso se seče tasterom E"). 3D kod za meso ostaje u `tomato-cut3d.js`, ali se više ne poziva.
 - **E** nad parčetom odseče jednu šniclu (parče kraće). **Desni klik** na parče mesa otvara „🧊 Vrati meso u frižider": parče nestaje, šnicla ostaje (`js/meat-menu.js`). **E** nad šniclom daje komade.
+
+## Nova daska (sa drškom) i alat „Senka daske"
+- Daska je `assets/new_props/daska_nova.png` (1160×372, već u perspektivi, drška desno), u katalogu 294×118 (stara 291×110; prvo 580×233, pa 420×169, pa -30%). Stara `daska.png` ostaje samo za 3D prozor sečenja povrća (`tomato-cut3d.js`), pa tamo još izgleda kao stara daska.
+- Daska više nema CSS nagib (`setPose`: samo `rotateZ`), jer je slika već u perspektivi. `getBoardPoly` = široki deo daske; snap centar = sredina širokog dela (`boardCenterSnapCandidate`); nož stoji u gornjem delu (`KNIFE_PARK`).
+- Šnicle idu u gomilu desno u širokom delu, ostatak parčeta levo (`meatSpawnSlice`, `meatSlicePoly`, `meatApplyCrop`).
+- Senka ispod daske je mekana silueta (ne pravougaonik); dugme „🎚 Senka daske" (levo) ima klizače (providnost, zamućenost, širina, visina, pomeranje), pamti se u `cookster.board-shadow` (`js/board-shadow-tool.js`).
