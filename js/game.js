@@ -10882,7 +10882,7 @@ function kitchenEquipmentDef(id){
 function ownedKitchenEquipment(){
  if(OBJECT_CALIBRATION_MODE)return KITCHEN_EQUIPMENT.map(def=>def.id);
  const owned=CooksterState.progression.kitchenEquipment;
-  return Array.from(new Set([...(Array.isArray(owned)?owned:[]),'mlin_za_mesо','kal_01_jaje','kal_01_dzezva',PAPRIKA_STEAM_BAG_ID,'kaca_prazna','kaca_poklopac',...KITCHEN_EQUIPMENT.filter(d=>d.category==='drink').map(d=>d.id)]));
+  return Array.from(new Set([...(Array.isArray(owned)?owned:[]),'mlin_za_mesо','kal_01_jaje','kal_01_dzezva','meso_junetina',PAPRIKA_STEAM_BAG_ID,'kaca_prazna','kaca_poklopac',...KITCHEN_EQUIPMENT.filter(d=>d.category==='drink').map(d=>d.id)]));
 }
 function equipmentCountInKitchen(id){
  return items.filter(el=>el.dataset.itemId===id).length+
@@ -10910,6 +10910,7 @@ function spawnKitchenEquipment(id,hold=true,slotOverride=null){
    z:++zCounter
  });
  el.dataset.surfaceZone='table';
+ if(def.meatKey){el.dataset.vegetable='1';el.dataset.collisionProfile='vegetable';el.dataset.vegKey=def.meatKey;el.dataset.cutState='whole';}   // meat is cut on the board like a vegetable: whole piece, slices, cut pieces
  if(OBJECT_CALIBRATION_MODE){
    el.dataset.calibrationCopy='1';
    el.dataset.calibrationTemplate=def.id;
@@ -14920,7 +14921,7 @@ function beginCutAction(mode='dice'){
      // v198.5.78: skip the intermediate "sliced" stage when the vegetable
      // has diced art (all 13 currently do) — one cut, straight to kockice.
      spawnSourHalf(target);
-     showToast((mode==='slices'||!targetDef.dicedSrc)?setVegetableSliced(target):setVegetableDiced(target));
+     showToast((mode==='slices'||!targetDef.dicedSrc||targetDef.meat)?setVegetableSliced(target):setVegetableDiced(target));      // meat: the piece is cut into slices first, then a slice into pieces (two passes)
    }else if(beforeState==='sliced'){
      // Still supported so any vegetable/save that predates this change (or
      // has no diced art) can finish the old two-step path.
@@ -15388,7 +15389,7 @@ function moveHeld(){
 
 
 
-Object.entries(VEGETABLES).forEach(([key,veg])=>{
+Object.entries(VEGETABLES).filter(([,v])=>!v.meat).forEach(([key,veg])=>{      // meat is not sold at the market (the butcher's shop comes later)
  const tr=document.createElement('tr');
  tr.innerHTML=`<td style="display:flex;align-items:center;gap:10px"><img src="${veg.src}" alt="" style="width:44px;height:44px;object-fit:contain"><b>${veg.label}</b></td><td>${veg.price} дин</td><td><button class='buy'>Kupi gajbicu (10)</button></td>`;
  tr.querySelector('.buy').onclick=()=>buyProduceCrate(key,true);
