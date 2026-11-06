@@ -6135,6 +6135,23 @@ function showToast(t){return}
 function setMoney(v){if(FREE_MODE&&v<money)v=money;money=v;CooksterState.player.money=v;moneyEl.textContent=FREE_MODE?'Sve je besplatno':`Novac: ${money} дин`;if(marketMoneyLive)marketMoneyLive.textContent=FREE_MODE?'besplatno':`${money} дин`;CooksterSave.schedule()}
 if(FREE_MODE)setMoney(money);
 window.CooksterAddMoney=function(d){setMoney(money+d)};
+// meso: sečenje (js/meat-cut.js) pravi šnicle i smanjuje parče preko ovog mosta
+window.CooksterMeatBridge={
+ // stavi novo meso (šnicla ili manje parče) pored/umesto mete; state: 'snicla' | 'parce'
+ spawn(target,src,label,w,h,i,state){
+  const d=target.dataset,bd=getBoardEl(),rest=state==='parce';
+  const col=(i%3)-1,row=Math.floor(i/3),x=rest?(+d.cx||0)-w/2:(+d.cx||0)+col*w*(state==='kockice'?1.1:.8)-w/2,y=(+d.by||0)-h-(rest?0:row*h*(state==='kockice'?.85:.55));
+  const el=makeItem({id:(rest?'meso_parce_':'meso_snicla_')+Date.now()+'_'+i,label,src,x,y,w,h,z:++zCounter,snapProfile:'produce'});
+  if(!el)return null;
+  el.dataset.meat='1';el.dataset.meatKey=d.meatKey||'junetina';el.dataset.meatState=state||'snicla';
+  setPose(el,x+w/2,(+d.by||0)-(rest?0:row*h*(state==='kockice'?.85:.55)),+d.vis||1);
+  try{if(bd&&d.attachedToBoard==='1'){const bw=Math.max(1,bd.offsetWidth);el.dataset.boardRelX=String(rest?(+d.boardRelX||0):Math.min(.45,Math.max(-.45,((+el.dataset.cx)-(+bd.dataset.cx))/bw)));el.dataset.boardRelY=String((+d.boardRelY||.5)-(rest?0:row*.12));el.dataset.boardRelAngle='0';el.dataset.attachedToBoard='1';syncOneBoardAttachment(el,bd);}}catch(_){}
+  return el;
+ },
+ remove(target){try{removeItem(target);}catch(_){}},
+ save(){try{CooksterSave.schedule();updateHover();}catch(_){}},
+ toast(t){showToast(t);}
+};
 function updateDayUI(){const el=document.getElementById('day');if(el)el.textContent=`Dan ${CooksterState.player.day||1}`}
 function activeRecipe(){
  const recipes=CooksterCatalog.RECIPES||{};
@@ -6708,6 +6725,7 @@ function getBoardEl(){return items.find(i=>i.dataset.itemId==='daska')||null}
 function getKnifeEl(){return items.find(i=>i.dataset.itemId==='noz')||null}
 
 function isBoardCuttableItem(el){
+ if(el&&el.dataset.meat==='1')return el.dataset.meatState==='parce';
  if(!el||(el.dataset.vegetable!=='1'&&el.dataset.fruit!=='1'))return false;
  const isFruit=el.dataset.fruit==='1';
  const key=el.dataset.vegKey||el.dataset.fruitKey||'';
@@ -10910,6 +10928,7 @@ function spawnKitchenEquipment(id,hold=true,slotOverride=null){
    z:++zCounter
  });
  el.dataset.surfaceZone='table';
+ if(def.meat){el.dataset.meat='1';el.dataset.meatKey=def.meat;el.dataset.meatState='parce';}
  if(OBJECT_CALIBRATION_MODE){
    el.dataset.calibrationCopy='1';
    el.dataset.calibrationTemplate=def.id;
@@ -14849,6 +14868,7 @@ function beginCutAction(mode='dice'){
  const knife=getKnifeEl();
  const target=findCutTargetOnBoard();
  if(!board||!knife||!target){showToast('Stavi sastojak na dasku.');return;}
+ if(target.dataset.meat==='1'&&window.CooksterMeatCut){window.CooksterMeatCut.start(target);return;}
  if(mode==='slices'&&window.CooksterTomatoCut?.supports(target)){
    const def=VEGETABLES[target.dataset.vegKey]||{};
    if(def.src&&def.slicedSrc){
