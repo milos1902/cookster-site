@@ -8074,7 +8074,7 @@ function setGhostPoseStyles(ghost,pose){
  ghost.style.left=(pose.cx-pose.w/2)+'px';
  ghost.style.top=(pose.by-pose.h)+'px';
  ghost.style.transformOrigin='50% 90%';
- ghost.style.transform=`perspective(1200px) rotateX(${pose.tilt}deg) rotateZ(${pose.angle}deg) scaleY(${Number.isFinite(+pose.flatten)?+pose.flatten:1})`;
+ ghost.style.transform=isFlatImageItem(holding)?`rotateZ(${pose.angle}deg)`:`perspective(1200px) rotateX(${pose.tilt}deg) rotateZ(${pose.angle}deg) scaleY(${Number.isFinite(+pose.flatten)?+pose.flatten:1})`;
  ghost.style.zIndex=String(pose.z);
  ghost.style.translate=(holding&&holding.dataset&&holding.dataset.itemId!=='daska')?'0 -6px':'';      // the carried item hangs 6 px above its place (set here, before the copy for the backpack is synced, so there are never two pictures at different heights)
  syncBackpackHeldPreview(ghost);
@@ -8493,6 +8493,9 @@ function itemPoseTransform(el,ang,flatten=1,tiltOverride=null){
  return `perspective(1200px) rotateX(${tilt}deg) rotateZ(${ang}deg) scaleY(${flatten})`;
 }
 
+// items whose picture is already drawn in the perspective of the table (the board, the colander ...): no extra CSS tilt or flattening
+const FLAT_IMAGE_IDS=new Set(['daska','kal_02_cediljka']);
+function isFlatImageItem(el){return FLAT_IMAGE_IDS.has(el?.dataset?.itemId||'');}
 function setPose(el,cx,by,vis){
  el.dataset.cx=cx;el.dataset.by=by;
  const surfaceZone=el.dataset.surfaceZone||'table';
@@ -8518,7 +8521,7 @@ function setPose(el,cx,by,vis){
  }else if(pr){
    el.style.transformOrigin=`50% ${Math.round(pr.anchorY*100)}%`;
  }
- el.style.transform=el.dataset.itemId==='daska'?`rotateZ(${ang}deg)`:itemPoseTransform(el,ang,flatten,tilt);      // the board picture is already drawn in perspective: no extra tilt
+ el.style.transform=isFlatImageItem(el)?`rotateZ(${ang}deg)`:itemPoseTransform(el,ang,flatten,tilt);      // the board picture is already drawn in perspective: no extra tilt
  let z=Math.max(+el.dataset.zBase||1,Math.floor(by));
  const board=getBoardEl();
  const attachedToBoard=el.dataset.itemId!=='daska'&&board&&el.dataset.attachedToBoard==='1';
