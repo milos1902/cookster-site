@@ -12294,6 +12294,33 @@ function findCutTargetOnBoard(){
  }
  return first;
 }
+// meat: the piece that is left after a cut: its picture is cropped and the corners of the cut edge are rounded (blur of the alpha + threshold)
+const meatImgCache={};
+function meatLoadImg(src){return meatImgCache[src]||(meatImgCache[src]=new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;}));}
+function meatRoundedCrop(img,L,R,rad){
+ const w=img.naturalWidth,h=img.naturalHeight,sx=Math.round(L*w),sw=Math.max(8,Math.round((1-L-R)*w));
+ const c=document.createElement('canvas');c.width=sw;c.height=h;const g=c.getContext('2d');g.drawImage(img,sx,0,sw,h,0,0,sw,h);
+ const b=document.createElement('canvas');b.width=sw;b.height=h;const bg=b.getContext('2d');bg.filter=`blur(${rad}px)`;bg.drawImage(c,0,0);
+ const od=g.getImageData(0,0,sw,h),bd=bg.getImageData(0,0,sw,h),o=od.data,q=bd.data;
+ for(let i=0;i<o.length;i+=4){const a=q[i+3]/255,t=Math.max(0,Math.min(1,(a-.43)/.14));o[i+3]=Math.round(o[i+3]*t);}
+ g.putImageData(od,0,0);return c;
+}
+window.meatRoundedCrop=meatRoundedCrop;window.meatLoadImg=meatLoadImg;
+async function meatApplyCrop(target,L,R){
+ try{
+  const body=target.querySelector('.body');if(!body||!target.isConnected)return;
+  if(!target.dataset.meatSrc0){target.dataset.meatSrc0=body.getAttribute('src')||body.src;target.dataset.meatW0=target.dataset.baseW||'92';}
+  const img=await meatLoadImg(target.dataset.meatSrc0);
+  const cv=meatRoundedCrop(img,L,R,Math.max(4,Math.round(img.naturalWidth*.06))),url=cv.toDataURL('image/png');
+  const w0=+target.dataset.meatW0||92,oldL=+(target.dataset.meatShownL||0),oldR=+(target.dataset.meatShownR||0);
+  const vis=+target.dataset.vis||1,shift=((L-oldL)-(R-oldR))/2*w0*vis;      // the rest of the meat stays where it was
+  body.style.clipPath='none';body.src=url;
+  const sh=target._contactShadow?.querySelector('img');if(sh)sh.src=url;
+  target.dataset.baseW=String(w0*(1-L-R));target.dataset.meatShownL=String(L);target.dataset.meatShownR=String(R);
+  setPose(target,(+target.dataset.cx)+shift,+target.dataset.by,vis);
+  CooksterSave.schedule();
+ }catch(e){}
+}
 // meat: one cut from the top of the piece takes ONE slice (E = thick, C = thin); the piece gets smaller. Cutting a slice then gives 6 pieces (the normal cut path).
 function meatSliceOff(target,mode){      // the quick cut (E thick / C thin in the old way): takes a slice of a fixed width from the right
  return meatSliceFraction(target,mode==='slices'?.1:.1667,'right');
@@ -12307,23 +12334,23 @@ function meatSliceFraction(target,w,side='right'){
  const room=Math.max(0,1-L-R);w=Math.min(w,room);
  if(w<.03)return 'Pretanko za šniclu.';
  const n=+(target.dataset.meatSlices||0),cx=+target.dataset.cx,by=+target.dataset.by,vis=+target.dataset.vis||1;
+ const bd=getBoardEl(),onBoard=!!bd&&target.dataset.attachedToBoard==='1';
  const dx=78*vis+(n%3)*8,dy=(n%3)*16;
  const el=makeItem({id:'veg_'+sk+'_'+Date.now(),label:def.label,src:def.src,x:cx+dx-def.w/2,y:by-dy-def.h,w:def.w,h:def.h,z:++zCounter,snapProfile:'produce'});
  if(!el)return 'Šnicla nije mogla da se napravi.';
  el.dataset.vegetable='1';el.dataset.collisionProfile='vegetable';el.dataset.vegKey=sk;el.dataset.cutState='whole';
  setPose(el,cx+dx,by-dy,vis);
- const bd=getBoardEl();
- if(bd&&target.dataset.attachedToBoard==='1'){
-   const bw=Math.max(1,bd.offsetWidth);
-   el.dataset.boardRelX=String(Math.min(.45,Math.max(-.45,(cx+dx-(+bd.dataset.cx))/bw)));
-   el.dataset.boardRelY=String((+target.dataset.boardRelY||.5)-dy/Math.max(1,bd.offsetHeight));
+ if(onBoard){      // the slices lie in a row at the front edge of the board, never outside of it
+   // the slices lie one on top of the other, in one pile on the right side of the board (every new slice is a bit higher)
+   el.dataset.boardRelX=String(.2+((n%3)-1)*.012);
+   el.dataset.boardRelY=String(Math.max(.28,.74-n*.045));
    el.dataset.boardRelAngle='0';el.dataset.attachedToBoard='1';syncOneBoardAttachment(el,bd);
  }
  target.dataset.meatSlices=String(n+1);
  if(side==='left')L+=w;else R+=w;
  target.dataset.meatClipL=String(L);target.dataset.meatClipR=String(R);target.dataset.meatLeft=String(6*Math.max(0,1-L-R));
  if(1-L-R<=.05){removeItem(target);}
- else{const body=target.querySelector('.body');if(body)body.style.clipPath=`inset(0 ${(R*100).toFixed(1)}% 0 ${(L*100).toFixed(1)}%)`;}      // the piece is shorter by what was cut off
+ else meatApplyCrop(target,L,R);
  CooksterSave.schedule();
  return thin?'Odrezana je tanka šnicla.':'Odrezana je debela šnicla.';
 }

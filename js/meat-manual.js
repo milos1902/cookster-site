@@ -3,7 +3,7 @@
    Širina šnicle je deo CELE širine parčeta (game.js: meatSliceFraction). E ostaje brzo automatsko sečenje. */
 (function(){
   'use strict';
-  const W=1280,H=720,MW=560,GAP=.02,THIN=.14,MAXW=.34,MINW=.05,BOARD={w:426*1.9,h:285*1.9};
+  const W=1280,H=720,MW=340,GAP=.02,THIN=.14,MAXW=.34,MINW=.05,BOARD={w:426*1.9,h:285*1.9};
   let st=null;
   const cache={};
   function load(src){return cache[src]||(cache[src]=new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;}));}
@@ -32,7 +32,7 @@
     const btn=document.createElement('button');btn.textContent='Gotovo (C)';btn.style.cssText='font:inherit;padding:8px 14px;border-radius:10px;border:2px solid #4a2a12;background:#f1d9a6;color:#3a1d0a;cursor:pointer';btn.onclick=close;bar.appendChild(btn);
     for(const ev of ['pointerdown','pointerup','pointermove','mousedown','mouseup','mousemove','click','dblclick','touchstart','touchmove','touchend','contextmenu','wheel'])root.addEventListener(ev,e=>e.stopPropagation());
     root.append(cv,bar,hint);document.body.appendChild(root);requestAnimationFrame(()=>{root.style.opacity='1';});
-    const MH=MW*meat.height/meat.width,cx=W/2,cy=H/2-10,x0=cx-MW/2,top=cy-MH/2,g=cv.getContext('2d');
+    const MH=MW*meat.height/meat.width,cx=W/2,cy=H/2-10,x0=cx-BOARD.w/2+55,top=cy-MH/2,g=cv.getContext('2d');
     const s=st={root,target,raf:0,stroke:null,cur:null,cuts:[]};
     const LR=()=>[+(target.dataset.meatClipL||0),+(target.dataset.meatClipR||0)];
     const pos=e=>{const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};};
@@ -53,10 +53,18 @@
       g.save();g.shadowColor='rgba(0,0,0,.5)';g.shadowBlur=30;g.shadowOffsetY=14;g.drawImage(board,cx-BOARD.w/2,cy-BOARD.h/2+10,BOARD.w,BOARD.h);g.restore();
       const [L,R]=LR(),sw=(1-L-R);
       if(sw>0){g.save();g.shadowColor='rgba(0,0,0,.35)';g.shadowBlur=14;g.shadowOffsetY=8;
-        g.drawImage(meat,L*meat.width,0,sw*meat.width,meat.height,x0+L*MW,top,sw*MW,MH);g.restore();}
+        // the cut edge is rounded at the top and the bottom (a soft cut, not a razor line)
+        const key=L.toFixed(3)+'|'+R.toFixed(3);
+        if(s.cropKey!==key&&window.meatRoundedCrop){s.crop=window.meatRoundedCrop(meat,L,R,Math.max(4,Math.round(meat.naturalWidth*.06)));s.cropKey=key;}
+        if(s.crop)g.drawImage(s.crop,x0+L*MW,top,sw*MW,MH);else g.drawImage(meat,L*meat.width,0,sw*meat.width,meat.height,x0+L*MW,top,sw*MW,MH);
+        g.restore();}
       // what was cut off (small slices lined up on the right of the board)
-      s.cuts.forEach((c,i)=>{const im=c.thin?imThin:imThick,w=130,h=w*im.height/im.width,x=cx+BOARD.w/2+10,y=cy+BOARD.h/2-60-i*30-h*.2;
-        g.save();g.shadowColor='rgba(0,0,0,.45)';g.shadowBlur=8;g.shadowOffsetY=4;g.drawImage(im,Math.min(W-w-6,x),Math.max(6,y),w,h);g.restore();});
+      // what was cut off lies on the board, as a pile on its right side (as big as the piece: a slice has the face of the piece)
+      s.cuts.forEach((c,i)=>{const im=c.thin?imThin:imThick,w=c.thin?270:300,h=w*im.height/im.width;
+        const x=cx+10+i*26,y=cy+BOARD.h/2-h-34-i*30;
+        g.save();g.shadowColor='rgba(0,0,0,.45)';g.shadowBlur=10;g.shadowOffsetY=5;g.drawImage(im,Math.min(cx+BOARD.w/2-w-6,x),y,w,h);g.restore();});
+
+
       if(s.cur&&s.stroke){
         g.save();g.strokeStyle='#fff';g.lineWidth=3;g.shadowColor='#8c6bff';g.shadowBlur=14;g.setLineDash([10,6]);
         g.beginPath();g.moveTo(s.stroke.x,s.stroke.y);g.lineTo(s.cur.x,s.cur.y);g.stroke();g.restore();
