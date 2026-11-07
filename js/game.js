@@ -10371,6 +10371,7 @@ cookingHudStyle.textContent=`
   box-shadow:0 1px 0 rgba(255,255,255,.15) inset,0 2px 5px rgba(0,0,0,.28);
 }
 .cookster-cooking-hud .cook-progress-bar{
+  border:0!important;border-radius:0!important;box-shadow:none!important;overflow:visible!important;      /* the old frame of css/game.css is not used: the bar is a picture */
   position:relative;
   width:250px;
   height:51px;      /* the drawn bar (assets/ui_cook): the empty one is the background, the full one is uncovered from left to right */
@@ -10378,10 +10379,17 @@ cookingHudStyle.textContent=`
   background:url(assets/ui_cook/traka_prazna.webp?v=1) center/100% 100% no-repeat;
 }
 .cookster-cooking-hud .cook-progress-bar>i{
-  position:absolute;left:0;top:0;bottom:0;width:0%;
-  display:block;overflow:hidden;background:none;
+  transition:width .10s linear;border-radius:999px!important;
+  position:absolute;left:3.85%;top:19.75%;height:35%;width:0%;      /* the slot of the wooden frame; the width is the cooked part (of 92.3% of the bar) */
+  display:block;overflow:hidden;background:none;border-radius:999px;
 }
-.cookster-cooking-hud .cook-progress-bar>i>img{position:absolute;left:0;top:0;width:250px;height:51px;max-width:none;pointer-events:none}
+.cookster-cooking-hud .cook-progress-bar::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:3;      /* the three round thermometers lie ABOVE the colour: a copy of the frame that is visible only inside the three circles */
+  background:url(assets/ui_cook/traka_prazna.webp?v=1) center/100% 100% no-repeat;
+  -webkit-mask-image:radial-gradient(circle 13.5px at 14.1% 74.2%,#000 96%,transparent 100%),radial-gradient(circle 13.5px at 50% 74.2%,#000 96%,transparent 100%),radial-gradient(circle 13.5px at 85.4% 74.2%,#000 96%,transparent 100%);
+  mask-image:radial-gradient(circle 13.5px at 14.1% 74.2%,#000 96%,transparent 100%),radial-gradient(circle 13.5px at 50% 74.2%,#000 96%,transparent 100%),radial-gradient(circle 13.5px at 85.4% 74.2%,#000 96%,transparent 100%);
+}
+.cookster-cooking-hud .cook-progress-bar>i>img{position:absolute;left:0;top:0;width:231px;height:100%;max-width:none;pointer-events:none}
 .cookster-cooking-hud.ready .cook-progress-bar>i,.cookster-cooking-hud.browned .cook-progress-bar>i,.cookster-cooking-hud.burnt .cook-progress-bar>i{background:none}
 .cookster-cooking-hud .cook-safe-mark{display:none}
 `;
@@ -10404,7 +10412,7 @@ function ensureCookingEffects(vessel){
     vessel.querySelectorAll?.(':scope > .pan-status,:scope > .cooking-status').forEach(n=>n.remove());
     const status=document.createElement('div');
     status.className='cookster-cooking-hud';
-    status.innerHTML='<div class="cook-state-label">Sirovo</div><div class="cook-progress-bar"><i><img src="assets/ui_cook/traka_puna.webp?v=1" alt="" draggable="false"></i><b class="cook-safe-mark"></b></div>';
+    status.innerHTML='<div class="cook-state-label">Sirovo</div><div class="cook-progress-bar"><i><img src="assets/ui_cook/traka_boja.webp?v=1" alt="" draggable="false"></i><b class="cook-safe-mark"></b></div>';
     document.body.appendChild(status);vessel._panStatus=status;
     vessel._cookStateLabel=status.querySelector('.cook-state-label');
     vessel._cookProgressFill=status.querySelector('.cook-progress-bar>i');
@@ -14333,7 +14341,7 @@ function updateCookingStatus(vessel,modelOverride=null,stateOverride=null,countO
   if(vessel._cookProgressBucket!==progressBucket){
     vessel._cookProgressBucket=progressBucket;
     if(vessel._cookProgressFill)
-      vessel._cookProgressFill.style.width=progressBucket<=0?'0%':`${(3.8+(progressBucket/200)*92.4).toFixed(1)}%`;      // the coloured part of the drawn bar lies between 3.8% and 96.2% of its width
+      vessel._cookProgressFill.style.width=progressBucket<=0?'0%':`${((progressBucket/200)*92.3).toFixed(1)}%`;      // the coloured fill grows from left to right inside the slot
   }
   positionCookingHud(vessel);
 }
