@@ -10308,7 +10308,7 @@ function addIngredientToContainer(item,vessel){
 
  {      // meat: a whole slice stays where the player dropped it (the picture of the vessel uses it, see appendWholeProduce)
    const mdef=VEGETABLES[meta.baseKey];
-   if(((mdef?.meat&&meta.key.endsWith('_celo'))||(vessel.dataset.itemId==='daska_serviranje'&&meta.type!=='staple'))){      // on the serving board every whole piece stays where it was put down
+   if(((mdef?.meat&&meta.key.endsWith('_celo'))||(keepsDrops(vessel)&&meta.type!=='staple'))){      // on the serving board every whole piece stays where it was put down
      const wrap=vessel._panContent||vessel._vesselContent;let r=wrap?.getBoundingClientRect?.();if(!r||r.width<4)r=vessel.getBoundingClientRect();      // the picture of the contents is the same box as the vessel
      if(r&&r.width>4&&r.height>4){
        const idx=Math.max(0,Math.round(+(heatable?CooksterPan.counts(vessel)[meta.key]:CooksterContainer.read?.(vessel)?.items?.[meta.key]?.count)||0));
@@ -12758,12 +12758,23 @@ function vesselFloorCenter(vessel){
   }catch(_){}
   return null;
 }
+// ONE rule for every vessel except frying pans and pots: a whole piece lies where the player put it down (not in a heap, not snapped to a place of a layout)
+function keepsDrops(v){
+  const id=v?.dataset?.itemId||'';
+  if(!v||isPanItem(v)||vesselSubtypeFor(v)==='pot'||/^(tiganj|serpa)/.test(id))return false;
+  return true;
+}
+function dropSpot(v,key,idx){
+  const dr=v?._meatDrops?.[key]?.[idx];if(!dr||!keepsDrops(v))return null;
+  const board=v.dataset.itemId==='daska_serviranje';      // on the board not over the handle
+  return {x:Math.max(board?10:12,Math.min(board?76:88,dr.fx*100)),y:Math.max(18,Math.min(82,dr.fy*100))};
+}
 // where a piece / slice of meat lies in a vessel (percent of the food layer): a slice lies in the middle of the floor (in a pan and in every other vessel),
 // a piece of meat where the player dropped it
 function meatSlicePos(vessel,md,key,idx){
   const wrap=vessel?._vesselContent||vessel?._panContent||null,Wd=(wrap&&wrap.clientWidth)||vessel?.offsetWidth||190,vv=+vessel?.dataset?.vis||1;
   const dr=vessel?._meatDrops?.[key]?.[idx];
-  const wide=vessel?.dataset?.itemId==='daska_serviranje';      // on the serving board the meat stays exactly where it was put down
+  const wide=keepsDrops(vessel);      // on the serving board the meat stays exactly where it was put down
   let x=dr?(wide?Math.max(8,Math.min(92,dr.fx*100)):Math.max(30,Math.min(70,dr.fx*100))):50,y=dr?(wide?Math.max(12,Math.min(88,dr.fy*100)):Math.max(32,Math.min(68,dr.fy*100))):50;
   if(md?.meat==='snicla'&&!dr){const c=isPanItem(vessel)?{x:56,y:55}:vesselFloorCenter(vessel);if(c){x=c.x+idx*7;y=c.y+idx*5;}}      // a slice lies where the player dropped it; only without a remembered spot (an old save) it lies in the middle
   if(/_krike(_rare|_med|_wd)?_celo$/.test(String(key))){      // a fan of slices: always as big as the loose one (112 px) - by the SCREEN width of the layer (the perspective squeezes the layer)
@@ -12815,9 +12826,9 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
         L={x:sp.x,y:sp.y,w:sp.w,rot:/_krike(_rare|_med|_wd)?_celo$/.test(entry.key)?((meatSeen[entry.key]*53)%7)-3:((meatSeen[entry.key]*53)%21)-10};
         img.style.height='auto';img.style.objectFit='contain';
       }
-      if(!mdef?.meat&&vessel?.dataset?.itemId==='daska_serviranje'){      // not a snap to some place of the layout: the piece lies where the player put it down
-        boardSeen[entry.key]=(boardSeen[entry.key]||0);const dr=vessel._meatDrops?.[entry.key]?.[boardSeen[entry.key]++];
-        if(dr)L={...L,x:Math.max(10,Math.min(76,dr.fx*100)),y:Math.max(18,Math.min(82,dr.fy*100))};
+      if(!mdef?.meat){      // not a snap to some place of the layout: the piece lies where the player put it down
+        boardSeen[entry.key]=(boardSeen[entry.key]||0);const sp0=dropSpot(vessel,entry.key,boardSeen[entry.key]++);
+        if(sp0)L={...L,x:sp0.x,y:sp0.y};
       }
       img.className='whole-produce-piece';img.dataset.entryKey=entry.key;img.src=src;img.alt='';img.draggable=false;
       img.style.left=L.x.toFixed(2)+'%';img.style.top=L.y.toFixed(2)+'%';img.style.width=L.w.toFixed(2)+'%';
@@ -12905,13 +12916,13 @@ function appendRoastedPepperHeap(layer,vessel,counts,metaItems){
   if(!list.length)return;
   const lay=trayPepperLayout(list.length,vessel,+VEGETABLES.paprika?.w||70);
   // the kinds are mixed over the heap (the same arrangement every time: a fixed shuffle)
-  const onBoard=vessel?.dataset?.itemId==='daska_serviranje',bSeen={};
+  const onBoard=keepsDrops(vessel),bSeen={};
   if(!onBoard)for(let i=list.length-1;i>0;i--){const j=(i*7919+13)%(i+1);const t=list[i];list[i]=list[j];list[j]=t;}
   list.forEach((entry,i)=>{
     let L=lay[i];
     if(onBoard){      // on the serving board a pepper lies exactly where the player put it down (no heap, no snapping to a place of the layout)
-      bSeen[entry.key]=(bSeen[entry.key]||0);const dr=vessel._meatDrops?.[entry.key]?.[bSeen[entry.key]++];
-      if(dr)L={...L,x:Math.max(10,Math.min(76,dr.fx*100)),y:Math.max(18,Math.min(82,dr.fy*100))};
+      bSeen[entry.key]=(bSeen[entry.key]||0);const sp0=dropSpot(vessel,entry.key,bSeen[entry.key]++);
+      if(sp0)L={...L,x:sp0.x,y:sp0.y};
     }
     const img=document.createElement('img');img.className='whole-roasted-pepper';
     img.dataset.entryKey=entry.key;      // a click on it takes this pepper out of the vessel (js/vessel-take.js)

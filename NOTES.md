@@ -1248,3 +1248,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Kriške mesa na dasci: bliža (niža u slici) uvek ide preko dalje (z-index po y).
 - Roštilj: isečeno meso (lepeza kriški) se ne prima na roštilj; nova šnicla ide na najbliže slobodno mesto oko mesta spuštanja (nikad skok skroz levo).
 - Servirna daska: cele oljuštene paprike (i ostale cele stvari) leže tačno gde ih spustite, bez gomile i bez snapa na ivicu; bliža uvek preko dalje.
+- Jedno pravilo za sve posude osim tiganja i šerpi: cele stvari (meso, paprike, cele paprike...) leže tačno gde su spuštene (`keepsDrops`/`dropSpot` u game.js); u tiganju i šerpi ostaje gomila.
