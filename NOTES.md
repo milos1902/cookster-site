@@ -1211,3 +1211,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - `junetina_snicla_debela` ima `friedSrc` (pečena, stepen 4) i `wellDoneSrc` (zagorela, stepen 6) za celu šniclu u posudi: wholeProduceSource(baseKey,meta,stage) u game.js. Iste granice kao kod seckanog povrća.
 - Slike za roštilj (`grilledSrc`, `grilledWellDoneSrc`, sa crtama) su u katalogu i u assets/meat, ali se još ne koriste: u igri nema roštilja.
 - Fajlovi: assets/meat/junetina_snicla_debela_{tiganj,rostilj}_{pecena,zagorela}.png (480 px širine).
+- Šnicla u tiganju uvek leži na sredini dna tiganja (x 56%, y 55% sloja hrane); ako ih ima više, pomeraju se malo. U drugim posudama ostaje gde je spuštena.

@@ -12689,6 +12689,7 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
         meatSeen[entry.key]=(meatSeen[entry.key]||0);const dr=vessel?._meatDrops?.[entry.key]?.[meatSeen[entry.key]++];
         const wrap=vessel?._vesselContent||vessel?._panContent||null,Wd=(wrap&&wrap.clientWidth)||vessel?.offsetWidth||190,vv=+vessel?.dataset?.vis||1;
         L={x:dr?Math.max(30,Math.min(70,dr.fx*100)):L.x,y:dr?Math.max(32,Math.min(68,dr.fy*100)):L.y,w:Math.min(60,(+mdef.w||60)*vv/Wd*100),rot:((meatSeen[entry.key]*53)%21)-10};
+        if(mdef.meat==='snicla'&&isPanItem(vessel)){L.x=56+(meatSeen[entry.key]-1)*7;L.y=55+(meatSeen[entry.key]-1)*5;}      // a slice in a frying pan always lies in the middle of the pan
         img.style.height='auto';img.style.objectFit='contain';
       }
       img.className='whole-produce-piece';img.dataset.entryKey=entry.key;img.src=src;img.alt='';img.draggable=false;
@@ -12734,6 +12735,7 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
       meatSeen[entry.key]=(meatSeen[entry.key]||0);const dr=vessel?._meatDrops?.[entry.key]?.[meatSeen[entry.key]++];
       if(dr){x=Math.max(30,Math.min(70,dr.fx*100));y=Math.max(32,Math.min(66,dr.fy*100));}
       rot=((meatSeen[entry.key]*53)%21)-10;w=mdef.panW||38;
+      if(mdef.meat==='snicla'&&isPanItem(vessel)){x=56+(meatSeen[entry.key]-1)*7;y=55+(meatSeen[entry.key]-1)*5;}      // in the middle of the pan
     }
     const src=wholeProduceSource(entry.baseKey,entry.meta,stage);
     if(!src)continue;
