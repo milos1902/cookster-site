@@ -11,6 +11,7 @@ const OVAL='oval_tanjir',HEAP=14,OVALDIR='assets/calibration_props/oval/';
 // the zone of the food in every kind of vessel (parts of the width / height of its picture; rot = tilt of the zone)
 const ZONES={
   oval_tanjir:{x:.50,y:.50,rx:.40,ry:.38,rot:.34},
+  daska_serviranje:{x:.44,y:.50,rx:.40,ry:.34,rot:0},      // the serving board: the whole board without the handle
   ANY:{x:.50,y:.50,rx:.43,ry:.42,rot:0}                                // every other vessel: almost the whole picture, so food stays exactly where the player put it
 };
 const zoneOf=id=>ZONES[id]||ZONES.ANY;
