@@ -100,7 +100,7 @@ window.CooksterCatalog = Object.freeze({
       wellDoneSrc: 'assets/meat/junetina_snicla_debela_tiganj_zagorela.png',
       grilledSrc: 'assets/meat/junetina_snicla_debela_rostilj_pecena.png',
       grilledWellDoneSrc: 'assets/meat/junetina_snicla_debela_rostilj_zagorela.png',
-      grilledSliced: Object.freeze({ rare: 'assets/meat/junetina_rostilj_krike_rare.webp', medium: 'assets/meat/junetina_rostilj_krike_med.webp', welldone: 'assets/meat/junetina_rostilj_krike_med.webp', w: 112, h: 39 }),      // sliced grilled steak (a fan of slices); medium/welldone pictures: until they are drawn the medium rare one is used
+      grilledSliced: Object.freeze({ rare: 'assets/meat/junetina_rostilj_krike_rare.webp', medium: 'assets/meat/junetina_rostilj_krike_med.webp', welldone: 'assets/meat/junetina_rostilj_krike_wd.webp', w: 112, h: 39 }),      // sliced grilled steak (a fan of slices); medium/welldone pictures: until they are drawn the medium rare one is used
       friedDicedSrc: 'assets/meat/junetina_k6_debela_fried.png',
       wellDoneDicedSrc: 'assets/meat/junetina_k6_debela_welldone.png',
       dicedLabel: 'junetina na komade',
