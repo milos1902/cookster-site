@@ -1247,3 +1247,5 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Servirna daska (ispravke): ne daje kašičicu za mešanje (`stirEligible`); nema prednjeg sloja posude preko mesa (`wantsFrontMask`), pa komadi ne "propadaju"; svaka pečenost kriški ima svoj ključ (`_krike_rare|_med|_wd_celo`) pa rare ostaje rare kad se doda medium; lepeza je uvek 112 px (po ekranskoj širini sloja) kao na dasci za sečenje; lepeza leži cela na plohi daske (drška i ivica ostaju slobodni za hvatanje daske).
 - Kriške mesa na dasci: bliža (niža u slici) uvek ide preko dalje (z-index po y).
 - Roštilj: isečeno meso (lepeza kriški) se ne prima na roštilj; nova šnicla ide na najbliže slobodno mesto oko mesta spuštanja (nikad skok skroz levo).
+- Servirna daska: cele oljuštene paprike (i ostale cele stvari) leže tačno gde ih spustite, bez gomile i bez snapa na ivicu; bliža uvek preko dalje.
+- Jedno pravilo za sve posude osim tiganja i šerpi: cele stvari (meso, paprike, cele paprike...) leže tačno gde su spuštene (`keepsDrops`/`dropSpot` u game.js); u tiganju i šerpi ostaje gomila.
