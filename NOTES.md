@@ -1212,3 +1212,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Slike za roštilj (`grilledSrc`, `grilledWellDoneSrc`, sa crtama) su u katalogu i u assets/meat, ali se još ne koriste: u igri nema roštilja.
 - Fajlovi: assets/meat/junetina_snicla_debela_{tiganj,rostilj}_{pecena,zagorela}.png (480 px širine).
 - Šnicla u tiganju uvek leži na sredini dna tiganja (x 56%, y 55% sloja hrane); ako ih ima više, pomeraju se malo. U drugim posudama ostaje gde je spuštena.
+- Mrlje od masti u tiganju: kreću kad šnicla počne da se prži (doneness >= .04) i rastu do .6; ostaju kad se šnicla izvadi; nestaju pranjem (sunđer ili sudopera). js/vessel-dirt.js: PROC (tiganj_veliki, tiganj_mali), grease(el,level); game.js updateVesselDirtState. Sada se mrlje crtaju programski. Kad stigne nacrtana slika: DIRTY_ART u vessel-dirt.js.

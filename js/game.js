@@ -9441,6 +9441,13 @@ window.addEventListener('cookster:vessel-calibration',e=>{
   });
 });
 function updateVesselDirtState(el){
+ try{      // meat frying in a pan: grease stains start when the meat starts to cook and grow with it (js/vessel-dirt.js)
+   if(isPanItem(el)&&window.CooksterVesselDirt?.grease){
+     const pm=CooksterPan.read(el),meta=readPanIngredientMeta(el)||{};
+     const hasMeat=Object.entries(pm.ingredients||{}).some(([k,n])=>(+n||0)>0&&VEGETABLES[meta[k]?.baseKey||k.replace(/_(celo|diced)$/,'')]?.meat);
+     if(hasMeat){const d=+pm.doneness||0;window.CooksterVesselDirt.grease(el,d<.04?0:Math.min(1,d/.6));}
+   }
+ }catch(_){}
  try{window.CooksterVesselDirt?.update(el,containerTotal(el),isHeatableCookwareItem(el)&&!!CooksterPan.read(el).burnt);}catch(_){}
  try{window.CooksterVesselWater?.sync(el);}catch(_){}
 }
