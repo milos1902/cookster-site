@@ -12310,14 +12310,15 @@ function takeOneFromCrate(crate){
 }
 
 function findCutTargetOnBoard(){
- let first=null;
+ const onBoard=el=>el.dataset.attachedToBoard==='1'&&isBoardCuttableItem(el);
+ if(hoverItem&&onBoard(hoverItem))return hoverItem;      // what the mouse points at is cut
+ let first=null,slice=null;
  for(const el of items){
-   if(el.dataset.attachedToBoard!=='1')continue;
-   if(!isBoardCuttableItem(el))continue;
-   if(VEGETABLES[el.dataset.vegKey]?.meat==='snicla')return el;       // a slice is cut before the rest of the meat
+   if(!onBoard(el))continue;
+   if(VEGETABLES[el.dataset.vegKey]?.meat==='snicla'){if(!slice)slice=el;continue;}
    if(!first)first=el;
  }
- return first;
+ return first||slice;      // without pointing: the piece (or a vegetable) first, a slice only when it is alone on the board
 }
 // ---------- meat: cutting with any line (the manual cut, js/meat-manual.js) ----------
 // A piece of meat is a convex polygon in the coordinates of its picture (0..1). A cut splits it by a line: the smaller part is a slice, the bigger one is what is left.
@@ -12364,7 +12365,7 @@ async function meatApplyCrop(target,P){
   target.dataset.baseW=String(w0*(box.x1-box.x0));target.dataset.baseH=String(h0*(box.y1-box.y0));
   setPose(target,cx0+(((box.x0+box.x1)/2)-.5)*w0*vis,by0-(1-box.y1)*h0*vis,vis);
   const bd=getBoardEl();
-  if(bd&&target.dataset.attachedToBoard==='1'){target.dataset.boardRelX=String(-.44+(parseFloat(target.style.width)||40)/(2*Math.max(1,bd.offsetWidth))+.012);target.dataset.boardRelY=String(+target.dataset.boardRelY||.55);syncOneBoardAttachment(target,bd);}      // the rest of the meat is on the left, the slices on the right
+  if(bd&&target.dataset.attachedToBoard==='1'){target.dataset.boardRelX='-.105';      /* the rest of the piece stays in the middle of the board (the slice goes to the right) */target.dataset.boardRelY=String(+target.dataset.boardRelY||.55);syncOneBoardAttachment(target,bd);}      // the rest of the meat is on the left, the slices on the right
   CooksterSave.schedule();
  }catch(e){}
 }

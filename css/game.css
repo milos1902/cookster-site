@@ -2809,21 +2809,7 @@ body.market-open #creatorLivePanel,body.garden-open #creatorLivePanel,body.kitch
 
 
 /* === v198.5.30 — board center snap / knife === */
-.item[data-item-id="daska"].cut-snap-active::after{
-  content:"";
-  position:absolute;
-  left:50%;
-  top:53%;
-  width:34px;
-  height:34px;
-  transform:translate(-50%,-50%);
-  border-radius:50%;
-  border:3px solid rgba(101,231,118,.96);
-  background:rgba(78,214,96,.16);
-  box-shadow:0 0 0 4px rgba(255,255,255,.72),0 0 18px rgba(73,226,94,.55);
-  pointer-events:none;
-  z-index:12;
-}
+/* the green snap circle on the board is gone (the snap itself stays) */
 
 /* Fill the visually truncated wooden handle without touching blade pixels. */
 .item[data-item-id="noz"]>.body{
