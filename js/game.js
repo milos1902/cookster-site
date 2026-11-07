@@ -12373,14 +12373,14 @@ async function meatApplyCrop(target,P){
 }
 // the quick cut (E thick / old C thin): a slice of a fixed width from the right edge
 function meatSliceOff(target,mode){
- const P=meatPoly(target),bb=meatPolyBox(P),w=(mode==='slices'?.1:.1667),x=bb.x1-w;
+ const P=meatPoly(target),bb=meatPolyBox(P),w=.1667,x=bb.x1-w;
  const [A,B]=meatSplit(P,x,0,x,1);      // A: one side of the line, B: the other
  const right=(A&&A[0][0]>=x-1e-9&&A.every(q=>q[0]>=x-1e-9))?A:B,left=right===A?B:A;
- return meatSlicePoly(target,left,right,w<.14);
+ return meatSlicePoly(target,left,right,false);      // only the thick slice exists (the thin one is gone)
 }
 // one slice item (thin or thick) on the board (a pile on the right side), nothing else changes
 function meatSpawnSlice(target,thin,n){
- const key=target.dataset.vegKey||'junetina',sk=key+(thin?'_snicla_tanka':'_snicla_debela'),def=VEGETABLES[sk];
+ const key=target.dataset.vegKey||'junetina',sk=key+'_snicla_debela',def=VEGETABLES[sk];
  if(!def)return null;
  const cx=+target.dataset.cx,by=+target.dataset.by,vis=+target.dataset.vis||1,bd=getBoardEl(),onBoard=!!bd&&target.dataset.attachedToBoard==='1';
  const dx=78*vis+(n%3)*8,dy=(n%3)*16;
@@ -12413,7 +12413,7 @@ function meatFrom3DCut(target,pieces){
 window.meatFrom3DCut=meatFrom3DCut;
 // make one slice item (thin or thick) next to the meat, and keep what is left of the piece
 function meatSlicePoly(target,keep,slice,thin){
- const key=target.dataset.vegKey||'junetina',sk=key+(thin?'_snicla_tanka':'_snicla_debela'),def=VEGETABLES[sk];
+ const key=target.dataset.vegKey||'junetina',sk=key+'_snicla_debela',def=VEGETABLES[sk];
  if(!def)return 'Nema šnicle za ovo meso.';
  if(!keep||!slice)return 'Rez ne ide kroz meso.';
  const n=+(target.dataset.meatSlices||0),cx=+target.dataset.cx,by=+target.dataset.by,vis=+target.dataset.vis||1;
