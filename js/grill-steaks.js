@@ -9,12 +9,31 @@ var MAXN=6;      // the logic is the same for every slice of meat that has the p
 var steaks=[],seq=1,last=0;
 /* the grate in the picture of the kitchen (1672x941): x 285..700, y 62..100 (the bottoms of the steaks stay above the stone wall in front of it) and in the close-up x 230..1370, y 262..420 */
 var KG={x0:285,x1:700,y0:66,y1:100,w:50},ZG={x0:230,x1:1370,y0:262,y1:420,w:190};
+/* the copper tray on the right edge of the stone (assets/new_props/pleh_rostilj.webp): the grilled steaks are put into it (they stop cooking there). zoom: centre and width in the picture of the close-up, kitchen: the same in the picture of the kitchen */
+var TRZ={cx:1446,cy:329,w:272},TRK={cx:727,cy:80,w:72},TR_ASPECT=525/460,TRAY_MAX=4,TRAY_SRC='assets/new_props/pleh_rostilj.webp?v=1';
+function slotPos(k,cx,cy,w){var t=(k+.5)/TRAY_MAX,h=w*TR_ASPECT;return {x:cx-w/2+(.28+.50*t)*w,y:cy-h/2+(.20+.62*t)*h,w:w*.40};}
 var RAW_AT=.3,BURN_AT=.9,RATE=1/25;      // grilled from 30%, burnt from 90% of a side; one side: grilled after about 8 s, burnt after about 23 s on a full fire
 function def(key){try{return VEGETABLES[key];}catch(e){return null;}}
 function canGrill(key){var d=def(key);return !!(d&&d.meat==='snicla'&&d.grilledSrc);}
 function srcOf(c,key){var d=def(key);if(!d)return '';return c>=BURN_AT?(d.grilledWellDoneSrc||d.src):c>=RAW_AT?(d.grilledSrc||d.src):d.src;}
 function stateOf(c){return c>=BURN_AT?'burnt':c>=RAW_AT?'grilled':'raw';}
 function lvl(){try{return window.CooksterGrill?CooksterGrill.level():0;}catch(e){return 0;}}
+var kTray=null;
+function kTrayEl(){
+  if(kTray&&kTray.isConnected)return kTray;
+  var sc=document.getElementById('scene');if(!sc)return null;
+  var im=document.createElement('img');im.draggable=false;im.className='grill-tray-k';im.src=TRAY_SRC;
+  im.style.cssText='position:absolute;z-index:5;pointer-events:none;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 3px rgba(0,0,0,.45));left:'+TRK.cx+'px;top:'+TRK.cy+'px;width:'+TRK.w+'px;height:auto';
+  sc.appendChild(im);kTray=im;return im;
+}
+function zTrayEl(){
+  var h=zHost();if(!h)return null;
+  var t=h.querySelector('.gz-tray');if(t)return t;
+  t=document.createElement('img');t.draggable=false;t.className='gz-tray';t.src=TRAY_SRC;
+  t.style.cssText='position:absolute;pointer-events:none;transform:translate(-50%,-50%);filter:drop-shadow(0 10px 8px rgba(0,0,0,.5));left:'+(TRZ.cx/1672*100)+'%;top:'+(TRZ.cy/941*100)+'%;width:'+(TRZ.w/1672*100)+'%;height:auto';
+  h.insertBefore(t,h.firstChild);return t;
+}
+function freeSlot(){for(var k=0;k<TRAY_MAX;k++){if(!steaks.some(function(o){return o.slot===k;}))return k;}return -1;}
 function kEl(s){
   if(s.kel&&s.kel.isConnected)return s.kel;
   var sc=document.getElementById('scene');if(!sc)return null;
@@ -23,7 +42,7 @@ function kEl(s){
   sc.appendChild(im);s.kel=im;return im;
 }
 var hinted=false;
-function zoomHint(){if(hinted||!document.getElementById('grillZoom'))return;hinted=true;setTimeout(function(){try{showToast('Vuci šniclu da je pomeriš. Desni klik: okreni ili uzmi meso.');}catch(e){}},1200);}
+function zoomHint(){if(hinted||!document.getElementById('grillZoom'))return;hinted=true;setTimeout(function(){try{showToast('Vuci šniclu da je pomeriš ili da je staviš u pleh. Desni klik: okreni ili uzmi meso.');}catch(e){}},1200);}
 function zHost(){var v=document.getElementById('grillZoom');return v?v.querySelector('.gz-steaks'):null;}
 function zEl(s){
   var h=zHost();if(!h)return null;
@@ -38,11 +57,14 @@ function zEl(s){
   h.appendChild(im);s.zel=im;return im;
 }
 function layout(s){
-  var kx=KG.x0+s.u*(KG.x1-KG.x0),ky=KG.y0+s.v*(KG.y1-KG.y0);
+  kTrayEl();zTrayEl();
+  var kx,ky,kw=KG.w,zx,zy,zw=ZG.w;
+  if(s.slot!=null){var kp=slotPos(s.slot,TRK.cx,TRK.cy,TRK.w),zp=slotPos(s.slot,TRZ.cx,TRZ.cy,TRZ.w);kx=kp.x;ky=kp.y;kw=kp.w;zx=zp.x;zy=zp.y;zw=zp.w;}
+  else{kx=KG.x0+s.u*(KG.x1-KG.x0);ky=KG.y0+s.v*(KG.y1-KG.y0);zx=ZG.x0+s.u*(ZG.x1-ZG.x0);zy=ZG.y0+s.v*(ZG.y1-ZG.y0);}
   var e=kEl(s);
-  if(e){var w=KG.w;e.style.left=kx+'px';e.style.top=ky+'px';e.style.width=w+'px';e.style.height='auto';e.style.transform='translate(-50%,-50%) rotate('+s.rot+'deg)';var src=srcOf(s.cook[s.up],s.key);if(e.getAttribute('src')!==src)e.setAttribute('src',src);}
+  if(e){e.style.left=kx+'px';e.style.top=ky+'px';e.style.width=kw+'px';e.style.height='auto';e.style.zIndex=s.slot!=null?'7':'6';e.style.transform='translate(-50%,-50%) rotate('+s.rot+'deg)';var src=srcOf(s.cook[s.up],s.key);if(e.getAttribute('src')!==src)e.setAttribute('src',src);}
   var z=zEl(s);
-  if(z){var zx=ZG.x0+s.u*(ZG.x1-ZG.x0),zy=ZG.y0+s.v*(ZG.y1-ZG.y0),zw=ZG.w;
+  if(z){
     z.style.left=(zx/1672*100)+'%';z.style.top=(zy/941*100)+'%';z.style.width=(zw/1672*100)+'%';z.style.height='auto';
     if(!s.flipping){z.style.transform='translate(-50%,-50%) rotate('+s.rot+'deg)';}
     var src2=srcOf(s.cook[s.up],s.key);if(z.getAttribute('src')!==src2)z.setAttribute('src',src2);}
@@ -50,29 +72,42 @@ function layout(s){
 function tick(now){
   var dt=Math.min(.25,(now-last)/1000||.05);last=now;
   var L=lvl();
-  if(L>.2)steaks.forEach(function(s){var down=1-s.up;s.cook[down]=Math.min(1.5,s.cook[down]+dt*RATE*L);});
+  if(L>.2)steaks.forEach(function(s){if(s.slot!=null)return;var down=1-s.up;s.cook[down]=Math.min(1.5,s.cook[down]+dt*RATE*L);});
   steaks.forEach(layout);
   zoomHint();
   updateBar();
   sizzleLoop();
 }
 setInterval(function(){tick(performance.now());},250);
+// the steak is let go over the tray: it lies in the tray (it stops cooking there)
+function overTray(x,y){
+  var t=zHost()&&zHost().querySelector('.gz-tray');if(!t)return false;
+  var r=t.getBoundingClientRect(),mx=r.width*.12,my=r.height*.08;
+  return x>=r.left+mx&&x<=r.right-mx&&y>=r.top+my&&y<=r.bottom-my;
+}
+function toTray(s){
+  var k=freeSlot();if(k<0){try{showToast('Pleh je pun.');}catch(e){}return false;}
+  s.slot=k;layout(s);hideBar();return true;
+}
+function dropOnTray(s,x,y){if(x==null||y==null)return;if(s.slot==null&&overTray(x,y))toTray(s);}
 // moving a steak on the grate: hold the left button on it and drag
 var drag=null;
 function startDrag(s,e){
   if(drag||s.flipping)return;
   var h=zHost();if(!h)return;
-  drag={s:s,pid:e.pointerId,el:s.zel};
+  var wasIn=s.slot!=null;drag={s:s,pid:e.pointerId,el:s.zel};
   try{s.zel.setPointerCapture(e.pointerId);}catch(x){}
   s.zel.style.cursor='grabbing';s.zel.style.zIndex='6';
   drag.mv=function(ev){
+    s.slot=null;
     var r=h.getBoundingClientRect(),px=(ev.clientX-r.left)/r.width*1672,py=(ev.clientY-r.top)/r.height*941;
     s.u=Math.max(.02,Math.min(1,(px-ZG.x0)/(ZG.x1-ZG.x0)));s.v=Math.max(0,Math.min(1,(py-ZG.y0)/(ZG.y1-ZG.y0)));
-    layout(s);moveBar(s);
+    drag.lx=ev.clientX;drag.ly=ev.clientY;layout(s);moveBar(s);
   };
   drag.up=function(){
     if(!drag)return;var d=drag;drag=null;
     try{d.el.releasePointerCapture(d.pid);}catch(x){}
+    dropOnTray(d.s,d.lx,d.ly);
     window.removeEventListener('pointermove',d.mv,true);window.removeEventListener('pointerup',d.up,true);window.removeEventListener('pointercancel',d.up,true);
     d.el.style.cursor='grab';d.el.style.zIndex='';
   };
@@ -88,7 +123,7 @@ function openMenu(s,e){
   function btn(label,fn){var b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='display:block;width:100%;text-align:left;padding:8px 14px;margin:2px 0;background:transparent;color:#fff;border:0;border-radius:7px;cursor:pointer;font:inherit';
     b.onmouseenter=function(){b.style.background='rgba(241,175,51,.35)';};b.onmouseleave=function(){b.style.background='transparent';};
     b.onclick=function(ev){ev.stopPropagation();closeMenu();fn(ev);};return b;}
-  m.appendChild(btn('Okreni meso',function(){flip(s);}));
+  if(s.slot==null){m.appendChild(btn('Okreni meso',function(){flip(s);}));if(freeSlot()>=0)m.appendChild(btn('Stavi u pleh',function(){toTray(s);}));}
   m.appendChild(btn('Uzmi meso',function(ev){take(s,ev);}));
   ['pointerdown','click','contextmenu','mousedown'].forEach(function(n){m.addEventListener(n,function(ev){ev.stopPropagation();});});
   v.appendChild(m);menu=m;
@@ -97,7 +132,7 @@ function openMenu(s,e){
 // the cooking bar over the steak under the mouse (one bar at a time): it shows how far the side that lies on the grate is cooked
 var bar=null,barFor=null;
 function showBar(s){
-  var v=document.getElementById('grillZoom');if(!v||s.flipping)return;
+  var v=document.getElementById('grillZoom');if(!v||s.flipping||s.slot!=null)return;
   hideBar();
   var d=document.createElement('div');d.className='cookster-cooking-hud visible gz-bar';
   d.innerHTML='<div class="cook-state-label"></div><div class="cook-progress-bar"><i><img src="assets/ui_cook/traka_boja.webp?v=1" alt="" draggable="false"></i></div>';
@@ -194,7 +229,8 @@ function synthSizzle(strength){
 var loopSrc=null,loopGain=null;
 function sizzleLoop(){
   try{
-    var want=(steaks.length>0&&lvl()>.2)?Math.min(.075,.035+.012*steaks.length):0;
+    var onGrate=steaks.filter(function(o){return o.slot==null;}).length;
+    var want=(onGrate>0&&lvl()>.2)?Math.min(.075,.035+.012*onGrate):0;
     if(!loopSrc&&want<=0)return;
     var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
     szCtx=szCtx||new AC();var c=szCtx;
