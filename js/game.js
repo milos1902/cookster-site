@@ -12446,7 +12446,8 @@ function meatSliceGrilled(target){
  const burnt=target.dataset.meatDone==='grilledBurnt'||target.dataset.meatDone==='burnt';
  const pan=target.dataset.meatDone==='fried'||target.dataset.meatDone==='burnt';      // meat from the frying pan: the pictures for the pan (without grill marks) when they exist
  const set=(pan&&def.pannedSliced)||gs;
- const src=burnt?set.welldone:(+target.dataset.grillCook>.7?set.medium:set.rare);
+ const gc=+target.dataset.grillCook||0;      // how far the side that lay on the grate was cooked: up to 50% medium rare, up to 70% medium, above that well done (also burnt)
+ const src=burnt||gc>=.7?set.welldone:(gc>=.5?set.medium:set.rare);
  target.dataset.cutState='sliced';target.dataset.grillSliced='1';target.dataset.meatDone='sliced';
  target.dataset.label='Naseckana šnicla sa roštilja';
  const img=target.querySelector('.body');if(img)img.src=src;
