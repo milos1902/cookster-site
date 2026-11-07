@@ -10308,7 +10308,7 @@ function addIngredientToContainer(item,vessel){
 
  {      // meat: a whole slice stays where the player dropped it (the picture of the vessel uses it, see appendWholeProduce)
    const mdef=VEGETABLES[meta.baseKey];
-   if(mdef?.meat&&meta.key.endsWith('_celo')){
+   if(((mdef?.meat&&meta.key.endsWith('_celo'))||(vessel.dataset.itemId==='daska_serviranje'&&meta.type!=='staple'))){      // on the serving board every whole piece stays where it was put down
      const wrap=vessel._panContent||vessel._vesselContent;let r=wrap?.getBoundingClientRect?.();if(!r||r.width<4)r=vessel.getBoundingClientRect();      // the picture of the contents is the same box as the vessel
      if(r&&r.width>4&&r.height>4){
        const idx=Math.max(0,Math.round(+(heatable?CooksterPan.counts(vessel)[meta.key]:CooksterContainer.read?.(vessel)?.items?.[meta.key]?.count)||0));
@@ -12805,7 +12805,7 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
   if(!expanded.length)return;
   if(bigTrayVessel(vessel)){
     const lay=trayPepperLayout(expanded.length,vessel,Math.max(...expanded.map(e=>+VEGETABLES[e.baseKey]?.w||70)));
-    const meatSeen={};
+    const meatSeen={},boardSeen={};
     expanded.forEach((entry,i)=>{
       const src=wholeProduceSource(entry.baseKey,entry.meta,stage);if(!src)return;
       let L=lay[i];const img=document.createElement('img');
@@ -12814,6 +12814,10 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
         meatSeen[entry.key]=(meatSeen[entry.key]||0);const sp=meatSlicePos(vessel,mdef,entry.key,meatSeen[entry.key]++);
         L={x:sp.x,y:sp.y,w:sp.w,rot:/_krike(_rare|_med|_wd)?_celo$/.test(entry.key)?((meatSeen[entry.key]*53)%7)-3:((meatSeen[entry.key]*53)%21)-10};
         img.style.height='auto';img.style.objectFit='contain';
+      }
+      if(!mdef?.meat&&vessel?.dataset?.itemId==='daska_serviranje'){      // not a snap to some place of the layout: the piece lies where the player put it down
+        boardSeen[entry.key]=(boardSeen[entry.key]||0);const dr=vessel._meatDrops?.[entry.key]?.[boardSeen[entry.key]++];
+        if(dr)L={...L,x:Math.max(10,Math.min(76,dr.fx*100)),y:Math.max(18,Math.min(82,dr.fy*100))};
       }
       img.className='whole-produce-piece';img.dataset.entryKey=entry.key;img.src=src;img.alt='';img.draggable=false;
       img.style.left=L.x.toFixed(2)+'%';img.style.top=L.y.toFixed(2)+'%';img.style.width=L.w.toFixed(2)+'%';
@@ -12901,13 +12905,19 @@ function appendRoastedPepperHeap(layer,vessel,counts,metaItems){
   if(!list.length)return;
   const lay=trayPepperLayout(list.length,vessel,+VEGETABLES.paprika?.w||70);
   // the kinds are mixed over the heap (the same arrangement every time: a fixed shuffle)
-  for(let i=list.length-1;i>0;i--){const j=(i*7919+13)%(i+1);const t=list[i];list[i]=list[j];list[j]=t;}
+  const onBoard=vessel?.dataset?.itemId==='daska_serviranje',bSeen={};
+  if(!onBoard)for(let i=list.length-1;i>0;i--){const j=(i*7919+13)%(i+1);const t=list[i];list[i]=list[j];list[j]=t;}
   list.forEach((entry,i)=>{
-    const L=lay[i],img=document.createElement('img');img.className='whole-roasted-pepper';
+    let L=lay[i];
+    if(onBoard){      // on the serving board a pepper lies exactly where the player put it down (no heap, no snapping to a place of the layout)
+      bSeen[entry.key]=(bSeen[entry.key]||0);const dr=vessel._meatDrops?.[entry.key]?.[bSeen[entry.key]++];
+      if(dr)L={...L,x:Math.max(10,Math.min(76,dr.fx*100)),y:Math.max(18,Math.min(82,dr.fy*100))};
+    }
+    const img=document.createElement('img');img.className='whole-roasted-pepper';
     img.dataset.entryKey=entry.key;      // a click on it takes this pepper out of the vessel (js/vessel-take.js)
     img.src=entry.src;img.alt='';img.draggable=false;
     img.style.left=L.x.toFixed(2)+'%';img.style.top=L.y.toFixed(2)+'%';img.style.width=L.w.toFixed(2)+'%';
-    img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String(30+i);
+    img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String(onBoard?30+Math.round(L.y*10):30+i);      // on the board the nearer one is in front
     layer.appendChild(img);
   });
 }
