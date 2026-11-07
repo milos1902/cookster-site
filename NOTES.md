@@ -1185,3 +1185,7 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Posle reza komad mesa ostaje u sredini daske (boardRelX -.105), šnicla ide desno u gomilu.
 - Taster za sečenje bira: ono na šta miš pokazuje; bez pokazivanja prvo komad (ili povrće), šnicla tek kad je sama na dasci. Tako se komad ponovo seče, a šnicla na komade kad pokažeš na nju.
 - Zeleni krug pri hvatanju za dasku je uklonjen (hvatanje ostaje).
+
+## Šnicle: hvatanje za sredinu i veličine (07.11.)
+- Šnicla može da se uhvati za sredinu daske i kad druge šnicle ostaju na dasci (blokira samo komad mesa u sredini).
+- Šnicla veća (w66 h44), komadi posle sečenja manji (debela 70x51, tanka 66x48).

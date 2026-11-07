@@ -6744,7 +6744,8 @@ function boardCenterSnapCandidate(el,cand){
  const a=(+board.dataset.angle||0)*Math.PI/180,cs=Math.cos(a),sn=Math.sin(a);
  // meat: it snaps to the side of the board that is free (the pile of slices lies on the right: the new one goes to the left, and the other way round)
  let sideX=0;
- if(VEGETABLES[el.dataset.vegKey]?.meat){let R=0,L=0;for(const o of items){if(o===el||o.dataset.attachedToBoard!=='1'||!VEGETABLES[o.dataset.vegKey]?.meat)continue;if((+o.dataset.boardRelX||0)>0)R++;else L++;}
+ if(VEGETABLES[el.dataset.vegKey]?.meat){let R=0,L=0,piece=false;for(const o of items){if(o===el||o.dataset.attachedToBoard!=='1'||!VEGETABLES[o.dataset.vegKey]?.meat)continue;if(VEGETABLES[o.dataset.vegKey].meat==='parce')piece=true;if((+o.dataset.boardRelX||0)>0)R++;else L++;}
+   if(VEGETABLES[el.dataset.vegKey].meat==='snicla'&&!piece){R=0;L=0;}      // a slice with no piece of meat on the board: the middle is free (the other slices lie to the side)
    if(R>L)sideX=-.19*bw;else if(L>R)sideX=.19*bw;}
  const cx=bcx+sideX*cs-(localY*sn);
  const by=bcy+(localY*cs);
@@ -7991,6 +7992,7 @@ function placementBlocked(el,cand){
    for(const other of items){
      if(other===el||other===cand.board)continue;
      if(other.dataset.attachedToBoard==='1'&&(other.dataset.vegetable==='1'||other.dataset.fruit==='1')){
+       if(VEGETABLES[el.dataset.vegKey]?.meat&&VEGETABLES[other.dataset.vegKey]?.meat==='snicla')continue;      // slices that stay on the board do not block the next piece from snapping to the middle
        return true;
      }
    }
