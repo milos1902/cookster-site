@@ -197,9 +197,26 @@
       }
       return c;
     }
+    // the slices of meat lying in the vessel (js/game.js CooksterSteakZones): the other food goes around them. Ellipses in simulation units.
+    zones(){
+      const zs=(window.CooksterSteakZones&&window.CooksterSteakZones(this.vessel))||[];
+      return zs.map(z=>{const rx=z.w/2*1.12+2;return {x:z.x,y:z.y*this.H/100,rx,ry:rx*.68};});
+    }
+    inKeep(x,y,pad){for(const z of (this.keep||[])){const dx=(x-z.x)/(z.rx+(pad||0)),dy=(y-z.y)/(z.ry+(pad||0)*.7);if(dx*dx+dy*dy<1)return true;}return false;}
+    pushOut(p){
+      for(const z of (this.keep||[])){
+        let dx=(p.x-z.x)/(z.rx+p.r*.55),dy=(p.y-z.y)/(z.ry+p.r*.4);const d2=dx*dx+dy*dy;
+        if(d2>=1)continue;
+        if(d2<1e-6){dx=0;dy=-1;}
+        const d=Math.sqrt(dx*dx+dy*dy)||1;dx/=d;dy/=d;
+        p.x=z.x+dx*(z.rx+p.r*.55);p.y=z.y+dy*(z.ry+p.r*.4);
+        const vn=p.vx*dx+p.vy*dy;if(vn<0){p.vx-=dx*vn;p.vy-=dy*vn;}
+      }
+    }
     sync(parts){
       this.parts=parts;
       this.region();
+      this.keep=this.zones();
       const want=new Set(),created=[];
       for(const part of parts){
         // a part of a unit (a ladle of food) shows only that part of the pieces of a unit, so the food in a vessel grows little by little (the pieces that are there stay)
@@ -234,7 +251,7 @@
       for(const id of [...this.pieces.keys()])if(!want.has(id)){this.pieces.delete(id);this.list=null;}
       this.fit();
       this.applyLevel();
-      const sig=this.poly.map(q=>q.x.toFixed(1)+','+q.y.toFixed(1)).join(';');          // the area of the food has changed (the vessel was calibrated again): the pieces that lie outside are pulled in
+      const sig=this.poly.map(q=>q.x.toFixed(1)+','+q.y.toFixed(1)).join(';')+'|'+this.keep.map(z=>z.x.toFixed(1)+','+z.y.toFixed(1)+','+z.rx.toFixed(1)).join(';');          // the area of the food has changed (the vessel was calibrated again): the pieces that lie outside are pulled in
       const moved=this._sig!==undefined&&this._sig!==sig;this._sig=sig;
       for(const p of created)this.scatter(p);
       if(created.length&&this.pieces.size>created.length){this.activeUntil=performance.now()+900;kick();}   // earlier pieces spread out gently over the larger area
@@ -263,7 +280,7 @@
       const f=1;
       for(let i=0;i<40;i++){
         const x=this.cx+(x0+Math.random()*(x1-x0)-this.cx)*f,y=this.cy+(y0+Math.random()*(y1-y0)-this.cy)*f;
-        if(this.inside(x,y)){p.x=x;p.y=y;return;}
+        if(this.inside(x,y)&&!this.inKeep(x,y,p.r*.6)){p.x=x;p.y=y;return;}
       }
       p.x=this.cx;p.y=this.cy;
     }
@@ -298,7 +315,7 @@
       if(vn<0){const k=Math.min(1,1.2*(1-e.d/m)+.15);p.vx-=nx*vn*k;p.vy-=ny*vn*k;}
     }
     wall(p){
-      if(this.inside(p.x,p.y))return;
+      if(this.inside(p.x,p.y)){this.pushOut(p);return;}
       // outside: put it on the outline (a little inside) and take away only the speed that goes out; the speed along the edge stays (it slides, no bounce, no damping)
       const poly=this.poly;let bx=p.x,by=p.y,bd=1e9;
       for(let i=0;i<poly.length;i++){
@@ -312,6 +329,7 @@
       const inset=Math.min(p.r*.35,3);
       p.x=bx+nx*inset;p.y=by+ny*inset;
       const vn=p.vx*nx+p.vy*ny;if(vn<0){p.vx-=nx*vn;p.vy-=ny*vn;}
+      this.pushOut(p);
     }
     collide(ps,push,range){
       // spatial hash (numeric keys, buckets reused between calls) so ~150 pieces stay cheap and nothing is allocated per frame
