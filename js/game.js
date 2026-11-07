@@ -5861,6 +5861,7 @@ window.addEventListener('pointermove',e=>{
 },true);
 window.addEventListener('pointerdown',e=>{
  if(e.button!==0||holding||stirring||(window.CooksterIsToolUi&&CooksterIsToolUi(e.target))||!miniVessel||!miniSpoon||miniSpoon.style.display==='none')return;
+ if(window.CooksterVesselTake&&CooksterVesselTake.pieceAt(e.clientX,e.clientY))return;      // a click on a whole piece (a slice of meat...) takes it out, it does not start stirring
  const v=foodVesselAt(e.clientX,e.clientY);if(!v||v!==miniVessel)return;
  e.stopImmediatePropagation();e.preventDefault();
  holding=miniSpoon;
@@ -8677,6 +8678,12 @@ function ingredientVisualMeta(item){
       };
     }
 
+    // a cooked slice of meat is another ingredient than a raw one: it keeps its fried / burnt picture wherever it is put (plate, pan, bowl)
+    if(!isFruit&&def.meat==='snicla'&&cutState==='whole'&&(item.dataset.meatDone==='fried'||item.dataset.meatDone==='burnt')){
+      const burnt=item.dataset.meatDone==='burnt';
+      return {key:`${key}_${burnt?'zagorela':'pecena'}_celo`,baseKey:key,type:'vegetable',form:'whole',cutState:'whole',
+        label:burnt?'Zagorela šnicla':'Pečena šnicla',src:(burnt?def.wellDoneSrc:def.friedSrc)||def.src};
+    }
     // a sour cabbage is a different ingredient from a fresh one (its own key and its own pale picture), so the two do not blend into one pile
     const sourCabbage=!isFruit&&key==='kupus'&&item.dataset.fermentPhase==='3';
     if(cutState==='diced'){
@@ -12638,8 +12645,9 @@ function panMixBaseColor(mix,stage){
 
 function wholeProduceSource(baseKey,meta=null,stage=1){
   const mv=VEGETABLES?.[baseKey];
-  if(mv?.meat==='snicla'){      // a whole slice in a pan: real pictures of the fried / burnt slice (the same stages as the chopped vegetables: 4 = fried, 6 = burnt)
-    const st=+stage||1;
+  if(mv?.meat==='snicla'){      // a whole slice in a vessel: real pictures of the fried / burnt slice (the same stages as the chopped vegetables: 4 = fried, 6 = burnt); a slice that was cooked before keeps its state
+    const k=String(meta?.key||''),own=/_zagorela_celo$/.test(k)?6:(/_pecena_celo$/.test(k)?4:1);
+    const st=Math.max(own,+stage||1);
     if(st>=6&&mv.wellDoneSrc)return mv.wellDoneSrc;
     if(st>=4&&mv.friedSrc)return mv.friedSrc;
   }

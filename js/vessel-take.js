@@ -57,12 +57,27 @@
     if(!entry)return false;
     const whole=entry.form==='whole'||entry.form==='whole_roasted'||/_celo|_pola_|^paprika_pecena|^paprika_zelena_pecena/.test(key);
     if(!whole)return false;
-    const base=entry.baseKey||String(key).replace(/_celo$/,''),def=VEGETABLES[base];if(!def)return false;
+    const base=entry.baseKey||String(key).replace(/_(pecena|zagorela)_celo$/,'').replace(/_celo$/,''),def=VEGETABLES[base];if(!def)return false;
+    // a slice of meat comes out as cooked as it is: what it was before (key ..._pecena_celo / ..._zagorela_celo) or what it has become in the vessel (stage 4 fried, 6 burnt)
+    let outSrc=entry.src||def.src,outLabel=entry.label||def.label,meatDone='';
+    if(def.meat==='snicla'){
+      let st=/_zagorela_celo$/.test(key)?6:(/_pecena_celo$/.test(key)?4:1);
+      if(heatable(v)){
+        try{
+          const m=CooksterPan.read(v);
+          st=Math.max(st,(window.CooksterFoodStateMachine&&CooksterFoodStateMachine.vesselState(m)&&CooksterFoodStateMachine.vesselState(m).visualStage)||panTextureStage(Math.max(0,+m.doneness||0),!!m.burnt));
+        }catch(_){}
+      }
+      if(st>=6&&def.wellDoneSrc){outSrc=def.wellDoneSrc;outLabel='Zagorela šnicla';meatDone='burnt';}
+      else if(st>=4&&def.friedSrc){outSrc=def.friedSrc;outLabel='Pečena šnicla';meatDone='fried';}
+      else{outSrc=def.src;outLabel=def.label;}
+    }
     removeOne(v,key);
     const half=key==='kupus_pola_kiseli',sour=/kiseli/.test(key);
     const w=half?Math.round(def.w*.8):def.w,h=half?Math.round(def.h*.7):def.h;
     const p=screenToScene(e.clientX,e.clientY);
-    const loose=makeItem({id:'veg_'+base+'_'+Date.now(),label:entry.label||def.label,src:entry.src||def.src,x:p.x-w/2,y:p.y-h,w,h,z:++zCounter,snapProfile:'produce'});
+    const loose=makeItem({id:'veg_'+base+'_'+Date.now(),label:outLabel,src:outSrc,x:p.x-w/2,y:p.y-h,w,h,z:++zCounter,snapProfile:'produce'});
+    if(meatDone)loose.dataset.meatDone=meatDone;
     loose.dataset.vegetable='1';loose.dataset.collisionProfile='vegetable';loose.dataset.vegKey=base;loose.dataset.cutState='whole';
     if(sour)loose.dataset.fermentPhase='3';
     if(half)loose.dataset.kupusHalf='1';
@@ -73,6 +88,7 @@
     try{CooksterSave.schedule();}catch(_){}
     return true;
   }
+  window.CooksterVesselTake={pieceAt};
   window.addEventListener('pointerdown',e=>{
     if(e.button!==0||(typeof holding!=='undefined'&&holding)||(typeof isCutting!=='undefined'&&isCutting))return;
     const hit=pieceAt(e.clientX,e.clientY);
