@@ -12817,7 +12817,7 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
       }
       img.className='whole-produce-piece';img.dataset.entryKey=entry.key;img.src=src;img.alt='';img.draggable=false;
       img.style.left=L.x.toFixed(2)+'%';img.style.top=L.y.toFixed(2)+'%';img.style.width=L.w.toFixed(2)+'%';
-      img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String((mdef?.meat==='snicla'?60:22)+i);
+      img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String(mdef?.meat==='snicla'?60+Math.round(L.y*10):22+i);      // meat: the nearer slice (lower in the picture) is always in front of the farther one
       layer.appendChild(img);
     });
     return;
@@ -12871,7 +12871,7 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
     img.style.top=y.toFixed(2)+'%';
     img.style.width=w.toFixed(2)+'%';
     img.style.transform=`translate(-50%,-50%) rotate(${rot}deg)`;
-    img.style.zIndex=String((mdef?.meat==='snicla'?60:22)+i+stackLevel*5);      // a slice of meat lies above the heap of other food (the heap has a hole where it is)
+    img.style.zIndex=String(mdef?.meat==='snicla'?60+Math.round(y*10):22+i+stackLevel*5);      // a slice of meat lies above the heap of other food (the heap has a hole where it is)
     img.style.filter=stageFilters[Math.max(0,Math.min(6,stage-1))];
     layer.appendChild(img);
   }
