@@ -1244,3 +1244,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Kriške mesa u posudama (serving.js): uvek iste veličine (sc=1) i skoro ravno (rot do ±0.125 rad), da leže u redu.
 - Daska za serviranje povećana 240→340 px (kvaka fioke je bila pola daske).
 - Daska za serviranje 235 px (80% daske za sečenje); kriške mesa na njoj iste veličine kao na dasci za sečenje (112 px) i ostaju tačno gde ih stavite (bez skupljanja/pomeranja).
+- Servirna daska (ispravke): ne daje kašičicu za mešanje (`stirEligible`); nema prednjeg sloja posude preko mesa (`wantsFrontMask`), pa komadi ne "propadaju"; svaka pečenost kriški ima svoj ključ (`_krike_rare|_med|_wd_celo`) pa rare ostaje rare kad se doda medium; lepeza je uvek 112 px (po ekranskoj širini sloja) kao na dasci za sečenje; lepeza leži cela na plohi daske (drška i ivica ostaju slobodni za hvatanje daske).
