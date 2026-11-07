@@ -8679,6 +8679,12 @@ function ingredientVisualMeta(item){
       };
     }
 
+    // a slice of meat from the grill: its own ingredient with the grilled / burnt-on-the-grill picture
+    if(!isFruit&&def.meat==='snicla'&&cutState==='whole'&&(item.dataset.meatDone==='grilled'||item.dataset.meatDone==='grilledBurnt')){
+      const burnt=item.dataset.meatDone==='grilledBurnt';
+      return {key:`${key}_${burnt?'rostilj_zagorela':'rostilj'}_celo`,baseKey:key,type:'vegetable',form:'whole',cutState:'whole',
+        label:burnt?'Zagorela šnicla sa roštilja':'Šnicla sa roštilja',src:(burnt?def.grilledWellDoneSrc:def.grilledSrc)||def.src};
+    }
     // a cooked slice of meat is another ingredient than a raw one: it keeps its fried / burnt picture wherever it is put (plate, pan, bowl)
     if(!isFruit&&def.meat==='snicla'&&cutState==='whole'&&(item.dataset.meatDone==='fried'||item.dataset.meatDone==='burnt')){
       const burnt=item.dataset.meatDone==='burnt';
@@ -12666,7 +12672,10 @@ function panMixBaseColor(mix,stage){
 function wholeProduceSource(baseKey,meta=null,stage=1){
   const mv=VEGETABLES?.[baseKey];
   if(mv?.meat==='snicla'){      // a whole slice in a vessel: real pictures of the fried / burnt slice (the same stages as the chopped vegetables: 4 = fried, 6 = burnt); a slice that was cooked before keeps its state
-    const k=String(meta?.key||''),own=/_zagorela_celo$/.test(k)?6:(/_pecena_celo$/.test(k)?4:1);
+    const k=String(meta?.key||'');
+    if(/_rostilj_zagorela_celo$/.test(k)&&mv.grilledWellDoneSrc)return mv.grilledWellDoneSrc;      // from the grill: the picture with the marks stays (also in a pan)
+    if(/_rostilj_celo$/.test(k)&&mv.grilledSrc)return (+stage||1)>=6&&mv.grilledWellDoneSrc?mv.grilledWellDoneSrc:mv.grilledSrc;
+    const own=/_zagorela_celo$/.test(k)?6:(/_pecena_celo$/.test(k)?4:1);
     const st=Math.max(own,+stage||1);
     if(st>=6&&mv.wellDoneSrc)return mv.wellDoneSrc;
     if(st>=4&&mv.friedSrc)return mv.friedSrc;
@@ -12735,7 +12744,7 @@ window.CooksterSteakZones=function(vessel){
     const meta=heat?readPanIngredientMeta(vessel):cont;
     for(const [key,n] of Object.entries(counts||{})){
       if(!(n>0)||!key.endsWith('_celo'))continue;
-      const base=meta?.[key]?.baseKey||key.replace(/_(pecena|zagorela)_celo$/,'').replace(/_celo$/,'');
+      const base=meta?.[key]?.baseKey||key.replace(/_(pecena|zagorela|rostilj_zagorela|rostilj)_celo$/,'').replace(/_celo$/,'');
       const md=VEGETABLES[base];if(md?.meat!=='snicla')continue;
       for(let i=0;i<Math.min(3,Math.round(n));i++)out.push(meatSlicePos(vessel,md,key,i));
     }
