@@ -69,7 +69,7 @@ function flip(s){
   z.style.zIndex='5';
   var an=z.animate(kf,{duration:D,fill:'none'});
   setTimeout(function(){s.up=1-s.up;swapped=true;layout(s);},D*.45);      // when the steak is edge-on, the other side comes up
-  setTimeout(function(){try{playImpactSound(z,'putIn',{noDelay:true});}catch(e){}},D*.85);
+  setTimeout(function(){if(lvl()>.2){try{CooksterGrillSizzle(.5+.3*lvl());}catch(e){}}},D*.85);      // the other side lands on the hot grate
   var done=function(){if(!swapped){s.up=1-s.up;layout(s);}s.flipping=false;z.style.zIndex='';};
   an.onfinish=done;an.oncancel=done;
 }
@@ -82,6 +82,7 @@ function add(item,e){
   var md=item.dataset.meatDone||'',c0=md==='burnt'||md==='grilledBurnt'?1:(md==='fried'||md==='grilled'?.45:0);
   var s={id:seq++,key:item.dataset.vegKey,u:u,v:v,rot:Math.round((Math.random()-.5)*14),up:0,cook:[c0,c0],flipping:false};
   steaks.push(s);layout(s);
+  if(lvl()>.2){try{CooksterGrillSizzle(.7+.3*lvl());}catch(e){}}      // the meat hits the hot grate: it sizzles
   return true;
 }
 function take(s,e){
@@ -97,6 +98,30 @@ function take(s,e){
   el.dataset.surfaceZone='table';setPose(el,p.x,p.y,1);
   try{startHolding(el);}catch(x){}
   try{CooksterSave.schedule();}catch(x){}
+}
+// the built-in sizzle: hiss (filtered noise) with small pops, about 3 s, fading out
+var szCtx=null,szBuf=null;
+function synthSizzle(strength){
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    szCtx=szCtx||new AC();var c=szCtx;if(c.state==='suspended')c.resume().catch(function(){});
+    if(!szBuf){
+      var n=Math.floor(c.sampleRate*3.2),b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0),pops=[],i;
+      for(i=0;i<70;i++)pops.push({t:Math.random()*Math.random()*2.6,a:.4+Math.random()*.8,l:.002+Math.random()*.006});
+      var lp=0;
+      for(i=0;i<n;i++){
+        var t=i/c.sampleRate,env=Math.exp(-t/1.1)*(t<.03?t/.03:1),w=Math.random()*2-1;
+        lp+=(w-lp)*.55;var hiss=(w-lp)*.9*env;      // high-passed noise
+        var pp=0;for(var j=0;j<pops.length;j++){var q=pops[j],dt=t-q.t;if(dt>=0&&dt<q.l*6)pp+=(Math.random()*2-1)*q.a*Math.exp(-dt/q.l)*Math.exp(-q.t/1.6);}
+        d[i]=Math.max(-1,Math.min(1,hiss*.55+pp*.5));
+      }
+      szBuf=b;
+    }
+    var src=c.createBufferSource();src.buffer=szBuf;src.playbackRate.value=.92+Math.random()*.16;
+    var f=c.createBiquadFilter();f.type='highpass';f.frequency.value=1800;
+    var g=c.createGain();g.gain.value=Math.max(.1,Math.min(1,strength==null?.7:strength))*.55;
+    src.connect(f);f.connect(g);g.connect(c.destination);src.start();
+  }catch(e){}
 }
 // a slice of meat from the hand, a click on the grate of the kitchen (not zoomed): it is put on the grill
 window.addEventListener('pointerdown',function(e){
@@ -115,5 +140,5 @@ window.addEventListener('pointerdown',function(e){
 // the clock panel (a picture over the upper left part of the grill) must not swallow the click while a steak is in the hand: the panels let the click through
 var st=document.createElement('style');st.textContent='body.gs-holding img.ui-overlay-element{pointer-events:none!important}';document.head.appendChild(st);
 setInterval(function(){var on=false;try{on=!!(typeof holding!=='undefined'&&holding&&holding.dataset&&canGrill(holding.dataset.vegKey||''));}catch(e){}document.body.classList.toggle('gs-holding',on);},150);
-window.CooksterGrillSteaks={all:function(){return steaks;},layout:function(){steaks.forEach(layout);},host:zHost,canGrill:canGrill};
+window.CooksterGrillSteaks={synthSizzle:synthSizzle,all:function(){return steaks;},layout:function(){steaks.forEach(layout);},host:zHost,canGrill:canGrill};
 })();
