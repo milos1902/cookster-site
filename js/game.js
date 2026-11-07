@@ -6732,7 +6732,7 @@ function isBoardCuttableItem(el){
  const def=(isFruit?(CooksterCatalog.FRUITS||{}):VEGETABLES)[key]||{};
  const cutState=el.dataset.cutState||'whole';
  if(cutState==='whole')return def.canSlice!==false&&!!(def.slicedSrc||def.src);
- if(cutState==='sliced')return !!def.dicedSrc;
+ if(cutState==='sliced')return !!def.dicedSrc&&el.dataset.grillSliced!=='1';      // a grilled steak that is already sliced into a fan is not cut again
  return false;
 }
 
@@ -8687,6 +8687,9 @@ function ingredientVisualMeta(item){
       };
     }
 
+    if(!isFruit&&def.meat==='snicla'&&item.dataset.grillSliced==='1'){      // a grilled steak sliced into a fan: a whole picture of its own
+      return {key:`${key}_krike_celo`,baseKey:key,type:'vegetable',form:'whole',cutState:'whole',label:'Naseckana šnicla sa roštilja',src:item.querySelector('.body')?.getAttribute('src')||''};
+    }
     // a slice of meat from the grill: its own ingredient with the grilled / burnt-on-the-grill picture
     if(!isFruit&&def.meat==='snicla'&&cutState==='whole'&&(item.dataset.meatDone==='grilled'||item.dataset.meatDone==='grilledBurnt')){
       const burnt=item.dataset.meatDone==='grilledBurnt';
@@ -12436,6 +12439,24 @@ async function meatApplyCrop(target,P){
   CooksterSave.schedule();
  }catch(e){}
 }
+// a grilled steak on the board + E: it is sliced into a fan of slices (the inside is seen); how done it is decides the picture
+function meatSliceGrilled(target){
+ const key=target.dataset.vegKey,def=VEGETABLES[key]||{},gs=def.grilledSliced;
+ if(!gs)return 'Ovo meso se ne seče na kriške.';
+ const burnt=target.dataset.meatDone==='grilledBurnt'||target.dataset.meatDone==='burnt';
+ const pan=target.dataset.meatDone==='fried'||target.dataset.meatDone==='burnt';      // meat from the frying pan: the pictures for the pan (without grill marks) when they exist
+ const set=(pan&&def.pannedSliced)||gs;
+ const src=burnt?set.welldone:(+target.dataset.grillCook>.7?set.medium:set.rare);
+ target.dataset.cutState='sliced';target.dataset.grillSliced='1';target.dataset.meatDone='sliced';
+ target.dataset.label='Naseckana šnicla sa roštilja';
+ const img=target.querySelector('.body');if(img)img.src=src;
+ const sh=target._contactShadow?.querySelector('img');if(sh)sh.src=src;
+ target.dataset.baseW=String(gs.w);target.dataset.baseH=String(gs.h);
+ const by=+target.dataset.by,cx=+target.dataset.cx;
+ setPose(target,cx,by,surfaceScaleFor(target,target.dataset.surfaceZone||'table',by));
+ CooksterSave.schedule();
+ return 'Šnicla je isečena na kriške.';
+}
 // the quick cut (E thick / old C thin): a slice of a fixed width from the right edge
 function meatSliceOff(target,mode){
  const P=meatPoly(target),bb=meatPolyBox(P),w=1/3,x=bb.x1-w;      // one piece of meat = THREE slices (a third each)
@@ -12681,6 +12702,7 @@ function wholeProduceSource(baseKey,meta=null,stage=1){
   const mv=VEGETABLES?.[baseKey];
   if(mv?.meat==='snicla'){      // a whole slice in a vessel: real pictures of the fried / burnt slice (the same stages as the chopped vegetables: 4 = fried, 6 = burnt); a slice that was cooked before keeps its state
     const k=String(meta?.key||'');
+    if(/_krike_celo$/.test(k)&&meta?.src)return meta.src;      // sliced steak: always its own picture
     if(/_rostilj_zagorela_celo$/.test(k)&&mv.grilledWellDoneSrc)return mv.grilledWellDoneSrc;      // from the grill: the picture with the marks stays (also in a pan)
     if(/_rostilj_celo$/.test(k)&&mv.grilledSrc)return (+stage||1)>=6&&mv.grilledWellDoneSrc?mv.grilledWellDoneSrc:mv.grilledSrc;
     const own=/_zagorela_celo$/.test(k)?6:(/_pecena_celo$/.test(k)?4:1);
@@ -12752,7 +12774,7 @@ window.CooksterSteakZones=function(vessel){
     const meta=heat?readPanIngredientMeta(vessel):cont;
     for(const [key,n] of Object.entries(counts||{})){
       if(!(n>0)||!key.endsWith('_celo'))continue;
-      const base=meta?.[key]?.baseKey||key.replace(/_(pecena|zagorela|rostilj_zagorela|rostilj)_celo$/,'').replace(/_celo$/,'');
+      const base=meta?.[key]?.baseKey||key.replace(/_(pecena|zagorela|rostilj_zagorela|rostilj|krike)_celo$/,'').replace(/_celo$/,'');
       const md=VEGETABLES[base];if(md?.meat!=='snicla')continue;
       for(let i=0;i<Math.min(3,Math.round(n));i++)out.push(meatSlicePos(vessel,md,key,i));
     }
@@ -15301,7 +15323,7 @@ function beginCutAction(mode='dice'){
      // v198.5.78: skip the intermediate "sliced" stage when the vegetable
      // has diced art (all 13 currently do) — one cut, straight to kockice.
      spawnSourHalf(target);
-     showToast(targetDef.meat==='parce'?meatSliceOff(target,mode):((mode==='slices'&&!targetDef.meat)||!targetDef.dicedSrc)?setVegetableSliced(target):setVegetableDiced(target));      // meat: one cut of the piece = ONE slice (E thick, C thin); cutting a slice = 6 pieces
+     showToast((targetDef.meat==='snicla'&&['grilled','grilledBurnt','fried','burnt'].includes(target.dataset.meatDone))?meatSliceGrilled(target):targetDef.meat==='parce'?meatSliceOff(target,mode):((mode==='slices'&&!targetDef.meat)||!targetDef.dicedSrc)?setVegetableSliced(target):setVegetableDiced(target));      // meat: one cut of the piece = ONE slice (E thick, C thin); cutting a slice = 6 pieces
    }else if(beforeState==='sliced'){
      // Still supported so any vegetable/save that predates this change (or
      // has no diced art) can finish the old two-step path.
