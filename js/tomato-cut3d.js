@@ -16,7 +16,6 @@
     kupus:{shape:'cabbage',label:'kupusa',skin:'assets/market_veg/kupus.png',skinPlanar:true,caps:['kupus_sv_presek_1','kupus_sv_presek_2','kupus_sv_presek_3','kupus_sv_presek_4','kupus_sv_presek_5','kupus_sv_srz'],coreCap:true,calyx:false,fill:'#8fbd45',capFill:'#e3edbd',tile:1,rough:.5,clear:.15},
     junetina:{shape:'beef',oneCut:true,label:'junetine',skin:'assets/meat/3d/junetina_povrsina.webp',skinTiled:true,capDir:'assets/meat/3d/',caps:['junetina_presek_1','junetina_presek_2','junetina_presek_3'],calyx:false,fill:'#a1201b',capFill:'#b0231d',rough:.6,clear:.12,refD:1.2},
     junetina_snicla_debela:{shape:'slab',label:'šnicle',skin:'assets/meat/3d/junetina_povrsina.webp',skinTiled:true,capDir:'assets/meat/3d/',caps:['junetina_presek_1','junetina_presek_2','junetina_presek_3'],calyx:false,fill:'#a1201b',capFill:'#b0231d',rough:.6,clear:.12,refD:1.2},
-    junetina_snicla_tanka:{shape:'slab',label:'šnicle',skin:'assets/meat/3d/junetina_povrsina.webp',skinTiled:true,capDir:'assets/meat/3d/',caps:['junetina_presek_1','junetina_presek_2','junetina_presek_3'],calyx:false,fill:'#a1201b',capFill:'#b0231d',rough:.6,clear:.12,refD:1.2},
     luk:{shape:'onion',label:'luka',skin:'assets/market_veg/luk_koza.webp',caps:['luk_presek_1','luk_presek_2'],calyx:false,fill:'#f3e3b4',capFill:'#f0e0b0',tile:2,rough:.5,clear:.2,mirror:true,peel:true,peelPile:['luk_kora_1','luk_kora_2','luk_kora_3']}
   };
 

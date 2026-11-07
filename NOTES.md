@@ -1189,3 +1189,8 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Šnicle: hvatanje za sredinu i veličine (07.11.)
 - Šnicla može da se uhvati za sredinu daske i kad druge šnicle ostaju na dasci (blokira samo komad mesa u sredini).
 - Šnicla veća (w66 h44), komadi posle sečenja manji (debela 70x51, tanka 66x48).
+
+## Tanka šnicla obrisana (07.11.)
+- Postoji samo debela šnicla. Obrisani: katalog `junetina_snicla_tanka`, 3D oblik u tomato-cut3d.js, slike tanka/k6_tanka/tanak_* i izvorne slike (assets/meat, assets/meat_src).
+- Rez mesa uvek daje debelu šniclu. Stari snimak igre sa tankom šniclom na dasci više je ne prikazuje.
+- Sledeće: slike pečene/zagorele šnicle za tiganj (bez crta) i za roštilj (sa crtama), samo debela.
