@@ -8,7 +8,7 @@
   const PAD=10;                          // padding baked around each piece
   const HEAP_W=62;                       // one ingredient unit's heap is this wide (units)
   const PIECE_SCALE=1.6;                 // pieces are drawn a little larger, so a few additions are enough to fill a vessel
-  const FLOOR_FIRST=new Set(['kal_01_okrugli_pleh','tiganj_veliki','tiganj_mali','serpa_velika']);      // the vessels whose floor zone the owner drew in the tool: only they fill the floor first (others: as before)
+  const FLOOR_FIRST=new Set(['kal_01_okrugli_pleh','tiganj_veliki','tiganj_mali','serpa_velika','kal_02_duboki_tanjir','kal_02_tanjir_ravni','oval_tanjir','kal_01_pravougaoni_pleh']);      // the vessels whose floor zone the owner drew in the tool: only they fill the floor first (others: as before)
   const FLOOR_K=2.41;                       // how many floor areas of pieces cover the floor (it is measured so that the big round tray is covered after 4 additions of a vegetable): a bigger vessel needs more food, a smaller one less
   const LEVEL_FULL=4;                    // the food reaches the top line after about 3 additions (fill measured in floor areas)
   // how much of the floor of a vessel ONE unit of a vegetable covers: big vegetables (a head of cabbage, a zucchini, an eggplant) cover (almost) the whole floor,
