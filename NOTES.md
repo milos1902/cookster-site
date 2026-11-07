@@ -1206,3 +1206,8 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Mrlje isključene, vraćanje u kvadratić (07.11.)
 - Mrlje (podna prljavština pri sečenju, prskanje po radnoj površini) isključene: `MESS_STAINS_ENABLED=false` u game.js (createFloorSpill/createSpill). Kod za mrlje i alat za kalibraciju ostaju za kasnije. Prljavština na sudovima (vessel-dirt) i prljava kuhinja nisu dirani.
 - Kvadratići "zadnje korišćeno": klik dok držiš predmet vraća ga u kvadratić (briše kopiju); ako kvadrat ima drugu stvar, ona se uzima. Ne vraća se: stvari koje postoje jednom, i posude sa hranom.
+
+## Cela šnicla u tiganju: prave slike (07.11.)
+- `junetina_snicla_debela` ima `friedSrc` (pečena, stepen 4) i `wellDoneSrc` (zagorela, stepen 6) za celu šniclu u posudi: wholeProduceSource(baseKey,meta,stage) u game.js. Iste granice kao kod seckanog povrća.
+- Slike za roštilj (`grilledSrc`, `grilledWellDoneSrc`, sa crtama) su u katalogu i u assets/meat, ali se još ne koriste: u igri nema roštilja.
+- Fajlovi: assets/meat/junetina_snicla_debela_{tiganj,rostilj}_{pecena,zagorela}.png (480 px širine).

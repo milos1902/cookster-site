@@ -12629,7 +12629,13 @@ function panMixBaseColor(mix,stage){
  return [Math.round(r*dark),Math.round(g*dark),Math.round(b*dark)];
 }
 
-function wholeProduceSource(baseKey,meta=null){
+function wholeProduceSource(baseKey,meta=null,stage=1){
+  const mv=VEGETABLES?.[baseKey];
+  if(mv?.meat==='snicla'){      // a whole slice in a pan: real pictures of the fried / burnt slice (the same stages as the chopped vegetables: 4 = fried, 6 = burnt)
+    const st=+stage||1;
+    if(st>=6&&mv.wellDoneSrc)return mv.wellDoneSrc;
+    if(st>=4&&mv.friedSrc)return mv.friedSrc;
+  }
   if(meta?.src)return meta.src;
   const veg=VEGETABLES?.[baseKey];
   const fruit=CooksterCatalog.FRUITS?.[baseKey];
@@ -12676,7 +12682,7 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
     const lay=trayPepperLayout(expanded.length,vessel,Math.max(...expanded.map(e=>+VEGETABLES[e.baseKey]?.w||70)));
     const meatSeen={};
     expanded.forEach((entry,i)=>{
-      const src=wholeProduceSource(entry.baseKey,entry.meta);if(!src)return;
+      const src=wholeProduceSource(entry.baseKey,entry.meta,stage);if(!src)return;
       let L=lay[i];const img=document.createElement('img');
       const mdef=VEGETABLES[entry.baseKey];
       if(mdef?.meat){      // meat: where the player dropped it, in its own shape and in the size it has on the board
@@ -12729,7 +12735,7 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
       if(dr){x=Math.max(30,Math.min(70,dr.fx*100));y=Math.max(32,Math.min(66,dr.fy*100));}
       rot=((meatSeen[entry.key]*53)%21)-10;w=mdef.panW||38;
     }
-    const src=wholeProduceSource(entry.baseKey,entry.meta);
+    const src=wholeProduceSource(entry.baseKey,entry.meta,stage);
     if(!src)continue;
     const img=document.createElement('img');
     img.className='whole-produce-piece';
