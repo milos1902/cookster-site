@@ -8,6 +8,8 @@
   const PAD=10;                          // padding baked around each piece
   const HEAP_W=62;                       // one ingredient unit's heap is this wide (units)
   const PIECE_SCALE=1.6;                 // pieces are drawn a little larger, so a few additions are enough to fill a vessel
+  const FLOOR_FIRST=new Set(['kal_01_okrugli_pleh','tiganj_veliki','tiganj_mali','serpa_velika']);      // the vessels whose floor zone the owner drew in the tool: only they fill the floor first (others: as before)
+  const FLOOR_UNITS=4;                   // the floor of a vessel is covered after about 4 additions (of one unit each); only then the food rises
   const LEVEL_FULL=4;                    // the food reaches the top line after about 3 additions (fill measured in floor areas)
   // how much of the floor of a vessel ONE unit of a vegetable covers: big vegetables (a head of cabbage, a zucchini, an eggplant) cover (almost) the whole floor,
   // small ones (radish, garlic) only a little. The number of pieces of a unit is multiplied by this factor (the pieces keep their own size).
@@ -145,6 +147,14 @@
           y:((y-frame.top)/frame.height)*this.H}));
       }
       if(!poly){poly=[];for(let i=0;i<28;i++){const a=i/28*Math.PI*2;poly.push({x:50+Math.cos(a)*46,y:this.H/2+Math.sin(a)*this.H*.44});}}
+      // the FLOOR of the vessel (the calibrated "bottom" area): the food covers it little by little with the first additions, and only then it rises
+      this.floorPoly=null;
+      if(FLOOR_FIRST.has(this.vessel.dataset.itemId)&&prof?.bottom?.length>=3&&frame?.width&&frame?.height){
+        const fp=prof.bottom.map(([x,y])=>({x:((x-frame.left)/frame.width)*SIM_W,y:((y-frame.top)/frame.height)*this.H}));
+        const m0=Sim.measure(fp),k0=Math.sqrt(1.12);      // the centres of the pieces may lie a little beyond the drawn floor
+        for(const q of fp){q.x=m0.cx+(q.x-m0.cx)*k0;q.y=m0.cy+(q.y-m0.cy)*k0;}
+        this.floorPoly=fp;
+      }
       let ar=0,cx=0,cy=0;
       for(let i=0;i<poly.length;i++){
         const a=poly[i],b=poly[(i+1)%poly.length],cr=a.x*b.y-b.x*a.y;
@@ -167,6 +177,25 @@
       }
       return out;
     }
+    static ray(poly,cx,cy,t){
+      const dx=Math.cos(t),dy=Math.sin(t);let best=0;
+      for(let i=0;i<poly.length;i++){
+        const a=poly[i],b=poly[(i+1)%poly.length],ex=b.x-a.x,ey=b.y-a.y,den=dx*ey-dy*ex;
+        if(Math.abs(den)<1e-9)continue;
+        const s=((a.x-cx)*ey-(a.y-cy)*ex)/den,u=((a.x-cx)*dy-(a.y-cy)*dx)/den;
+        if(s>0&&u>=0&&u<=1&&s>best)best=s;
+      }
+      return best;
+    }
+    // a shape between two outlines (t 0 = the first, 1 = the second), made around the centre of the first
+    static morph(p0,p1,t){
+      const m=Sim.measure(p0),out=[],N=44;
+      for(let k=0;k<N;k++){
+        const th=k/N*Math.PI*2,r0=Sim.ray(p0,m.cx,m.cy,th),r1=Sim.ray(p1,m.cx,m.cy,th)||r0,r=r0+(r1-r0)*t;
+        out.push({x:m.cx+Math.cos(th)*r,y:m.cy+Math.sin(th)*r});
+      }
+      return out;
+    }
     static pointIn(poly,x,y){let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)c=!c;}return c;}
     static measure(poly){
       let ar=0,cx=0,cy=0;
@@ -179,6 +208,12 @@
       // The food starts as a small heap around the "bottom point" the player marked in the tool (the yellow point; the middle of the area if there is none)
       // and grows from there (the same shape, larger) up to the whole calibrated area when the vessel is full.
       const full=this.fullPoly;
+      if(this.floorPoly){
+        // first additions: the pieces lie spread over the WHOLE floor (the floor is seen between them, less and less); after the floor is covered the area grows from the floor to the whole food area
+        const u=this.units||0,t=u<=FLOOR_UNITS?0:Math.min(1,(u-FLOOR_UNITS)/3);
+        const poly=t<=0?this.floorPoly.map(q=>({x:q.x,y:q.y})):Sim.morph(this.floorPoly,full,t);
+        if(poly.length>=3){const m=Sim.measure(poly);this.poly=poly;this.cx=m.cx;this.cy=m.cy;this.area=m.area;this.bedSpots=null;return;}
+      }
       const lvl=Math.min(1,this.fill||1);   // 1 = the floor is covered (then the food only gets higher): one small heap at the start, the whole area when the floor is covered
       // the food grows from a point on the floor of the vessel (the middle of its calibrated floor): the same shape, larger and larger, up to the whole area,
       // so it is always a whole round heap, only lower down in the vessel (not a half of the area)
@@ -215,6 +250,7 @@
     }
     sync(parts){
       this.parts=parts;
+      this.units=parts.reduce((s,q)=>s+Math.max(0,+q.count||0),0);
       this.region();
       this.keep=this.zones();
       const want=new Set(),created=[];
@@ -266,10 +302,10 @@
       for(const p of ps)area+=Math.PI*p.r0*p.r0;
       this.room=(this.fullArea||this.area)*.62;
       this.fill=area/this.room;   // 1 = the floor of the vessel is covered
-      const need=Math.max(1,Math.ceil(area/this.room));
+      const need=(this.floorPoly&&(this.units||0)<=FLOOR_UNITS)?1:Math.max(1,Math.ceil(area/this.room));      // nothing is lifted before the floor is covered
       this.layers=Math.min(5,need);
       // beyond 5 layers (very many pieces) shrink them a little
-      const s=need>5?Math.sqrt(5*this.room/area):1;
+      const s=(this.floorPoly&&(this.units||0)<=FLOOR_UNITS)?1:(need>5?Math.sqrt(5*this.room/area):1);
       ps.forEach((p,i)=>{p.k=p.k0*s;p.r=p.r0*s;if(p.layer===undefined||p.layer>=this.layers)p.layer=i%this.layers;});
     }
     // new pieces land at a random spot of the whole food area, so the heap fills it from the start
@@ -433,7 +469,7 @@
       if(!ps.length)return;
       // the bed never moves, so it is drawn once into its own canvas and only copied afterwards
       let cooked=0;for(const p of ps){if(p.entry.cooked?.fried)cooked|=1;if(p.entry.cooked?.well)cooked|=2;}
-      const key=w+'x'+h+'|'+stage+'|'+ps.length+'|'+cooked+'|'+this.area.toFixed(1);
+      const key=w+'x'+h+'|'+stage+'|'+ps.length+'|'+cooked+'|'+this.area.toFixed(1)+'|'+(this.floorPoly?Math.min(1,(this.units||0)/FLOOR_UNITS).toFixed(2):'-');
       const bc=this._bedCache||(this._bedCache=document.createElement('canvas'));
       if(this._bedKey!==key){
         this._bedKey=key;
@@ -447,29 +483,39 @@
       const bl=BLEND[Math.max(1,Math.min(7,stage))-1];
       // under the loose pieces lies a settled layer made of the same cut pieces (they do not move), so stirring never
       // uncovers the floor: it covers exactly the area the food has risen to
+      // with the first additions the settled layer covers the floor little by little (25% after the 1st addition, 50%, 75%, the whole floor after the 4th); after that it lies under the whole food
+      const cover=this.floorPoly?Math.min(1,(this.units||0)/FLOOR_UNITS):1;
+      const regions=this.floorPoly?(cover<1?[this.floorPoly]:[this.poly,this.floorPoly]):[this.poly];
       if(!this.bedSpots){
-        const xs=this.poly.map(q=>q.x),ys=this.poly.map(q=>q.y);
-        const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),st=8;
-        this.bedSpots=[];let n=0;
-        for(let y=y0;y<=y1+st/2;y+=st)for(let x=x0;x<=x1+st/2;x+=st){
-          n++;const jx=x+((n*37%11)/11-.5)*st*.8,jy=y+((n*53%13)/13-.5)*st*.8;
-          if(this.inside(jx,jy))this.bedSpots.push([jx,jy,(n*29%17)/17*6.28,n]);
+        this.bedSpots=[];let n=0;const st=this.floorPoly?4.6:8;
+        regions.forEach((rg,ri)=>{
+          const xs=rg.map(q=>q.x),ys=rg.map(q=>q.y);
+          const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+          for(let y=y0;y<=y1+st/2;y+=st)for(let x=x0;x<=x1+st/2;x+=st){
+            n++;const jx=x+((n*37%11)/11-.5)*st*.8,jy=y+((n*53%13)/13-.5)*st*.8;
+            if(!Sim.pointIn(rg,jx,jy))continue;
+            if(cover<1&&((Math.imul(n,2654435761)>>>0)/4294967296)>=cover)continue;      // a part of the floor is still seen
+            this.bedSpots.push([jx,jy,(n*29%17)/17*6.28,n,ri]);
+          }
+        });
+      }
+      regions.forEach((rg,ri)=>{
+        g.save();
+        g.beginPath();rg.forEach((q,k)=>k?g.lineTo(q.x*sc,q.y*sc):g.moveTo(q.x*sc,q.y*sc));g.closePath();g.clip();
+        for(const [x,y,rot,n,rr] of this.bedSpots){
+          if(rr!==ri)continue;
+          const p=ps[n%ps.length],e=p.entry;
+          g.save();g.translate(x*sc,y*sc);g.rotate(rot);
+          const dx=-p.ax*p.k*sc,dy=-p.ay*p.k*sc,dw=p.sw*p.k*sc,dh=p.sh*p.k*sc;
+          if(e.part)ensureCooked(e,e.part);
+          g.drawImage(e.img,p.sx,p.sy,p.sw,p.sh,dx,dy,dw,dh);
+          if(bl[0]>0&&e.cooked?.fried){g.globalAlpha=bl[0];g.drawImage(e.cooked.fried,p.sx,p.sy,p.sw,p.sh,dx,dy,dw,dh);}
+          if(bl[1]>0&&e.cooked?.well){g.globalAlpha=bl[1];g.drawImage(e.cooked.well,p.sx,p.sy,p.sw,p.sh,dx,dy,dw,dh);}
+          g.globalAlpha=1;g.restore();
         }
-      }
-      g.save();
-      g.beginPath();this.poly.forEach((q,i)=>i?g.lineTo(q.x*sc,q.y*sc):g.moveTo(q.x*sc,q.y*sc));g.closePath();g.clip();
-      for(const [x,y,rot,n] of this.bedSpots){
-        const p=ps[n%ps.length],e=p.entry;
-        g.save();g.translate(x*sc,y*sc);g.rotate(rot);
-        const dx=-p.ax*p.k*sc,dy=-p.ay*p.k*sc,dw=p.sw*p.k*sc,dh=p.sh*p.k*sc;
-        if(e.part)ensureCooked(e,e.part);
-        g.drawImage(e.img,p.sx,p.sy,p.sw,p.sh,dx,dy,dw,dh);
-        if(bl[0]>0&&e.cooked?.fried){g.globalAlpha=bl[0];g.drawImage(e.cooked.fried,p.sx,p.sy,p.sw,p.sh,dx,dy,dw,dh);}
-        if(bl[1]>0&&e.cooked?.well){g.globalAlpha=bl[1];g.drawImage(e.cooked.well,p.sx,p.sy,p.sw,p.sh,dx,dy,dw,dh);}
-        g.globalAlpha=1;g.restore();
-      }
+        g.restore();
+      });
       // (no dark fill over the settled layer: it made a dark mask on the bottom of every vessel)
-      g.restore();
     }
     draw(){
       const ps=(this.list||(this.list=[...this.pieces.values()])).slice().sort((a,b)=>a.layer-b.layer||a.y-b.y);
