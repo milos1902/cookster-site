@@ -51,11 +51,27 @@ function tick(now){
 setInterval(function(){tick(performance.now());},250);
 function flip(s){
   if(s.flipping)return;s.flipping=true;
-  var z=zEl(s),t=function(a){return 'translate(-50%,-50%) rotate('+s.rot+'deg) scaleY('+a+')';};
+  var z=zEl(s);
   if(!z){s.up=1-s.up;s.flipping=false;return;}
-  z.style.transition='transform .22s ease-in';z.style.transform=t(0.05);
-  setTimeout(function(){s.up=1-s.up;layout(s);z.style.transition='transform .22s ease-out';z.style.transform=t(1);setTimeout(function(){s.flipping=false;z.style.transition='';},230);},230);
-  try{playImpactSound(z,'putIn',{noDelay:true});}catch(e){}
+  // a real flip: it jumps up, turns over (the picture changes when it is edge-on) and falls back with a small bounce
+  var T=function(dy,sy,sc,rot){return 'translate(-50%,calc(-50% + '+dy+'px)) rotate('+(s.rot+(rot||0))+'deg) scale('+sc+','+(sc*sy)+')';};
+  var D=720;
+  var kf=[
+    {transform:T(0,1,1,0),offset:0,easing:'cubic-bezier(.3,.1,.5,1)'},
+    {transform:T(-70,.55,1.12,-6),offset:.22,easing:'linear'},
+    {transform:T(-110,.04,1.2,0),offset:.45,easing:'linear'},
+    {transform:T(-70,.55,1.12,6),offset:.68,easing:'cubic-bezier(.5,0,.9,.6)'},
+    {transform:T(0,.9,1,0),offset:.86,easing:'ease-out'},
+    {transform:T(-8,1.06,1,0),offset:.93,easing:'ease-in'},
+    {transform:T(0,1,1,0),offset:1}
+  ];
+  var swapped=false;
+  z.style.zIndex='5';
+  var an=z.animate(kf,{duration:D,fill:'none'});
+  setTimeout(function(){s.up=1-s.up;swapped=true;layout(s);},D*.45);      // when the steak is edge-on, the other side comes up
+  setTimeout(function(){try{playImpactSound(z,'putIn',{noDelay:true});}catch(e){}},D*.85);
+  var done=function(){if(!swapped){s.up=1-s.up;layout(s);}s.flipping=false;z.style.zIndex='';};
+  an.onfinish=done;an.oncancel=done;
 }
 function add(item,e){
   if(steaks.length>=MAXN){try{showToast('Roštilj je pun.');}catch(x){}return false;}
