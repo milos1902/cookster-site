@@ -1198,3 +1198,7 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Objava sajta: sopstveni radni tok (07.11.)
 - `.github/workflows/pages.yml`: korak objave čeka 3 min, do 3 pokušaja (GitHub-ov automatski deploy ume da zapne u koraku syncing_files).
 - Radi tek kad se u Settings -> Pages -> Source izabere "GitHub Actions". Vraćanje: "Deploy from a branch".
+
+## Komad mesa = tri šnicle (07.11.)
+- Svaki rez uzima trećinu komada; treći rez uzima ostatak kao poslednju šniclu i komad nestaje.
+- Bez pokazivanja mišem nož seče šniclu najbližu sredini daske (ne prvu u listi).
