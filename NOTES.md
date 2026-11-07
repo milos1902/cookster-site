@@ -1198,3 +1198,11 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Objava sajta: sopstveni radni tok (07.11.)
 - `.github/workflows/pages.yml`: korak objave čeka 3 min, do 3 pokušaja (GitHub-ov automatski deploy ume da zapne u koraku syncing_files).
 - Radi tek kad se u Settings -> Pages -> Source izabere "GitHub Actions". Vraćanje: "Deploy from a branch".
+
+## Komad mesa = tri šnicle (07.11.)
+- Svaki rez uzima trećinu komada; treći rez uzima ostatak kao poslednju šniclu i komad nestaje.
+- Bez pokazivanja mišem nož seče šniclu najbližu sredini daske (ne prvu u listi).
+
+## Mrlje isključene, vraćanje u kvadratić (07.11.)
+- Mrlje (podna prljavština pri sečenju, prskanje po radnoj površini) isključene: `MESS_STAINS_ENABLED=false` u game.js (createFloorSpill/createSpill). Kod za mrlje i alat za kalibraciju ostaju za kasnije. Prljavština na sudovima (vessel-dirt) i prljava kuhinja nisu dirani.
+- Kvadratići "zadnje korišćeno": klik dok držiš predmet vraća ga u kvadratić (briše kopiju); ako kvadrat ima drugu stvar, ona se uzima. Ne vraća se: stvari koje postoje jednom, i posude sa hranom.

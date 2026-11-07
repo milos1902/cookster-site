@@ -11551,6 +11551,23 @@ function detachItemIntoBackpack(item,index){
  updateBackpackDropTarget();
  updateHover();
 }
+// the item in the hand goes back into the "last used" square (the square makes a new copy again when it is clicked): the copy is simply removed
+function returnHeldItemToSquare(){
+ const item=holding;if(!item)return false;
+ if(stirring)endStirring();
+ if(cleaning)endCleaning();
+ if(panWashing)endPanWashing();
+ if(oilPouring)endOilPour();
+ holding=null;heldGrabState=null;
+ clearHeldPlacementState(item);
+ hidePlacementGhost();hideOriginGhost();clearPourTarget();
+ item.classList.remove('held','hovered','valid','invalid');
+ delete item.dataset.held;
+ removeItem(item);
+ updateHover();CooksterSave.schedule();
+ return true;
+}
+window.CooksterReturnHeld=returnHeldItemToSquare;
 function restoreBackpackItemToScene(item){
  if(!item)return false;
  item.classList.remove('held','hovered','valid','invalid');
@@ -12314,10 +12331,10 @@ function takeOneFromCrate(crate){
 function findCutTargetOnBoard(){
  const onBoard=el=>el.dataset.attachedToBoard==='1'&&isBoardCuttableItem(el);
  if(hoverItem&&onBoard(hoverItem))return hoverItem;      // what the mouse points at is cut
- let first=null,slice=null;
+ let first=null,slice=null,sd=1e9;
  for(const el of items){
    if(!onBoard(el))continue;
-   if(VEGETABLES[el.dataset.vegKey]?.meat==='snicla'){if(!slice)slice=el;continue;}
+   if(VEGETABLES[el.dataset.vegKey]?.meat==='snicla'){const d=Math.abs((+el.dataset.boardRelX||0)+.105);if(d<sd){sd=d;slice=el;}continue;}      // of the slices the one nearest to the middle of the board is cut
    if(!first)first=el;
  }
  return first||slice;      // without pointing: the piece (or a vegetable) first, a slice only when it is alone on the board
@@ -12373,10 +12390,15 @@ async function meatApplyCrop(target,P){
 }
 // the quick cut (E thick / old C thin): a slice of a fixed width from the right edge
 function meatSliceOff(target,mode){
- const P=meatPoly(target),bb=meatPolyBox(P),w=.1667,x=bb.x1-w;
+ const P=meatPoly(target),bb=meatPolyBox(P),w=1/3,x=bb.x1-w;      // one piece of meat = THREE slices (a third each)
+ if(bb.x1-bb.x0<=w+.02){      // the last third: it is the third slice and the piece is gone
+   const n=+(target.dataset.meatSlices||0),el=meatSpawnSlice(target,false,n);
+   removeItem(target);CooksterSave.schedule();updateHover();
+   return el?'Odrezana je poslednja šnicla, komad mesa je potrošen.':'Šnicla nije mogla da se napravi.';
+ }
  const [A,B]=meatSplit(P,x,0,x,1);      // A: one side of the line, B: the other
  const right=(A&&A[0][0]>=x-1e-9&&A.every(q=>q[0]>=x-1e-9))?A:B,left=right===A?B:A;
- return meatSlicePoly(target,left,right,false);      // only the thick slice exists (the thin one is gone)
+ return meatSlicePoly(target,left,right,false);
 }
 // one slice item (thin or thick) on the board (a pile on the right side), nothing else changes
 function meatSpawnSlice(target,thin,n){
@@ -14562,7 +14584,9 @@ window.CooksterStainCalibration.layoutOnTable=()=>layoutAllStainsOnSurface('tabl
 window.CooksterStainCalibration.layoutOnFloor=()=>layoutAllStainsOnSurface('floor');
 window.CooksterStainCalibration.clearLayout=clearStainLayout;
 window.CooksterStainCalibration.setBagsHidden=setBagsHidden;
+const MESS_STAINS_ENABLED=false;      // the stains (floor mess while chopping, counter splash) are off until they are redone properly
 function createFloorSpill(ingredientKey){
+ if(!MESS_STAINS_ENABLED)return;
  // v198.5.127 — occasional floor mess while chopping/preparing, separate
  // from the counter-splash-while-stirring trigger.
  const now=performance.now();if(now-lastFloorSpillAt<4000)return;lastFloorSpillAt=now;
@@ -14576,6 +14600,7 @@ function createFloorSpill(ingredientKey){
  popArtPuff(x,y,.4);
 }
 function createSpill(pan){
+ if(!MESS_STAINS_ENABLED)return;
  const now=performance.now();if(now-lastSpillAt<1200)return;lastSpillAt=now;
  const cx=+pan.dataset.cx,by=+pan.dataset.by,w=pan.offsetWidth,h=pan.offsetHeight;
  const side=Math.random()<.5?-1:1;
