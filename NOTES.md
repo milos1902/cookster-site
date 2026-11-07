@@ -1239,3 +1239,8 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Termički obrađeno meso (roštilj, tiganj) + E na dasci: seče se u lepezu kriški (meatSliceGrilled u game.js; slika assets/meat/junetina_rostilj_krike_mr.webp, katalog VEGETABLES.junetina_snicla_debela.grilledSliced; ključ ..._krike_celo u posudama). Sirovo meso + E: kockice kao do sada. Za sada sva tri stepena pečenosti i meso iz tiganja koriste istu sliku (medium rare, sa tragovima roštilja): treba medium, well done i verzije za tiganj bez crta (katalog: grilledSliced.medium/welldone, pannedSliced).
 - Kriške: medium rare (krike_mr) i medium (krike_med) postoje; fali well done i verzije za tiganj.
 - Pečenost kriški po tome koliko je strana bila na žaru (grillCook): do 50% medium rare, do 70% medium, više well done (i zagoreno). Well done slika još ne postoji: privremeno se koristi medium.
+- Kriške: rare (do 50% strane na žaru, krike_rare), medium (do 70%, krike_med), well done (preko 70%, krike_wd). Slika krike_mr (medium rare) je sačuvana ali se ne koristi.
+- Daska za serviranje (assets/new_props/daska_serviranje.webp, katalog daska_serviranje): posuda bez grejanja (serving.js ZONES), kriške mesa se na nju spuštaju kao na tanjir. Konobar/narudžbine za meso još ne postoje (kitchen-orders.js poznaje samo kiseli kupus i belolučane paprike).
+- Kriške mesa u posudama (serving.js): uvek iste veličine (sc=1) i skoro ravno (rot do ±0.125 rad), da leže u redu.
+- Daska za serviranje povećana 240→340 px (kvaka fioke je bila pola daske).
+- Daska za serviranje 235 px (80% daske za sečenje); kriške mesa na njoj iste veličine kao na dasci za sečenje (112 px) i ostaju tačno gde ih stavite (bez skupljanja/pomeranja).

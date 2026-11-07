@@ -100,7 +100,7 @@ window.CooksterCatalog = Object.freeze({
       wellDoneSrc: 'assets/meat/junetina_snicla_debela_tiganj_zagorela.png',
       grilledSrc: 'assets/meat/junetina_snicla_debela_rostilj_pecena.png',
       grilledWellDoneSrc: 'assets/meat/junetina_snicla_debela_rostilj_zagorela.png',
-      grilledSliced: Object.freeze({ rare: 'assets/meat/junetina_rostilj_krike_mr.webp', medium: 'assets/meat/junetina_rostilj_krike_med.webp', welldone: 'assets/meat/junetina_rostilj_krike_med.webp', w: 112, h: 39 }),      // sliced grilled steak (a fan of slices); medium/welldone pictures: until they are drawn the medium rare one is used
+      grilledSliced: Object.freeze({ rare: 'assets/meat/junetina_rostilj_krike_rare.webp', medium: 'assets/meat/junetina_rostilj_krike_med.webp', welldone: 'assets/meat/junetina_rostilj_krike_wd.webp', w: 112, h: 39 }),      // sliced grilled steak (a fan of slices); medium/welldone pictures: until they are drawn the medium rare one is used
       friedDicedSrc: 'assets/meat/junetina_k6_debela_fried.png',
       wellDoneDicedSrc: 'assets/meat/junetina_k6_debela_welldone.png',
       dicedLabel: 'junetina na komade',
@@ -378,6 +378,7 @@ window.CooksterCatalog = Object.freeze({
     Object.freeze({id:'kaca_prazna',type:'prop',subtype:'calibration_prop',label:"Bačva za kiseljenje — prazna",src:'assets/calibration_props/kaca_za_kupus/kaca_prazna.webp',w:190,h:202,snapProfile:'flat',shadowProfile:'tiny',placement:['table','floor'],price:0,starter:true}),
     Object.freeze({id:'kaca_poklopac',type:'prop',subtype:'calibration_prop',label:"Poklopac bačve sa drškom",src:'assets/calibration_props/kaca_za_kupus/kaca_poklopac.webp',w:181,h:194,snapProfile:'flat',shadowProfile:'tiny',placement:['table','floor'],price:0,starter:true}),
     Object.freeze({id:'kaca_sa_poklopcem',type:'prop',subtype:'calibration_prop',label:"Bačva za kiseljenje — sa poklopcem",src:'assets/calibration_props/kaca_za_kupus/kaca_sa_poklopcem.webp',w:196,h:195,snapProfile:'flat',shadowProfile:'tiny',placement:['table','floor'],price:0,starter:true}),
+    Object.freeze({id:'daska_serviranje',type:'container',subtype:'bowl',vessel:true,cooking:{capacity:4,canHeat:false,canBurn:false},label:"Daska za serviranje",src:'assets/new_props/daska_serviranje.webp?v=1',w:235,h:73,flatImage:true,snapProfile:'flat',shadowProfile:'tiny',placement:['table','floor'],price:0,starter:true}),
     Object.freeze({id:'kal_02_tanjir_ravni',type:'container',subtype:'bowl',vessel:true,cooking:{capacity:2,canHeat:false,canBurn:false},label:"Ravni tanjir",src:'assets/calibration_props/kitchen_set_18/02_tanjir_ravni_nov.png?v=1',w:160,h:125,flatImage:true,snapProfile:'flat',shadowProfile:'tiny',placement:['table','floor'],price:0,starter:true})
   ]),
   CALIBRATION_ONLY_ITEMS: Object.freeze([
