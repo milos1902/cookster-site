@@ -2384,6 +2384,14 @@ const buttonSoundTarget=makeSoundTarget('__ui_buttons','Dugmići — klik i prel
 buttonSoundTarget.dataset.soundActions='click,hover';
 const firewoodSoundTarget=makeSoundTarget('__firewood_insert','Cepanica — ubacivanje u šporet','insert');
 const bookSoundTarget=makeSoundTarget('__recipe_book','Bakina knjiga — otvaranje/zatvaranje','');
+const grillSoundTarget=makeSoundTarget('__grill','Roštilj — cvrčanje mesa kad se stavi ili okrene','sizzle');
+grillSoundTarget.dataset.soundActions='sizzle';
+// the sizzle of meat on the grill: the sound chosen in the tool "Zvukovi" (target Roštilj) or the built-in one (js/grill-steaks.js)
+window.CooksterGrillSizzle=function(strength){
+ let own=false;try{own=!!impactSounds['__grill']?.actions?.sizzle;}catch(_){}
+ if(own){playImpactSound(grillSoundTarget,'sizzle',{noDelay:true});return;}
+ try{window.CooksterGrillSteaks&&CooksterGrillSteaks.synthSizzle(strength);}catch(_){}
+};
 bookSoundTarget.dataset.soundActions='open,close,pageTurn';
 const drawerLeftSoundTarget=makeSoundTarget('__drawer_left','Leva fioka stola — otvaranje/zatvaranje','');
 drawerLeftSoundTarget.dataset.soundActions='open,close';
@@ -2700,7 +2708,7 @@ ssStyle.textContent=`
 document.head.appendChild(ssStyle);
 
 /* --- state --- */
-const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['break','Lomljenje saksije (prozor)'],['slam','Zalupljivanje vrata'],['scrubLeft','Ribanje: miš ide ulevo'],['scrubRight','Ribanje: miš ide udesno'],['scrubUp','Ribanje: miš ide gore'],['scrubDown','Ribanje: miš ide dole'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje papirića na šiljak'],['fall','Pad papirića sa šiljka'],['ring','Zvoni (kad ga dodirneš)'],['alarm','Alarm kuvanja (zvono kad jelo skoro zagori)'],['sprinkle','Sipaj (začin)'],['pour','Sipaj (ulje)'],['pourOut','Presipaj u drugu posudu'],['throw','Bacanje u kantu'],['empty','Pražnjenje kante'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara'],['eat','Gost jede (svaki zalogaj)'],['step','Koraci konobara (svaki korak)'],['amb0','Kafana prazna (petlja)'],['amb2','Kafana: do 3 gosta (petlja)'],['amb5','Kafana: 4–8 gostiju (petlja)'],['amb12','Kafana puna: 9+ gostiju (petlja)'],['guestIn','Ulazak gostiju u kafanu'],['ambMorning','Kuhinja: jutro (petlja)'],['ambDay','Kuhinja: dan (petlja)'],['ambEvening','Kuhinja: veče (petlja)'],['ambSun','Napolje: sunčano (petlja)'],['ambRain','Napolje: kiša (petlja)'],['ambStorm','Napolje: nevreme (petlja)'],['ambSnow','Napolje: sneg (petlja)'],['thunder','Napolje: grom (jednom, kad sevne)']];
+const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['break','Lomljenje saksije (prozor)'],['slam','Zalupljivanje vrata'],['scrubLeft','Ribanje: miš ide ulevo'],['scrubRight','Ribanje: miš ide udesno'],['scrubUp','Ribanje: miš ide gore'],['scrubDown','Ribanje: miš ide dole'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje papirića na šiljak'],['fall','Pad papirića sa šiljka'],['ring','Zvoni (kad ga dodirneš)'],['alarm','Alarm kuvanja (zvono kad jelo skoro zagori)'],['sizzle','Cvrčanje mesa na roštilju'],['sprinkle','Sipaj (začin)'],['pour','Sipaj (ulje)'],['pourOut','Presipaj u drugu posudu'],['throw','Bacanje u kantu'],['empty','Pražnjenje kante'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara'],['eat','Gost jede (svaki zalogaj)'],['step','Koraci konobara (svaki korak)'],['amb0','Kafana prazna (petlja)'],['amb2','Kafana: do 3 gosta (petlja)'],['amb5','Kafana: 4–8 gostiju (petlja)'],['amb12','Kafana puna: 9+ gostiju (petlja)'],['guestIn','Ulazak gostiju u kafanu'],['ambMorning','Kuhinja: jutro (petlja)'],['ambDay','Kuhinja: dan (petlja)'],['ambEvening','Kuhinja: veče (petlja)'],['ambSun','Napolje: sunčano (petlja)'],['ambRain','Napolje: kiša (petlja)'],['ambStorm','Napolje: nevreme (petlja)'],['ambSnow','Napolje: sneg (petlja)'],['thunder','Napolje: grom (jednom, kad sevne)']];
 const ssState={open:false,tab:'objekti',action:'drop',query:'',libQuery:'',libOpen:false};
 
 /* --- helpers (reuse ls* from light-studio) --- */
@@ -8679,6 +8687,12 @@ function ingredientVisualMeta(item){
       };
     }
 
+    // a slice of meat from the grill: its own ingredient with the grilled / burnt-on-the-grill picture
+    if(!isFruit&&def.meat==='snicla'&&cutState==='whole'&&(item.dataset.meatDone==='grilled'||item.dataset.meatDone==='grilledBurnt')){
+      const burnt=item.dataset.meatDone==='grilledBurnt';
+      return {key:`${key}_${burnt?'rostilj_zagorela':'rostilj'}_celo`,baseKey:key,type:'vegetable',form:'whole',cutState:'whole',
+        label:burnt?'Zagorela šnicla sa roštilja':'Šnicla sa roštilja',src:(burnt?def.grilledWellDoneSrc:def.grilledSrc)||def.src};
+    }
     // a cooked slice of meat is another ingredient than a raw one: it keeps its fried / burnt picture wherever it is put (plate, pan, bowl)
     if(!isFruit&&def.meat==='snicla'&&cutState==='whole'&&(item.dataset.meatDone==='fried'||item.dataset.meatDone==='burnt')){
       const burnt=item.dataset.meatDone==='burnt';
@@ -12666,7 +12680,10 @@ function panMixBaseColor(mix,stage){
 function wholeProduceSource(baseKey,meta=null,stage=1){
   const mv=VEGETABLES?.[baseKey];
   if(mv?.meat==='snicla'){      // a whole slice in a vessel: real pictures of the fried / burnt slice (the same stages as the chopped vegetables: 4 = fried, 6 = burnt); a slice that was cooked before keeps its state
-    const k=String(meta?.key||''),own=/_zagorela_celo$/.test(k)?6:(/_pecena_celo$/.test(k)?4:1);
+    const k=String(meta?.key||'');
+    if(/_rostilj_zagorela_celo$/.test(k)&&mv.grilledWellDoneSrc)return mv.grilledWellDoneSrc;      // from the grill: the picture with the marks stays (also in a pan)
+    if(/_rostilj_celo$/.test(k)&&mv.grilledSrc)return (+stage||1)>=6&&mv.grilledWellDoneSrc?mv.grilledWellDoneSrc:mv.grilledSrc;
+    const own=/_zagorela_celo$/.test(k)?6:(/_pecena_celo$/.test(k)?4:1);
     const st=Math.max(own,+stage||1);
     if(st>=6&&mv.wellDoneSrc)return mv.wellDoneSrc;
     if(st>=4&&mv.friedSrc)return mv.friedSrc;
@@ -12735,7 +12752,7 @@ window.CooksterSteakZones=function(vessel){
     const meta=heat?readPanIngredientMeta(vessel):cont;
     for(const [key,n] of Object.entries(counts||{})){
       if(!(n>0)||!key.endsWith('_celo'))continue;
-      const base=meta?.[key]?.baseKey||key.replace(/_(pecena|zagorela)_celo$/,'').replace(/_celo$/,'');
+      const base=meta?.[key]?.baseKey||key.replace(/_(pecena|zagorela|rostilj_zagorela|rostilj)_celo$/,'').replace(/_celo$/,'');
       const md=VEGETABLES[base];if(md?.meat!=='snicla')continue;
       for(let i=0;i<Math.min(3,Math.round(n));i++)out.push(meatSlicePos(vessel,md,key,i));
     }
