@@ -93,19 +93,26 @@ function tick(now){
 setInterval(function(){tick(performance.now());},250);
 // taking the tray: the whole tray with its steaks comes into the hand (it stays by the grill otherwise) and is carried to the table
 function loadImg(src){return new Promise(function(res){var i=new Image();i.onload=function(){res(i);};i.onerror=function(){res(null);};i.src=src;});}
+// the picture of the tray with its steaks (with a small contact shadow under every steak)
+function composeTray(list){
+  var W=520,H=Math.round(W*TRT_ASPECT),cv=document.createElement('canvas');cv.width=W;cv.height=H;var g=cv.getContext('2d');
+  var srcs=[TRAY_SRC_T].concat(list.map(function(o){return srcOf(o.cook[o.up],o.key);}));
+  return Promise.all(srcs.map(loadImg)).then(function(im){
+    if(im[0])g.drawImage(im[0],0,0,W,H);
+    list.map(function(o,i){return {o:o,img:im[1+i]};}).sort(function(a,b){return a.o.slot-b.o.slot;}).forEach(function(q){
+      var o=q.o,img=q.img,p=slotPosT(o.slot,W);if(!img)return;
+      var w=p.w,h=w*img.height/img.width;g.save();g.translate(p.x,p.y);g.rotate(o.rot*Math.PI/180);
+      g.shadowColor='rgba(0,0,0,.5)';g.shadowBlur=W*.016;g.shadowOffsetX=W*.004;g.shadowOffsetY=W*.012;
+      g.drawImage(img,-w/2,-h/2,w,h);g.restore();
+    });
+    return cv.toDataURL('image/png');
+  });
+}
 function takeTray(e){
   var inTray=steaks.filter(function(o){return o.slot!=null;});
   if(!inTray.length||trayAway)return;
-  var W=520,H=Math.round(W*TRT_ASPECT),cv=document.createElement('canvas');cv.width=W;cv.height=H;var g=cv.getContext('2d');
   var list=inTray.map(function(o){return {key:o.key,cook:o.cook.slice(),up:o.up,rot:o.rot,slot:o.slot};});
-  var srcs=[TRAY_SRC_T].concat(list.map(function(o){return srcOf(o.cook[o.up],o.key);}));
-  Promise.all(srcs.map(loadImg)).then(function(im){
-    if(im[0])g.drawImage(im[0],0,0,W,H);
-    list.slice().sort(function(a,b){return a.slot-b.slot;}).forEach(function(o,i){
-      var idx=list.indexOf(o),img=im[1+idx],p=slotPosT(o.slot,W);if(!img)return;
-      var w=p.w,h=w*img.height/img.width;g.save();g.translate(p.x,p.y);g.rotate(o.rot*Math.PI/180);g.drawImage(img,-w/2,-h/2,w,h);g.restore();
-    });
-    var url=cv.toDataURL('image/png');
+  composeTray(list).then(function(url){
     inTray.forEach(function(o){if(o.kel)o.kel.remove();if(o.zel)o.zel.remove();});
     steaks=steaks.filter(function(o){return o.slot==null;});
     trayAway=true;hideBar();closeMenu();{var a1=kTrayEl(),a2=zTrayEl();if(a1)a1.style.display='none';if(a2)a2.style.display='none';}
@@ -118,6 +125,57 @@ function takeTray(e){
     try{showToast('Uzeo si pleh sa mesom. Nosi ga na sto; vrati ga na ivicu roštilja kad je prazan.');}catch(x){}
   });
 }
+// the tray on the table: a click on a steak in it takes the steak; a steak from the hand dropped on the tray goes into it
+function trayList(el){try{return JSON.parse(el.dataset.traySteaks||'[]');}catch(x){return [];}}
+function refreshTray(el,list){
+  return composeTray(list).then(function(url){
+    el.dataset.traySteaks=JSON.stringify(list);
+    var b=el.querySelector('.body');if(b)b.setAttribute('src',url);
+    var sh=el._contactShadow&&el._contactShadow.querySelector('img');if(sh)sh.setAttribute('src',url);
+    try{CooksterSave.schedule();}catch(x){}
+  });
+}
+function trayAtPoint(e){
+  var it=null;try{it=itemAt(e.clientX,e.clientY);}catch(x){}
+  return it&&it.dataset&&it.dataset.trayItem==='1'?it:null;
+}
+function steakAtTray(el,e){
+  var r=el.getBoundingClientRect(),W=520,px=(e.clientX-r.left)/r.width*W,py=(e.clientY-r.top)/r.height*Math.round(W*TRT_ASPECT);
+  var list=trayList(el).slice().sort(function(a,b){return b.slot-a.slot;});
+  for(var i=0;i<list.length;i++){var p=slotPosT(list[i].slot,W),dx=(px-p.x)/(p.w/2),dy=(py-p.y)/(p.w*.34);if(dx*dx+dy*dy<1)return list[i];}
+  return null;
+}
+window.addEventListener('pointerdown',function(e){
+  if(e.button!==0)return;
+  var h=(typeof holding!=='undefined')?holding:null;
+  if(window.CooksterKitchenFx&&CooksterKitchenFx.isZoomed&&CooksterKitchenFx.isZoomed())return;
+  if(!h){
+    var el=trayAtPoint(e);if(!el)return;
+    var o=steakAtTray(el,e);if(!o)return;      // a click beside the steaks picks up the tray itself (the game does it)
+    e.stopImmediatePropagation();e.preventDefault();
+    var d=def(o.key);if(!d)return;
+    var list=trayList(el).filter(function(x){return x.slot!==o.slot;});
+    var c=o.cook[o.up],st=stateOf(c),p=screenToScene(e.clientX,e.clientY);
+    var st2=makeItem({id:'veg_'+o.key+'_'+Date.now(),label:st==='burnt'?'Zagorela šnicla sa roštilja':st==='grilled'?'Šnicla sa roštilja':d.label,src:srcOf(c,o.key),x:p.x-d.w/2,y:p.y-d.h,w:d.w,h:d.h,z:++zCounter,snapProfile:'produce'});
+    st2.dataset.vegetable='1';st2.dataset.collisionProfile='vegetable';st2.dataset.vegKey=o.key;st2.dataset.cutState='whole';
+    if(st==='grilled')st2.dataset.meatDone='grilled';else if(st==='burnt')st2.dataset.meatDone='grilledBurnt';
+    st2.dataset.surfaceZone='table';
+    try{setPose(st2,p.x,p.y,1);startHolding(st2);}catch(x){}
+    refreshTray(el,list);
+    return;
+  }
+  if(canGrill(h.dataset.vegKey||'')){
+    var tr=trayAtPoint(e);if(!tr)return;
+    var l2=trayList(tr);
+    var used={};l2.forEach(function(x){used[x.slot]=1;});var k=0;while(used[k])k++;
+    if(k>=TRAY_MAX){try{showToast('Pleh je potpuno pun.');}catch(x){}e.stopImmediatePropagation();e.preventDefault();return;}
+    e.stopImmediatePropagation();e.preventDefault();
+    var md=h.dataset.meatDone||'',c0=md==='grilledBurnt'||md==='burnt'?1:(md==='grilled'||md==='fried'?.45:0);
+    l2.push({key:h.dataset.vegKey,cook:[c0,c0],up:0,rot:Math.round((Math.random()-.5)*14),slot:k});
+    var it=h;try{removeItem(it);holding=null;hidePlacementGhost();hideOriginGhost();clearPanTargets();updateHover();}catch(x){}
+    refreshTray(tr,l2);
+  }
+},true);
 // the tray is put back at the right edge of the grill (a click there with the tray in the hand): it stands there again, with what is in it
 window.addEventListener('pointerdown',function(e){
   if(e.button!==0||typeof holding==='undefined'||!holding||!holding.dataset||holding.dataset.trayItem!=='1')return;
