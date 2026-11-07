@@ -1241,3 +1241,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Pečenost kriški po tome koliko je strana bila na žaru (grillCook): do 50% medium rare, do 70% medium, više well done (i zagoreno). Well done slika još ne postoji: privremeno se koristi medium.
 - Kriške: rare (do 50% strane na žaru, krike_rare), medium (do 70%, krike_med), well done (preko 70%, krike_wd). Slika krike_mr (medium rare) je sačuvana ali se ne koristi.
 - Daska za serviranje (assets/new_props/daska_serviranje.webp, katalog daska_serviranje): posuda bez grejanja (serving.js ZONES), kriške mesa se na nju spuštaju kao na tanjir. Konobar/narudžbine za meso još ne postoje (kitchen-orders.js poznaje samo kiseli kupus i belolučane paprike).
+- Kriške mesa u posudama (serving.js): uvek iste veličine (sc=1) i skoro ravno (rot do ±0.125 rad), da leže u redu.

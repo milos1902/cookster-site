@@ -176,8 +176,9 @@ function compose(el){
         if(hasXY(it)){x=it.x*W;y=it.y*H;}
         else if(i===0){x=bb0?(bb0.x0+bb0.x1)/2:cal.bx;y=bb0?(bb0.y0+bb0.y1)/2:cal.by;}
         else{const lv=Math.min(1,i/9),yb=cal.by+(cal.top<cal.by?(cal.by-cal.top)*.04:4),yt=cal.by-(cal.by-cal.top)*(.18+.82*lv);[x,y]=polyPoint(rp,cal.food,Math.min(yt,cal.by),yb);}
-        return{x,y,rot:(rp()-.5)*1.1,sc:i===0?1:.9+rp()*.2,first:i===0&&!hasXY(it)};});
-    }else{pl=places(pcs.length,Z,W,H,seed);pl.forEach((q,i)=>{if(hasXY(pcs[i])){q.x=pcs[i].x*W;q.y=pcs[i].y*H;q.sc=1;}});}
+        const meat=/krike|snicla|junetina|svinjetina/.test(String(it.k||''));      // pieces of meat are always the same size and lie almost straight
+        return{x,y,rot:meat?(rp()-.5)*.25:(rp()-.5)*1.1,sc:(i===0||meat)?1:.9+rp()*.2,first:i===0&&!hasXY(it)};});
+    }else{pl=places(pcs.length,Z,W,H,seed);pl.forEach((q,i)=>{if(hasXY(pcs[i])){q.x=pcs[i].x*W;q.y=pcs[i].y*H;q.sc=1;}if(/krike|snicla|junetina|svinjetina/.test(String(pcs[i].k||''))){q.sc=1;q.rot=(q.rot||0)*.25;}});}
     pcs.map((it,i)=>i).sort((a,b)=>pl[a].y-pl[b].y).forEach(i=>{                  // the lower ones are drawn over the higher ones (the places themselves do not change)
       const it=pcs[i],spr=sprite(it.s),p=pl[i];let w=W*Math.max(.1,Math.min(.62,it.w))*p.sc;
       let h=w*spr.height/spr.width;
