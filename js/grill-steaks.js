@@ -8,10 +8,10 @@ if(window.CooksterGrillSteaks)return;
 var MAXN=6;      // the logic is the same for every slice of meat that has the pictures grilledSrc / grilledWellDoneSrc in the catalog (VEGETABLES.<key>); today the beef slice
 var steaks=[],seq=1,last=0;
 /* the grate in the picture of the kitchen (1672x941): x 285..700, y 62..100 (the bottoms of the steaks stay above the stone wall in front of it) and in the close-up x 230..1370, y 262..420 */
-var KG={x0:285,x1:700,y0:66,y1:100,w:50},ZG={x0:230,x1:1370,y0:262,y1:420,w:190};
+var KG={x0:285,x1:700,y0:66,y1:100,w:30},ZG={x0:230,x1:1370,y0:262,y1:420,w:112};      // the size of a steak on the grate is the same as in the tray (the tray slot: 0.41 of the tray width)
 /* the copper tray on the right edge of the stone (assets/new_props/pleh_rostilj.webp): the grilled steaks are put into it (they stop cooking there). zoom: centre and width in the picture of the close-up, kitchen: the same in the picture of the kitchen */
 var TRZ={cx:1446,cy:329,w:272},TRK={cx:727,cy:80,w:72},TR_ASPECT=525/460,TRAY_MAX=4,TRAY_SRC='assets/new_props/pleh_rostilj.webp?v=1';
-function slotPos(k,cx,cy,w){var t=(k+.5)/TRAY_MAX,h=w*TR_ASPECT;return {x:cx-w/2+(.28+.50*t)*w,y:cy-h/2+(.20+.62*t)*h,w:w*.40};}
+function slotPos(k,cx,cy,w){var t=(k+.5)/TRAY_MAX,h=w*TR_ASPECT;return {x:cx-w/2+(.28+.50*t)*w,y:cy-h/2+(.20+.62*t)*h,w:w*.41};}
 var RAW_AT=.3,BURN_AT=.9,RATE=1/25;      // grilled from 30%, burnt from 90% of a side; one side: grilled after about 8 s, burnt after about 23 s on a full fire
 function def(key){try{return VEGETABLES[key];}catch(e){return null;}}
 function canGrill(key){var d=def(key);return !!(d&&d.meat==='snicla'&&d.grilledSrc);}
