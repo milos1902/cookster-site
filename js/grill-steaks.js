@@ -8,12 +8,16 @@ if(window.CooksterGrillSteaks)return;
 var MAXN=6;      // the logic is the same for every slice of meat that has the pictures grilledSrc / grilledWellDoneSrc in the catalog (VEGETABLES.<key>); today the beef slice
 var steaks=[],seq=1,last=0;
 /* the grate in the picture of the kitchen (1672x941): x 285..700, y 62..100 (the bottoms of the steaks stay above the stone wall in front of it) and in the close-up x 230..1370, y 262..420 */
-var KG={x0:285,x1:690,y0:70,y1:104,w:46},ZG={x0:230,x1:1370,y0:262,y1:420,w:112};      // the size of a steak on the grate is the same as in the tray (the tray slot: 0.41 of the tray width)
+var KG={x0:285,x1:690,y0:70,y1:104,w:37},ZG={x0:230,x1:1370,y0:262,y1:420,w:100};      // the size of a steak on the grate is the same as in the tray (the tray slot: 0.41 of the tray width)
 /* the copper tray on the right edge of the stone (assets/new_props/pleh_rostilj.webp): the grilled steaks are put into it (they stop cooking there). zoom: centre and width in the picture of the close-up, kitchen: the same in the picture of the kitchen */
-var TRZ={cx:1446,cy:329,w:272},TRK={cx:733,cy:88,w:112},TR_ASPECT=525/460,TRAY_ROW=4,TRAY_MAX=20,TRAY_SRC='assets/new_props/pleh_rostilj.webp?v=1';
-function slotPos(k,cx,cy,w){      // 4 steaks in the first row along the tray, the next ones lie over them (every layer a bit higher and moved), up to TRAY_MAX
-  var layer=Math.floor(k/TRAY_ROW),n=k%TRAY_ROW,t=(n+.5)/TRAY_ROW,h=w*TR_ASPECT,sx=(layer%2?.035:-.02)*w,sy=-layer*.06*h+(layer%2?.012:0)*h;
-  return {x:cx-w/2+(.28+.50*t)*w+sx,y:cy-h/2+(.20+.62*t)*h+sy,w:w*.41};
+var TRZ={cx:1462,cy:338,w:250},TRK={cx:738,cy:92,w:92},TR_ASPECT=712/620,TRK_ASPECT=368/300,TRAY_ROW=4,TRAY_MAX=20,TRAY_SRC='assets/new_props/pleh_rostilj_sto.webp?v=1',TRAY_SRC_T='assets/new_props/pleh_sto_nov.webp?v=1',TRT_ASPECT=718/520,TRAY_SRC_K='assets/new_props/pleh_rostilj_kuhinja.webp?v=1';
+function slotPosT(k,w){      // the tray on the table (portrait picture): 4 steaks in a column, the next ones over them
+  var layer=Math.floor(k/TRAY_ROW),n=k%TRAY_ROW,t=(n+.5)/TRAY_ROW,h=w*TRT_ASPECT,sx=(layer%2?.04:-.03)*w,sy=-layer*.04*h;
+  return {x:w/2+sx,y:(.14+.72*t)*h+sy,w:w*.46};
+}
+function slotPos(k,cx,cy,w,asp){      // 4 steaks in the first row along the tray, the next ones lie over them (every layer a bit higher and moved), up to TRAY_MAX
+  var layer=Math.floor(k/TRAY_ROW),n=k%TRAY_ROW,t=(n+.5)/TRAY_ROW,h=w*(asp||TR_ASPECT),sx=(layer%2?.035:-.02)*w,sy=-layer*.05*h;
+  return {x:cx+sx,y:cy-h/2+(.18+.68*t)*h+sy,w:w*.40};
 }
 var RAW_AT=.3,BURN_AT=.9,RATE=1/25;      // grilled from 30%, burnt from 90% of a side; one side: grilled after about 8 s, burnt after about 23 s on a full fire
 function def(key){try{return VEGETABLES[key];}catch(e){return null;}}
@@ -25,7 +29,7 @@ var kTray=null,trayAway=false;
 function kTrayEl(){
   if(kTray&&kTray.isConnected)return kTray;
   var sc=document.getElementById('scene');if(!sc)return null;
-  var im=document.createElement('img');im.draggable=false;im.className='grill-tray-k';im.src=TRAY_SRC;
+  var im=document.createElement('img');im.draggable=false;im.className='grill-tray-k';im.src=TRAY_SRC_K;
   im.style.cssText='position:absolute;z-index:5;pointer-events:none;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 3px rgba(0,0,0,.45));left:'+TRK.cx+'px;top:'+TRK.cy+'px;width:'+TRK.w+'px;height:auto';
   sc.appendChild(im);kTray=im;return im;
 }
@@ -62,7 +66,7 @@ function zEl(s){
 function layout(s){
   var kt=kTrayEl(),zt=zTrayEl();if(kt)kt.style.display=trayAway?'none':'';if(zt)zt.style.display=trayAway?'none':'';
   var kx,ky,kw=KG.w,zx,zy,zw=ZG.w;
-  if(s.slot!=null){var kp=slotPos(s.slot,TRK.cx,TRK.cy,TRK.w),zp=slotPos(s.slot,TRZ.cx,TRZ.cy,TRZ.w);kx=kp.x;ky=kp.y;kw=kp.w;zx=zp.x;zy=zp.y;zw=zp.w;}
+  if(s.slot!=null){var kp=slotPos(s.slot,TRK.cx,TRK.cy,TRK.w,TRK_ASPECT),zp=slotPos(s.slot,TRZ.cx,TRZ.cy,TRZ.w);kx=kp.x;ky=kp.y;kw=kp.w;zx=zp.x;zy=zp.y;zw=zp.w;}
   else{kx=KG.x0+s.u*(KG.x1-KG.x0);ky=KG.y0+s.v*(KG.y1-KG.y0);zx=ZG.x0+s.u*(ZG.x1-ZG.x0);zy=ZG.y0+s.v*(ZG.y1-ZG.y0);}
   var e=kEl(s);
   if(e){e.style.left=kx+'px';e.style.top=ky+'px';e.style.width=kw+'px';e.style.height='auto';e.style.zIndex=s.slot!=null?String(7+s.slot):'6';e.style.transform='translate(-50%,-50%) rotate('+s.rot+'deg)';var src=srcOf(s.cook[s.up],s.key);if(e.getAttribute('src')!==src)e.setAttribute('src',src);}
@@ -88,13 +92,13 @@ function loadImg(src){return new Promise(function(res){var i=new Image();i.onloa
 function takeTray(e){
   var inTray=steaks.filter(function(o){return o.slot!=null;});
   if(!inTray.length||trayAway)return;
-  var W=460,H=Math.round(W*TR_ASPECT),cv=document.createElement('canvas');cv.width=W;cv.height=H;var g=cv.getContext('2d');
+  var W=520,H=Math.round(W*TRT_ASPECT),cv=document.createElement('canvas');cv.width=W;cv.height=H;var g=cv.getContext('2d');
   var list=inTray.map(function(o){return {key:o.key,cook:o.cook.slice(),up:o.up,rot:o.rot,slot:o.slot};});
-  var srcs=[TRAY_SRC].concat(list.map(function(o){return srcOf(o.cook[o.up],o.key);}));
+  var srcs=[TRAY_SRC_T].concat(list.map(function(o){return srcOf(o.cook[o.up],o.key);}));
   Promise.all(srcs.map(loadImg)).then(function(im){
     if(im[0])g.drawImage(im[0],0,0,W,H);
     list.slice().sort(function(a,b){return a.slot-b.slot;}).forEach(function(o,i){
-      var idx=list.indexOf(o),img=im[1+idx],p=slotPos(o.slot,W/2,H/2,W);if(!img)return;
+      var idx=list.indexOf(o),img=im[1+idx],p=slotPosT(o.slot,W);if(!img)return;
       var w=p.w,h=w*img.height/img.width;g.save();g.translate(p.x,p.y);g.rotate(o.rot*Math.PI/180);g.drawImage(img,-w/2,-h/2,w,h);g.restore();
     });
     var url=cv.toDataURL('image/png');
@@ -102,7 +106,7 @@ function takeTray(e){
     steaks=steaks.filter(function(o){return o.slot==null;});
     trayAway=true;hideBar();closeMenu();{var a1=kTrayEl(),a2=zTrayEl();if(a1)a1.style.display='none';if(a2)a2.style.display='none';}
     try{CooksterKitchenFx.closeGrill();}catch(x){}
-    var w=212,h=Math.round(w*TR_ASPECT),p=screenToScene(e.clientX,e.clientY);
+    var w=212,h=Math.round(w*TRT_ASPECT),p=screenToScene(e.clientX,e.clientY);
     var el=makeItem({id:'pleh_rostilj_'+Date.now(),label:'Pleh sa mesom',src:url,x:p.x-w/2,y:p.y-h,w:w,h:h,z:++zCounter,snapProfile:'flat'});
     el.dataset.trayItem='1';el.dataset.traySteaks=JSON.stringify(list);el.dataset.surfaceZone='table';
     try{setPose(el,p.x,p.y,1);startHolding(el);}catch(x){}
