@@ -8,12 +8,16 @@ if(window.CooksterGrillSteaks)return;
 var MAXN=6;      // the logic is the same for every slice of meat that has the pictures grilledSrc / grilledWellDoneSrc in the catalog (VEGETABLES.<key>); today the beef slice
 var steaks=[],seq=1,last=0;
 /* the grate in the picture of the kitchen (1672x941): x 285..700, y 62..100 (the bottoms of the steaks stay above the stone wall in front of it) and in the close-up x 230..1370, y 262..420 */
-var KG={x0:285,x1:690,y0:70,y1:104,w:37},ZG={x0:230,x1:1370,y0:262,y1:420,w:100};      // the size of a steak on the grate is the same as in the tray (the tray slot: 0.41 of the tray width)
+var KG={x0:285,x1:690,y0:70,y1:104,w:37},ZG={x0:230,x1:1370,y0:262,y1:420,w:112};      // the size of a steak on the grate is the same as in the tray (the tray slot: 0.41 of the tray width)
 /* the copper tray on the right edge of the stone (assets/new_props/pleh_rostilj.webp): the grilled steaks are put into it (they stop cooking there). zoom: centre and width in the picture of the close-up, kitchen: the same in the picture of the kitchen */
-var TRZ={cx:1462,cy:338,w:250},TRK={cx:738,cy:92,w:92},TR_ASPECT=712/620,TRK_ASPECT=368/300,TRAY_ROW=4,TRAY_MAX=20,TRAY_SRC='assets/new_props/pleh_rostilj_sto.webp?v=1',TRAY_SRC_T='assets/new_props/pleh_sto_nov.webp?v=1',TRT_ASPECT=718/520,TRAY_SRC_K='assets/new_props/pleh_rostilj_kuhinja.webp?v=1';
+var TRZ={cx:1446,cy:329,w:272},TRZ_ASPECT=525/460,TRAY_SRC_Z='assets/new_props/pleh_rostilj.webp?v=1',TRK={cx:738,cy:92,w:92},TR_ASPECT=712/620,TRK_ASPECT=368/300,TRAY_ROW=4,TRAY_MAX=20,TRAY_SRC='assets/new_props/pleh_rostilj_sto.webp?v=1',TRAY_SRC_T='assets/new_props/pleh_sto_nov.webp?v=1',TRT_ASPECT=718/520,TRAY_SRC_K='assets/new_props/pleh_rostilj_kuhinja.webp?v=1';
 function slotPosT(k,w){      // the tray on the table (portrait picture): 4 steaks in a column, the next ones over them
   var layer=Math.floor(k/TRAY_ROW),n=k%TRAY_ROW,t=(n+.5)/TRAY_ROW,h=w*TRT_ASPECT,sx=(layer%2?.04:-.03)*w,sy=-layer*.04*h;
   return {x:w/2+sx,y:(.14+.72*t)*h+sy,w:w*.46};
+}
+function slotPosZ(k,cx,cy,w){      // the tray of the close-up (the long copper tray along the edge): 4 steaks in the first row, the next ones over them
+  var layer=Math.floor(k/TRAY_ROW),n=k%TRAY_ROW,t=(n+.5)/TRAY_ROW,h=w*TRZ_ASPECT,sx=(layer%2?.035:-.02)*w,sy=-layer*.06*h+(layer%2?.012:0)*h;
+  return {x:cx-w/2+(.28+.50*t)*w+sx,y:cy-h/2+(.20+.62*t)*h+sy,w:w*.41};
 }
 function slotPos(k,cx,cy,w,asp){      // 4 steaks in the first row along the tray, the next ones lie over them (every layer a bit higher and moved), up to TRAY_MAX
   var layer=Math.floor(k/TRAY_ROW),n=k%TRAY_ROW,t=(n+.5)/TRAY_ROW,h=w*(asp||TR_ASPECT),sx=(layer%2?.035:-.02)*w,sy=-layer*.05*h;
@@ -36,7 +40,7 @@ function kTrayEl(){
 function zTrayEl(){
   var h=zHost();if(!h)return null;
   var t=h.querySelector('.gz-tray');if(t)return t;
-  t=document.createElement('img');t.draggable=false;t.className='gz-tray';t.src=TRAY_SRC;
+  t=document.createElement('img');t.draggable=false;t.className='gz-tray';t.src=TRAY_SRC_Z;
   t.style.cssText='position:absolute;pointer-events:none;transform:translate(-50%,-50%);filter:drop-shadow(0 10px 8px rgba(0,0,0,.5));left:'+(TRZ.cx/1672*100)+'%;top:'+(TRZ.cy/941*100)+'%;width:'+(TRZ.w/1672*100)+'%;height:auto';
   h.insertBefore(t,h.firstChild);return t;
 }
@@ -66,7 +70,7 @@ function zEl(s){
 function layout(s){
   var kt=kTrayEl(),zt=zTrayEl();if(kt)kt.style.display=trayAway?'none':'';if(zt)zt.style.display=trayAway?'none':'';
   var kx,ky,kw=KG.w,zx,zy,zw=ZG.w;
-  if(s.slot!=null){var kp=slotPos(s.slot,TRK.cx,TRK.cy,TRK.w,TRK_ASPECT),zp=slotPos(s.slot,TRZ.cx,TRZ.cy,TRZ.w);kx=kp.x;ky=kp.y;kw=kp.w;zx=zp.x;zy=zp.y;zw=zp.w;}
+  if(s.slot!=null){var kp=slotPos(s.slot,TRK.cx,TRK.cy,TRK.w,TRK_ASPECT),zp=slotPosZ(s.slot,TRZ.cx,TRZ.cy,TRZ.w);kx=kp.x;ky=kp.y;kw=kp.w;zx=zp.x;zy=zp.y;zw=zp.w;}
   else{kx=KG.x0+s.u*(KG.x1-KG.x0);ky=KG.y0+s.v*(KG.y1-KG.y0);zx=ZG.x0+s.u*(ZG.x1-ZG.x0);zy=ZG.y0+s.v*(ZG.y1-ZG.y0);}
   var e=kEl(s);
   if(e){e.style.left=kx+'px';e.style.top=ky+'px';e.style.width=kw+'px';e.style.height='auto';e.style.zIndex=s.slot!=null?String(7+s.slot):'6';e.style.transform='translate(-50%,-50%) rotate('+s.rot+'deg)';var src=srcOf(s.cook[s.up],s.key);if(e.getAttribute('src')!==src)e.setAttribute('src',src);}
