@@ -12983,6 +12983,7 @@ function allSlicedIngredientMix(counts,metaItems={}){
     if(!atlas.length&&allPiles.length)atlas=allPiles.map(x=>'stock:'+x);
     else if(!atlas.length&&roastedPepper)atlas=['stock:'+roastedChoppedPepperSrc(key)];
     else if(!atlas.length&&diced&&!roastedEggplant&&def.dicedSrc)atlas=['stock:'+def.dicedSrc];
+    else if(!atlas.length&&roastedEggplant&&(metaItems?.[key]?.src||def.dicedSrc))atlas=['stock:'+(metaItems?.[key]?.src||def.dicedSrc)];      // roasted chopped eggplant: single pieces like all the other chopped food (the old path drew big cubes under everything and ignored the calibration)
     const piles=atlas.length?[]:allPiles;
     entries.push({
       kind:base,

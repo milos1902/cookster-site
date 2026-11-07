@@ -1221,3 +1221,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Broj dodavanja za popunjavanje dna zavisi od veličine zone dna posude (FLOOR_K u piece-sim.js: koliko površine komadića pokriva dno; baždareno da okrugli pleh bude pokriven na 4 dodavanja paprike).
 - Isto pravilo (dno prvo, pa raste) važi i za veliki tiganj, mali tiganj i veliku šerpu (FLOOR_FIRST u piece-sim.js; zone dna ubačene u js/data/vessel-food-cal-export.js iz izvoza 07.11.).
 - Dno prvo, pa raste: i za duboki tanjir, ravni tanjir i četvrtasti pleh (zone dna iz izvoza 07.11.). Oval (oval_tanjir) je samo rekvizit, ne posuda za hranu. Tanjir ravni ima kapacitet 2, pa se dno ne popuni do kraja.
+- Pečen seckan patlidžan ide kroz sistem komadića (stock atlas), ne kroz stari put sa velikim kockama (allSlicedIngredientMix). Nova kalibracija velikog tiganja (07.11. 03:25) u vessel-food-cal-export.js.
