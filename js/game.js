@@ -8494,7 +8494,7 @@ function itemPoseTransform(el,ang,flatten=1,tiltOverride=null){
 }
 
 // items whose picture is already drawn in the perspective of the table (the board, the colander ...): no extra CSS tilt or flattening
-const FLAT_IMAGE_IDS=new Set(['daska','kal_02_cediljka']);
+const FLAT_IMAGE_IDS=new Set(['daska','kal_02_cediljka','kal_02_duboki_tanjir','kal_02_tanjir_ravni']);
 function isFlatImageItem(el){return FLAT_IMAGE_IDS.has(el?.dataset?.itemId||'');}
 function setPose(el,cx,by,vis){
  el.dataset.cx=cx;el.dataset.by=by;
