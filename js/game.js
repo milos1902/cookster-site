@@ -12764,25 +12764,20 @@ function keepsDrops(v){
   if(!v||isPanItem(v)||vesselSubtypeFor(v)==='pot'||/^(tiganj|serpa)/.test(id))return false;
   return true;
 }
-// a whole piece is never cut by the calibrated edge of the vessel's food area: it is moved toward the middle until it fits (its size stays)
-function fitInFood(v,x,y,wPct,aspect){
-  try{
-    const cal=window.CooksterVesselFoodCalibration,prof=cal?.get?.(v),fr=cal?.frame?.(v);
-    if(!(prof?.foodVisible?.length>=3&&fr?.width&&fr?.height))return {x,y};
-    const poly=prof.foodVisible.map(([px,py])=>[(px-fr.left)/fr.width*100,(py-fr.top)/fr.height*100]);
-    const wr=v._vesselContent||v._panContent,rr=wr?.getBoundingClientRect?.(),ratio=(rr&&rr.height>4)?rr.width/rr.height:1.3;
-    const hw=wPct/2*.96,hh=wPct*(aspect||1)*ratio/2*.96;
-    const inside=(px,py)=>{let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const A=poly[i],B=poly[j];if((A[1]>py)!==(B[1]>py)&&px<(B[0]-A[0])*(py-A[1])/(B[1]-A[1])+A[0])c=!c;}return c;};
-    const fits=(px,py)=>{for(let k=0;k<16;k++){const t=k/16*Math.PI*2;if(!inside(px+Math.cos(t)*hw,py+Math.sin(t)*hh))return false;}return true;};
-    const xs=poly.map(q=>q[0]),ys=poly.map(q=>q[1]),cx=(Math.min(...xs)+Math.max(...xs))/2,cy=(Math.min(...ys)+Math.max(...ys))/2;
-    for(let n=0;n<40&&!fits(x,y);n++){x+=(cx-x)*.08;y+=(cy-y)*.08;}
-    return {x,y};
-  }catch(_){return {x,y};}
+// the layer of whole pieces: it lies exactly over the food area of the vessel, but WITHOUT its cut (a whole piece that lies in the plate is never cut by the calibrated edge of the bottom)
+function wholeLayerOf(v){
+  if(!v||!keepsDrops(v))return null;
+  if(v._wholeLayer&&v._wholeLayer.isConnected)return v._wholeLayer;
+  const d=document.createElement('div');d.className='vessel-whole-layer';
+  d.style.cssText='position:absolute;left:var(--vessel-food-left);top:var(--vessel-food-top);width:var(--vessel-food-width);height:var(--vessel-food-height);pointer-events:none;overflow:visible;';
+  const w=v._vesselContent;if(w&&w.parentNode===v)w.after(d);else v.appendChild(d);
+  return v._wholeLayer=d;
 }
+function clearWholeLayer(v){if(v?._wholeLayer)v._wholeLayer.replaceChildren();}
 function dropSpot(v,key,idx){
   const dr=v?._meatDrops?.[key]?.[idx];if(!dr||!keepsDrops(v))return null;
   const board=v.dataset.itemId==='daska_serviranje';      // on the board not over the handle
-  return {x:Math.max(board?10:12,Math.min(board?76:88,dr.fx*100)),y:Math.max(18,Math.min(82,dr.fy*100))};
+  return {x:Math.max(board?10:4,Math.min(board?76:96,dr.fx*100)),y:Math.max(board?18:4,Math.min(board?82:96,dr.fy*100))};
 }
 // where a piece / slice of meat lies in a vessel (percent of the food layer): a slice lies in the middle of the floor (in a pan and in every other vessel),
 // a piece of meat where the player dropped it
@@ -12847,12 +12842,12 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
       }
       if(!mdef?.meat){      // not a snap to some place of the layout: the piece lies where the player put it down
         boardSeen[entry.key]=(boardSeen[entry.key]||0);const sp0=dropSpot(vessel,entry.key,boardSeen[entry.key]++);
-        if(sp0){const ft=fitInFood(vessel,sp0.x,sp0.y,L.w,(+mdef.h||+mdef.w||60)/(+mdef.w||60));L={...L,x:ft.x,y:ft.y};}
+        if(sp0)L={...L,x:sp0.x,y:sp0.y};
       }
       img.className='whole-produce-piece';img.dataset.entryKey=entry.key;img.src=src;img.alt='';img.draggable=false;
       img.style.left=L.x.toFixed(2)+'%';img.style.top=L.y.toFixed(2)+'%';img.style.width=L.w.toFixed(2)+'%';
-      img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String(mdef?.meat==='snicla'?60+Math.round(L.y*10):22+i);      // meat: the nearer slice (lower in the picture) is always in front of the farther one
-      layer.appendChild(img);
+      img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String(keepsDrops(vessel)?20+Math.round(L.y*10):(mdef?.meat==='snicla'?60+Math.round(L.y*10):22+i));      // the nearer piece (lower in the picture) is always in front, for every kind      // meat: the nearer slice (lower in the picture) is always in front of the farther one
+      (wholeLayerOf(vessel)||layer).appendChild(img);
     });
     return;
   }
@@ -12907,7 +12902,7 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
     img.style.transform=`translate(-50%,-50%) rotate(${rot}deg)`;
     img.style.zIndex=String(mdef?.meat==='snicla'?60+Math.round(y*10):22+i+stackLevel*5);      // a slice of meat lies above the heap of other food (the heap has a hole where it is)
     img.style.filter=stageFilters[Math.max(0,Math.min(6,stage-1))];
-    layer.appendChild(img);
+    (wholeLayerOf(vessel)||layer).appendChild(img);
   }
 }
 function wholeProduceEntries(counts,metaItems={}){
@@ -12941,14 +12936,14 @@ function appendRoastedPepperHeap(layer,vessel,counts,metaItems){
     let L=lay[i];
     if(onBoard){      // on the serving board a pepper lies exactly where the player put it down (no heap, no snapping to a place of the layout)
       bSeen[entry.key]=(bSeen[entry.key]||0);const sp0=dropSpot(vessel,entry.key,bSeen[entry.key]++);
-      if(sp0){const ft=fitInFood(vessel,sp0.x,sp0.y,L.w,.75);L={...L,x:ft.x,y:ft.y};}
+      if(sp0)L={...L,x:sp0.x,y:sp0.y};
     }
     const img=document.createElement('img');img.className='whole-roasted-pepper';
     img.dataset.entryKey=entry.key;      // a click on it takes this pepper out of the vessel (js/vessel-take.js)
     img.src=entry.src;img.alt='';img.draggable=false;
     img.style.left=L.x.toFixed(2)+'%';img.style.top=L.y.toFixed(2)+'%';img.style.width=L.w.toFixed(2)+'%';
-    img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String(onBoard?30+Math.round(L.y*10):30+i);      // on the board the nearer one is in front
-    layer.appendChild(img);
+    img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String(onBoard?20+Math.round(L.y*10):30+i);      // on the board the nearer one is in front
+    (wholeLayerOf(vessel)||layer).appendChild(img);
   });
 }
 function appendWholeRoastedPeppers(layer,count,phase=4,vessel=null,srcOverride=''){
@@ -14116,6 +14111,7 @@ function buildFoodStageLayer(counts,stage,metaItems={},batches=[],heat=0,mixLeve
     3:+counts.paprika_pecena_3||0,
     4:(+counts.paprika_pecena_4||0)+(+counts.paprika_pecena||0)
   };
+  clearWholeLayer(vessel);
   const layer=document.createElement('div');
   layer.className='food-stage-layer';
   layer.dataset.foodStage=String(stage);
