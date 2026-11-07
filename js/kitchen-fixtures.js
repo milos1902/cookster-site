@@ -329,7 +329,7 @@ function zoomLive(){
   v.appendChild(gi);var gfx=null;try{gfx=window.CooksterGrill&&CooksterGrill.zoomCanvas();}catch(e){}if(gfx)v.appendChild(gfx);v.appendChild(gst);v.appendChild(sgh);v.appendChild(back);document.body.appendChild(v);view=v;try{window.CooksterSignposts&&CooksterSignposts.sweep()}catch(e){}
   ['pointerdown','pointerup','mousedown','mouseup','click','dblclick','contextmenu','wheel'].forEach(function(n){v.addEventListener(n,function(e){e.stopPropagation()})});
   back.addEventListener('click',closeGrill);v.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.target.closest('.gz-steak'))return;closeGrill()});
-  try{if(window.CooksterGrillSteaks)CooksterGrillSteaks.layout();}catch(x){}
+  try{if(window.CooksterGrillSteaks){CooksterGrillSteaks.layout();CooksterGrillSteaks.attachTongs(v);}}catch(x){}
   addEventListener('keydown',onKey,true);v._busy=true;
   runLive(v,false,function(){v._busy=false;back.style.opacity='1'});
 }

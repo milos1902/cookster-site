@@ -27,8 +27,9 @@ function zEl(s){
   var h=zHost();if(!h)return null;
   if(s.zel&&s.zel.isConnected&&s.zel.parentNode===h)return s.zel;
   var im=document.createElement('img');im.draggable=false;im.className='gz-steak';
-  im.style.cssText='position:absolute;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto;filter:drop-shadow(0 6px 5px rgba(0,0,0,.55))';
-  im.addEventListener('click',function(e){e.stopPropagation();flip(s);});
+  im.style.cssText='position:absolute;transform:translate(-50%,-50%);cursor:none;pointer-events:auto;filter:drop-shadow(0 6px 5px rgba(0,0,0,.55))';
+  im.addEventListener('click',function(e){e.stopPropagation();});      // a click alone does nothing: the steak is turned with a half circle
+  im.addEventListener('pointerdown',function(e){if(e.button!==0)return;e.stopPropagation();e.preventDefault();startArc(s,e);});
   im.addEventListener('contextmenu',function(e){e.preventDefault();e.stopPropagation();take(s,e);});
   h.appendChild(im);s.zel=im;return im;
 }
@@ -49,10 +50,47 @@ function tick(now){
   steaks.forEach(layout);
 }
 setInterval(function(){tick(performance.now());},250);
+// turning: hold the left button on the steak and draw ONE half circle with the mouse (around the steak); the trail shows the line
+var arc=null,trail=null;
+function trailSvg(){
+  var v=document.getElementById('grillZoom');if(!v)return null;
+  if(trail&&trail.isConnected)return trail;
+  var ns='http://www.w3.org/2000/svg',sv=document.createElementNS(ns,'svg');
+  sv.setAttribute('class','gz-trail');sv.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:30005';
+  var pl=document.createElementNS(ns,'polyline');pl.setAttribute('fill','none');pl.setAttribute('stroke','#7be26a');pl.setAttribute('stroke-width','7');pl.setAttribute('stroke-linecap','round');pl.setAttribute('stroke-linejoin','round');pl.setAttribute('opacity','.85');
+  pl.style.filter='drop-shadow(0 0 5px rgba(60,200,60,.8))';sv.appendChild(pl);v.appendChild(sv);trail=sv;return sv;
+}
+function endArc(){
+  if(!arc)return;var a=arc;arc=null;
+  try{a.el.releasePointerCapture(a.pid);}catch(e){}
+  window.removeEventListener('pointermove',a.mv,true);window.removeEventListener('pointerup',a.up,true);window.removeEventListener('pointercancel',a.up,true);
+  var t=trail;trail=null;if(t){t.style.transition='opacity .35s';t.style.opacity='0';setTimeout(function(){t.remove();},380);}
+}
+function startArc(s,e){
+  if(s.flipping||arc)return;
+  var r=s.zel.getBoundingClientRect(),cx=r.x+r.width/2,cy=r.y+r.height/2;
+  var a={s:s,cx:cx,cy:cy,last:null,acc:0,pts:[[e.clientX,e.clientY]],el:s.zel,pid:e.pointerId};
+  try{s.zel.setPointerCapture(e.pointerId);}catch(x){}
+  a.mv=function(ev){
+    if(!arc)return;
+    var x=ev.clientX,y=ev.clientY,dx=x-cx,dy=y-cy;
+    a.pts.push([x,y]);if(a.pts.length>140)a.pts.shift();
+    var sv=trailSvg();if(sv)sv.firstChild.setAttribute('points',a.pts.map(function(q){return q[0]+','+q[1];}).join(' '));
+    if(Math.hypot(dx,dy)<r.width*.16)return;      // too near the middle of the steak: the angle is not stable
+    var ang=Math.atan2(dy,dx);
+    if(a.last!=null){var d=ang-a.last;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;a.acc+=d;}
+    a.last=ang;
+    if(Math.abs(a.acc)>=Math.PI*.78){var ss=a.s;endArc();flip(ss);}      // about a half circle (140 degrees) is enough
+  };
+  a.up=function(){endArc();};
+  window.addEventListener('pointermove',a.mv,true);window.addEventListener('pointerup',a.up,true);window.addEventListener('pointercancel',a.up,true);
+  arc=a;
+}
 function flip(s){
   if(s.flipping)return;s.flipping=true;
   var z=zEl(s);
   if(!z){s.up=1-s.up;s.flipping=false;return;}
+  tongsGrab();
   // a real flip: it jumps up, turns over (the picture changes when it is edge-on) and falls back with a small bounce
   var T=function(dy,sy,sc,rot){return 'translate(-50%,calc(-50% + '+dy+'px)) rotate('+(s.rot+(rot||0))+'deg) scale('+sc+','+(sc*sy)+')';};
   var D=720;
@@ -99,6 +137,29 @@ function take(s,e){
   try{startHolding(el);}catch(x){}
   try{CooksterSave.schedule();}catch(x){}
 }
+// the tongs: as soon as the close-up of the grill opens, the player holds the tongs (they follow the mouse, the tips are at the pointer); they are what turns and takes the steaks
+var tongs=null;
+function attachTongs(v){
+  if(!v)return;
+  v.style.cursor='none';
+  if(tongs&&tongs.isConnected)tongs.remove();
+  var im=document.createElement('img');im.className='gz-tongs';im.draggable=false;im.src='assets/new_props/hvataljka.png?v=1';
+  im.style.cssText='position:fixed;left:0;top:0;width:230px;height:auto;pointer-events:none;z-index:30010;transform-origin:2% 50%;filter:drop-shadow(0 8px 6px rgba(0,0,0,.5));opacity:0;transition:opacity .25s';
+  v.appendChild(im);tongs=im;
+  if(!window.__gsHint){window.__gsHint=1;setTimeout(function(){try{showToast('Uhvati šniclu levim klikom i povuci polukrug mišem da je okreneš. Desni klik je vadi.');}catch(e){}},1200);}
+  var place=function(x,y){im.style.transform='translate('+x+'px,'+(y-40)+'px) rotate(16deg)';};
+  var mv=function(e){place(e.clientX,e.clientY);im.style.opacity='1';};
+  window.addEventListener('pointermove',mv,true);
+  try{place(mouse.x,mouse.y);}catch(e){}
+  setTimeout(function(){im.style.opacity='1';},700);      // it appears when the zoom is nearly there
+  var watch=setInterval(function(){if(!v.isConnected){window.removeEventListener('pointermove',mv,true);clearInterval(watch);}},400);
+  im._place=place;
+}
+function tongsGrab(){
+  if(!tongs||!tongs.isConnected)return;
+  var cur=tongs.style.transform;
+  try{tongs.animate([{transform:cur},{transform:cur.replace('rotate(16deg)','rotate(6deg) scale(.96)')},{transform:cur}],{duration:520,easing:'ease-in-out'});}catch(e){}
+}
 // the built-in sizzle: hiss (filtered noise) with small pops, about 3 s, fading out
 var szCtx=null,szBuf=null;
 function synthSizzle(strength){
@@ -140,5 +201,5 @@ window.addEventListener('pointerdown',function(e){
 // the clock panel (a picture over the upper left part of the grill) must not swallow the click while a steak is in the hand: the panels let the click through
 var st=document.createElement('style');st.textContent='body.gs-holding img.ui-overlay-element{pointer-events:none!important}';document.head.appendChild(st);
 setInterval(function(){var on=false;try{on=!!(typeof holding!=='undefined'&&holding&&holding.dataset&&canGrill(holding.dataset.vegKey||''));}catch(e){}document.body.classList.toggle('gs-holding',on);},150);
-window.CooksterGrillSteaks={synthSizzle:synthSizzle,all:function(){return steaks;},layout:function(){steaks.forEach(layout);},host:zHost,canGrill:canGrill};
+window.CooksterGrillSteaks={attachTongs:attachTongs,synthSizzle:synthSizzle,all:function(){return steaks;},layout:function(){steaks.forEach(layout);},host:zHost,canGrill:canGrill};
 })();
