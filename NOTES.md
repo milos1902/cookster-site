@@ -1243,3 +1243,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Daska za serviranje (assets/new_props/daska_serviranje.webp, katalog daska_serviranje): posuda bez grejanja (serving.js ZONES), kriške mesa se na nju spuštaju kao na tanjir. Konobar/narudžbine za meso još ne postoje (kitchen-orders.js poznaje samo kiseli kupus i belolučane paprike).
 - Kriške mesa u posudama (serving.js): uvek iste veličine (sc=1) i skoro ravno (rot do ±0.125 rad), da leže u redu.
 - Daska za serviranje povećana 240→340 px (kvaka fioke je bila pola daske).
+- Daska za serviranje 235 px (80% daske za sečenje); kriške mesa na njoj iste veličine kao na dasci za sečenje (112 px) i ostaju tačno gde ih stavite (bez skupljanja/pomeranja).

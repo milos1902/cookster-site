@@ -192,9 +192,10 @@ function compose(el){
         const inside=(x,y)=>poly?inPoly(poly,x,y):zin(x,y);
         const fits=(ww,hh)=>{for(let a=0;a<16;a++){const t=a/16*Math.PI*2,ex=Math.cos(t)*ww*.46,ey=Math.sin(t)*hh*.46;if(!inside(p.x+ex*cs-ey*sn,p.y+ex*sn+ey*cs))return false;}return true;};
         const cx=poly?(polyBox(poly).x0+polyBox(poly).x1)/2:W*Z.x,cy=poly?(polyBox(poly).y0+polyBox(poly).y1)/2:H*Z.y;
-        for(let n=0;n<8&&!fits(w,h);n++){w*=.92;h*=.92;}                      // first smaller (the place stays), only then a little toward the middle
+        const isMeat=/krike|snicla|junetina|svinjetina/.test(String(it.k||''))&&hasXY(it);      // meat put down by the player stays exactly where and as big as it was put
+        if(!isMeat){for(let n=0;n<8&&!fits(w,h);n++){w*=.92;h*=.92;}                      // first smaller (the place stays), only then a little toward the middle
         for(let n=0;n<30&&!fits(w,h);n++){p.x+=(cx-p.x)*.1;p.y+=(cy-p.y)*.1;}
-        for(let n=0;n<30&&!fits(w,h);n++){w*=.94;h*=.94;}
+        for(let n=0;n<30&&!fits(w,h);n++){w*=.94;h*=.94;}}
       }
       [g,f].forEach((c,k)=>{c.save();if(cal){polyPath(c,cal.food);c.clip();}c.translate(p.x,p.y);c.rotate(p.rot);if(k===0){c.shadowColor='rgba(50,25,5,.38)';c.shadowBlur=10;c.shadowOffsetY=4;}c.drawImage(spr,-w/2,-h/2,w,h);c.restore();});
     });
@@ -279,6 +280,7 @@ function tryDrop(item){
   if(item.dataset.peeled==='1'&&item.dataset.vegKey==='paprika_zelena'){kk='zelena_oljustena';ll='Oljuštena zelena paprika';}
   else if(item.dataset.peeled==='1'&&item.dataset.vegKey==='paprika'){kk='crvena_oljustena';ll='Oljuštena crvena paprika';}
   const rcv=el.getBoundingClientRect(),entry={x:+Math.max(.02,Math.min(.98,(mouse.x-rcv.left)/rcv.width)).toFixed(4),y:+Math.max(.02,Math.min(.98,(mouse.y-rcv.top)/rcv.height)).toFixed(4),s:src,f:form,w:Math.max(.16,Math.min(.6,ratio*1.9*(meta.cutState==='sliced'?.85:1))),k:kk,l:ll};
+  if(/krike|snicla|junetina|svinjetina/.test(kk+String(item.dataset.vegKey||'')))entry.w=Math.min(.6,+(112/(vd.w||150)).toFixed(3));      // a fan of slices is exactly as big as when it was cut on the cutting board (112 px)
   l.push(entry);el.dataset.srvItems=JSON.stringify(l);el.dataset.srvSeed=el.dataset.srvSeed||String(1+Math.floor(Math.random()*99999));
   removeItem(item);holding=null;
   try{hidePlacementGhost();hideOriginGhost();clearPanTargets();updateHover();}catch(_){}

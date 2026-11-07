@@ -12761,7 +12761,8 @@ function vesselFloorCenter(vessel){
 function meatSlicePos(vessel,md,key,idx){
   const wrap=vessel?._vesselContent||vessel?._panContent||null,Wd=(wrap&&wrap.clientWidth)||vessel?.offsetWidth||190,vv=+vessel?.dataset?.vis||1;
   const dr=vessel?._meatDrops?.[key]?.[idx];
-  let x=dr?Math.max(30,Math.min(70,dr.fx*100)):50,y=dr?Math.max(32,Math.min(68,dr.fy*100)):50;
+  const wide=vessel?.dataset?.itemId==='daska_serviranje';      // on the serving board the meat stays exactly where it was put down
+  let x=dr?(wide?Math.max(8,Math.min(92,dr.fx*100)):Math.max(30,Math.min(70,dr.fx*100))):50,y=dr?(wide?Math.max(12,Math.min(88,dr.fy*100)):Math.max(32,Math.min(68,dr.fy*100))):50;
   if(md?.meat==='snicla'&&!dr){const c=isPanItem(vessel)?{x:56,y:55}:vesselFloorCenter(vessel);if(c){x=c.x+idx*7;y=c.y+idx*5;}}      // a slice lies where the player dropped it; only without a remembered spot (an old save) it lies in the middle
   return {x,y,w:Math.min(60,(+md.w||60)*vv/Wd*100)};
 }
