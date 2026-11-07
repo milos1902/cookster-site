@@ -10,8 +10,11 @@ var steaks=[],seq=1,last=0;
 /* the grate in the picture of the kitchen (1672x941): x 285..700, y 62..100 (the bottoms of the steaks stay above the stone wall in front of it) and in the close-up x 230..1370, y 262..420 */
 var KG={x0:285,x1:700,y0:66,y1:100,w:30},ZG={x0:230,x1:1370,y0:262,y1:420,w:112};      // the size of a steak on the grate is the same as in the tray (the tray slot: 0.41 of the tray width)
 /* the copper tray on the right edge of the stone (assets/new_props/pleh_rostilj.webp): the grilled steaks are put into it (they stop cooking there). zoom: centre and width in the picture of the close-up, kitchen: the same in the picture of the kitchen */
-var TRZ={cx:1446,cy:329,w:272},TRK={cx:727,cy:80,w:72},TR_ASPECT=525/460,TRAY_MAX=4,TRAY_SRC='assets/new_props/pleh_rostilj.webp?v=1';
-function slotPos(k,cx,cy,w){var t=(k+.5)/TRAY_MAX,h=w*TR_ASPECT;return {x:cx-w/2+(.28+.50*t)*w,y:cy-h/2+(.20+.62*t)*h,w:w*.41};}
+var TRZ={cx:1446,cy:329,w:272},TRK={cx:727,cy:80,w:72},TR_ASPECT=525/460,TRAY_ROW=4,TRAY_MAX=20,TRAY_SRC='assets/new_props/pleh_rostilj.webp?v=1';
+function slotPos(k,cx,cy,w){      // 4 steaks in the first row along the tray, the next ones lie over them (every layer a bit higher and moved), up to TRAY_MAX
+  var layer=Math.floor(k/TRAY_ROW),n=k%TRAY_ROW,t=(n+.5)/TRAY_ROW,h=w*TR_ASPECT,sx=(layer%2?.035:-.02)*w,sy=-layer*.06*h+(layer%2?.012:0)*h;
+  return {x:cx-w/2+(.28+.50*t)*w+sx,y:cy-h/2+(.20+.62*t)*h+sy,w:w*.41};
+}
 var RAW_AT=.3,BURN_AT=.9,RATE=1/25;      // grilled from 30%, burnt from 90% of a side; one side: grilled after about 8 s, burnt after about 23 s on a full fire
 function def(key){try{return VEGETABLES[key];}catch(e){return null;}}
 function canGrill(key){var d=def(key);return !!(d&&d.meat==='snicla'&&d.grilledSrc);}
@@ -62,9 +65,10 @@ function layout(s){
   if(s.slot!=null){var kp=slotPos(s.slot,TRK.cx,TRK.cy,TRK.w),zp=slotPos(s.slot,TRZ.cx,TRZ.cy,TRZ.w);kx=kp.x;ky=kp.y;kw=kp.w;zx=zp.x;zy=zp.y;zw=zp.w;}
   else{kx=KG.x0+s.u*(KG.x1-KG.x0);ky=KG.y0+s.v*(KG.y1-KG.y0);zx=ZG.x0+s.u*(ZG.x1-ZG.x0);zy=ZG.y0+s.v*(ZG.y1-ZG.y0);}
   var e=kEl(s);
-  if(e){e.style.left=kx+'px';e.style.top=ky+'px';e.style.width=kw+'px';e.style.height='auto';e.style.zIndex=s.slot!=null?'7':'6';e.style.transform='translate(-50%,-50%) rotate('+s.rot+'deg)';var src=srcOf(s.cook[s.up],s.key);if(e.getAttribute('src')!==src)e.setAttribute('src',src);}
+  if(e){e.style.left=kx+'px';e.style.top=ky+'px';e.style.width=kw+'px';e.style.height='auto';e.style.zIndex=s.slot!=null?String(7+s.slot):'6';e.style.transform='translate(-50%,-50%) rotate('+s.rot+'deg)';var src=srcOf(s.cook[s.up],s.key);if(e.getAttribute('src')!==src)e.setAttribute('src',src);}
   var z=zEl(s);
   if(z){
+    if(!drag||drag.s!==s)z.style.zIndex=s.slot!=null?String(10+s.slot):'';
     z.style.left=(zx/1672*100)+'%';z.style.top=(zy/941*100)+'%';z.style.width=(zw/1672*100)+'%';z.style.height='auto';
     if(!s.flipping){z.style.transform='translate(-50%,-50%) rotate('+s.rot+'deg)';}
     var src2=srcOf(s.cook[s.up],s.key);if(z.getAttribute('src')!==src2)z.setAttribute('src',src2);}
@@ -86,7 +90,7 @@ function overTray(x,y){
   return x>=r.left+mx&&x<=r.right-mx&&y>=r.top+my&&y<=r.bottom-my;
 }
 function toTray(s){
-  var k=freeSlot();if(k<0){try{showToast('Pleh je pun.');}catch(e){}return false;}
+  var k=freeSlot();if(k<0){try{showToast('Pleh je potpuno pun.');}catch(e){}return false;}
   s.slot=k;layout(s);hideBar();return true;
 }
 function dropOnTray(s,x,y){if(x==null||y==null)return;if(s.slot==null&&overTray(x,y))toTray(s);}
