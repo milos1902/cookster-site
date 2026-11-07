@@ -10351,7 +10351,7 @@ cookingHudStyle.textContent=`
 .cookster-cooking-hud{
   position:fixed;
   display:none;
-  width:184px;
+  width:250px;
   pointer-events:none;
   z-index:15050;
   transform:translate(-50%,-100%);
@@ -10362,7 +10362,8 @@ cookingHudStyle.textContent=`
 }
 .cookster-cooking-hud.visible{display:block}
 .cookster-cooking-hud .cook-state-label{
-  display:inline-block;
+  display:none!important;      /* the text above the bar (Zagreva se, Gotovo...) is gone: the bar says it */
+  
   margin-bottom:5px;
   padding:3px 8px;
   border-radius:8px;
@@ -10371,25 +10372,18 @@ cookingHudStyle.textContent=`
 }
 .cookster-cooking-hud .cook-progress-bar{
   position:relative;
-  width:184px;
-  height:12px;
-  overflow:hidden;
-  border:2px solid rgba(42,24,13,.95);
-  border-radius:3px;
-  background:rgba(246,229,191,.92);
-  box-shadow:0 1px 0 rgba(255,255,255,.55) inset,0 2px 6px rgba(0,0,0,.30);
+  width:250px;
+  height:51px;      /* the drawn bar (assets/ui_cook): the empty one is the background, the full one is uncovered from left to right */
+  margin:0 auto;
+  background:url(assets/ui_cook/traka_prazna.webp?v=1) center/100% 100% no-repeat;
 }
 .cookster-cooking-hud .cook-progress-bar>i{
   position:absolute;left:0;top:0;bottom:0;width:0%;
-  display:block;background:linear-gradient(90deg,#f0b43b,#e66f27);
+  display:block;overflow:hidden;background:none;
 }
-.cookster-cooking-hud.ready .cook-progress-bar>i{background:linear-gradient(90deg,#73c55b,#3f9b45)}
-.cookster-cooking-hud.browned .cook-progress-bar>i{background:linear-gradient(90deg,#b56d34,#714021)}
-.cookster-cooking-hud.burnt .cook-progress-bar>i{background:linear-gradient(90deg,#5f4638,#251b16)}
-.cookster-cooking-hud .cook-safe-mark{
-  position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;
-  background:rgba(255,255,255,.82);box-shadow:0 0 0 1px rgba(65,37,20,.35)
-}
+.cookster-cooking-hud .cook-progress-bar>i>img{position:absolute;left:0;top:0;width:250px;height:51px;max-width:none;pointer-events:none}
+.cookster-cooking-hud.ready .cook-progress-bar>i,.cookster-cooking-hud.browned .cook-progress-bar>i,.cookster-cooking-hud.burnt .cook-progress-bar>i{background:none}
+.cookster-cooking-hud .cook-safe-mark{display:none}
 `;
 document.head.appendChild(cookingHudStyle);
 
@@ -10398,6 +10392,7 @@ function positionCookingHud(vessel){
  if(!vessel||!hud||!hud.classList.contains('cookster-cooking-hud'))return;
  const r=vessel.getBoundingClientRect?.();
  if(!r||r.width<2||r.height<2){hud.style.display='none';return;}
+ hud.style.display='';      // (it was hidden by an earlier call when the vessel had no size yet, e.g. at the first placing on the stove: it must come back)
  hud.style.left=(r.left+r.width*.5)+'px';
  hud.style.top=(r.top-Math.max(8,Math.min(22,r.height*.10)))+'px';
 }
@@ -10409,7 +10404,7 @@ function ensureCookingEffects(vessel){
     vessel.querySelectorAll?.(':scope > .pan-status,:scope > .cooking-status').forEach(n=>n.remove());
     const status=document.createElement('div');
     status.className='cookster-cooking-hud';
-    status.innerHTML='<div class="cook-state-label">Sirovo</div><div class="cook-progress-bar"><i></i><b class="cook-safe-mark"></b></div>';
+    status.innerHTML='<div class="cook-state-label">Sirovo</div><div class="cook-progress-bar"><i><img src="assets/ui_cook/traka_puna.webp?v=1" alt="" draggable="false"></i><b class="cook-safe-mark"></b></div>';
     document.body.appendChild(status);vessel._panStatus=status;
     vessel._cookStateLabel=status.querySelector('.cook-state-label');
     vessel._cookProgressFill=status.querySelector('.cook-progress-bar>i');
@@ -14338,7 +14333,7 @@ function updateCookingStatus(vessel,modelOverride=null,stateOverride=null,countO
   if(vessel._cookProgressBucket!==progressBucket){
     vessel._cookProgressBucket=progressBucket;
     if(vessel._cookProgressFill)
-      vessel._cookProgressFill.style.width=`${(progressBucket/2).toFixed(1)}%`;
+      vessel._cookProgressFill.style.width=progressBucket<=0?'0%':`${(3.8+(progressBucket/200)*92.4).toFixed(1)}%`;      // the coloured part of the drawn bar lies between 3.8% and 96.2% of its width
   }
   positionCookingHud(vessel);
 }
@@ -15068,8 +15063,8 @@ function releaseCutTargetBounce(target){
 function destroyCutProgress(){if(cutProgressEl){cutProgressEl.remove();cutProgressEl=null;}}
 function ensureCutProgress(cx,cy){
  destroyCutProgress();
- const wrap=document.createElement('div');wrap.className='cut-progress';
- wrap.innerHTML='<div class="ring"></div><div class="txt">SEČENJE</div>';
+ const wrap=document.createElement('div');wrap.className='cut-progress peel';      // the thick green circle (as when peppers are peeled), without the text SEČENJE
+ wrap.innerHTML='<div class="ring"></div>';
  wrap.style.left=cx+'px';wrap.style.top=cy+'px';
  scene.appendChild(wrap);cutProgressEl=wrap;return wrap;
 }
