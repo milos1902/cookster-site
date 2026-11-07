@@ -159,6 +159,7 @@ window.addEventListener('pointerdown',function(e){
     var st2=makeItem({id:'veg_'+o.key+'_'+Date.now(),label:st==='burnt'?'Zagorela šnicla sa roštilja':st==='grilled'?'Šnicla sa roštilja':d.label,src:srcOf(c,o.key),x:p.x-d.w/2,y:p.y-d.h,w:d.w,h:d.h,z:++zCounter,snapProfile:'produce'});
     st2.dataset.vegetable='1';st2.dataset.collisionProfile='vegetable';st2.dataset.vegKey=o.key;st2.dataset.cutState='whole';
     if(st==='grilled')st2.dataset.meatDone='grilled';else if(st==='burnt')st2.dataset.meatDone='grilledBurnt';
+    st2.dataset.grillCook=String(c);
     st2.dataset.surfaceZone='table';
     try{setPose(st2,p.x,p.y,1);startHolding(st2);}catch(x){}
     refreshTray(el,list);
@@ -309,6 +310,7 @@ function take(s,e){
   var el=makeItem({id:'veg_'+s.key+'_'+Date.now(),label:st==='burnt'?'Zagorela šnicla sa roštilja':st==='grilled'?'Šnicla sa roštilja':d.label,src:src,x:p.x-w/2,y:p.y-h,w:w,h:h,z:++zCounter,snapProfile:'produce'});
   el.dataset.vegetable='1';el.dataset.collisionProfile='vegetable';el.dataset.vegKey=s.key;el.dataset.cutState='whole';
   if(st==='grilled')el.dataset.meatDone='grilled';else if(st==='burnt')el.dataset.meatDone='grilledBurnt';
+  el.dataset.grillCook=String(c);
   el.dataset.surfaceZone='table';setPose(el,p.x,p.y,1);
   try{startHolding(el);}catch(x){}
   try{CooksterSave.schedule();}catch(x){}
