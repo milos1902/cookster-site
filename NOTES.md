@@ -1180,3 +1180,8 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Senka daske zaključana
 - Alat „Senka daske" se više ne vidi u igri (samo na linku sa `?senka`). Senka koristi vrednosti sačuvane u pregledaču (`cookster.board-shadow`), a ako ih nema, podrazumevane.
 - Kad se daska podigne, više ne ostaje druga (tamna pravougaona) senka: `updateHeldContactShadowFromPose` za dasku koristi istu mekanu senku (`styleBoardSoftShadow`) na mestu gde će sleteti.
+
+## Meso na dasci: komad ostaje u sredini (06.11.)
+- Posle reza komad mesa ostaje u sredini daske (boardRelX -.105), šnicla ide desno u gomilu.
+- Taster za sečenje bira: ono na šta miš pokazuje; bez pokazivanja prvo komad (ili povrće), šnicla tek kad je sama na dasci. Tako se komad ponovo seče, a šnicla na komade kad pokažeš na nju.
+- Zeleni krug pri hvatanju za dasku je uklonjen (hvatanje ostaje).
