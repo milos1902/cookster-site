@@ -57,10 +57,10 @@
     if(!entry)return false;
     const whole=entry.form==='whole'||entry.form==='whole_roasted'||/_celo|_pola_|^paprika_pecena|^paprika_zelena_pecena/.test(key);
     if(!whole)return false;
-    const base=entry.baseKey||String(key).replace(/_(pecena|zagorela|rostilj_zagorela|rostilj|krike)_celo$/,'').replace(/_celo$/,''),def=VEGETABLES[base];if(!def)return false;
+    const base=entry.baseKey||String(key).replace(/_(pecena|zagorela|rostilj_zagorela|rostilj|krike(?:_rare|_med|_wd)?)_celo$/,'').replace(/_celo$/,''),def=VEGETABLES[base];if(!def)return false;
     // a slice of meat comes out as cooked as it is: what it was before (key ..._pecena_celo / ..._zagorela_celo) or what it has become in the vessel (stage 4 fried, 6 burnt)
     let outSrc=entry.src||def.src,outLabel=entry.label||def.label,meatDone='';
-    if(def.meat==='snicla'&&/_krike_celo$/.test(key)){outSrc=entry.src||outSrc;outLabel='Naseckana šnicla sa roštilja';meatDone='sliced';}
+    if(def.meat==='snicla'&&/_krike(_rare|_med|_wd)?_celo$/.test(key)){outSrc=entry.src||outSrc;outLabel='Naseckana šnicla sa roštilja';meatDone='sliced';}
     else if(def.meat==='snicla'&&/_rostilj(_zagorela)?_celo$/.test(key)){      // from the grill: comes out as the grilled picture
       const bt=/_rostilj_zagorela_celo$/.test(key);
       outSrc=(bt?def.grilledWellDoneSrc:def.grilledSrc)||outSrc;outLabel=bt?'Zagorela šnicla sa roštilja':'Šnicla sa roštilja';meatDone=bt?'grilledBurnt':'grilled';

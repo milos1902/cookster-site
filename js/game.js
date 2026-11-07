@@ -5373,6 +5373,7 @@ function stirModelFor(vessel){
 function stirMetaFor(vessel){return isHeatableCookwareItem(vessel)?readPanIngredientMeta(vessel):CooksterContainer.read(vessel).items;}
 function stirEligible(vessel){
  if(!vessel||!isContainerItem(vessel))return false;
+ if(vessel.dataset.itemId==='daska_serviranje')return false;      // a board is not stirred
  if(stirTotal(vessel)<=0)return false;
  if(isHeatableCookwareItem(vessel)&&CooksterPan.read(vessel).burnt)return false;
  return true;
@@ -8688,7 +8689,8 @@ function ingredientVisualMeta(item){
     }
 
     if(!isFruit&&def.meat==='snicla'&&item.dataset.grillSliced==='1'){      // a grilled steak sliced into a fan: a whole picture of its own
-      return {key:`${key}_krike_celo`,baseKey:key,type:'vegetable',form:'whole',cutState:'whole',label:'Naseckana šnicla sa roštilja',src:item.querySelector('.body')?.getAttribute('src')||''};
+      const fsrc=item.querySelector('.body')?.getAttribute('src')||'',tier=/krike_rare/.test(fsrc)?'_rare':/krike_med/.test(fsrc)?'_med':/krike_wd/.test(fsrc)?'_wd':'';      // every doneness is its own entry: rare stays rare when a medium one is added
+      return {key:`${key}_krike${tier}_celo`,baseKey:key,type:'vegetable',form:'whole',cutState:'whole',label:'Naseckana šnicla sa roštilja',src:fsrc};
     }
     // a slice of meat from the grill: its own ingredient with the grilled / burnt-on-the-grill picture
     if(!isFruit&&def.meat==='snicla'&&cutState==='whole'&&(item.dataset.meatDone==='grilled'||item.dataset.meatDone==='grilledBurnt')){
@@ -8863,7 +8865,7 @@ function ensureVesselFrontMask(el,src){
 // the front wall of a vessel is drawn above the food only where there is a reason: the old vessels always had it, the others (frying pans, the blue pot, the small tub) only when a mask was drawn for them in the tool "Maska posude"
 function wantsFrontMask(el,defId){
  const id=defId||el?.dataset?.itemId||'';
- if(!['serpa_plava','vangla_mala','tiganj_veliki','tiganj_mali'].includes(id))return true;
+ if(!['serpa_plava','vangla_mala','tiganj_veliki','tiganj_mali','daska_serviranje'].includes(id))return true;
  return !!window.CooksterVesselFoodCalibration?.hasOwnMask?.(id);
 }
 function syncFrontMask(el,defId){
@@ -12703,7 +12705,7 @@ function wholeProduceSource(baseKey,meta=null,stage=1){
   const mv=VEGETABLES?.[baseKey];
   if(mv?.meat==='snicla'){      // a whole slice in a vessel: real pictures of the fried / burnt slice (the same stages as the chopped vegetables: 4 = fried, 6 = burnt); a slice that was cooked before keeps its state
     const k=String(meta?.key||'');
-    if(/_krike_celo$/.test(k)&&meta?.src)return meta.src;      // sliced steak: always its own picture
+    if(/_krike(_rare|_med|_wd)?_celo$/.test(k)&&meta?.src)return meta.src;      // sliced steak: always its own picture
     if(/_rostilj_zagorela_celo$/.test(k)&&mv.grilledWellDoneSrc)return mv.grilledWellDoneSrc;      // from the grill: the picture with the marks stays (also in a pan)
     if(/_rostilj_celo$/.test(k)&&mv.grilledSrc)return (+stage||1)>=6&&mv.grilledWellDoneSrc?mv.grilledWellDoneSrc:mv.grilledSrc;
     const own=/_zagorela_celo$/.test(k)?6:(/_pecena_celo$/.test(k)?4:1);
@@ -12764,6 +12766,15 @@ function meatSlicePos(vessel,md,key,idx){
   const wide=vessel?.dataset?.itemId==='daska_serviranje';      // on the serving board the meat stays exactly where it was put down
   let x=dr?(wide?Math.max(8,Math.min(92,dr.fx*100)):Math.max(30,Math.min(70,dr.fx*100))):50,y=dr?(wide?Math.max(12,Math.min(88,dr.fy*100)):Math.max(32,Math.min(68,dr.fy*100))):50;
   if(md?.meat==='snicla'&&!dr){const c=isPanItem(vessel)?{x:56,y:55}:vesselFloorCenter(vessel);if(c){x=c.x+idx*7;y=c.y+idx*5;}}      // a slice lies where the player dropped it; only without a remembered spot (an old save) it lies in the middle
+  if(/_krike(_rare|_med|_wd)?_celo$/.test(String(key))){      // a fan of slices: always as big as the loose one (112 px) - by the SCREEN width of the layer (the perspective squeezes the layer)
+    const rw=(wrap&&wrap.getBoundingClientRect().width)||vessel?.getBoundingClientRect?.().width||Wd,sk=(scene.getBoundingClientRect().width/(scene.offsetWidth||1))||1;
+    const fw=Math.min(70,(+md.grilledSliced?.w||112)*vv*sk/rw*100);
+    if(vessel?.dataset?.itemId==='daska_serviranje'){      // a fan lies completely on the blade of the board (never over the handle or the edge): that is where the board can still be grabbed and moved
+      const rh=(wrap&&wrap.getBoundingClientRect().height)||vessel.getBoundingClientRect().height||70,fh=fw*(+md.grilledSliced?.h||39)/(+md.grilledSliced?.w||112)*rw/rh;
+      x=Math.max(fw/2+3,Math.min(78-fw/2,x));y=Math.max(fh/2+4,Math.min(96-fh/2,y));
+    }
+    return {x,y,w:fw};
+  }
   return {x,y,w:Math.min(60,(+md.w||60)*vv/Wd*100)};
 }
 // the slices of meat lying in a vessel: the other food (js/piece-sim.js) goes AROUND them, not over them
@@ -12776,7 +12787,7 @@ window.CooksterSteakZones=function(vessel){
     const meta=heat?readPanIngredientMeta(vessel):cont;
     for(const [key,n] of Object.entries(counts||{})){
       if(!(n>0)||!key.endsWith('_celo'))continue;
-      const base=meta?.[key]?.baseKey||key.replace(/_(pecena|zagorela|rostilj_zagorela|rostilj|krike)_celo$/,'').replace(/_celo$/,'');
+      const base=meta?.[key]?.baseKey||key.replace(/_(pecena|zagorela|rostilj_zagorela|rostilj|krike(?:_rare|_med|_wd)?)_celo$/,'').replace(/_celo$/,'');
       const md=VEGETABLES[base];if(md?.meat!=='snicla')continue;
       for(let i=0;i<Math.min(3,Math.round(n));i++)out.push(meatSlicePos(vessel,md,key,i));
     }
@@ -12801,7 +12812,7 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
       const mdef=VEGETABLES[entry.baseKey];
       if(mdef?.meat){      // meat: in its own shape and in the size it has on the board; a slice in the middle of the floor, a piece where the player dropped it
         meatSeen[entry.key]=(meatSeen[entry.key]||0);const sp=meatSlicePos(vessel,mdef,entry.key,meatSeen[entry.key]++);
-        L={x:sp.x,y:sp.y,w:sp.w,rot:((meatSeen[entry.key]*53)%21)-10};
+        L={x:sp.x,y:sp.y,w:sp.w,rot:/_krike(_rare|_med|_wd)?_celo$/.test(entry.key)?((meatSeen[entry.key]*53)%7)-3:((meatSeen[entry.key]*53)%21)-10};
         img.style.height='auto';img.style.objectFit='contain';
       }
       img.className='whole-produce-piece';img.dataset.entryKey=entry.key;img.src=src;img.alt='';img.draggable=false;
@@ -12846,6 +12857,7 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
     if(mdef?.meat){      // meat: in its own shape (not the fixed layout of vegetables)
       meatSeen[entry.key]=(meatSeen[entry.key]||0);const sp=meatSlicePos(vessel,mdef,entry.key,meatSeen[entry.key]++);
       x=sp.x;y=sp.y;rot=((meatSeen[entry.key]*53)%21)-10;w=mdef.panW||38;
+      if(/_krike(_rare|_med|_wd)?_celo$/.test(entry.key)){w=sp.w;rot=((meatSeen[entry.key]*53)%7)-3;}      // a fan of slices is always the same size (112 px) and lies almost straight
     }
     const src=wholeProduceSource(entry.baseKey,entry.meta,stage);
     if(!src)continue;
