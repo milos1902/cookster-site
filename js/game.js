@@ -12826,6 +12826,10 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
         L={x:sp.x,y:sp.y,w:sp.w,rot:/_krike(_rare|_med|_wd)?_celo$/.test(entry.key)?((meatSeen[entry.key]*53)%7)-3:((meatSeen[entry.key]*53)%21)-10};
         img.style.height='auto';img.style.objectFit='contain';
       }
+      if(!mdef?.meat&&mdef){      // every kind keeps its OWN size (the layout used the biggest piece for all of them: the tomato became as big as the pepper)
+        const wr0=vessel?._vesselContent||vessel?._panContent||null,W0=(wr0&&wr0.clientWidth)||vessel?.offsetWidth||190;
+        L={...L,w:Math.min(70,(+mdef.w||70)*(+vessel?.dataset?.vis||1)/W0*100)};
+      }
       if(!mdef?.meat){      // not a snap to some place of the layout: the piece lies where the player put it down
         boardSeen[entry.key]=(boardSeen[entry.key]||0);const sp0=dropSpot(vessel,entry.key,boardSeen[entry.key]++);
         if(sp0)L={...L,x:sp0.x,y:sp0.y};
