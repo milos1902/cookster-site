@@ -10287,6 +10287,15 @@ function takeRoastedPepperFromVessel(vessel){
  return true;
 }
 
+// whole, uncut and not heat-treated vegetables and fruit go into NO vessel (plate, pan, pot, bowl): only onto a board
+function isRawWholeProduce(meta){
+  if(!meta||(meta.type!=='vegetable'&&meta.type!=='fruit'))return false;
+  if(VEGETABLES[meta.baseKey]?.meat)return false;
+  const k=String(meta.key||'');
+  if(meta.form!=='whole'||meta.cutState!=='whole'||!/_celo$/.test(k))return false;
+  return !/pecena|zagorela|rostilj|krike|kiseli|prz|kuvan/.test(k);
+}
+const RAW_WHOLE_OK_VESSELS=/^(daska_serviranje|kal_01_|lavor_|posuda_za_kupus)/;      // serving board, baking trays (roasting), basin (washing), cabbage barrel
 function addIngredientToContainer(item,vessel){
  if(!item||!vessel||!isContainerItem(vessel))return false;
  const meta=ingredientVisualMeta(item);if(!meta)return false;
@@ -10295,6 +10304,7 @@ function addIngredientToContainer(item,vessel){
  if(isSceneOilBottle(item)){
    return beginOilPour(item,vessel,null);
  }
+ if(isRawWholeProduce(meta)&&!RAW_WHOLE_OK_VESSELS.test(vessel.dataset.itemId||'')){showToast('Celo povrće i voće ne ide u posudu — prvo ga iseci, ili ga ostavi na dasci.');return true;}
  const heatable=isHeatableCookwareItem(vessel);
  if(heatable&&CooksterPan.read(vessel).burnt){
    showToast('Posuđe je zagorelo — operi ga pre nove ture.');

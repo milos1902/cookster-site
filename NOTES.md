@@ -1252,3 +1252,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Cele stvari u posudi: svaka vrsta ima svoju veličinu (ranije su svi komadi dobijali širinu najvećeg: paradajz je postajao veliki kao paprika).
 - Cele stvari u posudi se ne seku kalibrisanom ivicom dna: komad spušten uz ivicu se pomera ka sredini taman toliko da stane ceo (`fitInFood`, veličina ostaje).
 - Cele stvari u tanjirima/plehovima/dasci crtaju se u posebnom sloju bez isecanja (`wholeLayerOf`), na tačnom mestu spuštanja, bliža uvek preko dalje; bez pomeranja ka sredini. Tiganj i šerpa ostaju gomila.
+- Celo, neisečeno i termički neobrađeno povrće/voće ne ide ni u jednu posudu (tanjir, tiganj, šerpa, činija...): poruka 'prvo ga iseci, ili ga ostavi na dasci'. Izuzeci: daska za serviranje, pleh za pečenje (kal_01_*), lavor (pranje), posuda za kupus. Meso, jaja, seckano i pečeno/kuvano idu kao pre.
