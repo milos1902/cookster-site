@@ -1235,3 +1235,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Veličine: pleh na stolu 212 px širine; u kuhinji pleh 112 px, meso na rešetki 46 px (js/grill-steaks.js: TRK, KG, w u takeTray).
 - Pleh ima tri slike: sto (assets/new_props/pleh_sto_nov.webp, uspravan, slotPosT: 4 komada u koloni, ostali preko), zum i kuhinja (pleh_rostilj_sto.webp, pleh_rostilj_kuhinja.webp). Pleh na stolu 120 px širine (meso u njemu je isto veliko kao meso na stolu, ~55 px).
 - Zum koristi opet prvi bakarni pleh (pleh_rostilj.webp, duguljast uz ivicu), jer je uspravan pleh u zumu izgledao nakrivo. slotPosZ.
+- Pleh na stolu: meso ima kontaktnu senku (composeTray crta senku na canvasu). Klik na meso u plehu ga uzima, spuštanje šnicle iz ruke na pleh je ubacuje (refreshTray; slika pleha se ponovo slaže).
