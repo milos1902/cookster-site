@@ -25,7 +25,8 @@ function slotPos(k,cx,cy,w,asp){      // 4 steaks in the first row along the tra
 }
 var RAW_AT=.3,BURN_AT=.9,RATE=1/25;      // grilled from 30%, burnt from 90% of a side; one side: grilled after about 8 s, burnt after about 23 s on a full fire
 function def(key){try{return VEGETABLES[key];}catch(e){return null;}}
-function canGrill(key){var d=def(key);return !!(d&&d.meat==='snicla'&&d.grilledSrc);}
+function slicedItem(it){return !!(it&&it.dataset&&(it.dataset.grillSliced==='1'||it.dataset.meatDone==='sliced'||it.dataset.cutState==='sliced'));}      // an already sliced steak does not go back onto the grill
+function canGrill(key,it){if(slicedItem(it))return false;var d=def(key);return !!(d&&d.meat==='snicla'&&d.grilledSrc);}
 function srcOf(c,key){var d=def(key);if(!d)return '';return c>=BURN_AT?(d.grilledWellDoneSrc||d.src):c>=RAW_AT?(d.grilledSrc||d.src):d.src;}
 function stateOf(c){return c>=BURN_AT?'burnt':c>=RAW_AT?'grilled':'raw';}
 function lvl(){try{return window.CooksterGrill?CooksterGrill.level():0;}catch(e){return 0;}}
@@ -165,7 +166,7 @@ window.addEventListener('pointerdown',function(e){
     refreshTray(el,list);
     return;
   }
-  if(canGrill(h.dataset.vegKey||'')){
+  if(canGrill(h.dataset.vegKey||'',h)){
     var tr=trayAtPoint(e);if(!tr)return;
     var l2=trayList(tr);
     var used={};l2.forEach(function(x){used[x.slot]=1;});var k=0;while(used[k])k++;
@@ -292,7 +293,12 @@ function add(item,e){
   var p=screenToScene(e.clientX,e.clientY);
   var u=Math.max(.05,Math.min(.95,(p.x-KG.x0)/(KG.x1-KG.x0))),v=Math.max(0,Math.min(1,(p.y-KG.y0)/(KG.y1-KG.y0)));
   // not on top of another steak: a free place next to it
-  for(var k=0;k<10;k++){var hit=steaks.some(function(o){return Math.abs(o.u-u)<.13&&Math.abs(o.v-v)<.45;});if(!hit)break;u=u+.14>.95?.06+(u+.14-.95):u+.14;}
+  var u0=u,v0=v,found=false;      // the free place NEAREST to where it was dropped (right, left, then the other row), never a jump to the other end of the grill
+  var offs=[0,.14,-.14,.28,-.28,.42,-.42,.56,-.56,.7,-.7];
+  for(var rw=0;rw<3&&!found;rw++){var vv=Math.max(0,Math.min(1,v0+[0,.5,-.5][rw]));
+    for(var k=0;k<offs.length;k++){var uu=u0+offs[k];if(uu<.05||uu>.95)continue;
+      var hit=steaks.some(function(o){return Math.abs(o.u-uu)<.13&&Math.abs(o.v-vv)<.45;});if(!hit){u=uu;v=vv;found=true;break;}}}
+  if(!found){u=u0;v=v0;}
   var md=item.dataset.meatDone||'',c0=md==='burnt'||md==='grilledBurnt'?1:(md==='fried'||md==='grilled'?.45:0);
   var s={id:seq++,key:item.dataset.vegKey,u:u,v:v,rot:Math.round((Math.random()-.5)*14),up:0,cook:[c0,c0],flipping:false};
   steaks.push(s);layout(s);
@@ -368,7 +374,7 @@ function sizzleLoop(){
 // a slice of meat from the hand, a click on the grate of the kitchen (not zoomed): it is put on the grill
 window.addEventListener('pointerdown',function(e){
   if(e.button!==0||typeof holding==='undefined'||!holding||!holding.dataset)return;
-  var vk=holding.dataset.vegKey||'';if(!canGrill(vk))return;
+  var vk=holding.dataset.vegKey||'';if(!canGrill(vk,holding))return;
   if(window.CooksterKitchenFx&&CooksterKitchenFx.isZoomed&&CooksterKitchenFx.isZoomed())return;
   var p;try{p=screenToScene(e.clientX,e.clientY);}catch(x){return;}
   if(p.x<250||p.x>735||p.y<40||p.y>130)return;
@@ -381,6 +387,6 @@ window.addEventListener('pointerdown',function(e){
 },true);
 // the clock panel (a picture over the upper left part of the grill) must not swallow the click while a steak is in the hand: the panels let the click through
 var st=document.createElement('style');st.textContent='body.gs-holding img.ui-overlay-element{pointer-events:none!important}';document.head.appendChild(st);
-setInterval(function(){var on=false;try{on=!!(typeof holding!=='undefined'&&holding&&holding.dataset&&canGrill(holding.dataset.vegKey||''));}catch(e){}document.body.classList.toggle('gs-holding',on);},150);
+setInterval(function(){var on=false;try{on=!!(typeof holding!=='undefined'&&holding&&holding.dataset&&canGrill(holding.dataset.vegKey||'',holding));}catch(e){}document.body.classList.toggle('gs-holding',on);},150);
 window.CooksterGrillSteaks={flip:function(i){var s=steaks[i||0];if(s)flip(s);},synthSizzle:synthSizzle,all:function(){return steaks;},layout:function(){steaks.forEach(layout);},host:zHost,canGrill:canGrill};
 })();
