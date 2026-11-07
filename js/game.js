@@ -10380,7 +10380,7 @@ cookingHudStyle.textContent=`
 }
 .cookster-cooking-hud .cook-progress-bar>i{
   transition:width .10s linear;border-radius:999px!important;
-  position:absolute;left:3.85%;top:19.75%;height:35%;width:0%;      /* the slot of the wooden frame; the width is the cooked part (of 92.3% of the bar) */
+  position:absolute;left:4.3%;top:21.3%;height:32%;width:0%;      /* the slot of the wooden frame; the width is the cooked part (of 92.3% of the bar) */
   display:block;overflow:hidden;background:none;border-radius:999px;
 }
 .cookster-cooking-hud .cook-progress-bar::after{
@@ -10389,7 +10389,7 @@ cookingHudStyle.textContent=`
   -webkit-mask-image:radial-gradient(circle 13.5px at 14.1% 74.2%,#000 96%,transparent 100%),radial-gradient(circle 13.5px at 50% 74.2%,#000 96%,transparent 100%),radial-gradient(circle 13.5px at 85.4% 74.2%,#000 96%,transparent 100%);
   mask-image:radial-gradient(circle 13.5px at 14.1% 74.2%,#000 96%,transparent 100%),radial-gradient(circle 13.5px at 50% 74.2%,#000 96%,transparent 100%),radial-gradient(circle 13.5px at 85.4% 74.2%,#000 96%,transparent 100%);
 }
-.cookster-cooking-hud .cook-progress-bar>i>img{position:absolute;left:0;top:0;width:231px;height:100%;max-width:none;pointer-events:none}
+.cookster-cooking-hud .cook-progress-bar>i>img{position:absolute;left:0;top:0;width:229px;height:100%;max-width:none;pointer-events:none}
 .cookster-cooking-hud.ready .cook-progress-bar>i,.cookster-cooking-hud.browned .cook-progress-bar>i,.cookster-cooking-hud.burnt .cook-progress-bar>i{background:none}
 .cookster-cooking-hud .cook-safe-mark{display:none}
 `;
@@ -14293,6 +14293,13 @@ function getPanIngredientLabel(pan){
  return VEGETABLES[key]?.label?.toLowerCase?.()||'sastojci';
 }
 
+// the bar fills faster than the real progress: "Gotovo" (about 0.64 of the progress) is already at 88% of the bar, the end of the cooking (0.78) at 95%, the burnt one at 100%
+function cookBarFraction(x){
+  x=Math.max(0,Math.min(1,x));
+  if(x<=.64)return .88*x/.64;
+  if(x<=.78)return .88+(x-.64)/.14*.07;
+  return .95+(x-.78)/.22*.05;
+}
 function updateCookingStatus(vessel,modelOverride=null,stateOverride=null,countOverride=null,heatingOverride=null){
   if(!vessel||!isHeatableCookwareItem(vessel))return;
   ensureCookingEffects(vessel);
@@ -14341,7 +14348,7 @@ function updateCookingStatus(vessel,modelOverride=null,stateOverride=null,countO
   if(vessel._cookProgressBucket!==progressBucket){
     vessel._cookProgressBucket=progressBucket;
     if(vessel._cookProgressFill)
-      vessel._cookProgressFill.style.width=progressBucket<=0?'0%':`${((progressBucket/200)*92.3).toFixed(1)}%`;      // the coloured fill grows from left to right inside the slot
+      vessel._cookProgressFill.style.width=progressBucket<=0?'0%':`${(cookBarFraction(progressBucket/200)*91.4).toFixed(1)}%`;      // the coloured fill grows from left to right inside the slot
   }
   positionCookingHud(vessel);
 }
