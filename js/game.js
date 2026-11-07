@@ -2700,7 +2700,7 @@ ssStyle.textContent=`
 document.head.appendChild(ssStyle);
 
 /* --- state --- */
-const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['break','Lomljenje saksije (prozor)'],['slam','Zalupljivanje vrata'],['scrubLeft','Ribanje: miš ide ulevo'],['scrubRight','Ribanje: miš ide udesno'],['scrubUp','Ribanje: miš ide gore'],['scrubDown','Ribanje: miš ide dole'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje papirića na šiljak'],['fall','Pad papirića sa šiljka'],['ring','Zvoni (kad ga dodirneš)'],['sprinkle','Sipaj (začin)'],['pour','Sipaj (ulje)'],['pourOut','Presipaj u drugu posudu'],['throw','Bacanje u kantu'],['empty','Pražnjenje kante'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara'],['eat','Gost jede (svaki zalogaj)'],['step','Koraci konobara (svaki korak)'],['amb0','Kafana prazna (petlja)'],['amb2','Kafana: do 3 gosta (petlja)'],['amb5','Kafana: 4–8 gostiju (petlja)'],['amb12','Kafana puna: 9+ gostiju (petlja)'],['guestIn','Ulazak gostiju u kafanu'],['ambMorning','Kuhinja: jutro (petlja)'],['ambDay','Kuhinja: dan (petlja)'],['ambEvening','Kuhinja: veče (petlja)'],['ambSun','Napolje: sunčano (petlja)'],['ambRain','Napolje: kiša (petlja)'],['ambStorm','Napolje: nevreme (petlja)'],['ambSnow','Napolje: sneg (petlja)'],['thunder','Napolje: grom (jednom, kad sevne)']];
+const SS_ACTIONS=[['drop','Opšte spuštanje'],['dropTable','Na sto'],['dropStove','Na šporet'],['pickup','Podizanje'],['open','Otvaranje'],['close','Zatvaranje'],['break','Lomljenje saksije (prozor)'],['slam','Zalupljivanje vrata'],['scrubLeft','Ribanje: miš ide ulevo'],['scrubRight','Ribanje: miš ide udesno'],['scrubUp','Ribanje: miš ide gore'],['scrubDown','Ribanje: miš ide dole'],['slide','Klizanje'],['hit','Udarac'],['click','Klik dugmeta'],['insert','Ubacivanje cepanice'],['cut','Sečenje'],['peel','Čišćenje luka'],['putIn','Stavljanje u posudu'],['pageTurn','Okretanje stranice'],['water','Voda iz česme'],['hover','Prelaz mišem preko dugmeta'],['hang','Kačenje papirića na šiljak'],['fall','Pad papirića sa šiljka'],['ring','Zvoni (kad ga dodirneš)'],['alarm','Alarm kuvanja (zvono kad jelo skoro zagori)'],['sprinkle','Sipaj (začin)'],['pour','Sipaj (ulje)'],['pourOut','Presipaj u drugu posudu'],['throw','Bacanje u kantu'],['empty','Pražnjenje kante'],['serve','Spuštanje jela gostu'],['appear','Pojavljivanje konobara'],['eat','Gost jede (svaki zalogaj)'],['step','Koraci konobara (svaki korak)'],['amb0','Kafana prazna (petlja)'],['amb2','Kafana: do 3 gosta (petlja)'],['amb5','Kafana: 4–8 gostiju (petlja)'],['amb12','Kafana puna: 9+ gostiju (petlja)'],['guestIn','Ulazak gostiju u kafanu'],['ambMorning','Kuhinja: jutro (petlja)'],['ambDay','Kuhinja: dan (petlja)'],['ambEvening','Kuhinja: veče (petlja)'],['ambSun','Napolje: sunčano (petlja)'],['ambRain','Napolje: kiša (petlja)'],['ambStorm','Napolje: nevreme (petlja)'],['ambSnow','Napolje: sneg (petlja)'],['thunder','Napolje: grom (jednom, kad sevne)']];
 const ssState={open:false,tab:'objekti',action:'drop',query:'',libQuery:'',libOpen:false};
 
 /* --- helpers (reuse ls* from light-studio) --- */
@@ -2895,6 +2895,7 @@ const ssActionBar=ssEl('div',{class:'ss-action-tabs',role:'group'});
 const ssId=el=>soundKey(el)||'';
 const SS_SPECIAL_ACTIONS={
  ring:el=>ssId(el)==='zvonce_konobar',
+ alarm:el=>{try{return isHeatableCookwareItem(el);}catch(_){return false;}},
  sprinkle:el=>ssId(el).startsWith('zacin_'),
  pour:el=>ssId(el)==='kal_01_flasa_ulja',
  hang:el=>ssId(el)==='siljak_narudzbine',
@@ -10361,6 +10362,22 @@ cookingHudStyle.textContent=`
   filter:none!important;
 }
 .cookster-cooking-hud.visible{display:block}
+.cookster-cooking-hud.alarm{animation:cookAlarmShake .9s linear infinite}
+@keyframes cookAlarmShake{
+  0%,60%,100%{transform:translate(-50%,-100%) rotate(0deg)}
+  5%{transform:translate(calc(-50% - 4px),-100%) rotate(-3deg)}
+  10%{transform:translate(calc(-50% + 4px),calc(-100% - 2px)) rotate(3deg)}
+  15%{transform:translate(calc(-50% - 4px),-100%) rotate(-3.5deg)}
+  20%{transform:translate(calc(-50% + 4px),calc(-100% - 2px)) rotate(3.5deg)}
+  25%{transform:translate(calc(-50% - 3px),-100%) rotate(-3deg)}
+  30%{transform:translate(calc(-50% + 3px),calc(-100% - 1px)) rotate(3deg)}
+  35%{transform:translate(calc(-50% - 3px),-100%) rotate(-2.5deg)}
+  40%{transform:translate(calc(-50% + 3px),calc(-100% - 1px)) rotate(2.5deg)}
+  45%{transform:translate(calc(-50% - 2px),-100%) rotate(-2deg)}
+  50%{transform:translate(calc(-50% + 2px),-100%) rotate(1.5deg)}
+  55%{transform:translate(calc(-50% - 1px),-100%) rotate(-1deg)}
+}
+.cookster-cooking-hud.alarm.fast{animation-duration:.6s}
 .cookster-cooking-hud .cook-state-label{
   display:none!important;      /* the text above the bar (Zagreva se, Gotovo...) is gone: the bar says it */
   
@@ -14293,6 +14310,39 @@ function getPanIngredientLabel(pan){
  return VEGETABLES[key]?.label?.toLowerCase?.()||'sastojci';
 }
 
+// ---- the alarm: when the bar is close to burning it rings like an alarm clock and the bar shakes ----
+let cookAlarmCtx=null;
+function playCookBell(vol){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    cookAlarmCtx=cookAlarmCtx||new AC();const c=cookAlarmCtx;if(c.state==='suspended')c.resume().catch(()=>{});
+    const t0=c.currentTime,master=c.createGain();master.gain.value=vol;master.connect(c.destination);
+    // two quick rings of a small metal bell: a few sine partials with a fast decay
+    for(const dt of [0,.17]){
+      for(const [f,g,d] of [[1318,1,.55],[2637,.5,.35],[3951,.22,.2],[1760,.35,.45]]){
+        const o=c.createOscillator(),gn=c.createGain();o.type='sine';o.frequency.value=f;
+        gn.gain.setValueAtTime(0,t0+dt);gn.gain.linearRampToValueAtTime(g*.5,t0+dt+.004);gn.gain.exponentialRampToValueAtTime(.0008,t0+dt+d);
+        o.connect(gn);gn.connect(master);o.start(t0+dt);o.stop(t0+dt+d+.05);
+      }
+    }
+  }catch(_){}
+}
+function setCookAlarm(vessel,on,fast){
+  const hud=vessel&&vessel._panStatus;
+  if(hud){hud.classList.toggle('alarm',!!on);hud.classList.toggle('fast',!!(on&&fast));}
+  if(!on){if(vessel&&vessel._alarmTimer){clearInterval(vessel._alarmTimer);vessel._alarmTimer=null;vessel._alarmFast=null;}return;}
+  if(vessel._alarmTimer&&vessel._alarmFast===!!fast)return;
+  if(vessel._alarmTimer)clearInterval(vessel._alarmTimer);
+  vessel._alarmFast=!!fast;
+  const ring=()=>{
+    if(!vessel.isConnected||!vessel._panStatus||!vessel._panStatus.classList.contains('alarm')){setCookAlarm(vessel,false);return;}
+    // a sound that the owner chose in the tool "Zvukovi" (action "Alarm kuvanja") is played instead of the built-in bell
+    let own=false;try{own=!!impactSounds[soundKey(vessel)]?.actions?.alarm;}catch(_){}
+    if(own)playImpactSound(vessel,'alarm',{noDelay:true});else playCookBell(.22);
+  };
+  let own=false;try{own=!!impactSounds[soundKey(vessel)]?.actions?.alarm;}catch(_){}
+  ring();vessel._alarmTimer=setInterval(ring,own?2600:(fast?600:900));      // the owner's sound lasts about 2.5 s: the next ring starts after it ends
+}
 // the bar fills faster than the real progress: "Gotovo" (about 0.64 of the progress) is already at 88% of the bar, the end of the cooking (0.78) at 95%, the burnt one at 100%
 function cookBarFraction(x){
   x=Math.max(0,Math.min(1,x));
@@ -14349,6 +14399,10 @@ function updateCookingStatus(vessel,modelOverride=null,stateOverride=null,countO
     vessel._cookProgressBucket=progressBucket;
     if(vessel._cookProgressFill)
       vessel._cookProgressFill.style.width=progressBucket<=0?'0%':`${(cookBarFraction(progressBucket/200)*91.4).toFixed(1)}%`;      // the coloured fill grows from left to right inside the slot
+  }
+  {      // the alarm: the bar is in the orange and goes towards the red (the food will burn soon); it stops when the food burns, is taken off the fire or is taken out
+    const fr=cookBarFraction(progress);
+    setCookAlarm(vessel,visible&&!isBurnt&&fr>=.9,fr>=.96);
   }
   positionCookingHud(vessel);
 }
