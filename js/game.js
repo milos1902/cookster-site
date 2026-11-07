@@ -12684,6 +12684,44 @@ function trayPepperLayout(n,vessel,pieceW){
   out.sort((a,b)=>a.y-b.y);        // the lower ones lie over the upper ones
   return out;
 }
+// the middle of the floor of a vessel in percent of its food layer (from the calibrated floor), or null
+function vesselFloorCenter(vessel){
+  try{
+    const cal=window.CooksterVesselFoodCalibration,prof=cal?.get?.(vessel),fr=cal?.frame?.(vessel);
+    const pts=(prof?.bottom?.length>=3?prof.bottom:prof?.foodVisible);
+    if(pts?.length>=3&&fr?.width&&fr?.height){
+      let sx=0,sy=0;for(const q of pts){sx+=q[0];sy+=q[1];}sx/=pts.length;sy/=pts.length;
+      return {x:(sx-fr.left)/fr.width*100,y:(sy-fr.top)/fr.height*100};
+    }
+  }catch(_){}
+  return null;
+}
+// where a piece / slice of meat lies in a vessel (percent of the food layer): a slice lies in the middle of the floor (in a pan and in every other vessel),
+// a piece of meat where the player dropped it
+function meatSlicePos(vessel,md,key,idx){
+  const wrap=vessel?._vesselContent||vessel?._panContent||null,Wd=(wrap&&wrap.clientWidth)||vessel?.offsetWidth||190,vv=+vessel?.dataset?.vis||1;
+  const dr=vessel?._meatDrops?.[key]?.[idx];
+  let x=dr?Math.max(30,Math.min(70,dr.fx*100)):50,y=dr?Math.max(32,Math.min(68,dr.fy*100)):50;
+  if(md?.meat==='snicla'){const c=isPanItem(vessel)?{x:56,y:55}:vesselFloorCenter(vessel);if(c){x=c.x+idx*7;y=c.y+idx*5;}}
+  return {x,y,w:Math.min(60,(+md.w||60)*vv/Wd*100)};
+}
+// the slices of meat lying in a vessel: the other food (js/piece-sim.js) goes AROUND them, not over them
+window.CooksterSteakZones=function(vessel){
+  const out=[];
+  try{
+    const heat=isHeatableCookwareItem(vessel);
+    const cont=heat?null:(CooksterContainer.read(vessel).items||{});
+    const counts=heat?CooksterPan.read(vessel).ingredients:Object.fromEntries(Object.entries(cont).map(([k,e])=>[k,+e.count||0]));
+    const meta=heat?readPanIngredientMeta(vessel):cont;
+    for(const [key,n] of Object.entries(counts||{})){
+      if(!(n>0)||!key.endsWith('_celo'))continue;
+      const base=meta?.[key]?.baseKey||key.replace(/_(pecena|zagorela)_celo$/,'').replace(/_celo$/,'');
+      const md=VEGETABLES[base];if(md?.meat!=='snicla')continue;
+      for(let i=0;i<Math.min(3,Math.round(n));i++)out.push(meatSlicePos(vessel,md,key,i));
+    }
+  }catch(_){}
+  return out;
+};
 function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
   if(!layer||!entries?.length)return;
   const fs=fillState||{ratio:0,scaleX:1,scaleY:1,rise:0,layers:1,stackGap:3};
@@ -12700,16 +12738,14 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
       const src=wholeProduceSource(entry.baseKey,entry.meta,stage);if(!src)return;
       let L=lay[i];const img=document.createElement('img');
       const mdef=VEGETABLES[entry.baseKey];
-      if(mdef?.meat){      // meat: where the player dropped it, in its own shape and in the size it has on the board
-        meatSeen[entry.key]=(meatSeen[entry.key]||0);const dr=vessel?._meatDrops?.[entry.key]?.[meatSeen[entry.key]++];
-        const wrap=vessel?._vesselContent||vessel?._panContent||null,Wd=(wrap&&wrap.clientWidth)||vessel?.offsetWidth||190,vv=+vessel?.dataset?.vis||1;
-        L={x:dr?Math.max(30,Math.min(70,dr.fx*100)):L.x,y:dr?Math.max(32,Math.min(68,dr.fy*100)):L.y,w:Math.min(60,(+mdef.w||60)*vv/Wd*100),rot:((meatSeen[entry.key]*53)%21)-10};
-        if(mdef.meat==='snicla'&&isPanItem(vessel)){L.x=56+(meatSeen[entry.key]-1)*7;L.y=55+(meatSeen[entry.key]-1)*5;}      // a slice in a frying pan always lies in the middle of the pan
+      if(mdef?.meat){      // meat: in its own shape and in the size it has on the board; a slice in the middle of the floor, a piece where the player dropped it
+        meatSeen[entry.key]=(meatSeen[entry.key]||0);const sp=meatSlicePos(vessel,mdef,entry.key,meatSeen[entry.key]++);
+        L={x:sp.x,y:sp.y,w:sp.w,rot:((meatSeen[entry.key]*53)%21)-10};
         img.style.height='auto';img.style.objectFit='contain';
       }
       img.className='whole-produce-piece';img.dataset.entryKey=entry.key;img.src=src;img.alt='';img.draggable=false;
       img.style.left=L.x.toFixed(2)+'%';img.style.top=L.y.toFixed(2)+'%';img.style.width=L.w.toFixed(2)+'%';
-      img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String(22+i);
+      img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String((mdef?.meat==='snicla'?60:22)+i);
       layer.appendChild(img);
     });
     return;
@@ -12746,11 +12782,9 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
     w*=.88+.12*Math.sqrt(Math.max(.05,fs.ratio||.05));
 
     const mdef=VEGETABLES[entry.baseKey];
-    if(mdef?.meat){      // meat: where the player dropped it, in its own shape (not the fixed layout of vegetables)
-      meatSeen[entry.key]=(meatSeen[entry.key]||0);const dr=vessel?._meatDrops?.[entry.key]?.[meatSeen[entry.key]++];
-      if(dr){x=Math.max(30,Math.min(70,dr.fx*100));y=Math.max(32,Math.min(66,dr.fy*100));}
-      rot=((meatSeen[entry.key]*53)%21)-10;w=mdef.panW||38;
-      if(mdef.meat==='snicla'&&isPanItem(vessel)){x=56+(meatSeen[entry.key]-1)*7;y=55+(meatSeen[entry.key]-1)*5;}      // in the middle of the pan
+    if(mdef?.meat){      // meat: in its own shape (not the fixed layout of vegetables)
+      meatSeen[entry.key]=(meatSeen[entry.key]||0);const sp=meatSlicePos(vessel,mdef,entry.key,meatSeen[entry.key]++);
+      x=sp.x;y=sp.y;rot=((meatSeen[entry.key]*53)%21)-10;w=mdef.panW||38;
     }
     const src=wholeProduceSource(entry.baseKey,entry.meta,stage);
     if(!src)continue;
@@ -12764,7 +12798,7 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
     img.style.top=y.toFixed(2)+'%';
     img.style.width=w.toFixed(2)+'%';
     img.style.transform=`translate(-50%,-50%) rotate(${rot}deg)`;
-    img.style.zIndex=String(22+i+stackLevel*5);
+    img.style.zIndex=String((mdef?.meat==='snicla'?60:22)+i+stackLevel*5);      // a slice of meat lies above the heap of other food (the heap has a hole where it is)
     img.style.filter=stageFilters[Math.max(0,Math.min(6,stage-1))];
     layer.appendChild(img);
   }
@@ -13992,7 +14026,19 @@ function buildFoodStageLayer(counts,stage,metaItems={},batches=[],heat=0,mixLeve
     // solid disc via --stir-turn already looks fully mixed, with no crossfade,
     // no risk of the food disappearing mid-stir, and no separate hole-patching
     // scatter layer to keep in sync.
-    appendCenteredChoppedStack(layer,allMix,stage,fillState,vessel,batches);
+    // slices of meat lie in the middle: the heap of the other food goes AROUND them (a soft round hole in the heap where the slice is, the slice is drawn above)
+    const zones=(vessel&&window.CooksterSteakZones&&CooksterSteakZones(vessel))||[];
+    let stackHost=layer;
+    if(zones.length){
+      const wr=vessel._vesselContent||vessel._panContent,aspect=wr&&wr.clientHeight>4?wr.clientWidth/wr.clientHeight:1.2;
+      stackHost=document.createElement('div');stackHost.className='food-stack-host';stackHost.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none';
+      const holes=zones.map(z=>{const rx=(z.w/2*1.06).toFixed(1),ry=(z.w/2*1.06*.7*aspect).toFixed(1);return `radial-gradient(ellipse ${rx}% ${ry}% at ${z.x.toFixed(1)}% ${z.y.toFixed(1)}%,transparent 0,transparent 88%,#000 100%)`;});
+      const m=holes.join(',');
+      stackHost.style.webkitMaskImage=m;stackHost.style.maskImage=m;
+      stackHost.style.webkitMaskComposite='source-in';stackHost.style.maskComposite='intersect';
+      layer.appendChild(stackHost);
+    }
+    appendCenteredChoppedStack(stackHost,allMix,stage,fillState,vessel,batches);
   }
   if(simParts.length&&window.CooksterPieceSim)CooksterPieceSim.append(layer,simParts,stage,vessel,fillState);
   if((+counts?.jaje||0)>0&&window.CooksterEggSim)CooksterEggSim.append(layer,vessel,stage);
