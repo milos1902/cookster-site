@@ -1,0 +1,60 @@
+name: Objava sajta (Pages)
+
+# Zamena za GitHub-ov automatski "pages build and deployment".
+# Razlika: korak objave čeka najviše 3 minuta, pa sam odustaje i pokušava ponovo (do 3 puta).
+# Da bi radilo: Settings -> Pages -> Source = "GitHub Actions".
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.final.outputs.page_url }}
+    steps:
+      - name: Objava, pokušaj 1
+        id: d1
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 180000
+      - name: Objava, pokušaj 2
+        id: d2
+        if: steps.d1.outcome == 'failure'
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 180000
+      - name: Objava, pokušaj 3
+        id: d3
+        if: steps.d1.outcome == 'failure' && steps.d2.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 180000
+      - name: Adresa sajta
+        id: final
+        run: echo "page_url=https://milos1902.github.io/cookster-site/" >> "$GITHUB_OUTPUT"
