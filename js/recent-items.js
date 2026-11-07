@@ -39,10 +39,17 @@
   function activate(slot){
     const id=recent[slot],def=id&&defOf(id);
     if(!def)return false;
-    // already in the kitchen: take that one in the hand
-    if(typeof holding!=='undefined'&&holding){try{showToast('Prvo spusti ono što držiš.');}catch(_){}return true;}
     // a click always makes a NEW copy (two bowls, three glasses...); only the things that exist once (the bell, the spike, the rail, the bin, the barrel, the mill, the spices) are taken from where they are
     const UNIQUE=/^(siljak_narudzbine|zvonce_konobar|ticket_rail|kanta_set_zatvorena|mlin_za_mes.|kaca_.*|zacin_.*)$/;
+    // something is in the hand: a click on a square puts it BACK (it is a copy that came from a square); if the clicked square holds another thing, that one is taken next
+    if(typeof holding!=='undefined'&&holding){
+      const h=holding,hid=h.dataset&&h.dataset.itemId,hdef=hid&&defOf(hid);
+      let hasFood=false;try{hasFood=Object.keys((window.CooksterPan&&CooksterPan.read&&CooksterPan.read(h)||{}).ingredients||{}).length>0;}catch(_){}
+      if(!hdef||UNIQUE.test(hid)||hasFood||!window.CooksterReturnHeld){try{showToast(hasFood?'U njemu ima hrane: prvo ga spusti na sto.':'Ovo ne može da se vrati u kvadratić: spusti ga na sto.');}catch(_){}return true;}
+      window.CooksterReturnHeld();
+      try{showToast((hdef.label||hid)+' je vraćen u kvadratić.');}catch(_){}
+      if(hid===id)return true;
+    }
     const there=UNIQUE.test(id)?(window.items||items).find(el=>el.dataset.itemId===id&&el!==holding):null;
     if(there){try{startHolding(there);}catch(_){}return true;}
     const el=makeItem({...def,instanceId:nextItemInstanceId(id),x:700-def.w/2,y:560-def.h,z:++zCounter});

@@ -11551,6 +11551,23 @@ function detachItemIntoBackpack(item,index){
  updateBackpackDropTarget();
  updateHover();
 }
+// the item in the hand goes back into the "last used" square (the square makes a new copy again when it is clicked): the copy is simply removed
+function returnHeldItemToSquare(){
+ const item=holding;if(!item)return false;
+ if(stirring)endStirring();
+ if(cleaning)endCleaning();
+ if(panWashing)endPanWashing();
+ if(oilPouring)endOilPour();
+ holding=null;heldGrabState=null;
+ clearHeldPlacementState(item);
+ hidePlacementGhost();hideOriginGhost();clearPourTarget();
+ item.classList.remove('held','hovered','valid','invalid');
+ delete item.dataset.held;
+ removeItem(item);
+ updateHover();CooksterSave.schedule();
+ return true;
+}
+window.CooksterReturnHeld=returnHeldItemToSquare;
 function restoreBackpackItemToScene(item){
  if(!item)return false;
  item.classList.remove('held','hovered','valid','invalid');
@@ -14567,7 +14584,9 @@ window.CooksterStainCalibration.layoutOnTable=()=>layoutAllStainsOnSurface('tabl
 window.CooksterStainCalibration.layoutOnFloor=()=>layoutAllStainsOnSurface('floor');
 window.CooksterStainCalibration.clearLayout=clearStainLayout;
 window.CooksterStainCalibration.setBagsHidden=setBagsHidden;
+const MESS_STAINS_ENABLED=false;      // the stains (floor mess while chopping, counter splash) are off until they are redone properly
 function createFloorSpill(ingredientKey){
+ if(!MESS_STAINS_ENABLED)return;
  // v198.5.127 — occasional floor mess while chopping/preparing, separate
  // from the counter-splash-while-stirring trigger.
  const now=performance.now();if(now-lastFloorSpillAt<4000)return;lastFloorSpillAt=now;
@@ -14581,6 +14600,7 @@ function createFloorSpill(ingredientKey){
  popArtPuff(x,y,.4);
 }
 function createSpill(pan){
+ if(!MESS_STAINS_ENABLED)return;
  const now=performance.now();if(now-lastSpillAt<1200)return;lastSpillAt=now;
  const cx=+pan.dataset.cx,by=+pan.dataset.by,w=pan.offsetWidth,h=pan.offsetHeight;
  const side=Math.random()<.5?-1:1;
