@@ -1249,3 +1249,7 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Roštilj: isečeno meso (lepeza kriški) se ne prima na roštilj; nova šnicla ide na najbliže slobodno mesto oko mesta spuštanja (nikad skok skroz levo).
 - Servirna daska: cele oljuštene paprike (i ostale cele stvari) leže tačno gde ih spustite, bez gomile i bez snapa na ivicu; bliža uvek preko dalje.
 - Jedno pravilo za sve posude osim tiganja i šerpi: cele stvari (meso, paprike, cele paprike...) leže tačno gde su spuštene (`keepsDrops`/`dropSpot` u game.js); u tiganju i šerpi ostaje gomila.
+- Cele stvari u posudi: svaka vrsta ima svoju veličinu (ranije su svi komadi dobijali širinu najvećeg: paradajz je postajao veliki kao paprika).
+- Cele stvari u posudi se ne seku kalibrisanom ivicom dna: komad spušten uz ivicu se pomera ka sredini taman toliko da stane ceo (`fitInFood`, veličina ostaje).
+- Cele stvari u tanjirima/plehovima/dasci crtaju se u posebnom sloju bez isecanja (`wholeLayerOf`), na tačnom mestu spuštanja, bliža uvek preko dalje; bez pomeranja ka sredini. Tiganj i šerpa ostaju gomila.
+- Celo, neisečeno i termički neobrađeno povrće/voće ne ide ni u jednu posudu (tanjir, tiganj, šerpa, činija...): poruka 'prvo ga iseci, ili ga ostavi na dasci'. Izuzeci: daska za serviranje, pleh za pečenje (kal_01_*), lavor (pranje), posuda za kupus. Meso, jaja, seckano i pečeno/kuvano idu kao pre.
