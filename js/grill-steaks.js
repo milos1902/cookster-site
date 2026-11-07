@@ -10,7 +10,11 @@ var steaks=[],seq=1,last=0;
 /* the grate in the picture of the kitchen (1672x941): x 285..700, y 62..100 (the bottoms of the steaks stay above the stone wall in front of it) and in the close-up x 230..1370, y 262..420 */
 var KG={x0:285,x1:690,y0:70,y1:104,w:37},ZG={x0:230,x1:1370,y0:262,y1:420,w:100};      // the size of a steak on the grate is the same as in the tray (the tray slot: 0.41 of the tray width)
 /* the copper tray on the right edge of the stone (assets/new_props/pleh_rostilj.webp): the grilled steaks are put into it (they stop cooking there). zoom: centre and width in the picture of the close-up, kitchen: the same in the picture of the kitchen */
-var TRZ={cx:1462,cy:338,w:250},TRK={cx:738,cy:92,w:92},TR_ASPECT=712/620,TRK_ASPECT=368/300,TRAY_ROW=4,TRAY_MAX=20,TRAY_SRC='assets/new_props/pleh_rostilj_sto.webp?v=1',TRAY_SRC_K='assets/new_props/pleh_rostilj_kuhinja.webp?v=1';
+var TRZ={cx:1462,cy:338,w:250},TRK={cx:738,cy:92,w:92},TR_ASPECT=712/620,TRK_ASPECT=368/300,TRAY_ROW=4,TRAY_MAX=20,TRAY_SRC='assets/new_props/pleh_rostilj_sto.webp?v=1',TRAY_SRC_T='assets/new_props/pleh_sto_nov.webp?v=1',TRT_ASPECT=718/520,TRAY_SRC_K='assets/new_props/pleh_rostilj_kuhinja.webp?v=1';
+function slotPosT(k,w){      // the tray on the table (portrait picture): 4 steaks in a column, the next ones over them
+  var layer=Math.floor(k/TRAY_ROW),n=k%TRAY_ROW,t=(n+.5)/TRAY_ROW,h=w*TRT_ASPECT,sx=(layer%2?.04:-.03)*w,sy=-layer*.04*h;
+  return {x:w/2+sx,y:(.14+.72*t)*h+sy,w:w*.46};
+}
 function slotPos(k,cx,cy,w,asp){      // 4 steaks in the first row along the tray, the next ones lie over them (every layer a bit higher and moved), up to TRAY_MAX
   var layer=Math.floor(k/TRAY_ROW),n=k%TRAY_ROW,t=(n+.5)/TRAY_ROW,h=w*(asp||TR_ASPECT),sx=(layer%2?.035:-.02)*w,sy=-layer*.05*h;
   return {x:cx+sx,y:cy-h/2+(.18+.68*t)*h+sy,w:w*.40};
@@ -88,13 +92,13 @@ function loadImg(src){return new Promise(function(res){var i=new Image();i.onloa
 function takeTray(e){
   var inTray=steaks.filter(function(o){return o.slot!=null;});
   if(!inTray.length||trayAway)return;
-  var W=620,H=Math.round(W*TR_ASPECT),cv=document.createElement('canvas');cv.width=W;cv.height=H;var g=cv.getContext('2d');
+  var W=520,H=Math.round(W*TRT_ASPECT),cv=document.createElement('canvas');cv.width=W;cv.height=H;var g=cv.getContext('2d');
   var list=inTray.map(function(o){return {key:o.key,cook:o.cook.slice(),up:o.up,rot:o.rot,slot:o.slot};});
-  var srcs=[TRAY_SRC].concat(list.map(function(o){return srcOf(o.cook[o.up],o.key);}));
+  var srcs=[TRAY_SRC_T].concat(list.map(function(o){return srcOf(o.cook[o.up],o.key);}));
   Promise.all(srcs.map(loadImg)).then(function(im){
     if(im[0])g.drawImage(im[0],0,0,W,H);
     list.slice().sort(function(a,b){return a.slot-b.slot;}).forEach(function(o,i){
-      var idx=list.indexOf(o),img=im[1+idx],p=slotPos(o.slot,W/2,H/2,W);if(!img)return;
+      var idx=list.indexOf(o),img=im[1+idx],p=slotPosT(o.slot,W);if(!img)return;
       var w=p.w,h=w*img.height/img.width;g.save();g.translate(p.x,p.y);g.rotate(o.rot*Math.PI/180);g.drawImage(img,-w/2,-h/2,w,h);g.restore();
     });
     var url=cv.toDataURL('image/png');
@@ -102,7 +106,7 @@ function takeTray(e){
     steaks=steaks.filter(function(o){return o.slot==null;});
     trayAway=true;hideBar();closeMenu();{var a1=kTrayEl(),a2=zTrayEl();if(a1)a1.style.display='none';if(a2)a2.style.display='none';}
     try{CooksterKitchenFx.closeGrill();}catch(x){}
-    var w=212,h=Math.round(w*TR_ASPECT),p=screenToScene(e.clientX,e.clientY);
+    var w=212,h=Math.round(w*TRT_ASPECT),p=screenToScene(e.clientX,e.clientY);
     var el=makeItem({id:'pleh_rostilj_'+Date.now(),label:'Pleh sa mesom',src:url,x:p.x-w/2,y:p.y-h,w:w,h:h,z:++zCounter,snapProfile:'flat'});
     el.dataset.trayItem='1';el.dataset.traySteaks=JSON.stringify(list);el.dataset.surfaceZone='table';
     try{setPose(el,p.x,p.y,1);startHolding(el);}catch(x){}
