@@ -6912,7 +6912,8 @@ function ghostKeyFor(el){
    el.dataset.water||'',el.dataset.dirt||'',
    renderedContents??(el.dataset.panContents||''),
    renderedContents??(el.dataset.containerContents||''),
-   el.classList.contains('open')?'open':'closed'
+   el.classList.contains('open')?'open':'closed',
+   el.dataset.itemId==='daska'?boardCarryList(el).map(o=>(o.dataset.itemId||o.dataset.vegKey||'')+(o.querySelector('.body')?.getAttribute('src')||'')+o.dataset.boardRelX+o.dataset.boardRelY).join(','):''
  ].join(':');
 }
 
@@ -6925,6 +6926,27 @@ function copyCanvasContents(src,dst){
     d.width=c.width;d.height=c.height;
     try{d.getContext('2d').drawImage(c,0,0);}catch(_){}
   });
+}
+// what lies on the cutting board travels with it while the board is in the hand: copies of those things are put INTO the carried copy of the board
+function boardCarryList(bd){return bd&&bd.dataset.itemId==='daska'?items.filter(o=>o!==bd&&o.dataset.attachedToBoard==='1'&&o.dataset.itemId!=='noz'&&o.isConnected):[];}
+function restoreCarried(c){
+  if(c&&c._carried){c._carried.forEach(o=>{o.style.visibility='';if(o._contactShadow)o._contactShadow.style.visibility='';});c._carried=null;}
+}
+function addCarriedItems(container,bd){
+  restoreCarried(container);
+  const list=boardCarryList(bd);if(!list.length)return;
+  const bw=Math.max(1,bd.offsetWidth),bh=Math.max(1,bd.offsetHeight),bl=bd.offsetLeft,bt=bd.offsetTop;
+  container._carried=list;
+  for(const o of list){
+    const cp=o.cloneNode(true);copyCanvasContents(o,cp);
+    cp.removeAttribute('id');cp.querySelectorAll('[id]').forEach(n=>n.removeAttribute('id'));
+    cp.classList.remove('held','hovered','valid','invalid');cp.classList.add('ghost-carried-item');
+    cp.style.left=((o.offsetLeft-bl)/bw*100)+'%';cp.style.top=((o.offsetTop-bt)/bh*100)+'%';
+    cp.style.width=(o.offsetWidth/bw*100)+'%';cp.style.height=(o.offsetHeight/bh*100)+'%';
+    cp.style.zIndex='3';cp.style.visibility='visible';cp.style.opacity='1';cp.style.pointerEvents='none';
+    container.appendChild(cp);
+    o.style.visibility='hidden';if(o._contactShadow)o._contactShadow.style.visibility='hidden';
+  }
 }
 function fillGhostContainer(container,el){
   container.innerHTML='';
@@ -6944,6 +6966,7 @@ function fillGhostContainer(container,el){
   copy.style.zIndex='1';copy.style.pointerEvents='none';
   copy.querySelectorAll('.pan-status,.wash-foam,.pan-smoke,.lid-hit,.vw-rgw,.flour-ov').forEach(n=>n.remove());
   container.appendChild(copy);
+  if(container===placementGhost&&el===holding)addCarriedItems(container,el);
   // The copy is a new picture element: until its picture is loaded and decoded (it can take half a second) only the shadow would be seen.
   // So the real object stays visible until the copy is ready, then it is hidden again.
   try{
@@ -7012,6 +7035,7 @@ function hidePlacementGhost(){
  hideBackpackHeldPreview();
  if(!placementGhost)return;
  if(window.CooksterTween)CooksterTween.cancel(placementGhost,'ghostOpacity');
+ restoreCarried(placementGhost);placementGhost._key=null;
  placementGhost.style.display='none';
  placementGhost.style.opacity='.30';
 }
@@ -15442,7 +15466,7 @@ function syncOneBoardAttachment(el,board){
  // Board attachments must ALWAYS render above the board, including while the board is moving.
  const boardIsHeld=board.classList.contains('held');
  const boardZ=boardIsHeld?7000:parseInt(board.style.zIndex||board.dataset.zBase||1,10);
- const topZ=boardIsHeld?7600:boardZ+300;
+ const topZ=boardIsHeld?10100:boardZ+300;      // the held board has the z-index 9999 (--held-z): what lies on it is carried above it
  el.style.zIndex=String(topZ);
  if(el._contactShadow){
    el._contactShadow.style.zIndex=String(Math.max(boardZ+2,topZ-1));
