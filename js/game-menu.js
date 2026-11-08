@@ -1,19 +1,19 @@
 /* Cookster: the corner dock (bottom left). One picture (assets/ui/dock/menu.webp) holds the wooden plate AND the arc with the six round buttons.
-   Closed: only the plate is seen (the picture through a mask of the plate). Open (mouse over the plate): the arc with the buttons comes out from behind the plate (a circular reveal).
+   Closed: only the plate is seen (its own picture, menu_panel.webp, lies exactly over the same place of the big picture). Open (mouse over the plate): the arc with the buttons comes out from behind the plate (a circular reveal).
    The date, the time, the money and the weather on the plate are live texts. The buttons press what already exists in the game (the old HUD buttons are hidden while the dock is on). */
 (function(){
 'use strict';
 if(window.CooksterDock)return;
 var BASE='assets/ui/dock/';
 var IW=1304,IH=1206;      // the picture
-var PB=[41,253,987,1161];      // the visible plate in the picture (left, top, right, bottom)
+var PB=[53,254,975,1141];      // the visible plate in the picture (left, top, right, bottom)
 var PW=PB[2]-PB[0];      // width of the plate in picture pixels
 var CORNER=[PB[0]/IW*100,PB[3]/IH*100];      // bottom left corner of the plate (percent of the picture): the arc comes out from there
-var POLY=[[6.21, 23.8], [4.68, 26.2], [3.83, 31.18], [3.91, 86.48], [3.14, 89.55], [3.6, 92.04], [4.6, 93.78], [4.6, 96.19], [72.47, 96.19], [72.47, 94.53], [74.77, 91.87], [75.69, 88.39], [74.16, 87.4], [73.7, 85.99], [73.24, 77.03], [71.55, 68.41], [68.63, 59.87], [65.11, 52.65], [61.2, 46.52], [55.83, 39.97], [49.85, 34.41], [44.79, 30.76], [37.35, 26.7], [31.98, 24.88], [25.69, 23.38], [20.4, 22.8], [19.86, 22.22], [19.71, 21.23], [16.41, 20.98], [10.12, 21.39], [7.75, 22.47]];
+var POLY=[[4.29, 21.64], [4.14, 93.78], [4.52, 94.44], [73.39, 94.61], [74.54, 93.95], [74.77, 85.99], [74.08, 77.86], [72.78, 70.9], [70.86, 64.26], [68.48, 58.21], [64.95, 51.41], [61.35, 45.85], [56.21, 39.55], [50.23, 33.91], [45.25, 30.27], [39.19, 26.78], [32.52, 24.05], [26.15, 22.47], [19.02, 21.48], [5.14, 21.06]];
 var MONTHS=['JAN','FEB','MAR','APR','MAJ','JUN','JUL','AVG','SEP','OKT','NOV','DEC'];
 var TEMP_BASE=[0,2,7,12,17,21,24,23,18,12,6,1];
 // texts: [x, y, font size] in picture pixels
-var T={date:[400,472,74],time:[450,600,150],money:[612,741,56],wname:[500,856,56],wtemp:[760,856,56],sun:[265,858,62]};
+var T={date:[400,472,62],time:[450,598,128],money:[600,741,48],wname:[500,858,50],wtemp:[760,858,50],sun:[258,880,62]};
 var BUTTONS=[
   {id:'posudje',label:'Kuhinjski elementi',c:[189.5,150,104],act:function(){press('kitchenElementsBtn');}},
   {id:'frizider',label:'Frižider',c:[451.3,174.6,104],act:function(){toast('Frižider: uskoro.');}},
@@ -39,7 +39,7 @@ css.textContent=[
 '#cdock .cd-stage>img{position:absolute;left:0;top:0;width:100%;height:100%;display:block;pointer-events:none}',
 '#cdock .cd-full{z-index:1;clip-path:circle(0px at '+CORNER[0].toFixed(2)+'% '+CORNER[1].toFixed(2)+'%);transition:clip-path .34s cubic-bezier(.3,.7,.3,1);filter:drop-shadow(0 3px 6px rgba(40,20,6,.45))}',
 '#cdock.cd-open .cd-full{clip-path:circle(150% at '+CORNER[0].toFixed(2)+'% '+CORNER[1].toFixed(2)+'%)}',
-'#cdock .cd-pan{z-index:2;-webkit-mask-image:url('+BASE+'menu_mask.png);mask-image:url('+BASE+'menu_mask.png);-webkit-mask-size:100% 100%;mask-size:100% 100%;transition:filter .18s}',
+'#cdock .cd-pan{z-index:2}',
 '#cdock .cd-panw{position:absolute;inset:0;z-index:2;pointer-events:none;filter:drop-shadow(0 3px 6px rgba(40,20,6,.45));transition:filter .18s}',
 '#cdock.cd-open .cd-panw{filter:drop-shadow(0 0 9px rgba(255,214,90,.85)) drop-shadow(0 3px 6px rgba(40,20,6,.45))}',
 '#cdock .cd-t{position:absolute;z-index:3;transform:translate(-50%,-50%);white-space:nowrap;font-family:"CooksterSerif",Georgia,serif;font-weight:900;font-variant-numeric:lining-nums;font-feature-settings:"lnum" 1;color:#5a2410;text-shadow:0 1px 0 rgba(255,236,200,.55);line-height:1;pointer-events:none}',
@@ -61,9 +61,9 @@ document.head.appendChild(css);
 
 var dock=document.createElement('div');dock.id='cdock';
 var stage=document.createElement('div');stage.className='cd-stage';dock.appendChild(stage);
-function mkImg(cls){var i=document.createElement('img');i.className=cls;i.src=BASE+'menu.webp';i.alt='';i.draggable=false;return i;}
+function mkImg(cls,f){var i=document.createElement('img');i.className=cls;i.src=BASE+(f||'menu.webp');i.alt='';i.draggable=false;return i;}
 stage.appendChild(mkImg('cd-full'));
-var panw=document.createElement('div');panw.className='cd-panw';panw.appendChild(mkImg('cd-pan'));
+var panw=document.createElement('div');panw.className='cd-panw';panw.appendChild(mkImg('cd-pan','menu_panel.webp'));
 panw.firstChild.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%';
 stage.appendChild(panw);
 function txt(cls,t){var s=document.createElement('span');s.className='cd-t '+cls;s.style.left=pc(t[0],IW);s.style.top=pc(t[1],IH);s.style.fontSize=px(t[2]);stage.appendChild(s);return s;}
