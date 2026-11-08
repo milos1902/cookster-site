@@ -10,7 +10,8 @@
     for(const v of (window.items||items)){
       const w=wrapOf(v);
       if(!v||!w||v.offsetParent===null)continue;
-      for(const img of w.querySelectorAll(SEL)){
+      const hosts=v._wholeLayer?[w,v._wholeLayer]:[w];      // whole pieces of plates / boards lie in their own layer (without the cut)
+      for(const img of hosts.flatMap(h=>[...h.querySelectorAll(SEL)])){
         const r=img.getBoundingClientRect();
         if(x<r.left||x>r.right||y<r.top||y>r.bottom)continue;
         const z=+img.style.zIndex||0;
