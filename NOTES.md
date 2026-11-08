@@ -1257,3 +1257,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Servirne posude (daska, plitak/dubok tanjir): cele stvari idu kroz model posude (ne više u sliku tanjira), pa se mogu uzeti klikom nazad; vessel-take traži komade i u sloju bez isecanja (_wholeLayer). Ovalni tanjir ostaje kao pre.
 - Posuda ostaje prazna kad se uzme poslednji komad: sloj celih komada se čisti kad nema sadržaja (nema duha/senke mesa).
 - Novi meni dole levo (js/game-menu.js): drvena ploča (datum, vreme, novac, vreme napolju) i šest okruglih dugmadi koja izlaze na hover: posuđe (Kuhinjski elementi), frižider (uskoro), piće, pijaca, knjiga recepata, podešavanja (Sačuvaj/Učitaj). Stara HUD dugmad i gornja traka sa vremenom skrivene dok je meni uključen; dugmad za alate pomerena desno od menija. Slike: assets/ui/dock/.
+- Meni: font Playfair Display (OFL, assets/fonts) za datum/vreme/novac/vreme napolju, novac kao 12.500 дин., temperatura desno od 'Sunčano' kao na referenci.
