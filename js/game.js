@@ -14310,6 +14310,7 @@ function renderFoodContents(wrap,counts,stage=1,metaItems={},batches=[],heat=0,m
 
   const keys=Object.keys(counts||{}).filter(key=>(+counts[key]||0)>0).sort();
   const count=keys.reduce((sum,key)=>sum+(+counts[key]||0),0);
+  if(!count&&vesselArg)clearWholeLayer(vesselArg);      // an emptied vessel: no whole piece (and no shadow of it) stays in the layer without the cut
   const foodCount=keys.reduce((sum,key)=>{
     const meta=metaItems?.[key];
     return (meta?.type==='staple'||key==='jaje')?sum:sum+(+counts[key]||0);
