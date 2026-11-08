@@ -9,6 +9,7 @@ var IW=1304,IH=1206;      // the picture
 var PB=[53,254,975,1141];      // the visible plate in the picture (left, top, right, bottom)
 var PW=PB[2]-PB[0];      // width of the plate in picture pixels
 var CORNER=[PB[0]/IW*100,PB[3]/IH*100];      // bottom left corner of the plate (percent of the picture): the arc comes out from there
+var ARC=[[6.52, 4.31], [4.52, 7.55], [3.6, 11.28], [4.06, 15.92], [5.83, 19.57], [5.75, 20.65], [4.6, 21.48], [4.29, 22.22], [4.29, 93.45], [4.6, 94.44], [84.59, 94.53], [87.42, 93.78], [89.11, 92.87], [92.25, 89.97], [94.02, 87.4], [95.4, 84.41], [96.09, 81.59], [96.24, 78.61], [95.71, 75.21], [94.48, 72.22], [92.48, 69.49], [89.8, 67.41], [88.73, 65.75], [88.88, 64.26], [90.64, 60.86], [91.41, 57.96], [91.56, 54.64], [91.1, 51.91], [89.57, 48.51], [87.42, 46.1], [84.89, 44.61], [81.67, 43.86], [80.29, 42.45], [80.14, 40.63], [80.75, 36.9], [80.44, 33.42], [79.14, 29.93], [77.15, 27.36], [74.46, 25.54], [72.62, 24.96], [69.4, 24.79], [66.56, 25.21], [65.34, 24.54], [64.57, 23.3], [64.11, 19.49], [63.04, 16.33], [61.5, 14.01], [59.05, 11.86], [56.6, 10.78], [53.53, 10.53], [50.61, 11.28], [47.47, 13.18], [45.94, 13.27], [44.56, 11.86], [43.71, 9.45], [42.18, 6.97], [40.03, 4.89], [37.27, 3.57], [33.82, 3.23], [30.83, 4.06], [28.76, 5.39], [26.15, 8.29], [25.23, 8.79], [23.77, 8.46], [21.47, 4.81], [19.63, 2.82], [17.48, 1.49], [15.72, 0.91], [13.19, 0.75], [10.43, 1.41], [8.05, 2.82]];
 var POLY=[[4.29, 21.64], [4.14, 93.78], [4.52, 94.44], [73.39, 94.61], [74.54, 93.95], [74.77, 85.99], [74.08, 77.86], [72.78, 70.9], [70.86, 64.26], [68.48, 58.21], [64.95, 51.41], [61.35, 45.85], [56.21, 39.55], [50.23, 33.91], [45.25, 30.27], [39.19, 26.78], [32.52, 24.05], [26.15, 22.47], [19.02, 21.48], [5.14, 21.06]];
 var MONTHS=['JAN','FEB','MAR','APR','MAJ','JUN','JUL','AVG','SEP','OKT','NOV','DEC'];
 var TEMP_BASE=[0,2,7,12,17,21,24,23,18,12,6,1];
@@ -45,6 +46,8 @@ css.textContent=[
 '#cdock .cd-t{position:absolute;z-index:3;transform:translate(-50%,-50%);white-space:nowrap;font-family:"CooksterSerif",Georgia,serif;font-weight:900;font-variant-numeric:lining-nums;font-feature-settings:"lnum" 1;color:#5a2410;text-shadow:0 1px 0 rgba(255,236,200,.55);line-height:1;pointer-events:none}',
 '#cdock .cd-wi{position:absolute;z-index:3;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#fbe3c8 55%,#f6d4b0);display:none;align-items:center;justify-content:center;pointer-events:none}',
 '#cdock .cd-hit{position:absolute;inset:0;z-index:5;pointer-events:auto;cursor:pointer;clip-path:polygon('+POLY.map(function(p){return p[0]+'% '+p[1]+'%';}).join(',')+')}',
+'#cdock .cd-hit2{position:absolute;inset:0;z-index:4;pointer-events:none;clip-path:polygon('+ARC.map(function(p){return p[0]+'% '+p[1]+'%';}).join(',')+')}',
+'#cdock.cd-open .cd-hit2{pointer-events:auto;cursor:pointer}',
 '#cdock .cd-b{position:absolute;z-index:4;border:0;padding:0;border-radius:50%;background:transparent;cursor:pointer;pointer-events:none;aspect-ratio:1}',
 '#cdock.cd-open .cd-b{pointer-events:auto}',
 '#cdock .cd-b{transition:box-shadow .09s,background .09s}',
@@ -84,6 +87,8 @@ var btns=BUTTONS.map(function(d){
   b.addEventListener('mouseleave',function(){tip.classList.remove('on');later();});
   stage.appendChild(b);return b;
 });
+var hit2=document.createElement('div');hit2.className='cd-hit2';stage.appendChild(hit2);      // the wooden arc between the buttons also keeps the dock open
+hit2.addEventListener('mouseenter',keep);hit2.addEventListener('mouseleave',later);
 var hit=document.createElement('div');hit.className='cd-hit';stage.appendChild(hit);      // only the shape of the plate catches the mouse
 hit.addEventListener('mouseenter',keep);hit.addEventListener('mouseleave',later);
 hit.addEventListener('click',function(){pinned=!pinned;if(pinned)keep();else setOpen(false);});
