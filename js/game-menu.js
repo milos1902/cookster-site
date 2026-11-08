@@ -35,6 +35,8 @@ css.textContent=[
 '#cdock{position:fixed;left:0;bottom:0;--w:clamp(178px,14.9vw,281px);width:calc(var(--w)*1.7);height:calc(var(--w)*1.7);z-index:1900;pointer-events:none;user-select:none;-webkit-user-select:none}',
 '#cdock .cd-panel{position:absolute;left:0;bottom:0;width:var(--w);height:calc(var(--w)*'+W_H.toFixed(4)+');pointer-events:auto;cursor:pointer}',
 '#cdock .cd-panel img{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;filter:drop-shadow(0 3px 6px rgba(40,20,6,.45))}',
+'#cdock .cd-panel img{transition:filter .18s}',
+'#cdock.cd-open .cd-panel img{filter:drop-shadow(0 0 9px rgba(255,214,90,.85)) drop-shadow(0 3px 6px rgba(40,20,6,.45)) brightness(1.06)}',
 '#cdock .cd-t{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-family:"CooksterSerif",Georgia,serif;font-weight:900;font-variant-numeric:lining-nums;font-feature-settings:"lnum" 1;color:#5a2410;text-shadow:0 1px 0 rgba(255,236,200,.55);line-height:1;pointer-events:none}',
 '#cdock .cd-wi{position:absolute;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#fbe3c8 55%,#f6d4b0);display:none;align-items:center;justify-content:center;pointer-events:none}',
 '#cdock .cd-btn{position:absolute;width:calc(var(--w)*'+BTN+');height:calc(var(--w)*'+BTN+');border:0;padding:0;background:none;cursor:pointer;pointer-events:none;opacity:0;transform:translate(var(--fx),var(--fy)) scale(.25);transition:transform .34s cubic-bezier(.2,1.25,.4,1) var(--dl),opacity .18s ease var(--dl),filter .12s}',
@@ -130,7 +132,7 @@ function clearTools(){
 }
 function start(){
   document.body.appendChild(dock);document.body.classList.add('cdock-on');
-  update();setInterval(update,400);[800,2500,6000].forEach(function(t){setTimeout(clearTools,t);});window.addEventListener('resize',function(){document.querySelectorAll('button[data-cd-moved]').forEach(function(b){delete b.dataset.cdMoved;});clearTools();});
+  update();setInterval(update,400);[800,2500,6000].forEach(function(t){setTimeout(clearTools,t);});setInterval(clearTools,2000);window.addEventListener('resize',function(){document.querySelectorAll('button[data-cd-moved]').forEach(function(b){delete b.dataset.cdMoved;});clearTools();});
 }
 window.CooksterDock={open:function(){pinned=true;keep();},close:function(){pinned=false;setOpen(false);},el:dock};
 if(document.body)start();else document.addEventListener('DOMContentLoaded',start);
