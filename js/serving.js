@@ -267,6 +267,7 @@ function tryDrop(item){
   if(!meta||(meta.type!=='vegetable'&&meta.type!=='fruit'))return false;
   if(/kiseli|kupus_diced_kiseli/.test(String(meta.key||'')+String(item.dataset.fermentPhase||''))&&(el.dataset.itemId==='posuda_za_kupus'||el.dataset.itemId==='kal_02_duboki_tanjir'))return false;   // the dish "kiseli kupus" has its own rules
   if(meta.form==='whole'&&meta.cutState==='whole'&&!/pecena|zagorela|rostilj|krike|kiseli|prz|kuvan/.test(String(meta.key||''))&&!(window.VEGETABLES&&VEGETABLES[meta.baseKey]&&VEGETABLES[meta.baseKey].meat)&&el.dataset.itemId!=='daska_serviranje')return false;      // whole raw produce goes into no vessel (the message is given by the game)
+  if(el.dataset.itemId!==OVAL&&(meta.form==='whole'||meta.form==='whole_roasted'||meta.cutState==='whole'||item.dataset.peeled==='1'||/_celo$/.test(String(meta.key||''))))return false;      // whole things on the board / plates are real pieces (the container model): they can be taken off the board again
   if(hasOldContents(el)&&!listOf(el).length)return false;
   const body=item.querySelector('.body'),src=body&&body.getAttribute('src');if(!src)return false;
   const l=listOf(el);
