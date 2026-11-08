@@ -33,7 +33,8 @@ css.textContent=[
 'body.cdock-on #savkaBookRoot:not(.savka-open) .savka-book-tab{opacity:0;pointer-events:none}',
 'body.pantry-open #cdock,body.garden-open #cdock,body.market-open #cdock{display:none}',
 '#cdock{position:fixed;left:0;bottom:0;--w:clamp(178px,14.9vw,281px);width:calc(var(--w)*1.7);height:calc(var(--w)*1.7);z-index:1900;pointer-events:none;user-select:none;-webkit-user-select:none}',
-'#cdock .cd-panel{z-index:2;position:absolute;left:0;bottom:0;width:var(--w);height:calc(var(--w)*'+W_H.toFixed(4)+');pointer-events:auto;cursor:pointer}',
+'#cdock .cd-panel{z-index:2;position:absolute;left:0;bottom:0;width:var(--w);height:calc(var(--w)*'+W_H.toFixed(4)+');pointer-events:none}',
+'#cdock .cd-hit{position:absolute;inset:0;pointer-events:auto;cursor:pointer;clip-path:circle(104% at 0 100%)}',
 '#cdock .cd-panel img{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;filter:drop-shadow(0 3px 6px rgba(40,20,6,.45))}',
 '#cdock .cd-panel img{transition:filter .18s}',
 '#cdock.cd-open .cd-panel img{filter:drop-shadow(0 0 9px rgba(255,214,90,.85)) drop-shadow(0 3px 6px rgba(40,20,6,.45)) brightness(1.06)}',
@@ -42,6 +43,7 @@ css.textContent=[
 '#cdock .cd-btn{z-index:1;position:absolute;width:calc(var(--w)*'+BTN+');height:calc(var(--w)*'+BTN+');border:0;padding:0;background:none;cursor:pointer;pointer-events:none;opacity:0;transform:translate(var(--fx),var(--fy)) scale(.25);transition:transform .34s cubic-bezier(.55,0,.8,.4),opacity 0s linear .34s,filter .12s}',
 '#cdock .cd-btn img{width:100%;height:100%;display:block;pointer-events:none;filter:drop-shadow(0 3px 5px rgba(40,20,6,.5))}',
 '#cdock.cd-open .cd-btn{opacity:1;pointer-events:auto;transform:translate(0,0) scale(1);transition:transform .34s cubic-bezier(.2,1.1,.4,1),opacity 0s,filter .12s}',
+'#cdock.cd-open.cd-settled .cd-btn{transition:transform .09s ease-out,opacity 0s,filter .09s}',
 '#cdock .cd-btn:hover{filter:brightness(1.12) drop-shadow(0 0 7px rgba(255,214,90,.9));transform:translate(0,0) scale(1.1)!important}',
 '#cdock .cd-btn:active{transform:translate(0,0) scale(.95)!important}',
 '#cdock .cd-tip{z-index:3;position:absolute;transform:translate(-50%,0);padding:3px 9px;border-radius:7px;background:rgba(48,28,14,.94);color:#ffeccb;font:700 12px system-ui,sans-serif;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s}',
@@ -58,6 +60,7 @@ var pimg=document.createElement('img');pimg.src=BASE+'panel.webp';pimg.alt='';pi
 function txt(cls,pos){var s=document.createElement('span');s.className='cd-t '+cls;s.style.left=(pos[0]*100)+'%';s.style.top=(pos[1]*100)+'%';s.style.fontSize='calc(var(--w)*'+pos[2]+')';panel.appendChild(s);return s;}
 var tDate=txt('d',T.date),tTime=txt('t',T.time),tMoney=txt('m',T.money),tWn=txt('wn',T.wname),tWt=txt('wt',T.wtemp);
 var wIc=document.createElement('span');wIc.className='cd-wi';wIc.style.left=(T.sun[0]*100)+'%';wIc.style.top=(T.sun[1]*100)+'%';wIc.style.width='calc(var(--w)*.176)';wIc.style.height='calc(var(--w)*.176)';wIc.style.fontSize='calc(var(--w)*.13)';panel.appendChild(wIc);
+var hit=document.createElement('div');hit.className='cd-hit';panel.appendChild(hit);      // only the quarter circle of the plate catches the mouse (the empty corner of its box must not cover the buttons)
 dock.appendChild(panel);
 
 var tip=document.createElement('div');tip.className='cd-tip';dock.appendChild(tip);
@@ -77,11 +80,17 @@ var btns=BUTTONS.map(function(d,i){
 });
 
 var pinned=false,closeT=0;
-function setOpen(v){dock.classList.toggle('cd-open',!!v);if(!v){tip.classList.remove('on');hideGear();}}
+var settleT=0;
+function setOpen(v){
+  var was=dock.classList.contains('cd-open');
+  dock.classList.toggle('cd-open',!!v);
+  if(!v){clearTimeout(settleT);dock.classList.remove('cd-settled');tip.classList.remove('on');hideGear();}
+  else if(!was){clearTimeout(settleT);dock.classList.remove('cd-settled');settleT=setTimeout(function(){if(dock.classList.contains('cd-open'))dock.classList.add('cd-settled');},380);}      // after the coming out the buttons answer to the mouse fast (no slow 0.34 s growing)
+}
 function keep(){clearTimeout(closeT);setOpen(true);}
 function later(){clearTimeout(closeT);if(pinned)return;closeT=setTimeout(function(){setOpen(false);},90);}
-panel.addEventListener('mouseenter',keep);panel.addEventListener('mouseleave',later);
-panel.addEventListener('click',function(){pinned=!pinned;if(pinned)keep();else setOpen(false);});
+hit.addEventListener('mouseenter',keep);hit.addEventListener('mouseleave',later);
+hit.addEventListener('click',function(){pinned=!pinned;if(pinned)keep();else setOpen(false);});
 window.addEventListener('keydown',function(e){if(e.key==='Escape'&&(pinned||dock.classList.contains('cd-open'))){pinned=false;setOpen(false);}},true);
 window.addEventListener('pointerdown',function(e){
   if(gear&&gear.style.display!=='none'&&!gear.contains(e.target)&&!(e.target.closest&&e.target.closest('#cdock')))hideGear();
