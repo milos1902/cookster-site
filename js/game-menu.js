@@ -1,29 +1,31 @@
-/* Cookster: the corner dock (bottom left). A wooden quarter-circle plate with the date, the time, the money and the weather; when the mouse is over it, six round buttons come out
-   of it along an arc: the dishes (kitchen elements), the fridge, the drinks, the market, the recipe book and the settings (save / load).
-   It does not do anything by itself: it presses the buttons that already exist in the game (the old HUD buttons are hidden while the dock is on). */
+/* Cookster: the corner dock (bottom left). One picture (assets/ui/dock/menu.webp) holds the wooden plate AND the arc with the six round buttons.
+   Closed: only the plate is seen (its own picture, menu_panel.webp, lies exactly over the same place of the big picture). Open (mouse over the plate): the arc with the buttons comes out from behind the plate (a circular reveal).
+   The date, the time, the money and the weather on the plate are live texts. The buttons press what already exists in the game (the old HUD buttons are hidden while the dock is on). */
 (function(){
 'use strict';
 if(window.CooksterDock)return;
 var BASE='assets/ui/dock/';
+var IW=1304,IH=1206;      // the picture
+var PB=[53,254,975,1141];      // the visible plate in the picture (left, top, right, bottom)
+var PW=PB[2]-PB[0];      // width of the plate in picture pixels
+var CORNER=[PB[0]/IW*100,PB[3]/IH*100];      // bottom left corner of the plate (percent of the picture): the arc comes out from there
+var POLY=[[4.29, 21.64], [4.14, 93.78], [4.52, 94.44], [73.39, 94.61], [74.54, 93.95], [74.77, 85.99], [74.08, 77.86], [72.78, 70.9], [70.86, 64.26], [68.48, 58.21], [64.95, 51.41], [61.35, 45.85], [56.21, 39.55], [50.23, 33.91], [45.25, 30.27], [39.19, 26.78], [32.52, 24.05], [26.15, 22.47], [19.02, 21.48], [5.14, 21.06]];
 var MONTHS=['JAN','FEB','MAR','APR','MAJ','JUN','JUL','AVG','SEP','OKT','NOV','DEC'];
 var TEMP_BASE=[0,2,7,12,17,21,24,23,18,12,6,1];
-// the places of the texts on the plate (fractions of the picture of the plate, 1309 x 1201)
-var OLD=[1309,1201],BB=[32,10,1113,1145];      // the picture of the plate was cut to its visible part (BB inside of OLD): the plate lies exactly on the left and the bottom edge
-function cv(a){return [(a[0]*OLD[0]-BB[0])/BB[2],(a[1]*OLD[1]-BB[1])/BB[3],a[2]*OLD[0]/BB[2]];}
-var T={date:cv([.330,.254,.066]),time:cv([.370,.387,.146]),money:cv([.483,.541,.056]),wname:cv([.428,.673,.047]),wtemp:cv([.657,.678,.050]),sun:cv([.21,.675,.17])};
-var W_H=BB[3]/BB[2];      // height of the plate in widths
-var CORNER=[(35-BB[0])/BB[2],(1150-BB[1])/BB[3]];      // the middle of the arc (the bottom left corner of the plate), fractions of the plate
-var RADIUS=.99*OLD[0]/BB[2],BTN=.235*OLD[0]/BB[2];      // in widths of the plate
+// texts: [x, y, font size] in picture pixels
+var T={date:[400,472,62],time:[450,598,128],money:[600,741,48],wname:[500,858,50],wtemp:[760,858,50],sun:[258,880,62]};
 var BUTTONS=[
-  {id:'posudje',label:'Kuhinjski elementi',act:function(){press('kitchenElementsBtn');}},
-  {id:'frizider',label:'Frižider',act:function(){toast('Frižider: uskoro.');}},
-  {id:'pice',label:'Piće',act:function(){press('drinksBtn');}},
-  {id:'pijaca',label:'Pijaca',act:function(){press('marketBtn');}},
-  {id:'recepti',label:'Knjiga recepata',act:function(){var t=document.querySelector('#savkaBookRoot .savka-book-tab');if(t)t.click();else toast('Knjiga recepata nije dostupna ovde.');}},
-  {id:'podesavanja',label:'Sačuvaj / Učitaj',act:function(b){gearMenu(b);}}
+  {id:'posudje',label:'Kuhinjski elementi',c:[189.5,150,104],act:function(){press('kitchenElementsBtn');}},
+  {id:'frizider',label:'Frižider',c:[451.3,174.6,104],act:function(){toast('Frižider: uskoro.');}},
+  {id:'pice',label:'Piće',c:[705.3,265.3,105],act:function(){press('drinksBtn');}},
+  {id:'pijaca',label:'Pijaca',c:[916.8,438.9,108],act:function(){press('marketBtn');}},
+  {id:'recepti',label:'Knjiga recepata',c:[1056,668,111],act:function(){var t=document.querySelector('#savkaBookRoot .savka-book-tab');if(t)t.click();else toast('Knjiga recepata nije dostupna ovde.');}},
+  {id:'podesavanja',label:'Sačuvaj / Učitaj',c:[1102.7,956.3,124],act:function(b){gearMenu(b);}}
 ];
 function toast(m){try{showToast(m);}catch(e){}}
 function press(id){var b=document.getElementById(id);if(b)b.click();else toast('Nije dostupno.');}
+function pc(x,tot){return (x/tot*100).toFixed(3)+'%';}
+function px(v){return 'calc(var(--w)*'+(v/PW).toFixed(5)+')';}      // picture pixels -> screen pixels
 
 var css=document.createElement('style');
 css.textContent=[
@@ -32,22 +34,25 @@ css.textContent=[
 'body.cdock-on img.ui-overlay-element[src*="drvena_traka_krug"],body.cdock-on img.ui-overlay-element[src*="dva_polja"]{display:none!important}',
 'body.cdock-on #savkaBookRoot:not(.savka-open) .savka-book-tab{opacity:0;pointer-events:none}',
 'body.pantry-open #cdock,body.garden-open #cdock,body.market-open #cdock{display:none}',
-'#cdock{position:fixed;left:0;bottom:0;--w:clamp(178px,14.9vw,281px);width:calc(var(--w)*1.7);height:calc(var(--w)*1.7);z-index:1900;pointer-events:none;user-select:none;-webkit-user-select:none}',
-'#cdock .cd-panel{z-index:2;position:absolute;left:0;bottom:0;width:var(--w);height:calc(var(--w)*'+W_H.toFixed(4)+');pointer-events:none}',
-'#cdock .cd-hit{position:absolute;inset:0;pointer-events:auto;cursor:pointer;clip-path:circle(104% at 0 100%)}',
-'#cdock .cd-panel img{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;filter:drop-shadow(0 3px 6px rgba(40,20,6,.45))}',
-'#cdock .cd-panel img{transition:filter .18s}',
-'#cdock.cd-open .cd-panel img{filter:drop-shadow(0 0 9px rgba(255,214,90,.85)) drop-shadow(0 3px 6px rgba(40,20,6,.45)) brightness(1.06)}',
-'#cdock .cd-t{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-family:"CooksterSerif",Georgia,serif;font-weight:900;font-variant-numeric:lining-nums;font-feature-settings:"lnum" 1;color:#5a2410;text-shadow:0 1px 0 rgba(255,236,200,.55);line-height:1;pointer-events:none}',
-'#cdock .cd-wi{position:absolute;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#fbe3c8 55%,#f6d4b0);display:none;align-items:center;justify-content:center;pointer-events:none}',
-'#cdock .cd-btn{z-index:1;position:absolute;width:calc(var(--w)*'+BTN+');height:calc(var(--w)*'+BTN+');border:0;padding:0;background:none;cursor:pointer;pointer-events:none;opacity:0;transform:translate(var(--fx),var(--fy)) scale(.25);transition:transform .34s cubic-bezier(.55,0,.8,.4),opacity 0s linear .34s,filter .12s}',
-'#cdock .cd-btn img{width:100%;height:100%;display:block;pointer-events:none;filter:drop-shadow(0 3px 5px rgba(40,20,6,.5))}',
-'#cdock.cd-open .cd-btn{opacity:1;pointer-events:auto;transform:translate(0,0) scale(1);transition:transform .34s cubic-bezier(.2,1.1,.4,1),opacity 0s,filter .12s}',
-'#cdock.cd-open.cd-settled .cd-btn{transition:transform .09s ease-out,opacity 0s,filter .09s}',
-'#cdock .cd-btn:hover{filter:brightness(1.12) drop-shadow(0 0 7px rgba(255,214,90,.9));transform:translate(0,0) scale(1.1)!important}',
-'#cdock .cd-btn:active{transform:translate(0,0) scale(.95)!important}',
-'#cdock .cd-tip{z-index:3;position:absolute;transform:translate(-50%,0);padding:3px 9px;border-radius:7px;background:rgba(48,28,14,.94);color:#ffeccb;font:700 12px system-ui,sans-serif;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s}',
+'#cdock{position:fixed;left:0;bottom:0;--w:clamp(178px,14.9vw,281px);width:calc(var(--w)*1.05);height:calc(var(--w)*1.0);z-index:1900;pointer-events:none;user-select:none;-webkit-user-select:none}',
+'#cdock .cd-stage{position:absolute;left:'+px(-PB[0])+';bottom:'+px(-(IH-PB[3]))+';width:'+px(IW)+';height:'+px(IH)+';pointer-events:none}',
+'#cdock .cd-stage>img{position:absolute;left:0;top:0;width:100%;height:100%;display:block;pointer-events:none}',
+'#cdock .cd-full{z-index:1;clip-path:circle(0px at '+CORNER[0].toFixed(2)+'% '+CORNER[1].toFixed(2)+'%);transition:clip-path .34s cubic-bezier(.3,.7,.3,1);filter:drop-shadow(0 3px 6px rgba(40,20,6,.45))}',
+'#cdock.cd-open .cd-full{clip-path:circle(150% at '+CORNER[0].toFixed(2)+'% '+CORNER[1].toFixed(2)+'%)}',
+'#cdock .cd-pan{z-index:2}',
+'#cdock .cd-panw{position:absolute;inset:0;z-index:2;pointer-events:none;filter:drop-shadow(0 3px 6px rgba(40,20,6,.45));transition:filter .18s}',
+'#cdock.cd-open .cd-panw{filter:drop-shadow(0 0 9px rgba(255,214,90,.85)) drop-shadow(0 3px 6px rgba(40,20,6,.45))}',
+'#cdock .cd-t{position:absolute;z-index:3;transform:translate(-50%,-50%);white-space:nowrap;font-family:"CooksterSerif",Georgia,serif;font-weight:900;font-variant-numeric:lining-nums;font-feature-settings:"lnum" 1;color:#5a2410;text-shadow:0 1px 0 rgba(255,236,200,.55);line-height:1;pointer-events:none}',
+'#cdock .cd-wi{position:absolute;z-index:3;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#fbe3c8 55%,#f6d4b0);display:none;align-items:center;justify-content:center;pointer-events:none}',
+'#cdock .cd-hit{position:absolute;inset:0;z-index:5;pointer-events:auto;cursor:pointer;clip-path:polygon('+POLY.map(function(p){return p[0]+'% '+p[1]+'%';}).join(',')+')}',
+'#cdock .cd-b{position:absolute;z-index:4;border:0;padding:0;border-radius:50%;background:transparent;cursor:pointer;pointer-events:none;aspect-ratio:1}',
+'#cdock.cd-open .cd-b{pointer-events:auto}',
+'#cdock .cd-b{transition:box-shadow .09s,background .09s}',
+'#cdock .cd-b:hover{background:rgba(255,236,170,.16);box-shadow:0 0 0 '+px(5)+' rgba(255,226,120,.95),0 0 '+px(26)+' '+px(8)+' rgba(255,196,60,.8)}',
+'#cdock .cd-b:active{background:rgba(255,236,170,.3)}',
+'#cdock .cd-tip{z-index:6;position:absolute;transform:translate(-50%,0);padding:3px 9px;border-radius:7px;background:rgba(48,28,14,.94);color:#ffeccb;font:700 12px system-ui,sans-serif;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s}',
 '#cdock .cd-tip.on{opacity:1}',
+'#cdock .cd-box{position:absolute;pointer-events:none;left:'+pc(PB[0],IW)+';top:'+pc(PB[1],IH)+';width:'+pc(PW,IW)+';height:'+pc(PB[3]-PB[1],IH)+'}',
 '#cdock-gear{position:fixed;z-index:1950;display:none;flex-direction:column;gap:6px;padding:8px;background:rgba(48,28,14,.96);border:2px solid #d9a441;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.5)}',
 '#cdock-gear button{border:0;border-radius:7px;padding:8px 14px;cursor:pointer;background:#f0c36a;color:#2a1a0e;font:800 14px system-ui,sans-serif;text-align:left}',
 '#cdock-gear button:hover{background:#ffd98a}'
@@ -55,40 +60,31 @@ css.textContent=[
 document.head.appendChild(css);
 
 var dock=document.createElement('div');dock.id='cdock';
-var panel=document.createElement('div');panel.className='cd-panel';
-var pimg=document.createElement('img');pimg.src=BASE+'panel.webp';pimg.alt='';pimg.draggable=false;panel.appendChild(pimg);
-function txt(cls,pos){var s=document.createElement('span');s.className='cd-t '+cls;s.style.left=(pos[0]*100)+'%';s.style.top=(pos[1]*100)+'%';s.style.fontSize='calc(var(--w)*'+pos[2]+')';panel.appendChild(s);return s;}
+var stage=document.createElement('div');stage.className='cd-stage';dock.appendChild(stage);
+function mkImg(cls,f){var i=document.createElement('img');i.className=cls;i.src=BASE+(f||'menu.webp');i.alt='';i.draggable=false;return i;}
+stage.appendChild(mkImg('cd-full'));
+var panw=document.createElement('div');panw.className='cd-panw';panw.appendChild(mkImg('cd-pan','menu_panel.webp'));
+panw.firstChild.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%';
+stage.appendChild(panw);
+function txt(cls,t){var s=document.createElement('span');s.className='cd-t '+cls;s.style.left=pc(t[0],IW);s.style.top=pc(t[1],IH);s.style.fontSize=px(t[2]);stage.appendChild(s);return s;}
 var tDate=txt('d',T.date),tTime=txt('t',T.time),tMoney=txt('m',T.money),tWn=txt('wn',T.wname),tWt=txt('wt',T.wtemp);
-var wIc=document.createElement('span');wIc.className='cd-wi';wIc.style.left=(T.sun[0]*100)+'%';wIc.style.top=(T.sun[1]*100)+'%';wIc.style.width='calc(var(--w)*.176)';wIc.style.height='calc(var(--w)*.176)';wIc.style.fontSize='calc(var(--w)*.13)';panel.appendChild(wIc);
-var hit=document.createElement('div');hit.className='cd-hit';panel.appendChild(hit);      // only the quarter circle of the plate catches the mouse (the empty corner of its box must not cover the buttons)
-dock.appendChild(panel);
-
-var tip=document.createElement('div');tip.className='cd-tip';dock.appendChild(tip);
-var btns=BUTTONS.map(function(d,i){
-  var ang=(82-i*14.4)*Math.PI/180,cx=CORNER[0]+RADIUS*Math.cos(ang),cy=CORNER[1]*W_H-RADIUS*Math.sin(ang);      // the middle of the button in widths (y measured from the top of the plate)
-  var b=document.createElement('button');b.type='button';b.className='cd-btn';b.setAttribute('aria-label',d.label);b.title='';
-  b.style.left='calc(var(--w)*'+(cx-BTN/2).toFixed(4)+')';
-  b.style.bottom='calc(var(--w)*'+(W_H-cy-BTN/2).toFixed(4)+')';      // the plate is at the bottom: y from the top of the plate -> bottom
-  b.style.setProperty('--fx','calc(var(--w)*'+(CORNER[0]-cx).toFixed(4)+')');
-  b.style.setProperty('--fy','calc(var(--w)*'+(CORNER[1]*W_H-cy).toFixed(4)+')');
-  
-  var im=document.createElement('img');im.src=BASE+d.id+'.webp';im.alt='';im.draggable=false;b.appendChild(im);
-  b.addEventListener('click',function(e){e.stopPropagation();d.act(b);});
-  b.addEventListener('mouseenter',function(){tip.textContent=d.label;tip.style.left=b.offsetLeft+b.offsetWidth/2+'px';tip.style.top=(b.offsetTop+b.offsetHeight+4)+'px';tip.classList.add('on');keep();});
-  b.addEventListener('mouseleave',function(){tip.classList.remove('on');later();});
-  dock.appendChild(b);return b;
-});
+var wIc=document.createElement('span');wIc.className='cd-wi';wIc.style.left=pc(T.sun[0],IW);wIc.style.top=pc(T.sun[1],IH);wIc.style.width=px(T.sun[2]*2);wIc.style.height=px(T.sun[2]*2);wIc.style.fontSize=px(T.sun[2]*1.4);stage.appendChild(wIc);
+var tip=document.createElement('div');tip.className='cd-tip';stage.appendChild(tip);
+var box=document.createElement('div');box.className='cd-box';stage.appendChild(box);      // only to measure where the plate is
 
 var pinned=false,closeT=0;
-var settleT=0;
-function setOpen(v){
-  var was=dock.classList.contains('cd-open');
-  dock.classList.toggle('cd-open',!!v);
-  if(!v){clearTimeout(settleT);dock.classList.remove('cd-settled');tip.classList.remove('on');hideGear();}
-  else if(!was){clearTimeout(settleT);dock.classList.remove('cd-settled');settleT=setTimeout(function(){if(dock.classList.contains('cd-open'))dock.classList.add('cd-settled');},380);}      // after the coming out the buttons answer to the mouse fast (no slow 0.34 s growing)
-}
+function setOpen(v){dock.classList.toggle('cd-open',!!v);if(!v){tip.classList.remove('on');hideGear();}}
 function keep(){clearTimeout(closeT);setOpen(true);}
 function later(){clearTimeout(closeT);if(pinned)return;closeT=setTimeout(function(){setOpen(false);},90);}
+var btns=BUTTONS.map(function(d){
+  var b=document.createElement('button');b.type='button';b.className='cd-b';b.setAttribute('aria-label',d.label);
+  b.style.left=pc(d.c[0]-d.c[2],IW);b.style.top=pc(d.c[1]-d.c[2],IH);b.style.width=pc(d.c[2]*2,IW);
+  b.addEventListener('click',function(e){e.stopPropagation();d.act(b);});
+  b.addEventListener('mouseenter',function(){tip.textContent=d.label;tip.style.left=pc(d.c[0],IW);tip.style.top='calc('+pc(d.c[1]+d.c[2]+6,IH)+')';tip.classList.add('on');keep();});
+  b.addEventListener('mouseleave',function(){tip.classList.remove('on');later();});
+  stage.appendChild(b);return b;
+});
+var hit=document.createElement('div');hit.className='cd-hit';stage.appendChild(hit);      // only the shape of the plate catches the mouse
 hit.addEventListener('mouseenter',keep);hit.addEventListener('mouseleave',later);
 hit.addEventListener('click',function(){pinned=!pinned;if(pinned)keep();else setOpen(false);});
 window.addEventListener('keydown',function(e){if(e.key==='Escape'&&(pinned||dock.classList.contains('cd-open'))){pinned=false;setOpen(false);}},true);
@@ -117,7 +113,7 @@ function update(){
   try{
     var Wt=window.CooksterWeather,D=window.CooksterDay;
     var dt=Wt&&Wt.date?Wt.date():{d:1,m:6},m=D&&D.minute?D.minute():360,kind=Wt&&Wt.kind?Wt.kind():'sunce';
-    var night=(((m%1440)+1440)%1440)<330||(((m%1440)+1440)%1440)>=1140;
+    var mm=((m%1440)+1440)%1440,night=mm<330||mm>=1140;
     var name=Wt&&Wt.name?Wt.name():'Sunčano',icon=Wt&&Wt.icon?Wt.icon():'☀️';
     if(kind==='sunce'&&night){name='Vedro';icon='🌙';}
     var mt=document.getElementById('money'),money=mt?((mt.textContent.match(/-?\d[\d\s.,]*/)||['∞'])[0]).trim():'0';
@@ -130,7 +126,7 @@ function update(){
 // the developer tool buttons (Ladle, Guest animations...) are fixed at the bottom left: those that lie over the dock are moved to its right side
 function clearTools(){
   try{
-    var pr=panel.getBoundingClientRect();if(!pr.width)return;
+    var pr=box.getBoundingClientRect();if(!pr.width)return;
     var zone={l:0,t:pr.top-pr.width*.25,r:pr.right+pr.width*.45,b:innerHeight};
     document.querySelectorAll('button[data-tool-ui]').forEach(function(bt){
       if(bt.dataset.cdMoved||getComputedStyle(bt).position!=='fixed')return;
@@ -141,7 +137,8 @@ function clearTools(){
 }
 function start(){
   document.body.appendChild(dock);document.body.classList.add('cdock-on');
-  update();setInterval(update,400);[800,2500,6000].forEach(function(t){setTimeout(clearTools,t);});setInterval(clearTools,2000);window.addEventListener('resize',function(){document.querySelectorAll('button[data-cd-moved]').forEach(function(b){delete b.dataset.cdMoved;});clearTools();});
+  update();setInterval(update,400);[800,2500,6000].forEach(function(t){setTimeout(clearTools,t);});setInterval(clearTools,2000);
+  window.addEventListener('resize',function(){document.querySelectorAll('button[data-cd-moved]').forEach(function(b){delete b.dataset.cdMoved;});clearTools();});
 }
 window.CooksterDock={open:function(){pinned=true;keep();},close:function(){pinned=false;setOpen(false);},el:dock};
 if(document.body)start();else document.addEventListener('DOMContentLoaded',start);
