@@ -8,10 +8,12 @@ var BASE='assets/ui/dock/';
 var MONTHS=['JAN','FEB','MAR','APR','MAJ','JUN','JUL','AVG','SEP','OKT','NOV','DEC'];
 var TEMP_BASE=[0,2,7,12,17,21,24,23,18,12,6,1];
 // the places of the texts on the plate (fractions of the picture of the plate, 1309 x 1201)
-var T={date:[.328,.254,.062],time:[.375,.385,.17],money:[.50,.543,.07],wname:[.55,.655,.05],wtemp:[.55,.715,.062],sun:[.21,.675,.17]};
-var W_H=1201/1309;      // height of the plate in widths
-var CORNER=[35/1309,1150/1201];      // the middle of the arc (the bottom left corner of the plate), fractions of the plate
-var RADIUS=.99,BTN=.235;      // in widths of the plate
+var OLD=[1309,1201],BB=[32,10,1113,1145];      // the picture of the plate was cut to its visible part (BB inside of OLD): the plate lies exactly on the left and the bottom edge
+function cv(a){return [(a[0]*OLD[0]-BB[0])/BB[2],(a[1]*OLD[1]-BB[1])/BB[3],a[2]*OLD[0]/BB[2]];}
+var T={date:cv([.328,.254,.062]),time:cv([.375,.385,.17]),money:cv([.50,.543,.07]),wname:cv([.428,.645,.042]),wtemp:cv([.428,.693,.055]),sun:cv([.21,.675,.17])};
+var W_H=BB[3]/BB[2];      // height of the plate in widths
+var CORNER=[(35-BB[0])/BB[2],(1150-BB[1])/BB[3]];      // the middle of the arc (the bottom left corner of the plate), fractions of the plate
+var RADIUS=.99*OLD[0]/BB[2],BTN=.235*OLD[0]/BB[2];      // in widths of the plate
 var BUTTONS=[
   {id:'posudje',label:'Kuhinjski elementi',act:function(){press('kitchenElementsBtn');}},
   {id:'frizider',label:'Frižider',act:function(){toast('Frižider: uskoro.');}},
@@ -29,7 +31,7 @@ css.textContent=[
 'body.cdock-on img.ui-overlay-element[src*="drvena_traka_krug"],body.cdock-on img.ui-overlay-element[src*="dva_polja"]{display:none!important}',
 'body.cdock-on #savkaBookRoot:not(.savka-open) .savka-book-tab{opacity:0;pointer-events:none}',
 'body.pantry-open #cdock,body.garden-open #cdock,body.market-open #cdock{display:none}',
-'#cdock{position:fixed;left:0;bottom:0;--w:clamp(210px,17.5vw,330px);width:calc(var(--w)*1.4);height:calc(var(--w)*1.2);z-index:1900;pointer-events:none;user-select:none;-webkit-user-select:none}',
+'#cdock{position:fixed;left:0;bottom:0;--w:clamp(178px,14.9vw,281px);width:calc(var(--w)*1.7);height:calc(var(--w)*1.7);z-index:1900;pointer-events:none;user-select:none;-webkit-user-select:none}',
 '#cdock .cd-panel{position:absolute;left:0;bottom:0;width:var(--w);height:calc(var(--w)*'+W_H.toFixed(4)+');pointer-events:auto;cursor:pointer}',
 '#cdock .cd-panel img{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;filter:drop-shadow(0 3px 6px rgba(40,20,6,.45))}',
 '#cdock .cd-t{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-family:"Paytone One",system-ui,sans-serif;color:#5a2d10;text-shadow:0 1px 0 rgba(255,244,214,.7);line-height:1;pointer-events:none}',
@@ -52,7 +54,7 @@ var panel=document.createElement('div');panel.className='cd-panel';
 var pimg=document.createElement('img');pimg.src=BASE+'panel.webp';pimg.alt='';pimg.draggable=false;panel.appendChild(pimg);
 function txt(cls,pos){var s=document.createElement('span');s.className='cd-t '+cls;s.style.left=(pos[0]*100)+'%';s.style.top=(pos[1]*100)+'%';s.style.fontSize='calc(var(--w)*'+pos[2]+')';panel.appendChild(s);return s;}
 var tDate=txt('d',T.date),tTime=txt('t',T.time),tMoney=txt('m',T.money),tWn=txt('wn',T.wname),tWt=txt('wt',T.wtemp);
-var wIc=document.createElement('span');wIc.className='cd-wi';wIc.style.left=(T.sun[0]*100)+'%';wIc.style.top=(T.sun[1]*100)+'%';wIc.style.width='calc(var(--w)*.15)';wIc.style.height='calc(var(--w)*.15)';wIc.style.fontSize='calc(var(--w)*.11)';panel.appendChild(wIc);
+var wIc=document.createElement('span');wIc.className='cd-wi';wIc.style.left=(T.sun[0]*100)+'%';wIc.style.top=(T.sun[1]*100)+'%';wIc.style.width='calc(var(--w)*.176)';wIc.style.height='calc(var(--w)*.176)';wIc.style.fontSize='calc(var(--w)*.13)';panel.appendChild(wIc);
 dock.appendChild(panel);
 
 var tip=document.createElement('div');tip.className='cd-tip';dock.appendChild(tip);
