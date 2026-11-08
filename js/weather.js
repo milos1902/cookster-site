@@ -133,6 +133,7 @@ function stripCopies(ring,two){
 }
 function hudUpdate(){
   hudBuild();var all=[hudR,hudN,hudA,hudB];
+  if(document.body.classList.contains('cdock-on')){all.forEach(function(e){e.style.display='none';});if(stripC)stripC.style.display='none';if(stripD)stripD.style.display='none';return;}      // the new corner dock shows the date, the time and the weather
   var ring=document.querySelector('img.ui-overlay-element[src*="drvena_traka_krug"]'),two=document.querySelector('img.ui-overlay-element[src*="dva_polja"]');
   function hide(l){l.forEach(function(e){e.style.display='none';});}
   stripCopies(ring,two);
