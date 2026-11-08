@@ -46,7 +46,7 @@ css.textContent=[
 '#cdock .cd-t{position:absolute;z-index:3;transform:translate(-50%,-50%);white-space:nowrap;font-family:"CooksterSerif",Georgia,serif;font-weight:900;font-variant-numeric:lining-nums;font-feature-settings:"lnum" 1;color:#5a2410;text-shadow:0 1px 0 rgba(255,236,200,.55);line-height:1;pointer-events:none}',
 '#cdock .cd-wi{position:absolute;z-index:3;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#fbe3c8 55%,#f6d4b0);display:none;align-items:center;justify-content:center;pointer-events:none}',
 '#cdock .cd-hit{position:absolute;inset:0;z-index:5;pointer-events:auto;cursor:pointer;clip-path:polygon('+POLY.map(function(p){return p[0]+'% '+p[1]+'%';}).join(',')+')}',
-'#cdock .cd-hit2{position:absolute;inset:0;z-index:4;pointer-events:none;clip-path:polygon('+ARC.map(function(p){return p[0]+'% '+p[1]+'%';}).join(',')+')}',
+'#cdock .cd-hit2{position:absolute;inset:0;z-index:3;pointer-events:none;clip-path:polygon('+ARC.map(function(p){return p[0]+'% '+p[1]+'%';}).join(',')+')}',
 '#cdock.cd-open .cd-hit2{pointer-events:auto;cursor:pointer}',
 '#cdock .cd-b{position:absolute;z-index:4;border:0;padding:0;border-radius:50%;background:transparent;cursor:pointer;pointer-events:none;aspect-ratio:1}',
 '#cdock.cd-open .cd-b{pointer-events:auto}',
