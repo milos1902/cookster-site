@@ -9189,6 +9189,15 @@ function ensureVesselOilSurface(vessel){
   return surface;
 }
 
+// how many units of food (not oil, salt...) lie in a vessel: the oil mixes into the food, so the puddle of oil fades as the food grows
+function vesselFoodUnits(vessel){
+  try{
+    if(isHeatableCookwareItem(vessel))return Object.values(CooksterPan.read(vessel).ingredients||{}).reduce((n,v)=>n+Math.max(0,+v||0),0);
+    let n=Object.values(CooksterContainer.read(vessel).items||{}).reduce((n,e)=>n+(e&&e.type!=='staple'?Math.max(0,+e.count||0):0),0);
+    try{n+=(window.CooksterServe?CooksterServe.listOf(vessel):[]).length;}catch(_){}      // plates and boards keep their food in the serving list
+    return n;
+  }catch(_){return 0;}
+}
 function updateVesselOilVisual(vessel,pulse=false){
   if(!vessel||!isContainerItem(vessel))return;
   const amount=vesselOilAmount(vessel);
@@ -9213,7 +9222,10 @@ function updateVesselOilVisual(vessel,pulse=false){
    surface.style.height=p.height+'%';
    surface.style.clipPath=`ellipse(${p.clipX??49}% ${p.clipY??48}% at 50% 50%)`;
    surface.style.webkitClipPath=surface.style.clipPath;
-   surface.style.opacity=String(Math.min(.82,.34+amount*.055));
+   // the oil is soaked up by the food: one piece leaves most of the puddle, from about half of the capacity the puddle is gone (it is mixed into the food)
+   const soak=Math.max(0,1-vesselFoodUnits(vessel)/Math.max(2,(+containerCapacity(vessel)||6)*.5));
+   surface.style.transition='opacity .9s ease';
+   surface.style.opacity=String(Math.min(.82,.34+amount*.055)*soak);
   surface.style.transform=`rotate(${Math.max(-2,Math.min(2,+vessel.dataset.angle||0))*.08}deg)`;
   surface.dataset.oilAmount=String(amount);
 
