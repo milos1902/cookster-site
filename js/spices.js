@@ -164,5 +164,75 @@
     }catch(_){}
   }
   setTimeout(ensureJars,4500);
+
+  /* ---------- tackice zacina u jelu ----------
+     Svaka doza (dataset.spices) ostavlja sitne tackice u boji zacina na samom jelu, na stalnim slucajnim mestima (ne skacu pri crtanju).
+     Mesanje kasikom (--stir-mix) ih utapa u jelo: sto je jelo promesanije, to su tackice blede. Prazna posuda nema tackica. */
+  const DOTS={
+    paprika:{c:['#d8280f','#c21f0c','#e63a14'],n:16,s:1.0,shape:'round',a:.95},
+    tucana:{c:['#b3200f','#e0561a','#8e1a0c'],n:11,s:1.45,shape:'flake',a:.95},
+    biber:{c:['#1d1511','#2b201a','#120c09'],n:12,s:1.0,shape:'round',a:.95},
+    so:{c:['#f7f4ea','#ffffff','#ece7d8'],n:13,s:1.0,shape:'round',a:.92},
+    secer:{c:['#fffdf2','#f4ecd2','#fff8dc'],n:13,s:.9,shape:'round',a:.9},
+    lovor:{c:['#5f7f2b','#7d8f35','#4c6a22'],n:5,s:2.1,shape:'leaf',a:.95}
+  };
+  function readSpices(v){try{return JSON.parse(v.dataset.spices||'{}')||{};}catch(_){return {};}}
+  function pointsFor(v,kind,doses){
+    const cfg=DOTS[kind];v._spiceDots=v._spiceDots||{};
+    const want=cfg.n*doses,arr=v._spiceDots[kind]=v._spiceDots[kind]||[];
+    while(arr.length<want){
+      // stalno slucajno mesto unutar elipse (jelo je otprilike elipsa u posudi)
+      let x,y,t=0;do{x=Math.random();y=Math.random();t++;}while(((x-.5)/.46)**2+((y-.5)/.42)**2>1&&t<20);
+      arr.push({x,y,r:.7+Math.random()*.6,c:cfg.c[(Math.random()*cfg.c.length)|0],rot:Math.random()*180});
+    }
+    if(arr.length>want)arr.length=want;
+    return arr;
+  }
+  function renderSpiceDots(wrap,vessel){
+    if(!wrap)return;
+    vessel=vessel||wrap.closest?.('.item');
+    const old=wrap._dotsEl;
+    const visible=wrap.classList.contains('visible');
+    if(!vessel||!visible){
+      if(vessel&&vessel._hadFood&&!visible){vessel._hadFood=false;delete vessel.dataset.spices;vessel._spiceDots=null;}   // posuda je ispraznjena: i zacini odlaze
+      if(old&&old.parentNode)old.remove();wrap._dotsEl=null;return;
+    }
+    vessel._hadFood=true;
+    const sp=readSpices(vessel),kinds=Object.keys(sp).filter(k=>DOTS[k]&&(+sp[k]||0)>0);
+    if(!kinds.length){if(old&&old.parentNode)old.remove();wrap._dotsEl=null;return;}
+    const W=wrap.offsetWidth||0,H=wrap.offsetHeight||0;if(W<8||H<8){return;}
+    const mix=Math.max(0,Math.min(1,+wrap.style.getPropertyValue('--stir-mix')||0));
+    const sig=kinds.map(k=>k+':'+sp[k]).join('|')+'@'+Math.round(W)+'x'+Math.round(H);
+    let el=old&&old.isConnected?old:null;
+    if(!el||el._sig!==sig){
+      if(el)el.remove();
+      el=document.createElement('div');el.className='spice-dots';el._sig=sig;
+      el.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden';
+      const base=Math.max(2.4,Math.min(W,H*1.6)*0.02);
+      for(const k of kinds){
+        const cfg=DOTS[k],pts=pointsFor(vessel,k,Math.min(+sp[k],MAX_DOSES));
+        for(const p of pts){
+          const d=document.createElement('i'),sz=base*cfg.s*p.r;
+          const w=cfg.shape==='leaf'?sz*1.9:(cfg.shape==='flake'?sz*1.3:sz),h=cfg.shape==='leaf'?sz*.8:sz;
+          d.style.cssText='position:absolute;display:block;left:'+(p.x*100).toFixed(2)+'%;top:'+(p.y*100).toFixed(2)+'%;width:'+w.toFixed(1)+'px;height:'+h.toFixed(1)+'px;background:'+p.c
+            +';border-radius:'+(cfg.shape==='round'?'50%':(cfg.shape==='leaf'?'60% 40% 60% 40%':'35%'))+';opacity:'+cfg.a+';transform:translate(-50%,-50%) rotate('+p.rot.toFixed(0)+'deg);box-shadow:0 0 0 .5px rgba(0,0,0,.18)';
+          el.appendChild(d);
+        }
+      }
+      wrap.appendChild(el);wrap._dotsEl=el;
+    }
+    el.style.opacity=(1-.72*mix).toFixed(3);      // sto je jelo promesanije, tackice su blede
+  }
+  // renderFoodContents (game.js) je jedino mesto koje crta sadrzaj posude: iza njega se crtaju tackice
+  (function(){
+    const orig=window.renderFoodContents;
+    if(typeof orig!=='function'||orig.__dots)return;
+    const wrapped=function(wrap,counts,stage,metaItems,batches,heat,mixLevel,vesselArg){
+      const r=orig.apply(this,arguments);
+      try{renderSpiceDots(wrap,vesselArg||null);}catch(_){}
+      return r;
+    };
+    wrapped.__dots=true;window.renderFoodContents=wrapped;
+  })();
   window.CooksterSpices={ensureJars,applyLook};
 })();
