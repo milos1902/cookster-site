@@ -81,7 +81,7 @@ for(var si=0;si<SLOTS.length;si++)slotJar[si]=null;
 var JAR_BB={paprika:{cx:34,b:84,h:76},tucana:{cx:33,b:85,h:77},biber:{cx:31.5,b:85,h:77},so:{cx:31.5,b:85,h:77},secer:{cx:35.5,b:76,h:68},lovor:{cx:34,b:75,h:67}};
 // every jar is drawn the same size in the same row (a jar taken out of the front row and put into the back row must not stay smaller or bigger); the lower part sinks into the compartment:
 // the back row behind the front board of the shelf (the divider), the front row behind the front of the drawer
-var ROW={back:{full:92,sink:17},front:{full:82,sink:15}};
+var ROW={back:{full:92,sink:22},front:{full:82,sink:20}};
 JARS.forEach(function(j){j.im=load('assets/drawers/jar_'+j.id+'.webp?v=4');j.el=null;j.slot=-1;j.cx0=(j.box.l+j.box.r)/2;j.b0=j.box.b;j.bb=JAR_BB[j.id]});
 (function(){var def=['paprika','tucana','biber','so','secer','lovor'];def.forEach(function(id,i){JARS.forEach(function(j){if(j.id===id){j.slot=i;slotJar[i]=id}})})})();
 function gOf(d){return d.G[d.idx]||0}
