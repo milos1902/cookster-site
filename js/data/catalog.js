@@ -116,6 +116,10 @@ window.CooksterCatalog = Object.freeze({
       chopCount: 5,
       cooking: Object.freeze({ cookSpeed: 0.8, burnSpeed: 0.9 })
     }),
+    // minced meat (js/mince.js): the ball taken from the bowl and what is shaped from it (meat: 'mleveno' keeps them out of the market list)
+    mleveno_loptica: Object.freeze({ id: 'mleveno_loptica', meat: 'mleveno', label: 'Loptica mlevenog mesa', src: 'assets/meat/mleveno_loptica.png', price: 0, w: 44, h: 44, pile: 1 }),
+    pljeskavica: Object.freeze({ id: 'pljeskavica', meat: 'mleveno', label: 'Pljeskavica', src: 'assets/meat/pljeskavica_sirova.png', price: 0, w: 80, h: 61, pile: 1 }),
+    cevap: Object.freeze({ id: 'cevap', meat: 'mleveno', label: 'Ćevap', src: 'assets/meat/cevap_sirov.png', price: 0, w: 56, h: 36, pile: 1 }),
     luk: Object.freeze({
       id: 'luk',
       label: 'Luk',

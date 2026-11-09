@@ -17,7 +17,7 @@ var TEMP_BASE=[0,2,7,12,17,21,24,23,18,12,6,1];
 var T={date:[400,472,62],time:[450,598,128],money:[600,741,48],wname:[500,858,50],wtemp:[760,858,50],sun:[258,880,62]};
 var BUTTONS=[
   {id:'posudje',label:'Kuhinjski elementi',c:[189.5,150,104],act:function(){press('kitchenElementsBtn');}},
-  {id:'frizider',label:'Frižider',c:[451.3,174.6,104],act:function(){toast('Frižider: uskoro.');}},
+  {id:'frizider',label:'Frižider',c:[451.3,174.6,104],act:function(){if(window.CooksterMince)CooksterMince.fromFridge();else toast('Frižider: uskoro.');}},
   {id:'pice',label:'Piće',c:[705.3,265.3,105],act:function(){press('drinksBtn');}},
   {id:'pijaca',label:'Pijaca',c:[916.8,438.9,108],act:function(){press('marketBtn');}},
   {id:'recepti',label:'Knjiga recepata',c:[1056,668,111],act:function(){var t=document.querySelector('#savkaBookRoot .savka-book-tab');if(t)t.click();else toast('Knjiga recepata nije dostupna ovde.');}},
