@@ -1262,3 +1262,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Meni: jedna slika (menu.webp) sa lukom i ikonicama + posebna čista ploča (menu_panel.webp, iz slike bez ikonica); luk se otkriva iza ploče krugom; hover na ikonici daje zlatni sjaj.
 - Zvuk tiganja na šporetu (js/pan-sizzle.js): pun tiganj na šporetu polako počne da krčka i raste sa toplotom do uklanjanja; prazan topao tiganj sa uljem + ubacivanje hrane = nagli cvrk (isti zvuk kao roštilj) pa se smiri u krčkanje.
 - Zvuk mešanja (js/stir-sound.js): prati brzinu ruke/miša (ne sporo okretanje mase), staje čim se ruka zaustavi; brže je glasnije i svetlije.
+- Zvuk mešanja prepravljen: isti 'cvrčeći' zvuk kao prženje; sporo = malo jače cvrčanje, brzo = oštro šištanje sa pucketanjem kao pri ubacivanju hrane.
