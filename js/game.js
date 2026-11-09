@@ -4263,6 +4263,7 @@ function openContactShadowLab(){
  return true;
 }
 function createContactShadowLab(){
+ const aimOv={};   // slika/velicina predmeta nisanjenog na sceni (npr. polupecena paprika na plotni): kopija je ISTA kao pravi predmet
  const state={copies:[],selected:null,seq:0,itemId:'',
    applied:JSON.parse(JSON.stringify(contactShadowMaster.items||{}))};
 
@@ -4336,7 +4337,12 @@ function createContactShadowLab(){
    const el=e.target?.closest?.('.item');if(!el)return;
    e.preventDefault();e.stopImmediatePropagation();
    aiming=false;aimBtn.textContent='Нишани';document.body.classList.remove('cds-aim');
-   try{panel.style.display='block';populate();itemSel.value=contactShadowProfileKeyFor(el);itemSel.onchange();
+   try{
+     const id=contactShadowProfileKeyFor(el),bodySrc=el.querySelector('.body')?.getAttribute('src')||'';
+     if(bodySrc)aimOv[id]={src:bodySrc,w:+el.dataset.baseW||0,h:+el.dataset.baseH||0};
+     panel.style.display='block';populate();itemSel.value=id;
+     for(const c of [...state.copies])if(c.itemId===id)removeCopy(c);   // stara kopija (druga faza/slika) se baca
+     itemSel.onchange();
    }catch(_){}
  },true);
  const resetBtn=btn('Ресетуј предмет',resetCurrentItem);
@@ -4459,6 +4465,10 @@ function createContactShadowLab(){
      const id=contactShadowProfileKeyFor(el);      // the kind of the thing (e.g. produce_pljeskavica), not its unique number: what is set here is valid for every one of them
      if(!id||map.has(id))continue;
      map.set(id,{id,label:el.dataset.label||id,src:el.querySelector('.body')?.src||'',w:+el.dataset.baseW||120,h:+el.dataset.baseH||100});
+   }
+   for(const [id,o] of Object.entries(aimOv)){
+     const d=map.get(id);
+     if(d){d.src=o.src;if(o.w>0)d.w=o.w;if(o.h>0)d.h=o.h;}
    }
    return [...map.values()].filter(d=>d?.id&&d?.src).sort((a,b)=>String(a.label||a.id).localeCompare(String(b.label||b.id),'sr'));
  }
