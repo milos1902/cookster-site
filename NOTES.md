@@ -1286,3 +1286,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Senke: okvir providnosti prati trenutnu sliku
 - `styleCalibratedContactShadow` ponovo racuna alpha-okvir kad se slika senke promeni (seckanje, pecenje...). Pre je ostajao okvir cele paprike/krastavca pa senka kockica nije odgovarala onoj iz alata Senke. (game.js 3.280)
 - Alat Senke, "Нишани": kopija se postavlja tacno na mesto i povrsinu kliknutog predmeta (pre je bila na sredini stola pa je izgledalo da predmet lebdi); pravi predmet se sakrije dok je alat otvoren. (game.js 3.281)
+- Senka podignutog predmeta (u ruci) je meksa: blur*1.8+4 px i opacity*0.8 (u `styleCalibratedContactShadow`, parametar held; vazi za sve predmete). Spusteno = tacno podesena senka iz alata. (game.js 3.282)

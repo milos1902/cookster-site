@@ -321,8 +321,10 @@ function styleCalibratedContactShadow(contact,cfg,w,h,cx,by,ang,held=false){
  contact.style.left=x0+'px';
  contact.style.top=(shadowBottom-cropH)+'px';
  contact.style.transformOrigin='50% 100%';
- contact.style.opacity=Math.max(0,Math.min(1,+cfg.opacity||0)).toFixed(3);
- contact.style.filter=`blur(${Math.max(0,+cfg.blur||0)}px)`;
+ // U ruci (podignut) je senka mekša: veći blur i malo blaža; spušteno se vraća tačno podešena senka.
+ const baseBlur=Math.max(0,+cfg.blur||0),baseOp=Math.max(0,Math.min(1,+cfg.opacity||0));
+ contact.style.opacity=(held?baseOp*.8:baseOp).toFixed(3);
+ contact.style.filter=`blur(${held?(baseBlur*1.8+4).toFixed(2):baseBlur}px)`;
  contact.style.transform=`rotate(${ang+(+cfg.angle||0)}deg) scaleX(${sx}) scaleY(${sy})`;
 
  const img=contact.querySelector(':scope > img');
@@ -8171,7 +8173,7 @@ function updateHeldContactShadowFromPose(el,pose,surfaceOverride=null){
   if(img)img.style.display='block';
   el._contactShadow.style.background='';
   el._contactShadow.style.borderRadius='';
-  styleCalibratedContactShadow(el._contactShadow,cfg,w,h,cx,by,ang,false);
+  styleCalibratedContactShadow(el._contactShadow,cfg,w,h,cx,by,ang,true);
  }
  el._contactShadow.style.zIndex=String(Math.max(1,(Number.isFinite(+pose.z)?+pose.z:20)-1));
 }
