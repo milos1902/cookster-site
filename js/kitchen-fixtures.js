@@ -183,6 +183,7 @@ function takeJar(j){
     if(!def||jarOut(j))return;
     var el=makeItem(Object.assign({},def,{instanceId:nextItemInstanceId(id),x:sp.x-def.w/2,y:sp.y-def.h,z:++zCounter}));
     if(!el)return;el.dataset.surfaceZone='table';
+    el.style.visibility='hidden';   // while the jar is taken, only the jar in the hand is seen (the item itself flashed for a few frames, bigger, next to the one in the hand)
     setPose(el,sp.x,sp.y,surfaceScaleFor(el,'table',sp.y));
     startHolding(el);updateJars();
     try{CooksterSave.schedule()}catch(e){}
