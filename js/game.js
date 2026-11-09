@@ -4315,6 +4315,16 @@ function createContactShadowLab(){
  const dupBtn=btn('Центрирај preview',()=>{const c=state.selected;if(c){c.x=840;c.y=540;c.surface=surfaceForPoint(c.x,c.y,'table');renderCopy(c);syncStatus();}});
  const delBtn=btn('Обриши preview',()=>state.selected&&removeCopy(state.selected));
  const applyBtn=btn('Примени у игру',applyCurrentItem);
+ let aiming=false;
+ const aimBtn=btn('Нишани',()=>{aiming=!aiming;aimBtn.textContent=aiming?'Кликни предмет на сцени…':'Нишани';document.body.classList.toggle('cds-aim',aiming);});
+ {const st=document.createElement('style');st.textContent='body.cds-aim #scene,body.cds-aim #scene *{cursor:crosshair!important}';document.head.appendChild(st);}
+ window.addEventListener('pointerdown',e=>{
+   if(!aiming||panel.contains(e.target))return;
+   const el=e.target?.closest?.('.item');if(!el)return;
+   e.preventDefault();e.stopImmediatePropagation();
+   aiming=false;aimBtn.textContent='Нишани';document.body.classList.remove('cds-aim');
+   try{panel.style.display='block';populate();itemSel.value=contactShadowProfileKeyFor(el);itemSel.onchange();}catch(_){}
+ },true);
  const resetBtn=btn('Ресетуј предмет',resetCurrentItem);
  const exportBtn=btn('Извези master JSON',exportMaster);
  const closeBtn=btn('Затвори',()=>panel.style.display='none');
@@ -4431,7 +4441,9 @@ function createContactShadowLab(){
       w:340,h:257,snapProfile:'crate',shadowProfile:'crate',category:'produce-crate'
     });
    for(const el of items||[]){
-     const id=el?.dataset?.itemId;if(!id||map.has(id))continue;
+     if(!el?.dataset?.itemId)continue;
+     const id=contactShadowProfileKeyFor(el);      // the kind of the thing (e.g. produce_pljeskavica), not its unique number: what is set here is valid for every one of them
+     if(!id||map.has(id))continue;
      map.set(id,{id,label:el.dataset.label||id,src:el.querySelector('.body')?.src||'',w:+el.dataset.baseW||120,h:+el.dataset.baseH||100});
    }
    return [...map.values()].filter(d=>d?.id&&d?.src).sort((a,b)=>String(a.label||a.id).localeCompare(String(b.label||b.id),'sr'));
@@ -4649,7 +4661,7 @@ function createContactShadowLab(){
      if(saved?.items)contactShadowMaster=saved;
    }catch(_){}
    for(const el of items||[]){
-     if(el.dataset.itemId!==id||!Number.isFinite(+el.dataset.cx))continue;
+     if((contactShadowProfileKeyFor(el)!==id&&el.dataset.itemId!==id)||!Number.isFinite(+el.dataset.cx))continue;
      setPose(el,+el.dataset.cx,+el.dataset.by,+el.dataset.vis||1);
    }
    status.textContent=`Примењено и сачувано: ${defFor(id)?.label||id} · refresh користи исти master`;
