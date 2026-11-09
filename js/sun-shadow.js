@@ -4,6 +4,8 @@
    The length, strength, softness and flatness are set in the tool "Vreme i svetlo" (cfg.sh in js/day-light.js). */
 (function(){
 if(window.CooksterSunShadow)return;
+var SUN_SHADOWS_ENABLED=false;      // the sun shadows of the things are OFF by default (only the contact shadows stay); the button 'Senke sunca' (bottom right) switches them on / off and remembers it
+try{SUN_SHADOWS_ENABLED=localStorage.getItem('cookster.sunShadows.v1')==='1';}catch(e){}
 var GID=0,map=new Map(),META=null,BAKED_URL='assets/shadows/meta.json?v=1';
 /* the baked shadows (assets/shadows, made by tools/bake_sun_shadows.py): for the things that have them, three pictures (Jutro / Podne / Veče) are laid one over another and cross-faded by the time of the day */
 try{fetch(BAKED_URL).then(function(r){return r.json();}).then(function(j){META=j;}).catch(function(){});}catch(e){}
@@ -77,7 +79,7 @@ function polyPoints(cfg,el,body,wts,o,gb){      // the points (px in the box of 
   if(tw<=0)return null;
   return {pts:hs.map(function(p){return [p[0]/tw*w,p[1]/tw*h];})};
 }
-function tick(only){      // only: one thing (the one in the hand) is updated every frame, all of them every 0.1 s
+function tick(only){if(!SUN_SHADOWS_ENABLED)return;      // only: one thing (the one in the hand) is updated every frame, all of them every 0.1 s
   var D=window.CooksterDay,scene=sceneEl();if(!D||!scene)return;
   var cfg=D.config(),sh=cfg.sh||{},P=D.phase(),list=only&&only.dataset?[only]:((typeof items!=='undefined'&&items)||[]),hold=(typeof holding!=='undefined')?holding:null;
   var w=cfg.win,mx=(w.x1+w.x2)/2,my=(w.y1+w.y2)/2,dx=P.lx-mx,dy=P.ly-my,L=Math.hypot(dx,dy)||1;dx/=L;dy/=L;
@@ -135,9 +137,21 @@ function tick(only){      // only: one thing (the one in the hand) is updated ev
   if(only&&only.dataset)return;
   map.forEach(function(rec,el){if(!el.isConnected){rec._wrap.remove();map.delete(el);}else if(!seen.has(el))rec.style.display='none';});
 }
-setInterval(tick,100);
+(function(){
+  var st=document.createElement('style');st.textContent='body.no-sun-shadow .sun-shadow,body.no-sun-shadow .sun-shadow-wrap{display:none!important}'+
+   '#ssBtn{position:fixed;right:12px;bottom:172px;z-index:2147483500;border:2px solid #351b0d;border-radius:9px;background:#e8c27a;color:#351b0d;font:700 13px/1 system-ui,sans-serif;padding:9px 12px;cursor:pointer}';
+  document.head.appendChild(st);
+  var btn=document.createElement('button');btn.id='ssBtn';btn.type='button';btn.setAttribute('data-tool-ui','1');
+  function paint(){document.body.classList.toggle('no-sun-shadow',!SUN_SHADOWS_ENABLED);btn.textContent=(SUN_SHADOWS_ENABLED?'☀ Senke sunca: UKLJUČENE':'☀ Senke sunca: ISKLJUČENE');}
+  btn.onclick=function(e){e.stopPropagation();SUN_SHADOWS_ENABLED=!SUN_SHADOWS_ENABLED;try{localStorage.setItem('cookster.sunShadows.v1',SUN_SHADOWS_ENABLED?'1':'0');}catch(x){}paint();try{tick();}catch(x){}};
+  function add(){document.body.appendChild(btn);paint();}
+  if(document.body)add();else document.addEventListener('DOMContentLoaded',add);
+  // the button is shown only in the kitchen (not in the pantry, the garden, the market and the tavern)
+  setInterval(function(){var b=document.body.classList,away=b.contains('pantry-open')||b.contains('garden-open')||b.contains('market-open');try{if(window.CooksterTavern&&CooksterTavern.isOpen===true)away=true;}catch(x){}btn.style.display=away?'none':'';},500);
+})();
+setInterval(function(){if(SUN_SHADOWS_ENABLED)tick();},100);
 var lastHold=null;      // the shadow of the thing in the hand follows its copy every frame (not every 0.1 s); when it is put down, everything is redrawn at once
-(function frame(){requestAnimationFrame(frame);var h=(typeof holding!=='undefined')?holding:null;
+(function frame(){requestAnimationFrame(frame);if(!SUN_SHADOWS_ENABLED)return;var h=(typeof holding!=='undefined')?holding:null;
   try{if(h)tick(h);else if(lastHold)tick();}catch(e){}
   lastHold=h;})();
 window.CooksterSunShadow={tick:tick,keyWeights:keyWeights,
