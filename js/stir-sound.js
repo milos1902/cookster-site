@@ -41,11 +41,16 @@ function tick(){
     var now0=performance.now();
     if(now0-lastT>60)mv*=.78;      // the hand does not move: it dies out in about a tenth of a second
     var v=(typeof stirring!=='undefined'&&stirring)?mv:0;
+    // only while the frying itself is heard: the pan is on the burning stove AND the sizzle of the pan is playing (js/pan-sizzle.js); everything else is silent
+    var sz=window.CooksterPanSizzle?CooksterPanSizzle._state():null,onFire=false;
+    try{onFire=!!(typeof stirVessel!=='undefined'&&stirVessel&&stirVessel.dataset.onStove==='1'&&sz&&sz.loop&&sz.gain>.006);}catch(e){}
+    if(!onFire)v=0;
+    var follow=sz?Math.min(1,sz.gain/.04):0;      // it is as strong as the sizzle itself (it fades with it)
     if(v<.03){if(A1){var t0=ctx.currentTime;A1.g.gain.setTargetAtTime(0,t0,.05);A2.g.gain.setTargetAtTime(0,t0,.05);if(A1.g.gain.value<.002&&A2.g.gain.value<.002)stop();}return;}
     if(!A1&&!build())return;
     var now=ctx.currentTime;
-    A1.g.gain.setTargetAtTime(.10+.10*v,now,.05);      // slow: only a sizzle a little stronger than usual
-    A2.g.gain.setTargetAtTime(Math.pow(v,1.6)*.34,now,.04);      // fast: the sharp sizzle of food that has just been thrown in
+    A1.g.gain.setTargetAtTime((.010+.012*v)*follow,now,.08);      // only a subtle strengthening of the sizzle
+    A2.g.gain.setTargetAtTime(Math.pow(v,1.6)*.03*follow,now,.06);      // fast stirring: a little of the sharp hiss
     A2.hp.frequency.setTargetAtTime(1700+900*v,now,.1);
     A1.src.playbackRate.setTargetAtTime(.95+.2*v,now,.1);
   }catch(e){}
