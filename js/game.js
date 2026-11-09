@@ -4771,26 +4771,28 @@ const REMOVED_SIDE_BOTTOM_UI_INSTANCE_IDS=new Set([
   'ui_instance_253e0a9d-e98b-43f6-b126-db58708442b4'
 ]);
 // First-run fallback only. Once saved, each user's exact pose is authoritative.
-// Donja traka "Zadnje korisceno" (panel sa sest polja + sest dugmadi + svetli panel) je smanjena na 60%.
+// Donja traka "Zadnje korisceno" (panel sa sest polja + sest dugmadi + svetli panel) je smanjena na TRAY_SCALE (82%: polje ~63 px, kao dugmad u meniju levo).
 // Sve se skalira oko ISTE tacke (sredina ekrana x=836, donja ivica y=941), pa dugmad i dalje pogadjaju svoja polja.
-// Sacuvana podesavanja u browseru se jednom preracunaju (flag cookster.tray-scale.*), posle toga vaze kao sto su.
-const TRAY_SCALE=0.6,TRAY_CX=836,TRAY_BY=941;
+// Sacuvana podesavanja u browseru se preracunaju samo kad se TRAY_SCALE promeni (flag cookster.tray-scale.* cuva poslednju primenjenu razmeru).
+const TRAY_SCALE=0.82,TRAY_CX=836,TRAY_BY=941;
 window.CooksterTray={S:TRAY_SCALE,CX:TRAY_CX,BY:TRAY_BY,
-  px:x=>+(TRAY_CX+(x-TRAY_CX)*TRAY_SCALE).toFixed(2),
-  py:y=>+(TRAY_BY+(y-TRAY_BY)*TRAY_SCALE).toFixed(2),
-  sz:v=>+(v*TRAY_SCALE).toFixed(2)};
+  px:(x,f=TRAY_SCALE)=>+(TRAY_CX+(x-TRAY_CX)*f).toFixed(2),
+  py:(y,f=TRAY_SCALE)=>+(TRAY_BY+(y-TRAY_BY)*f).toFixed(2),
+  sz:(v,f=TRAY_SCALE)=>+(v*f).toFixed(2),
+  // koja je razmera bila primenjena ranije: nema flaga = original (1), "done" = prva verzija (0.6), inace broj
+  prev:(flagVal,whenMissing)=>flagVal===null||flagVal===undefined?whenMissing:(flagVal==='done'?0.6:(parseFloat(flagVal)>0?parseFloat(flagVal):whenMissing))};
 const TRAY_TYPES=new Set(['ui_drvena_traka_sest_polja','ui_osvetljeni_kvadratni_panel']);
-function trayRecord(r){
+function trayRecord(r,f=TRAY_SCALE){
   if(!r||!TRAY_TYPES.has(r.typeId))return r;
   const T=window.CooksterTray;
-  return {...r,x:T.px(+r.x),y:T.py(+r.y),w:T.sz(+r.w),h:T.sz(+r.h)};
+  return {...r,x:T.px(+r.x,f),y:T.py(+r.y,f),w:T.sz(+r.w,f),h:T.sz(+r.h,f)};
 }
 const DEFAULT_UI_LAYOUT=[
   {id:'ui_instance_6c8fb386-e40c-4f14-9760-6f71e685bf7f',typeId:'ui_drvena_traka_krug',x:213,y:110,w:197,h:131,angle:0,z:5},
   {id:'ui_instance_6fdf77f7-5896-487b-81b8-aecd80f185f2',typeId:'ui_drvena_traka_dva_polja',x:418,y:123,w:238,h:159,angle:0,z:6},
   {id:'ui_instance_f9d9eb81-3763-4fdd-bab5-e273264ffbbc',typeId:'ui_drvena_traka_sest_polja',x:836,y:996,w:516,h:291,angle:0,z:7},
   {id:'ui_instance_e4bd577d-8559-4cf0-b494-77cdcafb4a70',typeId:'ui_osvetljeni_kvadratni_panel',x:796,y:917,w:96,h:120,angle:0,z:13},
- ].map(trayRecord).filter(record=>!REMOVED_SIDE_BOTTOM_UI_INSTANCE_IDS.has(record.id));
+ ].map(r=>trayRecord(r)).filter(record=>!REMOVED_SIDE_BOTTOM_UI_INSTANCE_IDS.has(record.id));
 const LOCKED_BOTTOM_TRAY_INSTANCE_IDS=new Set(
   DEFAULT_UI_LAYOUT.filter(record=>record.y>BASE_H).map(record=>record.id)
 );
@@ -4799,9 +4801,12 @@ let savedUiInstances=[];
 try{
   const stored=localStorage.getItem(IMPORTED_ELEMENT_KEY);
   savedUiInstances=stored?JSON.parse(stored):DEFAULT_UI_LAYOUT;
-  // jednokratno: vec sacuvan raspored (iz ranije verzije, stara velicina) se skalira na 60%; novi igrac vec dobija smanjene podrazumevane vrednosti
-  if(stored&&localStorage.getItem('cookster.tray-scale.ui.v1')!=='done'&&Array.isArray(savedUiInstances))savedUiInstances=savedUiInstances.map(trayRecord);
-  localStorage.setItem('cookster.tray-scale.ui.v1','done');
+  // vec sacuvan raspored se preracuna na novu razmeru (odnos nove i ranije primenjene); novi igrac je odmah dobio podrazumevane u novoj razmeri
+  if(stored&&Array.isArray(savedUiInstances)){
+    const prev=window.CooksterTray.prev(localStorage.getItem('cookster.tray-scale.ui.v1'),1);
+    if(prev!==TRAY_SCALE)savedUiInstances=savedUiInstances.map(r=>trayRecord(r,TRAY_SCALE/prev));
+  }
+  localStorage.setItem('cookster.tray-scale.ui.v1',String(TRAY_SCALE));
 }catch(_){savedUiInstances=DEFAULT_UI_LAYOUT;}
 if(!Array.isArray(savedUiInstances))savedUiInstances=[...DEFAULT_UI_LAYOUT];
 savedUiInstances=savedUiInstances.filter(record=>
