@@ -135,7 +135,8 @@ function shape(ball,kind){
   try{removeItem(ball);}catch(e){}
   for(var i=0;i<n;i++){
     var dy=n>1?(i-(n-1)/2)*(def.h*vis*.8):0;
-    var el=makeItem({id:kind,label:def.label,src:def.src,x:cx-def.w/2,y:by-def.h,w:def.w,h:def.h,z:++zCounter,snapProfile:'produce'});
+    var bf=null;if(kind==='pljeskavica'){var sp=ball.dataset.minceLuk==='1'||ball.dataset.mincePap==='1';bf=sp?BURGER.spiced:BURGER.plain;}
+    var el=makeItem({id:kind,label:def.label,src:bf?bf[0]:def.src,x:cx-def.w/2,y:by-def.h,w:bf?bf[1]:def.w,h:bf?bf[2]:def.h,z:++zCounter,snapProfile:'produce'});
     el.dataset.vegetable='1';el.dataset.collisionProfile='vegetable';el.dataset.vegKey=kind;el.dataset.cutState='whole';el.dataset.surfaceZone=zone;
     if(ball.dataset.minceLuk)el.dataset.minceLuk='1';if(ball.dataset.mincePap)el.dataset.mincePap='1';
     setPose(el,cx,by+dy,vis);
@@ -165,42 +166,51 @@ window.addEventListener('contextmenu',function(e){
 },true);
 window.addEventListener('pointerdown',function(e){if(menu&&!menu.contains(e.target))closeMenu();},true);
 
-// stretching the ball with the mouse (like the dough): hold the left button on the ball and drag anywhere; the more you move the mouse the further the ball is pulled out:
-// the pictures of the phases (ball -> flatter and flatter -> burger) follow one another; the last one is the raw burger. A plain click still picks the ball up.
-// FRAMES: [picture, width, height] of every phase after the ball; put the drawn phases here (the same transparent canvas, in the order of stretching)
-var FRAMES=[['assets/meat/mleveno_faza_1.png',54,36],['assets/meat/mleveno_faza_2.png',68,29],['assets/meat/mleveno_faza_3.png',78,24]];
-var STEP=60;      // pixels of dragging for one phase
+// shaping the ball like with the palms: hold the left button on the meat and go ROUND in a circle over it. The meat is spread out phase by phase while you circle
+// (ball -> flatter -> flatter -> burger); going in a line does nothing. The last phase is the burger: with onion / pepper mixed in or a plain one. A plain click picks the meat up.
+// FRAMES: [picture, width, height] of every phase after the ball (the same transparent canvas, in the order of shaping)
+var FRAMES=[['assets/meat/mleveno_faza_1.png',50,45],['assets/meat/mleveno_faza_2.png',62,45],['assets/meat/mleveno_faza_3.png',72,48]];
+var BURGER={plain:['assets/meat/pljeskavica_obicna.png',80,61],spiced:['assets/meat/pljeskavica_zacinjena.png',80,68]};
+var RAD_PER_STAGE=1.5;      // radians of circling (about a quarter of a turn) for one phase
 var st=null;
 function setFrame(el,i){      // i: 0 = the ball, 1..FRAMES.length = the phases
   var f=i<=0?[VEGETABLES.mleveno_loptica.src,VEGETABLES.mleveno_loptica.w,VEGETABLES.mleveno_loptica.h]:FRAMES[Math.min(i,FRAMES.length)-1];
   var bd=el.querySelector('.body');if(bd)bd.src=f[0];
   el.dataset.baseW=f[1];el.dataset.baseH=f[2];el.dataset.minceStage=String(i);
-  try{setPose(el,+el.dataset.cx,+el.dataset.by,+el.dataset.vis||1);if(el.dataset.attachedToBoard==='1'){var bd2=getBoardEl();if(bd2)syncOneBoardAttachment(el,bd2);}}catch(e){}
+  try{setPose(el,+el.dataset.cx,+el.dataset.by,+el.dataset.vis||1);if(el.dataset.attachedToBoard==='1'){var b2=getBoardEl();if(b2)syncOneBoardAttachment(el,b2);}}catch(e){}
 }
 function toBurger(el){
-  var def=VEGETABLES.pljeskavica,bd=el.querySelector('.body');if(bd)bd.src=def.src;
-  el.dataset.vegKey='pljeskavica';el.dataset.itemId='pljeskavica';el.dataset.baseW=def.w;el.dataset.baseH=def.h;el.dataset.label=def.label;delete el.dataset.minceStage;
+  var spiced=el.dataset.minceLuk==='1'||el.dataset.mincePap==='1',f=spiced?BURGER.spiced:BURGER.plain,bd=el.querySelector('.body');
+  if(bd)bd.src=f[0];
+  el.dataset.vegKey='pljeskavica';el.dataset.itemId='pljeskavica';el.dataset.baseW=f[1];el.dataset.baseH=f[2];el.dataset.label=VEGETABLES.pljeskavica.label;delete el.dataset.minceStage;
   try{setPose(el,+el.dataset.cx,+el.dataset.by,+el.dataset.vis||1);if(el.dataset.attachedToBoard==='1'){var b=getBoardEl();if(b)syncOneBoardAttachment(el,b);}}catch(e){}
   try{CooksterSave.schedule();}catch(e){}toast('Napravljena je pljeskavica.');
 }
+function centerOf(el){var r=el.getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2,Math.max(r.width,r.height)/2];}
 window.addEventListener('pointerdown',function(e){
   if(e.button!==0)return;try{if(typeof holding!=='undefined'&&holding)return;}catch(x){}
   var b=ballAt(e.clientX,e.clientY);if(!b)return;
-  st={ball:b,x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,path:0,s0:+b.dataset.minceStage||0,moved:false};
+  var c=centerOf(b);
+  st={ball:b,x0:e.clientX,y0:e.clientY,moved:false,ang:null,rot:0,s0:+b.dataset.minceStage||0,c:c};
   e.preventDefault();e.stopImmediatePropagation();
 },true);
 window.addEventListener('pointermove',function(e){
   if(!st)return;
   if(!st.moved&&Math.hypot(e.clientX-st.x0,e.clientY-st.y0)<7)return;
-  st.moved=true;st.path+=Math.hypot(e.clientX-st.x,e.clientY-st.y);st.x=e.clientX;st.y=e.clientY;
-  var stage=st.s0+Math.floor(st.path/STEP);
-  if(stage>FRAMES.length){var b=st.ball;st=null;toBurger(b);return;}
+  st.moved=true;
+  var c=centerOf(st.ball),dx=e.clientX-c[0],dy=e.clientY-c[1],d=Math.hypot(dx,dy);
+  if(d<c[2]*.18||d>c[2]*2.6){st.ang=null;e.preventDefault();return;}      // too close to the middle or far from the meat: no circling is counted
+  var a=Math.atan2(dy,dx);
+  if(st.ang!=null){var da=a-st.ang;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;if(Math.abs(da)<1.2)st.rot+=Math.abs(da);}      // the angle travelled round the meat (either way)
+  st.ang=a;
+  var stage=st.s0+Math.floor(st.rot/RAD_PER_STAGE);
+  if(stage>FRAMES.length){var bl=st.ball;st=null;toBurger(bl);return;}
   if(stage!==(+st.ball.dataset.minceStage||0))setFrame(st.ball,stage);
   e.preventDefault();
 },true);
 function endStretch(){
   if(!st)return;var s0=st;st=null;
-  if(!s0.moved&&s0.ball.isConnected){try{startHolding(s0.ball);}catch(x){}}      // a plain click: the ball (or the half-pulled meat) is picked up
+  if(!s0.moved&&s0.ball.isConnected){try{startHolding(s0.ball);}catch(x){}}      // a plain click: the meat is picked up
 }
 window.addEventListener('pointerup',endStretch,true);
 window.addEventListener('pointercancel',endStretch,true);
