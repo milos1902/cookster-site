@@ -128,7 +128,7 @@ function takeTray(e){
     trayAway=true;hideBar();closeMenu();{var a1=kTrayEl(),a2=zTrayEl();if(a1)a1.style.display='none';if(a2)a2.style.display='none';}
     try{CooksterKitchenFx.closeGrill();}catch(x){}
     var w=120,h=Math.round(w*TRT_ASPECT),p=screenToScene(e.clientX,e.clientY);
-    var el=makeItem({id:'pleh_rostilj_'+Date.now(),label:'Pleh sa mesom',src:url,x:p.x-w/2,y:p.y-h,w:w,h:h,z:++zCounter,snapProfile:'flat'});
+    var el=makeItem({id:'pleh_rostilj',label:'Pleh sa mesom',src:url,x:p.x-w/2,y:p.y-h,w:w,h:h,z:++zCounter,snapProfile:'flat'});
     el.dataset.trayItem='1';el.dataset.traySteaks=JSON.stringify(list);el.dataset.surfaceZone='table';
     try{setPose(el,p.x,p.y,1);startHolding(el);}catch(x){}
     try{CooksterSave.schedule();}catch(x){}

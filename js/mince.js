@@ -114,7 +114,7 @@ function takeBall(v,e){
 function fromFridge(){
   if(typeof holding!=='undefined'&&holding){toast('Ruke su ti pune — spusti prvo ono što držiš.');return;}
   var w=58,h=66,p=screenToScene(mouse.x,mouse.y);
-  var bag=makeItem({id:'minceBag_'+Date.now(),label:'Mleveno meso (kesa)',src:BAG_SRC,x:p.x-w/2,y:p.y-h,w:w,h:h,z:++zCounter,snapProfile:'produce'});
+  var bag=makeItem({id:'minceBag',label:'Mleveno meso (kesa)',src:BAG_SRC,x:p.x-w/2,y:p.y-h,w:w,h:h,z:++zCounter,snapProfile:'produce'});
   bag.dataset.ingredient='1';bag.dataset.ingredientKey='mleveno_meso_kesa';bag.dataset.minceBag='1';bag.dataset.minceLeft=String(PER_BAG);
   bag.dataset.surfaceZone='table';setPose(bag,p.x,p.y,1);
   startHolding(bag);
