@@ -1299,3 +1299,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Fioka, tegle: vodoravno prosirene (JAR_WIDEN=1.32, kitchen-fixtures.js 78) jer su nove slike izgledale pretanke u pregradama.
 - Uzimanje tegle iz fioke: stvarni predmet se odmah sakrije (visibility hidden) pa se vise ne vidi nekoliko kadrova uvecan pored tegle u ruci (kitchen-fixtures.js 79).
 - Obrisana nekoriscena slika `assets/creator_camera_tripod.png` (kamera na tronosci); korisnik crta novu (starija kamera ili telefon) za snimanje recepta.
+- Tiha vatra (nivo 1) + ulje ili tecnost u posudi: gotovo jelo se samo krca i NE MOZE da zagori (dugo kuvanje); bez ulja i tecnosti i dalje zagoreva (suvo zagorevanje, i brze predgorevanje); jaca vatra (nivo 2-3) zagoreva kao i pre (core/pan.js 7, `simmerSafe`). Provereno 20 min simulacije.
