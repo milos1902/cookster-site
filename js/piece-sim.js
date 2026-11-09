@@ -303,6 +303,8 @@
       this.room=(this.fullArea||this.area)*.62;
       this.fill=area/this.room;   // 1 = the floor of the vessel is covered
       this.cover=this.floorPoly&&this.floorArea>0?area/(FLOOR_K*this.floorArea):1;      // 1 = the floor is covered
+      // a vessel that is full by its capacity always reaches the whole calibrated food area (the covering of 1.75 = the top line), whatever size its pieces are
+      try{const cap=+window.containerCapacity?.(this.vessel)||0;if(this.floorPoly&&cap>0&&this.units>0)this.cover=Math.max(this.cover,1.75*Math.min(1,this.units/cap));}catch(_){}
       const need=(this.floorPoly&&this.cover<=1)?1:Math.max(1,Math.ceil(area/this.room));      // nothing is lifted before the floor is covered
       this.layers=Math.min(5,need);
       // beyond 5 layers (very many pieces) shrink them a little
