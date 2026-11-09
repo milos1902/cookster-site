@@ -246,6 +246,7 @@ function render(el){
   const b=el.querySelector('.body'),sh=el._contactShadow&&el._contactShadow.querySelector('img');
   if(b&&el.dataset.srvSrc!==src){el.dataset.srvSrc=src;b.src=src;if(sh)sh.src=src;}
   el.dataset.srvDrawn='1';
+  try{if(window.updateVesselOilVisual&&el._oilSurface)updateVesselOilVisual(el);}catch(_){}      // the puddle of oil fades as the food is put on the plate
   const fm=el._vesselFrontMask||el.querySelector('.vessel-front-mask');if(fm)fm.style.display='none';          // the old "front wall" picture would cover the food: the picture drawn here already has the right edges
   el.dataset.label=nameOf(el,l)+((+el.dataset.srvOil)?' · nauljeno':'')+((+el.dataset.srvParsley)?' · peršun':'');
 }
@@ -257,7 +258,7 @@ function vesselAt(x,y){
   return null;
 }
 function hasOldContents(el){
-  try{const c=JSON.parse(el.dataset.containerContents||'[]');if(Array.isArray(c)?c.length:Object.keys(c||{}).length)return true;}catch(_){}
+  try{const c=JSON.parse(el.dataset.containerContents||'[]');if(Array.isArray(c)?c.length:Object.values((c&&c.items)||{}).some(function(e){return e&&e.type!=='staple'&&(+e.count||0)>0;}))return true;}catch(_){}      // oil, salt (staples) are not contents of the old kind: food can still be put on the plate
   return !!(el.dataset.plateFill||(+el.dataset.bagCount>0));
 }
 function tryDrop(item){
