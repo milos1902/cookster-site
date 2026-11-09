@@ -135,7 +135,7 @@ function shape(ball,kind){
   try{removeItem(ball);}catch(e){}
   for(var i=0;i<n;i++){
     var dy=n>1?(i-(n-1)/2)*(def.h*vis*.8):0;
-    var bf=null;if(kind==='pljeskavica'){var sp=ball.dataset.minceLuk==='1'||ball.dataset.mincePap==='1';bf=sp?BURGER.spiced:BURGER.plain;}
+    var bf=null,sp0=ball.dataset.minceLuk==='1'||ball.dataset.mincePap==='1';if(kind==='pljeskavica')bf=sp0?BURGER.spiced:BURGER.plain;else if(kind==='cevap')bf=sp0?CEVAP.spiced:CEVAP.plain;
     var el=makeItem({id:kind,label:def.label,src:bf?bf[0]:def.src,x:cx-def.w/2,y:by-def.h,w:bf?bf[1]:def.w,h:bf?bf[2]:def.h,z:++zCounter,snapProfile:'produce'});
     el.dataset.vegetable='1';el.dataset.collisionProfile='vegetable';el.dataset.vegKey=kind;el.dataset.cutState='whole';el.dataset.surfaceZone=zone;
     if(ball.dataset.minceLuk)el.dataset.minceLuk='1';if(ball.dataset.mincePap)el.dataset.mincePap='1';
@@ -172,10 +172,15 @@ window.addEventListener('pointerdown',function(e){if(menu&&!menu.contains(e.targ
 // KF: [picture, width, height] of the key pictures after the ball's own one; BURGER: the last picture depends on what is in the meat
 var KF=[['assets/meat/mleveno_loptica.png',48,44],['assets/meat/mleveno_faza_2.png',62,45],['assets/meat/mleveno_faza_3.png',72,48]];
 var BURGER={plain:['assets/meat/pljeskavica_obicna.png',80,61],spiced:['assets/meat/pljeskavica_zacinjena.png',80,68]};
+// the cevap: the same, but rolled back and forth over the meat instead of circling
+var KFC=[['assets/meat/mleveno_loptica.png',48,44],['assets/meat/cevap_faza_1.png',54,43],['assets/meat/cevap_faza_2.png',60,46],['assets/meat/cevap_faza_3.png',66,47]];
+var CEVAP={plain:['assets/meat/cevap_obican.png',70,46],spiced:['assets/meat/cevap_zacinjen.png',70,46]};
+var TOTAL_ROLL=1100;      // pixels of rolling for the whole way from the ball to the cevap
 var TOTAL_RAD=12;      // radians of circling for the whole way from the ball to the burger (about two full turns)
 var st=null;
-(function(){KF.concat([BURGER.plain,BURGER.spiced]).forEach(function(f){var im=new Image();im.src=f[0];});})();
+(function(){KF.concat(KFC,[BURGER.plain,BURGER.spiced,CEVAP.plain,CEVAP.spiced]).forEach(function(f){var im=new Image();im.src=f[0];});})();
 function lerp(a,b,t){return a+(b-a)*t;}
+function cevapFor(el){return (el.dataset.minceLuk==='1'||el.dataset.mincePap==='1')?CEVAP.spiced:CEVAP.plain;}
 function burgerFor(el){return (el.dataset.minceLuk==='1'||el.dataset.mincePap==='1')?BURGER.spiced:BURGER.plain;}
 function fadeOf(el){
   if(!el._fade||!el._fade.isConnected){var im=document.createElement('img');im.className='mince-fade';im.alt='';im.draggable=false;im.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;object-fit:fill;pointer-events:none;opacity:0';el.appendChild(im);el._fade=im;}
@@ -184,7 +189,7 @@ function fadeOf(el){
 function setSrc(img,src){if(img.getAttribute('src')!==src)img.src=src;}
 function applyPhase(el,p){      // p: 0 = the ball ... 1 = the burger
   p=Math.max(0,Math.min(.999,p));el.dataset.mincePhase=String(p);
-  var x=p*3,i=Math.min(2,Math.floor(x)),t=x-i,A=KF[i],B=i<2?KF[i+1]:burgerFor(el),bd=el.querySelector('.body'),fd=fadeOf(el);
+  var C=el.dataset.minceTrack==='cevap',K=C?KFC:KF,x=p*3,i=Math.min(2,Math.floor(x)),t=x-i,A=K[i],B=i<2?K[i+1]:(C?cevapFor(el):burgerFor(el)),bd=el.querySelector('.body'),fd=fadeOf(el);
   if(bd)setSrc(bd,A[0]);setSrc(fd,B[0]);fd.style.opacity=t.toFixed(3);
   el.dataset.baseW=lerp(A[1],B[1],t).toFixed(1);el.dataset.baseH=lerp(A[2],B[2],t).toFixed(1);
   try{setPose(el,+el.dataset.cx,+el.dataset.by,+el.dataset.vis||1);if(el.dataset.attachedToBoard==='1'){var b2=getBoardEl();if(b2)syncOneBoardAttachment(el,b2);}}catch(e){}
@@ -192,10 +197,18 @@ function applyPhase(el,p){      // p: 0 = the ball ... 1 = the burger
 function toBurger(el){
   var f=burgerFor(el),bd=el.querySelector('.body');
   if(bd)setSrc(bd,f[0]);if(el._fade){el._fade.remove();el._fade=null;}
-  el.dataset.vegKey='pljeskavica';el.dataset.itemId='pljeskavica';el.dataset.baseW=f[1];el.dataset.baseH=f[2];el.dataset.label=VEGETABLES.pljeskavica.label;delete el.dataset.mincePhase;
+  el.dataset.vegKey='pljeskavica';el.dataset.itemId='pljeskavica';el.dataset.baseW=f[1];el.dataset.baseH=f[2];el.dataset.label=VEGETABLES.pljeskavica.label;delete el.dataset.mincePhase;delete el.dataset.minceTrack;
   stretchTo(el,0,0,1,true);
   try{setPose(el,+el.dataset.cx,+el.dataset.by,+el.dataset.vis||1);if(el.dataset.attachedToBoard==='1'){var b=getBoardEl();if(b)syncOneBoardAttachment(el,b);}}catch(e){}
   try{CooksterSave.schedule();}catch(e){}toast('Napravljena je pljeskavica.');
+}
+function toCevap(el){
+  var f=cevapFor(el),bd=el.querySelector('.body');
+  if(bd)setSrc(bd,f[0]);if(el._fade){el._fade.remove();el._fade=null;}
+  el.dataset.vegKey='cevap';el.dataset.itemId='cevap';el.dataset.baseW=f[1];el.dataset.baseH=f[2];el.dataset.label=VEGETABLES.cevap.label;delete el.dataset.mincePhase;delete el.dataset.minceTrack;
+  stretchTo(el,0,0,1,true);
+  try{setPose(el,+el.dataset.cx,+el.dataset.by,+el.dataset.vis||1);if(el.dataset.attachedToBoard==='1'){var b=getBoardEl();if(b)syncOneBoardAttachment(el,b);}}catch(e){}
+  try{CooksterSave.schedule();}catch(e){}toast('Napravljen je ćevap.');
 }
 // where the meat is pulled it stretches a little towards the mouse; let go: it springs back
 function stretchTo(el,dx,dy,r,release){
@@ -209,7 +222,7 @@ window.addEventListener('pointerdown',function(e){
   if(e.button!==0)return;try{if(typeof holding!=='undefined'&&holding)return;}catch(x){}
   var b=ballAt(e.clientX,e.clientY);if(!b)return;
   if(!window.__minceHint){window.__minceHint=1;toast('Drži klik i kruži mišem oko mesa da ga oblikuješ.');}
-  st={ball:b,x0:e.clientX,y0:e.clientY,moved:false,ang:null,rot:0,p0:+b.dataset.mincePhase||0};
+  st={ball:b,x0:e.clientX,y0:e.clientY,moved:false,ang:null,rot:0,p0:+b.dataset.mincePhase||0,track:b.dataset.minceTrack||'',px:e.clientX,py:e.clientY,path:0,rev:0,dirx:0,sx:e.clientX,roll:0};
   e.preventDefault();e.stopImmediatePropagation();
 },true);
 window.addEventListener('pointermove',function(e){
@@ -218,10 +231,24 @@ window.addEventListener('pointermove',function(e){
   st.moved=true;
   var c=centerOf(st.ball),dx=e.clientX-c[0],dy=e.clientY-c[1],d=Math.hypot(dx,dy);
   stretchTo(st.ball,dx,dy,c[2]);
-  if(d<5||d>Math.max(c[2]*6,150)){st.ang=null;e.preventDefault();return;}      // right on the middle or very far from the meat: no circling is counted
-  var a=Math.atan2(dy,dx);
-  if(st.ang!=null){var da=a-st.ang;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;if(Math.abs(da)<2.4)st.rot+=Math.abs(da);}      // the angle travelled round the meat (either way)
-  st.ang=a;
+  if(d<5||d>Math.max(c[2]*6,150)){st.ang=null;}      // right on the middle or very far from the meat: no circling is counted (a big circle round a small ball is fine)
+  else{var a=Math.atan2(dy,dx);
+    if(st.ang!=null){var da=a-st.ang;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;if(Math.abs(da)<2.4){st.rot+=Math.abs(da);st.sig=(st.sig||0)+da;}}      // the angle travelled round the meat (either way); sig = the net turn (going back and forth cancels out)
+    st.ang=a;}
+  // rolling back and forth (the cevap): the path of the mouse counts, with changes of direction
+  st.path+=Math.hypot(e.clientX-st.px,e.clientY-st.py);
+  var ddx=e.clientX-st.sx;if(Math.abs(ddx)>14){var dr=ddx>0?1:-1;if(st.dirx&&dr!==st.dirx)st.rev++;st.dirx=dr;st.sx=e.clientX;}
+  st.px=e.clientX;st.py=e.clientY;
+  if(!st.track){      // the way of moving decides what is made: going round = a burger, back and forth = a cevap
+    if(Math.abs(st.sig||0)>1.6)st.track='burger';else if(st.rev>=2&&Math.abs(st.sig||0)<1.2&&st.path>60)st.track='cevap';
+    if(st.track){st.ball.dataset.minceTrack=st.track;st.rot=Math.min(st.rot,0);st.roll=0;st.pathAtLock=st.path;}
+  }
+  if(!st.track){e.preventDefault();return;}
+  if(st.track==='cevap'){
+    var p2=st.p0+(st.path-st.pathAtLock)/TOTAL_ROLL;
+    if(p2>=1){var bc=st.ball;st=null;toCevap(bc);return;}
+    applyPhase(st.ball,p2);e.preventDefault();return;
+  }
   var p=st.p0+st.rot/TOTAL_RAD;
   if(p>=1){var bl=st.ball;st=null;toBurger(bl);return;}
   applyPhase(st.ball,p);
