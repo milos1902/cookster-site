@@ -10,6 +10,9 @@
   const CALIBRATION_KEY='cookster.ui-button-hotspots.v1';
   // Exact rectangles from the user's 1672x941 coordinate export.
   // [id, x, y, width, height, export layer, group, slot, center glow]
+  // Traka je smanjena na 60% (window.CooksterTray iz game.js): isto skaliranje kao panel, da svako dugme pogadja svoje polje.
+  const TRAY=window.CooksterTray||null;
+  const trayZone=z=>TRAY?[z[0],TRAY.px(z[1]),TRAY.py(z[2]),TRAY.sz(z[3]),TRAY.sz(z[4]),...z.slice(5)]:z;
   const DEFAULT_ZONES=[
     ['button_87b2d209-c0ff-44a0-8e92-bc8aff4a362f',597,820,73,76,5,'center',1,false],
     ['button_d30f616c-20dd-461a-b741-c6e9b5322f67',676,820,76,76,6,'center',2,false],
@@ -17,7 +20,7 @@
     ['button_d65e553a-dff4-4099-8c66-67e6e067f817',838,819,76,77,7,'center',4,false],
     ['button_bd98d20a-02d5-4d0f-a9f5-3150e0b839b7',919,819,76,77,8,'center',5,false],
     ['button_e94d7354-62d9-4db6-b561-3fd47904139f',1001,819,74,77,9,'center',6,false]
-  ];
+  ].map(trayZone);
   const INITIAL_EXPORT_MARKER='cookster.ui-button-hotspots.imported.v2.67';
   function applyUploadedCalibrationOnce(){
     try{
@@ -40,7 +43,32 @@
       localStorage.setItem(INITIAL_EXPORT_MARKER,'done');
     }catch(_){}
   }
+  const hadImport=(()=>{try{return localStorage.getItem(INITIAL_EXPORT_MARKER)==='done';}catch(_){return false;}})();
   applyUploadedCalibrationOnce();
+  // jednokratno: vec sacuvana podesavanja dugmadi (stara velicina) se skaliraju na 60%; novi igrac je vec dobio smanjene podrazumevane
+  (function migrateTray(){
+    const FLAG='cookster.tray-scale.buttons.v1';
+    try{
+      if(!TRAY||localStorage.getItem(FLAG)==='done')return;
+      if(hadImport){
+        const raw=JSON.parse(localStorage.getItem(CALIBRATION_KEY)||'null');
+        const rows=Array.isArray(raw)?raw:(Array.isArray(raw?.buttons)?raw.buttons:null);
+        const ids=new Set(DEFAULT_ZONES.map(z=>z[0]));
+        if(rows){
+          rows.forEach(r=>{
+            if(!r||!ids.has(r.id))return;
+            const w=Number(r.width??r.w),h=Number(r.height??r.h),x=Number(r.x),y=Number(r.y);
+            if(![w,h,x,y].every(Number.isFinite))return;
+            r.x=TRAY.px(x);r.y=TRAY.py(y);
+            if(r.width!==undefined)r.width=TRAY.sz(w);else if(r.w!==undefined)r.w=TRAY.sz(w);
+            if(r.height!==undefined)r.height=TRAY.sz(h);else if(r.h!==undefined)r.h=TRAY.sz(h);
+          });
+          localStorage.setItem(CALIBRATION_KEY,JSON.stringify(raw));
+        }
+      }
+      localStorage.setItem(FLAG,'done');
+    }catch(_){}
+  })();
   const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
   const numberOr=(value,fallback)=>{
     const number=Number(value);
