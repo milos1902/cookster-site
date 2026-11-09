@@ -150,6 +150,60 @@ window.addEventListener('contextmenu',function(e){
 },true);
 window.addEventListener('pointerdown',function(e){if(menu&&!menu.contains(e.target))closeMenu();},true);
 
+// stretching the ball with the mouse (like the dough): hold the left button on the ball and drag; the ball follows the mouse as an ellipse.
+// Let go: a wide flat stretch = a burger in the shape you made (a little uneven is fine), a long thin one = a cevap, a small one = the ball stays. A plain click still picks the ball up.
+var st=null;
+function bodyOf(el){return el.querySelector('.body');}
+window.addEventListener('pointerdown',function(e){
+  if(e.button!==0)return;try{if(typeof holding!=='undefined'&&holding)return;}catch(x){}
+  var b=ballAt(e.clientX,e.clientY);if(!b)return;
+  var r=b.getBoundingClientRect();
+  st={ball:b,x0:e.clientX,y0:e.clientY,cx:r.left+r.width/2,cy:r.top+r.height/2,hw:r.width/2,hh:r.height/2,sx:1,sy:1,moved:false,id:e.pointerId};
+  e.preventDefault();e.stopImmediatePropagation();
+},true);
+window.addEventListener('pointermove',function(e){
+  if(!st)return;
+  if(!st.moved&&Math.hypot(e.clientX-st.x0,e.clientY-st.y0)<7)return;
+  st.moved=true;
+  var sx=Math.max(.9,Math.min(2.6,Math.abs(e.clientX-st.cx)/st.hw)),sy=Math.max(.9,Math.min(2.6,Math.abs(e.clientY-st.cy)/st.hh));
+  // the flesh does not grow in every direction at once: when one side is pulled a lot the other one gets a little thinner
+  var k=Math.sqrt(Math.max(sx,sy)/Math.min(sx,sy));if(sx>sy)sy=Math.max(.85,sy/Math.sqrt(k)*.98);else sx=Math.max(.85,sx/Math.sqrt(k)*.98);
+  st.sx=sx;st.sy=sy;var bd=bodyOf(st.ball);if(bd){bd.style.transition='none';bd.style.transformOrigin='50% 50%';bd.style.transform='scale('+sx.toFixed(3)+','+sy.toFixed(3)+')';}
+  e.preventDefault();
+},true);
+function endStretch(e){
+  if(!st)return;var s0=st;st=null;var b=s0.ball;if(!b.isConnected)return;
+  var bd=bodyOf(b);
+  if(!s0.moved){      // a plain click: the ball is picked up
+    try{startHolding(b);}catch(x){}return;
+  }
+  var area=s0.sx*s0.sy,ratio=Math.max(s0.sx,s0.sy)/Math.min(s0.sx,s0.sy);
+  if(ratio>=2.0&&area>=1.9){shapeCustom(b,'cevap',s0.sx,s0.sy);}
+  else if(area>=2.3){shapeCustom(b,'pljeskavica',s0.sx,s0.sy);}
+  else{      // not enough: the ball shrinks back
+    if(bd){bd.style.transition='transform .25s ease';bd.style.transform='scale(1,1)';}
+    toast('Razvuci lopticu jače da bude pljeskavica.');
+  }
+}
+window.addEventListener('pointerup',endStretch,true);
+window.addEventListener('pointercancel',endStretch,true);
+// the burger / cevap made by hand: the picture of the finished thing, in the (a bit uneven) shape the player pulled
+function shapeCustom(ball,kind,sx,sy){
+  var def=VEGETABLES[kind],cx=+ball.dataset.cx,by=+ball.dataset.by,vis=+ball.dataset.vis||1,zone=ball.dataset.surfaceZone||'table';
+  var onBoard=ball.dataset.attachedToBoard==='1',board=null;try{board=getBoardEl();}catch(e){}
+  var rx=+ball.dataset.boardRelX||0,ry=+ball.dataset.boardRelY||.55,bw=VEGETABLES.mleveno_loptica.w,bh=VEGETABLES.mleveno_loptica.h;
+  var w=Math.max(def.w*.7,Math.min(def.w*1.35,bw*sx*(kind==='cevap'?1.05:.93))),h=Math.max(def.h*.7,Math.min(def.h*1.35,bh*sy*(kind==='cevap'?.95:.93)));
+  var tall=kind==='cevap'&&sy>sx;if(tall){var t=w;w=h*1.55;h=t*.62;}      // a cevap pulled up and down lies the other way: keep it long on the screen
+  try{removeItem(ball);}catch(e){}
+  var el=makeItem({id:'m_'+kind+'_'+Date.now(),label:def.label,src:def.src,x:cx-w/2,y:by-h,w:w,h:h,z:++zCounter,snapProfile:'produce'});
+  el.dataset.vegetable='1';el.dataset.collisionProfile='vegetable';el.dataset.vegKey=kind;el.dataset.cutState='whole';el.dataset.surfaceZone=zone;
+  if(ball.dataset.minceLuk)el.dataset.minceLuk='1';if(ball.dataset.mincePap)el.dataset.mincePap='1';
+  setPose(el,cx,by,vis);
+  if(onBoard&&board){el.dataset.attachedToBoard='1';el.dataset.boardRelX=String(rx);el.dataset.boardRelY=String(ry);el.dataset.boardRelAngle='0';try{syncOneBoardAttachment(el,board);}catch(e){}}
+  try{CooksterSave.schedule();}catch(e){}
+  toast(kind==='cevap'?'Napravljen je ćevap.':'Napravljena je pljeskavica.');
+}
+
 // onion / pepper dropped or shaken in later: the bowl is drawn again (every 0.7 s only when something changed)
 setInterval(function(){
   try{(window.items||items).forEach(function(v){
