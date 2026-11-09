@@ -312,7 +312,9 @@ function styleCalibratedContactShadow(contact,cfg,w,h,cx,by,ang,held=false){
  const bw=Math.max(.01,b.r-b.l),bh=Math.max(.01,b.b-b.t);
  const cropW=w*bw,cropH=h*bh;
  const x0=cx-w/2+w*b.l+(+cfg.x||0);
- const shadowBottom=by+(+cfg.y||0);
+ // Donja ivica senke = stvarna donja ivica predmeta (ne ivica slike): providan prazan prostor pri dnu slike je ranije
+ // spustao senku ispod predmeta pa je izgledalo da predmet lebdi.
+ const shadowBottom=by-h*(1-b.b)+(+cfg.y||0);
 
  contact.style.display='block';
  contact.style.overflow='hidden';
@@ -4335,25 +4337,11 @@ function createContactShadowLab(){
    e.preventDefault();e.stopImmediatePropagation();
    aiming=false;aimBtn.textContent='Нишани';document.body.classList.remove('cds-aim');
    try{panel.style.display='block';populate();itemSel.value=contactShadowProfileKeyFor(el);itemSel.onchange();
-     // Kopija se postavlja TACNO gde predmet stvarno stoji (isto mesto, ista povrsina), a pravi predmet se
-     // sakrije dok je alat otvoren - inace kopija stoji na sredini stola i izgleda kao da je predmet u ruci.
-     const id=itemSel.value;
-     const c=(state.selected&&state.selected.itemId===id)?state.selected:state.copies.filter(q=>q.itemId===id).at(-1);
-     const cx=+el.dataset.cx,by=+el.dataset.by;
-     if(c&&Number.isFinite(cx)&&Number.isFinite(by)&&id!=='daska'){
-       const z=el.dataset.surfaceZone;
-       c.x=cx;c.y=by;c.surface=(z==='stove'||z==='floor')?z:'table';
-       renderCopy(c);select(c);
-       restoreAimHidden();
-       for(const n of [el,el._contactShadow])if(n){n.dataset.aimPrevVis=n.style.visibility||'';n.style.visibility='hidden';aimHidden.push(n);}
-     }
    }catch(_){}
  },true);
- const aimHidden=[];
- function restoreAimHidden(){while(aimHidden.length){const n=aimHidden.pop();n.style.visibility=n.dataset.aimPrevVis||'';delete n.dataset.aimPrevVis;}}
  const resetBtn=btn('Ресетуј предмет',resetCurrentItem);
  const exportBtn=btn('Извези master JSON',exportMaster);
- const closeBtn=btn('Затвори',()=>{restoreAimHidden();panel.style.display='none';});
+ const closeBtn=btn('Затвори',()=>panel.style.display='none');
 
  const pointList=document.createElement('div');
  pointList.style.cssText='display:flex;flex-wrap:wrap;gap:4px;margin:7px 0';
@@ -4497,7 +4485,7 @@ function createContactShadowLab(){
    const pot=String(itemId).includes('serpa');
    return pot
     ?{shadowX:0,shadowY:0,width:1.10,height:.70,opacity:.52,blur:.8,angle:.6}
-    :{shadowX:0,shadowY:0,width:.72,height:.07,opacity:.52,blur:.8,angle:.6};
+    :{shadowX:0,shadowY:0,width:.84,height:.9,opacity:.74,blur:1.4,angle:.6};   // pocetna senka: prilegla uz sto (kao podeseni predmeti), ne tanka linija ispod koja izgleda kao da predmet lebdi
  }
  function select(c){
    state.selected=c||null;
@@ -4768,7 +4756,7 @@ function createContactShadowLab(){
      }
      syncStatus();
    },
-   close(){restoreAimHidden();panel.style.display='none';for(const c of state.copies){c.el?.remove();c.shadowEl?.remove();}state.copies=[];state.selected=null;},
+   close(){panel.style.display='none';for(const c of state.copies){c.el?.remove();c.shadowEl?.remove();}state.copies=[];state.selected=null;},
    selectItem(itemId){populate();itemSel.value=itemId;itemSel.onchange();},
    panel
  };
