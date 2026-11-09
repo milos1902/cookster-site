@@ -8,7 +8,7 @@
 if(window.CooksterDamper)return;
 var KEY='cookster.damper.v1';
 // where the plate of the handle sits on the pipe (scene pixels) and how big it is
-var CX=1608,CY=252,PLATE=22;
+var CX=1608,CY=242,PLATE=25.3;
 var IMG_W=501,IMG_H=598,PCX=115.5,PCY=105.5,PLATE_PX=225;     // the picture (half size of the original), the middle of its plate and the width of the plate in it
 var K=PLATE/PLATE_PX;
 var img=null;
