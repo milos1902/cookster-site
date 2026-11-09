@@ -1282,3 +1282,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Ćevap: levo-desno mišem preko mesa (loptica, cevap_faza_1..3 pa cevap_zacinjen/cevap_obican); kruženje i dalje daje pljeskavicu (način kretanja odlučuje: neto okretanje = pljeskavica, promene smera = ćevap, KFC/CEVAP/TOTAL_ROLL u js/mince.js); novi ćevap je 70x46; grill slike za polupečen/pečen/zagoreo su stare (drugačija proporcija).
 - Kapacitet svih posuda x2 (CAPACITY_FACTOR u game.js; dubok tanjir 6, plitak 4, mala vangla 8, tiganj 12, šerpa 16); piljeskavica/ćevap: ne seku se (ne vraćaju u sirovo), pečenost se pamti u sudu (ključ _m<cook>[s]_celo), na dasci i u plehu; ćevap se prepoznaje po obliku kretanja miša (ravno levo-desno).
 - Glavna kontaktna senka (MASTER_CONTACT_SHADOW_CALIBRATION u game.js) zamenjena izvozom korisnika (119 predmeta + aliasi minceBag i pleh_rostilj); kesa mesa i pleh sa mesom imaju stalan itemId.
+
+## Senke: okvir providnosti prati trenutnu sliku
+- `styleCalibratedContactShadow` ponovo racuna alpha-okvir kad se slika senke promeni (seckanje, pecenje...). Pre je ostajao okvir cele paprike/krastavca pa senka kockica nije odgovarala onoj iz alata Senke. (game.js 3.280)

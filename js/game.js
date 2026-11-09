@@ -299,7 +299,16 @@ function prepareContactShadowAlphaBounds(contact,img){
 function styleCalibratedContactShadow(contact,cfg,w,h,cx,by,ang,held=false){
  if(!contact||!cfg)return false;
  const sy=Math.max(.01,+cfg.height||.07),sx=Math.max(.05,+cfg.width||.72);
- const b=contact._alphaBounds||contactShadowAlphaBoundsFor(contact.querySelector('img'))||{l:0,t:0,r:1,b:1};
+ // Slika se menja (cela paprika -> kockice, pecenje...): granice providnosti moraju da prate TRENUTNU sliku.
+ const shImg=contact.querySelector('img');
+ const curSrc=shImg?(shImg.currentSrc||shImg.src||''):'';
+ if(curSrc&&contact._boundsSrc!==curSrc){
+   contact._boundsSrc=curSrc;
+   const cached=contactShadowAlphaBoundsCache.get(curSrc);
+   if(cached)contact._alphaBounds=cached;
+   else prepareContactShadowAlphaBounds(contact,shImg);
+ }
+ const b=contact._alphaBounds||contactShadowAlphaBoundsFor(shImg)||{l:0,t:0,r:1,b:1};
  const bw=Math.max(.01,b.r-b.l),bh=Math.max(.01,b.b-b.t);
  const cropW=w*bw,cropH=h*bh;
  const x0=cx-w/2+w*b.l+(+cfg.x||0);
