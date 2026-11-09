@@ -1265,3 +1265,5 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Zvuk mešanja prepravljen: isti 'cvrčeći' zvuk kao prženje; sporo = malo jače cvrčanje, brzo = oštro šištanje sa pucketanjem kao pri ubacivanju hrane.
 - Piece-sim: posuda puna po kapacitetu uvek dostiže celu kalibrisanu površinu hrane (cover 1.75 = gornja linija); ranije je veliki tiganj sa 6 komada imao 0.99 i hrana je stajala na dnu (uglu gde dno prelazi u zid).
 - Zvuk mešanja: samo kad je tiganj na upaljenom šporetu i svira prženje (pan-sizzle); tada suptilno pojačava cvrčanje (oko 25%), inače ćuti.
+- Prljav tiganj: slika prljavog tiganja (veliki/mali) se pojavljuje kad se u njemu sprema BILO ŠTA (ne samo meso), raste sa pečenjem i ostaje kad se isprazni, do pranja.
+- Plitak tanjir (kal_02_tanjir_ravni): nova slika (02_tanjir_ravni_v3.png, ispravnija perspektiva, odnos 70%), w160 h112; kalibracija hrane ostaje ista (unutrašnji krug 16–84%).

@@ -12,7 +12,7 @@ var DIRTY_ART={
 var W=512,imgCache={};
 // the dirty picture is a hair smaller than the clean one (it was a millimetre too big): 1 = same size
 var SHRINK={def:.988,tiganj_veliki:1,tiganj_mali:1};
-// frying pans: the drawn dirty picture (only the floor of the pan, the same size and place as the clean picture) shows ONLY after meat has been fried in the pan (el.dataset.meatFat)
+// frying pans: the drawn dirty picture (only the floor of the pan, the same size and place as the clean picture) shows after anything has been cooked in the pan (el.dataset.meatFat)
 var PROC={
   tiganj_veliki:{src:'assets/new_props/tiganj_veliki_prljav.webp?v=1'},
   tiganj_mali:{src:'assets/new_props/tiganj_mali_prljav.webp?v=1'}
@@ -67,7 +67,7 @@ function clean(el){
 function update(el,total,burnt){
   if(!el||!el.dataset||(!artFor(el)&&el.dataset.dirt!=='1'))return;
   if(total>0)el.dataset.hadFood='1';
-  if(PROC[el.dataset.itemId]){if(el.dataset.dirt==='1')ensureCanvas(el);return;}      // pans: the stains come only from frying meat (grease())
+  if(PROC[el.dataset.itemId]){if(el.dataset.dirt==='1')ensureCanvas(el);return;}      // pans: the stains come from cooking anything in the pan (grease())
   if(el.dataset.dirt!=='1'&&((el.dataset.hadFood==='1'&&total<=0)||burnt))makeDirty(el);
   else if(el.dataset.dirt==='1')ensureCanvas(el);   // (after loading a saved game the canvas has to be made again)
 }
