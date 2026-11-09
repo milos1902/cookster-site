@@ -118,8 +118,8 @@ window.CooksterCatalog = Object.freeze({
     }),
     // minced meat (js/mince.js): the ball taken from the bowl and what is shaped from it (meat: 'mleveno' keeps them out of the market list)
     mleveno_loptica: Object.freeze({ id: 'mleveno_loptica', meat: 'mleveno', label: 'Loptica mlevenog mesa', src: 'assets/meat/mleveno_loptica.png', price: 0, w: 48, h: 44, pile: 1 }),
-    pljeskavica: Object.freeze({ id: 'pljeskavica', meat: 'mleveno', label: 'Pljeskavica', src: 'assets/meat/pljeskavica_sirova.png', price: 0, w: 80, h: 61, pile: 1 }),
-    cevap: Object.freeze({ id: 'cevap', meat: 'mleveno', label: 'Ćevap', src: 'assets/meat/cevap_sirov.png', price: 0, w: 56, h: 36, pile: 1 }),
+    pljeskavica: Object.freeze({ id: 'pljeskavica', meat: 'mleveno', label: 'Pljeskavica', src: 'assets/meat/pljeskavica_sirova.png', rawPlain: 'assets/meat/pljeskavica_obicna.png', rawSpiced: 'assets/meat/pljeskavica_zacinjena.png', grillSize: 1.25, grillStages: [[0.3,'assets/meat/pljeskavica_polupecena.png'],[0.6,'assets/meat/pljeskavica_pecena.png'],[0.9,'assets/meat/pljeskavica_zagorela.png']], price: 0, w: 80, h: 61, pile: 1 }),
+    cevap: Object.freeze({ id: 'cevap', meat: 'mleveno', label: 'Ćevap', src: 'assets/meat/cevap_sirov.png', grillSize: 1.0, grillStages: [[0.3,'assets/meat/cevap_polupecen.png'],[0.6,'assets/meat/cevap_pecen.png'],[0.9,'assets/meat/cevap_zagoreo.png']], price: 0, w: 56, h: 36, pile: 1 }),
     luk: Object.freeze({
       id: 'luk',
       label: 'Luk',
