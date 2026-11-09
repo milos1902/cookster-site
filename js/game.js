@@ -4332,11 +4332,26 @@ function createContactShadowLab(){
    const el=e.target?.closest?.('.item');if(!el)return;
    e.preventDefault();e.stopImmediatePropagation();
    aiming=false;aimBtn.textContent='Нишани';document.body.classList.remove('cds-aim');
-   try{panel.style.display='block';populate();itemSel.value=contactShadowProfileKeyFor(el);itemSel.onchange();}catch(_){}
+   try{panel.style.display='block';populate();itemSel.value=contactShadowProfileKeyFor(el);itemSel.onchange();
+     // Kopija se postavlja TACNO gde predmet stvarno stoji (isto mesto, ista povrsina), a pravi predmet se
+     // sakrije dok je alat otvoren - inace kopija stoji na sredini stola i izgleda kao da je predmet u ruci.
+     const id=itemSel.value;
+     const c=(state.selected&&state.selected.itemId===id)?state.selected:state.copies.filter(q=>q.itemId===id).at(-1);
+     const cx=+el.dataset.cx,by=+el.dataset.by;
+     if(c&&Number.isFinite(cx)&&Number.isFinite(by)&&id!=='daska'){
+       const z=el.dataset.surfaceZone;
+       c.x=cx;c.y=by;c.surface=(z==='stove'||z==='floor')?z:'table';
+       renderCopy(c);select(c);
+       restoreAimHidden();
+       for(const n of [el,el._contactShadow])if(n){n.dataset.aimPrevVis=n.style.visibility||'';n.style.visibility='hidden';aimHidden.push(n);}
+     }
+   }catch(_){}
  },true);
+ const aimHidden=[];
+ function restoreAimHidden(){while(aimHidden.length){const n=aimHidden.pop();n.style.visibility=n.dataset.aimPrevVis||'';delete n.dataset.aimPrevVis;}}
  const resetBtn=btn('Ресетуј предмет',resetCurrentItem);
  const exportBtn=btn('Извези master JSON',exportMaster);
- const closeBtn=btn('Затвори',()=>panel.style.display='none');
+ const closeBtn=btn('Затвори',()=>{restoreAimHidden();panel.style.display='none';});
 
  const pointList=document.createElement('div');
  pointList.style.cssText='display:flex;flex-wrap:wrap;gap:4px;margin:7px 0';
@@ -4751,7 +4766,7 @@ function createContactShadowLab(){
      }
      syncStatus();
    },
-   close(){panel.style.display='none';for(const c of state.copies){c.el?.remove();c.shadowEl?.remove();}state.copies=[];state.selected=null;},
+   close(){restoreAimHidden();panel.style.display='none';for(const c of state.copies){c.el?.remove();c.shadowEl?.remove();}state.copies=[];state.selected=null;},
    selectItem(itemId){populate();itemSel.value=itemId;itemSel.onchange();},
    panel
  };
