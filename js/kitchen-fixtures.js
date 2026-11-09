@@ -77,7 +77,7 @@ var JARS=[
 var SLOTS=[{cx:540,b:680},{cx:612,b:680},{cx:686,b:680},{cx:759,b:680},{cx:525,b:751},{cx:604,b:751},{cx:683,b:751},{cx:762,b:751}];
 var slotJar=[];                                                  // slotJar[i] = id of the jar that stands in the compartment i (or null)
 for(var si=0;si<SLOTS.length;si++)slotJar[si]=null;
-JARS.forEach(function(j){j.im=load('assets/drawers/jar_'+j.id+'.webp?v=2');j.el=null;j.slot=-1;j.cx0=(j.box.l+j.box.r)/2;j.b0=j.box.b});
+JARS.forEach(function(j){j.im=load('assets/drawers/jar_'+j.id+'.webp?v=3');j.el=null;j.slot=-1;j.cx0=(j.box.l+j.box.r)/2;j.b0=j.box.b});
 (function(){var def=['paprika','tucana','biber','so','secer','lovor'];def.forEach(function(id,i){JARS.forEach(function(j){if(j.id===id){j.slot=i;slotJar[i]=id}})})})();
 function gOf(d){return d.G[d.idx]||0}
 var DRAWER_IN={l:462,t:603,r:818,b:756};                        // the inside of the open left drawer
@@ -106,7 +106,7 @@ function updateJars(){
   if(!divEl||!divEl.isConnected){divEl=document.createElement('img');divEl.draggable=false;divEl.src='assets/drawers/divider.webp?v=1';divEl.style.cssText='position:absolute;pointer-events:none;transform-origin:0 0;z-index:2';jarClip.appendChild(divEl)}
   var dp=mapPoint(DIVIDER.x,DIVIDER.y,t);divEl.style.left=Math.round(dp.x-L)+'px';divEl.style.top=Math.round(dp.y-603)+'px';divEl.style.transform='scale('+k.toFixed(4)+')';divEl.style.display=shown?'block':'none';
   JARS.forEach(function(j){
-    if(!j.el||!j.el.isConnected){j.el=document.createElement('img');j.el.draggable=false;j.el.style.cssText='position:absolute;pointer-events:none;display:none;transform-origin:0 0';jarClip.appendChild(j.el)}
+    if(!j.el||!j.el.isConnected){j.el=document.createElement('img');j.el.draggable=false;j.el.style.cssText='position:absolute;pointer-events:none;display:none;transform-origin:0 0';j.el.onload=function(){j.el.style.width=(j.el.naturalWidth/2)+'px'};jarClip.appendChild(j.el)}   // slike tegli su 2x (ostre), prikazuju se u pola velicine
     var show=shown&&j.slot>=0;
     if(show){
       var o=SLOTS[j.slot],back=o.b<700,jx=j.x+(o.cx-j.cx0),jy=j.y+(o.b-j.b0)+(back?7:4);   // the bottoms of the jars go a little behind the divider (back row) and behind the front of the drawer (front row)
