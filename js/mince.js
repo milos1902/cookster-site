@@ -166,32 +166,50 @@ window.addEventListener('contextmenu',function(e){
 },true);
 window.addEventListener('pointerdown',function(e){if(menu&&!menu.contains(e.target))closeMenu();},true);
 
-// shaping the ball like with the palms: hold the left button on the meat and go ROUND in a circle over it. The meat is spread out phase by phase while you circle
-// (ball -> flatter -> flatter -> burger); going in a line does nothing. The last phase is the burger: with onion / pepper mixed in or a plain one. A plain click picks the meat up.
-// FRAMES: [picture, width, height] of every phase after the ball (the same transparent canvas, in the order of shaping)
-var FRAMES=[['assets/meat/mleveno_faza_1.png',50,45],['assets/meat/mleveno_faza_2.png',62,45],['assets/meat/mleveno_faza_3.png',72,48]];
+// shaping the ball like with the palms: hold the left button on the meat and go ROUND in a circle over it. The meat is spread out slowly while you circle: the pictures
+// (ball -> flatter -> flatter -> burger) melt one into the other and the size grows with them; going in a line does nothing to the shape, but where you pull the meat it
+// stretches a little towards the mouse (like the dough) and springs back. A plain click picks the meat up.
+// KF: [picture, width, height] of the key pictures after the ball's own one; BURGER: the last picture depends on what is in the meat
+var KF=[['assets/meat/mleveno_loptica.png',48,44],['assets/meat/mleveno_faza_2.png',62,45],['assets/meat/mleveno_faza_3.png',72,48]];
 var BURGER={plain:['assets/meat/pljeskavica_obicna.png',80,61],spiced:['assets/meat/pljeskavica_zacinjena.png',80,68]};
-var RAD_PER_STAGE=1.5;      // radians of circling (about a quarter of a turn) for one phase
+var TOTAL_RAD=12;      // radians of circling for the whole way from the ball to the burger (about two full turns)
 var st=null;
-function setFrame(el,i){      // i: 0 = the ball, 1..FRAMES.length = the phases
-  var f=i<=0?[VEGETABLES.mleveno_loptica.src,VEGETABLES.mleveno_loptica.w,VEGETABLES.mleveno_loptica.h]:FRAMES[Math.min(i,FRAMES.length)-1];
-  var bd=el.querySelector('.body');if(bd)bd.src=f[0];
-  el.dataset.baseW=f[1];el.dataset.baseH=f[2];el.dataset.minceStage=String(i);
+(function(){KF.concat([BURGER.plain,BURGER.spiced]).forEach(function(f){var im=new Image();im.src=f[0];});})();
+function lerp(a,b,t){return a+(b-a)*t;}
+function burgerFor(el){return (el.dataset.minceLuk==='1'||el.dataset.mincePap==='1')?BURGER.spiced:BURGER.plain;}
+function fadeOf(el){
+  if(!el._fade||!el._fade.isConnected){var im=document.createElement('img');im.className='mince-fade';im.alt='';im.draggable=false;im.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;object-fit:fill;pointer-events:none;opacity:0';el.appendChild(im);el._fade=im;}
+  return el._fade;
+}
+function setSrc(img,src){if(img.getAttribute('src')!==src)img.src=src;}
+function applyPhase(el,p){      // p: 0 = the ball ... 1 = the burger
+  p=Math.max(0,Math.min(.999,p));el.dataset.mincePhase=String(p);
+  var x=p*3,i=Math.min(2,Math.floor(x)),t=x-i,A=KF[i],B=i<2?KF[i+1]:burgerFor(el),bd=el.querySelector('.body'),fd=fadeOf(el);
+  if(bd)setSrc(bd,A[0]);setSrc(fd,B[0]);fd.style.opacity=t.toFixed(3);
+  el.dataset.baseW=lerp(A[1],B[1],t).toFixed(1);el.dataset.baseH=lerp(A[2],B[2],t).toFixed(1);
   try{setPose(el,+el.dataset.cx,+el.dataset.by,+el.dataset.vis||1);if(el.dataset.attachedToBoard==='1'){var b2=getBoardEl();if(b2)syncOneBoardAttachment(el,b2);}}catch(e){}
 }
 function toBurger(el){
-  var spiced=el.dataset.minceLuk==='1'||el.dataset.mincePap==='1',f=spiced?BURGER.spiced:BURGER.plain,bd=el.querySelector('.body');
-  if(bd)bd.src=f[0];
-  el.dataset.vegKey='pljeskavica';el.dataset.itemId='pljeskavica';el.dataset.baseW=f[1];el.dataset.baseH=f[2];el.dataset.label=VEGETABLES.pljeskavica.label;delete el.dataset.minceStage;
+  var f=burgerFor(el),bd=el.querySelector('.body');
+  if(bd)setSrc(bd,f[0]);if(el._fade){el._fade.remove();el._fade=null;}
+  el.dataset.vegKey='pljeskavica';el.dataset.itemId='pljeskavica';el.dataset.baseW=f[1];el.dataset.baseH=f[2];el.dataset.label=VEGETABLES.pljeskavica.label;delete el.dataset.mincePhase;
+  stretchTo(el,0,0,1,true);
   try{setPose(el,+el.dataset.cx,+el.dataset.by,+el.dataset.vis||1);if(el.dataset.attachedToBoard==='1'){var b=getBoardEl();if(b)syncOneBoardAttachment(el,b);}}catch(e){}
   try{CooksterSave.schedule();}catch(e){}toast('Napravljena je pljeskavica.');
+}
+// where the meat is pulled it stretches a little towards the mouse; let go: it springs back
+function stretchTo(el,dx,dy,r,release){
+  var els=[el.querySelector('.body'),el._fade].filter(Boolean),tf='none',sc=(typeof scale!=='undefined'&&+scale)||1;
+  if(!release){var d=Math.hypot(dx,dy),s=Math.min(.32,d/(r*6)),ang=Math.atan2(dy,dx)*180/Math.PI;
+    tf='translate('+(dx/sc*.1).toFixed(1)+'px,'+(dy/sc*.1).toFixed(1)+'px) rotate('+ang.toFixed(1)+'deg) scale('+(1+s).toFixed(3)+','+(1-s*.3).toFixed(3)+') rotate('+(-ang).toFixed(1)+'deg)';}
+  els.forEach(function(n){n.style.transition=release?'transform .35s cubic-bezier(.3,1.5,.5,1)':'none';n.style.transformOrigin='50% 60%';n.style.transform=tf;});
 }
 function centerOf(el){var r=el.getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2,Math.max(r.width,r.height)/2];}
 window.addEventListener('pointerdown',function(e){
   if(e.button!==0)return;try{if(typeof holding!=='undefined'&&holding)return;}catch(x){}
   var b=ballAt(e.clientX,e.clientY);if(!b)return;
-  var c=centerOf(b);
-  st={ball:b,x0:e.clientX,y0:e.clientY,moved:false,ang:null,rot:0,s0:+b.dataset.minceStage||0,c:c};
+  if(!window.__minceHint){window.__minceHint=1;toast('Drži klik i kruži mišem oko mesa da ga oblikuješ.');}
+  st={ball:b,x0:e.clientX,y0:e.clientY,moved:false,ang:null,rot:0,p0:+b.dataset.mincePhase||0};
   e.preventDefault();e.stopImmediatePropagation();
 },true);
 window.addEventListener('pointermove',function(e){
@@ -199,17 +217,19 @@ window.addEventListener('pointermove',function(e){
   if(!st.moved&&Math.hypot(e.clientX-st.x0,e.clientY-st.y0)<7)return;
   st.moved=true;
   var c=centerOf(st.ball),dx=e.clientX-c[0],dy=e.clientY-c[1],d=Math.hypot(dx,dy);
-  if(d<c[2]*.18||d>c[2]*2.6){st.ang=null;e.preventDefault();return;}      // too close to the middle or far from the meat: no circling is counted
+  stretchTo(st.ball,dx,dy,c[2]);
+  if(d<5||d>Math.max(c[2]*6,150)){st.ang=null;e.preventDefault();return;}      // right on the middle or very far from the meat: no circling is counted
   var a=Math.atan2(dy,dx);
-  if(st.ang!=null){var da=a-st.ang;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;if(Math.abs(da)<1.2)st.rot+=Math.abs(da);}      // the angle travelled round the meat (either way)
+  if(st.ang!=null){var da=a-st.ang;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;if(Math.abs(da)<2.4)st.rot+=Math.abs(da);}      // the angle travelled round the meat (either way)
   st.ang=a;
-  var stage=st.s0+Math.floor(st.rot/RAD_PER_STAGE);
-  if(stage>FRAMES.length){var bl=st.ball;st=null;toBurger(bl);return;}
-  if(stage!==(+st.ball.dataset.minceStage||0))setFrame(st.ball,stage);
+  var p=st.p0+st.rot/TOTAL_RAD;
+  if(p>=1){var bl=st.ball;st=null;toBurger(bl);return;}
+  applyPhase(st.ball,p);
   e.preventDefault();
 },true);
 function endStretch(){
   if(!st)return;var s0=st;st=null;
+  if(s0.ball.isConnected)stretchTo(s0.ball,0,0,1,true);
   if(!s0.moved&&s0.ball.isConnected){try{startHolding(s0.ball);}catch(x){}}      // a plain click: the meat is picked up
 }
 window.addEventListener('pointerup',endStretch,true);
