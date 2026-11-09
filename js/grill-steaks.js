@@ -181,7 +181,7 @@ window.addEventListener('pointerdown',function(e){
     var used={};l2.forEach(function(x){used[x.slot]=1;});var k=0;while(used[k])k++;
     if(k>=TRAY_MAX){try{showToast('Pleh je potpuno pun.');}catch(x){}e.stopImmediatePropagation();e.preventDefault();return;}
     e.stopImmediatePropagation();e.preventDefault();
-    var md=h.dataset.meatDone||'',c0=md==='grilledBurnt'||md==='burnt'?1:(md==='grilled'||md==='fried'?.45:0);
+    var md=h.dataset.meatDone||'',c0=md==='grilledBurnt'||md==='burnt'?1:(md==='grilled'||md==='fried'?.45:0);if(isFinite(parseFloat(h.dataset.grillCook)))c0=Math.max(0,Math.min(1.2,parseFloat(h.dataset.grillCook)));      // exactly as cooked as it was
     l2.push({key:h.dataset.vegKey,sp:(h.dataset.minceLuk==='1'||h.dataset.mincePap==='1'),cook:[c0,c0],up:0,rot:Math.round((Math.random()-.5)*14),slot:k});
     var it=h;try{removeItem(it);holding=null;hidePlacementGhost();hideOriginGhost();clearPanTargets();updateHover();}catch(x){}
     refreshTray(tr,l2);
@@ -308,7 +308,7 @@ function add(item,e){
     for(var k=0;k<offs.length;k++){var uu=u0+offs[k];if(uu<.05||uu>.95)continue;
       var hit=steaks.some(function(o){return Math.abs(o.u-uu)<.13&&Math.abs(o.v-vv)<.45;});if(!hit){u=uu;v=vv;found=true;break;}}}
   if(!found){u=u0;v=v0;}
-  var md=item.dataset.meatDone||'',c0=md==='burnt'||md==='grilledBurnt'?1:(md==='fried'||md==='grilled'?.45:0);
+  var md=item.dataset.meatDone||'',c0=md==='burnt'||md==='grilledBurnt'?1:(md==='fried'||md==='grilled'?.45:0);if(isFinite(parseFloat(item.dataset.grillCook)))c0=Math.max(0,Math.min(1.2,parseFloat(item.dataset.grillCook)));
   var s={id:seq++,key:item.dataset.vegKey,sp:(item.dataset.minceLuk==='1'||item.dataset.mincePap==='1'),u:u,v:v,rot:Math.round((Math.random()-.5)*14),up:0,cook:[c0,c0],flipping:false};
   steaks.push(s);layout(s);
   if(lvl()>.2){try{CooksterGrillSizzle(.7+.3*lvl());}catch(e){}}      // the meat hits the hot grate: it sizzles

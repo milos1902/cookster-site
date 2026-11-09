@@ -6743,6 +6743,7 @@ function isBoardCuttableItem(el){
  const isFruit=el.dataset.fruit==='1';
  const key=el.dataset.vegKey||el.dataset.fruitKey||'';
  const def=(isFruit?(CooksterCatalog.FRUITS||{}):VEGETABLES)[key]||{};
+ if(def.meat==='mleveno')return false;      // a ball, a burger and a cevap are not cut (they would turn raw again)
  const cutState=el.dataset.cutState||'whole';
  if(cutState==='whole')return def.canSlice!==false&&!!(def.slicedSrc||def.src);
  if(cutState==='sliced')return !!def.dicedSrc&&el.dataset.grillSliced!=='1';      // a grilled steak that is already sliced into a fan is not cut again
@@ -8649,8 +8650,9 @@ function cookingDefFor(elOrDef){
 function isHeatableCookwareItem(el){
  return !!el&&isContainerItem(el)&&(window.CooksterCooking?.isHeatable(el)??(cookingDefFor(el).canHeat===true));
 }
+const CAPACITY_FACTOR=2;
 function containerCapacity(el){
- return window.CooksterCooking?.capacity(el)??Math.max(1,+cookingDefFor(el).capacity||999);
+ return CAPACITY_FACTOR*(window.CooksterCooking?.capacity(el)??Math.max(1,+cookingDefFor(el).capacity||999));      // every vessel takes twice as much as its drawn capacity (a deep plate: 6 things)
 }
 function panModelTotal(model){
  return Object.values(model?.ingredients||{}).reduce((s,v)=>s+(+v||0),0);
@@ -8727,6 +8729,12 @@ function ingredientVisualMeta(item){
     if(!isFruit&&def.meat==='snicla'&&item.dataset.grillSliced==='1'){      // a grilled steak sliced into a fan: a whole picture of its own
       const fsrc=item.querySelector('.body')?.getAttribute('src')||'',tier=/krike_rare/.test(fsrc)?'_rare':/krike_med/.test(fsrc)?'_med':/krike_wd/.test(fsrc)?'_wd':'';      // every doneness is its own entry: rare stays rare when a medium one is added
       return {key:`${key}_krike${tier}_celo`,baseKey:key,type:'vegetable',form:'whole',cutState:'whole',label:'Naseckana šnicla sa roštilja',src:fsrc};
+    }
+    // a burger / cevap (minced meat): it keeps how far it is cooked wherever it is put (the picture is the one on the item)
+    if(!isFruit&&def.meat==='mleveno'&&cutState==='whole'){
+      let gc=+item.dataset.grillCook;if(!Number.isFinite(gc))gc=item.dataset.meatDone==='grilledBurnt'?1:item.dataset.meatDone==='grilled'?.45:0;
+      const sp=item.dataset.minceLuk==='1'||item.dataset.mincePap==='1';
+      return {key:`${key}_m${Math.round(gc*100)}${sp?'s':''}_celo`,baseKey:key,type:'vegetable',form:'whole',cutState:'whole',label:item.dataset.label||def.label,src:item.querySelector('.body')?.getAttribute('src')||def.src};
     }
     // a slice of meat from the grill: its own ingredient with the grilled / burnt-on-the-grill picture
     if(!isFruit&&def.meat==='snicla'&&cutState==='whole'&&(item.dataset.meatDone==='grilled'||item.dataset.meatDone==='grilledBurnt')){
@@ -9235,7 +9243,7 @@ function updateVesselOilVisual(vessel,pulse=false){
    surface.style.clipPath=`ellipse(${p.clipX??49}% ${p.clipY??48}% at 50% 50%)`;
    surface.style.webkitClipPath=surface.style.clipPath;
    // the oil is soaked up by the food: one piece leaves most of the puddle, from about half of the capacity the puddle is gone (it is mixed into the food)
-   const soak=Math.max(0,1-vesselFoodUnits(vessel)/Math.max(2,(+containerCapacity(vessel)||6)*.5));
+   const soak=Math.max(0,1-vesselFoodUnits(vessel)/Math.max(2,((+containerCapacity(vessel)||6)/CAPACITY_FACTOR)*.5));
    surface.style.transition='opacity .9s ease';
    surface.style.opacity=String(Math.min(.82,.34+amount*.055)*soak);
   surface.style.transform=`rotate(${Math.max(-2,Math.min(2,+vessel.dataset.angle||0))*.08}deg)`;
@@ -12759,6 +12767,7 @@ function panMixBaseColor(mix,stage){
 
 function wholeProduceSource(baseKey,meta=null,stage=1){
   const mv=VEGETABLES?.[baseKey];
+  if(mv?.meat==='mleveno'&&meta?.src)return meta.src;      // a burger / cevap in a vessel: its own picture (as cooked as it was)
   if(mv?.meat==='snicla'){      // a whole slice in a vessel: real pictures of the fried / burnt slice (the same stages as the chopped vegetables: 4 = fried, 6 = burnt); a slice that was cooked before keeps its state
     const k=String(meta?.key||'');
     if(/_krike(_rare|_med|_wd)?_celo$/.test(k)&&meta?.src)return meta.src;      // sliced steak: always its own picture
