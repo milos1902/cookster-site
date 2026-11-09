@@ -26,8 +26,16 @@ function slotPos(k,cx,cy,w,asp){      // 4 steaks in the first row along the tra
 var RAW_AT=.3,BURN_AT=.9,RATE=1/25;      // grilled from 30%, burnt from 90% of a side; one side: grilled after about 8 s, burnt after about 23 s on a full fire
 function def(key){try{return VEGETABLES[key];}catch(e){return null;}}
 function slicedItem(it){return !!(it&&it.dataset&&(it.dataset.grillSliced==='1'||it.dataset.meatDone==='sliced'||it.dataset.cutState==='sliced'));}      // an already sliced steak does not go back onto the grill
-function canGrill(key,it){if(slicedItem(it))return false;var d=def(key);return !!(d&&d.meat==='snicla'&&d.grilledSrc);}
-function srcOf(c,key){var d=def(key);if(!d)return '';return c>=BURN_AT?(d.grilledWellDoneSrc||d.src):c>=RAW_AT?(d.grilledSrc||d.src):d.src;}
+function canGrill(key,it){if(slicedItem(it))return false;var d=def(key);return !!(d&&(d.meat==='snicla'||d.meat==='mleveno')&&(d.grilledSrc||d.grillStages));}      // a steak, a burger (pljeskavica) and a cevap
+function rawOf(d,sp){return (sp&&d.rawSpiced)||d.rawPlain||d.src;}
+function srcOf(c,key,sp){
+  var d=def(key);if(!d)return '';
+  if(d.grillStages){var r=rawOf(d,sp);for(var i=d.grillStages.length-1;i>=0;i--)if(c>=d.grillStages[i][0])return d.grillStages[i][1];return r;}      // a burger / cevap: more pictures (half done, done, burnt)
+  return c>=BURN_AT?(d.grilledWellDoneSrc||d.src):c>=RAW_AT?(d.grilledSrc||d.src):d.src;
+}
+function sizeF(key){var d=def(key);return d&&d.meat==='mleveno'?(+d.grillSize||1):1;}      // the size on the grate relative to a steak
+function labelOf(d,st){return d.meat==='snicla'?(st==='burnt'?'Zagorela šnicla sa roštilja':st==='grilled'?'Šnicla sa roštilja':d.label):(st==='burnt'?'Zagoreo/la '+d.label.toLowerCase()+' sa roštilja':st==='grilled'?d.label+' sa roštilja':d.label);}
+function idOf(d,key){return d.meat==='mleveno'?key:'veg_'+key+'_'+Date.now();}      // burgers and cevapi keep one id (the settings of the shadows are the same for all of them)
 function stateOf(c){return c>=BURN_AT?'burnt':c>=RAW_AT?'grilled':'raw';}
 function lvl(){try{return window.CooksterGrill?CooksterGrill.level():0;}catch(e){return 0;}}
 var kTray=null,trayAway=false;
@@ -73,14 +81,15 @@ function layout(s){
   var kx,ky,kw=KG.w,zx,zy,zw=ZG.w;
   if(s.slot!=null){var kp=slotPos(s.slot,TRK.cx,TRK.cy,TRK.w,TRK_ASPECT),zp=slotPosZ(s.slot,TRZ.cx,TRZ.cy,TRZ.w);kx=kp.x;ky=kp.y;kw=kp.w;zx=zp.x;zy=zp.y;zw=zp.w;}
   else{kx=KG.x0+s.u*(KG.x1-KG.x0);ky=KG.y0+s.v*(KG.y1-KG.y0);zx=ZG.x0+s.u*(ZG.x1-ZG.x0);zy=ZG.y0+s.v*(ZG.y1-ZG.y0);}
+  kw*=sizeF(s.key);zw*=sizeF(s.key);
   var e=kEl(s);
-  if(e){e.style.left=kx+'px';e.style.top=ky+'px';e.style.width=kw+'px';e.style.height='auto';e.style.zIndex=s.slot!=null?String(7+s.slot):'6';e.style.transform='translate(-50%,-50%) rotate('+s.rot+'deg)';var src=srcOf(s.cook[s.up],s.key);if(e.getAttribute('src')!==src)e.setAttribute('src',src);}
+  if(e){e.style.left=kx+'px';e.style.top=ky+'px';e.style.width=kw+'px';e.style.height='auto';e.style.zIndex=s.slot!=null?String(7+s.slot):'6';e.style.transform='translate(-50%,-50%) rotate('+s.rot+'deg)';var src=srcOf(s.cook[s.up],s.key,s.sp);if(e.getAttribute('src')!==src)e.setAttribute('src',src);}
   var z=zEl(s);
   if(z){
     if(!drag||drag.s!==s)z.style.zIndex=s.slot!=null?String(10+s.slot):'';
     z.style.left=(zx/1672*100)+'%';z.style.top=(zy/941*100)+'%';z.style.width=(zw/1672*100)+'%';z.style.height='auto';
     if(!s.flipping){z.style.transform='translate(-50%,-50%) rotate('+s.rot+'deg)';}
-    var src2=srcOf(s.cook[s.up],s.key);if(z.getAttribute('src')!==src2)z.setAttribute('src',src2);}
+    var src2=srcOf(s.cook[s.up],s.key,s.sp);if(z.getAttribute('src')!==src2)z.setAttribute('src',src2);}
 }
 function tick(now){
   var dt=Math.min(.25,(now-last)/1000||.05);last=now;
@@ -97,12 +106,12 @@ function loadImg(src){return new Promise(function(res){var i=new Image();i.onloa
 // the picture of the tray with its steaks (with a small contact shadow under every steak)
 function composeTray(list){
   var W=520,H=Math.round(W*TRT_ASPECT),cv=document.createElement('canvas');cv.width=W;cv.height=H;var g=cv.getContext('2d');
-  var srcs=[TRAY_SRC_T].concat(list.map(function(o){return srcOf(o.cook[o.up],o.key);}));
+  var srcs=[TRAY_SRC_T].concat(list.map(function(o){return srcOf(o.cook[o.up],o.key,o.sp);}));
   return Promise.all(srcs.map(loadImg)).then(function(im){
     if(im[0])g.drawImage(im[0],0,0,W,H);
     list.map(function(o,i){return {o:o,img:im[1+i]};}).sort(function(a,b){return a.o.slot-b.o.slot;}).forEach(function(q){
       var o=q.o,img=q.img,p=slotPosT(o.slot,W);if(!img)return;
-      var w=p.w,h=w*img.height/img.width;g.save();g.translate(p.x,p.y);g.rotate(o.rot*Math.PI/180);
+      var w=p.w*sizeF(o.key),h=w*img.height/img.width;g.save();g.translate(p.x,p.y);g.rotate(o.rot*Math.PI/180);
       g.shadowColor='rgba(0,0,0,.5)';g.shadowBlur=W*.016;g.shadowOffsetX=W*.004;g.shadowOffsetY=W*.012;
       g.drawImage(img,-w/2,-h/2,w,h);g.restore();
     });
@@ -112,7 +121,7 @@ function composeTray(list){
 function takeTray(e){
   var inTray=steaks.filter(function(o){return o.slot!=null;});
   if(!inTray.length||trayAway)return;
-  var list=inTray.map(function(o){return {key:o.key,cook:o.cook.slice(),up:o.up,rot:o.rot,slot:o.slot};});
+  var list=inTray.map(function(o){return {key:o.key,sp:o.sp,cook:o.cook.slice(),up:o.up,rot:o.rot,slot:o.slot};});
   composeTray(list).then(function(url){
     inTray.forEach(function(o){if(o.kel)o.kel.remove();if(o.zel)o.zel.remove();});
     steaks=steaks.filter(function(o){return o.slot==null;});
@@ -157,10 +166,10 @@ window.addEventListener('pointerdown',function(e){
     var d=def(o.key);if(!d)return;
     var list=trayList(el).filter(function(x){return x.slot!==o.slot;});
     var c=o.cook[o.up],st=stateOf(c),p=screenToScene(e.clientX,e.clientY);
-    var st2=makeItem({id:'veg_'+o.key+'_'+Date.now(),label:st==='burnt'?'Zagorela šnicla sa roštilja':st==='grilled'?'Šnicla sa roštilja':d.label,src:srcOf(c,o.key),x:p.x-d.w/2,y:p.y-d.h,w:d.w,h:d.h,z:++zCounter,snapProfile:'produce'});
+    var st2=makeItem({id:idOf(d,o.key),label:labelOf(d,st),src:srcOf(c,o.key,o.sp),x:p.x-d.w/2,y:p.y-d.h,w:d.w,h:d.h,z:++zCounter,snapProfile:'produce'});
     st2.dataset.vegetable='1';st2.dataset.collisionProfile='vegetable';st2.dataset.vegKey=o.key;st2.dataset.cutState='whole';
     if(st==='grilled')st2.dataset.meatDone='grilled';else if(st==='burnt')st2.dataset.meatDone='grilledBurnt';
-    st2.dataset.grillCook=String(c);
+    st2.dataset.grillCook=String(c);if(o.sp)st2.dataset.minceLuk='1';
     st2.dataset.surfaceZone='table';
     try{setPose(st2,p.x,p.y,1);startHolding(st2);}catch(x){}
     refreshTray(el,list);
@@ -173,7 +182,7 @@ window.addEventListener('pointerdown',function(e){
     if(k>=TRAY_MAX){try{showToast('Pleh je potpuno pun.');}catch(x){}e.stopImmediatePropagation();e.preventDefault();return;}
     e.stopImmediatePropagation();e.preventDefault();
     var md=h.dataset.meatDone||'',c0=md==='grilledBurnt'||md==='burnt'?1:(md==='grilled'||md==='fried'?.45:0);
-    l2.push({key:h.dataset.vegKey,cook:[c0,c0],up:0,rot:Math.round((Math.random()-.5)*14),slot:k});
+    l2.push({key:h.dataset.vegKey,sp:(h.dataset.minceLuk==='1'||h.dataset.mincePap==='1'),cook:[c0,c0],up:0,rot:Math.round((Math.random()-.5)*14),slot:k});
     var it=h;try{removeItem(it);holding=null;hidePlacementGhost();hideOriginGhost();clearPanTargets();updateHover();}catch(x){}
     refreshTray(tr,l2);
   }
@@ -300,7 +309,7 @@ function add(item,e){
       var hit=steaks.some(function(o){return Math.abs(o.u-uu)<.13&&Math.abs(o.v-vv)<.45;});if(!hit){u=uu;v=vv;found=true;break;}}}
   if(!found){u=u0;v=v0;}
   var md=item.dataset.meatDone||'',c0=md==='burnt'||md==='grilledBurnt'?1:(md==='fried'||md==='grilled'?.45:0);
-  var s={id:seq++,key:item.dataset.vegKey,u:u,v:v,rot:Math.round((Math.random()-.5)*14),up:0,cook:[c0,c0],flipping:false};
+  var s={id:seq++,key:item.dataset.vegKey,sp:(item.dataset.minceLuk==='1'||item.dataset.mincePap==='1'),u:u,v:v,rot:Math.round((Math.random()-.5)*14),up:0,cook:[c0,c0],flipping:false};
   steaks.push(s);layout(s);
   if(lvl()>.2){try{CooksterGrillSizzle(.7+.3*lvl());}catch(e){}}      // the meat hits the hot grate: it sizzles
   return true;
@@ -312,11 +321,11 @@ function take(s,e){
   try{CooksterKitchenFx.closeGrill();}catch(x){}
   steaks=steaks.filter(function(o){return o!==s;});
   if(s.kel)s.kel.remove();if(s.zel)s.zel.remove();
-  var src=srcOf(c,s.key),w=d.w,h=d.h,p=screenToScene(e.clientX,e.clientY);
-  var el=makeItem({id:'veg_'+s.key+'_'+Date.now(),label:st==='burnt'?'Zagorela šnicla sa roštilja':st==='grilled'?'Šnicla sa roštilja':d.label,src:src,x:p.x-w/2,y:p.y-h,w:w,h:h,z:++zCounter,snapProfile:'produce'});
+  var src=srcOf(c,s.key,s.sp),w=d.w,h=d.h,p=screenToScene(e.clientX,e.clientY);
+  var el=makeItem({id:idOf(d,s.key),label:labelOf(d,st),src:src,x:p.x-w/2,y:p.y-h,w:w,h:h,z:++zCounter,snapProfile:'produce'});
   el.dataset.vegetable='1';el.dataset.collisionProfile='vegetable';el.dataset.vegKey=s.key;el.dataset.cutState='whole';
   if(st==='grilled')el.dataset.meatDone='grilled';else if(st==='burnt')el.dataset.meatDone='grilledBurnt';
-  el.dataset.grillCook=String(c);
+  el.dataset.grillCook=String(c);if(s.sp)el.dataset.minceLuk='1';
   el.dataset.surfaceZone='table';setPose(el,p.x,p.y,1);
   try{startHolding(el);}catch(x){}
   try{CooksterSave.schedule();}catch(x){}
