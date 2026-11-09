@@ -47,11 +47,9 @@ function toggle(){set(!closed());}
 function build(){
   var sc=document.getElementById('scene');if(!sc||img)return;
   img=document.createElement('img');img.draggable=false;img.alt='Šiber';
-  img.style.cssText='position:absolute;z-index:26;cursor:pointer;pointer-events:auto;transition:filter .12s;'
+  img.style.cssText='position:absolute;z-index:26;cursor:pointer;pointer-events:auto;'
     +'left:'+(CX-PCX*K).toFixed(1)+'px;top:'+(CY-PCY*K).toFixed(1)+'px;width:'+(IMG_W*K).toFixed(1)+'px;height:'+(IMG_H*K).toFixed(1)+'px;'
     +'filter:drop-shadow(1px 2px 1.5px rgba(20,8,0,.5))';
-  img.addEventListener('mouseenter',function(){img.style.filter='drop-shadow(0 0 5px rgba(255,214,90,.95)) drop-shadow(1px 2px 1.5px rgba(20,8,0,.5))';});
-  img.addEventListener('mouseleave',function(){img.style.filter='drop-shadow(1px 2px 1.5px rgba(20,8,0,.5))';});
   img.addEventListener('click',onClick);
   sc.appendChild(img);
   paint();
