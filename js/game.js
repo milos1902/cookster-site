@@ -1562,6 +1562,11 @@ const stoveState=CooksterState.stove;
 // One fuel item should provide a meaningful cooking session instead of
 // burning out during a single short interaction.
 const FIRE_MAX_LEVEL=3, FIRE_BURN_MS=90000;
+// Siber (js/damper.js): zatvoren = tiha vatra (nivo 1 za kuvanje) i svaki stepen drva traje FIRE_CLOSED_FACTOR puta duze; otvoren = kao do sada.
+const FIRE_CLOSED_FACTOR=3;
+function damperClosed(){return stoveState.damper==='closed';}
+function fireBurnMs(){return FIRE_BURN_MS*(damperClosed()?FIRE_CLOSED_FACTOR:1);}
+function effFireLevel(){const lv=Math.max(1,Math.min(3,+stoveState.fireLevel||1));return damperClosed()?1:lv;}
 const FIRE_AUDIO_SRC='assets/sfx/fire_crackling.mp3';
 const FIREBOX_FIRE_GIF_SRC='assets/effects/firebox_fire.gif';
 const FIREBOX_FIRE_STATIC_SRC='assets/effects/firebox_fire_static.png';
@@ -1741,11 +1746,11 @@ function updateFireTimerBar(){
  const now=Date.now();
  const segmentRemaining=Math.max(0,(+stoveState.burnEndsAt||now)-now);
  const level=Math.max(1,Math.min(FIRE_MAX_LEVEL,+stoveState.fireLevel||1));
- const totalRemaining=segmentRemaining+(level-1)*FIRE_BURN_MS;
+ const totalRemaining=segmentRemaining+(level-1)*fireBurnMs();
  syncFireAudio(totalRemaining);
  if(!fireTimerBar)return;
  fireTimerBar.classList.add('visible');
- const pct=Math.max(0,Math.min(1,totalRemaining/(FIRE_MAX_LEVEL*FIRE_BURN_MS)));
+ const pct=Math.max(0,Math.min(1,totalRemaining/(FIRE_MAX_LEVEL*fireBurnMs())));
  const fill=fireTimerBar.querySelector('i');if(fill)fill.style.width=`${pct*100}%`;
 }
 function scheduleFireBurn(resetSegment=true){
@@ -1757,7 +1762,7 @@ function scheduleFireBurn(resetSegment=true){
  }
  const now=Date.now();
  if(resetSegment||!stoveState.burnEndsAt||stoveState.burnEndsAt<=now){
-   stoveState.burnEndsAt=now+FIRE_BURN_MS;
+   stoveState.burnEndsAt=now+fireBurnMs();
  }
  const delay=Math.max(1,stoveState.burnEndsAt-now);
  stoveState.burnTimer=setTimeout(()=>{
@@ -1773,7 +1778,7 @@ function scheduleFireBurn(resetSegment=true){
      showToast('Vatra se ugasila — dodaj novo drvo.');
      return;
    }
-   stoveState.burnEndsAt=Date.now()+FIRE_BURN_MS;
+   stoveState.burnEndsAt=Date.now()+fireBurnMs();
    applyCookstoveState();
    scheduleFireBurn(false);
    showToast(stoveState.fireLevel===1?'Vatra slabi.':'Vatra polako sagoreva.');
@@ -14980,7 +14985,7 @@ function reportSimulationError(scope,err){
 }
 function simulateDirectProduceItem(produce,dt){
  if(!isProduceItem(produce)||produce.dataset.onStoveTop!=='1'||!stoveState.fireOn)return;
- const fireLevel=Math.max(1,Math.min(3,+stoveState.fireLevel||1));
+ const fireLevel=effFireLevel();
 
  if(isWholeStoveRoast(produce)){
    const eggplant=isWholeStraight(produce);
@@ -15053,7 +15058,7 @@ function simulateCookingVessel(vessel,dt,now){
  vessel._cookAccum=0;
 
  syncCookwareHeatFlags(vessel);
- const fireLevel=Math.max(1,Math.min(3,+stoveState.fireLevel||1));
+ const fireLevel=effFireLevel();
  const thermal=CooksterCooking.step(vessel,{dt:stepDt,fireLevel,heating:isHeating});
  if(!thermal)return;
  const {model,count}=thermal;

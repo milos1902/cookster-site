@@ -69,11 +69,13 @@ function wrapGlobals(){
 // začini (js/spices.js šalje događaj)
 window.addEventListener('cookster:spice',function(e){var d=e.detail||{};log('spice',d.name||d.kind||'začin',d.vessel||'');});
 // jačina vatre (proverava se par puta u sekundi)
-var lastFire=null;
+var lastFire=null,lastDamper=null;
 setInterval(function(){
   if(!rec)return;
   try{
     var on=!!stoveState.fireOn&&(+stoveState.fireLevel||0)>0,lv=on?(+stoveState.fireLevel||1):0;
+    var dm=(stoveState.damper==='closed')?'closed':'open';
+    if(lastDamper===null)lastDamper=dm;else if(dm!==lastDamper){lastDamper=dm;log('fire',dm==='closed'?'Zatvorio šiber (tiha vatra)':'Otvorio šiber',''+'',{damper:dm});}
     if(lastFire===null){lastFire=lv;return;}
     if(lv!==lastFire){
       var txt=lv===0?'Vatra se ugasila':(lastFire===0?'Naložio vatru':(lv>lastFire?'Pojačao vatru':'Vatra je slabija'));
@@ -153,7 +155,7 @@ var tick=0;
 function start(){
   if(rec)return;
   wrapGlobals();
-  rec={t0:Date.now(),steps:[]};lastFire=null;
+  rec={t0:Date.now(),steps:[]};lastFire=null;lastDamper=null;
   btn.classList.add('rec-on');hud.style.display='flex';refreshBadge();
   clearInterval(tick);tick=setInterval(function(){var el=document.getElementById('recT');if(el&&rec)el.textContent=fmt(Date.now()-rec.t0);},500);
   document.getElementById('recT').textContent='00:00';
