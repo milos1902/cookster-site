@@ -9027,10 +9027,7 @@ oilVisualStyle.textContent=`
   transform:translate(-3%,1%) rotate(-54deg)!important;
   transition:transform .16s cubic-bezier(.2,.75,.2,1)!important;
 }
-.item.oil-pour-target{
-  outline:2px solid rgba(245,196,75,.68);
-  outline-offset:3px;
-}
+/* (no yellow frame around the vessel that gets the oil) */
 .cookster-oil-surface.oil-hot > img{
   filter:saturate(1.02) brightness(1.04) contrast(1.04);
 }

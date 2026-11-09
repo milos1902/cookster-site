@@ -1268,3 +1268,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Prljav tiganj: slika prljavog tiganja (veliki/mali) se pojavljuje kad se u njemu sprema BILO ŠTA (ne samo meso), raste sa pečenjem i ostaje kad se isprazni, do pranja.
 - Plitak tanjir (kal_02_tanjir_ravni): nova slika (02_tanjir_ravni_v3.png, ispravnija perspektiva, odnos 70%), w160 h112; kalibracija hrane ostaje ista (unutrašnji krug 16–84%).
 - Senke sunca (js/sun-shadow.js): isključene po defaultu (ostaju samo kontaktne senke); dugme '☀ Senke sunca' dole desno uključuje/isključuje i pamti izbor (localStorage cookster.sunShadows.v1).
+- Flašica ulja: nova slika (01_flasa_ulja_v3.png, pogled odozgo), w51 h90; uklonjen žuti kvadrat (outline) oko posude u koju se sipa ulje (.item.oil-pour-target).
