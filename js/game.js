@@ -10331,6 +10331,7 @@ function isRawWholeProduce(meta){
 const RAW_WHOLE_OK_VESSELS=/^(daska_serviranje|kal_01_|lavor_|posuda_za_kupus)/;      // serving board, baking trays (roasting), basin (washing), cabbage barrel
 function addIngredientToContainer(item,vessel){
  if(!item||!vessel||!isContainerItem(vessel))return false;
+ try{if(window.CooksterMince&&CooksterMince.handle(item,vessel))return true;}catch(_){}      // minced meat: the bag is poured, onion is mixed in (js/mince.js)
  const meta=ingredientVisualMeta(item);if(!meta)return false;
  // Oil bottle uses the continuous press-and-hold pour system, never the
  // legacy one-click "1 measure" staple path.
@@ -14207,6 +14208,7 @@ function buildFoodStageLayer(counts,stage,metaItems={},batches=[],heat=0,mixLeve
   for(const [key,val] of Object.entries(counts||{})){
     const count=Math.max(0,+val||0);
     if(count<=0)continue;
+    if(key==='mleveno_meso'){try{CooksterMince.append(layer,vessel,count);}catch(_){}continue;}      // minced meat: one heap picture that follows what is mixed in
     if(GROUND_VEGETABLE_BY_KEY[key]||key.endsWith('_celo')||key.endsWith('_diced')||metaItems?.[key]?.form==='whole'
       ||key.startsWith('paprika_pecena')||isRoastedUnpeeledEggplantKey(key))continue;
     if(allMix.some(p=>p.storageKey===key))continue;
