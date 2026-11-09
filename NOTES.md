@@ -1298,3 +1298,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Fioka, tegle: sve tegle istog reda su iste velicine (zadnji red 92px, prednji 82px celog crteza), donji deo tegle ulazi u pregradu (zadnji red 22px iza prednje daske police, prednji red 20px iza prednje strane fioke (skoro do nalepnice)); tegla prebacena iz reda u red menja velicinu (kitchen-fixtures.js 76, slike ?v=4).
 - Fioka, tegle: vodoravno prosirene (JAR_WIDEN=1.32, kitchen-fixtures.js 78) jer su nove slike izgledale pretanke u pregradama.
 - Uzimanje tegle iz fioke: stvarni predmet se odmah sakrije (visibility hidden) pa se vise ne vidi nekoliko kadrova uvecan pored tegle u ruci (kitchen-fixtures.js 79).
+- Obrisana nekoriscena slika `assets/creator_camera_tripod.png` (kamera na tronosci); korisnik crta novu (starija kamera ili telefon) za snimanje recepta.
