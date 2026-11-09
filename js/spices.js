@@ -101,6 +101,7 @@
     sp[kind]=(sp[kind]||0)+1;target.dataset.spices=JSON.stringify(sp);
     try{renderVesselContents(target);}catch(_){applyLook(target);}
     counter(target,kind,sp[kind]);
+    try{window.dispatchEvent(new CustomEvent('cookster:spice',{detail:{kind:kind,name:NAMES[kind]||kind,n:sp[kind],vessel:String(target.dataset.label||'posuda').replace(/ · .*/,'')}}));}catch(_){}   // snimanje recepta (js/recorder.js)
     try{CooksterSave.schedule();}catch(_){}
   }
   const NAMES={paprika:'mlevena paprika',tucana:'tucana paprika',biber:'biber',so:'so',secer:'šećer',lovor:'lovor'};
