@@ -1293,3 +1293,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Master senke je u contactShadowMaster poslednji sloj (pregazi starije slojeve IMPORTED/CHOPPED/ROASTED/LATEST/RED_POINTED); stariji slojevi ostaju samo kao rezerva za predmete kojih nema u masteru.
 - Senke: obrisani SVI stariji slojevi (IMPORTED/CHOPPED/ROASTED_CHOPPED/ADDITIONAL/LATEST/RED_POINTED); contactShadowMaster = samo MASTER_CONTACT_SHADOW_CALIBRATION (122). Kljuc u localStorage podignut na v2 da stare sacuvane vrednosti iz browsera ne pregaze master. Predmet bez zapisa u masteru dobija podrazumevanu senku. (game.js 3.287)
 - Master senke zamenjen novim exportom (122 predmeta, 17:34). (game.js 3.288)
+- Nove tegle zacina (biber, so, tucana, mlevena paprika, secer, lovor) iz AI slika: zelena pozadina izrezana u providno, 360x844 webp u `assets/calibration_props/zacini/` (?v=2), katalog w:43 h:100 (odnos 0,43 kao nove slike). (catalog.js 3.73)
