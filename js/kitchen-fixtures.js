@@ -81,6 +81,7 @@ for(var si=0;si<SLOTS.length;si++)slotJar[si]=null;
 var JAR_BB={paprika:{cx:34,b:84,h:76},tucana:{cx:33,b:85,h:77},biber:{cx:31.5,b:85,h:77},so:{cx:31.5,b:85,h:77},secer:{cx:35.5,b:76,h:68},lovor:{cx:34,b:75,h:67}};
 // every jar is drawn the same size in the same row (a jar taken out of the front row and put into the back row must not stay smaller or bigger); the lower part sinks into the compartment:
 // the back row behind the front board of the shelf (the divider), the front row behind the front of the drawer
+var JAR_WIDEN=1.32;   // horizontal stretch of the jars in the drawer (the old pictures were about 0.56 wide to high, the new ones 0.43)
 var ROW={back:{full:92,sink:22},front:{full:82,sink:20}};
 JARS.forEach(function(j){j.im=load('assets/drawers/jar_'+j.id+'.webp?v=4');j.el=null;j.slot=-1;j.cx0=(j.box.l+j.box.r)/2;j.b0=j.box.b;j.bb=JAR_BB[j.id]});
 (function(){var def=['paprika','tucana','biber','so','secer','lovor'];def.forEach(function(id,i){JARS.forEach(function(j){if(j.id===id){j.slot=i;slotJar[i]=id}})})})();
@@ -117,8 +118,8 @@ function updateJars(){
       var o=SLOTS[j.slot],back=o.b<700,row=back?ROW.back:ROW.front;
       var jx=j.x+(o.cx-j.cx0),jy=j.y+(o.b-j.b0)+row.sink;     // the anchor (middle of the bottom) of the jar goes down into the compartment
       var sc2=row.full/j.bb.h,mp=mapPoint(jx,jy,t);if(!j.el.src)j.el.src=j.im.src;
-      var ex=1-sc2;                                                // the picture grows around its anchor (middle of the bottom), not around its corner
-      j.el.style.left=Math.round(mp.x+j.bb.cx*k*ex-L)+'px';j.el.style.top=Math.round(mp.y+j.bb.b*k*ex-603)+'px';j.el.style.transform='scale('+(k*sc2).toFixed(4)+')';
+      var sx2=sc2*JAR_WIDEN,ex=1-sc2,exX=1-sx2;                    // the picture grows around its anchor (middle of the bottom), not around its corner; a little wider than the picture (the jars looked too thin in the compartments)
+      j.el.style.left=Math.round(mp.x+j.bb.cx*k*exX-L)+'px';j.el.style.top=Math.round(mp.y+j.bb.b*k*ex-603)+'px';j.el.style.transform='scale('+(k*sx2).toFixed(4)+','+(k*sc2).toFixed(4)+')';
       j.el.style.zIndex=back?'1':'3';
     }
     j.el.style.display=show?'block':'none';
