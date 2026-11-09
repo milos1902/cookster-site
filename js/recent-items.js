@@ -36,6 +36,17 @@
       b.setAttribute('aria-label','Zadnje korišćeno: '+(def.label||def.id));
     });
   }
+  // zuti sjaj: ide na dugme koje je kliknuto, dok ta stvar stoji u ruci; kad se spusti, nestaje
+  let glowSlot=-1,glowAt=0;
+  function clearGlow(){document.querySelectorAll('.cookster-slot-glow').forEach(g=>g.remove());glowSlot=-1;}
+  function setGlow(slot){
+    clearGlow();
+    const b=buttons()[slot];if(!b)return;
+    const g=document.createElement('img');
+    g.className='cookster-slot-glow';g.src='assets/ui/custom_elements/osvetljeni_kvadratni_panel.png';g.alt='';g.draggable=false;
+    g.style.cssText='position:absolute;left:-13%;top:-28%;width:126%;height:157%;z-index:0;pointer-events:none;object-fit:contain';
+    b.prepend(g);glowSlot=slot;glowAt=performance.now();
+  }
   function activate(slot){
     const id=recent[slot],def=id&&defOf(id);
     if(!def)return false;
@@ -51,14 +62,14 @@
       if(hid===id)return true;
     }
     const there=UNIQUE.test(id)?(window.items||items).find(el=>el.dataset.itemId===id&&el!==holding):null;
-    if(there){try{startHolding(there);}catch(_){}return true;}
+    if(there){try{startHolding(there);}catch(_){}setGlow(slot);return true;}
     const el=makeItem({...def,instanceId:nextItemInstanceId(id),x:700-def.w/2,y:560-def.h,z:++zCounter});
     if(!el)return false;
     el.dataset.surfaceZone='table';
     setPose(el,700,560,surfaceScaleFor(el,'table',560));
     // the new copy stands at (700,560) on the table: it must never be shown, only the copy that follows the mouse (that is the flash that was seen)
     el.dataset.noFlash='1';el.style.visibility='hidden';setTimeout(()=>{delete el.dataset.noFlash;},1500);
-    startHolding(el);
+    startHolding(el);setGlow(slot);
     try{CooksterSave.schedule();}catch(_){}
     return true;
   }
@@ -68,6 +79,7 @@
     const h=(typeof holding!=='undefined')?holding:null;
     if(h&&h!==lastHeld)push(h.dataset&&h.dataset.itemId);
     lastHeld=h;
+    if(glowSlot>=0&&!h&&performance.now()-glowAt>300)clearGlow();
     render(false);
   }
   requestAnimationFrame(tick);
