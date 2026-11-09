@@ -252,7 +252,7 @@
     if(heating)d.heat+=(targetHeat-d.heat)*Math.min(1,dt*.95);
     else d.heat=Math.max(0,d.heat-dt*.045);   // cools slowly: steam keeps rising for a good while after the pan leaves the fire
 
-    // Tiha vatra (nivo 1) + ulje ili tecnost u posudi: gotovo jelo se samo krca i NE MOZE da zagori (dugo kuvanje, 2-3 sata).
+    // Tiha vatra (nivo 1) + ulje ili tecnost u posudi: jelo se kuva i prži kroz sve faze, ali NE MOZE da zagori (dugo kuvanje, 2-3 sata).
     // Bez ulja i bez tecnosti tiha vatra ne stiti: hrana moze da se zalepi i zagori (pravilo "suvo zagorevanje" nize).
     const simmerSafe=fireLevel===1&&((+d.staples.oil||0)>0||!!(opts&&opts.wet));
     if(heating){
@@ -262,7 +262,9 @@
         if(b.doneness<1){
           b.doneness=Math.min(1,b.doneness+(dt/baseCookSeconds)*b.cookSpeed);
           b.overcook=0;
-        }else if(!simmerSafe){
+        }else if(simmerSafe){
+          b.overcook=Math.min(1.9,b.overcook+dt*b.burnSpeed*.35);   // tiha vatra + ulje: prži se i prolazi kroz sve faze (zapečeno, dobro pečeno), ali staje tik pre "zagorelo"
+        }else{
           b.overcook+=dt*b.burnSpeed*.35;   // and it takes about three times as long to burn after it is done
           if(b.overcook>=2)b.burnt=true;
         }
