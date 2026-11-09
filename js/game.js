@@ -4764,6 +4764,7 @@ const BUILTIN_UI_ELEMENT_DEFS=[
 ];
 const BUILTIN_UI_ELEMENT_IDS=new Set(BUILTIN_UI_ELEMENT_DEFS.map(def=>def.id));
 const REMOVED_SIDE_BOTTOM_UI_INSTANCE_IDS=new Set([
+  'ui_instance_e4bd577d-8559-4cf0-b494-77cdcafb4a70',      // stalni svetli panel iza 3. polja: sjaj sada ide na dugme koje se klikne (js/recent-items.js)
   'ui_instance_495250cc-56a3-4f23-a727-9169564f7000',
   'ui_instance_e288bf45-35f1-45f3-a42a-4cac8c62b193',
   'ui_instance_25de8a40-6f61-4edd-a5d1-decdcc61eeb1',

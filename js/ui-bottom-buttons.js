@@ -16,7 +16,7 @@
   const DEFAULT_ZONES=[
     ['button_87b2d209-c0ff-44a0-8e92-bc8aff4a362f',597,820,73,76,5,'center',1,false],
     ['button_d30f616c-20dd-461a-b741-c6e9b5322f67',676,820,76,76,6,'center',2,false],
-    ['button_8d4fb093-99d9-4d2e-b4c8-5dd5f8e1f7f0',757,819,76,77,10,'center',3,true],
+    ['button_8d4fb093-99d9-4d2e-b4c8-5dd5f8e1f7f0',757,819,76,77,10,'center',3,false],
     ['button_d65e553a-dff4-4099-8c66-67e6e067f817',838,819,76,77,7,'center',4,false],
     ['button_bd98d20a-02d5-4d0f-a9f5-3150e0b839b7',919,819,76,77,8,'center',5,false],
     ['button_e94d7354-62d9-4db6-b561-3fd47904139f',1001,819,74,77,9,'center',6,false]
