@@ -171,7 +171,7 @@ window.addEventListener('pointerdown',function(e){if(menu&&!menu.contains(e.targ
 // FRAMES: [picture, width, height] of every phase after the ball (the same transparent canvas, in the order of shaping)
 var FRAMES=[['assets/meat/mleveno_faza_1.png',50,45],['assets/meat/mleveno_faza_2.png',62,45],['assets/meat/mleveno_faza_3.png',72,48]];
 var BURGER={plain:['assets/meat/pljeskavica_obicna.png',80,61],spiced:['assets/meat/pljeskavica_zacinjena.png',80,68]};
-var RAD_PER_STAGE=1.5;      // radians of circling (about a quarter of a turn) for one phase
+var RAD_PER_STAGE=1.2;      // radians of circling (about a quarter of a turn) for one phase
 var st=null;
 function setFrame(el,i){      // i: 0 = the ball, 1..FRAMES.length = the phases
   var f=i<=0?[VEGETABLES.mleveno_loptica.src,VEGETABLES.mleveno_loptica.w,VEGETABLES.mleveno_loptica.h]:FRAMES[Math.min(i,FRAMES.length)-1];
@@ -191,6 +191,7 @@ window.addEventListener('pointerdown',function(e){
   if(e.button!==0)return;try{if(typeof holding!=='undefined'&&holding)return;}catch(x){}
   var b=ballAt(e.clientX,e.clientY);if(!b)return;
   var c=centerOf(b);
+  if(!window.__minceHint){window.__minceHint=1;toast('Drži klik i kruži mišem oko mesa da ga oblikuješ.');}
   st={ball:b,x0:e.clientX,y0:e.clientY,moved:false,ang:null,rot:0,s0:+b.dataset.minceStage||0,c:c};
   e.preventDefault();e.stopImmediatePropagation();
 },true);
@@ -199,9 +200,9 @@ window.addEventListener('pointermove',function(e){
   if(!st.moved&&Math.hypot(e.clientX-st.x0,e.clientY-st.y0)<7)return;
   st.moved=true;
   var c=centerOf(st.ball),dx=e.clientX-c[0],dy=e.clientY-c[1],d=Math.hypot(dx,dy);
-  if(d<c[2]*.18||d>c[2]*2.6){st.ang=null;e.preventDefault();return;}      // too close to the middle or far from the meat: no circling is counted
+  if(d<5||d>Math.max(c[2]*6,150)){st.ang=null;e.preventDefault();return;}      // right on the middle or very far from the meat: no circling is counted (a big circle round a small ball is fine)
   var a=Math.atan2(dy,dx);
-  if(st.ang!=null){var da=a-st.ang;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;if(Math.abs(da)<1.2)st.rot+=Math.abs(da);}      // the angle travelled round the meat (either way)
+  if(st.ang!=null){var da=a-st.ang;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;if(Math.abs(da)<2.4)st.rot+=Math.abs(da);}      // the angle travelled round the meat (either way)
   st.ang=a;
   var stage=st.s0+Math.floor(st.rot/RAD_PER_STAGE);
   if(stage>FRAMES.length){var bl=st.ball;st=null;toBurger(bl);return;}
