@@ -1264,3 +1264,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Zvuk mešanja (js/stir-sound.js): prati brzinu ruke/miša (ne sporo okretanje mase), staje čim se ruka zaustavi; brže je glasnije i svetlije.
 - Zvuk mešanja prepravljen: isti 'cvrčeći' zvuk kao prženje; sporo = malo jače cvrčanje, brzo = oštro šištanje sa pucketanjem kao pri ubacivanju hrane.
 - Piece-sim: posuda puna po kapacitetu uvek dostiže celu kalibrisanu površinu hrane (cover 1.75 = gornja linija); ranije je veliki tiganj sa 6 komada imao 0.99 i hrana je stajala na dnu (uglu gde dno prelazi u zid).
+- Zvuk mešanja: samo kad je tiganj na upaljenom šporetu i svira prženje (pan-sizzle); tada suptilno pojačava cvrčanje (oko 25%), inače ćuti.
