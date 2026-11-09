@@ -231,6 +231,7 @@ window.addEventListener('pointermove',function(e){
   st.moved=true;
   var c=centerOf(st.ball),dx=e.clientX-c[0],dy=e.clientY-c[1],d=Math.hypot(dx,dy);
   stretchTo(st.ball,dx,dy,c[2]);
+  st.x1=Math.min(st.x1==null?e.clientX:st.x1,e.clientX);st.x2=Math.max(st.x2==null?e.clientX:st.x2,e.clientX);st.y1=Math.min(st.y1==null?e.clientY:st.y1,e.clientY);st.y2=Math.max(st.y2==null?e.clientY:st.y2,e.clientY);
   if(d<5||d>Math.max(c[2]*6,150)){st.ang=null;}      // right on the middle or very far from the meat: no circling is counted (a big circle round a small ball is fine)
   else{var a=Math.atan2(dy,dx);
     if(st.ang!=null){var da=a-st.ang;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;if(Math.abs(da)<2.4){st.rot+=Math.abs(da);st.sig=(st.sig||0)+da;}}      // the angle travelled round the meat (either way); sig = the net turn (going back and forth cancels out)
@@ -240,7 +241,8 @@ window.addEventListener('pointermove',function(e){
   var ddx=e.clientX-st.sx;if(Math.abs(ddx)>14){var dr=ddx>0?1:-1;if(st.dirx&&dr!==st.dirx)st.rev++;st.dirx=dr;st.sx=e.clientX;}
   st.px=e.clientX;st.py=e.clientY;
   if(!st.track){      // the way of moving decides what is made: going round = a burger, back and forth = a cevap
-    if(Math.abs(st.sig||0)>1.6)st.track='burger';else if(st.rev>=2&&Math.abs(st.sig||0)<1.2&&st.path>60)st.track='cevap';
+    var xr=st.x2-st.x1,yr=st.y2-st.y1;      // the shape of the way of the mouse: flat (left-right) = a cevap, round = a burger
+    if(xr>=28&&yr<=xr*.5&&st.rev>=1)st.track='cevap';else if(Math.abs(st.sig||0)>1.8&&yr>xr*.55&&xr>=20)st.track='burger';
     if(st.track){st.ball.dataset.minceTrack=st.track;st.rot=Math.min(st.rot,0);st.roll=0;st.pathAtLock=st.path;}
   }
   if(!st.track){e.preventDefault();return;}

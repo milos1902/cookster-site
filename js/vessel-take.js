@@ -78,6 +78,8 @@
       else if(st>=4&&def.friedSrc){outSrc=def.friedSrc;outLabel='Pečena šnicla';meatDone='fried';}
       else{outSrc=def.src;outLabel=def.label;}
     }
+    let mince=null;
+    if(def.meat==='mleveno'){const m=/_m(\d+)(s?)_celo$/.exec(key);mince={gc:m?(+m[1])/100:0,sp:!!(m&&m[2])};outSrc=entry.src||outSrc;}      // a burger / cevap comes out as cooked as it went in
     removeOne(v,key);
     const half=key==='kupus_pola_kiseli',sour=/kiseli/.test(key);
     const sl=meatDone==='sliced'&&def.grilledSliced;
@@ -89,6 +91,7 @@
     loose.dataset.vegetable='1';loose.dataset.collisionProfile='vegetable';loose.dataset.vegKey=base;loose.dataset.cutState='whole';
     if(sour)loose.dataset.fermentPhase='3';
     if(half)loose.dataset.kupusHalf='1';
+    if(mince){loose.dataset.grillCook=String(mince.gc);if(mince.sp)loose.dataset.minceLuk='1';if(mince.gc>=.9)loose.dataset.meatDone='grilledBurnt';else if(mince.gc>=.3)loose.dataset.meatDone='grilled';loose.dataset.itemId=base;}
     restoreState(loose,key);
     loose.dataset.surfaceZone=v.dataset.surfaceZone==='stove'?'table':(v.dataset.surfaceZone||'table');
     setPose(loose,p.x,p.y,+v.dataset.vis||1);
