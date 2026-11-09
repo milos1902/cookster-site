@@ -9,7 +9,7 @@ if(window.CooksterDamper)return;
 var KEY='cookster.damper.v1';
 // where the plate of the handle sits on the pipe (scene pixels) and how big it is
 var CX=1608,CY=242,PLATE=25.3;
-var IMG_W=501,IMG_H=598,PCX=115.5,PCY=105.5,PLATE_PX=225;     // the picture (half size of the original), the middle of its plate and the width of the plate in it
+var IMG_W=330,IMG_H=311,PCX=59.4,PCY=35.6,PLATE_PX=114;     // the picture (half size of the original), the middle of its plate and the width of the plate in it
 var K=PLATE/PLATE_PX;
 var img=null;
 
@@ -19,7 +19,7 @@ function toast(m){try{showToast(m);}catch(e){}}
 function paint(){
   if(!img)return;
   var c=closed();
-  img.src='assets/ui/stove/siber_'+(c?'zatvoren':'otvoren')+'.webp?v=1';
+  img.src='assets/ui/stove/siber_'+(c?'zatvoren':'otvoren')+'.webp?v=2';
   img.title=c?'Šiber: zatvoren (tiha vatra). Klik: otvori':'Šiber: otvoren. Klik: zatvori (tiha vatra)';
 }
 function set(isClosed,quiet){
