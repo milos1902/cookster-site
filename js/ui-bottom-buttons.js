@@ -49,8 +49,10 @@
   (function migrateTray(){
     const FLAG='cookster.tray-scale.buttons.v1';
     try{
-      if(!TRAY||localStorage.getItem(FLAG)==='done')return;
-      if(hadImport){
+      if(!TRAY)return;
+      const prev=TRAY.prev(localStorage.getItem(FLAG),hadImport?1:TRAY.S);   // nov igrac: podrazumevane su vec u novoj razmeri
+      if(prev!==TRAY.S){
+        const f=TRAY.S/prev;
         const raw=JSON.parse(localStorage.getItem(CALIBRATION_KEY)||'null');
         const rows=Array.isArray(raw)?raw:(Array.isArray(raw?.buttons)?raw.buttons:null);
         const ids=new Set(DEFAULT_ZONES.map(z=>z[0]));
@@ -59,14 +61,14 @@
             if(!r||!ids.has(r.id))return;
             const w=Number(r.width??r.w),h=Number(r.height??r.h),x=Number(r.x),y=Number(r.y);
             if(![w,h,x,y].every(Number.isFinite))return;
-            r.x=TRAY.px(x);r.y=TRAY.py(y);
-            if(r.width!==undefined)r.width=TRAY.sz(w);else if(r.w!==undefined)r.w=TRAY.sz(w);
-            if(r.height!==undefined)r.height=TRAY.sz(h);else if(r.h!==undefined)r.h=TRAY.sz(h);
+            r.x=TRAY.px(x,f);r.y=TRAY.py(y,f);
+            if(r.width!==undefined)r.width=TRAY.sz(w,f);else if(r.w!==undefined)r.w=TRAY.sz(w,f);
+            if(r.height!==undefined)r.height=TRAY.sz(h,f);else if(r.h!==undefined)r.h=TRAY.sz(h,f);
           });
           localStorage.setItem(CALIBRATION_KEY,JSON.stringify(raw));
         }
       }
-      localStorage.setItem(FLAG,'done');
+      localStorage.setItem(FLAG,String(TRAY.S));
     }catch(_){}
   })();
   const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
