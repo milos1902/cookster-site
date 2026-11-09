@@ -299,11 +299,22 @@ function prepareContactShadowAlphaBounds(contact,img){
 function styleCalibratedContactShadow(contact,cfg,w,h,cx,by,ang,held=false){
  if(!contact||!cfg)return false;
  const sy=Math.max(.01,+cfg.height||.07),sx=Math.max(.05,+cfg.width||.72);
- const b=contact._alphaBounds||contactShadowAlphaBoundsFor(contact.querySelector('img'))||{l:0,t:0,r:1,b:1};
+ // Slika se menja (cela paprika -> kockice, pecenje...): granice providnosti moraju da prate TRENUTNU sliku.
+ const shImg=contact.querySelector('img');
+ const curSrc=shImg?(shImg.currentSrc||shImg.src||''):'';
+ if(curSrc&&contact._boundsSrc!==curSrc){
+   contact._boundsSrc=curSrc;
+   const cached=contactShadowAlphaBoundsCache.get(curSrc);
+   if(cached)contact._alphaBounds=cached;
+   else prepareContactShadowAlphaBounds(contact,shImg);
+ }
+ const b=contact._alphaBounds||contactShadowAlphaBoundsFor(shImg)||{l:0,t:0,r:1,b:1};
  const bw=Math.max(.01,b.r-b.l),bh=Math.max(.01,b.b-b.t);
  const cropW=w*bw,cropH=h*bh;
  const x0=cx-w/2+w*b.l+(+cfg.x||0);
- const shadowBottom=by+(+cfg.y||0);
+ // Donja ivica senke = stvarna donja ivica predmeta (ne ivica slike): providan prazan prostor pri dnu slike je ranije
+ // spustao senku ispod predmeta pa je izgledalo da predmet lebdi.
+ const shadowBottom=by-h*(1-b.b)+(+cfg.y||0);
 
  contact.style.display='block';
  contact.style.overflow='hidden';
@@ -312,8 +323,10 @@ function styleCalibratedContactShadow(contact,cfg,w,h,cx,by,ang,held=false){
  contact.style.left=x0+'px';
  contact.style.top=(shadowBottom-cropH)+'px';
  contact.style.transformOrigin='50% 100%';
- contact.style.opacity=Math.max(0,Math.min(1,+cfg.opacity||0)).toFixed(3);
- contact.style.filter=`blur(${Math.max(0,+cfg.blur||0)}px)`;
+ // U ruci (podignut) je senka mekša: veći blur i malo blaža; spušteno se vraća tačno podešena senka.
+ const baseBlur=Math.max(0,+cfg.blur||0),baseOp=Math.max(0,Math.min(1,+cfg.opacity||0));
+ contact.style.opacity=(held?baseOp*.8:baseOp).toFixed(3);
+ contact.style.filter=`blur(${held?(baseBlur*1.8+4).toFixed(2):baseBlur}px)`;
  contact.style.transform=`rotate(${ang+(+cfg.angle||0)}deg) scaleX(${sx}) scaleY(${sy})`;
 
  const img=contact.querySelector(':scope > img');
@@ -4323,7 +4336,8 @@ function createContactShadowLab(){
    const el=e.target?.closest?.('.item');if(!el)return;
    e.preventDefault();e.stopImmediatePropagation();
    aiming=false;aimBtn.textContent='Нишани';document.body.classList.remove('cds-aim');
-   try{panel.style.display='block';populate();itemSel.value=contactShadowProfileKeyFor(el);itemSel.onchange();}catch(_){}
+   try{panel.style.display='block';populate();itemSel.value=contactShadowProfileKeyFor(el);itemSel.onchange();
+   }catch(_){}
  },true);
  const resetBtn=btn('Ресетуј предмет',resetCurrentItem);
  const exportBtn=btn('Извези master JSON',exportMaster);
@@ -4471,7 +4485,7 @@ function createContactShadowLab(){
    const pot=String(itemId).includes('serpa');
    return pot
     ?{shadowX:0,shadowY:0,width:1.10,height:.70,opacity:.52,blur:.8,angle:.6}
-    :{shadowX:0,shadowY:0,width:.72,height:.07,opacity:.52,blur:.8,angle:.6};
+    :{shadowX:0,shadowY:0,width:.84,height:.9,opacity:.74,blur:1.4,angle:.6};   // pocetna senka: prilegla uz sto (kao podeseni predmeti), ne tanka linija ispod koja izgleda kao da predmet lebdi
  }
  function select(c){
    state.selected=c||null;
@@ -8147,7 +8161,7 @@ function updateHeldContactShadowFromPose(el,pose,surfaceOverride=null){
   if(img)img.style.display='block';
   el._contactShadow.style.background='';
   el._contactShadow.style.borderRadius='';
-  styleCalibratedContactShadow(el._contactShadow,cfg,w,h,cx,by,ang,false);
+  styleCalibratedContactShadow(el._contactShadow,cfg,w,h,cx,by,ang,true);
  }
  el._contactShadow.style.zIndex=String(Math.max(1,(Number.isFinite(+pose.z)?+pose.z:20)-1));
 }
