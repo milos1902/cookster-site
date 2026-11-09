@@ -213,7 +213,15 @@
       : 0;
     // New food enters as a fresh thermal batch, even if the same ingredient
     // was already cooking. This prevents inherited doneness.
+    // Fresh food thrown into food that is already cooking: it cools and mixes with it, so the whole dish gets the AVERAGE cooking (what the bar shows),
+    // instead of the old food going on burning by itself behind a bar that went down.
+    const oldLive=d.batches.filter(b=>!b.burnt&&b.count>0&&(+b.doneness>0||+b.overcook>0));
     d.batches.push(makeBatch(key,amount));
+    if(oldLive.length){
+      const live=d.batches.filter(b=>!b.burnt&&b.count>0),tot=live.reduce((n,b)=>n+b.count,0)||1;
+      const avgD=live.reduce((n,b)=>n+(+b.doneness||0)*b.count,0)/tot,avgO=live.reduce((n,b)=>n+(+b.overcook||0)*b.count,0)/tot;
+      for(const b of live){b.doneness=avgD;b.overcook=avgD>=1?avgO:0;}
+    }
     summarize(d);
     return write(pan,d);
   }
