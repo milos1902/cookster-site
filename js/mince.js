@@ -6,7 +6,7 @@
 (function(){
 'use strict';
 if(window.CooksterMince)return;
-var KEY='mleveno_meso',NK='mleveno_nadev',NADEV_ID='kal_01_mleveno_nadev',PER_BAG=6,CEVAPI=4;      // NK: the minced meat for the filling (sarma, peppers): comes without the bag, never makes a ball
+var KEY='mleveno_meso',NK='mleveno_nadev',NADEV_ID='kal_01_mleveno_nadev',RK='pirinac',RICE_ID='kal_01_pirinac',PER_BAG=6,CEVAPI=4;      // NK: the minced meat for the filling (sarma, peppers): comes without the bag, never makes a ball
 var IMG={plain:'assets/meat/mleveno_gomila.png',luk:'assets/meat/mleveno_luk.png',pap:'assets/meat/mleveno_paprika.png',both:'assets/meat/mleveno_luk_paprika.png'};
 var BAG_SRC='assets/meat/mleveno_kesa.png';
 function toast(m){try{showToast(m);}catch(e){}}
@@ -76,8 +76,30 @@ function addNadev(item,v){
   try{playImpactSound(v,'drop');}catch(e){}
   try{rerender(v);}catch(e){}return true;
 }
+function addRice(item,v){
+  if(!(heatable(v)||isBowl(v))){toast('Pirinač ide u tiganj, šerpu ili vanglu.');return true;}
+  try{if(heatable(v)&&CooksterPan.read(v).burnt){toast('Posuđe je zagorelo — operi ga pre nove ture.');return true;}}catch(e){}
+  try{if(containerTotal(v)>=containerCapacity(v)){toast('Posuda je puna.');return true;}}catch(e){}
+  var meta={key:RK,type:'ingredient',label:'Pirinač',src:'assets/ingredients/pirinac_diced.webp',form:'grain',baseKey:RK,cutState:'whole'};
+  if(heatable(v)){CooksterPan.addIngredient(v,RK,1);try{rememberPanIngredientMeta(v,meta);}catch(e){}}
+  else{var m=CooksterContainer.read(v);m.items=m.items||{};var cur=m.items[RK]?Math.max(0,+m.items[RK].count||0):0;m.items[RK]=Object.assign({},meta,{count:cur+1});CooksterContainer.write(v,m);}
+  try{removeItem(item);}catch(e){}
+  try{holding=null;hidePlacementGhost();hideOriginGhost();clearPanTargets();updateHover();}catch(e){}
+  try{playImpactSound(v,'drop');}catch(e){}
+  try{rerender(v);}catch(e){}return true;
+}
+// the rice in a vessel: the white grains cover the floor (a few grains with one dose, more layers with the next ones), above the meat; drawn after the meat
+function appendRice(layer,v,count){
+  if(!layer||!v)return;var host=document.createElement('div');host.className='rice-host';host.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:31;overflow:visible';
+  var n=Math.max(1,Math.min(4,Math.round(count))),rots=[0,57,-33,121],sc=[1,1.07,1.04,1.1],tx=[0,4,-5,3],ty=[0,-4,4,-3];
+  for(var i=0;i<n;i++){var im=document.createElement('img');im.className='whole-produce-piece rice-grains';im.dataset.entryKey=RK;im.src='assets/ingredients/pirinac_diced.webp?v=1';im.draggable=false;im.alt='';
+    im.style.cssText='position:absolute;pointer-events:none;object-fit:fill;transform:translate('+tx[i]+'%,'+ty[i]+'%) rotate('+rots[i]+'deg) scale('+sc[i]+');filter:drop-shadow(0 1px 1px rgba(40,20,5,.35))';
+    host.appendChild(im);layout(im,v,Math.max(2,count));}
+  layer.appendChild(host);
+}
 function handle(item,v){
   if(!item||!item.dataset)return false;
+  if(item.dataset.itemId===RICE_ID)return addRice(item,v);
   if(item.dataset.itemId===NADEV_ID)return addNadev(item,v);
   if(item.dataset.minceBag==='1')return pour(item,v);
   return absorb(item,v);
@@ -322,5 +344,5 @@ setInterval(function(){
   });}catch(e){}
 },700);
 
-window.CooksterMince={NK:NK,NADEV_ID:NADEV_ID,handle:handle,append:append,takeBall:takeBall,fromFridge:fromFridge,units:units,state:state,shape:shape,KEY:KEY};
+window.CooksterMince={appendRice:appendRice,NK:NK,NADEV_ID:NADEV_ID,handle:handle,append:append,takeBall:takeBall,fromFridge:fromFridge,units:units,state:state,shape:shape,KEY:KEY};
 })();
