@@ -1,7 +1,7 @@
 /* Cookster: the voice of the narrator (the heir of the house) in the first minutes of a new game.
    The kitchen starts dirty. When the game is shown (the menu is closed) and nothing has been cleaned yet, the narrator says:
      1. "Pre bilo čega... moram sve da očistim."   (assets/audio/narracija/ocistiti.mp3)
-     2. 3.5 seconds after the first one has ended: "Negde je tu sigurno bila metla."   (metla.mp3)
+     2. right after the first one has ended (no pause): "Negde je tu sigurno bila metla."   (metla.mp3)
    The words also appear as a subtitle at the bottom. Each line plays once per start of the game. The voice was made in ElevenLabs.
    More lines (the letter, the neighbour at the window) come later. */
 (function(){
@@ -25,16 +25,17 @@ function showSub(t,ms){
   clearTimeout(subT);sub.textContent=t;void sub.offsetWidth;sub.classList.add('on');
   subT=setTimeout(function(){sub.classList.remove('on');},ms);
 }
-function say(id,done){
+function say(id,done,early){
   var L=LINES[id];if(!L||played[id])return false;
   played[id]=1;
   var a=new Audio(DIR+L.file);a.volume=.95;cur=a;
   var finished=false;function fin(){if(finished)return;finished=true;if(done)done();}
-  a.addEventListener('ended',fin);a.addEventListener('error',fin);
+  a.addEventListener('ended',fin);
+  if(early)a.addEventListener('timeupdate',function(){if(a.duration&&a.duration-a.currentTime<=early)fin();});      // the file ends with a quiet tail: the next line starts a little before the enda.addEventListener('error',fin);
   showSub(L.text,4200);
   var p=a.play();
   if(p&&p.catch)p.catch(function(){      // the browser blocks the sound until the first click: try again at the first click
-    played[id]=0;pending=function(){say(id,done);};fin=function(){};
+    played[id]=0;pending=function(){say(id,done,early);};fin=function(){};
   });
   return true;
 }
@@ -43,8 +44,8 @@ function start(){
   setTimeout(function(){
     if(!dirty())return;
     say('ocistiti',function(){
-      setTimeout(function(){say('metla');},3500);      // the second line follows the first one after a pause of 3.5 seconds
-    });
+      say('metla');      // the second line follows the first one at once (no pause)
+    },.28);
   },1500);
 }
 window.addEventListener('pointerdown',function(){if(pending){var f=pending;pending=null;f();}},true);
