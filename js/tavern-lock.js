@@ -7,7 +7,7 @@
 'use strict';
 if(window.CooksterTavernLock)return;
 var KEY='cookster.tavern-locked.v1';
-var DOOR={l:795,t:5,r:1145,b:145};      // the door in the picture of the kitchen (the same box as DOOR in js/kitchen-fixtures.js)
+var DOOR={l:797,t:4,r:1136,b:146};      // the opening of the door between the two posts (the tapes end at the posts, they are cut off there)
 var HIDE_IDS={ticket_rail:1,zvonce_konobar:1};
 var locked=true;
 try{
@@ -31,7 +31,7 @@ function build(){
   css();
   var w=DOOR.r-DOOR.l,h=DOOR.b-DOOR.t,len=Math.hypot(w,h)+30,ang=Math.atan2(h,w)*180/Math.PI;
   overlay=document.createElement('div');overlay.id='tavernLockX';
-  overlay.style.cssText='left:'+DOOR.l+'px;top:'+DOOR.t+'px;width:'+w+'px;height:'+h+'px';
+  overlay.style.cssText='left:'+DOOR.l+'px;top:'+DOOR.t+'px;width:'+w+'px;height:'+h+'px;overflow:hidden';
   [ang,-ang].forEach(function(a){
     var b=document.createElement('div');b.className='tl-bar';b.textContent='ZAKLJUČANO';
     b.style.width=len.toFixed(0)+'px';b.style.marginLeft=(-len/2).toFixed(0)+'px';b.style.transform='rotate('+a.toFixed(1)+'deg)';
