@@ -1357,3 +1357,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - 10.11.: prozor bez saksije: isecak assets/effects/prozor_bez_saksije.webp (ChatGPT, meke ivice) preko kuhinje (js/window-patch.js, sakriven kad je prozor otvoren i nocu); animacija sa padanjem saksije iskljucena (window-open.js willClip=false). Nocna slika prozora jos ima saksiju.
 - 10.11.: nocni isecak prozora bez saksije (assets/effects/prozor_bez_saksije_noc.webp), window-patch.js v2 (dan/noc preliv po nw).
 - 10.11.: prozor: saksija se vise ne vidi pri zatvaranju (window-patch v3: pri zatvaranju isecak je odmah vidljiv, pri otvaranju se sakriva tek posle 1.2 s).
+- 10.11.: prozor: nocni isecak ima istu masku (window_zone_mask) i istu providnost kao #dayWinNight, dnevni uvek 1 (nema plave senke na prozoru ujutru i uvece) - window-patch v4.
