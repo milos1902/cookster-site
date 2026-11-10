@@ -87,14 +87,14 @@ setInterval(function(){
 /* ---------- izgled ---------- */
 var css=document.createElement('style');
 css.textContent=[
-'#recBtn{position:fixed;left:14px;bottom:262px;width:62px;height:62px;z-index:1901;border:0;padding:0;border-radius:50%;cursor:pointer;background:transparent;user-select:none;-webkit-user-select:none;filter:drop-shadow(0 3px 5px rgba(40,20,6,.5));transition:transform .12s,filter .12s}',
+'#recBtn{position:fixed;left:14px;bottom:340px;width:62px;height:62px;z-index:1901;border:0;padding:0;border-radius:50%;cursor:pointer;background:transparent;user-select:none;-webkit-user-select:none;filter:drop-shadow(0 3px 5px rgba(40,20,6,.5));transition:transform .12s,filter .12s}',
 '#recBtn:hover{transform:scale(1.08);filter:drop-shadow(0 0 8px rgba(255,214,90,.9)) drop-shadow(0 3px 5px rgba(40,20,6,.5))}',
 '#recBtn img,#recBtn svg{width:100%;height:100%;display:block;pointer-events:none}',
 '#recBtn.rec-on{animation:recPulse 1.1s ease-in-out infinite}',
 '@keyframes recPulse{0%,100%{box-shadow:0 0 0 0 rgba(230,30,30,.0)}50%{box-shadow:0 0 0 7px rgba(230,30,30,.45),0 0 18px 8px rgba(230,30,30,.45)}}',
 '#recBadge{position:absolute;right:-4px;top:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#c92121;color:#fff;font:800 12px/20px system-ui,sans-serif;text-align:center;display:none;box-sizing:border-box;border:2px solid #fff3d6}',
 'body.pantry-open #recBtn,body.garden-open #recBtn,body.market-open #recBtn{display:none}',
-'#recMenu{position:fixed;left:14px;bottom:332px;z-index:1951;display:none;flex-direction:column;gap:6px;padding:8px;background:rgba(48,28,14,.96);border:2px solid #d9a441;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.5);min-width:176px}',
+'#recMenu{position:fixed;left:14px;bottom:410px;z-index:1951;display:none;flex-direction:column;gap:6px;padding:8px;background:rgba(48,28,14,.96);border:2px solid #d9a441;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.5);min-width:176px}',
 '#recMenu button{border:0;border-radius:7px;padding:8px 14px;cursor:pointer;background:#f0c36a;color:#2a1a0e;font:800 14px system-ui,sans-serif;text-align:left}',
 '#recMenu button:hover{background:#ffd98a}#recMenu button[disabled]{opacity:.45;cursor:default}',
 '#recMenu .rm-note{color:#ffeccb;font:600 12px system-ui,sans-serif;padding:0 4px}',
@@ -122,7 +122,7 @@ var FALLBACK='<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="47" fill="#7
 })();
 var badge=document.createElement('span');badge.id='recBadge';
 btn.innerHTML=FALLBACK;btn.appendChild(badge);
-btn.style.setProperty('left','14px','important');btn.style.setProperty('bottom','262px','important');   // neki drugi skript postavlja inline 'left' svim dugmadima: ovo ima prednost
+btn.style.setProperty('left','14px','important');btn.style.setProperty('bottom','340px','important');   // neki drugi skript postavlja inline 'left' svim dugmadima: ovo ima prednost
 document.body.appendChild(btn);
 
 var menu=document.createElement('div');menu.id='recMenu';document.body.appendChild(menu);
