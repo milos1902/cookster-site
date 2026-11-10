@@ -299,7 +299,7 @@
     // swaps pieces between layers so the ingredients really mix.
     fit(){
       let area=0;const ps=[...this.pieces.values()];
-      for(const p of ps)area+=Math.PI*p.r0*p.r0;
+      for(const p of ps)area+=Math.PI*p.r0*p.r0*((p.entry&&p.entry.part&&p.entry.part.kind==='mleveno_nadev')?.4:1);      // the crumbs of the filling count less: one dose covers the floor, every next dose fills the gaps and then rises gradually (not full at the second dose)
       this.room=(this.fullArea||this.area)*.62;
       this.fill=area/this.room;   // 1 = the floor of the vessel is covered
       this.cover=this.floorPoly&&this.floorArea>0?area/(FLOOR_K*this.floorArea):1;      // 1 = the floor is covered

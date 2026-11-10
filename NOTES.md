@@ -1420,3 +1420,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - 10.11.: pirinac u tiganju (piece-sim v55.3): FOOT pirinac 1.4 (238 zrna po dozi umesto 172) da zrna ne ostaju 'pola-pola' sa mesom; vise zrna od toga (2.4) je potpuno prekrivalo meso.
 - 10.11.: pirinac samo mali deo (piece-sim v55.4: FOOT pirinac .6 = 96 zrna po dozi), meso glavni sastojak.
 - 10.11.: pirinac ~57 zrna po dozi (piece-sim v55.6, FOOT pirinac .4) - Milos trazi oko 50 zrna u tiganju, meso glavni.
+- 10.11.: nadev se puni postepeno (piece-sim v55.7): mrvice nadeva racunaju se .4 u povrsini poda: 1 doza = pod sa razmacima, 2 doze guste, 3-4 doze dize se. 'Mala kasica se zaglavi u mesu': u headless testu mesanje se zavrsava ispravno (stirring=false posle puštanja), nije reprodukovano.
