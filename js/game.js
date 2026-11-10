@@ -9891,6 +9891,15 @@ function sourceIngredientKeys(payload){
     .map(([k])=>k)
     .sort();
 }
+// the share of the content that goes into a plate: 1 / (number of empty plates of the same kind, the target included)
+function pourPortionShare(source,target){
+  try{
+    const id=target?.dataset?.itemId||'';
+    if(!/tanjir/.test(id)||isHeatableCookwareItem(target))return 1;
+    const n=items.filter(e=>e!==source&&e.isConnected&&e.dataset.itemId===id&&(e===target||containerTotal(e)<=.05)).length;
+    return n>1?1/n:1;
+  }catch(_){return 1;}
+}
 function canPourInto(source,target){
   if(!source||!target||source===target||!isContainerItem(source)||!isContainerItem(target))
     return {ok:false,reason:'invalid'};
@@ -9908,17 +9917,21 @@ function canPourInto(source,target){
   if(isHeatableCookwareItem(target)&&CooksterPan.read(target).burnt)
     return {ok:false,reason:'Посуда је загорела — прво је опери.'};
 
-  const payload=vesselTransferPayload(source);
+  let payload=vesselTransferPayload(source);
+  // pouring into plates: when there are several empty plates of the same kind, only an equal share goes into this one (1/3 for three plates, then 1/2 of the rest, then all), so they are all filled evenly
+  const share=pourPortionShare(source,target);
+  if(share<.999){payload=scalePourPayload(payload,share);payload.portion=true;payload.portionN=Math.round(1/share);}
   const incomingFood=Math.max(0,+payload?.foodCount||0);
   const room=Math.max(0,containerCapacity(target)-containerTotal(target));
   // every vessel can be poured into every vessel: if the one that receives is too small for everything, it receives what fits and the rest stays in the vessel that was poured from
   if(incomingFood>room+1e-6){
     if(room<.2)return {ok:false,reason:'Посуда у коју пресипаш је пуна.'};
     const f=room/incomingFood;
-    return {ok:true,payload:scalePourPayload(payload,f),partial:true,fraction:f};
+    const p2=scalePourPayload(payload,f);p2.fraction=f*(share<.999?share:1);
+    return {ok:true,payload:p2,partial:true,fraction:p2.fraction};
   }
 
-  return {ok:true,payload};
+  return {ok:true,payload,...(share<.999?{partial:true,fraction:share}:{})};
 }
 // a part (f 0..1) of what a vessel holds: the amounts of the ingredients, of the oil and salt and of the batches (what is cooked) are multiplied, the state (heat, mix) stays
 function scalePourPayload(payload,f){
@@ -10271,7 +10284,7 @@ function beginPourTransfer(source,target){
 
     updatePourTarget();
     updateHover();
-    showToast(payload&&payload.fraction&&payload.fraction<.999?`Пресипано део у: ${target.dataset.label||'посуду'} — није стало све, остало је у првој посуди.`:`Пресипано у: ${target.dataset.label||'посуду'}.`);
+    showToast(payload&&payload.portion&&!(payload.foodCount<0)?`Presuto u: ${target.dataset.label||'tanjir'} — jednak deo, ostalo je za ostale tanjire.`:payload&&payload.fraction&&payload.fraction<.999?`Пресипано део у: ${target.dataset.label||'посуду'} — није стало све, остало је у првој посуди.`:`Пресипано у: ${target.dataset.label||'посуду'}.`);
   },910);
   return true;
 }
