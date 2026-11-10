@@ -169,7 +169,7 @@
      Svaka doza (dataset.spices) ostavlja sitne tackice u boji zacina na samom jelu, na stalnim slucajnim mestima (ne skacu pri crtanju).
      Mesanje kasikom (--stir-mix) ih utapa u jelo: sto je jelo promesanije, to su tackice blede. Prazna posuda nema tackica. */
   const DOTS={
-    paprika:{c:['#d8280f','#c21f0c','#e63a14'],n:16,s:1.0,shape:'round',a:.95},
+    paprika:{c:['#d8280f','#c21f0c','#e63a14'],n:0,s:1.0,shape:'round',a:.95},
     tucana:{c:['#b3200f','#e0561a','#8e1a0c'],n:11,s:1.45,shape:'flake',a:.95},
     biber:{c:['#1d1511','#2b201a','#120c09'],n:12,s:1.0,shape:'round',a:.95},
     so:{c:['#f7f4ea','#ffffff','#ece7d8'],n:13,s:1.0,shape:'round',a:.92},
@@ -188,9 +188,19 @@
     if(arr.length>want)arr.length=want;
     return arr;
   }
+  // the fine ground sweet paprika (aleva) dyes ALL the food of the dish reddish (meat, rice, onion ... also raw and fried): a little for one dose, a bit more for five
+  function paprikaTint(wrap,vessel){
+    if(!document.getElementById('paprikaTintCss')){const c=document.createElement('style');c.id='paprikaTintCss';
+      c.textContent='.paprika-tint>:not(.spice-dots){filter:sepia(calc(var(--pt,0)*1.0)) saturate(calc(1 + var(--pt,0)*2.4)) hue-rotate(calc(var(--pt,0)*-55deg)) brightness(calc(1 - var(--pt,0)*.06))!important}';document.head.appendChild(c);}
+    const d=+(readSpices(vessel).paprika||0);
+    if(d<=0){wrap.classList.remove('paprika-tint');wrap.style.removeProperty('--pt');return;}
+    const t=.16+.5*(1-Math.exp(-(d-1)/4.5));      // 1 dose: .16 (very little), 5 doses: .5, many: ~.66
+    wrap.classList.add('paprika-tint');wrap.style.setProperty('--pt',Math.min(.7,t).toFixed(3));
+  }
   function renderSpiceDots(wrap,vessel){
     if(!wrap)return;
     vessel=vessel||wrap.closest?.('.item');
+    try{if(vessel)paprikaTint(wrap,vessel);}catch(_){}
     const old=wrap._dotsEl;
     const visible=wrap.classList.contains('visible');
     if(!vessel||!visible){
@@ -221,7 +231,7 @@
       }
       wrap.appendChild(el);wrap._dotsEl=el;
     }
-    el.style.opacity=(1-.72*mix).toFixed(3);      // sto je jelo promesanije, tackice su blede
+    el.style.opacity='1';      // the flecks of the coarse pepper are NOT washed out by stirring: they mix with everything, but they stay
   }
   // renderFoodContents (game.js) je jedino mesto koje crta sadrzaj posude: iza njega se crtaju tackice
   (function(){
