@@ -13,7 +13,7 @@
   const LEVEL_FULL=4;                    // the food reaches the top line after about 3 additions (fill measured in floor areas)
   // how much of the floor of a vessel ONE unit of a vegetable covers: big vegetables (a head of cabbage, a zucchini, an eggplant) cover (almost) the whole floor,
   // small ones (radish, garlic) only a little. The number of pieces of a unit is multiplied by this factor (the pieces keep their own size).
-  const FOOT={kupus:1.7,tikvice:1.5,patlidzan:1.55,zelena_salata:1.35,paprika:1.35,paradajz:1.05,krastavac:1.4,luk:.9,paprika_zelena:.9,sargarepa:.7,persun:.55,beli_luk:.32,rotkvice:.34,mleveno_nadev:1,pirinac:.4};
+  const FOOT={kupus:1.7,tikvice:1.5,patlidzan:1.55,zelena_salata:1.35,paprika:1.35,paradajz:1.05,krastavac:1.4,luk:.9,paprika_zelena:.9,sargarepa:.7,persun:.55,beli_luk:.32,rotkvice:.34,mleveno_nadev:1.6,pirinac:.4};
   const hashFrac=(a,b,c)=>{let h=(a*73856093)^(b*19349663)^(c*83492791);h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967296;};
   const MAX_UNITS=6;                     // units of one ingredient drawn as pieces
   const UNIT_OFFSETS=[[0,0],[-16,5],[16,-5],[-6,-14],[8,13],[-21,-8],[21,10]];
@@ -299,7 +299,7 @@
     // swaps pieces between layers so the ingredients really mix.
     fit(){
       let area=0;const ps=[...this.pieces.values()];
-      for(const p of ps)area+=Math.PI*p.r0*p.r0;
+      for(const p of ps)area+=Math.PI*p.r0*p.r0*((p.entry&&p.entry.part&&p.entry.part.kind==='mleveno_nadev')?.4:1);      // the crumbs of the filling count less: one dose covers the floor, every next dose fills the gaps and then rises gradually (not full at the second dose)
       this.room=(this.fullArea||this.area)*.62;
       this.fill=area/this.room;   // 1 = the floor of the vessel is covered
       this.cover=this.floorPoly&&this.floorArea>0?area/(FLOOR_K*this.floorArea):1;      // 1 = the floor is covered
