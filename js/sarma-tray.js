@@ -97,18 +97,29 @@ function hit(el,cx,cy){
   st.list.forEach(function(s){var P=pts(s);for(var i=0;i<3;i++){var d=Math.hypot(P[i].x-p.x,P[i].y-p.y);if(d<s.r*1.25&&d<bd){bd=d;best=s;}}});
   return best;
 }
-function add(el,set,cx,cy){
+function add(el,set,cx,cy,rotDeg){
   var st=sys(el);if(st.list.length>=MAXN){toast('Pleh je pun.');return false;}
   var S=SETS[set]||SETS.f,len=S.len*(.94+Math.random()*.12),p=cx==null?{x:0,y:0}:local(el,cx,cy);
   var rr=Math.hypot(p.x,p.y),lim=FLOOR.rx-len*S.asp*.5*.3;if(rr>lim){p.x*=lim/rr;p.y*=lim/rr;rr=lim;}
   var tang=Math.atan2(p.y,p.x)+Math.PI/2;      // along the circle round the middle of the tray (the first rings round the edge, then inwards); the middle one lies freely
   var ang=rr<FLOOR.rx*.22?(Math.random()-.5)*1.2:tang+(Math.random()-.5)*.25;
+  if(typeof rotDeg==='number'){var kk=(FLOOR.ry*boxRatio(el))/FLOOR.rx,rs=rotDeg*Math.PI/180;ang=Math.atan2(Math.sin(rs)/kk,Math.cos(rs));}      // the player turned it with the wheel: it goes in exactly like that
   st.list.push({x:p.x,y:p.y,a:ang,len:len,r:len*S.asp*.5,set:set,pin:90});
   kick(el,60);return true;
 }
 function trayAt(e){var it=(typeof itemAt==='function')?itemAt(e.clientX,e.clientY):null;return isTray(it)?it:null;}
 function heldSarma(){try{var h=holding;return h&&h.dataset&&h.dataset.sarmaRolled==='1'?h:null;}catch(e){return null;}}
 var gestureSwallow=false;
+function applyRot(hs){
+  var d=(hs._rot||0),tf=function(h){var sc=1;try{sc=(hs._sm&&hs._sm.set&&hs._sm.set.scale)||1;}catch(e){}h.style.transform='scale('+sc+') rotate('+d+'deg)';h.style.transformOrigin='50% 50%';};
+  document.querySelectorAll('.placement-ghost .sarma-frames').forEach(tf);var own=hs.querySelector('.sarma-frames');if(own)tf(own);
+}
+window.addEventListener('wheel',function(e){
+  var hs=heldSarma();if(!hs)return;
+  e.preventDefault();e.stopImmediatePropagation();
+  var dy=e.deltaMode===1?e.deltaY*33:e.deltaY;hs._rot=((hs._rot||0)+(dy<0?-1:1)*Math.min(30,Math.max(8,Math.abs(dy)*.12)))%360;applyRot(hs);
+},{capture:true,passive:false});
+setInterval(function(){var hs=heldSarma();if(hs&&hs._rot)applyRot(hs);},120);
 window.addEventListener('pointerdown',function(e){
   if(e.button!==0)return;
   var tr=trayAt(e);
@@ -117,7 +128,7 @@ window.addEventListener('pointerdown',function(e){
     var t=tr;if(!t)return;
     var set=(hs._sm&&hs._sm.set&&hs._sm.set.pre)||'f';
     e.stopImmediatePropagation();e.preventDefault();gestureSwallow=true;
-    if(add(t,set,e.clientX,e.clientY)){
+    if(add(t,set,e.clientX,e.clientY,hs._rot!==undefined?hs._rot:undefined)){
       try{removeItem(hs);holding=null;hidePlacementGhost();hideOriginGhost();clearPourTarget();updateHover();}catch(x){}
       try{playImpactSound(t,'drop');}catch(x){}
     }
