@@ -32,7 +32,7 @@ function hanging(el,fromTable){
   var idx=el.dataset.hookIdx!=null&&el.dataset.hookIdx!==''?+el.dataset.hookIdx:2,to=hangT(idx),org=(APEX*100)+'% 0%';
   if(fromTable){
     var from=tableTransform(tableCfg);
-    try{b.animate([{transform:from,transformOrigin:'50% 100%'},{transform:to,transformOrigin:org}],{duration:420,easing:'ease-out',fill:'forwards'}).onfinish=function(){b.style.transformOrigin=org;b.style.transform=to;};}catch(e){}
+    try{b.animate([{transform:from,transformOrigin:'50% 100%',filter:'brightness('+(tableCfg.br||1)+')'},{transform:to,transformOrigin:org,filter:'brightness(1)'}],{duration:420,easing:'ease-out',fill:'forwards'}).onfinish=function(){b.style.transformOrigin=org;b.style.transform=to;};}catch(e){}
   }
   b.style.transformOrigin=org;b.style.transform=to;b.style.filter='';el.dataset.hookIdx=String(idx);
 }
@@ -42,10 +42,10 @@ function settle(itemEl){
   delete itemEl.dataset.hookIdx;
   b.style.transformOrigin='50% 100%';b.style.transform=base;b.style.filter=brF();
   try{b.animate([
-    {transform:from,transformOrigin:(APEX*100)+'% 0%',offset:0},
-    {transform:base+' scale(1.14,.74)',transformOrigin:'50% 100%',offset:.42,easing:'ease-out'},
+    {transform:from,transformOrigin:(APEX*100)+'% 0%',filter:'brightness(1)',offset:0},
+    {transform:base+' scale(1.14,.74)',transformOrigin:'50% 100%',filter:'brightness('+((1+(c.br||1))/2)+')',offset:.42,easing:'ease-out'},
     {transform:base+' scale(.97,1.05)',transformOrigin:'50% 100%',offset:.7,easing:'ease-in-out'},
-    {transform:base+' scale(1,1)',transformOrigin:'50% 100%',offset:1}
+    {transform:base+' scale(1,1)',transformOrigin:'50% 100%',filter:'brightness('+(c.br||1)+')',offset:1}
   ],{duration:560,easing:'ease-in'});}catch(e){}
 }
 // kesa iz ruke -> zapis za kuku

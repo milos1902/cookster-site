@@ -1325,3 +1325,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Ploca: najjaci sjaj 90% na najjacoj vatri, 60% na slabijoj (stove-plates.js 8, glatko). Kesa: sa kuke u ruku zadrzava viseci izgled (polozaj te kuke), pusti na sto -> spusti se/squash u "Kesa na stolu"; sa stola se uzima klikom na rucke (gornjih 30%, game.js 3.296), polako se vraca u viseci oblik; pustena preko slobodne kuke (95 px) okaci se nazad (wall-bags.js 14).
 - Kesa na stolu/u ruci vise nema natpis (ime i kolicina), game.js 3.297; ime ostaje u tooltipu.
 - Alat Kese, rezim "Kesa na stolu": novi klizac Osvetljenost (br 0.3-1.8, CSS brightness; vazi samo za kese na stolu, viseca/u ruci je bez filtera), cuva se u table cfg i izvozu (wall-bags.js 15).
+- Osvetljenost kese se postepeno menja zajedno sa kretanjem: na kuki/u ruci brightness 1, pri spustanju na sto prelazi u vrednost iz alata, pri uzimanju sa stola vraca se na 1 (wall-bags.js 16).
