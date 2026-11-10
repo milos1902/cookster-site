@@ -86,6 +86,21 @@ function layout(img,v,count){
   img.style.left=(tl-a[0]*W).toFixed(3)+'%';img.style.top=(tt-a[1]*H).toFixed(3)+'%';img.style.width=Math.max(1,W).toFixed(3)+'%';img.style.height=Math.max(1,H).toFixed(3)+'%';
   var host=img.parentNode;if(host&&host.classList&&host.classList.contains('mince-host')){host.style.clipPath=g.visibleClip;host.style.webkitClipPath=g.visibleClip;}      // never outside of the green area the player drew for this vessel
 }
+var CR={raw:'assets/meat/mleveno_meso_diced.webp?v=1',fried:'assets/meat/mleveno_meso_diced_fried.webp?v=1'};[CR.raw,CR.fried].forEach(function(u){var i=new Image();i.src=u;});
+function crumbOf(v){return Math.max(0,Math.min(1,+v._crumb||0));}
+function doneOf(v){try{var m=CooksterPan.read(v);return Math.max(0,Math.min(1,(+m.doneness||0)/.9));}catch(e){return 0;}}
+// the crumbs fill the floor of the pan like the heap does (same layout, a little wider); the raw and the fried picture cross-fade with the doneness
+function paintCrumbs(v){
+  if(!heatable(v))return;var host=v.querySelector('.mince-host');if(!host)return;var c=crumbOf(v),d=doneOf(v);
+  var heap=host.querySelector('.mince-heap');if(heap)heap.style.opacity=(1-c).toFixed(2);
+  ['raw','fried'].forEach(function(k){
+    var im=host.querySelector('.mince-crumbs-'+k);
+    if(!im){im=document.createElement('img');im.className='mince-crumbs-'+k;im.src=CR[k];im.draggable=false;im.alt='';im.style.cssText='position:absolute;pointer-events:none;object-fit:fill;opacity:0';host.appendChild(im);
+      if(heap){im.style.left=heap.style.left;im.style.top=heap.style.top;im.style.width=heap.style.width;im.style.height=heap.style.height;}}
+    else if(heap){im.style.left=heap.style.left;im.style.top=heap.style.top;im.style.width=heap.style.width;im.style.height=heap.style.height;}
+    im.style.opacity=(k==='raw'?c*(1-d):c*d).toFixed(2);
+  });
+}
 function append(layer,v,count){
   if(!layer||!v)return;
   var s=state(v),img=document.createElement('img');
@@ -94,7 +109,7 @@ function append(layer,v,count){
   var host=document.createElement('div');host.className='mince-host';host.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:30;overflow:visible';
   host.appendChild(img);layer.appendChild(host);layout(img,v,count);
 }
-function paint(v){var s=state(v),n=units(v);try{v.querySelectorAll('.mince-heap').forEach(function(i){if(i.getAttribute('src')!==s.src)i.src=s.src;layout(i,v,n);});}catch(e){}}
+function paint(v){var s=state(v),n=units(v);paintCrumbs(v);try{v.querySelectorAll('.mince-heap').forEach(function(i){if(i.getAttribute('src')!==s.src)i.src=s.src;layout(i,v,n);});}catch(e){}}
 
 // a click on the heap: one ball in the hand
 function takeBall(v,e){
@@ -264,6 +279,18 @@ function endStretch(){
 window.addEventListener('pointerup',endStretch,true);
 window.addEventListener('pointercancel',endStretch,true);
 
+setInterval(function(){      // the meat in a pan crumbles while it is stirred (about 10 s of stirring), and a little by itself in a hot pan
+  try{(window.items||items).forEach(function(v){
+    if(!v.isConnected||!heatable(v)||units(v)<=0){return;}
+    var stir=false;try{stir=(typeof stirring!=='undefined'&&stirring&&typeof stirVessel!=='undefined'&&stirVessel===v);}catch(e){}
+    var hot=0;try{hot=+CooksterPan.read(v).heat||0;}catch(e){}
+    var c=crumbOf(v),before=c;
+    var mix=0;try{mix=+CooksterPan.read(v).mix||0;}catch(e){}      // the game's own measure of how much the pan has been stirred (0..1)
+    if(stir)c=Math.min(1,c+.25/10*(hot>.25?1:.4));else if(hot>.4)c=Math.min(1,c+.25/90);
+    c=Math.max(c,Math.min(1,mix*1.25));
+    v._crumb=c;if(c!==before||c>0)paintCrumbs(v);
+  });}catch(e){}
+},250);
 // onion / pepper dropped or shaken in later: the bowl is drawn again (every 0.7 s only when something changed)
 setInterval(function(){
   try{(window.items||items).forEach(function(v){

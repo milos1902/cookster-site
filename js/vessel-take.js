@@ -56,7 +56,7 @@
   function take(hit,e){
     const v=hit.v,key=hit.img.dataset.entryKey,entry=entryOf(v,key);
     if(!entry)return false;
-    if(key==='mleveno_meso'&&window.CooksterMince)return CooksterMince.takeBall(v,e);      // a click on the minced meat takes a ball
+    if(key==='mleveno_meso'&&window.CooksterMince){if(heatable(v))return false;return CooksterMince.takeBall(v,e);}      // a click on the minced meat in a BOWL takes a ball (for the burger); in a pan it does not: there it is stirred and crumbles
     const whole=entry.form==='whole'||entry.form==='whole_roasted'||/_celo|_pola_|^paprika_pecena|^paprika_zelena_pecena/.test(key);
     if(!whole)return false;
     const base=entry.baseKey||String(key).replace(/_(pecena|zagorela|rostilj_zagorela|rostilj|krike(?:_rare|_med|_wd)?)_celo$/,'').replace(/_celo$/,''),def=VEGETABLES[base];if(!def)return false;
