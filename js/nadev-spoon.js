@@ -6,10 +6,21 @@
 (function(){
 'use strict';
 if(window.CooksterNadevSpoon)return;
-var NK='mleveno_nadev_diced',RK='pirinac_diced',PORTION=.4,W=62,H=154;      // a big spoon (the wooden one), not the small stirring spoon
+var NK='mleveno_nadev_diced',RK='pirinac_diced',PORTION=.1,W=62,H=154;      // a big spoon (the wooden one), not the small stirring spoon
 var NS={el:null,loaded:false,pan:null,rice:0,down:null};
 function emptyHands(){try{return !(typeof holding!=='undefined'&&holding&&!holding._mini);}catch(e){return true;}}      // the small stirring spoon (holding._mini) is not a thing in the hand
-function units(v,k){try{return Math.max(0,+((CooksterPan.read(v).ingredients||{})[k])||0);}catch(e){return 0;}}
+function heat(v){try{return isHeatableCookwareItem(v);}catch(e){return true;}}
+function units(v,k){      // a pan / a pot keep their food in the cooking model, a bowl in the container model
+  try{if(heat(v))return Math.max(0,+((CooksterPan.read(v).ingredients||{})[k])||0);
+    var e=(CooksterContainer.read(v).items||{})[k];return e?Math.max(0,+e.count||0):0;}catch(x){return 0;}
+}
+function setUnits(v,k,n){
+  n=Math.max(0,n);
+  try{
+    if(heat(v)){var cur=units(v,k);if(n>cur)CooksterPan.addIngredient(v,k,n-cur);else if(n<cur)CooksterPan.removeIngredient(v,k,cur-n);}
+    else{var m=CooksterContainer.read(v);m.items=m.items||{};if(m.items[k]){if(n<=0)delete m.items[k];else m.items[k]=Object.assign({},m.items[k],{count:n});}CooksterContainer.write(v,m);}
+  }catch(x){}
+}
 function nadevPan(e){
   var v=null;try{v=foodVesselAt(e.clientX,e.clientY);}catch(x){}
   return v&&units(v,NK)>0.001?v:null;      // any rest of the filling can be taken (also a small one that is still seen as a few crumbs)
@@ -24,7 +35,7 @@ function place(){var p=screenToScene(mouse.x,mouse.y);spoon().style.transform='t
 function show(on){spoon().style.display=on?'block':'none';document.body.classList.toggle('mini-spoon-on',!!on);if(on){try{miniSpoonHide();}catch(e){}}}
 function giveBack(){
   if(!NS.loaded)return;var v=NS.pan;
-  try{if(v&&v.isConnected){CooksterPan.addIngredient(v,NK,PORTION);if(NS.rice>0)CooksterPan.addIngredient(v,RK,NS.rice);renderCookwareContents(v);}}catch(e){}
+  try{if(v&&v.isConnected){setUnits(v,NK,units(v,NK)+PORTION);if(NS.rice>0)setUnits(v,RK,units(v,RK)+NS.rice);renderCookwareContents(v);}}catch(e){}
   NS.loaded=false;window.CooksterNadevLoaded=false;show(false);
 }
 window.addEventListener('pointerdown',function(e){
@@ -60,9 +71,9 @@ window.addEventListener('pointerup',function(e){
   if(!d||e.button!==0||NS.loaded||!emptyHands())return;
   if(Math.hypot(e.clientX-d.x,e.clientY-d.y)>16||performance.now()-d.t>700)return;      // a movement or a long press: it was the stirring
   var v=d.v,have=units(v,NK);if(have<=0.001||!v.isConnected)return;
-  var take=Math.min(PORTION,have);if(have-take<.2)take=have;      // the last small rest goes onto the spoon together with the last portion
+  var take=Math.min(PORTION,have);if(have-take<.04)take=have;      // the last small rest goes onto the spoon together with the last portion
   var rice=units(v,RK),share=take>=have-1e-6?rice:Math.min(rice,rice*take/have);
-  try{CooksterPan.removeIngredient(v,NK,take);if(share>0)CooksterPan.removeIngredient(v,RK,share);renderCookwareContents(v);}catch(x){return;}
+  try{setUnits(v,NK,have-take);if(share>0)setUnits(v,RK,rice-share);renderCookwareContents(v);}catch(x){return;}
   NS.loaded=true;NS.pan=v;NS.rice=share;window.CooksterNadevLoaded=true;place();show(true);
   try{playImpactSound(v,'pickup');}catch(x){}
 },true);
