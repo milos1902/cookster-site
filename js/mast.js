@@ -124,5 +124,56 @@ window.addEventListener('pointerdown',function(e){
   }
 },true);
 ['click','pointerup','mouseup'].forEach(function(t){window.addEventListener(t,function(e){var sp=spoonHeld();if(!sp)return;var it=(typeof itemAt==='function')?itemAt(e.clientX,e.clientY):null;if(isBucket(it)||(sp.dataset.mastLoad&&isPan(it))||busy){e.stopImmediatePropagation();}},true);});
+/* ---- the small spoon at the cursor (like the small stirring spoon over a pan): with EMPTY hands the cursor over the bucket of lard shows ONE small spoon.
+   A click scoops the lard (the spoon dips and comes up with a lump); the spoon stays at the cursor, loaded; a click on a pan tips it over and the lard falls in. Right click / Esc: the lard goes back. ---- */
+var MS={el:null,loaded:false,busy:false,x:0,y:0,over:false},MW=34,MH=84;
+function msEl(){
+  if(MS.el&&MS.el.isConnected)return MS.el;
+  var d=document.createElement('div');d.id='mastSpoon';d.style.cssText='position:absolute;left:0;top:0;width:'+MW+'px;height:'+MH+'px;pointer-events:none;display:none;z-index:11600;transform-origin:50% 82%';
+  var im=document.createElement('img');im.src='assets/new_props/kasika_1.png?v=2';im.draggable=false;im.style.cssText='width:100%;height:100%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))';
+  var lump=blob('left:24%;top:70%;width:52%;height:17%;z-index:3;display:none');lump.id='mastSpoonLump';
+  d.appendChild(im);d.appendChild(lump);scene.appendChild(d);MS.el=d;return d;
+}
+function msPlace(extra){
+  var d=msEl(),p=screenToScene(mouse.x,mouse.y);MS.x=p.x;MS.y=p.y;
+  d.style.transform='translate3d('+(p.x-MW/2).toFixed(1)+'px,'+(p.y-MH*.82).toFixed(1)+'px,0) rotateZ('+(180+(extra||0))+'deg)';
+}
+function msShow(on){var d=msEl();d.style.display=on?'block':'none';document.body.classList.toggle('mini-spoon-on',!!on);}
+function msLoad(on){MS.loaded=on;var l=document.getElementById('mastSpoonLump');if(l)l.style.display=on?'block':'none';}
+function overBucket(e){var it=(typeof itemAt==='function')?itemAt(e.clientX,e.clientY):null;return isBucket(it)?it:null;}
+function overPan(e){var it=(typeof itemAt==='function')?itemAt(e.clientX,e.clientY):null;return isPan(it)?it:null;}
+function emptyHands(){try{return !(typeof holding!=='undefined'&&holding);}catch(e){return true;}}
+window.addEventListener('pointermove',function(e){
+  if(MS.busy){return;}
+  if(!emptyHands()){if(MS.el&&MS.el.style.display!=='none')msShow(false);return;}
+  var show=MS.loaded||!!overBucket(e)||(MS.loaded&&!!overPan(e));
+  if(show){try{miniSpoonHide();}catch(x){}msShow(true);msPlace(0);}
+  else if(MS.el&&MS.el.style.display!=='none')msShow(false);
+},false);
+function animate(frames,ms,done){
+  var d=msEl();try{var a=d.animate(frames,{duration:ms,easing:'ease-in-out',fill:'forwards'});a.onfinish=function(){try{a.cancel();}catch(x){}done&&done();};}catch(x){done&&done();}
+}
+function tf(x,y,r){return 'translate3d('+(x-MW/2).toFixed(1)+'px,'+(y-MH*.82).toFixed(1)+'px,0) rotateZ('+r+'deg)';}
+window.addEventListener('pointerdown',function(e){
+  if(e.button===2&&MS.loaded&&emptyHands()){msLoad(false);return;}
+  if(e.button!==0||MS.busy||!emptyHands())return;
+  var bk=overBucket(e);
+  if(bk&&!MS.loaded){      // scoop: dips into the lard and comes up with a lump
+    e.stopImmediatePropagation();e.preventDefault();MS.busy=true;msShow(true);var x=MS.x,y=MS.y;
+    animate([{transform:tf(x,y-14,180)},{transform:tf(x,y+4,200),offset:.45},{transform:tf(x,y-14,180)}],520,function(){});
+    setTimeout(function(){msLoad(true);},260);
+    setTimeout(function(){MS.busy=false;msPlace(0);},540);return;
+  }
+  var pan=overPan(e);
+  if(pan&&MS.loaded){      // tips over the pan: the lard falls out
+    e.stopImmediatePropagation();e.preventDefault();MS.busy=true;var x2=MS.x,y2=MS.y;
+    animate([{transform:tf(x2,y2,180)},{transform:tf(x2,y2-10,110),offset:.4},{transform:tf(x2,y2-10,100),offset:.7},{transform:tf(x2,y2,180)}],900,function(){});
+    setTimeout(function(){msLoad(false);putInPan(pan);},420);
+    setTimeout(function(){MS.busy=false;msPlace(0);},920);return;
+  }
+  if(MS.loaded&&(overBucket(e)))e.stopImmediatePropagation();
+},true);
+window.addEventListener('keydown',function(e){if(e.key==='Escape'&&MS.loaded)msLoad(false);},false);
+['click','pointerup','mouseup'].forEach(function(t){window.addEventListener(t,function(e){if(!emptyHands()||MS.busy)return;if(overBucket(e)||(MS.loaded&&overPan(e)))e.stopImmediatePropagation();},true);});
 window.CooksterMast={BUCKET:BUCKET,put:putInPan,melting:function(p){return p._mast?p._mast.lumps.reduce(function(a,L){return a+L.left;},0):0;}};
 })();
