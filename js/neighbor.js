@@ -9,40 +9,38 @@
 if(window.CooksterNeighbor)return;
 var KEY='cookster.neighbor.v1',THRESHOLD=.5;
 var LINES=[
-  {who:'Komšinica',text:'Dobar dan, dete. Vidim da se u Savkinoj kući opet vrti.'},
-  {who:'Komšinica',text:'Tako smo mi radili dok je ona bila tu. Kucnemo na prozor, kažemo šta nam treba, a ona nam spremi.'},
-  {who:'Komšinica',text:'Da li bih mogla tebe da zamolim za jednu srpsku salatu? Imam goste kod kuće.'},
-  {who:'',text:'Salata… Nadam se da znam.'},
-  {who:'Komšinica',text:'Znaćeš. Pogledaj u njenu knjigu. Platiću, ne brini.'},
-  {who:'Komšinica',text:'Uzgred, daska ti je u desnoj fioci.'}
+  {who:'Komšinica',text:'Dobar dan, dete. Vidim da se u Savkinoj kući opet vrti.',v:'susret_1'},
+  {who:'Komšinica',text:'Tako smo mi radili dok je ona bila tu. Kucnemo na prozor, kažemo šta nam treba, a ona nam spremi.',v:'susret_2'},
+  {who:'Komšinica',text:'Da li bih mogla tebe da zamolim za jednu srpsku salatu? Imam goste kod kuće.',v:'susret_3'},
+  {who:'',text:'Salata… Nadam se da znam.',v:'susret_4'},
+  {who:'Komšinica',text:'Znaćeš. Pogledaj u njenu knjigu. Platiću, ne brini.',v:'susret_5'},
+  {who:'Komšinica',text:'Uzgred, daska ti je u desnoj fioci.',v:'susret_6'}
 ];
 var ORDERS={
   salad:{key:'cookster.neighbor.salad.v1',match:/paradajz/,pay:200,what:'činiju sa salatom',
     lines1:[
-      {who:'Komšinica',text:'Dobar dan, dete. Je l\' gotova salata?'},
-      {who:'',text:'Evo… gotova je.'},
-      {who:'Komšinica',text:'Odlično. Samo je stavi ovde, na dasku prozora.'}
+      {who:'Komšinica',text:'Dobar dan, dete. Je l\' gotova salata?',v:'salata_a1'},
+      {who:'',text:'Evo… gotova je.',v:'salata_a2'},
+      {who:'Komšinica',text:'Odlično. Samo je stavi ovde, na dasku prozora.',v:'salata_a3'}
     ],
     lines2:[
-      {who:'Komšinica',text:'Gle, divota. Kao za Savke. Novac ti ostavljam na dasci prozora, i hvala ti.'},
-      {who:'Komšinica',text:'Kad si već tu… Da li bi mogao da mi ispržiš i tikvice? Za večeru.'},
-      {who:'',text:'Tikvice… Pokušaću.'},
-      {who:'Komšinica',text:'Pazi samo na vatru, da ne zagore. Doći ću po njih.'}
+      {who:'Komšinica',text:'Gle, divota. Kao za Savke. Novac ti ostavljam na dasci prozora, i hvala ti.',v:'salata_b1'},
+      {who:'Komšinica',text:'Kad si već tu… Da li bi mogao da mi ispržiš i tikvice? Za večeru.',v:'salata_b2'},
+      {who:'',text:'Tikvice… Pokušaću.',v:'salata_b3'}
     ]},
   tikvice:{key:'cookster.neighbor.tikvice.v1',match:/tikvice/,pay:300,what:'tiganj sa tikvicama',
     lines1:[
-      {who:'Komšinica',text:'Dobar dan, dete. Jesu l\' tikvice gotove?'},
-      {who:'',text:'Evo, ispržene su.'},
-      {who:'Komšinica',text:'Divno. Stavi ih ovde, na dasku prozora.'}
+      {who:'Komšinica',text:'Dobar dan, dete. Jesu l\' tikvice gotove?',v:'tikvice_a1'},
+      {who:'',text:'Evo, ispržene su.',v:'tikvice_a2'}
     ],
     lines2:[
-      {who:'Komšinica',text:'Mmm, kako mirišu. Tačno kao kod Savke.'},
-      {who:'Komšinica',text:'Novac ti ostavljam na dasci prozora. Slobodno kucni opet kad ti zatreba još štagod.'}
+      {who:'Komšinica',text:'Mmm, kako mirišu. Lepo je Savka pričala da ćeš biti njen naslednik.',v:'tikvice_b1'},
+      {who:'Komšinica',text:'Laku noć, dete, vidimo se sutra.',v:'tikvice_b3'}
     ]}
 };
 // the sill of the open window (scene pixels): the bowl / the pan is put there with a click
 var SILL={l:0,t:175,r:125,b:335,cx:60,by:285};
-var st='idle',elK=null,elO=null,box=null,li=0,knockT=0,lines=LINES,afterTalk=null,forced=/[?&]komsinica\b/.test(location.search);
+var st='idle',elK=null,elO=null,elH=null,elJ=null,speakUntil=0,animOn=false,box=null,li=0,knockT=0,lines=LINES,afterTalk=null,forced=/[?&]komsinica\b/.test(location.search);
 function done(){try{return localStorage.getItem(KEY)==='1';}catch(e){return false;}}
 function prog(){try{return window.CooksterKitchenClean&&CooksterKitchenClean.active()?CooksterKitchenClean.progress():-1;}catch(e){return -1;}}
 function build(){
@@ -50,6 +48,14 @@ function build(){
   function mk(id,src,l,t,w,h,z){var d=document.createElement('div');d.id=id;d.setAttribute('aria-hidden','true');d.style.cssText='position:absolute;left:'+l+'px;top:'+t+'px;width:'+w+'px;height:'+h+'px;pointer-events:none;z-index:'+z+';opacity:0;transition:opacity .7s ease;background:url('+src+') 0 0/100% 100% no-repeat';return d;}
   elK=mk('komsinicaKuca','assets/effects/komsinica_kuca.webp?v=1',0,26,74,252,0);
   elO=mk('komsinicaOtvoren','assets/effects/komsinica_otvoren.webp?v=1',0,0,142,312,2);
+  // living neighbour: a copy of the head (soft mask) sways a little and a copy of the mouth area (child of the head) moves like a jaw while she speaks
+  var BG='url(assets/effects/komsinica_otvoren.webp?v=1) 0 0/100% 100% no-repeat';
+  function ml(el,m){el.style.webkitMaskImage=m;el.style.maskImage=m;}
+  elH=document.createElement('div');elH.style.cssText='position:absolute;left:0;top:0;width:142px;height:312px;pointer-events:none;background:'+BG+';transform-origin:37px 192px;will-change:transform';
+  ml(elH,'radial-gradient(ellipse 36px 50px at 33px 142px,#000 62%,transparent 100%)');
+  elJ=document.createElement('div');elJ.style.cssText='position:absolute;left:0;top:0;width:142px;height:312px;pointer-events:none;background:'+BG+';transform-origin:47px 158px;will-change:transform';
+  ml(elJ,'radial-gradient(ellipse 15px 11px at 47px 166px,#000 55%,transparent 100%)');
+  elH.appendChild(elJ);elO.appendChild(elH);
   var ref=document.getElementById('windowOpen');
   if(ref&&ref.parentNode===sc){sc.insertBefore(elK,ref);sc.insertBefore(elO,ref.nextSibling);}else{sc.appendChild(elK);sc.appendChild(elO);}
   var css=document.createElement('style');
@@ -88,8 +94,28 @@ function talk(ls,after){
   setTimeout(function(){elO.style.opacity='1';},900);
   setTimeout(function(){li=0;showLine();},1700);
 }
+// she moves while she speaks: the head sways, the mouth area opens and closes (a line with a voice file can call speak(ms) with its real length)
+function speak(ms){speakUntil=performance.now()+ms;if(!animOn){animOn=true;requestAnimationFrame(animStep);}}
+function animStep(now){
+  if(!elH){animOn=false;return;}
+  var t=now/1000,on=now<speakUntil,amp=on?1:0;
+  animStep.a=(animStep.a||0)+((amp-(animStep.a||0))*.15);var a=animStep.a;      // smooth start / stop
+  var syl=Math.max(0,Math.sin(t*13.5)*Math.sin(t*5.3+1.2)+.25);      // syllables: bursts of mouth movement with small pauses
+  var jaw=a*syl*2.2,rot=a*(Math.sin(t*2.1)*1.3+Math.sin(t*3.7)*.5)+Math.sin(t*.9)*.25,tx=a*Math.sin(t*1.7)*.9,ty=a*(Math.sin(t*2.9)*.9)+Math.sin(t*1.1)*.4;
+  elH.style.transform='translate('+tx.toFixed(2)+'px,'+ty.toFixed(2)+'px) rotate('+rot.toFixed(2)+'deg)';
+  elJ.style.transform='translateY('+jaw.toFixed(2)+'px) scaleY('+(1+jaw*.025).toFixed(3)+')';
+  if(on||a>.01)requestAnimationFrame(animStep);else{animOn=false;elH.style.transform='';elJ.style.transform='';}
+}
+var vAud=null;
+function stopVoice(){if(vAud){try{vAud.onended=null;vAud.pause();}catch(e){}vAud=null;}}
+function playVoice(L){      // the line has a voice file: she moves for its real length, and the next line comes right after it (no pause)
+  stopVoice();var a=new Audio('assets/audio/komsinica/'+L.v+'.mp3?v=1'),my=li;a.volume=.95;vAud=a;
+  a.addEventListener('loadedmetadata',function(){if(vAud===a&&L.who&&isFinite(a.duration))speak(a.duration*1000+150);});
+  a.onended=function(){if(vAud===a&&st==='talk'&&li===my){vAud=null;next();}};
+  var pr=a.play();if(pr&&pr.catch)pr.catch(function(){});
+}
 function showLine(){
-  var L=lines[li];box.querySelector('.nb-who').textContent=L.who||'';box.querySelector('.nb-who').style.display=L.who?'':'none';
+  var L=lines[li];stopVoice();if(L.who)speak(Math.max(1200,L.text.length*62));else speakUntil=0;if(L.v)playVoice(L);box.querySelector('.nb-who').textContent=L.who||'';box.querySelector('.nb-who').style.display=L.who?'':'none';
   box.querySelector('.nb-text').textContent=L.text;box.querySelector('.nb-text').style.fontStyle=L.who?'':'italic';
   box.style.display='block';box.querySelector('button').textContent=li>=lines.length-1?'U redu':'Dalje ▸';
 }
@@ -100,7 +126,7 @@ function next(){
   showLine();
 }
 function finish(){
-  box.style.display='none';
+  box.style.display='none';speakUntil=0;stopVoice();
   if(afterTalk){var f=afterTalk;afterTalk=null;st='done';f();return;}      // she stays at the window (the callback decides)
   elO.style.opacity='0';st='done';
   try{localStorage.setItem(KEY,'1');}catch(e){}
@@ -201,6 +227,6 @@ function init(){
 }
 // the kitchen is declared clean at 80%: if the cleaning jumped over the threshold between two checks, it knocks now
 window.addEventListener('cookster:kitchen-clean',function(){if(st==='idle'&&!done())setTimeout(function(){if(st==='idle'&&!done())knock();},1800);});
-window.CooksterNeighbor={knock:knock,state:function(){return st;},lines:LINES,expectSalad:expectSalad,expectOrder:expectOrder,delivered:function(id){return !!delivered[id||'salad'];}};
+window.CooksterNeighbor={speak:speak,knock:knock,state:function(){return st;},lines:LINES,expectSalad:expectSalad,expectOrder:expectOrder,delivered:function(id){return !!delivered[id||'salad'];}};
 if(document.readyState==='complete')setTimeout(init,600);else window.addEventListener('load',function(){setTimeout(init,600);});
 })();
