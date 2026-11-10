@@ -4919,12 +4919,12 @@ const CRATE_ZONE_FLATTEN={
 let crateSpawnIndex=0;
 
 const itemsData=CooksterCatalog.ITEMS;
-const QUICK_TOOL_ITEM_IDS=new Set(['noz','rakija','opanci']);      // (the broom is no longer a quick tool: it leans against the wall of the kitchen)
+const QUICK_TOOL_ITEM_IDS=new Set(['noz','sundjer','metla','rakija','opanci']);
 const QUICK_TOOL_SLOTS=Object.freeze([
  {id:'hand',label:'Ruka',enabled:true},
- {id:'locked_broom',label:'Zaključano',enabled:false},      // (the broom was here: now it stands in the kitchen)
+ {id:'metla',label:'Metla',enabled:true},
  {id:'noz',label:'Nož',enabled:true},
- {id:'locked_sponge',label:'Zaključano',enabled:false},      // (the sponge was here: now it lies on the sink)
+ {id:'sundjer',label:'Sunđer',enabled:true},
  {id:'rakija',label:'Rakija',enabled:false},
  {id:'opanci',label:'Opanci',enabled:false},
  {id:'locked_top',label:'Zaključano',enabled:false},
@@ -11915,7 +11915,8 @@ function cleanupQuickToolSceneClutter(){
   // Knife is now a permanent board tool, never disposable quick-wheel clutter.
   if(id==='noz')return;
 
-  if(![].includes(id))return;
+  if(!['sundjer','metla'].includes(id))return;
+  if(el.dataset.standing==='1')return;      // the broom at the wall and the sponge on the sink are not clutter
   if(el===holding&&el.dataset.quickTool==='1')return;
   if(el.dataset.quickTool==='1'&&(el.dataset.surfaceZone==='held'||el.dataset.held==='1'))return;
   removeItem(el);
@@ -12125,7 +12126,7 @@ function revealPreparedQuickTool(el){
 }
 function getQuickToolFlyAsset(id){
  if(id==='noz')return 'assets/noz.png';
- if(id==='sundjer')return 'assets/new_props/sundjer.svg';
+ if(id==='sundjer')return 'assets/tavern/sundjer_suv.webp';
  if(id==='metla')return 'assets/ui/metla.png';
  return '';
 }
@@ -15048,6 +15049,14 @@ function washWaterAway(vessel){
 }
 function endCleaning(finished=false){
  try{window.CooksterKitchenClean?.end?.();}catch(_){}
+ // a plain click (no movement) with the broom / sponge taken from its place puts it back there
+ try{
+  const cs=window.__cleanStart;window.__cleanStart=null;
+  if(cs&&holding&&holding.dataset.fromHome==='1'&&isQuickToolItem(holding)&&Math.hypot(mouse.x-cs.x,mouse.y-cs.y)<9&&performance.now()-cs.t<450){
+   cleaning=false;cleanStainEl=null;cleanPointerId=null;
+   stowCurrentQuickTool();ensureStandingTools();return;
+  }
+ }catch(_){}
  if(cleanStainEl&&cleanStainEl.isConnected)cleanStainEl.classList.remove('scrubbing');
  if(holding)holding.classList.remove('cleaning-tool');
  cleaning=false;cleanStainEl=null;cleanPointerId=null;
@@ -15761,6 +15770,10 @@ function trySnapLid(detached){
 }
 
 function startHolding(el,pointerEvent=null){
+ if(el?.dataset?.standing==='1'&&!holding&&!picking&&!placing&&!pouring){      // the broom / the sponge at its place: it is taken as a quick tool
+  delete el.dataset.standing;delete el.dataset.fixedVis;el.dataset.quickTool='1';el.dataset.fromHome='1';
+  if(startHoldingQuickToolDirect(el)){showToast('Držiš '+(el.dataset.itemId==='metla'?'metlu':'sunđer')+': drži levo dugme i povlači levo-desno. Običan klik (bez pomeranja) ga vraća na mesto.');return;}
+ }
  if(el?.dataset?.itemId==='noz'&&getBoardEl())el=getBoardEl();
  if(!el||picking||placing||pouring)return;
  if(el.dataset.locked==='1'){showToast('Ovaj predmet je zaključan na svom mestu.');return;}
@@ -16413,7 +16426,7 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
      }
    }
    if(isCleaningTool(holding)){const stain=stainAt(e.clientX,e.clientY);if(stain&&beginCleaning(stain,e))return;}
-   if(isCleaningTool(holding)&&window.CooksterKitchenClean?.active?.()&&CooksterKitchenClean.begin(e)){cleaning=true;cleanStainEl=null;cleanPointerId=e.pointerId;cleanLastX=e.clientX;cleanLastY=e.clientY;holding.classList.add('cleaning-tool');hidePlacementGhost();hideOriginGhost();positionCleaningSponge(e);return;}
+   if(isCleaningTool(holding)&&window.CooksterKitchenClean?.active?.()&&CooksterKitchenClean.begin(e)){window.__cleanStart={x:e.clientX,y:e.clientY,t:performance.now()};cleaning=true;cleanStainEl=null;cleanPointerId=e.pointerId;cleanLastX=e.clientX;cleanLastY=e.clientY;holding.classList.add('cleaning-tool');hidePlacementGhost();hideOriginGhost();positionCleaningSponge(e);return;}
    if(isIngredientItem(holding)&&commitHeldIngredientToVessel(holding,e.clientX,e.clientY))return;
    if(holding.dataset.vegetable==='1'&&it&&it!==holding&&it.dataset.marketBag==='1'&&returnVegetableToMarketBag(holding,it))return;
    if(holding.dataset.vegetable==='1'){
@@ -16587,25 +16600,24 @@ try{
   localStorage.setItem('cookster.tools-in-drawer.v1','1');
  }
 }catch(_){}
-// The broom leans against the wall between the door of the pantry and the sink (it is not in the quick wheel any more). A new game starts with it there; an old save gets it once per browser.
-try{
- if(!items.some(e=>e.dataset.itemId==='metla')&&(!__hasSavedWorld||localStorage.getItem('cookster.broom-wall.v1')!=='1')){
-  const bd=quickToolItemDef('metla');
-  if(bd){
-   const be=makeItem({...bd,instanceId:nextItemInstanceId(bd.id),x:1250-bd.w/2,y:180-bd.h,z:++zCounter});
-   if(be){be.dataset.surfaceZone='decor';be.dataset.angle='3';be.dataset.fixedVis='0.8';setPose(be,1256,192,.8);}
+// The broom leans against the wall between the door of the pantry and the sink, the sponge (the one of the tavern) lies on the sink. They are ALSO in the quick wheel (right click).
+// A click on them takes them as a quick tool (as if chosen in the wheel); when the tool is put away, a new one stands at the old place again.
+const STANDING_TOOLS=[{id:'metla',cx:1256,by:192,vis:.8,angle:3},{id:'sundjer',cx:1425,by:82,vis:.86,angle:-6}];
+function ensureStandingTools(){
+ try{
+  for(const st of STANDING_TOOLS){
+   if(items.some(e=>e.dataset.itemId===st.id))continue;
+   const def=st.id==='metla'?quickToolItemDef('metla'):itemsData.find(d=>d.id===st.id);if(!def)continue;
+   const el=makeItem({...def,instanceId:nextItemInstanceId(def.id),x:st.cx-def.w/2,y:st.by-def.h,z:++zCounter});
+   if(!el)continue;
+   el.dataset.standing='1';el.dataset.angle=String(st.angle);
+   if(st.id==='metla'){el.dataset.surfaceZone='decor';el.dataset.fixedVis=String(st.vis);}
+   setPose(el,st.cx,st.by,st.vis);
   }
-  localStorage.setItem('cookster.broom-wall.v1','1');
- }
- if(!items.some(e=>e.dataset.itemId==='sundjer')&&(!__hasSavedWorld||localStorage.getItem('cookster.sponge-sink.v1')!=='1')){      // the sponge (the one of the tavern) lies on the sink
-  const sd=itemsData.find(d=>d.id==='sundjer');
-  if(sd){
-   const se=makeItem({...sd,instanceId:nextItemInstanceId(sd.id),x:1425-sd.w/2,y:82-sd.h,z:++zCounter});
-   if(se){se.dataset.angle='-6';setPose(se,1425,82,.86);}
-  }
-  localStorage.setItem('cookster.sponge-sink.v1','1');
- }
-}catch(_){}
+ }catch(_){}
+}
+ensureStandingTools();
+setInterval(function(){if(!holding||!(holding.dataset.itemId==='metla'||holding.dataset.itemId==='sundjer'))ensureStandingTools();},1500);
 // The cutting board and the knife live in the right drawer too (js/kitchen-fixtures.js): a new game starts without them on the table; an old save loses them from the table once per browser (they are in the drawer).
 try{
  if(!__hasSavedWorld||localStorage.getItem('cookster.board-in-drawer.v1')!=='1'){
