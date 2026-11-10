@@ -72,16 +72,31 @@ function puff(x,y,n,big){
   for(var i=0;i<n;i++)dust.push({x:x+(Math.random()-.5)*50,y:y+(Math.random()-.5)*24,vx:(Math.random()-.5)*26,vy:-8-Math.random()*26,r:(big?3.5:2.2)+Math.random()*3,t:0,life:.8+Math.random()*.7,a:.28+Math.random()*.2});
   if(dust.length>260)dust.splice(0,dust.length-260);
 }
+// soap bubbles of the sponge: many, bigger, light with a bright rim; they follow the sponge and float up
+var bub=[];
+function bubbles(x,y,n){
+  for(var i=0;i<n;i++){var r=4+Math.random()*Math.random()*14;bub.push({x:x+(Math.random()-.5)*70,y:y+(Math.random()-.5)*46,vx:(Math.random()-.5)*22,vy:-10-Math.random()*34,r:r,t:0,life:1.1+Math.random()*1.3,ph:Math.random()*6.28,wob:6+Math.random()*10});}
+  if(bub.length>520)bub.splice(0,bub.length-520);
+}
 var lastT=0;
 function tick(now){
   requestAnimationFrame(tick);var dt=Math.min(.05,(now-lastT)/1000||.016);lastT=now;
   draw();
-  if(!dust.length){if(fx._busy){fg.clearRect(0,0,W,H);fx._busy=false;}return;}
+  if(!dust.length&&!bub.length){if(fx._busy){fg.clearRect(0,0,W,H);fx._busy=false;}return;}
   fx._busy=true;fg.clearRect(0,0,W,H);
   for(var i=dust.length-1;i>=0;i--){
     var p=dust[i];p.t+=dt;if(p.t>=p.life){dust.splice(i,1);continue;}
     p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.98;var k=1-p.t/p.life;
     fg.fillStyle='rgba(176,150,112,'+(p.a*k).toFixed(3)+')';fg.beginPath();fg.arc(p.x,p.y,p.r*(1+(1-k)*.8),0,6.2832);fg.fill();
+  }
+  for(var j=bub.length-1;j>=0;j--){
+    var b=bub[j];b.t+=dt;if(b.t>=b.life){bub.splice(j,1);continue;}
+    b.y+=b.vy*dt;b.x+=b.vx*dt+Math.sin(b.t*4+b.ph)*b.wob*dt;b.vx*=.98;var f=b.t<.12?b.t/.12:Math.min(1,(b.life-b.t)/.5);
+    fg.globalAlpha=Math.max(0,f);
+    fg.beginPath();fg.arc(b.x,b.y,b.r,0,6.2832);fg.fillStyle='rgba(225,242,255,.38)';fg.fill();
+    fg.lineWidth=1.6;fg.strokeStyle='rgba(255,255,255,.95)';fg.stroke();
+    fg.beginPath();fg.arc(b.x,b.y,b.r*.62,3.5,4.6);fg.lineWidth=Math.max(1.2,b.r*.16);fg.strokeStyle='rgba(255,255,255,.95)';fg.stroke();
+    fg.globalAlpha=1;
   }
 }
 requestAnimationFrame(tick);
@@ -127,7 +142,7 @@ function stamp(x,y,b){
       if(sweepOf[id]!==curSweep){sweepOf[id]=curSweep;applied[id]=0;}
       if(w>applied[id]){level[id]=Math.max(0,level[id]-(w-applied[id])/3.6);applied[id]=w;hit=true;if(level[id]<.004)level[id]=0;}
     }}
-  if(hit){dirty=true;puff(x,y+8,tool==='metla'?2:1,tool==='metla');}
+  if(hit){dirty=true;if(tool==='metla')puff(x,y+8,2,true);}
   return touched;
 }
 function onMove(e){
@@ -141,6 +156,7 @@ function onMove(e){
   else travel=0;
   var steps=Math.max(1,Math.ceil(dist/9)),any=0;
   for(var i=1;i<=steps;i++){var t=i/steps;any+=stamp(px+dx*t,py+dy*t,b);}
+  if(tool==='sundjer')bubbles(p.x,p.y+6,Math.min(9,2+Math.round(dist/5)));      // the sponge makes a lot of soap bubbles all along its way
   var dt=Math.max(1,now-pt),speed=dist/dt*1000;
   if(tool==='metla')swish(speed);
   else{try{if(window.CooksterSound&&CooksterSound.scrub)CooksterSound.scrub(dx,dy,dt);}catch(x){}}

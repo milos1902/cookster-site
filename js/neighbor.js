@@ -225,7 +225,12 @@ window.addEventListener('cookster:menu-closed',function(){
   if(!window.__COOKSTER_NEW_GAME__)return;window.__COOKSTER_NEW_GAME__=false;
   try{localStorage.removeItem(KEY);Object.keys(ORDERS).forEach(function(k){localStorage.removeItem(ORDERS[k].key);});}catch(e){}
   delivered={};asked={};visiting=false;handover=null;
-  if(st==='idle'||st==='done'||st==='wait'){clearInterval(knockT);st='idle';forced=true;}
+  if(st==='idle'||st==='done'||st==='wait'){      // she knocks only after the narrator has said his two lines (2.5 s after them), or after 14 s at the latest
+    clearInterval(knockT);st='wait';var fired=false;
+    var go=function(){if(fired)return;fired=true;window.removeEventListener('cookster:narration-done',onN);if(st==='wait')knock();};
+    var onN=function(){setTimeout(go,2500);};
+    window.addEventListener('cookster:narration-done',onN);setTimeout(go,14000);
+  }
 });
 function init(){
   build();

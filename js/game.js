@@ -8251,7 +8251,7 @@ function updatePlacementGhost(){
    const p=screenToScene(mouse.x,mouse.y);
    setPose(holding,p.x,p.y,.5);
  }else if(isQuickToolItem(holding)&&holding.dataset.itemId==='metla'&&isCleaningTool(holding)){
-   positionCleaningSponge({clientX:mouse.x,clientY:mouse.y});      // the broom follows the mouse (not the fixed pose in the corner): no jump when the cleaning starts / ends
+   positionCleaningSponge({clientX:mouse.x,clientY:mouse.y});hidePlacementGhost();clearHeldPlacementState(holding);return;      // (no second broom: the placement ghost is hidden) the broom follows the mouse (not the fixed pose in the corner): no jump when the cleaning starts / ends
  }else if(isQuickToolItem(holding)){
    const preview=heldPreviewPoseFor(holding);
    setPose(holding,preview.cx,preview.by,preview.vis);

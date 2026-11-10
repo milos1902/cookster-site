@@ -44,7 +44,7 @@ function start(){
   setTimeout(function(){
     if(!dirty())return;
     say('ocistiti',function(){
-      say('metla');      // the second line follows the first one at once (no pause)
+      say('metla',function(){try{window.dispatchEvent(new CustomEvent('cookster:narration-done'));}catch(e){}});      // the second line follows the first one at once (no pause)
     },.28);
   },1500);
 }
