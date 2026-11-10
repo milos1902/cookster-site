@@ -10,24 +10,25 @@ function build(){
   var sc=document.getElementById('scene');if(!sc||el)return;
   el=document.createElement('div');el.id='windowPatch';el.setAttribute('aria-hidden','true');
   el.style.cssText='position:absolute;left:'+X+'px;top:'+Y+'px;width:'+W+'px;height:'+H+'px;pointer-events:none;z-index:0;background:url(assets/effects/prozor_bez_saksije.webp?v=1) 0 0/100% 100% no-repeat;';
-  elN=el.cloneNode(false);elN.id='windowPatchNight';elN.style.backgroundImage='url(assets/effects/prozor_bez_saksije_noc.webp?v=1)';elN.style.opacity='0';
+  elN=el.cloneNode(false);elN.id='windowPatchNight';elN.style.backgroundImage='url(assets/effects/prozor_bez_saksije_noc.webp?v=1)';elN.style.opacity='0';elN.style.webkitMaskImage=elN.style.maskImage='url(assets/effects/window_zone_mask.png?v=1)';elN.style.webkitMaskSize=elN.style.maskSize='1672px 941px';elN.style.webkitMaskPosition=elN.style.maskPosition='0px -'+Y+'px';elN.style.webkitMaskRepeat=elN.style.maskRepeat='no-repeat';
   var ref=document.getElementById('windowOpen');
   if(ref&&ref.parentNode===sc){sc.insertBefore(el,ref);sc.insertBefore(elN,ref);}else{sc.appendChild(el);sc.appendChild(elN);}      // under the picture of the open window
   tick();
 }
-var lastOpen=null,nwCache=0,nwT=0;
-// the pieces lie UNDER the picture of the open window: when the window closes they must be there at once (the open picture fades out over them), when it opens they hide only after the open picture is fully seen - otherwise the pot shows for a moment
+var lastOpen=null,lastN=-1;
+// what is seen at any moment must be what the kitchen itself shows: the day picture with the night picture of the window over it only inside the window mask (js/day-light.js: #dayWinNight), by the same amount.
+// So the day piece is always there, and the night piece has the SAME mask and the SAME opacity as #dayWinNight (otherwise the whole piece, the sill and the wood, turned blue at dawn and at dusk).
+// The pieces lie UNDER the picture of the open window: when the window closes they must be there at once, when it opens they hide only after the open picture is fully seen.
 function tick(){
   if(!el)return;
-  var open=false,now=performance.now();
+  var open=false,n=0,w=document.getElementById('dayWinNight');
   try{open=!!(window.CooksterWindow&&CooksterWindow.isOpen());}catch(e){}
-  if(now-nwT>250){nwT=now;try{var D=window.CooksterDay;nwCache=D&&D.phase?D.phase().nw:0;}catch(e){nwCache=0;}}
-  var nw=nwCache,dayOp=Math.max(0,Math.min(1,2*(1-nw))),nightOp=Math.max(0,Math.min(1,2*nw));
-  if(open!==lastOpen||Math.abs(nw-(tick.nw||0))>.01){
-    lastOpen=open;tick.nw=nw;
+  if(w){n=parseFloat(w.style.opacity);if(!isFinite(n))n=parseFloat(getComputedStyle(w).opacity)||0;}
+  if(open!==lastOpen||Math.abs(n-lastN)>.004){
+    lastOpen=open;lastN=n;
     var tr=open?'opacity 0s linear 1.2s':'none';      // opening: hide after 1.2 s; closing / day-night change: at once
     el.style.transition=elN.style.transition=tr;
-    el.style.opacity=open?'0':dayOp.toFixed(2);elN.style.opacity=open?'0':nightOp.toFixed(2);
+    el.style.opacity=open?'0':'1';elN.style.opacity=open?'0':Math.max(0,Math.min(1,n)).toFixed(3);
   }
 }
 function loop(){tick();requestAnimationFrame(loop);}

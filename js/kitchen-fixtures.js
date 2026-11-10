@@ -129,7 +129,8 @@ setInterval(updateJars,150);
 // ---------- the wooden spoon and the ladle lie in the right drawer (pictures, like the jars of the left drawer): the front of the drawer hides their lower part; a click on one takes the real item, and an item put down over the open drawer goes back ----------
 var TOOLS=[
   {id:'kasika_mesanje',src:'assets/new_props/kasika_1.png?v=2',cx:935,cy:662,w:58,h:142,rot:90,k:.82,label:'drvena kašika'},
-  {id:'kutlaca_ajvar',src:'assets/calibration_props/ajvar_jars/kutlaca_ajvar.png',cx:1075,cy:664,w:112,h:112,rot:0,k:.9,label:'drvena kutlača'}
+  {id:'kutlaca_ajvar',src:'assets/calibration_props/ajvar_jars/kutlaca_ajvar.png',cx:1075,cy:664,w:112,h:112,rot:0,k:.9,label:'drvena kutlača'},
+  {id:'daska',src:'assets/new_props/daska_sa_nozem.png?v=1',cx:1010,cy:632,w:330,h:108,rot:0,k:.46,label:'daska i nož'}      // the board with the knife on it: it lies at the back of the drawer
 ];
 var TOOL_IN={l:860,t:605,r:1165,b:712},toolClip=null;
 function toolOut(t){try{
@@ -168,7 +169,11 @@ function takeTool(o){
     var el=makeItem(Object.assign({},def,{instanceId:nextItemInstanceId(o.id),x:sp.x-def.w/2,y:sp.y-def.h,z:++zCounter}));
     if(!el)return;el.dataset.surfaceZone='table';
     setPose(el,sp.x,sp.y,surfaceScaleFor(el,'table',sp.y));
-    startHolding(el);updateTools();
+    startHolding(el);
+    if(o.id==='daska'){      // the knife always lies on the board: it is made now (if it is not there) and put on the board
+      try{var kn=getKnifeEl();if(!kn){var kd=null;(CooksterCatalog.ITEMS||[]).forEach(function(d){if(d.id==='noz')kd=d});if(kd)kn=makeItem(Object.assign({},kd,{instanceId:nextItemInstanceId('noz'),x:sp.x-kd.w/2,y:sp.y-kd.h,z:++zCounter}));}ensureKnifeAlwaysOnBoard(el);}catch(e){}
+    }
+    updateTools();
     try{CooksterSave.schedule()}catch(e){}
   }catch(e){}
 }

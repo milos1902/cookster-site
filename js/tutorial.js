@@ -39,6 +39,8 @@ function giveBowl(){if(!vessels().some(function(e){return /cinija|vangla/.test(e
 function givePan(){if(!pans().length){try{spawnKitchenEquipment('tiganj_mali',false,{cx:640,by:670});}catch(e){}}}
 function giveOil(){if(!allItems().some(function(e){return e.dataset.itemId==='kal_01_flasa_ulja';})){try{spawnKitchenEquipment('kal_01_flasa_ulja',false,{cx:900,by:420});}catch(e){}}}
 function spiceIn(k){return vessels().some(function(v){try{return (+JSON.parse(v.dataset.spices||'{}')[k]||0)>0;}catch(e){return false;}});}
+function sceneRect(l,t,r,b){var sc=document.getElementById('scene');if(!sc)return null;var R=sc.getBoundingClientRect(),k=R.width/1672;return rectOf({getBoundingClientRect:function(){return {left:R.left+l*k,top:R.top+t*k,right:R.left+r*k,bottom:R.top+b*k,width:(r-l)*k,height:(b-t)*k};}});}
+function boardOnTable(){var b=allItems().filter(function(e){return e.dataset.itemId==='daska';})[0];var h=null;try{h=holding;}catch(e){}return !!b&&b!==h;}
 var bought=false;
 function boughtNow(){var h=document.getElementById('marketHaggleStep');if(h&&h.classList.contains('active'))bought=true;return bought;}      // cenkanje je otvoreno = kupovina je pritisnuta
 // ---------- koraci ----------
@@ -61,6 +63,8 @@ var STEPS=[
    text:'Prodavac traži cenu. Možeš da se cenkaš, a možeš i odmah da pritisneš „Prihvati cenu“.',
    target:function(){return rectOf(document.getElementById('marketAcceptBtn'));},
    done:function(){return !body('market-open')&&bagsAnywhere();}},
+  {id:'tools',text:'Treba nam daska i nož. Otvori desnu fioku ispod stola (klik na ručku), uzmi dasku sa nožem i spusti je na sto.',
+   done:boardOnTable},      // no arrow: the neighbour at the window will say that the board is in the right drawer
   {id:'bag',text:'Kupljeno je u kesi koja visi na kuki levo. Klikni na donji deo kese da izvadiš paradajz.',
    target:function(){return wallBagRect();},done:function(){return vegs('paradajz').length>0;}},
   {id:'board',text:'Spusti paradajz na dasku (levi klik na dasku).',

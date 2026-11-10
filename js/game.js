@@ -16587,6 +16587,13 @@ try{
   localStorage.setItem('cookster.tools-in-drawer.v1','1');
  }
 }catch(_){}
+// The cutting board and the knife live in the right drawer too (js/kitchen-fixtures.js): a new game starts without them on the table; an old save loses them from the table once per browser (they are in the drawer).
+try{
+ if(!__hasSavedWorld||localStorage.getItem('cookster.board-in-drawer.v1')!=='1'){
+  for(const el of [...items])if((el.dataset.itemId==='daska'||el.dataset.itemId==='noz')&&el!==holding)removeItem(el);
+  localStorage.setItem('cookster.board-in-drawer.v1','1');
+ }
+}catch(_){}
 cleanupQuickToolSceneClutter();
 setTimeout(cleanupQuickToolSceneClutter,50);
 setTimeout(cleanupQuickToolSceneClutter,350);
