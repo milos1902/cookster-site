@@ -3,7 +3,7 @@
 (function(){
 'use strict';
 if(window.CooksterWallHooks)return;
-var HOOKS=[{x:110,y:318},{x:97,y:348},{x:84,y:378},{x:71,y:408},{x:58,y:438},{x:45,y:468}];
+var HOOKS=[{x:94,y:266},{x:81,y:296},{x:68,y:326},{x:55,y:356},{x:42,y:386},{x:29,y:416}];
 var H=34;
 function build(){
   var sc=document.getElementById('scene');if(!sc||sc.querySelector('.wall-hook'))return;
