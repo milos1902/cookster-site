@@ -6,18 +6,19 @@
 (function(){
 'use strict';
 if(window.CooksterMince)return;
-var KEY='mleveno_meso',PER_BAG=6,CEVAPI=4;
+var KEY='mleveno_meso',NK='mleveno_nadev',NADEV_ID='kal_01_mleveno_nadev',PER_BAG=6,CEVAPI=4;      // NK: the minced meat for the filling (sarma, peppers): comes without the bag, never makes a ball
 var IMG={plain:'assets/meat/mleveno_gomila.png',luk:'assets/meat/mleveno_luk.png',pap:'assets/meat/mleveno_paprika.png',both:'assets/meat/mleveno_luk_paprika.png'};
 var BAG_SRC='assets/meat/mleveno_kesa.png';
 function toast(m){try{showToast(m);}catch(e){}}
 function isBowl(v){return !!v&&/^(vangla_|lavor_|kal_02_cinija_)/.test((v.dataset&&v.dataset.itemId)||'');}
 function heatable(v){try{return isHeatableCookwareItem(v);}catch(e){return false;}}
-function units(v){
+function unitsOf(v,key){
   try{
-    if(heatable(v))return Math.max(0,+((CooksterPan.read(v).ingredients||{})[KEY])||0);
-    var e=(CooksterContainer.read(v).items||{})[KEY];return e?Math.max(0,+e.count||0):0;
+    if(heatable(v))return Math.max(0,+((CooksterPan.read(v).ingredients||{})[key])||0);
+    var e=(CooksterContainer.read(v).items||{})[key];return e?Math.max(0,+e.count||0):0;
   }catch(e){return 0;}
 }
+function units(v){return unitsOf(v,KEY)+unitsOf(v,NK);}
 function spiceDose(v){var sp={};try{sp=JSON.parse(v.dataset.spices||'{}');}catch(e){}return (+sp.tucana||0)+(+sp.paprika||0);}
 function state(v){
   var luk=v.dataset.minceLuk==='1',pap=spiceDose(v)>0||v.dataset.mincePap==='1';
@@ -63,8 +64,21 @@ function absorb(item,v){
   try{playImpactSound(v,'drop');}catch(e){}
   rerender(v);toast((k==='luk'?'Luk':'Beli luk')+' je umešan u meso.');return true;
 }
+function addNadev(item,v){
+  if(!(heatable(v)||isBowl(v))){toast('Nadev ide u tiganj, šerpu ili vanglu.');return true;}
+  try{if(heatable(v)&&CooksterPan.read(v).burnt){toast('Posuđe je zagorelo — operi ga pre nove ture.');return true;}}catch(e){}
+  try{if(containerTotal(v)>=containerCapacity(v)){toast('Posuda je puna.');return true;}}catch(e){}
+  var meta={key:NK,type:'ingredient',label:'Mleveno meso (nadev)',src:IMG.plain,form:'mince',baseKey:NK,cutState:'whole'};
+  if(heatable(v)){CooksterPan.addIngredient(v,NK,1);try{rememberPanIngredientMeta(v,meta);}catch(e){}}
+  else{var m=CooksterContainer.read(v);m.items=m.items||{};var cur=m.items[NK]?Math.max(0,+m.items[NK].count||0):0;m.items[NK]=Object.assign({},meta,{count:cur+1});CooksterContainer.write(v,m);}
+  try{removeItem(item);}catch(e){}
+  try{holding=null;hidePlacementGhost();hideOriginGhost();clearPanTargets();updateHover();}catch(e){}
+  try{playImpactSound(v,'drop');}catch(e){}
+  try{rerender(v);}catch(e){}return true;
+}
 function handle(item,v){
   if(!item||!item.dataset)return false;
+  if(item.dataset.itemId===NADEV_ID)return addNadev(item,v);
   if(item.dataset.minceBag==='1')return pour(item,v);
   return absorb(item,v);
 }
@@ -108,10 +122,10 @@ function paintCrumbs(v){
     }
   });
 }
-function append(layer,v,count){
+function append(layer,v,count,key){
   if(!layer||!v)return;
   var s=state(v),img=document.createElement('img');
-  img.className='whole-produce-piece mince-heap';img.dataset.entryKey=KEY;img.src=s.src;img.alt='';img.draggable=false;
+  img.className='whole-produce-piece mince-heap';img.dataset.entryKey=key||KEY;img.src=s.src;img.alt='';img.draggable=false;
   img.style.cssText='position:absolute;transform:none;object-fit:fill;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(70,15,8,.22))';
   var host=document.createElement('div');host.className='mince-host';host.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:30;overflow:visible';
   host.appendChild(img);layer.appendChild(host);layout(img,v,count);
@@ -308,5 +322,5 @@ setInterval(function(){
   });}catch(e){}
 },700);
 
-window.CooksterMince={handle:handle,append:append,takeBall:takeBall,fromFridge:fromFridge,units:units,state:state,shape:shape,KEY:KEY};
+window.CooksterMince={NK:NK,NADEV_ID:NADEV_ID,handle:handle,append:append,takeBall:takeBall,fromFridge:fromFridge,units:units,state:state,shape:shape,KEY:KEY};
 })();

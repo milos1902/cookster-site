@@ -11056,7 +11056,7 @@ function kitchenEquipmentDef(id){
 function ownedKitchenEquipment(){
  if(OBJECT_CALIBRATION_MODE)return KITCHEN_EQUIPMENT.map(def=>def.id);
  const owned=CooksterState.progression.kitchenEquipment;
-  return Array.from(new Set([...(Array.isArray(owned)?owned:[]),'mlin_za_mesо','kal_01_jaje','kal_01_pirinac','kal_01_list_kupusa','kal_01_mast_kanta','kal_01_dzezva','meso_junetina',PAPRIKA_STEAM_BAG_ID,'kaca_prazna','kaca_poklopac',...KITCHEN_EQUIPMENT.filter(d=>d.category==='drink').map(d=>d.id)]));
+  return Array.from(new Set([...(Array.isArray(owned)?owned:[]),'mlin_za_mesо','kal_01_jaje','kal_01_pirinac','kal_01_list_kupusa','kal_01_mast_kanta','kal_01_mleveno_nadev','kal_01_dzezva','meso_junetina',PAPRIKA_STEAM_BAG_ID,'kaca_prazna','kaca_poklopac',...KITCHEN_EQUIPMENT.filter(d=>d.category==='drink').map(d=>d.id)]));
 }
 function equipmentCountInKitchen(id){
  return items.filter(el=>el.dataset.itemId===id).length+
@@ -14258,7 +14258,8 @@ function buildFoodStageLayer(counts,stage,metaItems={},batches=[],heat=0,mixLeve
   for(const [key,val] of Object.entries(counts||{})){
     const count=Math.max(0,+val||0);
     if(count<=0)continue;
-    if(key==='mleveno_meso'){try{CooksterMince.append(layer,vessel,count);}catch(_){}continue;}      // minced meat: one heap picture that follows what is mixed in
+    if(key==='mleveno_meso'){try{CooksterMince.append(layer,vessel,count);}catch(_){}continue;}
+    if(key==='mleveno_nadev'){try{CooksterMince.append(layer,vessel,count,'mleveno_nadev');}catch(_){}continue;}      // the minced meat for the filling: the same heap / crumbs picture      // minced meat: one heap picture that follows what is mixed in
     if(GROUND_VEGETABLE_BY_KEY[key]||key.endsWith('_celo')||key.endsWith('_diced')||metaItems?.[key]?.form==='whole'
       ||key.startsWith('paprika_pecena')||isRoastedUnpeeledEggplantKey(key))continue;
     if(allMix.some(p=>p.storageKey===key))continue;

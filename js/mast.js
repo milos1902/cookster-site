@@ -66,19 +66,63 @@ setInterval(function(){
     render(pan);
   });}catch(e){}
 },250);
+var busy=false;
+// the spoon is held with its bowl UP (not hanging down)
+setInterval(function(){try{var sp=spoonHeld();if(sp&&!busy&&sp.dataset.angle!=='0'&&!sp.dataset.keepAngle){sp.dataset.angle='0';try{updatePlacementGhost();}catch(e){}}}catch(e){}},200);
+function bodyOf(sp){return sp.querySelector('.body')||sp;}
+// like the ladle: the spoon moves over the target, dips (or tips over) and comes back; "at" is the moment of the action (ms)
+function animateSpoon(sp,target,mode,at,done){
+  if(busy||typeof pouring==='undefined'||pouring){return false;}
+  busy=true;pouring=true;
+  var live=(typeof placementGhostMotion!=='undefined'&&placementGhostMotion&&placementGhostMotion.key===sp&&placementGhostMotion.pose)||null;
+  var h0=live&&Number.isFinite(+live.cx)&&Number.isFinite(+live.by)?{cx:+live.cx,by:+live.by,vis:+live.vis||(+sp.dataset.vis||1)}:{cx:+sp.dataset.cx||0,by:+sp.dataset.by||0,vis:+sp.dataset.vis||1};
+  var m0=screenToScene(mouse.x,mouse.y);
+  try{if(sp._contactShadow)sp._contactShadow.style.visibility='hidden';}catch(e){}
+  sp.dataset.noSunShadow='1';
+  try{clearPourTarget();hidePlacementGhost();hideOriginGhost();}catch(e){}
+  var vis=h0.vis||1,w=(+sp.dataset.baseW||58)*vis,h=(+sp.dataset.baseH||142)*vis;
+  var tv=+target.dataset.vis||1,tcx=+target.dataset.cx||0,tby=+target.dataset.by||0,tmid=tby-(+target.dataset.baseH||100)*tv*.5;
+  var tr=function(ms){return 'left '+ms+'ms cubic-bezier(.3,.1,.3,1), top '+ms+'ms cubic-bezier(.3,.1,.3,1), transform '+ms+'ms cubic-bezier(.3,.1,.3,1)';};
+  var oldT=sp.style.transition||'';
+  var go=function(cx,by,ang,ms){sp.style.transition=tr(ms);setPose(sp,cx,by,vis);sp.style.transformOrigin='50% 18%';sp.style.transform='perspective(1200px) rotateZ('+ang+'deg)';};      // the origin is the bowl of the spoon
+  setPose(sp,h0.cx,h0.by,vis);sp.style.transformOrigin='50% 18%';sp.style.transform='rotateZ(0deg)';
+  sp.style.visibility='visible';sp.classList.add('pouring-source');
+  var bowlY=function(dy){return tmid+h*.82+dy;};      // by (the bottom of the spoon) so that the bowl (near the top of the picture) is over the target
+  requestAnimationFrame(function(){requestAnimationFrame(function(){go(tcx,bowlY(-26*vis),0,300);});});      // over the target
+  if(mode==='scoop'){
+    setTimeout(function(){go(tcx,bowlY(4*vis),-18,260);},330);      // dips into the lard
+    setTimeout(function(){at&&at();},620);      // the lard is on the spoon
+    setTimeout(function(){go(tcx,bowlY(-26*vis),0,260);},700);      // up again
+  }else{
+    setTimeout(function(){go(tcx,bowlY(-30*vis),-75,340);},330);      // tips over the pan
+    setTimeout(function(){at&&at();},560);      // the lard falls
+    setTimeout(function(){go(tcx,bowlY(-26*vis),0,300);},950);      // upright again
+  }
+  setTimeout(function(){var m=screenToScene(mouse.x,mouse.y);go(h0.cx+(m.x-m0.x),h0.by+(m.y-m0.y),0,260);},mode==='scoop'?980:1280);
+  setTimeout(function(){
+    sp.style.transition=oldT;sp.classList.remove('pouring-source');delete sp.dataset.noSunShadow;try{if(sp._contactShadow)sp._contactShadow.style.visibility='';}catch(e){}
+    pouring=false;busy=false;
+    if(holding===sp)sp.style.visibility='';
+    try{updatePlacementGhost();}catch(e){}
+    if(holding===sp)sp.style.visibility='hidden';
+    try{updatePourTarget();updateHover();}catch(e){}
+    done&&done();
+  },mode==='scoop'?1280:1580);
+  return true;
+}
 window.addEventListener('pointerdown',function(e){
-  if(e.button!==0)return;var sp=spoonHeld();if(!sp)return;
+  if(e.button!==0)return;var sp=spoonHeld();if(!sp||busy)return;
   var it=(typeof itemAt==='function')?itemAt(e.clientX,e.clientY):null;
   if(!it)return;
   if(isBucket(it)&&!sp.dataset.mastLoad){
     e.stopImmediatePropagation();e.preventDefault();
-    sp.dataset.mastLoad='1';showOnSpoon(sp,true);return;
+    animateSpoon(sp,it,'scoop',function(){sp.dataset.mastLoad='1';showOnSpoon(sp,true);});return;
   }
   if(sp.dataset.mastLoad&&isPan(it)){
     e.stopImmediatePropagation();e.preventDefault();
-    delete sp.dataset.mastLoad;showOnSpoon(sp,false);putInPan(it);return;
+    animateSpoon(sp,it,'pour',function(){delete sp.dataset.mastLoad;showOnSpoon(sp,false);putInPan(it);});return;
   }
 },true);
-['click','pointerup','mouseup'].forEach(function(t){window.addEventListener(t,function(e){var sp=spoonHeld();if(!sp)return;var it=(typeof itemAt==='function')?itemAt(e.clientX,e.clientY):null;if(isBucket(it)){e.stopImmediatePropagation();}},true);});
+['click','pointerup','mouseup'].forEach(function(t){window.addEventListener(t,function(e){var sp=spoonHeld();if(!sp)return;var it=(typeof itemAt==='function')?itemAt(e.clientX,e.clientY):null;if(isBucket(it)||(sp.dataset.mastLoad&&isPan(it))||busy){e.stopImmediatePropagation();}},true);});
 window.CooksterMast={BUCKET:BUCKET,put:putInPan,melting:function(p){return p._mast?p._mast.lumps.reduce(function(a,L){return a+L.left;},0):0;}};
 })();
