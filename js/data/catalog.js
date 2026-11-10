@@ -320,7 +320,7 @@ window.CooksterCatalog = Object.freeze({
     Object.freeze({id:'noz',type:'tool',subtype:'knife',label:'nož',src:'assets/noz.png',x:650,y:410,w:176,h:31,snapProfile:'flat',placement:['table']}),
     Object.freeze({id:'kasika_mesanje',type:'tool',subtype:'stir_spoon',label:'drvena kašika',src:'assets/new_props/kasika_1.png?v=2',x:1148,y:450,w:58,h:142,angle:178,snapProfile:'flat',shadowProfile:'tiny',placement:['table','pan']}),
     Object.freeze({id:'kutlaca_ajvar',type:'tool',subtype:'ajvar_ladle',label:'drvena kutlača za ajvar',src:'assets/calibration_props/ajvar_jars/kutlaca_ajvar.png',x:1238,y:446,w:112,h:112,angle:0,snapProfile:'flat',shadowProfile:'tiny',placement:['table','pan']}),
-    Object.freeze({id:'sundjer',type:'tool',subtype:'sponge',label:'sunđer',src:'assets/new_props/sundjer.svg',x:1328,y:78,w:74,h:45,angle:-6,snapProfile:'flat',shadowProfile:'tiny',placement:['table','sink','stove']})
+    Object.freeze({id:'sundjer',type:'tool',subtype:'sponge',label:'sunđer',src:'assets/tavern/sundjer_suv.webp?v=1',x:1395,y:53,w:60,h:29,angle:-6,snapProfile:'flat',shadowProfile:'tiny',placement:['table','sink','stove']})
   ]),
   KITCHEN_EQUIPMENT: Object.freeze([
     Object.freeze({id:'serpa_velika',type:'cookware',subtype:'pot',label:'Velika šerpa',src:'assets/new_props/serpa_velika.png',w:166,h:128,snapProfile:'pot',placement:['table','stove','sink','floor'],cooking:{capacity:8,canHeat:true,canBurn:true},price:0,starter:true}),

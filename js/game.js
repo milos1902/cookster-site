@@ -4919,12 +4919,12 @@ const CRATE_ZONE_FLATTEN={
 let crateSpawnIndex=0;
 
 const itemsData=CooksterCatalog.ITEMS;
-const QUICK_TOOL_ITEM_IDS=new Set(['noz','sundjer','metla','rakija','opanci']);
+const QUICK_TOOL_ITEM_IDS=new Set(['noz','rakija','opanci']);      // (the broom is no longer a quick tool: it leans against the wall of the kitchen)
 const QUICK_TOOL_SLOTS=Object.freeze([
  {id:'hand',label:'Ruka',enabled:true},
- {id:'metla',label:'Metla',enabled:true},
+ {id:'locked_broom',label:'Zaključano',enabled:false},      // (the broom was here: now it stands in the kitchen)
  {id:'noz',label:'Nož',enabled:true},
- {id:'sundjer',label:'Sunđer',enabled:true},
+ {id:'locked_sponge',label:'Zaključano',enabled:false},      // (the sponge was here: now it lies on the sink)
  {id:'rakija',label:'Rakija',enabled:false},
  {id:'opanci',label:'Opanci',enabled:false},
  {id:'locked_top',label:'Zaključano',enabled:false},
@@ -11915,7 +11915,7 @@ function cleanupQuickToolSceneClutter(){
   // Knife is now a permanent board tool, never disposable quick-wheel clutter.
   if(id==='noz')return;
 
-  if(!['sundjer','metla'].includes(id))return;
+  if(![].includes(id))return;
   if(el===holding&&el.dataset.quickTool==='1')return;
   if(el.dataset.quickTool==='1'&&(el.dataset.surfaceZone==='held'||el.dataset.held==='1'))return;
   removeItem(el);
@@ -16585,6 +16585,25 @@ try{
  if(!__hasSavedWorld||localStorage.getItem('cookster.tools-in-drawer.v1')!=='1'){
   for(const el of [...items])if((el.dataset.itemId==='kasika_mesanje'||el.dataset.itemId==='kutlaca_ajvar')&&el!==holding&&['','table','decor','floor'].includes(el.dataset.surfaceZone||''))removeItem(el);
   localStorage.setItem('cookster.tools-in-drawer.v1','1');
+ }
+}catch(_){}
+// The broom leans against the wall between the door of the pantry and the sink (it is not in the quick wheel any more). A new game starts with it there; an old save gets it once per browser.
+try{
+ if(!items.some(e=>e.dataset.itemId==='metla')&&(!__hasSavedWorld||localStorage.getItem('cookster.broom-wall.v1')!=='1')){
+  const bd=quickToolItemDef('metla');
+  if(bd){
+   const be=makeItem({...bd,instanceId:nextItemInstanceId(bd.id),x:1250-bd.w/2,y:180-bd.h,z:++zCounter});
+   if(be){be.dataset.surfaceZone='decor';be.dataset.angle='3';be.dataset.fixedVis='0.8';setPose(be,1256,192,.8);}
+  }
+  localStorage.setItem('cookster.broom-wall.v1','1');
+ }
+ if(!items.some(e=>e.dataset.itemId==='sundjer')&&(!__hasSavedWorld||localStorage.getItem('cookster.sponge-sink.v1')!=='1')){      // the sponge (the one of the tavern) lies on the sink
+  const sd=itemsData.find(d=>d.id==='sundjer');
+  if(sd){
+   const se=makeItem({...sd,instanceId:nextItemInstanceId(sd.id),x:1425-sd.w/2,y:82-sd.h,z:++zCounter});
+   if(se){se.dataset.angle='-6';setPose(se,1425,82,.86);}
+  }
+  localStorage.setItem('cookster.sponge-sink.v1','1');
  }
 }catch(_){}
 // The cutting board and the knife live in the right drawer too (js/kitchen-fixtures.js): a new game starts without them on the table; an old save loses them from the table once per browser (they are in the drawer).
