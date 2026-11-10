@@ -8250,13 +8250,15 @@ function updatePlacementGhost(){
  if(holding.dataset.fixedGrinder==='1'){
    const p=screenToScene(mouse.x,mouse.y);
    setPose(holding,p.x,p.y,.5);
+ }else if(isQuickToolItem(holding)&&holding.dataset.itemId==='metla'&&isCleaningTool(holding)){
+   positionCleaningSponge({clientX:mouse.x,clientY:mouse.y});      // the broom follows the mouse (not the fixed pose in the corner): no jump when the cleaning starts / ends
  }else if(isQuickToolItem(holding)){
    const preview=heldPreviewPoseFor(holding);
    setPose(holding,preview.cx,preview.by,preview.vis);
    holding.style.transformOrigin='50% 50%';
    holding.style.transform=`perspective(1200px) rotateX(${itemTiltValue(holding,holding.dataset.tilt||0)*.45}deg) rotateZ(${+(holding.dataset.angle||0)+preview.carryAngle}deg)`;
  }
- holding.style.zIndex='9999';
+ if(holding.dataset.itemId!=='metla')holding.style.zIndex='9999';
  if(holding.dataset.itemId==='daska'){
    for(const el of items){
      if(el!==holding&&el.dataset.attachedToBoard==='1'&&el.dataset.itemId!=='noz'){
@@ -16292,6 +16294,7 @@ window.addEventListener('pointermove',e=>{
  }
  if(panWashing){updatePanWashing(e);updateHover();updateArrowVisibility();return}
  if(cleaning){updateCleaning(e);updateHover();updateArrowVisibility();return}
+ if(holding&&holding.dataset.itemId==='metla'&&isCleaningTool(holding))positionCleaningSponge(e);      // the broom in the hand follows the mouse (the bristles at the cursor) even before the click: no jump when the cleaning starts, none when it ends
  if(rotating){
    const dx=e.clientX-rotateStartX,dy=e.clientY-rotateStartY;
    rotating.dataset.angle=String(rotateStartAngle+dx*.7);
