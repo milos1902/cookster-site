@@ -157,6 +157,16 @@ function coinSound(){
     });
   }catch(e){}
 }
+// the player thinks aloud after the money (text + a voice file, if it exists: assets/audio/narracija/lik_05.mp3, lik_06.mp3)
+var THINK={
+  salad:{text:'Dvesta dinara za jednu salatu... Pa ovo i nije loše.',file:'lik_05.mp3'},
+  tikvice:{text:'Petsto dinara za desetak minuta... Od ovoga bi moglo da se živi.',file:'lik_06.mp3'}
+};
+function think(id){
+  var T=THINK[id];if(!T)return;
+  sub(T.text,5200);
+  try{var a=new Audio('assets/audio/narracija/'+T.file+'?v=1');a.volume=.95;a.addEventListener('error',function(){});var pr=a.play();if(pr&&pr.catch)pr.catch(function(){});}catch(e){}
+}
 function leaveMoney(O,id){
   var sc=document.getElementById('scene');if(!sc)return;
   var im=document.createElement('img');im.id='nbNotes';im.src=NOTE_SVG;im.draggable=false;im.title='Novac — klik da uzmeš';
@@ -170,6 +180,7 @@ function leaveMoney(O,id){
     setTimeout(function(){if(im.parentNode)im.parentNode.removeChild(im);},400);
     try{setMoney(money+O.pay);showToast('Dobio si '+O.pay+' dinara.');}catch(er){}
     delivered[id]=true;visiting=false;try{localStorage.setItem(O.key,'1');}catch(er){}
+    setTimeout(function(){think(id);},1300);      // the player thinks aloud about the money
   }
   ['pointerdown','click','pointerup','mousedown'].forEach(function(t){im.addEventListener(t,take,true);});
   im.style.pointerEvents='auto';
