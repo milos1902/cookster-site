@@ -11,6 +11,10 @@ var steaks=[],seq=1,last=0;
 var KG={x0:285,x1:690,y0:70,y1:104,w:37},ZG={x0:230,x1:1370,y0:262,y1:420,w:112};      // the size of a steak on the grate is the same as in the tray (the tray slot: 0.41 of the tray width)
 /* the copper tray on the right edge of the stone (assets/new_props/pleh_rostilj.webp): the grilled steaks are put into it (they stop cooking there). zoom: centre and width in the picture of the close-up, kitchen: the same in the picture of the kitchen */
 var TRZ={cx:1446,cy:329,w:272},TRZ_ASPECT=525/460,TRAY_SRC_Z='assets/new_props/pleh_rostilj.webp?v=1',TRK={cx:738,cy:92,w:92},TR_ASPECT=712/620,TRK_ASPECT=368/300,TRAY_ROW=4,TRAY_MAX=20,TRAY_SRC='assets/new_props/pleh_rostilj_sto.webp?v=1',TRAY_SRC_T='assets/new_props/pleh_sto_nov.webp?v=1',TRT_ASPECT=718/520,TRAY_SRC_K='assets/new_props/pleh_rostilj_kuhinja.webp?v=1';
+function posT(o,w){      // a steak that was put down by the hand lies exactly where it was put (not snapped to a slot)
+  if(o&&isFinite(o.fx)&&isFinite(o.fy)){var h0=w*TRT_ASPECT;return {x:o.fx*w,y:o.fy*h0,w:w*.46};}
+  return slotPosT(o.slot,w);
+}
 function slotPosT(k,w){      // the tray on the table (portrait picture): 4 steaks in a column, the next ones over them
   var layer=Math.floor(k/TRAY_ROW),n=k%TRAY_ROW,t=(n+.5)/TRAY_ROW,h=w*TRT_ASPECT,sx=(layer%2?.04:-.03)*w,sy=-layer*.04*h;
   return {x:w/2+sx,y:(.14+.72*t)*h+sy,w:w*.46};
@@ -109,8 +113,8 @@ function composeTray(list){
   var srcs=[TRAY_SRC_T].concat(list.map(function(o){return srcOf(o.cook[o.up],o.key,o.sp);}));
   return Promise.all(srcs.map(loadImg)).then(function(im){
     if(im[0])g.drawImage(im[0],0,0,W,H);
-    list.map(function(o,i){return {o:o,img:im[1+i]};}).sort(function(a,b){return a.o.slot-b.o.slot;}).forEach(function(q){
-      var o=q.o,img=q.img,p=slotPosT(o.slot,W);if(!img)return;
+    list.map(function(o,i){return {o:o,img:im[1+i]};}).sort(function(a,b){return posT(a.o,W).y-posT(b.o,W).y||a.o.slot-b.o.slot;}).forEach(function(q){
+      var o=q.o,img=q.img,p=posT(o,W);if(!img)return;
       var w=p.w*sizeF(o.key),h=w*img.height/img.width;g.save();g.translate(p.x,p.y);g.rotate(o.rot*Math.PI/180);
       g.shadowColor='rgba(0,0,0,.5)';g.shadowBlur=W*.016;g.shadowOffsetX=W*.004;g.shadowOffsetY=W*.012;
       g.drawImage(img,-w/2,-h/2,w,h);g.restore();
@@ -151,8 +155,8 @@ function trayAtPoint(e){
 }
 function steakAtTray(el,e){
   var r=el.getBoundingClientRect(),W=520,px=(e.clientX-r.left)/r.width*W,py=(e.clientY-r.top)/r.height*Math.round(W*TRT_ASPECT);
-  var list=trayList(el).slice().sort(function(a,b){return b.slot-a.slot;});
-  for(var i=0;i<list.length;i++){var p=slotPosT(list[i].slot,W),dx=(px-p.x)/(p.w/2),dy=(py-p.y)/(p.w*.34);if(dx*dx+dy*dy<1)return list[i];}
+  var list=trayList(el).slice().sort(function(a,b){return posT(b,W).y-posT(a,W).y||b.slot-a.slot;});
+  for(var i=0;i<list.length;i++){var p=posT(list[i],W),dx=(px-p.x)/(p.w/2),dy=(py-p.y)/(p.w*.34);if(dx*dx+dy*dy<1)return list[i];}
   return null;
 }
 window.addEventListener('pointerdown',function(e){
@@ -182,7 +186,7 @@ window.addEventListener('pointerdown',function(e){
     if(k>=TRAY_MAX){try{showToast('Pleh je potpuno pun.');}catch(x){}e.stopImmediatePropagation();e.preventDefault();return;}
     e.stopImmediatePropagation();e.preventDefault();
     var md=h.dataset.meatDone||'',c0=md==='grilledBurnt'||md==='burnt'?1:(md==='grilled'||md==='fried'?.45:0);if(isFinite(parseFloat(h.dataset.grillCook)))c0=Math.max(0,Math.min(1.2,parseFloat(h.dataset.grillCook)));      // exactly as cooked as it was
-    l2.push({key:h.dataset.vegKey,sp:(h.dataset.minceLuk==='1'||h.dataset.mincePap==='1'),cook:[c0,c0],up:0,rot:Math.round((Math.random()-.5)*14),slot:k});
+    l2.push({key:h.dataset.vegKey,sp:(h.dataset.minceLuk==='1'||h.dataset.mincePap==='1'),cook:[c0,c0],up:0,rot:Math.round((Math.random()-.5)*14),slot:k,fx:Math.max(.16,Math.min(.84,(e.clientX-tr.getBoundingClientRect().left)/Math.max(1,tr.getBoundingClientRect().width))),fy:Math.max(.1,Math.min(.9,(e.clientY-tr.getBoundingClientRect().top)/Math.max(1,tr.getBoundingClientRect().height)))});
     var it=h;try{removeItem(it);holding=null;hidePlacementGhost();hideOriginGhost();clearPanTargets();updateHover();}catch(x){}
     refreshTray(tr,l2);
   }
