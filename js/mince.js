@@ -6,7 +6,7 @@
 (function(){
 'use strict';
 if(window.CooksterMince)return;
-var KEY='mleveno_meso',NK='mleveno_nadev',NADEV_ID='kal_01_mleveno_nadev',RK='pirinac',RICE_ID='kal_01_pirinac',PER_BAG=6,CEVAPI=4;      // NK: the minced meat for the filling (sarma, peppers): comes without the bag, never makes a ball
+var KEY='mleveno_meso',NK='mleveno_nadev_diced',NADEV_ID='kal_01_mleveno_nadev',RK='pirinac_diced',RICE_ID='kal_01_pirinac',PER_BAG=6,CEVAPI=4;      // NK: the minced meat for the filling (sarma, peppers): comes without the bag, never makes a ball
 var IMG={plain:'assets/meat/mleveno_gomila.png',luk:'assets/meat/mleveno_luk.png',pap:'assets/meat/mleveno_paprika.png',both:'assets/meat/mleveno_luk_paprika.png'};
 var BAG_SRC='assets/meat/mleveno_kesa.png';
 function toast(m){try{showToast(m);}catch(e){}}
@@ -68,7 +68,7 @@ function addNadev(item,v){
   if(!(heatable(v)||isBowl(v))){toast('Nadev ide u tiganj, šerpu ili vanglu.');return true;}
   try{if(heatable(v)&&CooksterPan.read(v).burnt){toast('Posuđe je zagorelo — operi ga pre nove ture.');return true;}}catch(e){}
   try{if(containerTotal(v)>=containerCapacity(v)){toast('Posuda je puna.');return true;}}catch(e){}
-  var meta={key:NK,type:'ingredient',label:'Mleveno meso (nadev)',src:IMG.plain,form:'mince',baseKey:NK,cutState:'whole'};
+  var meta={key:NK,type:'ingredient',label:'Mleveno meso (nadev)',src:window.CooksterMinceAtlas||IMG.plain,form:'diced',baseKey:'mleveno_nadev',cutState:'diced'};      // src = the atlas of single crumbs: every crumb is a piece of the simulation, like the chopped onion
   if(heatable(v)){CooksterPan.addIngredient(v,NK,1);try{rememberPanIngredientMeta(v,meta);}catch(e){}}
   else{var m=CooksterContainer.read(v);m.items=m.items||{};var cur=m.items[NK]?Math.max(0,+m.items[NK].count||0):0;m.items[NK]=Object.assign({},meta,{count:cur+1});CooksterContainer.write(v,m);}
   try{removeItem(item);}catch(e){}
@@ -80,7 +80,7 @@ function addRice(item,v){
   if(!(heatable(v)||isBowl(v))){toast('Pirinač ide u tiganj, šerpu ili vanglu.');return true;}
   try{if(heatable(v)&&CooksterPan.read(v).burnt){toast('Posuđe je zagorelo — operi ga pre nove ture.');return true;}}catch(e){}
   try{if(containerTotal(v)>=containerCapacity(v)){toast('Posuda je puna.');return true;}}catch(e){}
-  var meta={key:RK,type:'ingredient',label:'Pirinač',src:'assets/ingredients/pirinac_diced.webp',form:'grain',baseKey:RK,cutState:'whole'};
+  var meta={key:RK,type:'ingredient',label:'Pirinač',src:window.CooksterRiceAtlas||'assets/ingredients/pirinac_diced.webp',form:'diced',baseKey:'pirinac',cutState:'diced'};      // every grain is a piece of the simulation (like the chopped onion)
   if(heatable(v)){CooksterPan.addIngredient(v,RK,1);try{rememberPanIngredientMeta(v,meta);}catch(e){}}
   else{var m=CooksterContainer.read(v);m.items=m.items||{};var cur=m.items[RK]?Math.max(0,+m.items[RK].count||0):0;m.items[RK]=Object.assign({},meta,{count:cur+1});CooksterContainer.write(v,m);}
   try{removeItem(item);}catch(e){}
@@ -114,7 +114,7 @@ function layout(img,v,count){
   if(uncal){      // a vessel without its drawn mask (tool "Maska posude"): a safe oval round the opening of a bowl
     g={bottom:{left:22,right:78,top:44,bottom:66},visible:{left:12,right:88,top:22,bottom:72},visibleClip:'ellipse(44% 31% at 50% 48%)'};
   }
-  var s=state(v),a=ART[s.key],floorT=Math.min(1,count/2),riseT=Math.max(0,Math.min(1,(count-2)/4));
+  var s=state(v),a=ART[s.key],floorT=heatable(v)?1:Math.min(1,count/2),riseT=Math.max(0,Math.min(1,(count-2)/4));
   var cx=(g.bottom.left+g.bottom.right)/2,cy=(g.bottom.top+g.bottom.bottom)/2,fw=(g.bottom.right-g.bottom.left)*floorT,fh=(g.bottom.bottom-g.bottom.top)*floorT;
   function lerp(x,y,t){return x+(y-x)*t;}
   var tl=lerp(cx-fw/2,g.visible.left,riseT),tr=lerp(cx+fw/2,g.visible.right,riseT),tt=lerp(cy-fh/2,g.visible.top,riseT),tb=lerp(cy+fh/2,g.visible.bottom,riseT);
@@ -138,7 +138,7 @@ function paintCrumbs(v){
   var heap=host.querySelector('.mince-heap');
   // one dose: the crumbs cover the whole floor but the floor is seen between them; the SECOND dose fills these gaps, every next dose fills more (a heap under the crumbs): a heap of meat under the crumbs (it goes brown as the meat fries)
   // and several layers of crumbs one over another, turned and shifted, so no gap is left
-  if(heap){heap.style.transform='rotate(var(--stir-turn,0deg))';heap.style.opacity=(n>=2?1:1-c).toFixed(2);heap.style.filter=n>=2?'brightness('+(1-.5*d*c).toFixed(2)+') saturate('+(1-.35*d*c).toFixed(2)+') drop-shadow(0 1px 2px rgba(70,15,8,.22))':'drop-shadow(0 1px 2px rgba(70,15,8,.22))';}
+  if(heap){heap.style.transform='rotate(var(--stir-turn,0deg))';heap.style.opacity=(n>=2?1:1-c).toFixed(2);heap.style.filter=n>=2?'brightness('+(1-.5*d).toFixed(2)+') saturate('+(1-.35*d).toFixed(2)+') drop-shadow(0 1px 2px rgba(70,15,8,.22))':'drop-shadow(0 1px 2px rgba(70,15,8,.22))';}
   var layers=Math.max(1,Math.min(3,n)),rots=[0,63,-41],sc=[1,1.08,1.05],tx=[0,5,-4],ty=[0,-4,5];
   ['raw','fried'].forEach(function(k){
     for(var i=0;i<3;i++){
@@ -337,7 +337,7 @@ setInterval(function(){      // the meat in a pan crumbles while it is stirred (
     var c=crumbOf(v),before=c;
     var mix=0;try{mix=+CooksterPan.read(v).mix||0;}catch(e){}      // the game's own measure of how much the pan has been stirred (0..1)
     if(stir)c=Math.min(1,c+.25/10*(hot>.25?1:.4));else if(hot>.4)c=Math.min(1,c+.25/90);
-    c=Math.max(c,Math.min(1,mix*1.25));
+    c=Math.max(c,Math.min(1,mix*1.25),Math.min(1,doneOf(v)*1.4));
     v._crumb=c;if(c!==before||c>0)paintCrumbs(v);
   });}catch(e){}
 },250);
@@ -351,5 +351,14 @@ setInterval(function(){
   });}catch(e){}
 },700);
 
+// pouring a pan into another pan: the meat keeps how crumbled and how fried it is (the state of the picture lives on the vessel, so it is carried over together with the food)
+(function(){
+  var last=null;
+  try{
+    var vtp=window.vesselTransferPayload,mph=window.mergePayloadIntoHeatable;
+    if(typeof vtp==='function'&&!vtp.__mince){var w1=function(src){var r=vtp.apply(this,arguments);try{if(src&&src._crumb!=null||src&&src._doneMax!=null)last={crumb:+src._crumb||0,done:+src._doneMax||0,t:performance.now()};}catch(e){}return r;};w1.__mince=true;window.vesselTransferPayload=w1;}
+    if(typeof mph==='function'&&!mph.__mince){var w2=function(target,payload){var r=mph.apply(this,arguments);try{if(last&&performance.now()-last.t<15000&&target&&unitsOf(target,KEY)+unitsOf(target,NK)>0){target._crumb=Math.max(+target._crumb||0,last.crumb);target._doneMax=Math.max(+target._doneMax||0,last.done);paintCrumbs(target);}}catch(e){}return r;};w2.__mince=true;window.mergePayloadIntoHeatable=w2;}
+  }catch(e){}
+})();
 window.CooksterMince={appendRice:appendRice,NK:NK,NADEV_ID:NADEV_ID,handle:handle,append:append,takeBall:takeBall,fromFridge:fromFridge,units:units,state:state,shape:shape,KEY:KEY};
 })();
