@@ -7,7 +7,7 @@
 (function(){
 'use strict';
 if(window.CooksterNeighbor)return;
-var KEY='cookster.neighbor.v1',THRESHOLD=.55;
+var KEY='cookster.neighbor.v1',THRESHOLD=.5;
 var LINES=[
   {who:'Komšinica',text:'Dobar dan, dete. Vidim da se u Savkinoj kući opet vrti.'},
   {who:'Komšinica',text:'Tako smo mi radili dok je ona bila tu. Kucnemo na prozor, kažemo šta nam treba, a ona nam spremi.'},
@@ -89,6 +89,8 @@ function init(){
   var p=prog();if(p>=0&&p<.02){try{localStorage.removeItem(KEY);}catch(e){}}      // a fresh dirty kitchen = a new game: the meeting happens again
   setInterval(tick,500);
 }
+// the kitchen is declared clean at 80%: if the cleaning jumped over the threshold between two checks, it knocks now
+window.addEventListener('cookster:kitchen-clean',function(){if(st==='idle'&&!done())setTimeout(function(){if(st==='idle'&&!done())knock();},1800);});
 window.CooksterNeighbor={knock:knock,state:function(){return st;},lines:LINES};
 if(document.readyState==='complete')setTimeout(init,600);else window.addEventListener('load',function(){setTimeout(init,600);});
 })();

@@ -1363,3 +1363,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - 10.11.: metla stoji naslonjena uz zid (izmedju vrata spajza i sudopere) umesto u tocku za brze alate; sunder (iz kafane, assets/tavern/sundjer_suv.webp) lezi na ivici sudopere, takodje izvan tocka; krpa sa sporeta je u desnoj fioci; ciscenje brze (2 prelaza umesto 3, veci cetka).
 - 10.11.: naracija: druga recenica ('metla') ide uvek, 3.5 s posle prve (narration v3).
 - 10.11.: metla i sunder opet u tocku za brze alate; stoje i fizicki (metla uz zid, sunder na sudoperi), klik ih uzima kao brzi alat (prati kursor i cisti), obican klik bez pomeranja vraca na mesto (ensureStandingTools); ciscenje sporije (2.5 prelaza) i na 80% se zavrsi (DONE_AT=.2).
+- 10.11.: komsinica kuca i kad se ciscenje zavrsi (dogadjaj cookster:kitchen-clean), prag 50% (neighbor v2); ciscenje jos sporije (3.6 prelaza).
