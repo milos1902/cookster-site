@@ -3691,7 +3691,9 @@ function createPerspectiveLabV2(){
   const applyBtn=mkBtn('Примени у игру');
   const exportBtn=mkBtn('Извези JSON');
   const closeBtn=mkBtn('Затвори');
-  buttonGrid.append(copyBtn,delBtn,clearBtn,resetItemBtn,applyBtn,exportBtn,closeBtn);
+  const aimBtn=mkBtn('Нишани');
+  aimBtn.style.gridColumn='1 / -1';
+  buttonGrid.append(aimBtn,copyBtn,delBtn,clearBtn,resetItemBtn,applyBtn,exportBtn,closeBtn);
 
   const output=document.createElement('textarea');
   output.spellcheck=false;
@@ -3703,6 +3705,23 @@ function createPerspectiveLabV2(){
   hint.textContent='Тул аутоматски препознаје сто, шпорет или под. При избору предмета учитава све његове постојеће master тачке. „Ресетуј предмет“ брише само тај предмет. „Примени у игру“ чува измену трајно; „Извези JSON“ прави финални master.';
 
   panel.append(title,itemSel,surfaceSel,status,scaleRow,angleRow,tiltRow,pointList,buttonGrid,output,hint);
+
+  // Нишани: klik na predmet na sceni bira TAJ predmet u alatu (isto kao u alatu Senke)
+  let aiming=false;
+  aimBtn.onclick=()=>{aiming=!aiming;aimBtn.textContent=aiming?'Кликни предмет на сцени…':'Нишани';document.body.classList.toggle('cpl-aim',aiming);};
+  {const st=document.createElement('style');st.textContent='body.cpl-aim #scene,body.cpl-aim #scene *{cursor:crosshair!important}';document.head.appendChild(st);}
+  window.addEventListener('pointerdown',e=>{
+    if(!aiming||panel.style.display==='none'||panel.contains(e.target))return;
+    const el=e.target?.closest?.('.item');if(!el)return;
+    e.preventDefault();e.stopImmediatePropagation();
+    aiming=false;aimBtn.textContent='Нишани';document.body.classList.remove('cpl-aim');
+    const id=el.dataset.itemId||'';
+    try{
+      populate();
+      if([...itemSel.options].some(o=>o.value===id)){itemSel.value=id;itemSel.onchange();}
+      else status.textContent='Овај предмет ('+(el.dataset.label||id)+') није на листи за калибрацију.';
+    }catch(_){}
+  },true);
   document.body.appendChild(panel);
 
   for(const type of ['pointerdown','pointermove','pointerup','pointercancel','mousedown','mousemove','mouseup','click','dblclick','contextmenu','wheel'])
@@ -16032,10 +16051,13 @@ window.CooksterMarketTrade=Object.freeze({
    const records=CooksterState.market.pendingBags.map(x=>({...x}));
    CooksterState.market.pendingBags.length=0;
    closeMarket();
-   const made=spawnCollectedMarketBags(records);
+   let toTable=records,hung=0;
+   try{if(window.CooksterWallBags){toTable=CooksterWallBags.hang(records);hung=records.length-toTable.length;}}catch(_){toTable=records;}   // kese se kace na kuke (js/wall-bags.js); sto ako nema mesta
+   if(hung)showToast(hung===1?'Kesa je okacena na kuku.':'Kese su okacene na kuke.');
+   const made=toTable.length?spawnCollectedMarketBags(toTable):[];
    CooksterSave.schedule();
    window.dispatchEvent(new CustomEvent('cookster:market-bags-changed',{detail:{collected:true}}));
-   return {ok:true,count:made.length};
+   return {ok:true,count:made.length+hung};
  }
 });
 

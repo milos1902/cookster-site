@@ -11,6 +11,16 @@ var DEFAULTS=[{"x":113.4,"y":297.2,"h":73,"rz":-11.5,"rx":0,"ry":12.3,"p":500},{
 function defaults(){return JSON.parse(JSON.stringify(DEFAULTS));}
 function norm(b){return {x:+b.x,y:+b.y,h:+b.h||72,rz:+b.rz||0,rx:+b.rx||0,ry:+b.ry||0,p:+b.p||500};}
 var bags=[],els=[],sel=-1,open=false,showAll=true;
+// kese koje stvarno vise (po jedna na kuku): slots[i] = zapis kese sa pijace ili null. Cuva se posebno u pregledacu.
+var SLOTS_KEY='cookster.hanging-bags.v1',slots=[];
+function loadSlots(){try{var r=JSON.parse(localStorage.getItem(SLOTS_KEY)||'null');if(Array.isArray(r))return r;}catch(e){}return [];}
+function saveSlots(){try{localStorage.setItem(SLOTS_KEY,JSON.stringify(slots));}catch(e){}}
+// slika kese po povrcu: assets/ui/wall/kesa_<productKey>.webp ako postoji, inace osnovna (salata)
+var VEG_IMG={};   // kesa_<kljuc>.webp: sargarepa, paradajz, paprika_zelena, paprika_crvena, luk (ostalo: osnovna)   // popunjava se kad slika postoji (probe preko Image)
+function imgFor(rec){var k=rec&&rec.productKey;return (k&&VEG_IMG[k])?VEG_IMG[k]:SRC;}
+function probe(k){if(VEG_IMG[k]!==undefined)return;VEG_IMG[k]=null;var im=new Image(),u='assets/ui/wall/kesa_'+k+'.webp?v=1';im.onload=function(){VEG_IMG[k]=u;render();};im.src=u;}
+function mixText(r){return (r.items||[]).map(function(x){return (x.label||x.productKey)+' '+qtyText(x);}).join(', ');}
+function qtyText(r){var m=r.quantityMode==='bunch',v=m?(+r.quantityBunches||+r.quantityValue||1):(+r.quantityKg||+r.quantityValue||1);return m?(Math.round(v)+' vezica'):(v===.5?'500 g':(String(v).replace('.',',')+' kg'));}
 function load(){
   try{var r=JSON.parse(localStorage.getItem(KEY)||'null');if(Array.isArray(r)&&r.length)return r.filter(function(b){return b&&isFinite(b.x)&&isFinite(b.y);}).map(norm);}catch(e){}
   return defaults();
@@ -27,8 +37,10 @@ function render(){
   els.forEach(function(e){e.remove();});els=[];
   bags.forEach(function(b,i){
     var el=document.createElement('img');el.className='wall-bag';el.draggable=false;el.src=SRC;el.alt='';
-    el.style.cssText='position:absolute;z-index:4;filter:drop-shadow(1px 2px 2px rgba(30,12,0,.5));display:'+((open&&showAll)?'block':'none')+';pointer-events:'+(open?'auto':'none')+';cursor:'+(open?'move':'default');
+    el.style.cssText='position:absolute;z-index:4;filter:drop-shadow(1px 2px 2px rgba(30,12,0,.5));display:'+(((open&&showAll)||slots[i])?'block':'none')+';pointer-events:'+((open||slots[i])?'auto':'none')+';cursor:'+(open?'move':(slots[i]?'pointer':'default'));
+    if(slots[i]){el.src=imgFor(slots[i]);el.title=slots[i].mixed?('Mesano povrce: '+mixText(slots[i])+' — klik da izvadis sve na sto'):((slots[i].label||'Kesa')+' · '+qtyText(slots[i])+' — klik da uzmes');}
     paint(b,el);
+    el.addEventListener('click',function(e){if(open||!slots[i])return;e.preventDefault();e.stopPropagation();take(i);});
     el.addEventListener('pointerdown',function(e){if(!open||e.button!==0)return;e.preventDefault();e.stopPropagation();select(i);
       var s0=screenToScene(e.clientX,e.clientY),x0=b.x,y0=b.y;
       function mv(ev){var s=screenToScene(ev.clientX,ev.clientY);b.x=+(x0+s.x-s0.x).toFixed(1);b.y=+(y0+s.y-s0.y).toFixed(1);paint(b,el);syncRows();}
@@ -92,7 +104,41 @@ function toggle(v){
   if(open&&sel<0&&bags.length)sel=0;
   render();syncRows();
 }
-function init(){bags=load();render();buildPanel();}
-window.CooksterWallBags={get:function(){return bags;},render:render,open:function(){toggle(true);}};
+function take(i){
+  var rec=slots[i];if(!rec)return;
+  try{if(typeof holding!=='undefined'&&holding){showToast('Prvo spusti predmet iz ruke.');return;}}catch(e){}
+  slots[i]=null;saveSlots();render();
+  if(rec.mixed){      // mesana kesa: sve kese iz nje se redjaju na sto
+    try{(rec.items||[]).forEach(function(r,k){makeMarketBag(r,k);});showToast('Iz mesane kese je izvadjeno '+(rec.items||[]).length+' kesa na sto.');CooksterSave.schedule();}catch(e){}
+    return;
+  }
+  try{
+    var el=makeMarketBag(rec,0);if(!el)return;
+    var sp=screenToScene(mouse.x,mouse.y);el.style.visibility='hidden';
+    setPose(el,sp.x,sp.y,surfaceScaleFor(el,'table',sp.y));startHolding(el);
+    try{CooksterSave.schedule();}catch(e){}
+  }catch(e){}
+}
+// okaci kese na slobodne kuke; ako ih ima vise nego kuka, visak ide u JEDNU mesanu kesu na poslednjoj slobodnoj kuki (ili u vec okacenu mesanu)
+function mixedOf(items){return {id:'mixed_'+Date.now(),mixed:true,productKey:'mesano',label:'Mesano povrce',items:items};}
+function hang(records){
+  var list=(records||[]).filter(Boolean),free=[];
+  for(var i=0;i<bags.length;i++)if(!slots[i])free.push(i);
+  var mi=-1;for(var j=0;j<slots.length;j++)if(slots[j]&&slots[j].mixed){mi=j;break;}
+  var direct=Math.min(list.length,free.length>0&&list.length>free.length?free.length-1:free.length);
+  for(var d=0;d<direct;d++){slots[free[d]]=list[d];if(list[d].productKey)probe(list[d].productKey);}
+  var over=list.slice(direct);
+  if(over.length){
+    if(mi>=0){slots[mi].items=(slots[mi].items||[]).concat(over);}
+    else if(free.length>direct){slots[free[direct]]=mixedOf(over);}
+    else{      // nema slobodne kuke: poslednja kesa se pretvara u mesanu zajedno sa novima
+      var last=bags.length-1,prev=slots[last];slots[last]=mixedOf((prev?[prev]:[]).concat(over));
+    }
+    probe('mesano');
+  }
+  saveSlots();render();return [];
+}
+function init(){bags=load();slots=loadSlots();slots.length=Math.min(slots.length,bags.length);slots.forEach(function(r){if(r&&r.productKey)probe(r.productKey);});render();buildPanel();}
+window.CooksterWallBags={get:function(){return bags;},render:render,open:function(){toggle(true);},hang:hang,take:take,slots:function(){return slots;}};
 if(document.readyState==='complete')init();else window.addEventListener('load',init);
 })();
