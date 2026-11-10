@@ -1379,3 +1379,5 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - 10.11.: druga metla ispred: bio je 'placement-ghost' (senka za spustanje) koji je igra crtala na drugom mestu dok se metla nosi bez klika; sada se za metlu sakriva (game.js 3.315).
 - 10.11.: komsinica posle nove igre kuca tek 2.5 s posle obe recenice naracije (dogadjaj cookster:narration-done iz narration.js v5), najkasnije posle 14 s (neighbor v14). Test: kucanje 2.7 s posle kraja naracije.
 - 10.11.: sunder: mnogo vise vidljivih sapunastih mehurica koji prate sunder i plutaju nagore (kitchen-clean.js v6124, funkcija bubbles; do 520 odjednom, 2-11 po pomaku). Prasina (smedje cestice) ostaje samo za metlu.
+- 10.11.: metla: velika meka prasina (oblaci sa gradijentom, do 230, prate metlu i lebde suprotno od zamaha; kitchen-clean v6125, dustClouds). Zvuk metle (swish, sum kroz filter) je generisan kodom u kitchen-clean.js - nije menjan.
+- 10.11.: prasina metle realisticnija (kitchen-clean v6126): oblak od vise mekih mrlja koje se razilaze i vrtlože + sitne cestice (trunje) koje odlete iza metle i padaju.

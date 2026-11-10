@@ -78,16 +78,46 @@ function bubbles(x,y,n){
   for(var i=0;i<n;i++){var r=4+Math.random()*Math.random()*14;bub.push({x:x+(Math.random()-.5)*70,y:y+(Math.random()-.5)*46,vx:(Math.random()-.5)*22,vy:-10-Math.random()*34,r:r,t:0,life:1.1+Math.random()*1.3,ph:Math.random()*6.28,wob:6+Math.random()*10});}
   if(bub.length>520)bub.splice(0,bub.length-520);
 }
+// dust of the broom: big soft clouds (a gradient, not hard dots) that follow the broom, spread out, drift against the sweep and slowly fade
+var clouds=[],specks=[],PAL=[[196,176,146],[170,150,120],[210,196,170]];
+function dustClouds(x,y,n,dx,dy){
+  var l=Math.hypot(dx,dy)||1,ux=dx/l,uy=dy/l;
+  for(var i=0;i<n;i++){      // a wispy cloud = several soft blobs of different size that drift apart and swirl a little
+    var c={x:x+(Math.random()-.5)*80,y:y+12+(Math.random()-.5)*28,vx:-ux*(10+Math.random()*26)+(Math.random()-.5)*18,vy:-uy*(5+Math.random()*12)-8-Math.random()*14,t:0,life:1.4+Math.random()*1.6,ph:Math.random()*6.28,col:PAL[(Math.random()*3)|0],b:[]};
+    for(var k=0;k<4;k++)c.b.push({ox:(Math.random()-.5)*34,oy:(Math.random()-.5)*20,r:10+Math.random()*20,a:.11+Math.random()*.13,sp:(Math.random()-.5)*12});
+    clouds.push(c);
+  }
+  for(var m=0;m<n*9;m++){      // fine specks thrown out behind the broom
+    var ang=Math.atan2(-uy,-ux)+(Math.random()-.5)*1.5,sp=25+Math.random()*90;
+    specks.push({x:x+(Math.random()-.5)*60,y:y+14+(Math.random()-.5)*20,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp*.6-10-Math.random()*25,r:1+Math.random()*2.4,t:0,life:.6+Math.random()*1.2,col:PAL[(Math.random()*2)|0],a:.55+Math.random()*.4});
+  }
+  if(clouds.length>150)clouds.splice(0,clouds.length-150);
+  if(specks.length>900)specks.splice(0,specks.length-900);
+}
 var lastT=0;
 function tick(now){
   requestAnimationFrame(tick);var dt=Math.min(.05,(now-lastT)/1000||.016);lastT=now;
   draw();
-  if(!dust.length&&!bub.length){if(fx._busy){fg.clearRect(0,0,W,H);fx._busy=false;}return;}
+  if(!dust.length&&!bub.length&&!clouds.length&&!specks.length){if(fx._busy){fg.clearRect(0,0,W,H);fx._busy=false;}return;}
   fx._busy=true;fg.clearRect(0,0,W,H);
   for(var i=dust.length-1;i>=0;i--){
     var p=dust[i];p.t+=dt;if(p.t>=p.life){dust.splice(i,1);continue;}
     p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.98;var k=1-p.t/p.life;
     fg.fillStyle='rgba(176,150,112,'+(p.a*k).toFixed(3)+')';fg.beginPath();fg.arc(p.x,p.y,p.r*(1+(1-k)*.8),0,6.2832);fg.fill();
+  }
+  for(var q=clouds.length-1;q>=0;q--){
+    var c=clouds[q];c.t+=dt;if(c.t>=c.life){clouds.splice(q,1);continue;}
+    c.x+=(c.vx+Math.sin(c.t*2.2+c.ph)*9)*dt;c.y+=(c.vy+Math.cos(c.t*1.7+c.ph)*5)*dt;c.vx*=.982;c.vy*=.99;
+    var u=c.t/c.life,f=u<.18?u/.18:1-(u-.18)/.82,gr;
+    for(var k=0;k<c.b.length;k++){var bb=c.b[k],rr=bb.r*(1+u*1.4),bx=c.x+bb.ox*(1+u*1.2)+bb.sp*c.t,by=c.y+bb.oy*(1+u);
+      gr=fg.createRadialGradient(bx,by,0,bx,by,rr);var al=bb.a*f;
+      gr.addColorStop(0,'rgba('+c.col[0]+','+c.col[1]+','+c.col[2]+','+al.toFixed(3)+')');gr.addColorStop(.55,'rgba('+c.col[0]+','+c.col[1]+','+c.col[2]+','+(al*.42).toFixed(3)+')');gr.addColorStop(1,'rgba('+c.col[0]+','+c.col[1]+','+c.col[2]+',0)');
+      fg.fillStyle=gr;fg.beginPath();fg.arc(bx,by,rr,0,6.2832);fg.fill();}
+  }
+  for(var w=specks.length-1;w>=0;w--){
+    var sk=specks[w];sk.t+=dt;if(sk.t>=sk.life){specks.splice(w,1);continue;}
+    sk.x+=sk.vx*dt;sk.y+=sk.vy*dt;sk.vx*=.93;sk.vy=sk.vy*.93+14*dt;var ka=1-sk.t/sk.life;
+    fg.fillStyle='rgba('+sk.col[0]+','+sk.col[1]+','+sk.col[2]+','+(sk.a*ka).toFixed(3)+')';fg.beginPath();fg.arc(sk.x,sk.y,sk.r,0,6.2832);fg.fill();
   }
   for(var j=bub.length-1;j>=0;j--){
     var b=bub[j];b.t+=dt;if(b.t>=b.life){bub.splice(j,1);continue;}
@@ -142,7 +172,7 @@ function stamp(x,y,b){
       if(sweepOf[id]!==curSweep){sweepOf[id]=curSweep;applied[id]=0;}
       if(w>applied[id]){level[id]=Math.max(0,level[id]-(w-applied[id])/3.6);applied[id]=w;hit=true;if(level[id]<.004)level[id]=0;}
     }}
-  if(hit){dirty=true;if(tool==='metla')puff(x,y+8,2,true);}
+  if(hit){dirty=true;if(tool==='metla')puff(x,y+8,1,false);}
   return touched;
 }
 function onMove(e){
@@ -156,6 +186,7 @@ function onMove(e){
   else travel=0;
   var steps=Math.max(1,Math.ceil(dist/9)),any=0;
   for(var i=1;i<=steps;i++){var t=i/steps;any+=stamp(px+dx*t,py+dy*t,b);}
+  if(tool==='metla')dustClouds(p.x,p.y,Math.min(4,1+Math.round(dist/12)),dx,dy);      // a big cloud of dust follows the broom
   if(tool==='sundjer')bubbles(p.x,p.y+6,Math.min(9,2+Math.round(dist/5)));      // the sponge makes a lot of soap bubbles all along its way
   var dt=Math.max(1,now-pt),speed=dist/dt*1000;
   if(tool==='metla')swish(speed);
