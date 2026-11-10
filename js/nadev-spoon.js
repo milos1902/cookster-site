@@ -6,7 +6,7 @@
 (function(){
 'use strict';
 if(window.CooksterNadevSpoon)return;
-var NK='mleveno_nadev_diced',RK='pirinac_diced',PORTION=.1,W=62,H=154;      // a big spoon (the wooden one), not the small stirring spoon
+var NK='mleveno_nadev_diced',RK='pirinac_diced',PORTION=.1,W=42,H=104;      // a big spoon (the wooden one), not the small stirring spoon
 var NS={el:null,loaded:false,pan:null,rice:0,down:null};
 function emptyHands(){try{return !(typeof holding!=='undefined'&&holding&&!holding._mini);}catch(e){return true;}}      // the small stirring spoon (holding._mini) is not a thing in the hand
 function heat(v){try{return isHeatableCookwareItem(v);}catch(e){return true;}}
