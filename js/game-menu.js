@@ -103,6 +103,7 @@ function hideGear(){if(gear)gear.style.display='none';}
 function gearMenu(anchor){
   if(!gear){gear=document.createElement('div');gear.id='cdock-gear';
     [['💾 Sačuvaj igru','saveBtn'],['📂 Učitaj poslednji save','loadBtn']].forEach(function(p){var b=document.createElement('button');b.type='button';b.textContent=p[0];b.onclick=function(){press(p[1]);hideGear();};gear.appendChild(b);});
+    var tb=document.createElement('button');tb.type='button';tb.textContent='❓ Uputstvo (Baba Savka)';tb.onclick=function(){hideGear();try{CooksterTutorial.start(true);}catch(e){}};gear.appendChild(tb);
     document.body.appendChild(gear);}
   if(gear.style.display==='flex'){hideGear();return;}
   var r=anchor.getBoundingClientRect();gear.style.display='flex';
