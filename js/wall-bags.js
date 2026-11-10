@@ -73,8 +73,7 @@ function probe(k){if(VEG_IMG[k]!==undefined)return;VEG_IMG[k]=null;var im=new Im
 function mixText(r){return (r.items||[]).map(function(x){return (x.label||x.productKey)+' '+qtyText(x);}).join(', ');}
 function qtyText(r){var m=r.quantityMode==='bunch',v=m?(+r.quantityBunches||+r.quantityValue||1):(+r.quantityKg||+r.quantityValue||1);return m?(Math.round(v)+' vezica'):(v===.5?'500 g':(String(v).replace('.',',')+' kg'));}
 function load(){
-  try{var r=JSON.parse(localStorage.getItem(KEY)||'null');if(Array.isArray(r)&&r.length)return r.filter(function(b){return b&&isFinite(b.x)&&isFinite(b.y);}).map(norm);}catch(e){}
-  return defaults();
+  return defaults();      // polozaji kuka su gotovi (DEFAULTS); sacuvane izmene iz alata se ne koriste (dodatne kese iz alata su pravile "kuke" na podu)
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(bags));}catch(e){}}
 function paint(b,el){
@@ -287,13 +286,16 @@ function holdTick(){
   var idx=h.dataset.hookIdx!=null&&h.dataset.hookIdx!==''?+h.dataset.hookIdx:2,hk=bags[Math.max(0,Math.min(bags.length-1,idx))]||{p:500,rx:0,ry:10,rz:-12,h:90};
   var gh=g.offsetHeight||204,best=1e9,hh=hk.h;
   for(var i=0;i<bags.length;i++){var d=Math.hypot(bags[i].x-sp.x,(bags[i].y+bags[i].h)-sp.y);if(d<best){best=d;hh=bags[i].h;}}
-  var bi=0;for(var j=0;j<bags.length;j++){if(Math.hypot(bags[j].x-sp.x,(bags[j].y+bags[j].h)-sp.y)<=best+.01){bi=j;break;}}
+  var hx=bags[0].x,hh2=bags[0].h,ay=sp.y;      // kuka kao neprekidna funkcija visine misa (bez skokova sa kuke na kuku)
+  if(bags.length>1){var a0=bags[0].y+bags[0].h,aN=bags[bags.length-1].y+bags[bags.length-1].h;
+    if(ay<=a0){hx=bags[0].x;hh2=bags[0].h;}else if(ay>=aN){hx=bags[bags.length-1].x;hh2=bags[bags.length-1].h;}
+    else for(var j=0;j<bags.length-1;j++){var y0=bags[j].y+bags[j].h,y1=bags[j+1].y+bags[j+1].h;if(ay<=y1){var f=(ay-y0)/Math.max(1,y1-y0);hx=lerp(bags[j].x,bags[j+1].x,f);hh2=lerp(bags[j].h,bags[j+1].h,f);break;}}}
   var ey=Math.max(233,Math.min(576,sp.y)),edgeX=452.1+(376.1-452.1)*(ey-233)/(576-233);      // leva ivica stola (tablePoly) na visini misa
-  var tt=Math.max(0,Math.min(1,(edgeX-sp.x)/Math.max(1,edgeX-bags[bi].x))),t=1-tt;
-  var H=lerp(hh,gh,Math.max(0,Math.min(1,(sp.x-bags[bi].x)/Math.max(1,edgeX-bags[bi].x))));      // jednom ravnomerno od ivice stola do kuke, bez medjutacaka
+  var u1=Math.max(0,Math.min(1,(sp.x-hx)/Math.max(1,edgeX-hx))),t=u1;
+  var H=lerp(hh2,gh,u1);      // jedno ravnomerno smanjenje od ivice stola do kuke
   var sc=Math.min(1,H/gh);      // na stolu pun razmer; tek preko leve ivice ravnomerno do kuke
-  var fs=sstep((sp.x-bags[bi].x)/Math.max(20,176-bags[bi].x));      // otkacena: nagib sa kuke nestaje dok se odmice, do x176 visi pod pravim uglom (tvoje tacke)
-  var c=tableCfg,p=lerp(c.p,hk.p,u),rx=lerp(c.rx,hk.rx,u),ry=lerp(c.ry,lerp(hk.ry,12.3,fs),u),rz=lerp(c.rz,lerp(hk.rz,0,fs),u)+hold.ang*u;
+  var fs=sstep((sp.x-hx)/70);      // otkacena: nagib sa kuke nestaje dok se odmice, do x176 visi pod pravim uglom (tvoje tacke)
+  var c=tableCfg,p=lerp(c.p,hk.p,u),rx=lerp(c.rx,hk.rx,u),ry=lerp(c.ry,lerp(hk.ry,0,fs),u),rz=lerp(c.rz,lerp(hk.rz,c.rz,fs),u)+hold.ang*u;
   var bounce=Math.sin(Math.PI*u),sy=1+.11*bounce*(hold.fromTable?1:0),lift=-9*bounce*(hold.fromTable?1:0);
   bd.style.transformOrigin=lerp(50,APEX*100,u).toFixed(1)+'% '+lerp(100,0,u).toFixed(1)+'%';
   bd.style.transform='translateY('+lift.toFixed(1)+'px) perspective('+p.toFixed(0)+'px) rotateX('+rx.toFixed(2)+'deg) rotateY('+ry.toFixed(2)+'deg) rotateZ('+rz.toFixed(2)+'deg) scale(1,'+sy.toFixed(3)+')';
