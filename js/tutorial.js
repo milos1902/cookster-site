@@ -32,23 +32,24 @@ function panOnStove(){return pans().filter(function(e){return e.dataset.surfaceZ
 function panRect(){var p=panOnStove()||pans()[0];return p?rectOf(p.querySelector('.body')||p):null;}
 function panModel(){var p=panOnStove();try{return p?CooksterPan.read(p):null;}catch(e){return null;}}
 var bought=false;
+function boughtNow(){var h=document.getElementById('marketHaggleStep');if(h&&h.classList.contains('active'))bought=true;return bought;}      // cenkanje je otvoreno = kupovina je pritisnuta
 // ---------- koraci ----------
 // text: sta Savka kaze; target: funkcija koja vraca pravougaonik (ekran) na koji strelica pokazuje; done: kad je korak gotov; button: "Dalje" umesto provere
 var STEPS=[
   {id:'hello',button:'Dalje',text:'Dobro došao u moju kuhinju, sine. Hajde da skuvamo srpsku salatu, pa ću ti usput pokazati gde je šta.'},
-  {id:'dock',text:'Pređi mišem preko drvenog polja dole levo, tamo gde je sat. Otvoriće se ikonice.',target:plateRect,done:dockOpen},
+  {id:'dock',text:'Pređi mišem preko drvenog polja dole levo, tamo gde je sat. Otvoriće se ikonice.',target:plateRect,done:function(){return dockOpen()||body('market-open');}},
   {id:'market',text:function(){return dockOpen()?'Klikni na pijacu, ikonicu sa tezgom. Treba nam povrće.':'Zadrži miš na drvenom polju sa satom, da se ikonice otvore.';},
    target:function(){return dockOpen()?(dockBtn('Pijaca')||plateRect()):plateRect();},done:function(){return body('market-open');}},
   {id:'pick',requires:function(){return body('market-open')?null:'market';},
    text:'Ovo je pijaca. Za salatu nam treba paradajz: klikni na gomilu paradajza.',
    target:function(){return rectOf($('#marketHoverLayer .market-pile[data-key="paradajz"]'));},
    done:function(){var c=document.getElementById('marketCartCount');return !!c&&(parseInt(c.textContent,10)||0)>0;}},
-  {id:'buy',requires:function(){return body('market-open')?null:'market';},
+  {id:'buy',requires:function(){return (body('market-open')||boughtNow())?null:'market';},
    text:'Dobro! Paradajz je u korpi. Sad pritisni „Kupi sve“.',
    side:'below',
    target:function(){return rectOf(document.getElementById('marketCartBuy'));},
-   done:function(){return bought;}},
-  {id:'accept',requires:function(){return (body('market-open')||bagsAnywhere())?null:'market';},
+   done:function(){return boughtNow();}},
+  {id:'accept',requires:function(){return (body('market-open')||boughtNow()||bagsAnywhere())?null:'market';},
    text:'Prodavac traži cenu. Možeš da se cenkaš, a možeš i odmah da pritisneš „Prihvati cenu“.',
    target:function(){return rectOf(document.getElementById('marketAcceptBtn'));},
    done:function(){return !body('market-open')&&bagsAnywhere();}},
@@ -70,9 +71,9 @@ var STEPS=[
   {id:'z_pick',requires:function(){return body('market-open')?null:'z_dock';},text:'Klikni na gomilu tikvica.',
    target:function(){return rectOf($('#marketHoverLayer .market-pile[data-key="tikvice"]'));},
    done:function(){var c=document.getElementById('marketCartCount');return !!c&&(parseInt(c.textContent,10)||0)>0;}},
-  {id:'z_buy',requires:function(){return body('market-open')?null:'z_dock';},side:'below',text:'Pritisni „Kupi sve“, pa prihvati cenu.',
+  {id:'z_buy',requires:function(){return (body('market-open')||boughtNow())?null:'z_dock';},side:'below',text:'Pritisni „Kupi sve“, pa prihvati cenu.',
    target:function(){return rectOf(document.getElementById('marketCartBuy'))||rectOf(document.getElementById('marketAcceptBtn'));},
-   done:function(){return !body('market-open')&&vegsInBags('tikvice');}},
+   done:function(){return boughtNow()&&!body('market-open')&&(vegsInBags('tikvice')||allItems().some(function(e){return e.dataset.marketBag==='1'&&e.dataset.vegKey==='tikvice';}));}},
   {id:'z_bag',text:'Izvadi tikvicu iz kese sa kuke (klik na donji deo kese).',
    target:function(){return wallBagRect();},done:function(){return vegs('tikvice').length>0;}},
   {id:'z_cut',text:'Spusti tikvicu na dasku i pritisni C. Prevuci mišem preko nje da je preseciš, pa pritisni E kad si gotov.',
@@ -139,6 +140,7 @@ function placeArrow(r,side){
 }
 function go(i){
   st.i=Math.max(0,Math.min(STEPS.length-1,i));save();cur=STEPS[st.i];shownId='';
+  if(cur.id==='z_dock'||cur.id==='hello')bought=false;      // nova kupovina
 }
 function frame(){
   if(!running)return;
@@ -165,7 +167,7 @@ btnNext.addEventListener('click',function(){
 });
 btnSkip.addEventListener('click',function(){finish();try{showToast('Uputstvo je preskočeno. Možeš ga opet pokrenuti iz knjige recepata.');}catch(e){}});
 // kupovina: "Kupi sve" je pritisnuto (posle toga se otvara cenkanje)
-document.addEventListener('click',function(e){var b=e.target&&e.target.closest&&e.target.closest('#marketCartBuy');if(b&&cur&&cur.id==='buy')bought=true;},true);
+['pointerdown','click'].forEach(function(ev){document.addEventListener(ev,function(e){var b=e.target&&e.target.closest&&e.target.closest('#marketCartBuy');if(b&&cur&&(cur.id==='buy'||cur.id==='z_buy'))bought=true;},true);});
 
 function start(from){
   if(running)return;
