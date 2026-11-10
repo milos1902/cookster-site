@@ -18,7 +18,12 @@ document.head.appendChild(css);
 function held(){return typeof holding!=='undefined'?holding:null;}
 function isPitcher(el){return !!el&&el.dataset&&el.dataset.itemId===ID;}
 function troughUnder(x,y){
+  try{var tray=window.CooksterSarmaTray&&CooksterSarmaTray.trayWithSarmasAt?CooksterSarmaTray.trayWithSarmasAt(x,y):null;if(tray)return tray;}catch(e){}      // the round tray with sarmas (js/sarma-tray.js) takes the water too
   try{var s=screenToScene(x,y);return window.CooksterFlour&&CooksterFlour.troughAt?CooksterFlour.troughAt(s.x,s.y):null;}catch(e){return null;}
+}
+function addW(tr,amount,temp){
+  if(tr&&tr.dataset&&tr.dataset.itemId==='kal_01_okrugli_pleh'){try{CooksterSarmaTray.addWater(tr,amount);}catch(e){}return;}
+  try{CooksterFlour.addWater(tr,amount,temp);}catch(e){}
 }
 function layer(){var l=document.getElementById('ppLayer');if(!l){l=document.createElement('div');l.id='ppLayer';document.body.appendChild(l);}return l;}
 function start(el,tr){
@@ -83,14 +88,14 @@ function frame(now){
   var dt=Math.min(.05,(now-p.last)/1000);p.last=now;
   if(p.img.style.transform){                                     // the water runs only when the pitcher is tilted
     var use=Math.min(p.level-p.used,RATE*dt);p.used+=use;p.acc+=use*100;
-    if(p.acc>=1){try{CooksterFlour.addWater(tr,p.acc,+p.el.dataset.waterTemp||15);}catch(e){}p.acc=0;}
+    if(p.acc>=1){addW(tr,p.acc,+p.el.dataset.waterTemp||15);p.acc=0;}
   }
   if(p.used>=p.level-.0005){try{showToast('Bokal je prazan.');}catch(e){}stop();return;}
   place();draw(p,dt);requestAnimationFrame(frame);
 }
 function stop(){
   var p=pour;if(!p)return;pour=null;
-  if(p.acc>0){try{CooksterFlour.addWater(p.tr,p.acc,+p.el.dataset.waterTemp||15);}catch(e){}}
+  if(p.acc>0){addW(p.tr,p.acc,+p.el.dataset.waterTemp||15);}
   var l=document.getElementById('ppLayer');if(l)l.innerHTML='';
   document.body.classList.remove('pitcher-pouring');
   var left=Math.max(0,p.level-p.used);

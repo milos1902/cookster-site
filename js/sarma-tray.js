@@ -79,6 +79,13 @@ function draw(el){
   var br=h/w,kk=(FLOOR.ry*br)/FLOOR.rx;
   // the mask of the tray: only what is inside the opening of the tray is seen (the front wall and the rim hide the rest, nothing goes over the edge)
   g.save();g.beginPath();g.ellipse(.5*w,.455*h,.462*w,.355*h,0,0,Math.PI*2);g.clip();
+  var wl=waterOf(el);
+  if(wl>.002){      // the water: a layer on the floor of the tray that rises with the amount, round the sarmas
+    var wf=.1+.9*wl,top=h*(.80-.42*wf);
+    var gr=g.createLinearGradient(0,top,0,h*.82);gr.addColorStop(0,'rgba(120,150,150,.55)');gr.addColorStop(1,'rgba(60,85,85,.72)');
+    g.fillStyle=gr;g.fillRect(0,top,w,h);
+    g.fillStyle='rgba(255,255,255,.18)';g.fillRect(0,top,w,Math.max(1.5,h*.012));
+  }
   var list=st.list.slice().sort(function(a,b){return a.y-b.y;});
   list.forEach(function(s){
     var im=spr[s.set];if(!im)return;
@@ -90,6 +97,7 @@ function draw(el){
     g.shadowColor='rgba(20,10,0,.45)';g.shadowBlur=3;g.shadowOffsetY=2;
     g.drawImage(im,-lenPx/2,-hh/2,lenPx,hh);g.restore();
   });
+  if(wl>.45){var tint=Math.min(.3,(wl-.45)*.55);g.fillStyle='rgba(70,100,100,'+tint.toFixed(3)+')';g.fillRect(0,0,w,h);}
   g.restore();
 }
 function hit(el,cx,cy){
@@ -182,5 +190,14 @@ window.addEventListener('pointerdown',function(e){
     try{playImpactSound(tr,'pickup');}catch(x){}
   }
 },true);
-window.CooksterSarmaTray={lidOn:lidOn,lidOff:lidOff,add:add,sys:sys,kick:kick,hit:hit,count:function(el){return sys(el).list.length;}};
+// ---- WATER: poured from the pitcher (js/pitcher-pour.js) into the tray with sarmas (no lid on it). The water stands round the sarmas and rises (the sarmas stay on top, a little darker where the water is) ----
+var WATER_FULL=100;      // 100 units of the pitcher fill the tray to the top of the sarmas (a full pitcher is 100 units)
+function trayWithSarmasAt(x,y){
+  var found=null;try{(window.items||items).forEach(function(it){if(!isTray(it)||it._lid||!it._sarmas||!it._sarmas.list.length)return;var r=it.getBoundingClientRect();
+    var u=(x-r.left)/Math.max(1,r.width),v=(y-r.top)/Math.max(1,r.height);if(u>.04&&u<.96&&v>.05&&v<.9)found=it;});}catch(e){}
+  return found;
+}
+function waterOf(tr){return Math.max(0,Math.min(1,(tr._water||0)));}
+function addWater(tr,units){tr._water=Math.min(1,waterOf(tr)+units/WATER_FULL);tr.dataset.sarmaWater=tr._water.toFixed(3);kick(tr,4);try{CooksterSave.schedule();}catch(e){}}
+window.CooksterSarmaTray={trayWithSarmasAt:trayWithSarmasAt,addWater:addWater,water:waterOf,lidOn:lidOn,lidOff:lidOff,add:add,sys:sys,kick:kick,hit:hit,count:function(el){return sys(el).list.length;}};
 })();
