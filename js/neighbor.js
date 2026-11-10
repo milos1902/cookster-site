@@ -16,7 +16,14 @@ var LINES=[
   {who:'Komšinica',text:'Znaćeš. Pogledaj u njenu knjigu. Platiću, ne brini.'},
   {who:'Komšinica',text:'Uzgred, daska ti je u desnoj fioci.'}
 ];
-var st='idle',elK=null,elO=null,box=null,li=0,knockT=0,forced=/[?&]komsinica\b/.test(location.search);
+var SALAD_LINES=[
+  {who:'Komšinica',text:'Dobar dan, dete. Je l\' gotova salata?'},
+  {who:'',text:'Evo… gotova je.'},
+  {who:'Komšinica',text:'Gle, divota. Kao za Savke.'},
+  {who:'Komšinica',text:'Evo ti dvesta dinara, i hvala ti. Doći ću opet.'}
+];
+var SALAD_PAY=200,KEY2='cookster.neighbor.salad.v1';
+var st='idle',elK=null,elO=null,box=null,li=0,knockT=0,lines=LINES,afterTalk=null,saladOn=false,forced=/[?&]komsinica\b/.test(location.search);
 function done(){try{return localStorage.getItem(KEY)==='1';}catch(e){return false;}}
 function prog(){try{return window.CooksterKitchenClean&&CooksterKitchenClean.active()?CooksterKitchenClean.progress():-1;}catch(e){return -1;}}
 function build(){
@@ -56,33 +63,55 @@ function knock(){
   clearInterval(knockT);knockT=setInterval(function(){if(st==='knock'){knockSound();}else clearInterval(knockT);},14000);
 }
 function windowOpen(){try{return !!window.CooksterWindow&&CooksterWindow.isOpen();}catch(e){return false;}}
-function talk(){
+function talk(ls,after){
+  lines=ls||LINES;afterTalk=after||null;
   st='talk';clearInterval(knockT);elK.style.opacity='0';
   setTimeout(function(){elO.style.opacity='1';},900);
   setTimeout(function(){li=0;showLine();},1700);
 }
 function showLine(){
-  var L=LINES[li];box.querySelector('.nb-who').textContent=L.who||'';box.querySelector('.nb-who').style.display=L.who?'':'none';
+  var L=lines[li];box.querySelector('.nb-who').textContent=L.who||'';box.querySelector('.nb-who').style.display=L.who?'':'none';
   box.querySelector('.nb-text').textContent=L.text;box.querySelector('.nb-text').style.fontStyle=L.who?'':'italic';
-  box.style.display='block';box.querySelector('button').textContent=li>=LINES.length-1?'U redu':'Dalje ▸';
+  box.style.display='block';box.querySelector('button').textContent=li>=lines.length-1?'U redu':'Dalje ▸';
 }
 function next(){
   if(st!=='talk')return;
   li++;
-  if(li>=LINES.length){finish();return;}
+  if(li>=lines.length){finish();return;}
   showLine();
 }
 function finish(){
-  st='done';box.style.display='none';elO.style.opacity='0';
+  box.style.display='none';elO.style.opacity='0';
+  if(afterTalk){var f=afterTalk;afterTalk=null;st='done';f();return;}
+  st='done';
   try{localStorage.setItem(KEY,'1');}catch(e){}
   setTimeout(function(){try{if(window.CooksterTutorial)CooksterTutorial.start(true);}catch(e){}},900);      // Savka's book: the instructions begin
+}
+// the second visit: when the salad is ready, the neighbour comes back for it, pays and leaves
+var delivered=false,saladVisit=false;
+function takeSalad(){      // the bowl with the salad is emptied (she takes it)
+  try{items.forEach(function(v){try{if(!isContainerItem(v))return;var ks=[];try{ks=Object.keys(CooksterPan.read(v).ingredients||{});}catch(e){}try{ks=ks.concat(Object.keys(CooksterContainer.read(v).items||{}));}catch(e){}
+    if(ks.some(function(k){return /paradajz/.test(k);})){clearVesselAfterPour(v);renderCookwareContents(v);}}catch(e){}});}catch(e){}
+}
+function expectSalad(){
+  if(saladOn||delivered)return;saladOn=true;saladVisit=true;
+  try{if(localStorage.getItem(KEY2)==='1'){delivered=true;return;}}catch(e){}
+  setTimeout(function(){
+    build();st='knock';elK.style.opacity='1';knockSound();sub('Komšinica se vratila.',3500);
+    setTimeout(function(){if(st==='knock')sub('(Klikni na prozor da ga otvoriš.)',4500);},3800);
+    clearInterval(knockT);knockT=setInterval(function(){if(st==='knock')knockSound();else clearInterval(knockT);},14000);
+    var w=setInterval(function(){if(st==='knock'&&windowOpen()){clearInterval(w);talk(SALAD_LINES,function(){
+      takeSalad();try{setMoney(money+SALAD_PAY);showToast('Dobio si '+SALAD_PAY+' dinara.');}catch(e){}
+      delivered=true;saladVisit=false;try{localStorage.setItem(KEY2,'1');}catch(e){}
+    });}},500);
+  },4000);
 }
 function tick(){
   if(st==='idle'){
     if(done())return;
     if(forced){forced=false;setTimeout(knock,3000);st='wait';return;}
     var p=prog();if(p>=THRESHOLD)knock();
-  }else if(st==='knock'&&windowOpen()){talk();}
+  }else if(st==='knock'&&windowOpen()&&!saladVisit){talk();}
 }
 function init(){
   build();
@@ -91,6 +120,6 @@ function init(){
 }
 // the kitchen is declared clean at 80%: if the cleaning jumped over the threshold between two checks, it knocks now
 window.addEventListener('cookster:kitchen-clean',function(){if(st==='idle'&&!done())setTimeout(function(){if(st==='idle'&&!done())knock();},1800);});
-window.CooksterNeighbor={knock:knock,state:function(){return st;},lines:LINES};
+window.CooksterNeighbor={knock:knock,state:function(){return st;},lines:LINES,expectSalad:expectSalad,delivered:function(){return delivered;}};
 if(document.readyState==='complete')setTimeout(init,600);else window.addEventListener('load',function(){setTimeout(init,600);});
 })();
