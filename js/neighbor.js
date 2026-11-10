@@ -16,14 +16,25 @@ var LINES=[
   {who:'Komšinica',text:'Znaćeš. Pogledaj u njenu knjigu. Platiću, ne brini.'},
   {who:'Komšinica',text:'Uzgred, daska ti je u desnoj fioci.'}
 ];
-var SALAD_LINES=[
-  {who:'Komšinica',text:'Dobar dan, dete. Je l\' gotova salata?'},
-  {who:'',text:'Evo… gotova je.'},
-  {who:'Komšinica',text:'Gle, divota. Kao za Savke.'},
-  {who:'Komšinica',text:'Evo ti dvesta dinara, i hvala ti. Doći ću opet.'}
-];
-var SALAD_PAY=200,KEY2='cookster.neighbor.salad.v1';
-var st='idle',elK=null,elO=null,box=null,li=0,knockT=0,lines=LINES,afterTalk=null,saladOn=false,forced=/[?&]komsinica\b/.test(location.search);
+var ORDERS={
+  salad:{key:'cookster.neighbor.salad.v1',match:/paradajz/,pay:200,
+    lines:[
+      {who:'Komšinica',text:'Dobar dan, dete. Je l\' gotova salata?'},
+      {who:'',text:'Evo… gotova je.'},
+      {who:'Komšinica',text:'Gle, divota. Kao za Savke. Evo ti dvesta dinara, i hvala ti.'},
+      {who:'Komšinica',text:'Kad si već tu… Da li bi mogao da mi ispržiš i tikvice? Za večeru.'},
+      {who:'',text:'Tikvice… Pokušaću.'},
+      {who:'Komšinica',text:'Pazi samo na vatru, da ne zagore. Doći ću po njih.'}
+    ]},
+  tikvice:{key:'cookster.neighbor.tikvice.v1',match:/tikvice/,pay:300,
+    lines:[
+      {who:'Komšinica',text:'Dobar dan, dete. Jesu l\' tikvice gotove?'},
+      {who:'',text:'Evo, ispržene su.'},
+      {who:'Komšinica',text:'Mmm, kako mirišu. Tačno kao kod Savke.'},
+      {who:'Komšinica',text:'Evo ti trista dinara. Slobodno kucni opet kad ti zatreba još štagod.'}
+    ]}
+};
+var st='idle',elK=null,elO=null,box=null,li=0,knockT=0,lines=LINES,afterTalk=null,forced=/[?&]komsinica\b/.test(location.search);
 function done(){try{return localStorage.getItem(KEY)==='1';}catch(e){return false;}}
 function prog(){try{return window.CooksterKitchenClean&&CooksterKitchenClean.active()?CooksterKitchenClean.progress():-1;}catch(e){return -1;}}
 function build(){
@@ -88,30 +99,31 @@ function finish(){
   setTimeout(function(){try{if(window.CooksterTutorial)CooksterTutorial.start(true);}catch(e){}},900);      // Savka's book: the instructions begin
 }
 // the second visit: when the salad is ready, the neighbour comes back for it, pays and leaves
-var delivered=false,saladVisit=false;
-function takeSalad(){      // the bowl with the salad is emptied (she takes it)
+var delivered={},visiting=false,asked={};
+function takeFood(re){      // the vessel with the food is emptied (she takes it)
   try{items.forEach(function(v){try{if(!isContainerItem(v))return;var ks=[];try{ks=Object.keys(CooksterPan.read(v).ingredients||{});}catch(e){}try{ks=ks.concat(Object.keys(CooksterContainer.read(v).items||{}));}catch(e){}
-    if(ks.some(function(k){return /paradajz/.test(k);})){clearVesselAfterPour(v);renderCookwareContents(v);}}catch(e){}});}catch(e){}
+    if(ks.some(function(k){return re.test(k);})){clearVesselAfterPour(v);renderCookwareContents(v);}}catch(e){}});}catch(e){}
 }
-function expectSalad(){
-  if(saladOn||delivered)return;saladOn=true;saladVisit=true;
-  try{if(localStorage.getItem(KEY2)==='1'){delivered=true;return;}}catch(e){}
+function expectOrder(id){
+  var O=ORDERS[id];if(!O||asked[id]||delivered[id])return;asked[id]=true;
+  try{if(localStorage.getItem(O.key)==='1'){delivered[id]=true;return;}}catch(e){}
   setTimeout(function(){
-    build();st='knock';elK.style.opacity='1';knockSound();sub('Komšinica se vratila.',3500);
+    build();visiting=true;st='knock';elK.style.opacity='1';knockSound();sub('Komšinica se vratila.',3500);
     setTimeout(function(){if(st==='knock')sub('(Klikni na prozor da ga otvoriš.)',4500);},3800);
     clearInterval(knockT);knockT=setInterval(function(){if(st==='knock')knockSound();else clearInterval(knockT);},14000);
-    var w=setInterval(function(){if(st==='knock'&&windowOpen()){clearInterval(w);talk(SALAD_LINES,function(){
-      takeSalad();try{setMoney(money+SALAD_PAY);showToast('Dobio si '+SALAD_PAY+' dinara.');}catch(e){}
-      delivered=true;saladVisit=false;try{localStorage.setItem(KEY2,'1');}catch(e){}
+    var w=setInterval(function(){if(st==='knock'&&windowOpen()){clearInterval(w);talk(O.lines,function(){
+      takeFood(O.match);try{setMoney(money+O.pay);showToast('Dobio si '+O.pay+' dinara.');}catch(e){}
+      delivered[id]=true;visiting=false;try{localStorage.setItem(O.key,'1');}catch(e){}
     });}},500);
   },4000);
 }
+function expectSalad(){expectOrder('salad');}
 function tick(){
   if(st==='idle'){
     if(done())return;
     if(forced){forced=false;setTimeout(knock,3000);st='wait';return;}
     var p=prog();if(p>=THRESHOLD)knock();
-  }else if(st==='knock'&&windowOpen()&&!saladVisit){talk();}
+  }else if(st==='knock'&&windowOpen()&&!visiting){talk();}
 }
 function init(){
   build();
@@ -120,6 +132,6 @@ function init(){
 }
 // the kitchen is declared clean at 80%: if the cleaning jumped over the threshold between two checks, it knocks now
 window.addEventListener('cookster:kitchen-clean',function(){if(st==='idle'&&!done())setTimeout(function(){if(st==='idle'&&!done())knock();},1800);});
-window.CooksterNeighbor={knock:knock,state:function(){return st;},lines:LINES,expectSalad:expectSalad,delivered:function(){return delivered;}};
+window.CooksterNeighbor={knock:knock,state:function(){return st;},lines:LINES,expectSalad:expectSalad,expectOrder:expectOrder,delivered:function(id){return !!delivered[id||'salad'];}};
 if(document.readyState==='complete')setTimeout(init,600);else window.addEventListener('load',function(){setTimeout(init,600);});
 })();
