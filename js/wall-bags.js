@@ -17,7 +17,7 @@ function loadTable(){try{var r=JSON.parse(localStorage.getItem(TABLE_KEY)||'null
 var tableCfg=loadTable(),mode='hooks',tableEl=null;
 function saveTable(){try{localStorage.setItem(TABLE_KEY,JSON.stringify(tableCfg));}catch(e){}}
 // slike kesa po povrcu koje postoje (ostalo: osnovna torba)
-var KNOWN={sargarepa:1,paradajz:1,paprika_zelena:1,paprika_crvena:1,luk:1,krastavac:1,kupus:1,patlidzan:1,tikvice:1,rotkvice:1};
+var KNOWN={sargarepa:1,paradajz:1,paprika_zelena:1,paprika_crvena:1,luk:1,krastavac:1,kupus:1,patlidzan:1,tikvice:1,rotkvice:1,persun:1,beli_luk:1};
 function srcFor(key){return KNOWN[key]?('assets/ui/wall/kesa_'+key+'.webp?v=1'):'assets/ui/wall/kesa.webp?v=2';}
 function syncBr(){try{document.documentElement.style.setProperty('--wbbr',tableCfg.br||1);}catch(e){}}
 function brF(){syncBr();return tableCfg.br&&tableCfg.br!==1?'brightness('+tableCfg.br+')':'';}
@@ -67,8 +67,8 @@ var SLOTS_KEY='cookster.hanging-bags.v1',slots=[];
 function loadSlots(){try{var r=JSON.parse(localStorage.getItem(SLOTS_KEY)||'null');if(Array.isArray(r))return r;}catch(e){}return [];}
 function saveSlots(){try{localStorage.setItem(SLOTS_KEY,JSON.stringify(slots));}catch(e){}}
 // slika kese po povrcu: assets/ui/wall/kesa_<productKey>.webp ako postoji, inace osnovna (salata)
-var VEG_IMG={};   // kesa_<kljuc>.webp: sargarepa, paradajz, paprika_zelena, paprika_crvena, luk, krastavac, kupus, patlidzan, tikvice, rotkvice (fale: persun, beli_luk, mesano)
-function imgFor(rec){var k=rec&&rec.productKey;return (k&&KNOWN[k])?srcFor(k):SRC;}
+var VEG_IMG={};   // kesa_<kljuc>.webp: sargarepa, paradajz, paprika_zelena, paprika_crvena, luk, krastavac, kupus, patlidzan, tikvice, rotkvice, persun, beli_luk; kesa_mesano.webp za mesanu kesu
+function imgFor(rec){if(rec&&rec.mixed)return 'assets/ui/wall/kesa_mesano.webp?v=1';var k=rec&&rec.productKey;return (k&&KNOWN[k])?srcFor(k):SRC;}
 function probe(k){if(VEG_IMG[k]!==undefined)return;VEG_IMG[k]=null;var im=new Image(),u='assets/ui/wall/kesa_'+k+'.webp?v=1';im.onload=function(){VEG_IMG[k]=u;render();};im.src=u;}
 function mixText(r){return (r.items||[]).map(function(x){return (x.label||x.productKey)+' '+qtyText(x);}).join(', ');}
 function qtyText(r){var m=r.quantityMode==='bunch',v=m?(+r.quantityBunches||+r.quantityValue||1):(+r.quantityKg||+r.quantityValue||1);return m?(Math.round(v)+' vezica'):(v===.5?'500 g':(String(v).replace('.',',')+' kg'));}
