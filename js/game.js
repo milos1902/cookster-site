@@ -10344,6 +10344,8 @@ function isRawWholeProduce(meta){
   return !/pecena|zagorela|rostilj|krike|kiseli|prz|kuvan/.test(k);
 }
 const RAW_WHOLE_OK_VESSELS=/^(daska_serviranje|kal_01_|lavor_|posuda_za_kupus)/;      // serving board, baking trays (roasting), basin (washing), cabbage barrel
+const MEAT_VESSEL_CAP={kal_02_tanjir_ravni:8,kal_02_duboki_tanjir:13,kal_01_pravougaoni_pleh:20,oval_tanjir:10};
+const MEAT_SIZE_K=1.3;      // meat shrinks less in a vessel (its own value, the same for every vessel)
 function addIngredientToContainer(item,vessel){
  if(!item||!vessel||!isContainerItem(vessel))return false;
  try{if(window.CooksterMince&&CooksterMince.handle(item,vessel))return true;}catch(_){}      // minced meat: the bag is poured, onion is mixed in (js/mince.js)
@@ -10360,8 +10362,9 @@ function addIngredientToContainer(item,vessel){
    return true;
  }
 
- if(meta.type!=='staple'&&meta.key!=='jaje'&&containerTotal(vessel)>=containerCapacity(vessel)){   // eggs do not take room: they are mixed into the dish
-   showToast(`${vessel.dataset.label} je pun — kapacitet je ${containerCapacity(vessel)}.`);
+ const meatCap=(VEGETABLES[meta.baseKey]?.meat&&MEAT_VESSEL_CAP[vessel.dataset.itemId||''])||0,capNow=Math.max(containerCapacity(vessel),meatCap);      // meat has its own, bigger room in plates (flat 8, deep 13, tray 20)
+ if(meta.type!=='staple'&&meta.key!=='jaje'&&containerTotal(vessel)>=capNow){   // eggs do not take room: they are mixed into the dish
+   showToast(`${vessel.dataset.label} je pun — kapacitet je ${capNow}.`);
    return true;
  }
 
@@ -12847,14 +12850,14 @@ function meatSlicePos(vessel,md,key,idx){
   if(md?.meat==='snicla'&&!dr){const c=isPanItem(vessel)?{x:56,y:55}:vesselFloorCenter(vessel);if(c){x=c.x+idx*7;y=c.y+idx*5;}}      // a slice lies where the player dropped it; only without a remembered spot (an old save) it lies in the middle
   if(/_krike(_rare|_med|_wd)?_celo$/.test(String(key))){      // a fan of slices: always as big as the loose one (112 px) - by the SCREEN width of the layer (the perspective squeezes the layer)
     const rw=(wrap&&wrap.getBoundingClientRect().width)||vessel?.getBoundingClientRect?.().width||Wd,sk=(scene.getBoundingClientRect().width/(scene.offsetWidth||1))||1;
-    const fw=Math.min(70,(+md.grilledSliced?.w||112)*vv*sk/rw*100);
+    const fw=Math.min(78,(+md.grilledSliced?.w||112)*MEAT_SIZE_K*vv*sk/rw*100);
     if(vessel?.dataset?.itemId==='daska_serviranje'){      // a fan lies completely on the blade of the board (never over the handle or the edge): that is where the board can still be grabbed and moved
       const rh=(wrap&&wrap.getBoundingClientRect().height)||vessel.getBoundingClientRect().height||70,fh=fw*(+md.grilledSliced?.h||39)/(+md.grilledSliced?.w||112)*rw/rh;
       x=Math.max(fw/2+3,Math.min(78-fw/2,x));y=Math.max(fh/2+4,Math.min(96-fh/2,y));
     }
     return {x,y,w:fw};
   }
-  return {x,y,w:Math.min(60,(+md.w||60)*vv/Wd*100)};
+  return {x,y,w:Math.min(66,(+md.w||60)*MEAT_SIZE_K*vv/Wd*100)};
 }
 // the slices of meat lying in a vessel: the other food (js/piece-sim.js) goes AROUND them, not over them
 window.CooksterSteakZones=function(vessel){
