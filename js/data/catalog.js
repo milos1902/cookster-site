@@ -394,7 +394,10 @@ window.CooksterCatalog = Object.freeze({
   ]),
   CALIBRATION_ONLY_ITEMS: Object.freeze([
     Object.freeze({id:'ajvar_poklopac_veliki',type:'prop',subtype:'calibration_prop',label:'Poklopac velike tegle',src:'assets/calibration_props/ajvar_jars/poklopac_veliki.png',w:108,h:76,snapProfile:'flat',shadowProfile:'tiny'}),
-    Object.freeze({id:'ajvar_poklopac_mali',type:'prop',subtype:'calibration_prop',label:'Poklopac male tegle',src:'assets/calibration_props/ajvar_jars/poklopac_mali.png',w:85,h:62,snapProfile:'flat',shadowProfile:'tiny'})
+    Object.freeze({id:'ajvar_poklopac_mali',type:'prop',subtype:'calibration_prop',label:'Poklopac male tegle',src:'assets/calibration_props/ajvar_jars/poklopac_mali.png',w:85,h:62,snapProfile:'flat',shadowProfile:'tiny'}),
+    // the finished sarmas (for the tools of the shadows / the placing: the shadows of the rolled sarma can be set here)
+    Object.freeze({id:'sarma_debela',type:'prop',subtype:'calibration_prop',label:'Sarma, debela (gotova)',src:'assets/sarma/sarma_debela.webp',w:92,h:50,snapProfile:'flat',shadowProfile:'tiny'}),
+    Object.freeze({id:'sarma_uska',type:'prop',subtype:'calibration_prop',label:'Sarma, duža (gotova)',src:'assets/sarma3/sarma_uska.webp',w:104,h:46,snapProfile:'flat',shadowProfile:'tiny'})
   ]),
   STAPLES: Object.freeze({
     ulje:Object.freeze({id:'ulje',label:'Ulje',src:'assets/new_props/zacin_2.png',price:120,w:62,h:92,uses:5,placement:['table','pan']}),
