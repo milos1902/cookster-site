@@ -12,7 +12,7 @@ function emptyHands(){try{return !(typeof holding!=='undefined'&&holding&&!holdi
 function units(v,k){try{return Math.max(0,+((CooksterPan.read(v).ingredients||{})[k])||0);}catch(e){return 0;}}
 function nadevPan(e){
   var v=null;try{v=foodVesselAt(e.clientX,e.clientY);}catch(x){}
-  return v&&units(v,NK)>0.05?v:null;
+  return v&&units(v,NK)>0.001?v:null;      // any rest of the filling can be taken (also a small one that is still seen as a few crumbs)
 }
 function spoon(){
   if(NS.el&&NS.el.isConnected)return NS.el;
@@ -59,13 +59,14 @@ window.addEventListener('pointerup',function(e){
   var d=NS.down;NS.down=null;
   if(!d||e.button!==0||NS.loaded||!emptyHands())return;
   if(Math.hypot(e.clientX-d.x,e.clientY-d.y)>9||performance.now()-d.t>380)return;      // a movement or a long press: it was the stirring
-  var v=d.v,have=units(v,NK);if(have<=0.05||!v.isConnected)return;
-  var take=Math.min(PORTION,have),rice=units(v,RK),share=Math.min(rice,rice*take/have);
+  var v=d.v,have=units(v,NK);if(have<=0.001||!v.isConnected)return;
+  var take=Math.min(PORTION,have);if(have-take<.2)take=have;      // the last small rest goes onto the spoon together with the last portion
+  var rice=units(v,RK),share=take>=have-1e-6?rice:Math.min(rice,rice*take/have);
   try{CooksterPan.removeIngredient(v,NK,take);if(share>0)CooksterPan.removeIngredient(v,RK,share);renderCookwareContents(v);}catch(x){return;}
   NS.loaded=true;NS.pan=v;NS.rice=share;window.CooksterNadevLoaded=true;place();show(true);
   try{playImpactSound(v,'pickup');}catch(x){}
 },true);
 window.addEventListener('pointermove',function(){if(NS.loaded){if(!emptyHands()){giveBack();return;}show(true);place();}},false);
 window.addEventListener('keydown',function(e){if(e.key==='Escape')giveBack();},false);
-window.CooksterNadevSpoon={PORTION:PORTION,loaded:function(){return NS.loaded;},giveBack:giveBack};
+window.CooksterNadevSpoon={consume:function(){NS.loaded=false;window.CooksterNadevLoaded=false;show(false);},PORTION:PORTION,loaded:function(){return NS.loaded;},giveBack:giveBack};
 })();
