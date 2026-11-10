@@ -46,8 +46,8 @@ function prog(){try{return window.CooksterKitchenClean&&CooksterKitchenClean.act
 function build(){
   var sc=document.getElementById('scene');if(!sc||elK)return;
   function mk(id,src,l,t,w,h,z){var d=document.createElement('div');d.id=id;d.setAttribute('aria-hidden','true');d.style.cssText='position:absolute;left:'+l+'px;top:'+t+'px;width:'+w+'px;height:'+h+'px;pointer-events:none;z-index:'+z+';opacity:0;transition:opacity .7s ease;background:url('+src+') 0 0/100% 100% no-repeat';return d;}
-  elK=mk('komsinicaKuca','assets/effects/komsinica_kuca.webp?v=1',0,26,74,252,0);
-  elO=mk('komsinicaOtvoren','assets/effects/komsinica_otvoren.webp?v=1',0,0,142,312,2);
+  elK=mk('komsinicaKuca','assets/effects/komsinica_kuca.webp?v=1',0,26,74,252,27);
+  elO=mk('komsinicaOtvoren','assets/effects/komsinica_otvoren.webp?v=1',0,0,142,312,27);      // z 27: above the dirt canvas (26) and the occluders (25), below the waiter (46)
   // living neighbour: a copy of the head (soft mask) sways a little and a copy of the mouth area (child of the head) moves like a jaw while she speaks
   var BG='url(assets/effects/komsinica_otvoren.webp?v=1) 0 0/100% 100% no-repeat';
   function ml(el,m){el.style.webkitMaskImage=m;el.style.maskImage=m;}
@@ -220,6 +220,13 @@ function tick(){
     var p=prog();if(p>=THRESHOLD)knock();
   }else if(st==='knock'&&windowOpen()&&!visiting){talk();}
 }
+// while the game is being built: every "Nova igra" brings the neighbour (3 s after the game is shown), even if the meeting was done before
+window.addEventListener('cookster:menu-closed',function(){
+  if(!window.__COOKSTER_NEW_GAME__)return;window.__COOKSTER_NEW_GAME__=false;
+  try{localStorage.removeItem(KEY);Object.keys(ORDERS).forEach(function(k){localStorage.removeItem(ORDERS[k].key);});}catch(e){}
+  delivered={};asked={};visiting=false;handover=null;
+  if(st==='idle'||st==='done'||st==='wait'){clearInterval(knockT);st='idle';forced=true;}
+});
 function init(){
   build();
   var p=prog();if(p>=0&&p<.02){try{localStorage.removeItem(KEY);}catch(e){}}      // a fresh dirty kitchen = a new game: the meeting happens again
