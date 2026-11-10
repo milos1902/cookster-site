@@ -1355,3 +1355,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - 10.11.: font cele igre = Paytone One (kao na starim trakama za vreme/dan, weather.js) - css/game.css 3.10; izuzeci: #cdock .cd-t (Playfair), #menuBook (rukopis), canvas/svg.
 - 10.11.: font Paytone One samo na drvenom polju sa datumom, vremenom i vremenskim prilikama (game-menu.js v22); globalno pravilo za font iz PR 621 uklonjeno (ostatak igre opet kao ranije).
 - 10.11.: prozor bez saksije: isecak assets/effects/prozor_bez_saksije.webp (ChatGPT, meke ivice) preko kuhinje (js/window-patch.js, sakriven kad je prozor otvoren i nocu); animacija sa padanjem saksije iskljucena (window-open.js willClip=false). Nocna slika prozora jos ima saksiju.
+- 10.11.: nocni isecak prozora bez saksije (assets/effects/prozor_bez_saksije_noc.webp), window-patch.js v2 (dan/noc preliv po nw).
