@@ -1,7 +1,7 @@
 /* Cookster: the rubbish on the floor of the dirty kitchen (cans, rags, paper balls, bottles, broken pots): 20 single things (assets/effects/smece/o1..o20.webp),
    every one cut out of the picture made in ChatGPT and lying at its own place of the 1672 x 941 scene.
-   With EMPTY hands: the cursor over a thing makes it pop up a little and settle back (no glow); a click takes it: it rushes towards the middle of the screen (towards the eyes of the player), grows fast and does not stop there,
-   it flies through and is gone. The leaves are NOT here: they stay on the floor (they are in the dirty picture) and are swept with the broom.
+   With EMPTY hands: the cursor over a thing makes it pop up a little and settle back (no glow); a click takes it: it rushes in a curve to the bottom middle of the screen (towards the player), grows fast and does not stop,
+   it flies past the edge and is gone. The leaves are NOT here: they stay on the floor (they are in the dirty picture) and are swept with the broom.
    State: localStorage 'cookster.trash.v2' (the numbers of the things already taken); "Nova igra" brings all of them back (event cookster:kitchen-restart from kitchen-clean.js). ?cistakuhinja = no rubbish. */
 (function(){
 'use strict';
@@ -54,16 +54,17 @@ function left(){return T.filter(function(o){return !gone[o.id];}).length;}
 function take(id){
   var el=els[id],o=T[id-1];gone[id]=1;save();delete els[id];
   el.getAnimations().forEach(function(a){a.cancel();});el.style.transition='none';el.style.zIndex='9000';el.style.transformOrigin='50% 50%';
-  // towards the middle of the screen (the eyes), faster and faster, growing; it does not stop in the middle: it flies through and is gone
-  var c=scenePt({clientX:innerWidth/2,clientY:innerHeight/2}),dx=c.x-(o.x+o.w/2),dy=c.y-(o.y+o.h/2);
-  var an=el.animate([
-    {transform:'translate(0,0) scale(1)',opacity:1,offset:0},
-    {transform:'translate('+(dx*.62)+'px,'+(dy*.62)+'px) scale(2.2)',opacity:1,offset:.5},
-    {transform:'translate('+dx+'px,'+dy+'px) scale(7)',opacity:1,offset:.82},
-    {transform:'translate('+dx+'px,'+dy+'px) scale(16)',opacity:0,offset:1}
-  ],{duration:650,fill:'forwards',easing:'cubic-bezier(.55,0,.9,.55)'});
+  // a curved path (a bow) to the bottom middle of the screen (the player), faster and faster, growing; it does not stop: it flies past the edge and is gone
+  var sx=o.x+o.w/2,sy=o.y+o.h/2,tp=scenePt({clientX:innerWidth/2,clientY:innerHeight+30}),tx=tp.x,ty=tp.y;
+  var cx=tx,cy=sy+(ty-sy)*.3,kf=[],N=16;
+  for(var i=0;i<=N;i++){
+    var u=i/N,t=Math.pow(u,1.2),m=1-t;      // t: the time bent only a little: it is brisk from the start (like collecting loot in a simulator), not slow
+    var x=m*m*sx+2*m*t*cx+t*t*tx,y=m*m*sy+2*m*t*cy+t*t*ty;
+    kf.push({transform:'translate('+(x-sx).toFixed(1)+'px,'+(y-sy).toFixed(1)+'px) scale('+(1+t*t*3.2).toFixed(2)+')',opacity:u>.88?Math.max(0,(1-u)/.12):1,offset:u});
+  }
+  var an=el.animate(kf,{duration:460,fill:'forwards',easing:'linear'});
   an.onfinish=function(){if(el.parentNode)el.parentNode.removeChild(el);};
-  setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},1000);
+  setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},800);
   try{window.dispatchEvent(new CustomEvent('cookster:trash-taken',{detail:{id:id,left:left()}}));}catch(e){}
 }
 ['pointerdown','mousedown','click','pointerup'].forEach(function(t){
