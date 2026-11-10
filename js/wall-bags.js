@@ -91,7 +91,7 @@ function render(){
     el.style.cssText='position:absolute;z-index:4;filter:drop-shadow(1px 2px 2px rgba(30,12,0,.5));display:'+(((open&&showAll&&mode==='hooks')||slots[i])?'block':'none')+';pointer-events:'+((open||slots[i])?'auto':'none')+';cursor:'+(open?'move':(slots[i]?'pointer':'default'));
     if(slots[i]){el.src=imgFor(slots[i]);el.title=slots[i].mixed?('Mesano povrce: '+mixText(slots[i])+' — dole: jedno povrce, gore (rucke): cela kesa'):((slots[i].label||'Kesa')+' · '+qtyText(slots[i])+' · '+countOf(slots[i])+' kom. — dole: jedno povrce, gore (rucke): cela kesa');}
     paint(b,el);
-    el.addEventListener('click',function(e){if(open||!slots[i])return;e.preventDefault();e.stopPropagation();var r=el.getBoundingClientRect();((e.clientY-r.top)/Math.max(1,r.height)<.40)?takeWhole(i):take(i);});
+    el.addEventListener('click',function(e){if(open||!slots[i])return;e.preventDefault();e.stopPropagation();if(putBack(i))return;var r=el.getBoundingClientRect();((e.clientY-r.top)/Math.max(1,r.height)<.40)?takeWhole(i):take(i);});
     el.addEventListener('pointerdown',function(e){if(!open||e.button!==0)return;e.preventDefault();e.stopPropagation();select(i);
       var s0=screenToScene(e.clientX,e.clientY),x0=b.x,y0=b.y;
       function mv(ev){var s=screenToScene(ev.clientX,ev.clientY);b.x=+(x0+s.x-s0.x).toFixed(1);b.y=+(y0+s.y-s0.y).toFixed(1);paint(b,el);syncRows();}
@@ -175,6 +175,16 @@ function takeWhole(i){
     var sp=screenToScene(mouse.x,mouse.y);el.style.visibility='hidden';
     el.dataset.hookIdx=String(i);setPose(el,sp.x,sp.y,surfaceScaleFor(el,'table',sp.y));startHolding(el);CooksterSave.schedule();
   }catch(e){}
+}
+function putBack(i){      // povrce u ruci se vraca u kesu na kuki (ista vrsta)
+  var h=null;try{h=(typeof holding!=='undefined')?holding:null;}catch(e){}
+  if(!h||!h.dataset||h.dataset.vegetable!=='1')return false;
+  var rec=slots[i];if(!rec)return false;var vk=h.dataset.vegKey,tgt=null;
+  if(rec.mixed){(rec.items||[]).forEach(function(r){if(!tgt&&vegKeyOf(r)===vk)tgt=r;});}else if(vegKeyOf(rec)===vk)tgt=rec;
+  if(!tgt){try{showToast('Ovo povrce ne ide u tu kesu.');}catch(e){}return true;}
+  tgt.count=countOf(tgt)+1;saveSlots();render();
+  try{removeItem(h);holding=null;hidePlacementGhost();hideOriginGhost();updateHover();showToast('Vraceno u kesu: '+(h.dataset.label||''));CooksterSave.schedule();}catch(e){}
+  return true;
 }
 function take(i){
   var rec=slots[i];if(!rec)return;

@@ -1336,3 +1336,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - 10.11.: velicina kese u ruci po x: kuka -> x176 h73 -> x282 h92 -> ivica stola (punа) (tvoje dve tacke, wall-bags v28).
 - 10.11.: kesa u ruci: cim se otkaci, nagib sa kuke nestaje do x176 (rz 0, ry 12.3) - wall-bags v29.
 - 10.11.: kesa u ruci: jedno ravnomerno smanjenje (bez medjutacaka), smanjuje se oko tacke koja klizi ka rucki (ne propada ispod misa), jace klatno (v31).
+- 10.11.: povrce u ruci se vraca u kesu klikom na kesu (na stolu: returnVegetableToMarketBag u game.js 3.300; na kuki: putBack u wall-bags v32).
