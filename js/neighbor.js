@@ -10,7 +10,7 @@ if(window.CooksterNeighbor)return;
 var KEY='cookster.neighbor.v1',THRESHOLD=.5;
 var LINES=[
   {who:'Komšinica',text:'Dobar dan, dete. Vidim da se u Savkinoj kući opet vrti.',v:'susret_1'},
-  {who:'Komšinica',text:'Tako smo mi radili dok je ona bila tu. Kucnemo na prozor, kažemo šta nam treba, a ona nam spremi.',v:'susret_2'},
+  {who:'Komšinica',text:'Tako smo i mi ranije, dok je Savka bila živa. Samo kucnemo, i ona nam spremi.',v:'susret_2'},
   {who:'Komšinica',text:'Da li bih mogla tebe da zamolim za jednu srpsku salatu? Imam goste kod kuće.',v:'susret_3'},
   {who:'',text:'Salata… Nadam se da znam.',v:'susret_4'},
   {who:'Komšinica',text:'Znaćeš. Pogledaj u njenu knjigu. Platiću, ne brini.',v:'susret_5'},
