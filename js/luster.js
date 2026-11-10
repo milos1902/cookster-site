@@ -2,7 +2,7 @@
    A click on the middle of the chandelier switches it on / off. When it is on the lamps in the shades glow warm and it lights the room (js/day-light.js draws a pool of light that cuts the dark, it asks CooksterLuster.level()). */
 (function(){
 if(window.CooksterLuster)return;
-var KEY='cooksterLusterOn',on=false,level=0,hot=null,X=702,Y=0,W=256,H=221,         // place in the scene (the chain is at x=830, the same as the middle of the table)
+var KEY='cooksterLusterOn',on=false,level=0,hot=null,X=702,Y=-32,W=256,H=221,         // place in the scene (the chain is at x=830, the same as the middle of the table)
         wrap=null,glows=[],halo=null;
 function build(){
   var sc=document.getElementById('scene');if(!sc)return false;

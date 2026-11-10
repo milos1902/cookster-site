@@ -254,6 +254,7 @@ function tavernAt(room,c,p){
 }
 function tavernClear(room){room.style.transform='';room.style.transformOrigin='';room.style.opacity='';room.style.webkitMaskImage='';room.style.maskImage='';room.style.willChange=''}
 function zoomDoor(){
+  if(window.CooksterTavernLock&&CooksterTavernLock.locked()){try{showToast('Kafana je zaključana.');}catch(e){}return;}
   if(view||(window.CooksterTavern&&(window.CooksterTavern.busy||window.CooksterTavern.isOpen)))return;
   try{if(typeof holding!=='undefined'&&holding){showToast('Prvo spusti predmet iz ruke.');return}}catch(e){}
   var scn=document.getElementById('scene'),vp=document.getElementById('viewport'),room=document.getElementById('tavernScene'),T=window.CooksterTavern;if(!scn||!room||!T)return;
