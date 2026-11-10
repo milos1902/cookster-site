@@ -218,6 +218,7 @@ function hang(records){
 }
 function applyAllTable(){try{items.forEach(function(it){if(it&&it.dataset&&it.dataset.marketBag==='1')applyTable(it);});}catch(e){}}
 // KESA U RUCI (kopija pod kursorom): velicina raste postepeno sa udaljenoscu od kuka, njise se kad se pomera mis, a kad se podigne sa stola preliva se iz polozaja na stolu u viseci (sa odskokom)
+(function(){var st=document.createElement('style');st.textContent='.contact-shadow-sprite.wb-noshadow{display:none!important}';document.head.appendChild(st);})();
 var hold={el:null,t0:0,fromTable:false,ang:0,vel:0,lx:null};
 function lerp(a,b,t){return a+(b-a)*t;}
 function sstep(t){t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);}
@@ -227,33 +228,34 @@ function holdTick(){
   if(!(h&&h.dataset&&h.dataset.marketBag==='1')){hold.el=null;return;}
   var now=performance.now();
   if(hold.el!==h){hold.el=h;hold.t0=now;hold.fromTable=h.dataset.fromTable==='1';hold.ang=0;hold.vel=0;hold.lx=null;hold.lt=null;hold.sv=0;hold.psv=null;}
-  try{if(h.style.visibility!=='hidden')h.style.visibility='hidden';if(h._contactShadow&&h._contactShadow.style.visibility!=='hidden')h._contactShadow.style.visibility='hidden';}catch(e){}      // samo kopija pod kursorom se vidi, prava kesa nikad ispred nje
+  try{if(!h.classList.contains('held')){hold.el=null;return;}      // pusteno: igra je vec vratila kesu, ne diraj
+    if(h.style.visibility!=='hidden')h.style.visibility='hidden';if(h._contactShadow){h._contactShadow.classList.add('wb-noshadow');if(h._contactShadow.style.visibility!=='hidden')h._contactShadow.style.visibility='hidden';}}catch(e){}      // samo kopija pod kursorom se vidi, prava kesa nikad ispred nje
   var g=(typeof placementGhost!=='undefined')?placementGhost:null;if(!g)return;
   var cp=g.querySelector('.ghost-item-copy'),bd=cp&&cp.querySelector('.body');if(!bd)return;
   var sp;try{sp=screenToScene(mouse.x,mouse.y);}catch(e){return;}
   // pravi pravi klatno: tacka okacenja je kursor; kad mis ubrza udesno, kesa zaostane ulevo pa se polako vrati i zanjise preko (mekano, sporo, sa blagim gasenjem)
   var dt=Math.min(.033,Math.max(.004,(now-(hold.lt||now))/1000));hold.lt=now;
-  var vxs=hold.lx==null?0:(sp.x-hold.lx)/dt;hold.lx=sp.x;
+  var gr=g.getBoundingClientRect(),px;try{px=screenToScene(gr.left+gr.width/2,gr.top).x;}catch(e){px=sp.x;}      // tacka okacenja = STVARAN polozaj kopije (igra je vec glatko vuce za misem), ne mis
+  var vxs=hold.lx==null?0:(px-hold.lx)/dt;hold.lx=px;
   hold.sv=(hold.sv||0)+(vxs-(hold.sv||0))*Math.min(1,dt*10);          // zaglađena brzina misa (px/s)
   var acc=hold.psv==null?0:(hold.sv-hold.psv)/dt;hold.psv=hold.sv;      // ubrzanje tacke okacenja
-  var W=2*Math.PI*.85,Z=.14;                                           // prirodna frekvencija ~0.85 Hz, slabo gasenje: ~3 lepa zamaha
-  var lean=Math.max(-5,Math.min(5,hold.sv*.0045));                     // blago naginjanje dok se mis brzo krece
-  var force=Math.max(-14,Math.min(14,acc*.0035));                      // zamah od ubrzanja
+  var W=2*Math.PI*.7,Z=.26;                                           // prirodna frekvencija ~0.85 Hz, slabo gasenje: ~3 lepa zamaha
+  var lean=Math.max(-3,Math.min(3,hold.sv*.0025));                     // blago naginjanje dok se mis brzo krece
+  var force=Math.max(-10,Math.min(10,acc*.0028));                      // zamah od ubrzanja
   var n=Math.max(1,Math.round(dt/.008)),h8=dt/n;
   for(var q=0;q<n;q++){hold.vel+=(-W*W*(hold.ang-lean)-2*Z*W*hold.vel+W*W*force*.5)*h8;hold.ang+=hold.vel*h8;}
   hold.ang=Math.max(-16,Math.min(16,hold.ang));
   // prelaz sto -> viseci (samo kad je uzeta sa stola)
   var u=hold.fromTable?sstep((now-hold.t0)/520):1;
   var idx=h.dataset.hookIdx!=null&&h.dataset.hookIdx!==''?+h.dataset.hookIdx:2,hk=bags[Math.max(0,Math.min(bags.length-1,idx))]||{p:500,rx:0,ry:10,rz:-12,h:90};
-  var c=tableCfg,p=lerp(c.p,hk.p,u),rx=lerp(c.rx,hk.rx,u),ry=lerp(c.ry,hk.ry,u),rz=lerp(c.rz,hk.rz,u)+hold.ang*u;
+  var gh=g.offsetHeight||204,best=1e9,hh=hk.h;
+  for(var i=0;i<bags.length;i++){var d=Math.hypot(bags[i].x-sp.x,(bags[i].y+bags[i].h)-sp.y);if(d<best){best=d;hh=bags[i].h;}}
+  var t=sstep((best-50)/560),sc=lerp(Math.min(1,hh/gh),1,t);
+  var c=tableCfg,p=lerp(c.p,hk.p,u),rx=lerp(c.rx,hk.rx,u),ry=lerp(c.ry,hk.ry,u),rz=lerp(c.rz,lerp(hk.rz,0,t),u)+hold.ang*u;
   var bounce=Math.sin(Math.PI*u),sy=1+.11*bounce*(hold.fromTable?1:0),lift=-9*bounce*(hold.fromTable?1:0);
   bd.style.transformOrigin=lerp(50,APEX*100,u).toFixed(1)+'% '+lerp(100,0,u).toFixed(1)+'%';
   bd.style.transform='translateY('+lift.toFixed(1)+'px) perspective('+p.toFixed(0)+'px) rotateX('+rx.toFixed(2)+'deg) rotateY('+ry.toFixed(2)+'deg) rotateZ('+rz.toFixed(2)+'deg) scale(1,'+sy.toFixed(3)+')';
   var br=lerp(c.br||1,1,u);bd.style.filter=Math.abs(br-1)>.01?'brightness('+br.toFixed(3)+')':'';
-  // velicina: uz kuku velicina te kuke, dalje od kuka postepeno prirodna (sto)
-  var gh=g.offsetHeight||204,best=1e9,hh=hk.h;
-  for(var i=0;i<bags.length;i++){var d=Math.hypot(bags[i].x-sp.x,(bags[i].y+bags[i].h)-sp.y);if(d<best){best=d;hh=bags[i].h;}}
-  var t=sstep((best-50)/560),sc=lerp(Math.min(1,hh/gh),1,t);
   cp.style.scale=sc.toFixed(3);
 }
 requestAnimationFrame(holdTick);
@@ -267,7 +269,7 @@ function wrapHold(){
         var rec=recOf(h);try{removeItem(h);}catch(e){}holding=null;try{hidePlacementGhost();hideOriginGhost();updateHover();}catch(e){}
         slots[f]=rec;if(rec.productKey)probe(rec.productKey);saveSlots();render();try{showToast('Kesa je okacena na kuku.');}catch(e){}return;}}}catch(e){}
       var r=dh.apply(this,arguments);
-      try{if(h&&h.dataset&&h.dataset.marketBag==='1'&&!h.classList.contains('held'))settle(h);}catch(e){}return r;};w2.__bag=1;window.dropHolding=w2;}
+      try{if(h&&h.dataset&&h.dataset.marketBag==='1'){h.style.visibility='';if(h._contactShadow){h._contactShadow.style.visibility='';h._contactShadow.classList.remove('wb-noshadow');}if(!h.classList.contains('held'))settle(h);}}catch(e){}return r;};w2.__bag=1;window.dropHolding=w2;}
   }catch(e){}
 }
 function init(){wrapHold();bags=load();slots=loadSlots();slots.length=Math.min(slots.length,bags.length);slots.forEach(function(r){if(r&&r.productKey)probe(r.productKey);});render();buildPanel();}
