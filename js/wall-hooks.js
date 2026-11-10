@@ -3,12 +3,12 @@
 (function(){
 'use strict';
 if(window.CooksterWallHooks)return;
-var HOOKS=[{x:106,y:314},{x:84,y:360},{x:61,y:406},{x:38,y:452}];
-var H=46;
+var HOOKS=[{x:110,y:318},{x:97,y:348},{x:84,y:378},{x:71,y:408},{x:58,y:438},{x:45,y:468}];
+var H=34;
 function build(){
   var sc=document.getElementById('scene');if(!sc||sc.querySelector('.wall-hook'))return;
   HOOKS.forEach(function(h){
-    var i=document.createElement('img');i.className='wall-hook';i.draggable=false;i.src='assets/ui/wall/kuka.webp?v=1';i.alt='';
+    var i=document.createElement('img');i.className='wall-hook';i.draggable=false;i.src='assets/ui/wall/kuka.webp?v=2';i.alt='';
     i.style.cssText='position:absolute;pointer-events:none;z-index:3;height:'+H+'px;left:'+(h.x-H*.2)+'px;top:'+(h.y-H*.12)+'px;filter:drop-shadow(1px 2px 1.5px rgba(30,12,0,.55))';
     sc.appendChild(i);
   });
