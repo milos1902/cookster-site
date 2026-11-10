@@ -1350,3 +1350,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - 10.11.: poskakivanje sadrzaja uz zid posude: crta se sa niskopropusnim filterom (p.ox/oy/or, 0.3) - piece-sim v55.1; reversal rate uz zid 56% -> 5.6%.
 - 10.11.: nove slike kesa: persun, beli_luk, mesano (assets/ui/wall/kesa_*.webp 400x600; wall-bags v35).
 - 10.11.: presipanje: cestice izlaze sa ruba nagnute posude, prave se po onome sto je u posudi (pripremljeno stanje: pecene/zagorele slike, cela jela kao jela) - game.js 3.304 (pourParticleSources, spawnPourParticles).
+- 10.11.: presipanje u tanjire: ako ima vise praznih tanjira iste vrste, u svaki ide jednak deo (1/N, pa 1/(N-1) ostatka...) - pourPortionShare u game.js 3.305.
