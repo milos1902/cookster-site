@@ -10094,54 +10094,71 @@ function applyVesselTransfer(source,target,payload){
   CooksterSave.schedule();
   return true;
 }
+// how cooked is what is poured (the average of the batches, 0 raw .. 1 well done, burnt = 7): the bits that fly out look like the food in the vessel
+function pourPayloadStage(payload){
+  const bs=(payload?.batches||[]).filter(b=>(+b.count||0)>0);
+  if(!bs.length)return 1;
+  if(bs.some(b=>b.burnt))return 7;
+  const tot=bs.reduce((s,b)=>s+(+b.count||0),0)||1;
+  return panTextureStage(bs.reduce((s,b)=>s+(+b.doneness||0)*(+b.count||0),0)/tot,false);
+}
+// the pictures of the bits that fly out of the vessel: what really is in it (a whole piece / slice as it is, chopped food in the cooked state it has)
 function pourParticleSources(payload){
-  const list=[];
+  const list=[],stage=pourPayloadStage(payload);
   for(const [key,entry] of Object.entries(payload?.items||{})){
     if(entry?.type==='staple')continue;
-    const count=Math.max(0,+entry?.count||0);if(count<=0||!entry.src)continue;
-    const n=Math.max(1,Math.min(5,Math.round(Math.sqrt(count)+1)));
-    // the pieces cut by hand are one sheet of many pieces: the falling bits use the stock picture of that food
-    const psrc=CooksterPiles.is(entry.src)?((VEGETABLES[entry.baseKey]||CooksterCatalog.FRUITS?.[entry.baseKey]||{}).dicedSrc||''):entry.src;
+    const count=Math.max(0,+entry?.count||0);if(count<=0)continue;
+    const def=VEGETABLES[entry.baseKey]||CooksterCatalog.FRUITS?.[entry.baseKey]||{};
+    let psrc='',whole=false;
+    if(entry.form==='whole'||/_celo$/.test(key)){
+      try{psrc=wholeProduceSource(entry.baseKey||key.replace(/_celo$/,''),entry,stage)||'';}catch(_){psrc='';}
+      whole=true;
+    }
+    if(!psrc){
+      const cookedSrc=stage>=6&&def.wellDoneDicedSrc?def.wellDoneDicedSrc:(stage>=4&&def.friedDicedSrc?def.friedDicedSrc:'');
+      psrc=cookedSrc||(CooksterPiles.is(entry.src)?(def.dicedSrc||''):entry.src)||def.dicedSrc||'';
+      whole=false;
+    }
     if(!psrc)continue;
-    for(let i=0;i<n;i++)list.push({src:psrc,key});
+    const n=Math.max(2,Math.min(9,Math.round(Math.sqrt(count)*2.2+1)));
+    for(let i=0;i<n;i++)list.push({src:psrc,key,whole,w:+def.w||60});
   }
   return list;
 }
 function spawnPourParticles(source,target,payload){
   const choices=pourParticleSources(payload);
   if(!choices.length)return;
-  const sx=+source.dataset.cx||0;
-  const sy=(+source.dataset.by||0)-(+source.dataset.baseH||100)*(+source.dataset.vis||1)*.48;
-  const tx=+target.dataset.cx||0;
-  const ty=(+target.dataset.by||0)-(+target.dataset.baseH||100)*(+target.dataset.vis||1)*.46;
-  const pieces=Math.min(10,Math.max(6,choices.length));
-  for(let i=0;i<pieces;i++){
-    const choice=choices[i%choices.length];
+  const sVis=+source.dataset.vis||1,tVis=+target.dataset.vis||1;
+  const sW=(+source.dataset.baseW||120)*sVis,sH=(+source.dataset.baseH||100)*sVis;
+  const tW=(+target.dataset.baseW||120)*tVis,tH=(+target.dataset.baseH||100)*tVis;
+  // the lip of the tilted vessel (it is turned -38 degrees round its middle, the rim on its left side goes down): the food comes out of there, not from the middle of the body
+  const scx=+source.dataset.cx||0,scy=(+source.dataset.by||0)-sH*.5;
+  const lx=scx-.394*sW-.216*sH,ly=scy+.308*sW-.276*sH;
+  const tx=(+target.dataset.cx||0)+tW*.06,ty=(+target.dataset.by||0)-tH*.42;
+  const total=Math.min(26,Math.max(10,choices.length*2));
+  for(let i=0;i<total;i++){
+    const choice=choices[(i*7)%choices.length];
     const img=document.createElement('img');
     img.className='pour-particle';
     img.src=choice.src;img.alt='';img.draggable=false;
-    img.style.left=sx+'px';img.style.top=sy+'px';
-    img.style.width=(30+((i*7)%18))+'px';
+    const w=choice.whole?Math.min(64,Math.max(26,choice.w*.55*sVis)):(16+((i*5)%11))*Math.max(.8,sVis);
+    img.style.left=(lx+((i%4)-1.5)*3)+'px';img.style.top=(ly+((i%3)-1)*2)+'px';
+    img.style.width=w.toFixed(1)+'px';
     img.style.zIndex='12050';
     scene.appendChild(img);
-
-    const dx=(tx-sx)+((i%3)-1)*12;
-    const dy=(ty-sy)+((i%2)?5:-7);
-    const arc=-38-(i%4)*9;
+    const dx=(tx-lx)+(((i*13)%9)-4)*tW*.035;
+    const dy=(ty-ly)+(((i*17)%7)-3)*3;
+    const fall=Math.max(10,Math.abs(dy)*.5);
     try{
       const anim=img.animate([
-        {transform:'translate(-50%,-50%) translate(0,0) rotate(0deg) scale(1)',opacity:0},
-        {transform:`translate(-50%,-50%) translate(${dx*.38}px,${dy*.28+arc}px) rotate(${35+i*13}deg) scale(.95)`,opacity:1,offset:.36},
-        {transform:`translate(-50%,-50%) translate(${dx}px,${dy}px) rotate(${100+i*19}deg) scale(.72)`,opacity:.15}
-      ],{
-        duration:430+i*18,
-        delay:i*24,
-        easing:'cubic-bezier(.18,.58,.28,1)',
-        fill:'forwards'
-      });
+        {transform:'translate(-50%,-50%) translate(0,0) rotate(0deg)',opacity:0},
+        {transform:`translate(-50%,-50%) translate(${dx*.22}px,${-4+fall*.1}px) rotate(${25+i*9}deg)`,opacity:1,offset:.12},
+        {transform:`translate(-50%,-50%) translate(${dx*.7}px,${dy*.55+fall*.35}px) rotate(${70+i*13}deg)`,opacity:1,offset:.6},
+        {transform:`translate(-50%,-50%) translate(${dx}px,${dy}px) rotate(${120+i*17}deg)`,opacity:.0}
+      ],{duration:400+(i%5)*22,delay:i*(230/total),easing:'cubic-bezier(.3,.1,.55,1)',fill:'forwards'});
       anim.onfinish=()=>img.remove();
     }catch{
-      setTimeout(()=>img.remove(),560+i*20);
+      setTimeout(()=>img.remove(),600+i*12);
     }
   }
 }
