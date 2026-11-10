@@ -152,5 +152,35 @@ function endDrag(){
 }
 window.addEventListener('pointerup',function(e){if(gestureSwallow){e.stopImmediatePropagation();gestureSwallow=false;}endDrag();},true);
 ['click','mouseup','mousedown'].forEach(function(t){window.addEventListener(t,function(e){if(gestureSwallow&&t!=='mousedown'){e.stopImmediatePropagation();}},true);});
-window.CooksterSarmaTray={add:add,sys:sys,kick:kick,hit:hit,count:function(el){return sys(el).list.length;}};
+// ---- the LID of the tray (assets/calibration_props/okrugli_pleh_poklopac.webp, the item "Poklopac za okrugli pleh" of the Kitchen elements) ----
+// with the lid in the hand a click on the tray puts it on (it covers the sarmas); with empty hands a click on a covered tray takes the lid off (it goes into the hand).
+var LID_ID='kal_01_okrugli_pleh_poklopac';
+function lidOn(tr){
+  if(tr._lidEl&&tr._lidEl.isConnected)return;
+  var im=document.createElement('img');im.className='sarma-tray-lid';im.src='assets/calibration_props/okrugli_pleh_poklopac.webp?v=1';im.draggable=false;im.alt='';
+  im.style.cssText='position:absolute;left:-1.5%;top:-4%;width:103%;pointer-events:none;z-index:9;filter:drop-shadow(0 2px 3px rgba(20,10,0,.5))';
+  tr.appendChild(im);tr._lidEl=im;tr._lid=true;
+  var cv=sys(tr).cv;if(cv)cv.style.opacity='1';
+}
+function lidOff(tr){if(tr._lidEl&&tr._lidEl.parentNode)tr._lidEl.parentNode.removeChild(tr._lidEl);tr._lidEl=null;tr._lid=false;}
+function heldLid(){try{return holding&&holding.dataset&&holding.dataset.itemId===LID_ID?holding:null;}catch(e){return null;}}
+window.addEventListener('pointerdown',function(e){
+  if(e.button!==0)return;
+  var hl=heldLid(),tr=trayAt(e);
+  if(hl&&tr&&!tr._lid){
+    e.stopImmediatePropagation();e.preventDefault();gestureSwallow=true;
+    try{removeItem(hl);holding=null;hidePlacementGhost();hideOriginGhost();clearPourTarget();updateHover();}catch(x){}
+    lidOn(tr);try{playImpactSound(tr,'drop');}catch(x){}return;
+  }
+  if(!hl&&emptyHands()&&tr&&tr._lid){
+    var def=null;try{def=kitchenDefForId(LID_ID);}catch(x){}if(!def)return;
+    e.stopImmediatePropagation();e.preventDefault();gestureSwallow=true;
+    lidOff(tr);
+    var p0=screenToScene(e.clientX,e.clientY),w=def.w,h=def.h;
+    var el=makeItem({...def,instanceId:nextItemInstanceId(def.id),x:p0.x-w/2,y:p0.y-h,z:++zCounter});
+    if(el){el.dataset.surfaceZone='table';try{setPose(el,p0.x,p0.y,+tr.dataset.vis||1);}catch(x){}try{startHolding(el);}catch(x){}}
+    try{playImpactSound(tr,'pickup');}catch(x){}
+  }
+},true);
+window.CooksterSarmaTray={lidOn:lidOn,lidOff:lidOff,add:add,sys:sys,kick:kick,hit:hit,count:function(el){return sys(el).list.length;}};
 })();
