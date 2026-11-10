@@ -165,6 +165,12 @@ var pill=document.createElement('div');pill.setAttribute('data-tool-ui','1');
 pill.style.cssText='position:fixed;left:50%;top:78px;transform:translateX(-50%);z-index:2147483000;padding:7px 16px;border-radius:11px;background:rgba(40,24,10,.85);border:2px solid #7a5428;color:#ffe8bf;font:700 14px system-ui,sans-serif;pointer-events:none;opacity:0;transition:opacity .4s';
 document.body.appendChild(pill);var pillT=0,lastHint=0;
 function say(t,ms){pill.textContent=t;pill.style.opacity='1';clearTimeout(pillT);pillT=setTimeout(function(){pill.style.opacity='0';},ms||1800);}
+// the window (with its sill): the cells inside the hotspot of the window (js/window-open.js: 112 x 300 px, the lower right corner cut); the neighbour knocks only when this is clean
+var winCells=(function(){var a=[],P=[[0,0],[112,0],[112,186],[67,300],[0,300]];
+  function inside(x,y){var c=false;for(var i=0,j=P.length-1;i<P.length;j=i++){var xi=P[i][0],yi=P[i][1],xj=P[j][0],yj=P[j][1];if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))c=!c;}return c;}
+  for(var gy=0;gy<GH;gy++)for(var gx=0;gx<GW;gx++){if(inside(gx*CELL+2,gy*CELL+2))a.push(gy*GW+gx);}
+  return a;})();
+function windowProgress(){var s=0;for(var i=0;i<winCells.length;i++)s+=level[winCells[i]];return winCells.length?1-s/winCells.length:1;}
 function progress(){var s=0,n=0;for(var i=0;i<GW*GH;i++){n++;s+=level[i];}return 1-s/n;}
 
 // ---------- the brush ----------
@@ -226,6 +232,7 @@ function finish(){
 window.CooksterKitchenClean={
   active:function(){return !startClean&&!finish.done;},
   progress:progress,
+  windowProgress:windowProgress,
   zoneMap:function(){var c=document.createElement('canvas');c.width=GW;c.height=GH;var x=c.getContext('2d'),im=x.createImageData(GW,GH);for(var i=0;i<GW*GH;i++){var f=zone[i]===1;im.data[i*4]=f?255:0;im.data[i*4+1]=f?60:120;im.data[i*4+2]=f?60:255;im.data[i*4+3]=110;}x.putImageData(im,0,0);return c.toDataURL();},
   // called by the game when the left button goes down with the broom or the sponge in the hand; true = the cleaning has started
   begin:function(e){
