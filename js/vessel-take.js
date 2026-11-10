@@ -12,6 +12,8 @@
       if(!v||!w||v.offsetParent===null)continue;
       const hosts=v._wholeLayer?[w,v._wholeLayer]:[w];      // whole pieces of plates / boards lie in their own layer (without the cut)
       for(const img of hosts.flatMap(h=>[...h.querySelectorAll(SEL)])){
+        const ek=img.dataset.entryKey||'';
+        if((ek==='mleveno_nadev'||ek==='mleveno_meso')&&(ek==='mleveno_nadev'||heatable(v)))continue;      // the minced meat in a pan (and the filling anywhere) is not a piece to take out: a click on it stirs
         const r=img.getBoundingClientRect();
         if(x<r.left||x>r.right||y<r.top||y>r.bottom)continue;
         const z=+img.style.zIndex||0;
