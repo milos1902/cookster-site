@@ -12,7 +12,7 @@ function defaults(){return JSON.parse(JSON.stringify(DEFAULTS));}
 function norm(b){return {x:+b.x,y:+b.y,h:+b.h||72,rz:+b.rz||0,rx:+b.rx||0,ry:+b.ry||0,p:+b.p||500};}
 var bags=[],els=[],sel=-1,open=false,showAll=true;
 // kesa NA STOLU (ona koja se uzme sa kuke i spusti na sto / drzi u ruci): isti oblik podesavanja; nema x,y (stoji gde je spustena), h = visina px
-var TABLE_KEY='cookster.wall-bags.table.v3',TABLE_DEF={h:240,rz:2,rx:28,ry:0,p:800,br:1};   // tvoj izvoz iz alata (10.11.)
+var TABLE_KEY='cookster.wall-bags.table.v3',TABLE_DEF={h:240,rz:2,rx:28,ry:0,p:800,br:1.18};   // tvoj izvoz iz alata (10.11.)
 function loadTable(){try{var r=JSON.parse(localStorage.getItem(TABLE_KEY)||'null');if(r&&isFinite(r.h))return {h:+r.h,rz:+r.rz||0,rx:+r.rx||0,ry:+r.ry||0,p:+r.p||900,br:(isFinite(+r.br)&&+r.br>0)?+r.br:1};}catch(e){}return JSON.parse(JSON.stringify(TABLE_DEF));}
 var tableCfg=loadTable(),mode='hooks',tableEl=null;
 function saveTable(){try{localStorage.setItem(TABLE_KEY,JSON.stringify(tableCfg));}catch(e){}}
