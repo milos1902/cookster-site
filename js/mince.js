@@ -124,14 +124,16 @@ function layout(img,v,count){
 }
 var CR={raw:'assets/meat/mleveno_meso_diced.webp?v=1',fried:'assets/meat/mleveno_meso_diced_fried.webp?v=1'};[CR.raw,CR.fried].forEach(function(u){var i=new Image();i.src=u;});
 function crumbOf(v){return Math.max(0,Math.min(1,+v._crumb||0));}
-function doneOf(v){try{var m=CooksterPan.read(v);return Math.max(0,Math.min(1,(+m.doneness||0)/.9));}catch(e){return 0;}}
+function doneOf(v){      // cooked meat never goes back to raw: the value only grows (it is cleared when the pan is empty)
+  try{var m=CooksterPan.read(v),d=Math.max(0,Math.min(1,(+m.doneness||0)/.9));if(units(v)<=0)v._doneMax=0;else if(d>(v._doneMax||0))v._doneMax=d;return v._doneMax||0;}catch(e){return v._doneMax||0;}
+}
 // the crumbs fill the floor of the pan like the heap does (same layout, a little wider); the raw and the fried picture cross-fade with the doneness
 function paintCrumbs(v){
   if(!heatable(v))return;var host=v.querySelector('.mince-host');if(!host)return;var c=crumbOf(v),d=doneOf(v),n=units(v);
   var heap=host.querySelector('.mince-heap');
   // one dose: the crumbs cover the whole floor but the floor is seen between them; the SECOND dose fills these gaps, every next dose fills more (a heap under the crumbs): a heap of meat under the crumbs (it goes brown as the meat fries)
   // and several layers of crumbs one over another, turned and shifted, so no gap is left
-  if(heap){heap.style.opacity=(n>=2?1:1-c).toFixed(2);heap.style.filter=n>=2?'brightness('+(1-.5*d*c).toFixed(2)+') saturate('+(1-.35*d*c).toFixed(2)+') drop-shadow(0 1px 2px rgba(70,15,8,.22))':'drop-shadow(0 1px 2px rgba(70,15,8,.22))';}
+  if(heap){heap.style.transform='rotate(var(--stir-turn,0deg))';heap.style.opacity=(n>=2?1:1-c).toFixed(2);heap.style.filter=n>=2?'brightness('+(1-.5*d*c).toFixed(2)+') saturate('+(1-.35*d*c).toFixed(2)+') drop-shadow(0 1px 2px rgba(70,15,8,.22))':'drop-shadow(0 1px 2px rgba(70,15,8,.22))';}
   var layers=Math.max(1,Math.min(3,n)),rots=[0,63,-41],sc=[1,1.08,1.05],tx=[0,5,-4],ty=[0,-4,5];
   ['raw','fried'].forEach(function(k){
     for(var i=0;i<3;i++){
@@ -139,7 +141,7 @@ function paintCrumbs(v){
       if(i>=layers){if(im)im.style.opacity='0';continue;}
       if(!im){im=document.createElement('img');im.className='mince-crumbs-'+k+'-'+i;im.src=CR[k];im.draggable=false;im.alt='';im.style.cssText='position:absolute;pointer-events:none;object-fit:fill;opacity:0';host.appendChild(im);}
       layout(im,v,Math.max(2,n));      // the crumbs cover the whole floor of the pan already with ONE dose (with gaps between them); every next dose makes the heap higher
-      im.style.transform='translate('+tx[i]+'%,'+ty[i]+'%) rotate('+rots[i]+'deg) scale('+sc[i]+')';
+      im.style.transform='translate('+tx[i]+'%,'+ty[i]+'%) rotate(calc('+rots[i]+'deg + var(--stir-turn,0deg))) scale('+sc[i]+')';
       im.style.opacity=(k==='raw'?c*(1-d):c*d).toFixed(2);
     }
   });
@@ -150,7 +152,7 @@ function append(layer,v,count,key){
   img.className='whole-produce-piece mince-heap';img.dataset.entryKey=key||KEY;img.src=s.src;img.alt='';img.draggable=false;
   img.style.cssText='position:absolute;transform:none;object-fit:fill;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(70,15,8,.22))';
   var host=document.createElement('div');host.className='mince-host';host.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:30;overflow:visible';
-  host.appendChild(img);layer.appendChild(host);layout(img,v,count);
+  host.appendChild(img);layer.appendChild(host);layout(img,v,count);try{paintCrumbs(v);}catch(e){}
 }
 function paint(v){var s=state(v),n=units(v);paintCrumbs(v);try{v.querySelectorAll('.mince-heap').forEach(function(i){if(i.getAttribute('src')!==s.src)i.src=s.src;layout(i,v,n);});}catch(e){}}
 
