@@ -141,7 +141,7 @@ video.addEventListener('error',function(){if(introActive)endIntro();});
 skip.addEventListener('click',endIntro);
 
 function act(id){
-  if(id==='new'){window.__COOKSTER_NEW_GAME__=true;startIntro();}
+  if(id==='new')startIntro();
   else if(id==='cont')closeMenu();
   else if(id==='set'){panel.style.display=panel.style.display==='block'?'none':'block';refresh();}
   else if(id==='exit'){try{window.close();}catch(e){}setTimeout(function(){bye.style.display='flex';},120);}

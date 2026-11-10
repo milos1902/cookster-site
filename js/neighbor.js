@@ -7,7 +7,7 @@
 (function(){
 'use strict';
 if(window.CooksterNeighbor)return;
-var KEY='cookster.neighbor.v1',THRESHOLD=.5;
+var KEY='cookster.neighbor.v1',THRESHOLD=.6,WIN_CLEAN=.85;
 var LINES=[
   {who:'Komšinica',text:'Dobar dan, dete. Vidim da se u Savkinoj kući opet vrti.',v:'susret_1'},
   {who:'Komšinica',text:'Tako smo mi, dete, još dok je Savka bila tu: tek kucnemo, a ona nam već sprema.',v:'susret_2'},
@@ -42,6 +42,7 @@ var ORDERS={
 var SILL={l:0,t:175,r:125,b:335,cx:60,by:285};
 var st='idle',elK=null,elO=null,elH=null,elJ=null,speakUntil=0,animOn=false,box=null,li=0,knockT=0,lines=LINES,afterTalk=null,forced=/[?&]komsinica\b/.test(location.search);
 function done(){try{return localStorage.getItem(KEY)==='1';}catch(e){return false;}}
+function winClean(){try{return window.CooksterKitchenClean&&CooksterKitchenClean.windowProgress?CooksterKitchenClean.windowProgress()>=WIN_CLEAN:true;}catch(e){return true;}}      // the window is cleaned (85% of its dirt gone)
 function prog(){try{return window.CooksterKitchenClean&&CooksterKitchenClean.active()?CooksterKitchenClean.progress():-1;}catch(e){return -1;}}
 function build(){
   var sc=document.getElementById('scene');if(!sc||elK)return;
@@ -217,28 +218,16 @@ function tick(){
   if(st==='idle'){
     if(done())return;
     if(forced){forced=false;setTimeout(knock,3000);st='wait';return;}
-    var p=prog();if(p>=THRESHOLD)knock();
+    var p=prog();if(p>=THRESHOLD&&winClean())knock();      // both: over 60% clean AND the whole window clean
   }else if(st==='knock'&&windowOpen()&&!visiting){talk();}
 }
-// while the game is being built: every "Nova igra" brings the neighbour (3 s after the game is shown), even if the meeting was done before
-window.addEventListener('cookster:menu-closed',function(){
-  if(!window.__COOKSTER_NEW_GAME__)return;window.__COOKSTER_NEW_GAME__=false;
-  try{localStorage.removeItem(KEY);Object.keys(ORDERS).forEach(function(k){localStorage.removeItem(ORDERS[k].key);});}catch(e){}
-  delivered={};asked={};visiting=false;handover=null;
-  if(st==='idle'||st==='done'||st==='wait'){      // she knocks only after the narrator has said his two lines (2.5 s after them), or after 14 s at the latest
-    clearInterval(knockT);st='wait';var fired=false;
-    var go=function(){if(fired)return;fired=true;window.removeEventListener('cookster:narration-done',onN);if(st==='wait')knock();};
-    var onN=function(){setTimeout(go,2500);};
-    window.addEventListener('cookster:narration-done',onN);setTimeout(go,14000);
-  }
-});
 function init(){
   build();
   var p=prog();if(p>=0&&p<.02){try{localStorage.removeItem(KEY);}catch(e){}}      // a fresh dirty kitchen = a new game: the meeting happens again
   setInterval(tick,500);
 }
 // the kitchen is declared clean at 80%: if the cleaning jumped over the threshold between two checks, it knocks now
-window.addEventListener('cookster:kitchen-clean',function(){if(st==='idle'&&!done())setTimeout(function(){if(st==='idle'&&!done())knock();},1800);});
+window.addEventListener('cookster:kitchen-clean',function(){if(st==='idle'&&!done())setTimeout(function(){if(st==='idle'&&!done()&&winClean())knock();},1800);});
 window.CooksterNeighbor={speak:speak,knock:knock,state:function(){return st;},lines:LINES,expectSalad:expectSalad,expectOrder:expectOrder,delivered:function(id){return !!delivered[id||'salad'];}};
 if(document.readyState==='complete')setTimeout(init,600);else window.addEventListener('load',function(){setTimeout(init,600);});
 })();
