@@ -9,30 +9,30 @@
 if(window.CooksterNeighbor)return;
 var KEY='cookster.neighbor.v1',THRESHOLD=.5;
 var LINES=[
-  {who:'Komšinica',text:'Dobar dan, dete. Vidim da se u Savkinoj kući opet vrti.'},
-  {who:'Komšinica',text:'Tako smo mi radili dok je ona bila tu. Kucnemo na prozor, kažemo šta nam treba, a ona nam spremi.'},
-  {who:'Komšinica',text:'Da li bih mogla tebe da zamolim za jednu srpsku salatu? Imam goste kod kuće.'},
-  {who:'',text:'Salata… Nadam se da znam.'},
-  {who:'Komšinica',text:'Znaćeš. Pogledaj u njenu knjigu. Platiću, ne brini.'},
-  {who:'Komšinica',text:'Uzgred, daska ti je u desnoj fioci.'}
+  {who:'Komšinica',text:'Dobar dan, dete. Vidim da se u Savkinoj kući opet vrti.',v:'susret_1'},
+  {who:'Komšinica',text:'Tako smo mi radili dok je ona bila tu. Kucnemo na prozor, kažemo šta nam treba, a ona nam spremi.',v:'susret_2'},
+  {who:'Komšinica',text:'Da li bih mogla tebe da zamolim za jednu srpsku salatu? Imam goste kod kuće.',v:'susret_3'},
+  {who:'',text:'Salata… Nadam se da znam.',v:'susret_4'},
+  {who:'Komšinica',text:'Znaćeš. Pogledaj u njenu knjigu. Platiću, ne brini.',v:'susret_5'},
+  {who:'Komšinica',text:'Uzgred, daska ti je u desnoj fioci.',v:'susret_6'}
 ];
 var ORDERS={
   salad:{key:'cookster.neighbor.salad.v1',match:/paradajz/,pay:200,what:'činiju sa salatom',
     lines1:[
-      {who:'Komšinica',text:'Dobar dan, dete. Je l\' gotova salata?'},
-      {who:'',text:'Evo… gotova je.'},
-      {who:'Komšinica',text:'Odlično. Samo je stavi ovde, na dasku prozora.'}
+      {who:'Komšinica',text:'Dobar dan, dete. Je l\' gotova salata?',v:'salata_a1'},
+      {who:'',text:'Evo… gotova je.',v:'salata_a2'},
+      {who:'Komšinica',text:'Odlično. Samo je stavi ovde, na dasku prozora.',v:'salata_a3'}
     ],
     lines2:[
-      {who:'Komšinica',text:'Gle, divota. Kao za Savke. Novac ti ostavljam na dasci prozora, i hvala ti.'},
-      {who:'Komšinica',text:'Kad si već tu… Da li bi mogao da mi ispržiš i tikvice? Za večeru.'},
-      {who:'',text:'Tikvice… Pokušaću.'},
+      {who:'Komšinica',text:'Gle, divota. Kao za Savke. Novac ti ostavljam na dasci prozora, i hvala ti.',v:'salata_b1'},
+      {who:'Komšinica',text:'Kad si već tu… Da li bi mogao da mi ispržiš i tikvice? Za večeru.',v:'salata_b2'},
+      {who:'',text:'Tikvice… Pokušaću.',v:'salata_b3'},
       {who:'Komšinica',text:'Pazi samo na vatru, da ne zagore. Doći ću po njih.'}
     ]},
   tikvice:{key:'cookster.neighbor.tikvice.v1',match:/tikvice/,pay:300,what:'tiganj sa tikvicama',
     lines1:[
       {who:'Komšinica',text:'Dobar dan, dete. Jesu l\' tikvice gotove?'},
-      {who:'',text:'Evo, ispržene su.'},
+      {who:'',text:'Evo, ispržene su.',v:'tikvice_a2'},
       {who:'Komšinica',text:'Divno. Stavi ih ovde, na dasku prozora.'}
     ],
     lines2:[
@@ -113,7 +113,7 @@ var vAud=null;
 function stopVoice(){if(vAud){try{vAud.onended=null;vAud.pause();}catch(e){}vAud=null;}}
 function playVoice(L){      // the line has a voice file: she moves for its real length, and the next line comes right after it (no pause)
   stopVoice();var a=new Audio('assets/audio/komsinica/'+L.v+'.mp3?v=1'),my=li;a.volume=.95;vAud=a;
-  a.addEventListener('loadedmetadata',function(){if(vAud===a&&isFinite(a.duration))speak(a.duration*1000+150);});
+  a.addEventListener('loadedmetadata',function(){if(vAud===a&&L.who&&isFinite(a.duration))speak(a.duration*1000+150);});
   a.onended=function(){if(vAud===a&&st==='talk'&&li===my){vAud=null;next();}};
   var pr=a.play();if(pr&&pr.catch)pr.catch(function(){});
 }
