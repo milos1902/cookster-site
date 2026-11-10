@@ -18,7 +18,7 @@ function toast(m){try{showToast(m);}catch(e){}}
 function setup(el){
   if(el._sm)return;var set=SETS[hashStr(el.dataset.instanceId||'x')%SETS.length],FR=set.fr;
   var st=el._sm={set:set,filled:false,stage:0,roll:0,x:0,target:0,imgs:[],anim:0};
-  var body=el.querySelector('.body');if(body){body.style.setProperty('display','none','important');body.removeAttribute('src');}      // the plain picture of the leaf is gone for good (it showed again behind the sarma when the item was picked up: the game copies the item for its ghost)
+  var body=el.querySelector('.body');if(body){body.style.setProperty('display','none','important');body.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4////fwAJ+wP9KobjigAAAABJRU5ErkJggg==';}      // a 1x1 opaque picture (hidden by display:none; the game takes the place of a click from the alpha of the body, so the whole box can be clicked) (an <img> without a src never counts as loaded, and the game waited 2 s for it before hiding the real item in the hand: a ghost stayed behind)      // the plain picture of the leaf is gone for good (it showed again behind the sarma when the item was picked up: the game copies the item for its ghost)
   var host=document.createElement('div');host.className='sarma-frames';host.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;transform-origin:50% 100%;transform:scale('+set.scale+')';
   for(var i=0;i<N;i++){var m=document.createElement('img');m.src=FR[i].src;m.draggable=false;m.alt='';m.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;opacity:0;filter:drop-shadow(1px 2px 2px rgba(30,15,0,.4))';host.appendChild(m);st.imgs.push(m);}
   el.appendChild(host);draw(el);
