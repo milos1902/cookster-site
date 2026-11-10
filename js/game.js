@@ -11056,7 +11056,7 @@ function kitchenEquipmentDef(id){
 function ownedKitchenEquipment(){
  if(OBJECT_CALIBRATION_MODE)return KITCHEN_EQUIPMENT.map(def=>def.id);
  const owned=CooksterState.progression.kitchenEquipment;
-  return Array.from(new Set([...(Array.isArray(owned)?owned:[]),'mlin_za_mesо','kal_01_jaje','kal_01_pirinac','kal_01_list_kupusa','kal_01_dzezva','meso_junetina',PAPRIKA_STEAM_BAG_ID,'kaca_prazna','kaca_poklopac',...KITCHEN_EQUIPMENT.filter(d=>d.category==='drink').map(d=>d.id)]));
+  return Array.from(new Set([...(Array.isArray(owned)?owned:[]),'mlin_za_mesо','kal_01_jaje','kal_01_pirinac','kal_01_list_kupusa','kal_01_mast_kanta','kal_01_dzezva','meso_junetina',PAPRIKA_STEAM_BAG_ID,'kaca_prazna','kaca_poklopac',...KITCHEN_EQUIPMENT.filter(d=>d.category==='drink').map(d=>d.id)]));
 }
 function equipmentCountInKitchen(id){
  return items.filter(el=>el.dataset.itemId===id).length+
