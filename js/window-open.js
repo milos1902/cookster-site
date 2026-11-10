@@ -65,7 +65,7 @@ function night(){var D=window.CooksterDay;try{return D&&D.phase?D.phase().nw:0;}
 function set(v,animate){
   if(!build())return;var was=open;open=!!v;try{localStorage.setItem(KEY,open?'1':'0');}catch(e){}
   stopClip();broke=false;lvlGo();
-  var willClip=open&&!was&&animate&&gl&&night()<.3;      // with the clip the picture of the open window shows only when the clip ends (no flash of the open window before the clip starts)
+  var willClip=false;      // (the clip with the falling flowerpot is no longer used: the pot is removed from the kitchen) was: open&&!was&&animate&&gl&&night()<.3;      // with the clip the picture of the open window shows only when the clip ends (no flash of the open window before the clip starts)
   box.style.opacity=(open&&!willClip)?1:0;box.style.transform='';
   try{if(typeof playImpactSound==='function'&&hot)playImpactSound(hot,open?'open':'close');}catch(e){}
   if(willClip){      // by day: the clip with the flowerpot; at night the window is only switched (the night picture has no clip)
