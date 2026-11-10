@@ -101,8 +101,8 @@ function draw(el){
     var im=spr[s.set];if(!im)return;
     var dxs=Math.cos(s.a),dys=kk*Math.sin(s.a),ls=Math.hypot(dxs,dys),ang=Math.atan2(dys,dxs);
     var sx=(FLOOR.cx+s.x)*w,sy=(FLOOR.cy*br+s.y*kk)*w;      // screen position (px)
-    var lenPx=s.len*w*ls,widPx=s.len*w*SETS[s.set].asp*(.55+.45*(1-Math.abs(Math.sin(ang-Math.atan2(dys,dxs)))))*(0.8+.2*(1/ls));
-    var hh=s.len*w*SETS[s.set].asp*Math.max(.62,Math.min(1.05,Math.sqrt(Math.sin(s.a)*Math.sin(s.a)*kk*kk+Math.cos(s.a)*Math.cos(s.a))));
+    // every sarma keeps its OWN exact size: the length and the width in pixels depend only on the sarma and on the size of the tray, never on how it lies or on the others
+    var lenPx=s.len*w,hh=s.len*w*SETS[s.set].asp;
     g.save();g.translate(sx,sy);g.rotate(ang);
     g.shadowColor='rgba(20,10,0,.45)';g.shadowBlur=3;g.shadowOffsetY=2;
     g.drawImage(im,-lenPx/2,-hh/2,lenPx,hh);g.restore();
@@ -117,7 +117,7 @@ function hit(el,cx,cy){
 }
 function add(el,set,cx,cy,rotDeg){
   var st=sys(el);if(st.list.length>=MAXN){toast('Pleh je pun.');return false;}
-  var S=SETS[set]||SETS.f,len=S.len*(.94+Math.random()*.12),p=cx==null?{x:0,y:0}:local(el,cx,cy);
+  var S=SETS[set]||SETS.f,len=S.len,p=cx==null?{x:0,y:0}:local(el,cx,cy);
   var rr=Math.hypot(p.x,p.y),lim=FLOOR.rx-len*S.asp*.5*.3;if(rr>lim){p.x*=lim/rr;p.y*=lim/rr;rr=lim;}
   var tang=Math.atan2(p.y,p.x)+Math.PI/2;      // along the circle round the middle of the tray (the first rings round the edge, then inwards); the middle one lies freely
   var ang=rr<FLOOR.rx*.22?(Math.random()-.5)*1.2:tang+(Math.random()-.5)*.25;
