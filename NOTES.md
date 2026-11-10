@@ -1345,3 +1345,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - 10.11.: uputstvo vise ne vraca na pijacu: kupovina se prepoznaje po otvorenom cenkanju (boughtNow), ne samo po kliku (tutorial v5).
 - 10.11.: uputstvo samo stavlja na sto cinijum (vangla_srednja), so, ulje i tiganj_mali kad ih nema (tutorial v6; korak.enter). U novoj pijaci ulje i so se ne mogu kupiti.
 - 10.11.: stare tegle soli/ulja (staple_so_*, staple_ulje_*, slike zacin_1/zacin_2) obrisane: spawnStaple('so'/'ulje') ne radi nista, a ucitavanje igre brise sacuvane. Uputstvo: ulje = prava flasa kal_01_flasa_ulja, so = nova tegla (dataset.spices) - tutorial v7.
+- 10.11.: okacene kese vece (h 99,98,105,110,122,148; korisnikov izvoz) - wall-bags v34.
