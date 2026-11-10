@@ -6,8 +6,8 @@
 (function(){
 'use strict';
 if(window.CooksterWallBags)return;
-var KEY='cookster.wall-bags.v2',IMG_W=198,IMG_H=300,APEX=.477,SRC='assets/ui/wall/kesa.webp?v=2';
-var DEFAULTS=[{"x":113.4,"y":297.2,"h":73,"rz":-11.5,"rx":0,"ry":12.3,"p":500},{"x":97.8,"y":333.5,"h":76,"rz":-13,"rx":0,"ry":9.3,"p":500},{"x":84.6,"y":368.4,"h":80,"rz":-11.5,"rx":0,"ry":10,"p":500},{"x":67.4,"y":402.2,"h":85,"rz":-12.5,"rx":0,"ry":10.8,"p":500},{"x":52.1,"y":433.6,"h":94,"rz":-14.5,"rx":0,"ry":11.5,"p":500},{"x":37.1,"y":460.6,"h":103,"rz":-12.5,"rx":0,"ry":1,"p":500}];   // tvoj izvoz iz alata (10.11.)
+var KEY='cookster.wall-bags.v3',IMG_W=198,IMG_H=300,APEX=.477,SRC='assets/ui/wall/kesa.webp?v=2';
+var DEFAULTS=[{"x":113.4,"y":297.2,"h":73,"rz":-11.5,"rx":0,"ry":12.3,"p":500},{"x":97.8,"y":333.5,"h":76,"rz":-13,"rx":0,"ry":9.3,"p":500},{"x":84.6,"y":368.4,"h":85,"rz":-11.5,"rx":0,"ry":10,"p":500},{"x":67.4,"y":402.2,"h":92,"rz":-12.5,"rx":0,"ry":10.8,"p":500},{"x":52.1,"y":433.6,"h":101,"rz":-14.5,"rx":0,"ry":11.5,"p":500},{"x":36.3,"y":463,"h":119,"rz":-12.5,"rx":0,"ry":1,"p":500}]   // tvoj izvoz iz alata (10.11.)
 function defaults(){return JSON.parse(JSON.stringify(DEFAULTS));}
 function norm(b){return {x:+b.x,y:+b.y,h:+b.h||72,rz:+b.rz||0,rx:+b.rx||0,ry:+b.ry||0,p:+b.p||500};}
 var bags=[],els=[],sel=-1,open=false,showAll=true;
