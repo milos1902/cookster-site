@@ -1,6 +1,6 @@
 /* Cookster: the rubbish on the floor of the dirty kitchen (cans, rags, paper balls, bottles, broken pots).
    Six heaps of 3-4 things (assets/effects/smece/g1..g6.webp, cut out of the picture made in ChatGPT; every heap is at its own place of the 1672 x 941 scene).
-   With EMPTY hands a click on a heap takes the whole heap at once (it is lifted off the floor and pulled towards the camera). The leaves stay on the floor: the broom sweeps them (they are in the dirty picture).
+   With EMPTY hands a click on a heap takes the whole heap at once (it lights up for a moment and fades away). The leaves stay on the floor: the broom sweeps them (they are in the dirty picture).
    State: localStorage 'cookster.trash.v1' (the numbers of the heaps already taken); "Nova igra" brings all of them back (event cookster:kitchen-restart from kitchen-clean.js). ?cistakuhinja = no rubbish. */
 (function(){
 'use strict';
@@ -49,13 +49,12 @@ function left(){return HEAPS.filter(function(h){return !gone[h.id];}).length;}
 function take(id){
   var el=els[id],h=HEAPS[id-1];gone[id]=1;save();delete els[id];
   el.classList.remove('hov');el.style.transition='none';el.style.transformOrigin='50% 60%';
-  // lifted off the floor (a short hop up and a little bigger), then pulled towards the camera (the bottom middle of the screen), growing and fading
-  var dx=836-(h.x+h.w/2),dy=980-(h.y+h.h/2);
+  // only a short glow and the heap is gone (no flying): it lights up a little and fades
   var an=el.animate([
-    {transform:'translate(0,0) scale(1)',opacity:1,offset:0},
-    {transform:'translate(0,-22px) scale(1.12)',opacity:1,offset:.25,easing:'cubic-bezier(.4,0,.9,.5)'},
-    {transform:'translate('+dx+'px,'+dy+'px) scale(2.4)',opacity:0,offset:1}
-  ],{duration:620,fill:'forwards'});
+    {filter:'brightness(1.25) drop-shadow(0 0 6px rgba(255,236,170,.95))',opacity:1,offset:0},
+    {filter:'brightness(1.6) drop-shadow(0 0 12px rgba(255,240,190,1))',opacity:.9,offset:.35},
+    {filter:'brightness(1.8) drop-shadow(0 0 16px rgba(255,240,190,.8))',opacity:0,offset:1}
+  ],{duration:380,fill:'forwards',easing:'ease-out'});
   an.onfinish=function(){if(el.parentNode)el.parentNode.removeChild(el);};
   setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},900);
   try{if(window.CooksterNarration)CooksterNarration.sub(left()?'Smeće pokupljeno. Još hrpa: '+left()+'.':'Sve smeće je pokupljeno. Lišće ostaje metli.',2600);}catch(e){}
