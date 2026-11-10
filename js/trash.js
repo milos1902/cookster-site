@@ -1,6 +1,6 @@
 /* Cookster: the rubbish on the floor of the dirty kitchen (cans, rags, paper balls, bottles, broken pots).
    Six heaps of 3-4 things (assets/effects/smece/g1..g6.webp, cut out of the picture made in ChatGPT; every heap is at its own place of the 1672 x 941 scene).
-   With EMPTY hands a click on a heap takes the whole heap at once (it flies into the wicker basket in the corner). The leaves stay on the floor: the broom sweeps them (they are in the dirty picture).
+   With EMPTY hands a click on a heap takes the whole heap at once (it is lifted off the floor and pulled towards the camera). The leaves stay on the floor: the broom sweeps them (they are in the dirty picture).
    State: localStorage 'cookster.trash.v1' (the numbers of the heaps already taken); "Nova igra" brings all of them back (event cookster:kitchen-restart from kitchen-clean.js). ?cistakuhinja = no rubbish. */
 (function(){
 'use strict';
@@ -21,7 +21,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(Object.keys(gone).ma
 function noRubbish(){try{return localStorage.getItem('cookster.kitchen-dirt.v1')==='clean';}catch(e){return false;}}
 function build(){
   sc=document.getElementById('scene');if(!sc||els[1]||noRubbish())return;
-  var css=document.createElement('style');css.textContent='.trash-heap{position:absolute;pointer-events:none;z-index:27;transition:transform .55s cubic-bezier(.5,0,.8,.4),opacity .55s ease,filter .15s ease}.trash-heap.hov{filter:brightness(1.22) drop-shadow(0 0 5px rgba(255,236,170,.9))}';
+  var css=document.createElement('style');css.textContent='.trash-heap{position:absolute;pointer-events:none;z-index:27;transition:transform .55s cubic-bezier(.5,0,.8,.4),opacity .55s ease,filter .15s ease}.trash-heap.hov{filter:brightness(1.25) drop-shadow(0 0 6px rgba(255,236,170,.95))}';
   document.head.appendChild(css);
   HEAPS.forEach(function(h){
     if(gone[h.id])return;
@@ -48,10 +48,16 @@ function blocked(){
 function left(){return HEAPS.filter(function(h){return !gone[h.id];}).length;}
 function take(id){
   var el=els[id],h=HEAPS[id-1];gone[id]=1;save();delete els[id];
-  var dx=BASKET.x-(h.x+h.w/2),dy=BASKET.y-(h.y+h.h/2);
-  el.classList.remove('hov');el.style.transformOrigin='50% 50%';void el.offsetWidth;
-  el.style.transform='translate('+dx+'px,'+dy+'px) scale(.22)';el.style.opacity='0';
-  setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},700);
+  el.classList.remove('hov');el.style.transition='none';el.style.transformOrigin='50% 60%';
+  // lifted off the floor (a short hop up and a little bigger), then pulled towards the camera (the bottom middle of the screen), growing and fading
+  var dx=836-(h.x+h.w/2),dy=980-(h.y+h.h/2);
+  var an=el.animate([
+    {transform:'translate(0,0) scale(1)',opacity:1,offset:0},
+    {transform:'translate(0,-22px) scale(1.12)',opacity:1,offset:.25,easing:'cubic-bezier(.4,0,.9,.5)'},
+    {transform:'translate('+dx+'px,'+dy+'px) scale(2.4)',opacity:0,offset:1}
+  ],{duration:620,fill:'forwards'});
+  an.onfinish=function(){if(el.parentNode)el.parentNode.removeChild(el);};
+  setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},900);
   try{if(window.CooksterNarration)CooksterNarration.sub(left()?'Smeće pokupljeno. Još hrpa: '+left()+'.':'Sve smeće je pokupljeno. Lišće ostaje metli.',2600);}catch(e){}
   try{window.dispatchEvent(new CustomEvent('cookster:trash-taken',{detail:{id:id,left:left()}}));}catch(e){}
 }
