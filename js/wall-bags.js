@@ -16,7 +16,7 @@ var SLOTS_KEY='cookster.hanging-bags.v1',slots=[];
 function loadSlots(){try{var r=JSON.parse(localStorage.getItem(SLOTS_KEY)||'null');if(Array.isArray(r))return r;}catch(e){}return [];}
 function saveSlots(){try{localStorage.setItem(SLOTS_KEY,JSON.stringify(slots));}catch(e){}}
 // slika kese po povrcu: assets/ui/wall/kesa_<productKey>.webp ako postoji, inace osnovna (salata)
-var VEG_IMG={};   // kesa_<kljuc>.webp: sargarepa, paradajz, paprika_zelena, paprika_crvena, luk (ostalo: osnovna)   // popunjava se kad slika postoji (probe preko Image)
+var VEG_IMG={};   // kesa_<kljuc>.webp: sargarepa, paradajz, paprika_zelena, paprika_crvena, luk, krastavac, kupus, patlidzan, tikvice, rotkvice (fale: persun, beli_luk, mesano)
 function imgFor(rec){var k=rec&&rec.productKey;return (k&&VEG_IMG[k])?VEG_IMG[k]:SRC;}
 function probe(k){if(VEG_IMG[k]!==undefined)return;VEG_IMG[k]=null;var im=new Image(),u='assets/ui/wall/kesa_'+k+'.webp?v=1';im.onload=function(){VEG_IMG[k]=u;render();};im.src=u;}
 function mixText(r){return (r.items||[]).map(function(x){return (x.label||x.productKey)+' '+qtyText(x);}).join(', ');}
@@ -38,7 +38,7 @@ function render(){
   bags.forEach(function(b,i){
     var el=document.createElement('img');el.className='wall-bag';el.draggable=false;el.src=SRC;el.alt='';
     el.style.cssText='position:absolute;z-index:4;filter:drop-shadow(1px 2px 2px rgba(30,12,0,.5));display:'+(((open&&showAll)||slots[i])?'block':'none')+';pointer-events:'+((open||slots[i])?'auto':'none')+';cursor:'+(open?'move':(slots[i]?'pointer':'default'));
-    if(slots[i]){el.src=imgFor(slots[i]);el.title=slots[i].mixed?('Mesano povrce: '+mixText(slots[i])+' — klik da izvadis sve na sto'):((slots[i].label||'Kesa')+' · '+qtyText(slots[i])+' — klik da uzmes');}
+    if(slots[i]){el.src=imgFor(slots[i]);el.title=slots[i].mixed?('Mesano povrce: '+mixText(slots[i])+' — klik vadi povrce'):((slots[i].label||'Kesa')+' · '+qtyText(slots[i])+' · '+countOf(slots[i])+' kom. — klik vadi povrce');}
     paint(b,el);
     el.addEventListener('click',function(e){if(open||!slots[i])return;e.preventDefault();e.stopPropagation();take(i);});
     el.addEventListener('pointerdown',function(e){if(!open||e.button!==0)return;e.preventDefault();e.stopPropagation();select(i);
@@ -104,19 +104,29 @@ function toggle(v){
   if(open&&sel<0&&bags.length)sel=0;
   render();syncRows();
 }
+// klik na okacenu kesu: komad povrca ODMAH izlazi u ruku (kao iz kese na stolu); kesa se prazni, a prazna nestaje sa kuke
+function countOf(r){var c=+r.count;if(isFinite(c)&&c>=0)return c;try{var m=r.quantityMode==='bunch'?'bunch':'kg',v=m==='bunch'?(+r.quantityBunches||+r.quantityValue||1):(+r.quantityKg||+r.quantityValue||1);return marketBagUnitCount(r.productKey,v,m);}catch(e){return 1;}}
+function vegKeyOf(r){try{return MARKET_PRODUCT_TO_VEG[r.productKey]||(VEGETABLES[r.productKey]?r.productKey:'');}catch(e){return '';}}
 function take(i){
   var rec=slots[i];if(!rec)return;
   try{if(typeof holding!=='undefined'&&holding){showToast('Prvo spusti predmet iz ruke.');return;}}catch(e){}
-  slots[i]=null;saveSlots();render();
-  if(rec.mixed){      // mesana kesa: sve kese iz nje se redjaju na sto
-    try{(rec.items||[]).forEach(function(r,k){makeMarketBag(r,k);});showToast('Iz mesane kese je izvadjeno '+(rec.items||[]).length+' kesa na sto.');CooksterSave.schedule();}catch(e){}
-    return;
+  var src=rec;
+  if(rec.mixed){src=null;(rec.items||[]).forEach(function(r){if(!src&&countOf(r)>0)src=r;});if(!src){slots[i]=null;saveSlots();render();return;}}
+  var veg=null,vk=vegKeyOf(src);try{veg=VEGETABLES[vk];}catch(e){}
+  if(!veg){try{showToast((src.label||'Ova namirnica')+' jos nema svoj kuhinjski sprite.');}catch(e){}return;}
+  var left=countOf(src)-1;src.count=Math.max(0,left);
+  if(src.count<=0){
+    if(rec.mixed){rec.items=rec.items.filter(function(r){return countOf(r)>0;});if(!rec.items.length)slots[i]=null;}
+    else slots[i]=null;
   }
+  saveSlots();render();
   try{
-    var el=makeMarketBag(rec,0);if(!el)return;
-    var sp=screenToScene(mouse.x,mouse.y);el.style.visibility='hidden';
-    setPose(el,sp.x,sp.y,surfaceScaleFor(el,'table',sp.y));startHolding(el);
-    try{CooksterSave.schedule();}catch(e){}
+    var sp=screenToScene(mouse.x,mouse.y);
+    var loose=makeItem({id:'veg_'+vk+'_'+Date.now(),label:veg.label,src:veg.src,x:sp.x-veg.w/2,y:sp.y-veg.h,w:veg.w,h:veg.h,z:++zCounter,snapProfile:'produce'});
+    loose.dataset.vegetable='1';loose.dataset.collisionProfile='vegetable';loose.dataset.vegKey=vk;loose.dataset.cutState='whole';loose.dataset.surfaceZone='table';
+    loose.style.visibility='hidden';
+    setPose(loose,sp.x,sp.y,surfaceScaleFor(loose,'table',sp.y));startHolding(loose);
+    showToast(veg.label+' — izvađen iz kese.');CooksterSave.schedule();
   }catch(e){}
 }
 // okaci kese na slobodne kuke; ako ih ima vise nego kuka, visak ide u JEDNU mesanu kesu na poslednjoj slobodnoj kuki (ili u vec okacenu mesanu)
