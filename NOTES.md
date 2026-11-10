@@ -1339,3 +1339,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - 10.11.: povrce u ruci se vraca u kesu klikom na kesu (na stolu: returnVegetableToMarketBag u game.js 3.300; na kuki: putBack u wall-bags v32).
 - 10.11.: seckanje kese na putu: uzrok = dve dodatne kese iz alata (sacuvane u localStorage) racunate kao kuke; load() sada uvek DEFAULTS, kuka je neprekidna funkcija visine misa; otkacena kesa visi pravo (rz kao na stolu, ry 0) - v33.
 - 10.11.: meso u posudama: MEAT_VESSEL_CAP (ravni tanjir 8, duboki 13, pravougaoni pleh 20, oval 10) i MEAT_SIZE_K=1.3 (manje smanjenje) u game.js 3.301; pleh sa mesom na stolu (grill-steaks v30): meso ostaje gde je pusteno (fx,fy), ne u slotu.
+- 10.11.: meso u posudi dobija senku (klasa meat-piece, game.css 3.08, game.js 3.302).

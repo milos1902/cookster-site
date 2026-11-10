@@ -12905,7 +12905,7 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
         boardSeen[entry.key]=(boardSeen[entry.key]||0);const sp0=dropSpot(vessel,entry.key,boardSeen[entry.key]++);
         if(sp0)L={...L,x:sp0.x,y:sp0.y};
       }
-      img.className='whole-produce-piece';img.dataset.entryKey=entry.key;img.src=src;img.alt='';img.draggable=false;
+      img.className='whole-produce-piece'+(mdef?.meat?' meat-piece':'');img.dataset.entryKey=entry.key;img.src=src;img.alt='';img.draggable=false;
       img.style.left=L.x.toFixed(2)+'%';img.style.top=L.y.toFixed(2)+'%';img.style.width=L.w.toFixed(2)+'%';
       img.style.transform=`translate(-50%,-50%) rotate(${L.rot}deg)`;img.style.zIndex=String(keepsDrops(vessel)?20+Math.round(L.y*10):(mdef?.meat==='snicla'?60+Math.round(L.y*10):22+i));      // the nearer piece (lower in the picture) is always in front, for every kind      // meat: the nearer slice (lower in the picture) is always in front of the farther one
       (wholeLayerOf(vessel)||layer).appendChild(img);
@@ -12952,7 +12952,7 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
     const src=wholeProduceSource(entry.baseKey,entry.meta,stage);
     if(!src)continue;
     const img=document.createElement('img');
-    img.className='whole-produce-piece';
+    img.className='whole-produce-piece'+(mdef?.meat?' meat-piece':'');
     if(mdef?.meat){img.style.height='auto';img.style.objectFit='contain';}
     img.dataset.entryKey=entry.key;
     img.dataset.stackLevel=String(stackLevel);
@@ -12962,7 +12962,7 @@ function appendWholeProduce(layer,entries,stage=1,fillState=null,vessel=null){
     img.style.width=w.toFixed(2)+'%';
     img.style.transform=`translate(-50%,-50%) rotate(${rot}deg)`;
     img.style.zIndex=String(mdef?.meat==='snicla'?60+Math.round(y*10):22+i+stackLevel*5);      // a slice of meat lies above the heap of other food (the heap has a hole where it is)
-    img.style.filter=stageFilters[Math.max(0,Math.min(6,stage-1))];
+    img.style.filter=mdef?.meat?'':stageFilters[Math.max(0,Math.min(6,stage-1))];
     (wholeLayerOf(vessel)||layer).appendChild(img);
   }
 }
