@@ -91,7 +91,7 @@ function addRice(item,v){
 // the rice in a vessel: the white grains cover the floor (a few grains with one dose, more layers with the next ones), above the meat; drawn after the meat
 function appendRice(layer,v,count){
   if(!layer||!v)return;var host=document.createElement('div');host.className='rice-host';host.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:31;overflow:visible';
-  var n=Math.max(1,Math.min(4,Math.round(count))),rots=[0,57,-33,121],sc=[1,1.07,1.04,1.1],tx=[0,4,-5,3],ty=[0,-4,4,-3];
+  var n=Math.max(1,Math.min(4,Math.round(count))),rots=[0,180,0,180],sc=[1,1,1.03,1.03],tx=[0,2,-3,3],ty=[0,-2,3,-3];      // turned by 180 degrees only: the oval of the grains stays an oval (other angles made a star)
   for(var i=0;i<n;i++){var im=document.createElement('img');im.className='whole-produce-piece rice-grains';im.dataset.entryKey=RK;im.src='assets/ingredients/pirinac_diced.webp?v=1';im.draggable=false;im.alt='';
     im.style.cssText='position:absolute;pointer-events:none;object-fit:fill;transform:translate('+tx[i]+'%,'+ty[i]+'%) rotate('+rots[i]+'deg) scale('+sc[i]+');filter:drop-shadow(0 1px 1px rgba(40,20,5,.35))';
     host.appendChild(im);layout(im,v,Math.max(2,count));}
@@ -124,12 +124,17 @@ function layout(img,v,count){
 }
 var CR={raw:'assets/meat/mleveno_meso_diced.webp?v=1',fried:'assets/meat/mleveno_meso_diced_fried.webp?v=1'};[CR.raw,CR.fried].forEach(function(u){var i=new Image();i.src=u;});
 function crumbOf(v){return Math.max(0,Math.min(1,+v._crumb||0));}
-function doneOf(v){      // cooked meat never goes back to raw: the value only grows (it is cleared when the pan is empty)
-  try{var m=CooksterPan.read(v),d=Math.max(0,Math.min(1,(+m.doneness||0)/.9));if(units(v)<=0)v._doneMax=0;else if(d>(v._doneMax||0))v._doneMax=d;return v._doneMax||0;}catch(e){return v._doneMax||0;}
+function doneOf(v){      // cooked meat never goes back to raw: its own clock grows while the pan is hot (about 70 s of a good heat), and the game's doneness can only push it up
+  try{var m=CooksterPan.read(v),d=Math.max(0,Math.min(1,(+m.doneness||0)/.9)),t=performance.now();
+    if(units(v)<=0){v._doneMax=0;v._doneT=t;return 0;}
+    var dt=Math.min(1,(t-(v._doneT||t))/1000);v._doneT=t;var hot=+m.heat||0;
+    if(hot>.3)v._doneMax=Math.min(1,(v._doneMax||0)+dt*hot/70);
+    if(d>(v._doneMax||0))v._doneMax=d;return v._doneMax||0;
+  }catch(e){return v._doneMax||0;}
 }
 // the crumbs fill the floor of the pan like the heap does (same layout, a little wider); the raw and the fried picture cross-fade with the doneness
 function paintCrumbs(v){
-  if(!heatable(v))return;var host=v.querySelector('.mince-host');if(!host)return;var c=crumbOf(v),d=doneOf(v),n=units(v);
+  if(!heatable(v))return;var hosts=v.querySelectorAll('.mince-host');if(!hosts.length)return;for(var hi=0;hi<hosts.length-1;hi++){if(hosts[hi].parentNode)hosts[hi].parentNode.removeChild(hosts[hi]);}var host=hosts[hosts.length-1];var c=crumbOf(v),d=doneOf(v),n=units(v);
   var heap=host.querySelector('.mince-heap');
   // one dose: the crumbs cover the whole floor but the floor is seen between them; the SECOND dose fills these gaps, every next dose fills more (a heap under the crumbs): a heap of meat under the crumbs (it goes brown as the meat fries)
   // and several layers of crumbs one over another, turned and shifted, so no gap is left

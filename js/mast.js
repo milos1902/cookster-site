@@ -141,7 +141,12 @@ function msPlace(extra){
 }
 function msShow(on){var d=msEl();d.style.display=on?'block':'none';document.body.classList.toggle('mini-spoon-on',!!on);}
 function msLoad(on){MS.loaded=on;var l=document.getElementById('mastSpoonLump');if(l)l.style.display=on?'block':'none';}
-function overBucket(e){var it=(typeof itemAt==='function')?itemAt(e.clientX,e.clientY):null;return isBucket(it)?it:null;}
+// the small spoon belongs only to the SURFACE of the lard (the opening of the bucket): on the rest of the bucket (the wall, the handle) the cursor works as always, so the bucket can be taken
+function overBucket(e){
+  var it=(typeof itemAt==='function')?itemAt(e.clientX,e.clientY):null;if(!isBucket(it))return null;
+  var r=it.getBoundingClientRect(),nx=(e.clientX-(r.left+r.width*.5))/(r.width*.36),ny=(e.clientY-(r.top+r.height*.3))/(r.height*.16);
+  return nx*nx+ny*ny<=1?it:null;
+}
 function overPan(e){var it=(typeof itemAt==='function')?itemAt(e.clientX,e.clientY):null;return isPan(it)?it:null;}
 function emptyHands(){try{return !(typeof holding!=='undefined'&&holding);}catch(e){return true;}}
 window.addEventListener('pointermove',function(e){
