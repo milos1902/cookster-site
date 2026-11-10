@@ -67,6 +67,37 @@ window.addEventListener('wheel',function(e){
   st.roll=Math.max(0,Math.min(1,st.roll+(-dy/100)*STEP));st.x=targetOf(st);st.target=st.x;draw(it);
 },{capture:true,passive:false});
 setInterval(function(){try{items.forEach(function(el){if(el.dataset&&el.dataset.itemId===ID&&!el._sm)setup(el);});}catch(e){}},500);
+// the leaves are taken from a head of SOUR cabbage (not from the Kitchen elements): with empty hands the cursor over a whole sour head (the green outline) and the key E peels one leaf off it;
+// the leaf lies next to the head on the table. A head has about 14 leaves.
+var LEAVES=14;
+function sourHeadAt(x,y){
+  var it=(typeof itemAt==='function')?itemAt(x,y):null;
+  if(!it||!it.dataset||it.dataset.vegKey!=='kupus'||it.dataset.fermentPhase!=='3'||it.dataset.cutState!=='whole'||it.dataset.attachedToBoard==='1')return null;
+  return it;
+}
+function peel(head){
+  var left=head.dataset.leavesLeft===undefined?LEAVES:+head.dataset.leavesLeft;
+  if(left<=0){toast('Sa ove glavice nema više listova.');return;}
+  var def=null;try{def=kitchenDefForId('kal_01_list_kupusa');}catch(e){}
+  if(!def){toast('Nema lista.');return;}
+  var cx=+head.dataset.cx||0,by=+head.dataset.by||0,vis=+head.dataset.vis||1,off=(LEAVES-left)%3;
+  var w=def.w,h=def.h,x=cx+(+head.dataset.baseW||100)*vis*.5+w*.62+off*16,y=by+8+off*12;      // next to the head, not over it
+  var el=makeItem({...def,instanceId:nextItemInstanceId(def.id),x:x-w/2,y:y-h,z:++zCounter});
+  if(!el)return;
+  el.dataset.surfaceZone=head.dataset.surfaceZone||'table';
+  try{setPose(el,x,y,vis);}catch(e){}
+  head.dataset.leavesLeft=String(left-1);
+  try{playImpactSound(head,'pickup');}catch(e){}
+  toast('List je skinut sa glavice. Još '+(left-1)+'.');
+  try{CooksterSave.schedule();}catch(e){}
+}
+window.addEventListener('keydown',function(e){
+  if(!(e.key==='e'||e.key==='E')||e.repeat||e.ctrlKey||e.metaKey)return;
+  if(/^(INPUT|TEXTAREA|SELECT)$/.test((e.target&&e.target.tagName)||''))return;
+  try{if(typeof holding!=='undefined'&&holding)return;}catch(x){}
+  var head=sourHeadAt(mouse.x,mouse.y);if(!head)return;
+  e.preventDefault();e.stopImmediatePropagation();peel(head);
+},true);
 window.CooksterSarma={ID:ID,stage:function(el){return el._sm?el._sm.stage:0;},
   leafAt:function(e){var it=over(e);if(it)setup(it);return it;},
   isFilled:function(el){return !!(el&&el._sm&&el._sm.filled);},

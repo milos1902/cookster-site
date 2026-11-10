@@ -11056,7 +11056,7 @@ function kitchenEquipmentDef(id){
 function ownedKitchenEquipment(){
  if(OBJECT_CALIBRATION_MODE)return KITCHEN_EQUIPMENT.map(def=>def.id);
  const owned=CooksterState.progression.kitchenEquipment;
-  return Array.from(new Set([...(Array.isArray(owned)?owned:[]),'mlin_za_mesо','kal_01_jaje','kal_01_pirinac','kal_01_list_kupusa','kal_01_mast_kanta','kal_01_mleveno_nadev','kal_01_dzezva','meso_junetina',PAPRIKA_STEAM_BAG_ID,'kaca_prazna','kaca_poklopac',...KITCHEN_EQUIPMENT.filter(d=>d.category==='drink').map(d=>d.id)]));
+  return Array.from(new Set([...(Array.isArray(owned)?owned:[]),'mlin_za_mesо','kal_01_jaje','kal_01_pirinac','kal_01_mast_kanta','kal_01_mleveno_nadev','kal_01_dzezva','meso_junetina',PAPRIKA_STEAM_BAG_ID,'kaca_prazna','kaca_poklopac',...KITCHEN_EQUIPMENT.filter(d=>d.category==='drink').map(d=>d.id)]));
 }
 function equipmentCountInKitchen(id){
  return items.filter(el=>el.dataset.itemId===id).length+
@@ -11244,7 +11244,7 @@ function renderKitchenElements(){
   shopSec.style.display='';if(ownTitle)ownTitle.textContent='Moja kuhinja';if(ownHint)ownHint.textContent='Klik = stvori na stolu';if(orderSec)orderSec.style.display='none';
  }
  const titleEl=document.getElementById('kitchenElementsTitle');if(titleEl)titleEl.textContent=kitchenPanelMode==='drinks'?'🍷 Piće':'🍳 Kuhinjski elementi';
- const ownedDefs=KITCHEN_EQUIPMENT.filter(d=>ownedIds.includes(d.id)&&inPanel(d));
+ const ownedDefs=KITCHEN_EQUIPMENT.filter(d=>ownedIds.includes(d.id)&&inPanel(d)&&d.id!=='kal_01_list_kupusa');      // the cabbage leaf for the sarma is not in this list: the player peels it off a head of sour cabbage (key E, js/sarma.js)
  for(const def of ownedDefs)ownedGrid.appendChild(kitchenEquipmentCard(def,'owned'));
 
  const shopDefs=OBJECT_CALIBRATION_MODE?[]:KITCHEN_EQUIPMENT.filter(d=>!d.starter&&inPanel(d));
