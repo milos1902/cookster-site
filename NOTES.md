@@ -1343,3 +1343,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - 10.11.: uputstvo (tutorial.js v3) produzeno: cenkanje -> kesa -> daska -> seckanje (C pa prevuci pa E) -> cinija -> so -> ulje -> salata gotova -> tikvice (pijaca, kesa, seckanje, tiganj na plocu, vatra, ulje, tikvice, prziti) -> poruka: probaj sam Savkin gulas. Cutting/fire koraci su samo pracenje stanja (nisu testirani do kraja).
 - 10.11.: uputstvo se pali iz dugmeta 'Uputstvo (Baba Savka)' u meniju Sacuvaj / Ucitaj (game-menu.js v21.1).
 - 10.11.: uputstvo vise ne vraca na pijacu: kupovina se prepoznaje po otvorenom cenkanju (boughtNow), ne samo po kliku (tutorial v5).
+- 10.11.: uputstvo samo stavlja na sto cinijum (vangla_srednja), so, ulje i tiganj_mali kad ih nema (tutorial v6; korak.enter). U novoj pijaci ulje i so se ne mogu kupiti.
