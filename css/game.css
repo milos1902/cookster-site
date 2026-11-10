@@ -174,7 +174,7 @@ body.scene-zone-calibration-active #sceneZoneOverlay{display:block;pointer-event
 @keyframes bubblePop{0%{opacity:.35;transform:scale(.95)}50%{opacity:.95;transform:scale(1.04)}100%{opacity:.45;transform:scale(.98)}}
 @keyframes groundPepperGrindPulse{0%,100%{scale:1 1;filter:drop-shadow(0 1px 2px rgba(70,15,8,.18)) brightness(1)}50%{scale:1.018 .982;filter:drop-shadow(0 2px 3px rgba(70,15,8,.25)) brightness(1.08)}}
 .ground-pepper-single-mass.ground-pepper-grinding{animation:groundPepperGrindPulse .52s ease-in-out infinite}
-#cursor{position:fixed;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.55),0 0 10px rgba(255,255,255,.95);margin-left:-4px;margin-top:-4px;pointer-events:none;z-index:100000}
+#cursor{position:fixed;width:5px;height:5px;border-radius:50%;background:#fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.55),0 0 7px rgba(255,255,255,.95);margin-left:-2.5px;margin-top:-2.5px;pointer-events:none;z-index:100000}
 /* v198.5.114 — soft blob that makes the spoon tip look dipped into the food. */
 #stirDipOverlay{
   position:absolute;
@@ -3764,3 +3764,6 @@ body.mini-spoon-on #scene,body.mini-spoon-on #scene *{cursor:none!important}
 
 /* meat in every vessel keeps a shadow under it (raw, fried, grilled, sliced) */
 .whole-produce-piece.meat-piece{filter:drop-shadow(0 2px 1.5px rgba(28,12,4,.6)) drop-shadow(1px 3px 3px rgba(28,12,4,.35))}
+
+/* no hand (pointer) cursor over things in the kitchen and the bottom dock: only the small white dot (#cursor) is seen */
+#scene,#scene *,#cdock,#cdock *,#hud,#hud *{cursor:none!important}

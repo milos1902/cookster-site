@@ -16102,6 +16102,7 @@ function marketPress(el){
 }
 
 function spawnStaple(key){
+ if(key==='so'||key==='ulje')return null;      // the old jars of salt and oil are removed (new spice jars, oil bottle: kal_01_flasa_ulja)
  const def=CooksterCatalog.STAPLES?.[key];if(!def)return null;
  const sceneBottle=key==='ulje'
    ?itemsData.find(item=>item.id==='kal_01_flasa_ulja')
@@ -16481,6 +16482,8 @@ if(!__hasSavedWorld){
 const __worldRestored=CooksterWorld.restore(CooksterState.world);
 // the old wood basket is gone (the wood will be kept in the drawer under the oven): remove it from older saves
 items.filter(el=>el.dataset.itemId==='korpa_drva').forEach(removeItem);
+// the old jars of salt and oil (the packs 'staple_so_...' / 'staple_ulje_...', the old pictures zacin_1/zacin_2) are gone: there are the new spice jars and the oil bottle
+items.filter(el=>/^staple_(so|ulje)_/.test(el.dataset.itemId||'')).forEach(removeItem);
 try{for(let i=0;i<backpackContents.length;i++)if(backpackContents[i]?.dataset?.itemId==='korpa_drva')backpackContents[i]=null;}catch(_){}
 // The stirring spoon is a physical kitchen tool, not a quick-wheel tool. Older
 // saves could be missing it, so restore one only when there is no scene instance.
