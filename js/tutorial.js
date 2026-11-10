@@ -15,6 +15,22 @@ function rectOf(el){if(!el)return null;var r=el.getBoundingClientRect();return r
 function dockOpen(){var d=$('#cdock');return !!d&&d.classList.contains('cd-open');}
 function plateRect(){return rectOf($('#cdock .cd-box'));}
 function dockBtn(title){var bs=document.querySelectorAll('#cdock .cd-b');for(var i=0;i<bs.length;i++){if(((bs[i].getAttribute('aria-label')||'')+' '+(bs[i].title||'')).indexOf(title)>=0)return rectOf(bs[i]);}return null;}
+
+// ---------- stanje igre (za provere koraka) ----------
+function allItems(){try{return items.slice();}catch(e){return [];}}
+function vegs(key){return allItems().filter(function(e){return e.dataset&&e.dataset.vegKey===key&&e.dataset.marketBag!=='1';});}
+function itemRect(id){var e=allItems().filter(function(x){return x.dataset.itemId===id;})[0];return e?rectOf(e.querySelector('.body')||e):null;}
+function wallBagRect(){var b=document.querySelectorAll('.wall-bag');for(var i=0;i<b.length;i++){var r=rectOf(b[i]);if(r)return r;}return null;}
+function bagsAnywhere(){try{if(CooksterWallBags.slots().some(Boolean))return true;}catch(e){}return allItems().some(function(e){return e.dataset.marketBag==='1';});}
+function vegsInBags(key){try{return CooksterWallBags.slots().some(function(r){return r&&(r.productKey===key||(r.items||[]).some(function(x){return x.productKey===key;}));});}catch(e){return false;}}
+function vessels(){return allItems().filter(function(e){try{return isContainerItem(e);}catch(x){return false;}});}
+function bowlRect(){var v=vessels().filter(function(e){return /cinija|vangla/.test(e.dataset.itemId||'');})[0];return v?rectOf(v.querySelector('.body')||v):null;}
+function contentKeys(v){var out=[];try{var m=CooksterPan.read(v);Object.keys(m.ingredients||{}).forEach(function(k){if(+m.ingredients[k]>0)out.push(k);});if(+(m.staples&&m.staples.oil)>0)out.push('ulje');if(+(m.staples&&m.staples.salt)>0)out.push('so');}catch(e){}try{var it=CooksterContainer.read(v).items||{};Object.keys(it).forEach(function(k){if((+it[k].count||0)>0)out.push(k);});}catch(e){}return out;}
+function vesselHas(re){return vessels().some(function(v){return contentKeys(v).some(function(k){return re.test(k);});});}
+function pans(){return vessels().filter(function(e){return /^(tiganj|kal_01_okrugli_pleh)/.test(e.dataset.itemId||'');});}
+function panOnStove(){return pans().filter(function(e){return e.dataset.surfaceZone==='stove';})[0]||null;}
+function panRect(){var p=panOnStove()||pans()[0];return p?rectOf(p.querySelector('.body')||p):null;}
+function panModel(){var p=panOnStove();try{return p?CooksterPan.read(p):null;}catch(e){return null;}}
 var bought=false;
 // ---------- koraci ----------
 // text: sta Savka kaze; target: funkcija koja vraca pravougaonik (ekran) na koji strelica pokazuje; done: kad je korak gotov; button: "Dalje" umesto provere
@@ -32,7 +48,46 @@ var STEPS=[
    side:'below',
    target:function(){return rectOf(document.getElementById('marketCartBuy'));},
    done:function(){return bought;}},
-  {id:'end',button:'Zatvori',text:'Tako se kupuje. Nastavak uputstva (kese, seckanje, činija, so i ulje) stiže uskoro.',final:true}
+  {id:'accept',requires:function(){return (body('market-open')||bagsAnywhere())?null:'market';},
+   text:'Prodavac traži cenu. Možeš da se cenkaš, a možeš i odmah da pritisneš „Prihvati cenu“.',
+   target:function(){return rectOf(document.getElementById('marketAcceptBtn'));},
+   done:function(){return !body('market-open')&&bagsAnywhere();}},
+  {id:'bag',text:'Kupljeno je u kesi koja visi na kuki levo. Klikni na donji deo kese da izvadiš paradajz.',
+   target:function(){return wallBagRect();},done:function(){return vegs('paradajz').length>0;}},
+  {id:'board',text:'Spusti paradajz na dasku (levi klik na dasku).',
+   target:function(){return itemRect('daska');},done:function(){return vegs('paradajz').some(function(e){return e.dataset.attachedToBoard==='1';});}},
+  {id:'cut',text:'Dok je paradajz na dasci, pritisni C. Otvara se seckanje: prevuci levim dugmetom miša preko paradajza da ga preseciš, pa pritisni E kad si gotov.',
+   target:function(){return itemRect('daska');},done:function(){return vegs('paradajz').some(function(e){return e.dataset.cutState==='sliced'||e.dataset.cutState==='diced';});}},
+  {id:'bowl',text:'Uzmi isečeni paradajz i spusti ga u činiju.',
+   target:function(){return bowlRect();},done:function(){return vesselHas(/paradajz/);}},
+  {id:'salt',text:'Dodaj so: uzmi so sa stola i klikni na činiju.',
+   target:function(){return itemRect('so');},done:function(){return vesselHas(/^so$/);}},
+  {id:'oil',text:'Sad ulje: uzmi flašu ulja, drži dugme miša iznad činije dok ne poteče.',
+   target:function(){return itemRect('kal_01_flasa_ulja');},done:function(){return vesselHas(/^(ulje|oil)$/);}},
+  {id:'salad',button:'Dalje',text:'Srpska salata je gotova! Sad pržene tikvice: treba nam tiganj, vatra i tikvice sa pijace.'},
+  {id:'z_dock',text:function(){return dockOpen()?'Klikni na pijacu, kupi tikvice.':'Pređi mišem preko drvenog polja sa satom, pa na pijacu.';},
+   target:function(){return dockOpen()?(dockBtn('Pijaca')||plateRect()):plateRect();},done:function(){return body('market-open');}},
+  {id:'z_pick',requires:function(){return body('market-open')?null:'z_dock';},text:'Klikni na gomilu tikvica.',
+   target:function(){return rectOf($('#marketHoverLayer .market-pile[data-key="tikvice"]'));},
+   done:function(){var c=document.getElementById('marketCartCount');return !!c&&(parseInt(c.textContent,10)||0)>0;}},
+  {id:'z_buy',requires:function(){return body('market-open')?null:'z_dock';},side:'below',text:'Pritisni „Kupi sve“, pa prihvati cenu.',
+   target:function(){return rectOf(document.getElementById('marketCartBuy'))||rectOf(document.getElementById('marketAcceptBtn'));},
+   done:function(){return !body('market-open')&&vegsInBags('tikvice');}},
+  {id:'z_bag',text:'Izvadi tikvicu iz kese sa kuke (klik na donji deo kese).',
+   target:function(){return wallBagRect();},done:function(){return vegs('tikvice').length>0;}},
+  {id:'z_cut',text:'Spusti tikvicu na dasku i pritisni C. Prevuci mišem preko nje da je preseciš, pa pritisni E kad si gotov.',
+   target:function(){return itemRect('daska');},done:function(){return vegs('tikvice').some(function(e){return e.dataset.cutState==='sliced'||e.dataset.cutState==='diced';});}},
+  {id:'z_pan',text:'Stavi tiganj na ploču šporeta.',
+   target:function(){return panRect();},done:function(){return !!panOnStove();}},
+  {id:'z_fire',text:'Zapali vatru: iz fioke ispod rerne uzmi cepanicu i ubaci je u ložište.',
+   done:function(){try{return !!stoveState.fireOn;}catch(e){return false;}}},
+  {id:'z_oil',text:'Dodaj ulje u tiganj (flaša ulja, drži dugme miša iznad tiganja).',
+   target:function(){return itemRect('kal_01_flasa_ulja');},done:function(){var m=panModel();return !!m&&(+(m.staples&&m.staples.oil)||0)>0;}},
+  {id:'z_add',text:'Spusti isečene tikvice u tiganj.',
+   target:function(){return panRect();},done:function(){var m=panModel();return !!m&&Object.keys(m.ingredients||{}).some(function(k){return /tikvice/.test(k)&&m.ingredients[k]>0;});}},
+  {id:'z_fry',text:'Mešaj kašikom i čekaj da porumene. Pazi da ne zagore!',
+   target:function(){return panRect();},done:function(){var m=panModel();return !!m&&!m.burnt&&(+m.doneness||0)>=.54;}},
+  {id:'end',button:'Zatvori',text:'Pržene tikvice su gotove. Sada si spreman, sine: ajde sad sam probaj Savkin gulaš iz knjige recepata.',final:true}
 ];
 
 // ---------- izgled ----------
