@@ -14967,6 +14967,21 @@ function beginCleaning(stain,e){
  showToast(isMop(holding)?'Drži levi klik i gura džoger preko mrlje.':'Drži levi klik i trljaj sunđerom preko mrlje.');
  return true;
 }
+function applyBroomSway(el){
+ const sx=el._sx||0,sy=el._sy||0;
+ const k=(el._swx=(el._swx||0)+(sx-(el._swx||0))*.25),m=(el._swy=(el._swy||0)+(sy-(el._swy||0))*.25);      // smoothed lag (a soft spring)
+ const rot=Math.max(-14,Math.min(14,k*.9)),skew=Math.max(-12,Math.min(12,-k*.7)),sc=Math.max(.9,Math.min(1.12,1-m*.012));
+ el.style.transform=`rotate(${rot.toFixed(2)}deg) skewX(${skew.toFixed(2)}deg) scaleY(${sc.toFixed(3)})`;
+}
+let broomSwayOn=false;
+function startBroomSway(){
+ if(broomSwayOn)return;broomSwayOn=true;
+ (function step(){
+  const el=holding;
+  if(!el||el.dataset.itemId!=='metla'||!cleaning){broomSwayOn=false;if(el&&el.dataset.itemId==='metla'){el._sx=el._sy=el._swx=el._swy=0;}return;}
+  el._sx*=.86;el._sy*=.86;applyBroomSway(el);requestAnimationFrame(step);
+ })();
+}
 function positionCleaningSponge(e){
  if(!holding||!isCleaningTool(holding))return;
  const p=screenToScene(e.clientX,e.clientY);
@@ -14976,9 +14991,11 @@ function positionCleaningSponge(e){
  holding.dataset.cx=String(p.x);holding.dataset.by=String(p.y+h*.35);holding.dataset.vis=String(vis);
  holding.style.width=w+'px';holding.style.height=h+'px';
  if(broom){      // the bristles are at the cursor, the broom leans with the sweep
-  const vx=p.x-(holding._bx??p.x);holding._bx=p.x;holding._tilt=(holding._tilt||0)*.8+Math.max(-14,Math.min(14,vx*.9))*.2;
+  // the bristles trail behind the movement: the lower end curls against it (left -> to the right, up -> down...), horizontally and vertically; it settles when the mouse stops
+  const ivx=p.x-(holding._bx??p.x),ivy=p.y-(holding._by??p.y);holding._bx=p.x;holding._by=p.y;
+  holding._sx=(holding._sx||0)*.6+ivx*.4;holding._sy=(holding._sy||0)*.6+ivy*.4;
   holding.style.left=(p.x-w*.5)+'px';holding.style.top=(p.y-h*.9)+'px';
-  holding.style.transformOrigin='50% 90%';holding.style.transform=`rotate(${(holding._tilt||0).toFixed(1)}deg)`;
+  holding.style.transformOrigin='50% 12%';applyBroomSway(holding);startBroomSway();
  }else{
  holding.style.left=(p.x-w*.50)+'px';holding.style.top=(p.y-h*.52)+'px';
  holding.style.transformOrigin='50% 50%';holding.style.transform=`rotate(${+(holding.dataset.angle||-8)}deg)`;
