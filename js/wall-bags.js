@@ -279,7 +279,10 @@ function holdTick(){
   for(var i=0;i<bags.length;i++){var d=Math.hypot(bags[i].x-sp.x,(bags[i].y+bags[i].h)-sp.y);if(d<best){best=d;hh=bags[i].h;}}
   var bi=0;for(var j=0;j<bags.length;j++){if(Math.hypot(bags[j].x-sp.x,(bags[j].y+bags[j].h)-sp.y)<=best+.01){bi=j;break;}}
   var ey=Math.max(233,Math.min(576,sp.y)),edgeX=452.1+(376.1-452.1)*(ey-233)/(576-233);      // leva ivica stola (tablePoly) na visini misa
-  var tt=Math.max(0,Math.min(1,(edgeX-sp.x)/Math.max(1,edgeX-bags[bi].x))),t=1-tt,sc=lerp(1,Math.min(1,hh/gh),tt);      // na stolu pun razmer; tek preko leve ivice ravnomerno do kuke
+  var tt=Math.max(0,Math.min(1,(edgeX-sp.x)/Math.max(1,edgeX-bags[bi].x))),t=1-tt;
+  var K=[{x:bags[bi].x,h:hh},{x:176,h:73},{x:282,h:92},{x:edgeX,h:gh}],H=gh;      // visine kese na putu do kuke (tvoje dve tacke na podu: x176 -> 73, x282 -> 92)
+  if(sp.x<=K[0].x)H=K[0].h;else if(sp.x>=K[3].x)H=gh;else for(var kk=0;kk<3;kk++){if(sp.x<=K[kk+1].x){H=lerp(K[kk].h,K[kk+1].h,(sp.x-K[kk].x)/Math.max(1,K[kk+1].x-K[kk].x));break;}}
+  var sc=Math.min(1,H/gh);      // na stolu pun razmer; tek preko leve ivice ravnomerno do kuke
   var c=tableCfg,p=lerp(c.p,hk.p,u),rx=lerp(c.rx,hk.rx,u),ry=lerp(c.ry,hk.ry,u),rz=lerp(c.rz,lerp(hk.rz,0,t),u)+hold.ang*u;
   var bounce=Math.sin(Math.PI*u),sy=1+.11*bounce*(hold.fromTable?1:0),lift=-9*bounce*(hold.fromTable?1:0);
   bd.style.transformOrigin=lerp(50,APEX*100,u).toFixed(1)+'% '+lerp(100,0,u).toFixed(1)+'%';
