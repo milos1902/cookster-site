@@ -9,7 +9,7 @@
 'use strict';
 if(window.CooksterSarma)return;
 var ID='kal_01_list_kupusa',N=8,STEP=.085,HINTS={start:'Klikni dva puta na donji deo lista da preklopiš nadev.',left:'Klikni na levu stranu lista.',right:'Klikni na desnu stranu lista.',roll:'Okreći točkić miša nagore da umotaš sarmu.'};
-var FR=[];for(var i=1;i<=N;i++){var im=new Image();im.src='assets/sarma/f'+i+'.webp?v=1';FR.push(im);}
+var FR=[];for(var i=1;i<=N;i++){var im=new Image();im.src='assets/sarma/f'+i+'.webp?v=2';FR.push(im);}
 function toast(m){try{showToast(m);}catch(e){}}
 function setup(el){
   if(el._sm)return;var st=el._sm={stage:0,roll:0,x:0,target:0,imgs:[],anim:0};
