@@ -486,13 +486,14 @@
     }
     drawBedNow(g,w,h,sc,stage,ps){
       const bl=BLEND[Math.max(1,Math.min(7,stage))-1];
+      const noRice=ps.filter(q=>!(q.entry&&q.entry.part&&q.entry.part.kind==='pirinac')),bedPs=noRice.length?noRice:ps;      // the settled layer is made of the main food (the meat), never of grains of rice: rice would be seen through the meat
       // under the loose pieces lies a settled layer made of the same cut pieces (they do not move), so stirring never
       // uncovers the floor: it covers exactly the area the food has risen to
       // with the first additions the settled layer covers the floor little by little (25% after the 1st addition, 50%, 75%, the whole floor after the 4th); after that it lies under the whole food
       const cover=this.floorPoly?Math.min(1,this.cover||0):1;
       const regions=this.floorPoly?(cover<1?[this.floorPoly]:[this.poly,this.floorPoly]):[this.poly];
       if(!this.bedSpots){
-        this.bedSpots=[];let n=0;const st=this.floorPoly?4.6:8;
+        this.bedSpots=[];let n=0;const st=this.floorPoly?(this.hasSmall?3.2:4.6):8;
         regions.forEach((rg,ri)=>{
           const xs=rg.map(q=>q.x),ys=rg.map(q=>q.y);
           const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
@@ -509,7 +510,7 @@
         g.beginPath();rg.forEach((q,k)=>k?g.lineTo(q.x*sc,q.y*sc):g.moveTo(q.x*sc,q.y*sc));g.closePath();g.clip();
         for(const [x,y,rot,n,rr] of this.bedSpots){
           if(rr!==ri)continue;
-          const p=ps[n%ps.length],e=p.entry;
+          const p=bedPs[n%bedPs.length],e=p.entry;
           g.save();g.translate(x*sc,y*sc);g.rotate(rot);
           const dx=-p.ax*p.k*sc,dy=-p.ay*p.k*sc,dw=p.sw*p.k*sc,dh=p.sh*p.k*sc;
           if(e.part)ensureCooked(e,e.part);
