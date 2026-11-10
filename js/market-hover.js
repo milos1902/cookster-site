@@ -305,7 +305,7 @@
       const value=mode==='bunch'?(+bag.quantityBunches||+bag.quantityValue||1):(+bag.quantityKg||+bag.quantityValue||1);
       const qty=quantityLabel(mode,value);
       const image=document.createElement('img');
-      image.src='assets/market_paper_bag.png';image.alt='';
+      image.src='assets/ui/wall/kesa.webp';image.alt='';
       const label=document.createElement('span');
       label.textContent=bag.label||'Намирница';
       const quantity=document.createElement('small');
@@ -314,7 +314,8 @@
       marketBagRow.appendChild(card);
     });
     marketBagShelf.classList.toggle('show',bags.length>0);
-    marketCollectBags.style.display=bags.length?'inline-flex':'none';
+    marketCollectBags.style.display='none';      // kese se same okace posle kupovine
+    marketBagShelf.classList.remove('show');
     marketCollectBags.textContent=bags.length===1?'ПОКУПИ КЕСУ':`ПОКУПИ СВЕ КЕСЕ (${bags.length})`;
   }
   function clearSelection(){
@@ -621,6 +622,8 @@
       haggleBtn.disabled=false;
       slider.disabled=false;
       closeBargain(false);
+      // kupljene kese se odmah okace na zid u kuhinji (nema vise "Pokupi kese"): pijaca se zatvara, vraca se u kuhinju
+      try{const r=window.CooksterMarketTrade?.collectPendingBags?.();if(r?.ok)renderMarketBagShelf();}catch(e){}
     },1350);
   }
 
