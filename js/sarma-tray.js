@@ -11,7 +11,7 @@ if(window.CooksterSarmaTray)return;
 var TRAY='kal_01_okrugli_pleh',MAXN=14;
 var FLOOR={cx:.50,cy:.50,rx:.45,ry:.315};      // the floor of the tray in the picture (fractions of its box)
 var SOFT=.72,PUSH=1.1;
-var SETS={f:{src:'assets/sarma/f8.webp',len:.285,asp:.45},g:{src:'assets/sarma3/g8.webp',len:.305,asp:.42}};
+var SETS={f:{src:'assets/sarma/f8.webp',len:.31,asp:.46},g:{src:'assets/sarma3/g8.webp',len:.33,asp:.43}};
 var spr={};
 Object.keys(SETS).forEach(function(k){var im=new Image();im.onload=function(){      // crop to the solid part (the rolled sarma is a small part of the picture)
   var c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;var g=c.getContext('2d');g.drawImage(im,0,0);
