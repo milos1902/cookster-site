@@ -218,7 +218,7 @@ function hang(records){
 }
 function applyAllTable(){try{items.forEach(function(it){if(it&&it.dataset&&it.dataset.marketBag==='1')applyTable(it);});}catch(e){}}
 // KESA U RUCI (kopija pod kursorom): velicina raste postepeno sa udaljenoscu od kuka, njise se kad se pomera mis, a kad se podigne sa stola preliva se iz polozaja na stolu u viseci (sa odskokom)
-(function(){var st=document.createElement('style');st.textContent='.contact-shadow-sprite.wb-noshadow{display:none!important}';document.head.appendChild(st);})();
+(function(){var st=document.createElement('style');st.textContent='.contact-shadow-sprite.wb-noshadow{display:none!important}.cookster-backpack-held-preview .market-bag-item{display:none!important}';document.head.appendChild(st);})();
 var holdObs=null;
 function hideReal(h){
   try{
