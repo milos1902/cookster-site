@@ -13,13 +13,14 @@
   const LEVEL_FULL=4;                    // the food reaches the top line after about 3 additions (fill measured in floor areas)
   // how much of the floor of a vessel ONE unit of a vegetable covers: big vegetables (a head of cabbage, a zucchini, an eggplant) cover (almost) the whole floor,
   // small ones (radish, garlic) only a little. The number of pieces of a unit is multiplied by this factor (the pieces keep their own size).
-  const FOOT={kupus:1.7,tikvice:1.5,patlidzan:1.55,zelena_salata:1.35,paprika:1.35,paradajz:1.05,krastavac:1.4,luk:.9,paprika_zelena:.9,sargarepa:.7,persun:.55,beli_luk:.32,rotkvice:.34,mleveno_nadev:1.6,pirinac:.4};
+  const FOOT={kupus:1.7,tikvice:1.5,patlidzan:1.55,zelena_salata:1.35,paprika:1.35,paradajz:1.05,krastavac:1.4,luk:.9,paprika_zelena:.9,sargarepa:.7,persun:.55,beli_luk:.32,rotkvice:.34,mleveno_nadev:1.25,pirinac:.4};
   const hashFrac=(a,b,c)=>{let h=(a*73856093)^(b*19349663)^(c*83492791);h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967296;};
   const MAX_UNITS=6;                     // units of one ingredient drawn as pieces
   const UNIT_OFFSETS=[[0,0],[-16,5],[16,-5],[-6,-14],[8,13],[-21,-8],[21,10]];
   // cooking tint per visual stage (1 raw .. 7 burnt), painted over the pieces only
   const TINT=[null,null,null,null,null,null,'rgba(14,8,4,.78)'];   // only burnt gets a dark tint, the other stages use the real cooked art
 
+  const SMALL_KIND=p=>{const k=p.entry&&p.entry.part&&p.entry.part.kind;return k==='mleveno_nadev'||k==='pirinac';};
   const atlasCache=new Map();
   const sims=new WeakMap();
   const live=new Set();
@@ -299,7 +300,7 @@
     // swaps pieces between layers so the ingredients really mix.
     fit(){
       let area=0;const ps=[...this.pieces.values()];
-      for(const p of ps)area+=Math.PI*p.r0*p.r0*((p.entry&&p.entry.part&&p.entry.part.kind==='mleveno_nadev')?.4:1);      // the crumbs of the filling count less: one dose covers the floor, every next dose fills the gaps and then rises gradually (not full at the second dose)
+      for(const p of ps)area+=Math.PI*p.r0*p.r0*1;      // the crumbs of the filling count less: one dose covers the floor, every next dose fills the gaps and then rises gradually (not full at the second dose)
       this.room=(this.fullArea||this.area)*.62;
       this.fill=area/this.room;   // 1 = the floor of the vessel is covered
       this.cover=this.floorPoly&&this.floorArea>0?area/(FLOOR_K*this.floorArea):1;      // 1 = the floor is covered
@@ -432,6 +433,7 @@
     crowd(){return 1+Math.max(0,this.pieces.size-20)/45;}
     step(now){
       const ps=this.list||(this.list=[...this.pieces.values()]);
+      this.hasSmall=ps.length>0&&SMALL_KIND(ps[0]);
       const crowd=this.crowd();
       const settling=now<this.activeUntil+1400;   // the evening-out only acts while and shortly after stirring
       let energy=0;
@@ -443,7 +445,7 @@
           const ox=p.x-cx0,oy=p.y-cy0,ol=Math.hypot(ox,oy)||1,k=sw/(p.mass*Math.sqrt(crowd))*Math.min(1,ol/20);
           p.vx+=-oy/ol*k;p.vy+=ox/ol*k;
         }
-        this.swirlW=sw*.965;
+        this.swirlW=sw*(this.hasSmall?.9:.965);
         energy=Math.max(energy,Math.abs(sw)*2);
       }else this.swirlW=0;
       for(const p of ps){
@@ -452,17 +454,17 @@
         energy=Math.max(energy,Math.abs(p.vx)+Math.abs(p.vy));
         p.rot+=p.vx*.01;
         // cap the speed and add drag: a thick, heavy mixture, never a quick stream
-        const sp=Math.hypot(p.vx,p.vy),cap=.27/(p.mass*Math.sqrt(crowd));
+        const sm=SMALL_KIND(p),sp=Math.hypot(p.vx,p.vy),cap=(sm?.11:.27)/(p.mass*Math.sqrt(crowd));      // the small crumbs / grains move slowly (like the chopped vegetable), not like a swarm of worms
         if(sp>cap){p.vx*=cap/sp;p.vy*=cap/sp;}
         this.softEdge(p);
-        p.vx*=.945;p.vy*=.945;   // a thick mixture keeps gliding for a moment after the spoon is let go
+        p.vx*=sm?.88:.945;p.vy*=sm?.88:.945;   // a thick mixture keeps gliding for a moment after the spoon is let go
         if(Math.abs(p.vx)<.001)p.vx=0;
         if(Math.abs(p.vy)<.001)p.vy=0;
       }
-      if(energy>0){this.collide(ps,.3,.8);for(const p of ps)this.wall(p);}
+      if(energy>0){this.collide(ps,this.hasSmall?.1:.3,.8);for(const p of ps)this.wall(p);}
       // while and just after stirring the food evens itself out over the whole area (soft pressure between neighbours),
       // so it never ends up bunched in the middle with the floor showing at the sides
-      if(settling&&(energy>0||(this.tickN=(this.tickN||0)+1)%2===0)){this.collide(ps,.045,1.9);for(const p of ps)this.wall(p);if(energy>0)this.dirty=true;}
+      if(settling&&(energy>0||(this.tickN=(this.tickN||0)+1)%2===0)){this.collide(ps,this.hasSmall?.012:.045,this.hasSmall?1.3:1.9);for(const p of ps)this.wall(p);if(energy>0)this.dirty=true;}
       return energy;
     }
     // Static "bed": the stock art of the cooked vegetable covers the bottom of the vessel, so stirring never uncovers it.
