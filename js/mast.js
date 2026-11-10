@@ -21,9 +21,10 @@ function layer(src,css){var d=document.createElement('div');d.className='mast-la
 var MAX_LUMPS=8,FULL=2.4;      // any number of spoons can be put in (up to 8 lumps at once); about 2.4 melted lumps cover the whole floor of the pan
 function newLump(pan,st){
   var im=document.createElement('img');im.className='mast-layer';im.src='assets/fat/mast_grudva.webp?v=1';im.draggable=false;
-  im.style.cssText='position:absolute;pointer-events:none;z-index:5;left:'+((G.lump.cx-G.lump.w/2)*100)+'%;top:'+((G.lump.cy-G.lump.h/2)*100)+'%;width:'+(G.lump.w*100)+'%;height:'+(G.lump.h*100)+'%';
+  var K=1.25;      // a spoon takes MORE lard: the lump is bigger (about twice the old size when it starts: 1.25 x 1.6)
+  im.style.cssText='position:absolute;pointer-events:none;z-index:5;left:'+((G.lump.cx-G.lump.w*K/2)*100)+'%;top:'+((G.lump.cy-G.lump.h*K/2)*100)+'%;width:'+(G.lump.w*K*100)+'%;height:'+(G.lump.h*K*100)+'%';
   pan.appendChild(im);var n=st.lumps.length;
-  st.lumps.push({el:im,left:1,x:(Math.random()-.5)*.28*(n?1:0),y:(Math.random()-.5)*.2*(n?1:0),vx:0,vy:0});
+  st.lumps.push({el:im,left:1.6,x:(Math.random()-.5)*.28*(n?1:0),y:(Math.random()-.5)*.2*(n?1:0),vx:0,vy:0});
 }
 function putInPan(pan){
   var st=pan._mast=pan._mast||{lumps:[],els:null,F:0,fade:0};
@@ -131,7 +132,7 @@ function msEl(){
   if(MS.el&&MS.el.isConnected)return MS.el;
   var d=document.createElement('div');d.id='mastSpoon';d.style.cssText='position:absolute;left:0;top:0;width:'+MW+'px;height:'+MH+'px;pointer-events:none;display:none;z-index:11600;transform-origin:50% 16%';
   var im=document.createElement('img');im.src='assets/new_props/kasika_1.png?v=2';im.draggable=false;im.style.cssText='width:100%;height:100%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))';
-  var lump=blob('left:26%;top:7%;width:48%;height:15%;z-index:3;display:none');lump.id='mastSpoonLump';
+  var lump=blob('left:20%;top:5%;width:60%;height:19%;z-index:3;display:none');lump.id='mastSpoonLump';
   d.appendChild(im);d.appendChild(lump);scene.appendChild(d);MS.el=d;return d;
 }
 function msPlace(extra){
