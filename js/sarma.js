@@ -20,13 +20,15 @@ function setup(el){
 }
 function draw(el){
   var st=el._sm,x=st.x;
-  for(var i=0;i<N;i++){var d=Math.abs(x-i);st.imgs[i].style.opacity=d>=1?'0':(1-d).toFixed(3);}
+  // the pictures are NOT cross-faded over a long way (two different folds at once looked like a ghost): one picture at a time, with a very short soft cut around the middle between two pictures
+  var lo=Math.floor(x),f=x-lo,W=.16,a=f<.5-W?0:f>.5+W?1:(f-(.5-W))/(2*W);
+  for(var i=0;i<N;i++){var o=i===lo?1-a:(i===lo+1?a:0);st.imgs[i].style.opacity=o.toFixed(3);}
   el.dataset.sarmaRolled=(st.stage>=4&&st.roll>=.995)?'1':'';
 }
 function targetOf(st){return st.stage<4?st.stage:4+3*st.roll;}
 function go(el){      // the picture melts to the target (clicks: a short soft move; the wheel: at once)
   var st=el._sm;st.target=targetOf(st);cancelAnimationFrame(st.anim);
-  (function step(){var d=st.target-st.x;if(Math.abs(d)<.01){st.x=st.target;draw(el);return;}st.x+=Math.sign(d)*Math.min(Math.abs(d),.09+Math.abs(d)*.12);draw(el);st.anim=requestAnimationFrame(step);})();
+  (function step(){var d=st.target-st.x;if(Math.abs(d)<.01){st.x=st.target;draw(el);return;}st.x+=Math.sign(d)*Math.min(Math.abs(d),.12);draw(el);st.anim=requestAnimationFrame(step);})();
 }
 function over(e){var it=(typeof itemAt==='function')?itemAt(e.clientX,e.clientY):null;return it&&it.dataset&&it.dataset.itemId===ID?it:null;}
 function relPos(el,e){var r=el.getBoundingClientRect();return {x:(e.clientX-r.left)/Math.max(1,r.width),y:(e.clientY-r.top)/Math.max(1,r.height)};}
