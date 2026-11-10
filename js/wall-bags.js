@@ -266,12 +266,12 @@ function holdTick(){
   var vxs=hold.lx==null?0:(px-hold.lx)/dt;hold.lx=px;
   hold.sv=(hold.sv||0)+(vxs-(hold.sv||0))*Math.min(1,dt*10);          // zaglađena brzina misa (px/s)
   var acc=hold.psv==null?0:(hold.sv-hold.psv)/dt;hold.psv=hold.sv;      // ubrzanje tacke okacenja
-  var W=2*Math.PI*.7,Z=.26;                                           // prirodna frekvencija ~0.85 Hz, slabo gasenje: ~3 lepa zamaha
-  var lean=Math.max(-5,Math.min(5,hold.sv*.004));                     // blago naginjanje dok se mis brzo krece
-  var force=Math.max(-18,Math.min(18,acc*.0048));                      // zamah od ubrzanja
+  var W=2*Math.PI*.7,Z=.2;                                           // prirodna frekvencija ~0.85 Hz, slabo gasenje: ~3 lepa zamaha
+  var lean=Math.max(-7,Math.min(7,hold.sv*.006));                     // blago naginjanje dok se mis brzo krece
+  var force=Math.max(-28,Math.min(28,acc*.0075));                      // zamah od ubrzanja
   var n=Math.max(1,Math.round(dt/.008)),h8=dt/n;
   for(var q=0;q<n;q++){hold.vel+=(-W*W*(hold.ang-lean)-2*Z*W*hold.vel+W*W*force*.5)*h8;hold.ang+=hold.vel*h8;}
-  hold.ang=Math.max(-26,Math.min(26,hold.ang));
+  hold.ang=Math.max(-36,Math.min(36,hold.ang));
   // prelaz sto -> viseci (samo kad je uzeta sa stola)
   var u=hold.fromTable?sstep((now-hold.t0)/520):1;
   var idx=h.dataset.hookIdx!=null&&h.dataset.hookIdx!==''?+h.dataset.hookIdx:2,hk=bags[Math.max(0,Math.min(bags.length-1,idx))]||{p:500,rx:0,ry:10,rz:-12,h:90};
@@ -280,8 +280,7 @@ function holdTick(){
   var bi=0;for(var j=0;j<bags.length;j++){if(Math.hypot(bags[j].x-sp.x,(bags[j].y+bags[j].h)-sp.y)<=best+.01){bi=j;break;}}
   var ey=Math.max(233,Math.min(576,sp.y)),edgeX=452.1+(376.1-452.1)*(ey-233)/(576-233);      // leva ivica stola (tablePoly) na visini misa
   var tt=Math.max(0,Math.min(1,(edgeX-sp.x)/Math.max(1,edgeX-bags[bi].x))),t=1-tt;
-  var K=[{x:bags[bi].x,h:hh},{x:176,h:73},{x:282,h:92},{x:edgeX,h:gh}],H=gh;      // visine kese na putu do kuke (tvoje dve tacke na podu: x176 -> 73, x282 -> 92)
-  if(sp.x<=K[0].x)H=K[0].h;else if(sp.x>=K[3].x)H=gh;else for(var kk=0;kk<3;kk++){if(sp.x<=K[kk+1].x){H=lerp(K[kk].h,K[kk+1].h,(sp.x-K[kk].x)/Math.max(1,K[kk+1].x-K[kk].x));break;}}
+  var H=lerp(hh,gh,Math.max(0,Math.min(1,(sp.x-bags[bi].x)/Math.max(1,edgeX-bags[bi].x))));      // jednom ravnomerno od ivice stola do kuke, bez medjutacaka
   var sc=Math.min(1,H/gh);      // na stolu pun razmer; tek preko leve ivice ravnomerno do kuke
   var fs=sstep((sp.x-bags[bi].x)/Math.max(20,176-bags[bi].x));      // otkacena: nagib sa kuke nestaje dok se odmice, do x176 visi pod pravim uglom (tvoje tacke)
   var c=tableCfg,p=lerp(c.p,hk.p,u),rx=lerp(c.rx,hk.rx,u),ry=lerp(c.ry,lerp(hk.ry,12.3,fs),u),rz=lerp(c.rz,lerp(hk.rz,0,fs),u)+hold.ang*u;
@@ -289,6 +288,12 @@ function holdTick(){
   bd.style.transformOrigin=lerp(50,APEX*100,u).toFixed(1)+'% '+lerp(100,0,u).toFixed(1)+'%';
   bd.style.transform='translateY('+lift.toFixed(1)+'px) perspective('+p.toFixed(0)+'px) rotateX('+rx.toFixed(2)+'deg) rotateY('+ry.toFixed(2)+'deg) rotateZ('+rz.toFixed(2)+'deg) scale(1,'+sy.toFixed(3)+')';
   var br=lerp(c.br||1,1,u);bd.style.filter=Math.abs(br-1)>.01?'brightness('+br.toFixed(3)+')':'';
+  // smanjivanje: tacka za koju se drzi kesa (kursor) klizi sa sredine ka rucki, tako da kesa ne "propadne" naniže ispod misa
+  var wq=Math.max(0,Math.min(1,(sc-.3)/.7)),sk=gr.height/Math.max(1,g.offsetHeight);
+  var ox=Math.max(0,Math.min(1,(mouse.x-gr.left)/Math.max(1,gr.width))),oy=Math.max(0,Math.min(1,(mouse.y-gr.top)/Math.max(1,gr.height)));
+  var Px=lerp(APEX,ox,wq),Py=lerp(.12,oy,wq),tx=(mouse.x-(gr.left+Px*gr.width))/Math.max(.01,sk),ty=(mouse.y-(gr.top+Py*gr.height))/Math.max(.01,sk);
+  cp.style.transformOrigin=(Px*100).toFixed(1)+'% '+(Py*100).toFixed(1)+'%';
+  cp.style.translate=tx.toFixed(1)+'px '+ty.toFixed(1)+'px';
   cp.style.scale=sc.toFixed(3);
 }
 requestAnimationFrame(holdTick);
