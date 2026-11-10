@@ -12,7 +12,7 @@ function defaults(){return JSON.parse(JSON.stringify(DEFAULTS));}
 function norm(b){return {x:+b.x,y:+b.y,h:+b.h||72,rz:+b.rz||0,rx:+b.rx||0,ry:+b.ry||0,p:+b.p||500};}
 var bags=[],els=[],sel=-1,open=false,showAll=true;
 // kesa NA STOLU (ona koja se uzme sa kuke i spusti na sto / drzi u ruci): isti oblik podesavanja; nema x,y (stoji gde je spustena), h = visina px
-var TABLE_KEY='cookster.wall-bags.table.v2',TABLE_DEF={h:204,rz:2,rx:44,ry:0,p:800,br:1};   // tvoj izvoz iz alata (10.11.)
+var TABLE_KEY='cookster.wall-bags.table.v3',TABLE_DEF={h:240,rz:2,rx:28,ry:0,p:800,br:1};   // tvoj izvoz iz alata (10.11.)
 function loadTable(){try{var r=JSON.parse(localStorage.getItem(TABLE_KEY)||'null');if(r&&isFinite(r.h))return {h:+r.h,rz:+r.rz||0,rx:+r.rx||0,ry:+r.ry||0,p:+r.p||900,br:(isFinite(+r.br)&&+r.br>0)?+r.br:1};}catch(e){}return JSON.parse(JSON.stringify(TABLE_DEF));}
 var tableCfg=loadTable(),mode='hooks',tableEl=null;
 function saveTable(){try{localStorage.setItem(TABLE_KEY,JSON.stringify(tableCfg));}catch(e){}}
@@ -27,17 +27,14 @@ function applyTable(itemEl){var b=itemEl&&itemEl.querySelector&&itemEl.querySele
 // kad se sa stola uzme za rucke, polako se vraca u viseci polozaj, a puštena preko kuke okaci se nazad.
 function hangT(i){var b=bags[Math.max(0,Math.min(bags.length-1,i==null?2:i))]||{p:500,rx:0,ry:10,rz:-12};return 'perspective('+b.p+'px) rotateX('+b.rx+'deg) rotateY('+b.ry+'deg) rotateZ('+b.rz+'deg)';}
 function bodyOf(el){return el&&el.querySelector&&el.querySelector('.body');}
-function hanging(el,fromTable){
+function hanging(el){      // pravi predmet (skriven dok se nosi) samo dobija staticki viseci oblik; animacije i velicina idu na kopiju pod kursorom (holdTick)
   var b=bodyOf(el);if(!b)return;try{b.getAnimations().forEach(function(a){a.cancel();});}catch(e){}
-  var idx=el.dataset.hookIdx!=null&&el.dataset.hookIdx!==''?+el.dataset.hookIdx:2,to=hangT(idx),org=(APEX*100)+'% 0%';
-  if(fromTable){
-    var from=tableTransform(tableCfg);
-    try{b.animate([{transform:from,transformOrigin:'50% 100%',filter:'brightness('+(tableCfg.br||1)+')'},{transform:to,transformOrigin:org,filter:'brightness(1)'}],{duration:420,easing:'ease-out',fill:'forwards'}).onfinish=function(){b.style.transformOrigin=org;b.style.transform=to;};}catch(e){}
-  }
-  b.style.transformOrigin=org;b.style.transform=to;b.style.filter='';el.dataset.hookIdx=String(idx);
+  var idx=el.dataset.hookIdx!=null&&el.dataset.hookIdx!==''?+el.dataset.hookIdx:2,org=(APEX*100)+'% 0%';
+  b.style.transformOrigin=org;b.style.transform=hangT(idx);b.style.filter='';el.dataset.hookIdx=String(idx);
 }
 function settle(itemEl){
   var b=bodyOf(itemEl);if(!b)return;
+  try{b.getAnimations().forEach(function(a){a.cancel();});}catch(e){}
   var c=tableCfg,base=tableTransform(c),idx=itemEl.dataset.hookIdx!=null&&itemEl.dataset.hookIdx!==''?+itemEl.dataset.hookIdx:2,from=hangT(idx);
   delete itemEl.dataset.hookIdx;
   b.style.transformOrigin='50% 100%';b.style.transform=base;b.style.filter=brF();
@@ -93,7 +90,7 @@ function render(){
     el.style.cssText='position:absolute;z-index:4;filter:drop-shadow(1px 2px 2px rgba(30,12,0,.5));display:'+(((open&&showAll&&mode==='hooks')||slots[i])?'block':'none')+';pointer-events:'+((open||slots[i])?'auto':'none')+';cursor:'+(open?'move':(slots[i]?'pointer':'default'));
     if(slots[i]){el.src=imgFor(slots[i]);el.title=slots[i].mixed?('Mesano povrce: '+mixText(slots[i])+' — dole: jedno povrce, gore (rucke): cela kesa'):((slots[i].label||'Kesa')+' · '+qtyText(slots[i])+' · '+countOf(slots[i])+' kom. — dole: jedno povrce, gore (rucke): cela kesa');}
     paint(b,el);
-    el.addEventListener('click',function(e){if(open||!slots[i])return;e.preventDefault();e.stopPropagation();var r=el.getBoundingClientRect();((e.clientY-r.top)/Math.max(1,r.height)<.26)?takeWhole(i):take(i);});
+    el.addEventListener('click',function(e){if(open||!slots[i])return;e.preventDefault();e.stopPropagation();var r=el.getBoundingClientRect();((e.clientY-r.top)/Math.max(1,r.height)<.40)?takeWhole(i):take(i);});
     el.addEventListener('pointerdown',function(e){if(!open||e.button!==0)return;e.preventDefault();e.stopPropagation();select(i);
       var s0=screenToScene(e.clientX,e.clientY),x0=b.x,y0=b.y;
       function mv(ev){var s=screenToScene(ev.clientX,ev.clientY);b.x=+(x0+s.x-s0.x).toFixed(1);b.y=+(y0+s.y-s0.y).toFixed(1);paint(b,el);syncRows();}
@@ -220,10 +217,42 @@ function hang(records){
   saveSlots();render();return [];
 }
 function applyAllTable(){try{items.forEach(function(it){if(it&&it.dataset&&it.dataset.marketBag==='1')applyTable(it);});}catch(e){}}
+// KESA U RUCI (kopija pod kursorom): velicina raste postepeno sa udaljenoscu od kuka, njise se kad se pomera mis, a kad se podigne sa stola preliva se iz polozaja na stolu u viseci (sa odskokom)
+var hold={el:null,t0:0,fromTable:false,ang:0,vel:0,lx:null};
+function lerp(a,b,t){return a+(b-a)*t;}
+function sstep(t){t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);}
+function holdTick(){
+  requestAnimationFrame(holdTick);
+  var h=(typeof holding!=='undefined')?holding:null;
+  if(!(h&&h.dataset&&h.dataset.marketBag==='1')){hold.el=null;return;}
+  var now=performance.now();
+  if(hold.el!==h){hold.el=h;hold.t0=now;hold.fromTable=h.dataset.fromTable==='1';hold.ang=0;hold.vel=0;hold.lx=null;}
+  var g=(typeof placementGhost!=='undefined')?placementGhost:null;if(!g)return;
+  var cp=g.querySelector('.ghost-item-copy'),bd=cp&&cp.querySelector('.body');if(!bd)return;
+  var sp;try{sp=screenToScene(mouse.x,mouse.y);}catch(e){return;}
+  // njihanje: mis ide desno -> kesa se zanjise levo (i obrnuto), manje nego krpa
+  var vx=hold.lx==null?0:(sp.x-hold.lx);hold.lx=sp.x;
+  var target=Math.max(-9,Math.min(9,-vx*.8));
+  hold.vel+=(target-hold.ang)*.10;hold.vel*=.84;hold.ang+=hold.vel;
+  // prelaz sto -> viseci (samo kad je uzeta sa stola)
+  var u=hold.fromTable?sstep((now-hold.t0)/520):1;
+  var idx=h.dataset.hookIdx!=null&&h.dataset.hookIdx!==''?+h.dataset.hookIdx:2,hk=bags[Math.max(0,Math.min(bags.length-1,idx))]||{p:500,rx:0,ry:10,rz:-12,h:90};
+  var c=tableCfg,p=lerp(c.p,hk.p,u),rx=lerp(c.rx,hk.rx,u),ry=lerp(c.ry,hk.ry,u),rz=lerp(c.rz,hk.rz,u)+hold.ang*u;
+  var bounce=Math.sin(Math.PI*u),sy=1+.11*bounce*(hold.fromTable?1:0),lift=-9*bounce*(hold.fromTable?1:0);
+  bd.style.transformOrigin=lerp(50,APEX*100,u).toFixed(1)+'% '+lerp(100,0,u).toFixed(1)+'%';
+  bd.style.transform='translateY('+lift.toFixed(1)+'px) perspective('+p.toFixed(0)+'px) rotateX('+rx.toFixed(2)+'deg) rotateY('+ry.toFixed(2)+'deg) rotateZ('+rz.toFixed(2)+'deg) scale(1,'+sy.toFixed(3)+')';
+  var br=lerp(c.br||1,1,u);bd.style.filter=Math.abs(br-1)>.01?'brightness('+br.toFixed(3)+')':'';
+  // velicina: uz kuku velicina te kuke, dalje od kuka postepeno prirodna (sto)
+  var gh=g.offsetHeight||204,best=1e9,hh=hk.h;
+  for(var i=0;i<bags.length;i++){var d=Math.hypot(bags[i].x-sp.x,(bags[i].y+bags[i].h)-sp.y);if(d<best){best=d;hh=bags[i].h;}}
+  var t=sstep((best-50)/560),sc=lerp(Math.min(1,hh/gh),1,t);
+  cp.style.scale=sc.toFixed(3);
+}
+requestAnimationFrame(holdTick);
 function wrapHold(){
   try{
     var sh=window.startHolding,dh=window.dropHolding;
-    if(typeof sh==='function'&&!sh.__bag){var w1=function(el){var r=sh.apply(this,arguments);try{if(el&&el.dataset&&el.dataset.marketBag==='1'){var fromHook=el.dataset.hookIdx!=null&&el.dataset.hookIdx!=='';hanging(el,!fromHook);}}catch(e){}return r;};w1.__bag=1;window.startHolding=w1;}
+    if(typeof sh==='function'&&!sh.__bag){var w1=function(el){var r=sh.apply(this,arguments);try{if(el&&el.dataset&&el.dataset.marketBag==='1'){var fromHook=el.dataset.hookIdx!=null&&el.dataset.hookIdx!=='';el.dataset.fromTable=fromHook?'0':'1';hanging(el);}}catch(e){}return r;};w1.__bag=1;window.startHolding=w1;}
     if(typeof dh==='function'&&!dh.__bag){var w2=function(){
       var h=(typeof holding!=='undefined')?holding:null;
       try{if(h&&h.dataset&&h.dataset.marketBag==='1'){var f=nearestFree();if(f>=0){      // pusteno preko kuke: okaci se nazad

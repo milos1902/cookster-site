@@ -16372,7 +16372,7 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
  if(it&&it.dataset.marketBag==='1'){
    {      // klik na RUCKE (gornji deo kese na stolu) uzima celu kesu; klik dole vadi jedno povrce
      const bb=it.querySelector('.body')?.getBoundingClientRect?.()||it.getBoundingClientRect();
-     if(bb&&bb.height>4&&(e.clientY-bb.top)/bb.height<.3){startHolding(it,e);return;}
+     if(bb&&bb.height>4&&(e.clientY-bb.top)/bb.height<.4){startHolding(it,e);return;}
    }
    if(bagPickTarget===it&&bagPickQty>1){
      takeManyFromMarketBagToBoard(it,bagPickQty);
