@@ -9,12 +9,16 @@
 'use strict';
 if(window.CooksterSarma)return;
 var ID='kal_01_list_kupusa',N=9,STEP=.085,HINTS={start:'Klikni dva puta na donji deo lista da preklopiš nadev.',left:'Klikni na levu stranu lista.',right:'Klikni na desnu stranu lista.',roll:'Okreći točkić miša nagore da umotaš sarmu.'};
-var FR=[];for(var i=0;i<N;i++){var im=new Image();im.src='assets/sarma/f'+i+'.webp?v=3';FR.push(im);}
+// two looks of the sarma (every new leaf takes one of them by its number): the fat homemade sarma (assets/sarma/f0..f8) and the narrow one on an upright leaf (assets/sarma3/g0..g8)
+var SETS=[{dir:'assets/sarma/f',pre:'f',scale:1},{dir:'assets/sarma3/g',pre:'g',scale:1.25}];
+function hashStr(t){var h=2166136261;for(var i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}h^=h>>>15;h=Math.imul(h,2246822519)>>>0;h^=h>>>13;return h>>>0;}
+SETS.forEach(function(S){S.fr=[];for(var i=0;i<N;i++){var im=new Image();im.src=S.dir+i+'.webp?v=3';S.fr.push(im);}});
 function toast(m){try{showToast(m);}catch(e){}}
 function setup(el){
-  if(el._sm)return;var st=el._sm={filled:false,stage:0,roll:0,x:0,target:0,imgs:[],anim:0};
+  if(el._sm)return;var set=SETS[hashStr(el.dataset.instanceId||'x')%SETS.length],FR=set.fr;
+  var st=el._sm={set:set,filled:false,stage:0,roll:0,x:0,target:0,imgs:[],anim:0};
   var body=el.querySelector('.body');if(body)body.style.visibility='hidden';
-  var host=document.createElement('div');host.className='sarma-frames';host.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none';
+  var host=document.createElement('div');host.className='sarma-frames';host.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;transform-origin:50% 100%;transform:scale('+set.scale+')';
   for(var i=0;i<N;i++){var m=document.createElement('img');m.src=FR[i].src;m.draggable=false;m.alt='';m.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;opacity:0;filter:drop-shadow(1px 2px 2px rgba(30,15,0,.4))';host.appendChild(m);st.imgs.push(m);}
   el.appendChild(host);draw(el);
 }

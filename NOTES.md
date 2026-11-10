@@ -1432,3 +1432,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - 10.11.: kasika sa nadevom je prava slika (assets/sarma/kasika_nadev.webp: drvena kasika + isecak pravog nadeva iz f1 u udubljenju), ne vise nacrtan krug u kodu (nadev-spoon v8).
 - 10.11.: kasika sa nadevom skroz puna do ivice (kasika_nadev.webp v2).
 - 10.11.: treci set sarme (sarma_3.zip, uspravan/uzak list, tanja sarma) sacuvan u assets/sarma3/g1..g8.webp (640 px, okvir 110,0-1170,1254), NIJE povezan: cekamo odluku (nasumicna varijanta po listu?) i prazan list za taj set.
+- 10.11.: DVE varijante sarme (sarma.js v9): debela (assets/sarma/f0..f8) i uska na uspravnom listu (assets/sarma3/g0..g8, g0 = Milosev prazan uspravan list uklopljen u g1); svaki list bira varijantu po hash-u svog instanceId (scale .25 vece za uski). Isti tok: nadev kasikom, 2 klika dole, levo, desno, tockic. Testirano headless do gotove sarme.
