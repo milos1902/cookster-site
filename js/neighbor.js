@@ -42,7 +42,7 @@ var ORDERS={
 };
 // the sill of the open window (scene pixels): the bowl / the pan is put there with a click
 var SILL={l:0,t:175,r:125,b:335,cx:60,by:285};
-var st='idle',elK=null,elO=null,box=null,li=0,knockT=0,lines=LINES,afterTalk=null,forced=/[?&]komsinica\b/.test(location.search);
+var st='idle',elK=null,elO=null,elH=null,elJ=null,speakUntil=0,animOn=false,box=null,li=0,knockT=0,lines=LINES,afterTalk=null,forced=/[?&]komsinica\b/.test(location.search);
 function done(){try{return localStorage.getItem(KEY)==='1';}catch(e){return false;}}
 function prog(){try{return window.CooksterKitchenClean&&CooksterKitchenClean.active()?CooksterKitchenClean.progress():-1;}catch(e){return -1;}}
 function build(){
@@ -50,6 +50,14 @@ function build(){
   function mk(id,src,l,t,w,h,z){var d=document.createElement('div');d.id=id;d.setAttribute('aria-hidden','true');d.style.cssText='position:absolute;left:'+l+'px;top:'+t+'px;width:'+w+'px;height:'+h+'px;pointer-events:none;z-index:'+z+';opacity:0;transition:opacity .7s ease;background:url('+src+') 0 0/100% 100% no-repeat';return d;}
   elK=mk('komsinicaKuca','assets/effects/komsinica_kuca.webp?v=1',0,26,74,252,0);
   elO=mk('komsinicaOtvoren','assets/effects/komsinica_otvoren.webp?v=1',0,0,142,312,2);
+  // living neighbour: a copy of the head (soft mask) sways a little and a copy of the mouth area (child of the head) moves like a jaw while she speaks
+  var BG='url(assets/effects/komsinica_otvoren.webp?v=1) 0 0/100% 100% no-repeat';
+  function ml(el,m){el.style.webkitMaskImage=m;el.style.maskImage=m;}
+  elH=document.createElement('div');elH.style.cssText='position:absolute;left:0;top:0;width:142px;height:312px;pointer-events:none;background:'+BG+';transform-origin:37px 192px;will-change:transform';
+  ml(elH,'radial-gradient(ellipse 36px 50px at 33px 142px,#000 62%,transparent 100%)');
+  elJ=document.createElement('div');elJ.style.cssText='position:absolute;left:0;top:0;width:142px;height:312px;pointer-events:none;background:'+BG+';transform-origin:47px 158px;will-change:transform';
+  ml(elJ,'radial-gradient(ellipse 15px 11px at 47px 166px,#000 55%,transparent 100%)');
+  elH.appendChild(elJ);elO.appendChild(elH);
   var ref=document.getElementById('windowOpen');
   if(ref&&ref.parentNode===sc){sc.insertBefore(elK,ref);sc.insertBefore(elO,ref.nextSibling);}else{sc.appendChild(elK);sc.appendChild(elO);}
   var css=document.createElement('style');
@@ -88,8 +96,20 @@ function talk(ls,after){
   setTimeout(function(){elO.style.opacity='1';},900);
   setTimeout(function(){li=0;showLine();},1700);
 }
+// she moves while she speaks: the head sways, the mouth area opens and closes (a line with a voice file can call speak(ms) with its real length)
+function speak(ms){speakUntil=performance.now()+ms;if(!animOn){animOn=true;requestAnimationFrame(animStep);}}
+function animStep(now){
+  if(!elH){animOn=false;return;}
+  var t=now/1000,on=now<speakUntil,amp=on?1:0;
+  animStep.a=(animStep.a||0)+((amp-(animStep.a||0))*.15);var a=animStep.a;      // smooth start / stop
+  var syl=Math.max(0,Math.sin(t*13.5)*Math.sin(t*5.3+1.2)+.25);      // syllables: bursts of mouth movement with small pauses
+  var jaw=a*syl*2.2,rot=a*(Math.sin(t*2.1)*1.3+Math.sin(t*3.7)*.5)+Math.sin(t*.9)*.25,tx=a*Math.sin(t*1.7)*.9,ty=a*(Math.sin(t*2.9)*.9)+Math.sin(t*1.1)*.4;
+  elH.style.transform='translate('+tx.toFixed(2)+'px,'+ty.toFixed(2)+'px) rotate('+rot.toFixed(2)+'deg)';
+  elJ.style.transform='translateY('+jaw.toFixed(2)+'px) scaleY('+(1+jaw*.025).toFixed(3)+')';
+  if(on||a>.01)requestAnimationFrame(animStep);else{animOn=false;elH.style.transform='';elJ.style.transform='';}
+}
 function showLine(){
-  var L=lines[li];box.querySelector('.nb-who').textContent=L.who||'';box.querySelector('.nb-who').style.display=L.who?'':'none';
+  var L=lines[li];if(L.who)speak(Math.max(1200,L.text.length*62));else speakUntil=0;box.querySelector('.nb-who').textContent=L.who||'';box.querySelector('.nb-who').style.display=L.who?'':'none';
   box.querySelector('.nb-text').textContent=L.text;box.querySelector('.nb-text').style.fontStyle=L.who?'':'italic';
   box.style.display='block';box.querySelector('button').textContent=li>=lines.length-1?'U redu':'Dalje ▸';
 }
@@ -100,7 +120,7 @@ function next(){
   showLine();
 }
 function finish(){
-  box.style.display='none';
+  box.style.display='none';speakUntil=0;
   if(afterTalk){var f=afterTalk;afterTalk=null;st='done';f();return;}      // she stays at the window (the callback decides)
   elO.style.opacity='0';st='done';
   try{localStorage.setItem(KEY,'1');}catch(e){}
@@ -201,6 +221,6 @@ function init(){
 }
 // the kitchen is declared clean at 80%: if the cleaning jumped over the threshold between two checks, it knocks now
 window.addEventListener('cookster:kitchen-clean',function(){if(st==='idle'&&!done())setTimeout(function(){if(st==='idle'&&!done())knock();},1800);});
-window.CooksterNeighbor={knock:knock,state:function(){return st;},lines:LINES,expectSalad:expectSalad,expectOrder:expectOrder,delivered:function(id){return !!delivered[id||'salad'];}};
+window.CooksterNeighbor={speak:speak,knock:knock,state:function(){return st;},lines:LINES,expectSalad:expectSalad,expectOrder:expectOrder,delivered:function(id){return !!delivered[id||'salad'];}};
 if(document.readyState==='complete')setTimeout(init,600);else window.addEventListener('load',function(){setTimeout(init,600);});
 })();
