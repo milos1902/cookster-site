@@ -226,14 +226,22 @@ function holdTick(){
   var h=(typeof holding!=='undefined')?holding:null;
   if(!(h&&h.dataset&&h.dataset.marketBag==='1')){hold.el=null;return;}
   var now=performance.now();
-  if(hold.el!==h){hold.el=h;hold.t0=now;hold.fromTable=h.dataset.fromTable==='1';hold.ang=0;hold.vel=0;hold.lx=null;}
+  if(hold.el!==h){hold.el=h;hold.t0=now;hold.fromTable=h.dataset.fromTable==='1';hold.ang=0;hold.vel=0;hold.lx=null;hold.lt=null;hold.sv=0;hold.psv=null;}
+  try{if(h.style.visibility!=='hidden')h.style.visibility='hidden';if(h._contactShadow&&h._contactShadow.style.visibility!=='hidden')h._contactShadow.style.visibility='hidden';}catch(e){}      // samo kopija pod kursorom se vidi, prava kesa nikad ispred nje
   var g=(typeof placementGhost!=='undefined')?placementGhost:null;if(!g)return;
   var cp=g.querySelector('.ghost-item-copy'),bd=cp&&cp.querySelector('.body');if(!bd)return;
   var sp;try{sp=screenToScene(mouse.x,mouse.y);}catch(e){return;}
-  // njihanje: mis ide desno -> kesa se zanjise levo (i obrnuto), manje nego krpa
-  var vx=hold.lx==null?0:(sp.x-hold.lx);hold.lx=sp.x;
-  var target=Math.max(-9,Math.min(9,-vx*.8));
-  hold.vel+=(target-hold.ang)*.10;hold.vel*=.84;hold.ang+=hold.vel;
+  // pravi pravi klatno: tacka okacenja je kursor; kad mis ubrza udesno, kesa zaostane ulevo pa se polako vrati i zanjise preko (mekano, sporo, sa blagim gasenjem)
+  var dt=Math.min(.033,Math.max(.004,(now-(hold.lt||now))/1000));hold.lt=now;
+  var vxs=hold.lx==null?0:(sp.x-hold.lx)/dt;hold.lx=sp.x;
+  hold.sv=(hold.sv||0)+(vxs-(hold.sv||0))*Math.min(1,dt*10);          // zaglađena brzina misa (px/s)
+  var acc=hold.psv==null?0:(hold.sv-hold.psv)/dt;hold.psv=hold.sv;      // ubrzanje tacke okacenja
+  var W=2*Math.PI*.85,Z=.14;                                           // prirodna frekvencija ~0.85 Hz, slabo gasenje: ~3 lepa zamaha
+  var lean=Math.max(-5,Math.min(5,hold.sv*.0045));                     // blago naginjanje dok se mis brzo krece
+  var force=Math.max(-14,Math.min(14,acc*.0035));                      // zamah od ubrzanja
+  var n=Math.max(1,Math.round(dt/.008)),h8=dt/n;
+  for(var q=0;q<n;q++){hold.vel+=(-W*W*(hold.ang-lean)-2*Z*W*hold.vel+W*W*force*.5)*h8;hold.ang+=hold.vel*h8;}
+  hold.ang=Math.max(-16,Math.min(16,hold.ang));
   // prelaz sto -> viseci (samo kad je uzeta sa stola)
   var u=hold.fromTable?sstep((now-hold.t0)/520):1;
   var idx=h.dataset.hookIdx!=null&&h.dataset.hookIdx!==''?+h.dataset.hookIdx:2,hk=bags[Math.max(0,Math.min(bags.length-1,idx))]||{p:500,rx:0,ry:10,rz:-12,h:90};
