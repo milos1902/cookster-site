@@ -17,23 +17,31 @@ var LINES=[
   {who:'Komšinica',text:'Uzgred, daska ti je u desnoj fioci.'}
 ];
 var ORDERS={
-  salad:{key:'cookster.neighbor.salad.v1',match:/paradajz/,pay:200,
-    lines:[
+  salad:{key:'cookster.neighbor.salad.v1',match:/paradajz/,pay:200,what:'činiju sa salatom',
+    lines1:[
       {who:'Komšinica',text:'Dobar dan, dete. Je l\' gotova salata?'},
       {who:'',text:'Evo… gotova je.'},
-      {who:'Komšinica',text:'Gle, divota. Kao za Savke. Evo ti dvesta dinara, i hvala ti.'},
+      {who:'Komšinica',text:'Odlično. Samo je stavi ovde, na dasku prozora.'}
+    ],
+    lines2:[
+      {who:'Komšinica',text:'Gle, divota. Kao za Savke. Novac ti ostavljam na dasci prozora, i hvala ti.'},
       {who:'Komšinica',text:'Kad si već tu… Da li bi mogao da mi ispržiš i tikvice? Za večeru.'},
       {who:'',text:'Tikvice… Pokušaću.'},
       {who:'Komšinica',text:'Pazi samo na vatru, da ne zagore. Doći ću po njih.'}
     ]},
-  tikvice:{key:'cookster.neighbor.tikvice.v1',match:/tikvice/,pay:300,
-    lines:[
+  tikvice:{key:'cookster.neighbor.tikvice.v1',match:/tikvice/,pay:300,what:'tiganj sa tikvicama',
+    lines1:[
       {who:'Komšinica',text:'Dobar dan, dete. Jesu l\' tikvice gotove?'},
       {who:'',text:'Evo, ispržene su.'},
+      {who:'Komšinica',text:'Divno. Stavi ih ovde, na dasku prozora.'}
+    ],
+    lines2:[
       {who:'Komšinica',text:'Mmm, kako mirišu. Tačno kao kod Savke.'},
-      {who:'Komšinica',text:'Evo ti trista dinara. Slobodno kucni opet kad ti zatreba još štagod.'}
+      {who:'Komšinica',text:'Novac ti ostavljam na dasci prozora. Slobodno kucni opet kad ti zatreba još štagod.'}
     ]}
 };
+// the sill of the open window (scene pixels): the bowl / the pan is put there with a click
+var SILL={l:0,t:175,r:125,b:335,cx:60,by:285};
 var st='idle',elK=null,elO=null,box=null,li=0,knockT=0,lines=LINES,afterTalk=null,forced=/[?&]komsinica\b/.test(location.search);
 function done(){try{return localStorage.getItem(KEY)==='1';}catch(e){return false;}}
 function prog(){try{return window.CooksterKitchenClean&&CooksterKitchenClean.active()?CooksterKitchenClean.progress():-1;}catch(e){return -1;}}
@@ -92,9 +100,9 @@ function next(){
   showLine();
 }
 function finish(){
-  box.style.display='none';elO.style.opacity='0';
-  if(afterTalk){var f=afterTalk;afterTalk=null;st='done';f();return;}
-  st='done';
+  box.style.display='none';
+  if(afterTalk){var f=afterTalk;afterTalk=null;st='done';f();return;}      // she stays at the window (the callback decides)
+  elO.style.opacity='0';st='done';
   try{localStorage.setItem(KEY,'1');}catch(e){}
   setTimeout(function(){try{if(window.CooksterTutorial)CooksterTutorial.start(true);}catch(e){}},900);      // Savka's book: the instructions begin
 }
@@ -104,6 +112,68 @@ function takeFood(re){      // the vessel with the food is emptied (she takes it
   try{items.forEach(function(v){try{if(!isContainerItem(v))return;var ks=[];try{ks=Object.keys(CooksterPan.read(v).ingredients||{});}catch(e){}try{ks=ks.concat(Object.keys(CooksterContainer.read(v).items||{}));}catch(e){}
     if(ks.some(function(k){return re.test(k);})){clearVesselAfterPour(v);renderCookwareContents(v);}}catch(e){}});}catch(e){}
 }
+var handover=null;
+function holdsFood(re){try{var h=holding;if(!h||!isContainerItem(h))return false;var ks=[];try{ks=Object.keys(CooksterPan.read(h).ingredients||{});}catch(e){}try{ks=ks.concat(Object.keys(CooksterContainer.read(h).items||{}));}catch(e){}return ks.some(function(k){return re.test(k);});}catch(e){return false;}}
+function sillScreen(){var sc=document.getElementById('scene');if(!sc)return null;var R=sc.getBoundingClientRect(),k=R.width/1672;return {l:R.left+SILL.l*k,t:R.top+SILL.t*k,r:R.left+SILL.r*k,b:R.top+SILL.b*k};}
+// the player puts the vessel with the food on the sill (a click on the sill with it in the hand): she takes it
+function onHandoverClick(e){
+  if(!handover)return;
+  var z=document.getElementById('scene');if(!z)return;
+  var R=z.getBoundingClientRect(),k=R.width/1672,x=(e.clientX-R.left)/k,y=(e.clientY-R.top)/k;
+  if(x<0||x>176||y<0||y>440)return;      // outside the window: the game does what it does
+  e.stopImmediatePropagation();e.preventDefault();
+  if(e.type!=='pointerdown')return;
+  var S=sillScreen();
+  if(holdsFood(handover.O.match)&&x>=SILL.l&&x<=SILL.r&&y>=SILL.t&&y<=SILL.b){
+    var v=holding,O=handover.O,id=handover.id;handover=null;
+    try{holding=null;hidePlacementGhost();hideOriginGhost();clearPourTarget();}catch(er){}
+    var pan=false;try{pan=isHeatableCookwareItem(v)&&/tiganj|serpa/.test(v.dataset.itemId||'');}catch(er){}
+    try{v.dataset.surfaceZone='table';setPose(v,SILL.cx,SILL.by,.7);v.style.visibility='';v.classList.remove('held');}catch(er){}
+    sub('',1);
+    setTimeout(function(){      // she takes the food (and the bowl); the pan stays: only its food goes
+      try{if(pan){clearVesselAfterPour(v);renderCookwareContents(v);setPose(v,740,640,1);}else{removeItem(v);}}catch(er){}
+      try{updateHover();}catch(er){}
+      talk(O.lines2,function(){
+        setTimeout(function(){elO.style.opacity='0';},300);
+        leaveMoney(O,id);      // she leaves the banknotes on the sill: the player takes them (click)
+      });
+    },1400);
+  }else{
+    sub('Podigni '+handover.O.what+' i stavi je na dasku prozora (klik na dasku).',3500);
+  }
+}
+['pointerdown','click','pointerup','mousedown'].forEach(function(t){window.addEventListener(t,onHandoverClick,true);});
+// banknotes on the sill (drawn here, a picture of them can replace it): a click takes them, with the sound of coins
+var NOTE_SVG="data:image/svg+xml;utf8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60"><g transform="rotate(-6 60 30)"><rect x="6" y="8" width="104" height="46" rx="4" fill="#b9d9a6" stroke="#3f6b3a" stroke-width="2"/><rect x="12" y="14" width="92" height="34" rx="2" fill="none" stroke="#5c8c55" stroke-width="1.5"/><circle cx="34" cy="31" r="11" fill="#9ccb87" stroke="#3f6b3a" stroke-width="1.5"/><text x="74" y="36" font-family="Georgia,serif" font-size="20" font-weight="bold" fill="#2f5a2c" text-anchor="middle">DIN</text></g><g transform="translate(8 -3) rotate(5 60 30)"><rect x="6" y="8" width="104" height="46" rx="4" fill="#cfe5bd" stroke="#3f6b3a" stroke-width="2"/><circle cx="34" cy="31" r="11" fill="#b4d79f" stroke="#3f6b3a" stroke-width="1.5"/><text x="74" y="36" font-family="Georgia,serif" font-size="20" font-weight="bold" fill="#2f5a2c" text-anchor="middle">DIN</text></g></svg>');
+function coinSound(){
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;var ac=window.__nbAc||(window.__nbAc=new AC());if(ac.state==='suspended')ac.resume();
+    [0,.13,.3].forEach(function(dt,i){
+      var t=ac.currentTime+dt;[2400+i*260,3600+i*390].forEach(function(f,j){
+        var o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f;
+        g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(j?.07:.14,t+.004);g.gain.exponentialRampToValueAtTime(.0005,t+.42);
+        o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.45);
+      });
+    });
+  }catch(e){}
+}
+function leaveMoney(O,id){
+  var sc=document.getElementById('scene');if(!sc)return;
+  var im=document.createElement('img');im.id='nbNotes';im.src=NOTE_SVG;im.draggable=false;im.title='Novac — klik da uzmeš';
+  im.style.cssText='position:absolute;left:'+(SILL.cx-34)+'px;top:'+(SILL.by-64)+'px;width:68px;z-index:45;cursor:none;opacity:0;transition:opacity .5s ease,transform .25s ease;filter:drop-shadow(1px 3px 2px rgba(20,8,0,.5))';
+  sc.appendChild(im);requestAnimationFrame(function(){im.style.opacity='1';});
+  sub('Uzmi novac sa daske prozora (klik).',6000);
+  var took=false;
+  function take(e){
+    if(took)return;e.stopImmediatePropagation();e.preventDefault();if(e.type!=='pointerdown')return;
+    took=true;coinSound();im.style.transform='translateY(-14px) scale(1.15)';im.style.opacity='0';
+    setTimeout(function(){if(im.parentNode)im.parentNode.removeChild(im);},400);
+    try{setMoney(money+O.pay);showToast('Dobio si '+O.pay+' dinara.');}catch(er){}
+    delivered[id]=true;visiting=false;try{localStorage.setItem(O.key,'1');}catch(er){}
+  }
+  ['pointerdown','click','pointerup','mousedown'].forEach(function(t){im.addEventListener(t,take,true);});
+  im.style.pointerEvents='auto';
+}
 function expectOrder(id){
   var O=ORDERS[id];if(!O||asked[id]||delivered[id])return;asked[id]=true;
   try{if(localStorage.getItem(O.key)==='1'){delivered[id]=true;return;}}catch(e){}
@@ -111,9 +181,8 @@ function expectOrder(id){
     build();visiting=true;st='knock';elK.style.opacity='1';knockSound();sub('Komšinica se vratila.',3500);
     setTimeout(function(){if(st==='knock')sub('(Klikni na prozor da ga otvoriš.)',4500);},3800);
     clearInterval(knockT);knockT=setInterval(function(){if(st==='knock')knockSound();else clearInterval(knockT);},14000);
-    var w=setInterval(function(){if(st==='knock'&&windowOpen()){clearInterval(w);talk(O.lines,function(){
-      takeFood(O.match);try{setMoney(money+O.pay);showToast('Dobio si '+O.pay+' dinara.');}catch(e){}
-      delivered[id]=true;visiting=false;try{localStorage.setItem(O.key,'1');}catch(e){}
+    var w=setInterval(function(){if(st==='knock'&&windowOpen()){clearInterval(w);talk(O.lines1,function(){
+      st='handover';handover={O:O,id:id};sub('Uzmi '+O.what+' (klik) i stavi je na dasku prozora (klik na dasku).',6000);
     });}},500);
   },4000);
 }

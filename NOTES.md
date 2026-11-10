@@ -1366,3 +1366,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - 10.11.: komsinica kuca i kad se ciscenje zavrsi (dogadjaj cookster:kitchen-clean), prag 50% (neighbor v2); ciscenje jos sporije (3.6 prelaza).
 - 10.11.: komsinica se vraca po salatu (neighbor v3, tutorial v12): kad je salata gotova kuca, igrac otvara prozor, uzima salatu iz cinije, daje 200 din; uputstvo ceka tu isporuku pre tikvica.
 - 10.11.: komsinica uz salatu narucuje i prziene tikvice, vraca se po njih (trista din); neighbor v4 (ORDERS), tutorial v13 (korak z_deliver).
+- 10.11.: komsinica: cinija/tiganj se stavlja na dasku prozora (klik na dasku sa cinijom u ruci); ona uzme cinju (tiganj ostaje, samo hrana nestaje), ostavi novcanice na dasci; klik na novcanice = ting-ting zvuk i novac (neighbor v7). Novcanice su nacrtane SVG-om (privremeno).
