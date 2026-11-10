@@ -203,7 +203,11 @@ function onMove(e){
   if(tool==='sundjer')bubbles(p.x,p.y+6,Math.min(9,2+Math.round(dist/5)));      // the sponge makes a lot of soap bubbles all along its way
   var dt=Math.max(1,now-pt),speed=dist/dt*1000;
   if(tool==='metla'&&curSweep!==swishSweep){swishSweep=curSweep;swish(speed);}      // ONE swish per stroke (left, then right...), not a continuous sound while the mouse moves
-  else if(curSweep!==spongeSweep){spongeSweep=curSweep;sponge(speed);}      // the sponge: also ONE rub per stroke (the continuous scrubbing sound is no longer used)
+  else{      // the sponge: the sounds chosen in the tool "Zvuk" (one per stroke, game.js scrubMove); if none is chosen, a soft built-in rub: one per stroke as well
+    var chosen=false;try{chosen=!!(window.CooksterSound&&CooksterSound.hasScrub&&CooksterSound.hasScrub());}catch(x){}
+    if(chosen){try{CooksterSound.scrub(dx,dy,dt);}catch(x){}}
+    else if(curSweep!==spongeSweep){spongeSweep=curSweep;sponge(speed);}
+  }
   if(!any&&now-lastHint>2600){lastHint=now;say(tool==='metla'?'Metla čisti samo pod. Za sve ostalo uzmi sunđer.':'Sunđer ne čisti pod. Za pod uzmi metlu.',2200);}
   px=p.x;py=p.y;pt=now;
   var pr=progress();say('Kuhinja: '+Math.min(100,Math.round(pr*100))+'% očišćena',1400);
