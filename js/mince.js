@@ -91,14 +91,21 @@ function crumbOf(v){return Math.max(0,Math.min(1,+v._crumb||0));}
 function doneOf(v){try{var m=CooksterPan.read(v);return Math.max(0,Math.min(1,(+m.doneness||0)/.9));}catch(e){return 0;}}
 // the crumbs fill the floor of the pan like the heap does (same layout, a little wider); the raw and the fried picture cross-fade with the doneness
 function paintCrumbs(v){
-  if(!heatable(v))return;var host=v.querySelector('.mince-host');if(!host)return;var c=crumbOf(v),d=doneOf(v);
-  var heap=host.querySelector('.mince-heap');if(heap)heap.style.opacity=(1-c).toFixed(2);
+  if(!heatable(v))return;var host=v.querySelector('.mince-host');if(!host)return;var c=crumbOf(v),d=doneOf(v),n=units(v);
+  var heap=host.querySelector('.mince-heap');
+  // one dose: the crumbs lie loose and the floor of the pan may be seen between them; from two doses on everything is FILLED: a heap of meat under the crumbs (it goes brown as the meat fries)
+  // and several layers of crumbs one over another, turned and shifted, so no gap is left
+  if(heap){heap.style.opacity=(n>=2?1:1-c).toFixed(2);heap.style.filter=n>=2?'brightness('+(1-.5*d*c).toFixed(2)+') saturate('+(1-.35*d*c).toFixed(2)+') drop-shadow(0 1px 2px rgba(70,15,8,.22))':'drop-shadow(0 1px 2px rgba(70,15,8,.22))';}
+  var layers=Math.max(1,Math.min(3,n)),rots=[0,63,-41],sc=[1,1.08,1.05],tx=[0,5,-4],ty=[0,-4,5];
   ['raw','fried'].forEach(function(k){
-    var im=host.querySelector('.mince-crumbs-'+k);
-    if(!im){im=document.createElement('img');im.className='mince-crumbs-'+k;im.src=CR[k];im.draggable=false;im.alt='';im.style.cssText='position:absolute;pointer-events:none;object-fit:fill;opacity:0';host.appendChild(im);
-      if(heap){im.style.left=heap.style.left;im.style.top=heap.style.top;im.style.width=heap.style.width;im.style.height=heap.style.height;}}
-    else if(heap){im.style.left=heap.style.left;im.style.top=heap.style.top;im.style.width=heap.style.width;im.style.height=heap.style.height;}
-    im.style.opacity=(k==='raw'?c*(1-d):c*d).toFixed(2);
+    for(var i=0;i<3;i++){
+      var im=host.querySelector('.mince-crumbs-'+k+'-'+i);
+      if(i>=layers){if(im)im.style.opacity='0';continue;}
+      if(!im){im=document.createElement('img');im.className='mince-crumbs-'+k+'-'+i;im.src=CR[k];im.draggable=false;im.alt='';im.style.cssText='position:absolute;pointer-events:none;object-fit:fill;opacity:0';host.appendChild(im);}
+      if(heap){im.style.left=heap.style.left;im.style.top=heap.style.top;im.style.width=heap.style.width;im.style.height=heap.style.height;}
+      im.style.transform='translate('+tx[i]+'%,'+ty[i]+'%) rotate('+rots[i]+'deg) scale('+sc[i]+')';
+      im.style.opacity=(k==='raw'?c*(1-d):c*d).toFixed(2);
+    }
   });
 }
 function append(layer,v,count){
