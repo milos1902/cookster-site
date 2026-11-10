@@ -74,7 +74,8 @@ var STEPS=[
    done:function(){return spiceIn('so')||vesselHas(/^so$/);}},
   {id:'oil',enter:giveOil,text:'Sad ulje: uzmi flašu ulja, drži dugme miša iznad činije dok ne poteče.',
    target:function(){return itemRect('kal_01_flasa_ulja');},done:function(){return vesselHas(/^(ulje|oil)$/);}},
-  {id:'salad',button:'Dalje',text:'Srpska salata je gotova! Sad pržene tikvice: treba nam tiganj, vatra i tikvice sa pijace.'},
+  {id:'salad',enter:function(){try{CooksterNeighbor.expectSalad();}catch(e){}},text:'Srpska salata je gotova! Komšinica će svratiti po nju. Sačekaj da kucne na prozor.',
+   done:function(){try{return CooksterNeighbor.delivered('salad');}catch(e){return true;}}},
   {id:'z_dock',text:function(){return dockOpen()?'Klikni na pijacu, kupi tikvice.':'Pređi mišem preko drvenog polja sa satom, pa na pijacu.';},
    target:function(){return dockOpen()?(dockBtn('Pijaca')||plateRect()):plateRect();},done:function(){return body('market-open');}},
   {id:'z_pick',requires:function(){return body('market-open')?null:'z_dock';},text:'Klikni na gomilu tikvica.',
@@ -97,7 +98,9 @@ var STEPS=[
    target:function(){return panRect();},done:function(){var m=panModel();return !!m&&Object.keys(m.ingredients||{}).some(function(k){return /tikvice/.test(k)&&m.ingredients[k]>0;});}},
   {id:'z_fry',text:'Mešaj kašikom i čekaj da porumene. Pazi da ne zagore!',
    target:function(){return panRect();},done:function(){var m=panModel();return !!m&&!m.burnt&&(+m.doneness||0)>=.54;}},
-  {id:'end',button:'Zatvori',text:'Pržene tikvice su gotove. Sada si spreman, sine: ajde sad sam probaj Savkin gulaš iz knjige recepata.',final:true}
+  {id:'z_deliver',enter:function(){try{CooksterNeighbor.expectOrder('tikvice');}catch(e){}},text:'Tikvice su gotove! Komšinica će doći po njih. Sačekaj da kucne na prozor.',
+   done:function(){try{return CooksterNeighbor.delivered('tikvice');}catch(e){return true;}}},
+  {id:'end',button:'Zatvori',text:'Komšinica je zadovoljna. Sada si spreman, sine: ajde sad sam probaj Savkin gulaš iz knjige recepata.',final:true}
 ];
 
 // ---------- izgled ----------
