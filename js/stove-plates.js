@@ -3,7 +3,7 @@
    at night js/day-light.js adds a little light round them (CooksterStovePlates.heat()). */
 (function(){
 if(window.CooksterStovePlates)return;
-var PL=[{x:1343,y:322,rx:80,ry:60}],heat=0,els=[],last=0,lastRef=0,lastShown=-1;      // only the big plate on the left
+var PL=[],heat=0,els=[],last=0,lastRef=0,lastShown=-1;      // crveni sjaj ploce je ISKLJUCEN (nema ga vise); `heat` se i dalje racuna za svetlo noću (day-light.js). Ranije: [{x:1343,y:322,rx:80,ry:60}]
 function build(){var sc=document.getElementById('scene');if(!sc)return false;if(els.length&&els[0].parentNode===sc)return true;els=[];
   PL.forEach(function(p){var d=document.createElement('div');d.className='stove-plate-glow';
     d.style.cssText='position:absolute;left:'+(p.x-p.rx)+'px;top:'+(p.y-p.ry)+'px;width:'+(p.rx*2)+'px;height:'+(p.ry*2)+'px;border-radius:50%;pointer-events:none;z-index:2;opacity:0;mix-blend-mode:screen;'+
