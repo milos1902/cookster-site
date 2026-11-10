@@ -5,13 +5,15 @@
 (function(){
 if(window.CooksterStovePlates)return;
 var IMG='assets/ui/stove/ploca_usijana.webp?v=1',X=1250,Y=256,W=184,H=136;      // polozaj i velicina slike ploce u sceni
-var MAXO=.7,heat=0,el=null,last=0,lastRef=0,lastShown=-1;
+var MAXO=.6,heat=0,el=null,last=0,lastRef=0,lastShown=-1;
 function build(){var sc=document.getElementById('scene');if(!sc)return false;if(el&&el.parentNode===sc)return true;
   el=document.createElement('img');el.className='stove-plate-hot';el.src=IMG;el.alt='';el.draggable=false;
   el.style.cssText='position:absolute;left:'+X+'px;top:'+Y+'px;width:'+W+'px;height:'+H+'px;pointer-events:none;z-index:2;opacity:0';
   sc.appendChild(el);return true;}
 function burning(){try{return stoveState.fireOn&&(+stoveState.fireLevel||0)>0?Math.min(1,(+stoveState.fireLevel||0)/FIRE_MAX_LEVEL):0;}catch(e){return 0;}}
 function frame(now){requestAnimationFrame(frame);var dt=Math.min(.1,(now-last)/1000||.016);last=now;
+  var lv=0;try{lv=stoveState.fireOn?(+stoveState.fireLevel||0):0;}catch(e){}
+  if(lv>0){var capT=lv>=3?.9:.6;MAXO+=(capT-MAXO)*Math.min(1,dt*.8);}      // najjaca vatra: sjaj do 90%, slabija: 60%
   var b=burning(),target=b>0?Math.min(1,.45+.55*b):0;
   if(b>0){if(heat<target)heat=Math.min(target,heat+dt/(40/Math.max(.4,b)));else heat=Math.max(target,heat-dt/60);}else heat=Math.max(0,heat-dt/30);
   if(!build())return;

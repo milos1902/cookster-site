@@ -22,18 +22,37 @@ function srcFor(key){return KNOWN[key]?('assets/ui/wall/kesa_'+key+'.webp?v=1'):
 function tableTransform(c){return 'perspective('+c.p+'px) rotateX('+c.rx+'deg) rotateY('+c.ry+'deg) rotateZ('+c.rz+'deg)';}
 // primeni podesavanja stola na kesu-predmet (img.body): velicinu i nagibe, oslonac je dno
 function applyTable(itemEl){var b=itemEl&&itemEl.querySelector&&itemEl.querySelector('.body');if(!b)return;b.style.transformOrigin='50% 100%';b.style.transform=tableTransform(tableCfg);}
-// u ruci kesa stoji uspravno; kad se pusti na sto spljosti se (squash), malo odskoci i legne u polozaj iz alata
-function upright(itemEl){var b=itemEl&&itemEl.querySelector&&itemEl.querySelector('.body');if(!b)return;try{b.getAnimations().forEach(function(a){a.cancel();});}catch(e){}b.style.transformOrigin='50% 100%';b.style.transform='none';}
+// POLOZAJI KESE: na kuki visi (polozaj iz alata, tacka okacenja je vrh petlje); u ruci zadrzava taj viseci izgled; kad se pusti na sto spusti se (squash) u polozaj "Kesa na stolu";
+// kad se sa stola uzme za rucke, polako se vraca u viseci polozaj, a puštena preko kuke okaci se nazad.
+function hangT(i){var b=bags[Math.max(0,Math.min(bags.length-1,i==null?2:i))]||{p:500,rx:0,ry:10,rz:-12};return 'perspective('+b.p+'px) rotateX('+b.rx+'deg) rotateY('+b.ry+'deg) rotateZ('+b.rz+'deg)';}
+function bodyOf(el){return el&&el.querySelector&&el.querySelector('.body');}
+function hanging(el,fromTable){
+  var b=bodyOf(el);if(!b)return;try{b.getAnimations().forEach(function(a){a.cancel();});}catch(e){}
+  var idx=el.dataset.hookIdx!=null&&el.dataset.hookIdx!==''?+el.dataset.hookIdx:2,to=hangT(idx),org=(APEX*100)+'% 0%';
+  if(fromTable){
+    var from=tableTransform(tableCfg);
+    try{b.animate([{transform:from,transformOrigin:'50% 100%'},{transform:to,transformOrigin:org}],{duration:420,easing:'ease-out',fill:'forwards'}).onfinish=function(){b.style.transformOrigin=org;b.style.transform=to;};}catch(e){}
+  }
+  b.style.transformOrigin=org;b.style.transform=to;el.dataset.hookIdx=String(idx);
+}
 function settle(itemEl){
-  var b=itemEl&&itemEl.querySelector&&itemEl.querySelector('.body');if(!b)return;
-  var c=tableCfg,base='perspective('+c.p+'px) rotateX('+c.rx+'deg) rotateY('+c.ry+'deg) rotateZ('+c.rz+'deg)';
+  var b=bodyOf(itemEl);if(!b)return;
+  var c=tableCfg,base=tableTransform(c),idx=itemEl.dataset.hookIdx!=null&&itemEl.dataset.hookIdx!==''?+itemEl.dataset.hookIdx:2,from=hangT(idx);
+  delete itemEl.dataset.hookIdx;
   b.style.transformOrigin='50% 100%';b.style.transform=base;
   try{b.animate([
-    {transform:'perspective('+c.p+'px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1,1)',offset:0},
-    {transform:base+' scale(1.14,.74)',offset:.38,easing:'ease-out'},
-    {transform:base+' scale(.97,1.05)',offset:.66,easing:'ease-in-out'},
-    {transform:base+' scale(1,1)',offset:1}
-  ],{duration:480,easing:'ease-in'});}catch(e){}
+    {transform:from,transformOrigin:(APEX*100)+'% 0%',offset:0},
+    {transform:base+' scale(1.14,.74)',transformOrigin:'50% 100%',offset:.42,easing:'ease-out'},
+    {transform:base+' scale(.97,1.05)',transformOrigin:'50% 100%',offset:.7,easing:'ease-in-out'},
+    {transform:base+' scale(1,1)',transformOrigin:'50% 100%',offset:1}
+  ],{duration:560,easing:'ease-in'});}catch(e){}
+}
+// kesa iz ruke -> zapis za kuku
+function recOf(el){var d=el.dataset,m=d.quantityMode==='bunch'?'bunch':'kg';var r={id:'hung_'+Date.now(),productKey:d.marketProductKey,label:d.marketProductLabel||d.label,quantityMode:m,quantityValue:+d.quantityValue||1,count:+d.count||0};if(m==='bunch')r.quantityBunches=+d.quantityBunches||r.quantityValue;else r.quantityKg=+d.quantityKg||r.quantityValue;return r;}
+function nearestFree(){
+  var sp;try{sp=screenToScene(mouse.x,mouse.y);}catch(e){return -1;}
+  var best=-1,bd=1e9;for(var i=0;i<bags.length;i++){if(slots[i])continue;var d=Math.hypot(bags[i].x-sp.x,(bags[i].y+bags[i].h*.35)-sp.y);if(d<bd){bd=d;best=i;}}
+  return bd<95?best:-1;
 }
 function tableSize(){return {h:tableCfg.h,w:tableCfg.h*IMG_W/IMG_H};}
 function renderTable(){
@@ -154,7 +173,7 @@ function takeWhole(i){
     if(rec.mixed){(rec.items||[]).forEach(function(r,k){if(countOf(r)>0)makeMarketBag(r,k);});showToast('Iz mesane kese je izvadjeno '+(rec.items||[]).length+' kesa na sto.');CooksterSave.schedule();return;}
     var el=makeMarketBag(rec,0);if(!el)return;
     var sp=screenToScene(mouse.x,mouse.y);el.style.visibility='hidden';
-    setPose(el,sp.x,sp.y,surfaceScaleFor(el,'table',sp.y));startHolding(el);CooksterSave.schedule();
+    el.dataset.hookIdx=String(i);setPose(el,sp.x,sp.y,surfaceScaleFor(el,'table',sp.y));startHolding(el);CooksterSave.schedule();
   }catch(e){}
 }
 function take(i){
@@ -202,11 +221,17 @@ function applyAllTable(){try{items.forEach(function(it){if(it&&it.dataset&&it.da
 function wrapHold(){
   try{
     var sh=window.startHolding,dh=window.dropHolding;
-    if(typeof sh==='function'&&!sh.__bag){var w1=function(el){var r=sh.apply(this,arguments);try{if(el&&el.dataset&&el.dataset.marketBag==='1')upright(el);}catch(e){}return r;};w1.__bag=1;window.startHolding=w1;}
-    if(typeof dh==='function'&&!dh.__bag){var w2=function(){var h=(typeof holding!=='undefined')?holding:null;var r=dh.apply(this,arguments);try{if(h&&h.dataset&&h.dataset.marketBag==='1'&&!h.classList.contains('held'))settle(h);}catch(e){}return r;};w2.__bag=1;window.dropHolding=w2;}
+    if(typeof sh==='function'&&!sh.__bag){var w1=function(el){var r=sh.apply(this,arguments);try{if(el&&el.dataset&&el.dataset.marketBag==='1'){var fromHook=el.dataset.hookIdx!=null&&el.dataset.hookIdx!=='';hanging(el,!fromHook);}}catch(e){}return r;};w1.__bag=1;window.startHolding=w1;}
+    if(typeof dh==='function'&&!dh.__bag){var w2=function(){
+      var h=(typeof holding!=='undefined')?holding:null;
+      try{if(h&&h.dataset&&h.dataset.marketBag==='1'){var f=nearestFree();if(f>=0){      // pusteno preko kuke: okaci se nazad
+        var rec=recOf(h);try{removeItem(h);}catch(e){}holding=null;try{hidePlacementGhost();hideOriginGhost();updateHover();}catch(e){}
+        slots[f]=rec;if(rec.productKey)probe(rec.productKey);saveSlots();render();try{showToast('Kesa je okacena na kuku.');}catch(e){}return;}}}catch(e){}
+      var r=dh.apply(this,arguments);
+      try{if(h&&h.dataset&&h.dataset.marketBag==='1'&&!h.classList.contains('held'))settle(h);}catch(e){}return r;};w2.__bag=1;window.dropHolding=w2;}
   }catch(e){}
 }
 function init(){wrapHold();bags=load();slots=loadSlots();slots.length=Math.min(slots.length,bags.length);slots.forEach(function(r){if(r&&r.productKey)probe(r.productKey);});render();buildPanel();}
-window.CooksterWallBags={settle:settle,upright:upright,srcFor:srcFor,table:function(){return tableCfg;},tableSize:tableSize,applyTable:applyTable,get:function(){return bags;},render:render,open:function(){toggle(true);},hang:hang,take:take,takeWhole:takeWhole,slots:function(){return slots;}};
+window.CooksterWallBags={settle:settle,hanging:hanging,srcFor:srcFor,table:function(){return tableCfg;},tableSize:tableSize,applyTable:applyTable,get:function(){return bags;},render:render,open:function(){toggle(true);},hang:hang,take:take,takeWhole:takeWhole,slots:function(){return slots;}};
 if(document.readyState==='complete')init();else window.addEventListener('load',init);
 })();
