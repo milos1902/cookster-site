@@ -3761,3 +3761,6 @@ body .item.hovered > .body,body .detached-lid.hovered .lid-crop,body .lid-hit.ho
 /* the very small spoon at the cursor over the food (js/game.js: miniSpoon) */
 body.mini-spoon-on #scene,body.mini-spoon-on #scene *{cursor:none!important}
 .item.mini-spoon{filter:none!important}
+
+/* meat in every vessel keeps a shadow under it (raw, fried, grilled, sliced) */
+.whole-produce-piece.meat-piece{filter:drop-shadow(0 2px 1.5px rgba(28,12,4,.6)) drop-shadow(1px 3px 3px rgba(28,12,4,.35))}
