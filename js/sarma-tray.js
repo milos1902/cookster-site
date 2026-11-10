@@ -8,7 +8,7 @@
 (function(){
 'use strict';
 if(window.CooksterSarmaTray)return;
-var TRAY='kal_01_okrugli_pleh',MAXN=14;
+var TRAY='kal_01_okrugli_pleh',MAXN=50;
 var FLOOR={cx:.50,cy:.50,rx:.45,ry:.315};      // the floor of the tray in the picture (fractions of its box)
 var SOFT=.72,PUSH=.42,MAXSTEP=.0045;      // heavy and soft: a weak push, divided by the weight of the sarma, and a small cap of the move in one step (nothing jumps away)
 var SETS={f:{src:'assets/sarma/f8.webp',len:.31,asp:.46},g:{src:'assets/sarma3/g8.webp',len:.33,asp:.43}};
@@ -181,6 +181,7 @@ function lidOn(tr){
   var cv=sys(tr).cv;if(cv)cv.style.opacity='1';
 }
 function lidOff(tr){if(tr._lidEl&&tr._lidEl.parentNode)tr._lidEl.parentNode.removeChild(tr._lidEl);tr._lidEl=null;tr._lid=false;}
+function onHandle(tr,e){var r=tr.getBoundingClientRect(),u=(e.clientX-r.left)/Math.max(1,r.width),v=(e.clientY-r.top)/Math.max(1,r.height);return u>.3&&u<.7&&v>.05&&v<.42;}
 function heldLid(){try{return holding&&holding.dataset&&holding.dataset.itemId===LID_ID?holding:null;}catch(e){return null;}}
 window.addEventListener('pointerdown',function(e){
   if(e.button!==0)return;
@@ -190,7 +191,7 @@ window.addEventListener('pointerdown',function(e){
     try{removeItem(hl);holding=null;hidePlacementGhost();hideOriginGhost();clearPourTarget();updateHover();}catch(x){}
     lidOn(tr);try{playImpactSound(tr,'drop');}catch(x){}return;
   }
-  if(!hl&&emptyHands()&&tr&&tr._lid){
+  if(!hl&&emptyHands()&&tr&&tr._lid&&onHandle(tr,e)){      // only a click on the HANDLE of the lid takes the lid off; a click anywhere else takes the whole tray (with the lid and the sarmas) in the hand and it is moved with them
     var def=null;try{def=kitchenDefForId(LID_ID);}catch(x){}if(!def)return;
     e.stopImmediatePropagation();e.preventDefault();gestureSwallow=true;
     lidOff(tr);

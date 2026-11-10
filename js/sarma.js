@@ -70,26 +70,36 @@ setInterval(function(){try{items.forEach(function(el){if(el.dataset&&el.dataset.
 // the leaves are taken from a head of SOUR cabbage (not from the Kitchen elements): with empty hands the cursor over a whole sour head (the green outline) and the key E peels one leaf off it;
 // the leaf lies next to the head on the table. A head has about 14 leaves.
 var LEAVES=14;
-function sourHeadAt(x,y){
-  var it=(typeof itemAt==='function')?itemAt(x,y):null;
-  if(!it||!it.dataset||it.dataset.vegKey!=='kupus'||it.dataset.fermentPhase!=='3'||it.dataset.cutState!=='whole'||it.dataset.attachedToBoard==='1')return null;
-  return it;
+function sourHeadAt(x,y){      // the head under the cursor, also when leaves lie over it (the leaves are not looked at)
+  var best=null;
+  try{items.forEach(function(it){
+    if(!it||!it.dataset||it.dataset.vegKey!=='kupus'||it.dataset.fermentPhase!=='3'||it.dataset.cutState!=='whole'||it.dataset.attachedToBoard==='1'||it.dataset.kupusHalf==='1')return;
+    var r=it.getBoundingClientRect();var pad=34;if(x>=r.left-pad&&x<=r.right+pad&&y>=r.top-pad&&y<=r.bottom+pad)best=it;});}catch(e){}      // a little room round the head: it gets smaller while the leaves are taken, the cursor stays where it was
+  return best;
 }
 function peel(head){
+  if(!head.dataset.leafBaseVis)head.dataset.leafBaseVis=String(+head.dataset.vis||1);
   var left=head.dataset.leavesLeft===undefined?LEAVES:+head.dataset.leavesLeft;
   if(left<=0){toast('Sa ove glavice nema više listova.');return;}
   var def=null;try{def=kitchenDefForId('kal_01_list_kupusa');}catch(e){}
   if(!def){toast('Nema lista.');return;}
   var cx=+head.dataset.cx||0,by=+head.dataset.by||0,vis=+head.dataset.vis||1,off=(LEAVES-left)%3;
-  var w=def.w,h=def.h,x=cx+(+head.dataset.baseW||100)*vis*.5+w*.62+off*16,y=by+8+off*12;      // next to the head, not over it
+  var bv0=+head.dataset.leafBaseVis||vis,w=def.w,h=def.h,x=cx+(+head.dataset.baseW||100)*bv0*.5+w*.62+off*16,y=by+8+off*12;      // next to the head, not over it
   var el=makeItem({...def,instanceId:nextItemInstanceId(def.id),x:x-w/2,y:y-h,z:++zCounter});
   if(!el)return;
   el.dataset.surfaceZone=head.dataset.surfaceZone||'table';
   try{setPose(el,x,y,vis);}catch(e){}
   setup(el);      // at once (not after the 0.5 s timer): the leaf is never seen for a moment as the plain picture of the game
   head.dataset.leavesLeft=String(left-1);
+  // the head gets smaller with every leaf and is used up completely with the last one
+  if(left-1<=0){setTimeout(function(){try{removeItem(head);}catch(e){}try{updateHover();}catch(e){}},350);}
+  else{
+    if(!head.dataset.leafBaseVis)head.dataset.leafBaseVis=String(vis);
+    var f=.42+.58*((left-1)/LEAVES),bv=+head.dataset.leafBaseVis||vis;
+    try{setPose(head,cx,by,bv*f);}catch(e){}
+  }
   try{playImpactSound(head,'pickup');}catch(e){}
-  toast('List je skinut sa glavice. Još '+(left-1)+'.');
+  toast(left-1>0?'List je skinut sa glavice. Još '+(left-1)+'.':'Poslednji list. Glavica je potrošena.');
   try{CooksterSave.schedule();}catch(e){}
 }
 window.addEventListener('keydown',function(e){
