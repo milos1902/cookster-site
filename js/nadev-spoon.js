@@ -17,7 +17,7 @@ function nadevPan(e){
 function spoon(){
   if(NS.el&&NS.el.isConnected)return NS.el;
   var d=document.createElement('div');d.id='nadevSpoon';d.style.cssText='position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;pointer-events:none;display:none;z-index:11600;transform-origin:50% 16%';
-  var im=document.createElement('img');im.src='assets/sarma/kasika_nadev.webp?v=1';im.draggable=false;im.style.cssText='width:100%;height:100%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))';      // the picture of the spoon WITH the real filling in its bowl
+  var im=document.createElement('img');im.src='assets/sarma/kasika_nadev.webp?v=2';im.draggable=false;im.style.cssText='width:100%;height:100%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))';      // the picture of the spoon WITH the real filling in its bowl
   d.appendChild(im);scene.appendChild(d);NS.el=d;return d;
 }
 function place(){var p=screenToScene(mouse.x,mouse.y);spoon().style.transform='translate3d('+(p.x-W/2).toFixed(1)+'px,'+(p.y-H*.16).toFixed(1)+'px,0)';}
