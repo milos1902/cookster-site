@@ -1352,3 +1352,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - 10.11.: presipanje: cestice izlaze sa ruba nagnute posude, prave se po onome sto je u posudi (pripremljeno stanje: pecene/zagorele slike, cela jela kao jela) - game.js 3.304 (pourParticleSources, spawnPourParticles).
 - 10.11.: presipanje u tanjire: ako ima vise praznih tanjira iste vrste, u svaki ide jednak deo (1/N, pa 1/(N-1) ostatka...) - pourPortionShare u game.js 3.305.
 - 10.11.: kafana zakljucana na pocetku: zute trake X 'ZAKLJUCANO' preko vrata (iza lustera), klik na vrata kaze da je zakljucano, sakriveni ticket_rail i zvonce_konobar (js/tavern-lock.js; otkljucavanje CooksterTavernLock.set(false) ili ?otkljucaj u adresi; ?zakljucaj vraca). Luster podignut 32 px (luster.js Y=-32).
+- 10.11.: font cele igre = Paytone One (kao na starim trakama za vreme/dan, weather.js) - css/game.css 3.10; izuzeci: #cdock .cd-t (Playfair), #menuBook (rukopis), canvas/svg.

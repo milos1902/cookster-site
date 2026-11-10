@@ -3767,3 +3767,8 @@ body.mini-spoon-on #scene,body.mini-spoon-on #scene *{cursor:none!important}
 
 /* no hand (pointer) cursor over things in the kitchen and the bottom dock: only the small white dot (#cursor) is seen */
 #scene,#scene *,#cdock,#cdock *,#hud,#hud *{cursor:none!important}
+
+/* the font of the whole game: Paytone One (the chunky one of the old fields for the weather / date / time in the top right corner; it has č ć š ž đ).
+   Not for the picture-fitted texts of the wooden dock (#cdock .cd-t), the old pen of the recipe book (#menuBook) and the drawings (canvas, svg). */
+@font-face{font-family:'Paytone One';src:url(../assets/fonts/PaytoneOne-Regular.ttf) format('truetype');font-display:swap}
+body :not(canvas):not(svg):not(svg *):not(#menuBook):not(#menuBook *):not(#cdock .cd-t){font-family:'Paytone One',system-ui,sans-serif!important;font-synthesis:none!important}
