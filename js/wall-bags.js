@@ -16,7 +16,7 @@ var SLOTS_KEY='cookster.hanging-bags.v1',slots=[];
 function loadSlots(){try{var r=JSON.parse(localStorage.getItem(SLOTS_KEY)||'null');if(Array.isArray(r))return r;}catch(e){}return [];}
 function saveSlots(){try{localStorage.setItem(SLOTS_KEY,JSON.stringify(slots));}catch(e){}}
 // slika kese po povrcu: assets/ui/wall/kesa_<productKey>.webp ako postoji, inace osnovna (salata)
-var VEG_IMG={};   // popunjava se kad slika postoji (probe preko Image)
+var VEG_IMG={};   // kesa_<kljuc>.webp: sargarepa, paradajz, paprika_zelena, paprika_crvena, luk (ostalo: osnovna)   // popunjava se kad slika postoji (probe preko Image)
 function imgFor(rec){var k=rec&&rec.productKey;return (k&&VEG_IMG[k])?VEG_IMG[k]:SRC;}
 function probe(k){if(VEG_IMG[k]!==undefined)return;VEG_IMG[k]=null;var im=new Image(),u='assets/ui/wall/kesa_'+k+'.webp?v=1';im.onload=function(){VEG_IMG[k]=u;render();};im.src=u;}
 function mixText(r){return (r.items||[]).map(function(x){return (x.label||x.productKey)+' '+qtyText(x);}).join(', ');}
