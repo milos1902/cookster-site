@@ -1,7 +1,7 @@
 /* Cookster: the voice of the narrator (the heir of the house) in the first minutes of a new game.
    The kitchen starts dirty. When the game is shown (the menu is closed) and nothing has been cleaned yet, the narrator says:
      1. "Pre bilo čega... moram sve da očistim."   (assets/audio/narracija/ocistiti.mp3)
-     2. after a pause, if the player still has not started to clean (does not hold the broom): "Negde je tu sigurno bila metla."   (metla.mp3)
+     2. 3.5 seconds after the first one has ended: "Negde je tu sigurno bila metla."   (metla.mp3)
    The words also appear as a subtitle at the bottom. Each line plays once per start of the game. The voice was made in ElevenLabs.
    More lines (the letter, the neighbour at the window) come later. */
 (function(){
@@ -43,7 +43,7 @@ function start(){
   setTimeout(function(){
     if(!dirty())return;
     say('ocistiti',function(){
-      setTimeout(function(){if(dirty()&&!holdingBroom())say('metla');},13000);      // the second line: only if the player still did not take the broom
+      setTimeout(function(){say('metla');},3500);      // the second line follows the first one after a pause of 3.5 seconds
     });
   },1500);
 }
