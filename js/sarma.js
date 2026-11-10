@@ -86,6 +86,7 @@ function peel(head){
   if(!el)return;
   el.dataset.surfaceZone=head.dataset.surfaceZone||'table';
   try{setPose(el,x,y,vis);}catch(e){}
+  setup(el);      // at once (not after the 0.5 s timer): the leaf is never seen for a moment as the plain picture of the game
   head.dataset.leavesLeft=String(left-1);
   try{playImpactSound(head,'pickup');}catch(e){}
   toast('List je skinut sa glavice. Još '+(left-1)+'.');
