@@ -26,14 +26,12 @@ var ORDERS={
     lines2:[
       {who:'Komšinica',text:'Gle, divota. Kao za Savke. Novac ti ostavljam na dasci prozora, i hvala ti.',v:'salata_b1'},
       {who:'Komšinica',text:'Kad si već tu… Da li bi mogao da mi ispržiš i tikvice? Za večeru.',v:'salata_b2'},
-      {who:'',text:'Tikvice… Pokušaću.',v:'salata_b3'},
-      {who:'Komšinica',text:'Pazi samo na vatru, da ne zagore. Doći ću po njih.'}
+      {who:'',text:'Tikvice… Pokušaću.',v:'salata_b3'}
     ]},
   tikvice:{key:'cookster.neighbor.tikvice.v1',match:/tikvice/,pay:300,what:'tiganj sa tikvicama',
     lines1:[
       {who:'Komšinica',text:'Dobar dan, dete. Jesu l\' tikvice gotove?',v:'tikvice_a1'},
-      {who:'',text:'Evo, ispržene su.',v:'tikvice_a2'},
-      {who:'Komšinica',text:'Divno. Stavi ih ovde, na dasku prozora.'}
+      {who:'',text:'Evo, ispržene su.',v:'tikvice_a2'}
     ],
     lines2:[
       {who:'Komšinica',text:'Mmm, kako mirišu. Lepo je Savka pričala da ćeš biti njen naslednik.',v:'tikvice_b1'},
