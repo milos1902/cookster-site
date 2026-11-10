@@ -219,17 +219,43 @@ function hang(records){
 function applyAllTable(){try{items.forEach(function(it){if(it&&it.dataset&&it.dataset.marketBag==='1')applyTable(it);});}catch(e){}}
 // KESA U RUCI (kopija pod kursorom): velicina raste postepeno sa udaljenoscu od kuka, njise se kad se pomera mis, a kad se podigne sa stola preliva se iz polozaja na stolu u viseci (sa odskokom)
 (function(){var st=document.createElement('style');st.textContent='.contact-shadow-sprite.wb-noshadow{display:none!important}';document.head.appendChild(st);})();
+var holdObs=null;
+function hideReal(h){
+  try{
+    h.style.setProperty('visibility','hidden','important');h.style.setProperty('opacity','0','important');
+    if(h._contactShadow){h._contactShadow.classList.add('wb-noshadow');h._contactShadow.style.setProperty('visibility','hidden','important');}
+  }catch(e){}
+}
+function showReal(h){
+  try{
+    h.style.removeProperty('visibility');h.style.removeProperty('opacity');
+    if(h._contactShadow){h._contactShadow.style.removeProperty('visibility');h._contactShadow.classList.remove('wb-noshadow');}
+  }catch(e){}
+}
+// cim igra (ili bilo ko) promeni stil prave kese dok se nosi, odmah (pre crtanja) se vraca skrivena
+function watchReal(h){
+  stopWatch();hideReal(h);
+  try{
+    holdObs=new MutationObserver(function(){
+      if(!h.classList.contains('held')){stopWatch();return;}
+      var v=h.style.getPropertyValue('visibility'),o=h.style.getPropertyValue('opacity');
+      if(v!=='hidden'||o!=='0')hideReal(h);
+    });
+    holdObs.observe(h,{attributes:true,attributeFilter:['style','class']});
+  }catch(e){}
+}
+function stopWatch(){if(holdObs){try{holdObs.disconnect();}catch(e){}holdObs=null;}}
 var hold={el:null,t0:0,fromTable:false,ang:0,vel:0,lx:null};
 function lerp(a,b,t){return a+(b-a)*t;}
 function sstep(t){t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);}
 function holdTick(){
   requestAnimationFrame(holdTick);
   var h=(typeof holding!=='undefined')?holding:null;
-  if(!(h&&h.dataset&&h.dataset.marketBag==='1')){hold.el=null;return;}
+  if(!(h&&h.dataset&&h.dataset.marketBag==='1')){if(hold.el){showReal(hold.el);stopWatch();}hold.el=null;return;}
   var now=performance.now();
   if(hold.el!==h){hold.el=h;hold.t0=now;hold.fromTable=h.dataset.fromTable==='1';hold.ang=0;hold.vel=0;hold.lx=null;hold.lt=null;hold.sv=0;hold.psv=null;}
-  try{if(!h.classList.contains('held')){hold.el=null;return;}      // pusteno: igra je vec vratila kesu, ne diraj
-    if(h.style.visibility!=='hidden')h.style.visibility='hidden';if(h._contactShadow){h._contactShadow.classList.add('wb-noshadow');if(h._contactShadow.style.visibility!=='hidden')h._contactShadow.style.visibility='hidden';}}catch(e){}      // samo kopija pod kursorom se vidi, prava kesa nikad ispred nje
+  if(!h.classList.contains('held')){if(hold.el){showReal(hold.el);stopWatch();}hold.el=null;return;}      // pusteno: igra je vec vratila kesu
+  if(!holdObs)watchReal(h);
   var g=(typeof placementGhost!=='undefined')?placementGhost:null;if(!g)return;
   var cp=g.querySelector('.ghost-item-copy'),bd=cp&&cp.querySelector('.body');if(!bd)return;
   var sp;try{sp=screenToScene(mouse.x,mouse.y);}catch(e){return;}
@@ -269,7 +295,7 @@ function wrapHold(){
         var rec=recOf(h);try{removeItem(h);}catch(e){}holding=null;try{hidePlacementGhost();hideOriginGhost();updateHover();}catch(e){}
         slots[f]=rec;if(rec.productKey)probe(rec.productKey);saveSlots();render();try{showToast('Kesa je okacena na kuku.');}catch(e){}return;}}}catch(e){}
       var r=dh.apply(this,arguments);
-      try{if(h&&h.dataset&&h.dataset.marketBag==='1'){h.style.visibility='';if(h._contactShadow){h._contactShadow.style.visibility='';h._contactShadow.classList.remove('wb-noshadow');}if(!h.classList.contains('held'))settle(h);}}catch(e){}return r;};w2.__bag=1;window.dropHolding=w2;}
+      try{if(h&&h.dataset&&h.dataset.marketBag==='1'){stopWatch();showReal(h);if(!h.classList.contains('held'))settle(h);}}catch(e){}return r;};w2.__bag=1;window.dropHolding=w2;}
   }catch(e){}
 }
 function init(){wrapHold();bags=load();slots=loadSlots();slots.length=Math.min(slots.length,bags.length);slots.forEach(function(r){if(r&&r.productKey)probe(r.productKey);});render();buildPanel();}
