@@ -31,13 +31,12 @@ var ORDERS={
     ]},
   tikvice:{key:'cookster.neighbor.tikvice.v1',match:/tikvice/,pay:300,what:'tiganj sa tikvicama',
     lines1:[
-      {who:'Komšinica',text:'Dobar dan, dete. Jesu l\' tikvice gotove?'},
+      {who:'Komšinica',text:'Dobar dan, dete. Jesu l\' tikvice gotove?',v:'tikvice_a1'},
       {who:'',text:'Evo, ispržene su.',v:'tikvice_a2'},
       {who:'Komšinica',text:'Divno. Stavi ih ovde, na dasku prozora.'}
     ],
     lines2:[
-      {who:'Komšinica',text:'Mmm, kako mirišu. Tačno kao kod Savke.'},
-      {who:'Komšinica',text:'Novac ti ostavljam na dasci prozora. Slobodno kucni opet kad ti zatreba još štagod.'},
+      {who:'Komšinica',text:'Mmm, kako mirišu. Lepo je Savka pričala da ćeš biti njen naslednik.',v:'tikvice_b1'},
       {who:'Komšinica',text:'Laku noć, dete, vidimo se sutra.',v:'tikvice_b3'}
     ]}
 };
