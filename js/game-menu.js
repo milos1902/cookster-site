@@ -30,6 +30,7 @@ function px(v){return 'calc(var(--w)*'+(v/PW).toFixed(5)+')';}      // picture p
 
 var css=document.createElement('style');
 css.textContent=[
+'@font-face{font-family:"Paytone One";src:url(assets/fonts/PaytoneOne-Regular.ttf) format("truetype");font-display:swap}',
 '@font-face{font-family:"CooksterSerif";src:url(assets/fonts/PlayfairDisplay-Variable.ttf) format("truetype");font-weight:400 900;font-display:swap}',
 'body.cdock-on #hud #marketBtn,body.cdock-on #hud #kitchenElementsBtn,body.cdock-on #hud #drinksBtn,body.cdock-on #hud #saveBtn,body.cdock-on #hud #loadBtn{display:none!important}',
 'body.cdock-on img.ui-overlay-element[src*="drvena_traka_krug"],body.cdock-on img.ui-overlay-element[src*="dva_polja"]{display:none!important}',
@@ -43,7 +44,7 @@ css.textContent=[
 '#cdock .cd-pan{z-index:2}',
 '#cdock .cd-panw{position:absolute;inset:0;z-index:2;pointer-events:none;filter:drop-shadow(0 3px 6px rgba(40,20,6,.45));transition:filter .18s}',
 '#cdock.cd-open .cd-panw{filter:drop-shadow(0 0 9px rgba(255,214,90,.85)) drop-shadow(0 3px 6px rgba(40,20,6,.45))}',
-'#cdock .cd-t{position:absolute;z-index:3;transform:translate(-50%,-50%);white-space:nowrap;font-family:"CooksterSerif",Georgia,serif;font-weight:900;font-variant-numeric:lining-nums;font-feature-settings:"lnum" 1;color:#5a2410;text-shadow:0 1px 0 rgba(255,236,200,.55);line-height:1;pointer-events:none}',
+'#cdock .cd-t{position:absolute;z-index:3;transform:translate(-50%,-50%);white-space:nowrap;font-family:"Paytone One","CooksterSerif",Georgia,serif;font-weight:400;font-synthesis:none;color:#5a2410;text-shadow:0 1px 0 rgba(255,236,200,.55);line-height:1;pointer-events:none}',
 '#cdock .cd-wi{position:absolute;z-index:3;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#fbe3c8 55%,#f6d4b0);display:none;align-items:center;justify-content:center;pointer-events:none}',
 '#cdock .cd-hit{position:absolute;inset:0;z-index:5;pointer-events:auto;cursor:pointer;clip-path:polygon('+POLY.map(function(p){return p[0]+'% '+p[1]+'%';}).join(',')+')}',
 '#cdock .cd-hit2{position:absolute;inset:0;z-index:3;pointer-events:none;clip-path:polygon('+ARC.map(function(p){return p[0]+'% '+p[1]+'%';}).join(',')+')}',
