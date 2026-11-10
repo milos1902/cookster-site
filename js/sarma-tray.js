@@ -82,9 +82,10 @@ function draw(el){
   var wl=waterOf(el);
   if(wl>.002){      // the water: a layer on the floor of the tray that rises with the amount, round the sarmas
     var wf=.1+.9*wl,top=h*(.80-.42*wf);
-    var gr=g.createLinearGradient(0,top,0,h*.82);gr.addColorStop(0,'rgba(120,150,150,.55)');gr.addColorStop(1,'rgba(60,85,85,.72)');
+    // the juice of the sarma: opaque, yellowish-reddish (the colour of the cooking liquid with paprika and fat), a little lighter on top, with a soft shine of the fat
+    var gr=g.createLinearGradient(0,top,0,h*.82);gr.addColorStop(0,'rgba(196,118,52,.94)');gr.addColorStop(.5,'rgba(176,86,38,.97)');gr.addColorStop(1,'rgba(136,58,26,.98)');
     g.fillStyle=gr;g.fillRect(0,top,w,h);
-    g.fillStyle='rgba(255,255,255,.18)';g.fillRect(0,top,w,Math.max(1.5,h*.012));
+    g.fillStyle='rgba(255,226,160,.32)';g.fillRect(0,top,w,Math.max(1.6,h*.014));
   }
   var list=st.list.slice().sort(function(a,b){return a.y-b.y;});
   list.forEach(function(s){
@@ -97,7 +98,7 @@ function draw(el){
     g.shadowColor='rgba(20,10,0,.45)';g.shadowBlur=3;g.shadowOffsetY=2;
     g.drawImage(im,-lenPx/2,-hh/2,lenPx,hh);g.restore();
   });
-  if(wl>.45){var tint=Math.min(.3,(wl-.45)*.55);g.fillStyle='rgba(70,100,100,'+tint.toFixed(3)+')';g.fillRect(0,0,w,h);}
+  if(wl>.45){var tint=Math.min(.3,(wl-.45)*.55);g.fillStyle='rgba(150,70,30,'+tint.toFixed(3)+')';g.fillRect(0,0,w,h);}
   g.restore();
 }
 function hit(el,cx,cy){

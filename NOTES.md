@@ -1446,3 +1446,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - 10.11.: velicina sarmi u plehu izmedju (sarma-tray v12: len .285/.305, 14 po plehu).
 - 10.11.: Milos potvrdio velicinu sarmi u plehu (slika 14 sarmi): sarma-tray v13 len .31/.33, asp .46/.43.
 - 10.11.: VODA U PLEHU SA SARMAMA (sarma-tray.js v14, pitcher-pour.js v95): bokal (bokal_stari) u ruci, levi klik drzan nad plehom sa sarmama (bez poklopca) = voda curi (isti tok kao u naceve); 100 jedinica = pun pleh; voda se crta kao sloj oko sarmi i raste. Stanje tray._water / dataset.sarmaWater (jos se ne cuva u save). Sledece: slanina, kuvanje.
+- 10.11.: voda u plehu sa sarmama je neprozirni 'sok od sarme' zutkasto-crvenkast (sarma-tray v15), ne bistra plava.
