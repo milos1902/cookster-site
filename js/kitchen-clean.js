@@ -250,6 +250,7 @@ window.CooksterKitchenClean={
     level.fill(1);sweepOf.fill(-1);applied.fill(0);finish.done=false;startClean=false;down=false;dust.length=0;
     if(!cv.parentNode)sc.insertBefore(cv,sc.firstChild);
     cv.style.display='block';cv.style.transition='none';cv.style.opacity='1';dirty=true;
+    try{window.dispatchEvent(new CustomEvent('cookster:kitchen-restart'));}catch(e){}
   }
 };
 })();
