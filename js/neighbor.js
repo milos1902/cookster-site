@@ -37,7 +37,8 @@ var ORDERS={
     ],
     lines2:[
       {who:'Komšinica',text:'Mmm, kako mirišu. Tačno kao kod Savke.'},
-      {who:'Komšinica',text:'Novac ti ostavljam na dasci prozora. Slobodno kucni opet kad ti zatreba još štagod.'}
+      {who:'Komšinica',text:'Novac ti ostavljam na dasci prozora. Slobodno kucni opet kad ti zatreba još štagod.'},
+      {who:'Komšinica',text:'Laku noć, dete, vidimo se sutra.',v:'tikvice_b3'}
     ]}
 };
 // the sill of the open window (scene pixels): the bowl / the pan is put there with a click
@@ -108,8 +109,16 @@ function animStep(now){
   elJ.style.transform='translateY('+jaw.toFixed(2)+'px) scaleY('+(1+jaw*.025).toFixed(3)+')';
   if(on||a>.01)requestAnimationFrame(animStep);else{animOn=false;elH.style.transform='';elJ.style.transform='';}
 }
+var vAud=null;
+function stopVoice(){if(vAud){try{vAud.onended=null;vAud.pause();}catch(e){}vAud=null;}}
+function playVoice(L){      // the line has a voice file: she moves for its real length, and the next line comes right after it (no pause)
+  stopVoice();var a=new Audio('assets/audio/komsinica/'+L.v+'.mp3?v=1'),my=li;a.volume=.95;vAud=a;
+  a.addEventListener('loadedmetadata',function(){if(vAud===a&&isFinite(a.duration))speak(a.duration*1000+150);});
+  a.onended=function(){if(vAud===a&&st==='talk'&&li===my){vAud=null;next();}};
+  var pr=a.play();if(pr&&pr.catch)pr.catch(function(){});
+}
 function showLine(){
-  var L=lines[li];if(L.who)speak(Math.max(1200,L.text.length*62));else speakUntil=0;box.querySelector('.nb-who').textContent=L.who||'';box.querySelector('.nb-who').style.display=L.who?'':'none';
+  var L=lines[li];stopVoice();if(L.who)speak(Math.max(1200,L.text.length*62));else speakUntil=0;if(L.v)playVoice(L);box.querySelector('.nb-who').textContent=L.who||'';box.querySelector('.nb-who').style.display=L.who?'':'none';
   box.querySelector('.nb-text').textContent=L.text;box.querySelector('.nb-text').style.fontStyle=L.who?'':'italic';
   box.style.display='block';box.querySelector('button').textContent=li>=lines.length-1?'U redu':'Dalje ▸';
 }
@@ -120,7 +129,7 @@ function next(){
   showLine();
 }
 function finish(){
-  box.style.display='none';speakUntil=0;
+  box.style.display='none';speakUntil=0;stopVoice();
   if(afterTalk){var f=afterTalk;afterTalk=null;st='done';f();return;}      // she stays at the window (the callback decides)
   elO.style.opacity='0';st='done';
   try{localStorage.setItem(KEY,'1');}catch(e){}
