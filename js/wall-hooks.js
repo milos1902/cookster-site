@@ -7,11 +7,8 @@
 (function(){
 'use strict';
 if(window.CooksterWallHooks)return;
-var KEY='cookster.wall-hooks.v1',IMG_W=101,IMG_H=160,SRC='assets/ui/wall/kuka.webp?v=2';
-var DEFAULTS=[
-  {x:114,y:303,h:34,rz:-16,rx:0,ry:0,p:500},{x:98,y:336,h:34,rz:-16,rx:0,ry:0,p:500},{x:82,y:369,h:34,rz:-16,rx:0,ry:0,p:500},
-  {x:66,y:402,h:34,rz:-16,rx:0,ry:0,p:500},{x:50,y:435,h:34,rz:-16,rx:0,ry:0,p:500},{x:34,y:468,h:34,rz:-16,rx:0,ry:0,p:500}
-];
+var KEY='cookster.wall-hooks.v2',IMG_W=101,IMG_H=160,SRC='assets/ui/wall/kuka.webp?v=2';
+var DEFAULTS=[{"x":110,"y":299.4,"h":34,"rz":-16,"rx":0,"ry":24.5,"p":100},{"x":95.2,"y":334.8,"h":34,"rz":-16,"rx":0,"ry":18.5,"p":100},{"x":82,"y":369,"h":34,"rz":-16,"rx":0,"ry":20,"p":100},{"x":66,"y":402,"h":34,"rz":-16,"rx":0,"ry":21.5,"p":100},{"x":50.8,"y":434.2,"h":34,"rz":-16,"rx":0,"ry":23,"p":100},{"x":35.2,"y":463.9,"h":34,"rz":-11,"rx":0,"ry":11,"p":100}];   // tvoj izvoz iz alata (10.11.)
 var hooks=null;
 function clone(o){return JSON.parse(JSON.stringify(o));}
 function load(){
