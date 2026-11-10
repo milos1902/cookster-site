@@ -411,6 +411,7 @@ window.CooksterCatalog = Object.freeze({
     }),
     itemProfiles: Object.freeze({
       daska:'none',
+      kal_01_list_kupusa:'none',      // cabbage leaves occupy no place: they can lie on each other (stacked)
       noz:'knife'
     }),
     candidateItemProfiles: Object.freeze({
