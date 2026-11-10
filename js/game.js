@@ -15634,6 +15634,20 @@ function crateAt(x,y,vegKey=null){
  return null;
 }
 
+function returnVegetableToMarketBag(vegItem,bag){
+ if(!vegItem||vegItem.dataset.vegetable!=='1'||!bag||bag.dataset.marketBag!=='1')return false;
+ if((bag.dataset.vegKey||'')!==(vegItem.dataset.vegKey||'')){showToast('Ovo povrce ne ide u tu kesu.');return true;}
+ bag.dataset.count=String((+bag.dataset.count||0)+1);
+ renderMarketBag(bag);
+ showToast('Vraceno u kesu: '+(vegItem.dataset.label||''));
+ removeItem(vegItem);
+ holding=null;
+ hidePlacementGhost();
+ hideOriginGhost();
+ updateHover();
+ CooksterSave.schedule();
+ return true;
+}
 function returnVegetableToCrate(vegItem,crate){
  if(!vegItem||vegItem.dataset.vegetable!=='1'||!crate||crate.dataset.crate!=='1')return false;
  const current=+crate.dataset.count||0;
@@ -16367,6 +16381,7 @@ if(e.button===0&&!holding&&cookstoveHot==='oven'){const action=stoveState.ovenOp
    if(isCleaningTool(holding)){const stain=stainAt(e.clientX,e.clientY);if(stain&&beginCleaning(stain,e))return;}
    if(isCleaningTool(holding)&&window.CooksterKitchenClean?.active?.()&&CooksterKitchenClean.begin(e)){cleaning=true;cleanStainEl=null;cleanPointerId=e.pointerId;cleanLastX=e.clientX;cleanLastY=e.clientY;holding.classList.add('cleaning-tool');hidePlacementGhost();hideOriginGhost();positionCleaningSponge(e);return;}
    if(isIngredientItem(holding)&&commitHeldIngredientToVessel(holding,e.clientX,e.clientY))return;
+   if(holding.dataset.vegetable==='1'&&it&&it!==holding&&it.dataset.marketBag==='1'&&returnVegetableToMarketBag(holding,it))return;
    if(holding.dataset.vegetable==='1'){
      const targetCrate=crateAt(e.clientX,e.clientY,holding.dataset.vegKey);
      if(targetCrate&&returnVegetableToCrate(holding,targetCrate))return;
