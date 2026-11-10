@@ -10,7 +10,7 @@
 if(window.CooksterSarmaTray)return;
 var TRAY='kal_01_okrugli_pleh',MAXN=14;
 var FLOOR={cx:.50,cy:.50,rx:.45,ry:.315};      // the floor of the tray in the picture (fractions of its box)
-var SOFT=.72,PUSH=1.1;
+var SOFT=.72,PUSH=.42,MAXSTEP=.0045;      // heavy and soft: a weak push, divided by the weight of the sarma, and a small cap of the move in one step (nothing jumps away)
 var SETS={f:{src:'assets/sarma/f8.webp',len:.31,asp:.46},g:{src:'assets/sarma3/g8.webp',len:.33,asp:.43}};
 var spr={};
 Object.keys(SETS).forEach(function(k){var im=new Image();im.onload=function(){      // crop to the solid part (the rolled sarma is a small part of the picture)
@@ -47,8 +47,9 @@ function relax(st,iters){
           var f=(min-d)*PUSH,nx=dx/d,ny=dy/d,wa=(st.drag===a||a.pin>0)?0:1,wb=(st.drag===b||b.pin>0)?0:1,tot=(wa+wb)||1;
           var sa=wa/tot*f,sb=wb/tot*f;
           // move + turn: the displacement at a point moves the centre and turns the body round it
-          a.x-=nx*sa*.6;a.y-=ny*sa*.6;a.a-=((pa[p].x-a.x)*(-ny)-(pa[p].y-a.y)*(-nx))*sa*1.2/(a.len*a.len*.2+.01)*.5;
-          b.x+=nx*sb*.6;b.y+=ny*sb*.6;b.a+=((pb[q].x-b.x)*(ny)-(pb[q].y-b.y)*(nx))*sb*1.2/(b.len*b.len*.2+.01)*.5;
+          var ma=a.m||1,mb=b.m||1,ca=Math.min(MAXSTEP,sa*.6/ma),cb=Math.min(MAXSTEP,sb*.6/mb);      // a heavy sarma gives way less; a light one more
+          a.x-=nx*ca;a.y-=ny*ca;a.a-=((pa[p].x-a.x)*(-ny)-(pa[p].y-a.y)*(-nx))*sa*.5/ma/(a.len*a.len*.2+.01)*.35;
+          b.x+=nx*cb;b.y+=ny*cb;b.a+=((pb[q].x-b.x)*(ny)-(pb[q].y-b.y)*(nx))*sb*.5/mb/(b.len*b.len*.2+.01)*.35;
         }
       }
     }
@@ -61,8 +62,16 @@ function relax(st,iters){
 function tick(el){
   var st=sys(el);st.raf=0;
   var before=st.list.map(function(s){return [s.x,s.y,s.a];});
-  if(st.drag){var d=st.drag,t=st.target;if(t){d.x+= (t.x-d.x)*.55;d.y+=(t.y-d.y)*.55;var lim=FLOOR.rx-d.r*.3,rr=Math.hypot(d.x,d.y);if(rr>lim){d.x*=lim/rr;d.y*=lim/rr;}}}
-  relax(st,8);st.list.forEach(function(q){if(q.pin>0)q.pin--;});
+  if(st.drag){var d=st.drag,t=st.target;if(t){d.x+=Math.max(-.02,Math.min(.02,(t.x-d.x)*.45));d.y+=Math.max(-.02,Math.min(.02,(t.y-d.y)*.45));var lim=FLOOR.rx-d.r*.3,rr=Math.hypot(d.x,d.y);if(rr>lim){d.x*=lim/rr;d.y*=lim/rr;}}}
+  var x0=st.list.map(function(q){return [q.x,q.y,q.a];});
+  relax(st,8);
+  // heavy: in one frame a sarma that is pushed may only go a very little way and turn a little (nothing jumps away), only the sarma in the hand follows the mouse freely
+  st.list.forEach(function(q,i){
+    if(q.pin>0)q.pin--;if(st.drag===q)return;
+    var dx=q.x-x0[i][0],dy=q.y-x0[i][1],dd=Math.hypot(dx,dy),cap=.0034/(q.m||1);
+    if(dd>cap){q.x=x0[i][0]+dx*cap/dd;q.y=x0[i][1]+dy*cap/dd;}
+    var da=q.a-x0[i][2],ca=.012/(q.m||1);if(Math.abs(da)>ca)q.a=x0[i][2]+Math.sign(da)*ca;
+  });
   var mv=0;st.list.forEach(function(s,i){mv=Math.max(mv,Math.abs(s.x-before[i][0])+Math.abs(s.y-before[i][1])+Math.abs(s.a-before[i][2])*.05);});
   draw(el);
   if(mv>.0006||st.drag||st.active>0){st.active=Math.max(0,st.active-1);st.raf=requestAnimationFrame(function(){tick(el);});}
@@ -113,7 +122,7 @@ function add(el,set,cx,cy,rotDeg){
   var tang=Math.atan2(p.y,p.x)+Math.PI/2;      // along the circle round the middle of the tray (the first rings round the edge, then inwards); the middle one lies freely
   var ang=rr<FLOOR.rx*.22?(Math.random()-.5)*1.2:tang+(Math.random()-.5)*.25;
   if(typeof rotDeg==='number'){var kk=(FLOOR.ry*boxRatio(el))/FLOOR.rx,rs=rotDeg*Math.PI/180;ang=Math.atan2(Math.sin(rs)/kk,Math.cos(rs));}      // the player turned it with the wheel: it goes in exactly like that
-  st.list.push({x:p.x,y:p.y,a:ang,len:len,r:len*S.asp*.5,set:set,pin:90});
+  st.list.push({x:p.x,y:p.y,a:ang,len:len,r:len*S.asp*.5,set:set,pin:90,m:.8+Math.random()*1.7});      // m: the weight (a light one .8 ... a heavy one 2.5)
   kick(el,60);return true;
 }
 function trayAt(e){var it=(typeof itemAt==='function')?itemAt(e.clientX,e.clientY):null;return isTray(it)?it:null;}
