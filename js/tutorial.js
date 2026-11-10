@@ -64,7 +64,7 @@ var STEPS=[
    target:function(){return rectOf(document.getElementById('marketAcceptBtn'));},
    done:function(){return !body('market-open')&&bagsAnywhere();}},
   {id:'tools',text:'Treba nam daska i nož. Otvori desnu fioku ispod stola (klik na ručku), uzmi dasku sa nožem i spusti je na sto.',
-   target:function(){return sceneRect(930,672,1090,735);},done:boardOnTable},
+   done:boardOnTable},      // no arrow: the neighbour at the window will say that the board is in the right drawer
   {id:'bag',text:'Kupljeno je u kesi koja visi na kuki levo. Klikni na donji deo kese da izvadiš paradajz.',
    target:function(){return wallBagRect();},done:function(){return vegs('paradajz').length>0;}},
   {id:'board',text:'Spusti paradajz na dasku (levi klik na dasku).',
