@@ -12203,12 +12203,9 @@ function marketBagUnitCount(productKey,quantityValue,quantityMode='kg'){
 }
 function renderMarketBag(bag){
   if(!bag||bag.dataset.marketBag!=='1')return;
-  let tag=bag.querySelector('.market-bag-tag');
-  if(!tag){
-    tag=document.createElement('div');
-    tag.className='market-bag-tag';
-    bag.appendChild(tag);
-  }
+  bag.querySelectorAll('.market-bag-tag').forEach(t=>t.remove());      // natpis (ime i kolicina) na kesi je uklonjen: torba sama pokazuje sta je unutra
+  const tag=document.createElement('div');      // samo za racunanje teksta ispod; ne ide u scenu
+  bag.title=`${bag.dataset.marketProductLabel||bag.dataset.label||'Кеса'}`;
   const label=bag.dataset.marketProductLabel||bag.dataset.label||'Намирница';
   const count=Math.max(0,+bag.dataset.count||0);
   const mode=bag.dataset.quantityMode||'kg';
