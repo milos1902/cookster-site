@@ -1,7 +1,7 @@
 /* Cleaning the kitchen. The game starts with the DIRTY picture (assets/kitchen/prljava.webp) lying over the clean kitchen; whatever is rubbed off shows the clean one under it.
    - the broom (metla) cleans only the floor, the sponge (sunđer) cleans everything else (table, stove, sink, window, walls, grill, chest)
    - hold the left mouse button and move the tool left <-> right (or up <-> down): every sweep in one direction is one pass and takes off a third of the dirt of the places it touches;
-     about two and a half passes over the same place make it clean (a change of direction starts a new pass)
+     about three and a half passes over the same place make it clean (a change of direction starts a new pass)
    - the broom lifts a little dust and swishes, the sponge uses the scrubbing sound of the tool "Zvuk" (CooksterSound.scrub)
    The levels of the dirt (a grid of 4 px cells) are kept in this browser (cookster.kitchen-dirt.v1); "Nova igra" in the start menu clears them. ?cistakuhinja in the address starts with a clean kitchen. */
 (function(){
@@ -125,7 +125,7 @@ function stamp(x,y,b){
       var t=(q-.3)/.7,w=t<=0?1:1-t*t*(3-2*t);           // 1 in the middle, 0 at the edge (smoothstep)
       if(w<=.002)continue;
       if(sweepOf[id]!==curSweep){sweepOf[id]=curSweep;applied[id]=0;}
-      if(w>applied[id]){level[id]=Math.max(0,level[id]-(w-applied[id])/2.5);applied[id]=w;hit=true;if(level[id]<.004)level[id]=0;}
+      if(w>applied[id]){level[id]=Math.max(0,level[id]-(w-applied[id])/3.6);applied[id]=w;hit=true;if(level[id]<.004)level[id]=0;}
     }}
   if(hit){dirty=true;puff(x,y+8,tool==='metla'?2:1,tool==='metla');}
   return touched;
