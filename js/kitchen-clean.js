@@ -134,15 +134,28 @@ if(startClean){cv.style.display='none';}
 
 // ---------- the sound of the broom: a short swish of filtered noise (no file) ----------
 var ac=null,lastSwish=0;
+var swishSweep=-1,spongeSweep=-1;
+function sponge(speed){      // one wet, soft rub per stroke of the sponge (noise through a low band that sweeps down, with a quick start)
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;if(!ac&&AC)ac=new AC();if(!ac)return;if(ac.state==='suspended')ac.resume();
+    var dur=.3,len=Math.floor(ac.sampleRate*dur),buf=ac.createBuffer(1,len,ac.sampleRate),d=buf.getChannelData(0);
+    for(var i=0;i<len;i++){var t=i/len,env=Math.pow(Math.sin(Math.PI*Math.pow(t,.55)),1.3);d[i]=(Math.random()*2-1)*env;}
+    var n=ac.createBufferSource();n.buffer=buf;
+    var f=ac.createBiquadFilter();f.type='bandpass';var t0=ac.currentTime,f0=1300+Math.random()*350;f.frequency.setValueAtTime(f0,t0);f.frequency.exponentialRampToValueAtTime(f0*.55,t0+dur);f.Q.value=1.1;
+    var lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;
+    var g2=ac.createGain();g2.gain.value=Math.min(.13,.045+speed/6000);
+    n.connect(f);f.connect(lp);lp.connect(g2);g2.connect(ac.destination);n.start();
+  }catch(e){}
+}
 function swish(speed){
-  var now=performance.now();if(now-lastSwish<330)return;lastSwish=now;
+  var now=performance.now();if(now-lastSwish<120)return;lastSwish=now;
   try{
     var AC=window.AudioContext||window.webkitAudioContext;if(!ac&&AC)ac=new AC();if(!ac)return;if(ac.state==='suspended')ac.resume();
     var len=Math.floor(ac.sampleRate*.34),buf=ac.createBuffer(1,len,ac.sampleRate),d=buf.getChannelData(0);
     for(var i=0;i<len;i++){var t=i/len,env=Math.sin(Math.PI*Math.pow(t,.7));d[i]=(Math.random()*2-1)*env;}
     var n=ac.createBufferSource();n.buffer=buf;
     var f=ac.createBiquadFilter();f.type='bandpass';f.frequency.value=1700+Math.random()*700;f.Q.value=.7;
-    var g2=ac.createGain();g2.gain.value=Math.min(.34,.12+speed/2400);
+    var g2=ac.createGain();g2.gain.value=Math.min(.15,.05+speed/5200);      // quieter
     n.connect(f);f.connect(g2);g2.connect(ac.destination);n.start();
   }catch(e){}
 }
@@ -189,8 +202,8 @@ function onMove(e){
   if(tool==='metla')dustClouds(p.x,p.y,Math.min(4,1+Math.round(dist/12)),dx,dy);      // a big cloud of dust follows the broom
   if(tool==='sundjer')bubbles(p.x,p.y+6,Math.min(9,2+Math.round(dist/5)));      // the sponge makes a lot of soap bubbles all along its way
   var dt=Math.max(1,now-pt),speed=dist/dt*1000;
-  if(tool==='metla')swish(speed);
-  else{try{if(window.CooksterSound&&CooksterSound.scrub)CooksterSound.scrub(dx,dy,dt);}catch(x){}}
+  if(tool==='metla'&&curSweep!==swishSweep){swishSweep=curSweep;swish(speed);}      // ONE swish per stroke (left, then right...), not a continuous sound while the mouse moves
+  else if(curSweep!==spongeSweep){spongeSweep=curSweep;sponge(speed);}      // the sponge: also ONE rub per stroke (the continuous scrubbing sound is no longer used)
   if(!any&&now-lastHint>2600){lastHint=now;say(tool==='metla'?'Metla čisti samo pod. Za sve ostalo uzmi sunđer.':'Sunđer ne čisti pod. Za pod uzmi metlu.',2200);}
   px=p.x;py=p.y;pt=now;
   var pr=progress();say('Kuhinja: '+Math.min(100,Math.round(pr*100))+'% očišćena',1400);
