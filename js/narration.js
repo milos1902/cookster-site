@@ -51,5 +51,5 @@ window.addEventListener('pointerdown',function(){if(pending){var f=pending;pendi
 window.addEventListener('cookster:menu-closed',start);
 function auto(){if(/[?&]nomenu\b/.test(location.search))setTimeout(start,2500);}
 if(document.readyState==='complete')auto();else window.addEventListener('load',auto);
-window.CooksterNarration={say:say,start:start};
+window.CooksterNarration={say:say,start:start,sub:showSub};
 })();

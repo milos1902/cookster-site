@@ -1,4 +1,4 @@
-/* Cookster: uputstvo koje vodi Baba Savka. Poruke izlaze u okviru gore, a animirana strelica (blago ide gore-dole) pokazuje gde da se klikne.
+/* Cookster: uputstvo: beleške iz Savkine knjige (Savka ne može da priča, ona je ostavila knjigu). Poruke izlaze u okviru gore, a animirana strelica (blago ide gore-dole) pokazuje gde da se klikne.
    Koraci se sami prebacuju kad igrac uradi trazeno (provera stanja u igri, ne klikovi na dugme "Dalje"). Uvek se moze preskociti.
    Ukljucuje se: dodaj ?uputstvo u adresu (npr. index.html?uputstvo), ili CooksterTutorial.start(). Dok uputstvo nije gotovo, ne pali se samo od sebe.
    Stanje: localStorage 'cookster.tutorial.v1' {i: korak, done: bool}. Prvi deo: srpska salata (do kupovine na pijaci). */
@@ -46,8 +46,7 @@ function boughtNow(){var h=document.getElementById('marketHaggleStep');if(h&&h.c
 // ---------- koraci ----------
 // text: sta Savka kaze; target: funkcija koja vraca pravougaonik (ekran) na koji strelica pokazuje; done: kad je korak gotov; button: "Dalje" umesto provere
 var STEPS=[
-  {id:'hello',button:'Dalje',text:'Dobro došao u moju kuhinju, sine. Hajde da skuvamo srpsku salatu, pa ću ti usput pokazati gde je šta.'},
-  {id:'dock',text:'Pređi mišem preko drvenog polja dole levo, tamo gde je sat. Otvoriće se ikonice.',target:plateRect,done:function(){return dockOpen()||body('market-open');}},
+  {id:'dock',text:'Za salatu trebaju nam sastojci. Pređi mišem preko drvenog polja dole levo, tamo gde je sat. Otvoriće se ikonice.',target:plateRect,done:function(){return dockOpen()||body('market-open');}},
   {id:'market',text:function(){return dockOpen()?'Klikni na pijacu, ikonicu sa tezgom. Treba nam povrće.':'Zadrži miš na drvenom polju sa satom, da se ikonice otvore.';},
    target:function(){return dockOpen()?(dockBtn('Pijaca')||plateRect()):plateRect();},done:function(){return body('market-open');}},
   {id:'pick',requires:function(){return body('market-open')?null:'market';},
@@ -63,8 +62,6 @@ var STEPS=[
    text:'Prodavac traži cenu. Možeš da se cenkaš, a možeš i odmah da pritisneš „Prihvati cenu“.',
    target:function(){return rectOf(document.getElementById('marketAcceptBtn'));},
    done:function(){return !body('market-open')&&bagsAnywhere();}},
-  {id:'tools',text:'Treba nam daska i nož. Otvori desnu fioku ispod stola (klik na ručku), uzmi dasku sa nožem i spusti je na sto.',
-   done:boardOnTable},      // no arrow: the neighbour at the window will say that the board is in the right drawer
   {id:'bag',text:'Kupljeno je u kesi koja visi na kuki levo. Klikni na donji deo kese da izvadiš paradajz.',
    target:function(){return wallBagRect();},done:function(){return vegs('paradajz').length>0;}},
   {id:'board',text:'Spusti paradajz na dasku (levi klik na dasku).',
@@ -123,7 +120,7 @@ css.textContent=[
 ].join('\n');
 document.head.appendChild(css);
 var bub=document.createElement('div');bub.id='tutBubble';
-bub.innerHTML='<div class="tb-av">S</div><div class="tb-name">Baba Savka</div><div class="tb-text"></div><div class="tb-row"><button type="button" class="tb-skip">Preskoči uputstvo</button><button type="button" class="tb-next" style="display:none">Dalje</button></div>';
+bub.innerHTML='<div class="tb-av">📖</div><div class="tb-name">Savkina beleška</div><div class="tb-text"></div><div class="tb-row"><button type="button" class="tb-skip">Preskoči uputstvo</button><button type="button" class="tb-next" style="display:none">Dalje</button></div>';
 document.body.appendChild(bub);
 var arrow=document.createElement('div');arrow.id='tutArrow';
 arrow.innerHTML='<svg viewBox="0 0 46 58"><path d="M14 2h18v26h11L23 55 3 28h11z" fill="#f2b631" stroke="#5a2a0e" stroke-width="3" stroke-linejoin="round"/><path d="M18 6h10v26" fill="none" stroke="#fff3b8" stroke-width="2.5" stroke-linecap="round" opacity=".7"/></svg>';
@@ -152,7 +149,7 @@ function placeArrow(r,side){
 }
 function go(i){
   st.i=Math.max(0,Math.min(STEPS.length-1,i));save();cur=STEPS[st.i];shownId='';
-  if(cur.id==='z_dock'||cur.id==='hello')bought=false;      // nova kupovina
+  if(cur.id==='z_dock'||cur.id==='dock')bought=false;      // nova kupovina
   if(cur.enter){try{cur.enter();}catch(e){}}
 }
 function frame(){
