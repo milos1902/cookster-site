@@ -6085,7 +6085,13 @@ function hasPerspectiveCalibrationPoints(el,zone){
  const pts=perspectiveCorrections?.[id]?.points?.[prefix];
  return Array.isArray(pts)&&pts.length>0;
 }
+// Povrce i voce koje se prenese na POD (preko ivice stola) je 40% manje: sama scena (zone stola/poda iz kalibracije scene) odlucuje gde je ivica
+const FLOOR_PRODUCE_SCALE=.6;
 function surfaceScaleFor(el,zone,by){
+ const v=surfaceScaleCore(el,zone,by);
+ return (zone==='floor'&&el&&el.dataset&&(el.dataset.vegetable==='1'||el.dataset.fruit==='1'))?v*FLOOR_PRODUCE_SCALE:v;
+}
+function surfaceScaleCore(el,zone,by){
  const corr=typeof perspectiveCorrectionFor==='function'?perspectiveCorrectionFor(el,zone):{scale:1};
  // For calibrated items the user's JSON scale is the single authority.
  // Do not multiply it by the old geometry depth curve as well.
