@@ -54,7 +54,7 @@ var cv=document.createElement('canvas');cv.id='kitchenDirt';cv.width=W;cv.height
 cv.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:26';
 sc.insertBefore(cv,sc.firstChild);
 var g=cv.getContext('2d'),img=new Image(),ready=false,dirty=true;
-img.onload=function(){ready=true;dirty=true;draw();};img.src='assets/kitchen/prljava.webp?v=1';
+img.onload=function(){ready=true;dirty=true;draw();};img.src='assets/kitchen/prljava.webp?v=2';
 var mk=document.createElement('canvas');mk.width=GW;mk.height=GH;var mg=mk.getContext('2d'),md=mg.createImageData(GW,GH);
 function draw(){
   if(!ready||!dirty)return;dirty=false;
