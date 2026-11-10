@@ -12,28 +12,48 @@ function defaults(){return JSON.parse(JSON.stringify(DEFAULTS));}
 function norm(b){return {x:+b.x,y:+b.y,h:+b.h||72,rz:+b.rz||0,rx:+b.rx||0,ry:+b.ry||0,p:+b.p||500};}
 var bags=[],els=[],sel=-1,open=false,showAll=true;
 // kesa NA STOLU (ona koja se uzme sa kuke i spusti na sto / drzi u ruci): isti oblik podesavanja; nema x,y (stoji gde je spustena), h = visina px
-var TABLE_KEY='cookster.wall-bags.table.v2',TABLE_DEF={h:204,rz:2,rx:44,ry:0,p:800};   // tvoj izvoz iz alata (10.11.)
-function loadTable(){try{var r=JSON.parse(localStorage.getItem(TABLE_KEY)||'null');if(r&&isFinite(r.h))return {h:+r.h,rz:+r.rz||0,rx:+r.rx||0,ry:+r.ry||0,p:+r.p||900};}catch(e){}return JSON.parse(JSON.stringify(TABLE_DEF));}
+var TABLE_KEY='cookster.wall-bags.table.v2',TABLE_DEF={h:204,rz:2,rx:44,ry:0,p:800,br:1};   // tvoj izvoz iz alata (10.11.)
+function loadTable(){try{var r=JSON.parse(localStorage.getItem(TABLE_KEY)||'null');if(r&&isFinite(r.h))return {h:+r.h,rz:+r.rz||0,rx:+r.rx||0,ry:+r.ry||0,p:+r.p||900,br:(isFinite(+r.br)&&+r.br>0)?+r.br:1};}catch(e){}return JSON.parse(JSON.stringify(TABLE_DEF));}
 var tableCfg=loadTable(),mode='hooks',tableEl=null;
 function saveTable(){try{localStorage.setItem(TABLE_KEY,JSON.stringify(tableCfg));}catch(e){}}
 // slike kesa po povrcu koje postoje (ostalo: osnovna torba)
 var KNOWN={sargarepa:1,paradajz:1,paprika_zelena:1,paprika_crvena:1,luk:1,krastavac:1,kupus:1,patlidzan:1,tikvice:1,rotkvice:1};
 function srcFor(key){return KNOWN[key]?('assets/ui/wall/kesa_'+key+'.webp?v=1'):'assets/ui/wall/kesa.webp?v=2';}
+function brF(){return tableCfg.br&&tableCfg.br!==1?'brightness('+tableCfg.br+')':'';}
 function tableTransform(c){return 'perspective('+c.p+'px) rotateX('+c.rx+'deg) rotateY('+c.ry+'deg) rotateZ('+c.rz+'deg)';}
 // primeni podesavanja stola na kesu-predmet (img.body): velicinu i nagibe, oslonac je dno
 function applyTable(itemEl){var b=itemEl&&itemEl.querySelector&&itemEl.querySelector('.body');if(!b)return;b.style.transformOrigin='50% 100%';b.style.transform=tableTransform(tableCfg);}
-// u ruci kesa stoji uspravno; kad se pusti na sto spljosti se (squash), malo odskoci i legne u polozaj iz alata
-function upright(itemEl){var b=itemEl&&itemEl.querySelector&&itemEl.querySelector('.body');if(!b)return;try{b.getAnimations().forEach(function(a){a.cancel();});}catch(e){}b.style.transformOrigin='50% 100%';b.style.transform='none';}
+// POLOZAJI KESE: na kuki visi (polozaj iz alata, tacka okacenja je vrh petlje); u ruci zadrzava taj viseci izgled; kad se pusti na sto spusti se (squash) u polozaj "Kesa na stolu";
+// kad se sa stola uzme za rucke, polako se vraca u viseci polozaj, a puštena preko kuke okaci se nazad.
+function hangT(i){var b=bags[Math.max(0,Math.min(bags.length-1,i==null?2:i))]||{p:500,rx:0,ry:10,rz:-12};return 'perspective('+b.p+'px) rotateX('+b.rx+'deg) rotateY('+b.ry+'deg) rotateZ('+b.rz+'deg)';}
+function bodyOf(el){return el&&el.querySelector&&el.querySelector('.body');}
+function hanging(el,fromTable){
+  var b=bodyOf(el);if(!b)return;try{b.getAnimations().forEach(function(a){a.cancel();});}catch(e){}
+  var idx=el.dataset.hookIdx!=null&&el.dataset.hookIdx!==''?+el.dataset.hookIdx:2,to=hangT(idx),org=(APEX*100)+'% 0%';
+  if(fromTable){
+    var from=tableTransform(tableCfg);
+    try{b.animate([{transform:from,transformOrigin:'50% 100%'},{transform:to,transformOrigin:org}],{duration:420,easing:'ease-out',fill:'forwards'}).onfinish=function(){b.style.transformOrigin=org;b.style.transform=to;};}catch(e){}
+  }
+  b.style.transformOrigin=org;b.style.transform=to;b.style.filter='';el.dataset.hookIdx=String(idx);
+}
 function settle(itemEl){
-  var b=itemEl&&itemEl.querySelector&&itemEl.querySelector('.body');if(!b)return;
-  var c=tableCfg,base='perspective('+c.p+'px) rotateX('+c.rx+'deg) rotateY('+c.ry+'deg) rotateZ('+c.rz+'deg)';
-  b.style.transformOrigin='50% 100%';b.style.transform=base;
+  var b=bodyOf(itemEl);if(!b)return;
+  var c=tableCfg,base=tableTransform(c),idx=itemEl.dataset.hookIdx!=null&&itemEl.dataset.hookIdx!==''?+itemEl.dataset.hookIdx:2,from=hangT(idx);
+  delete itemEl.dataset.hookIdx;
+  b.style.transformOrigin='50% 100%';b.style.transform=base;b.style.filter=brF();
   try{b.animate([
-    {transform:'perspective('+c.p+'px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1,1)',offset:0},
-    {transform:base+' scale(1.14,.74)',offset:.38,easing:'ease-out'},
-    {transform:base+' scale(.97,1.05)',offset:.66,easing:'ease-in-out'},
-    {transform:base+' scale(1,1)',offset:1}
-  ],{duration:480,easing:'ease-in'});}catch(e){}
+    {transform:from,transformOrigin:(APEX*100)+'% 0%',offset:0},
+    {transform:base+' scale(1.14,.74)',transformOrigin:'50% 100%',offset:.42,easing:'ease-out'},
+    {transform:base+' scale(.97,1.05)',transformOrigin:'50% 100%',offset:.7,easing:'ease-in-out'},
+    {transform:base+' scale(1,1)',transformOrigin:'50% 100%',offset:1}
+  ],{duration:560,easing:'ease-in'});}catch(e){}
+}
+// kesa iz ruke -> zapis za kuku
+function recOf(el){var d=el.dataset,m=d.quantityMode==='bunch'?'bunch':'kg';var r={id:'hung_'+Date.now(),productKey:d.marketProductKey,label:d.marketProductLabel||d.label,quantityMode:m,quantityValue:+d.quantityValue||1,count:+d.count||0};if(m==='bunch')r.quantityBunches=+d.quantityBunches||r.quantityValue;else r.quantityKg=+d.quantityKg||r.quantityValue;return r;}
+function nearestFree(){
+  var sp;try{sp=screenToScene(mouse.x,mouse.y);}catch(e){return -1;}
+  var best=-1,bd=1e9;for(var i=0;i<bags.length;i++){if(slots[i])continue;var d=Math.hypot(bags[i].x-sp.x,(bags[i].y+bags[i].h*.35)-sp.y);if(d<bd){bd=d;best=i;}}
+  return bd<95?best:-1;
 }
 function tableSize(){return {h:tableCfg.h,w:tableCfg.h*IMG_W/IMG_H};}
 function renderTable(){
@@ -42,7 +62,7 @@ function renderTable(){
   var on=open&&mode==='table';tableEl.style.display=on?'block':'none';if(!on)return;
   var z=tableSize();tableEl.src=srcFor('paradajz');
   tableEl.style.width=z.w+'px';tableEl.style.height=z.h+'px';tableEl.style.left=(840-z.w/2)+'px';tableEl.style.top=(560-z.h)+'px';
-  tableEl.style.transformOrigin='50% 100%';tableEl.style.transform=tableTransform(tableCfg);
+  tableEl.style.transformOrigin='50% 100%';tableEl.style.transform=tableTransform(tableCfg);tableEl.style.filter='drop-shadow(1px 3px 3px rgba(30,12,0,.5)) '+brF();
 }
 // kese koje stvarno vise (po jedna na kuku): slots[i] = zapis kese sa pijace ili null. Cuva se posebno u pregledacu.
 var SLOTS_KEY='cookster.hanging-bags.v1',slots=[];
@@ -86,13 +106,13 @@ function render(){
 function mark(){els.forEach(function(e,i){e.style.outline=(open&&i===sel)?'2px dashed #22c55e':'';e.style.outlineOffset='2px';});}
 
 var panel=null,btn=null,rows={};
-var CTRL=[['h','Veličina (visina px)',20,240,1],['rz','Rotacija (njihanje)',-60,60,.5],['rx','Nagib gore-dole',-70,70,.5],['ry','Nagib levo-desno',-70,70,.5],['p','Perspektiva',100,1500,10]];
+var CTRL=[['h','Veličina (visina px)',20,240,1],['rz','Rotacija (njihanje)',-60,60,.5],['rx','Nagib gore-dole',-70,70,.5],['ry','Nagib levo-desno',-70,70,.5],['p','Perspektiva',100,1500,10],['br','Osvetljenost (samo na stolu)',.3,1.8,.02]];
 function select(i){sel=i;syncRows();mark();}
 function target(){return mode==='table'?tableCfg:bags[sel];}
 function syncRows(){
-  var b=target();if(!panel)return;
+  var b=target();if(!panel)return;try{panel.querySelectorAll('.wb-row-br').forEach(function(x){x.style.display=(mode==='table')?'':'none';});}catch(e){}
   panel.querySelector('.wb-st').textContent=mode==='table'?('Kesa na stolu (uzeta sa kuke i spustena): visina '+tableCfg.h+' px. Podesavanje vazi za sve kese na stolu i u ruci.'):b?('Kesa '+(sel+1)+' / '+bags.length+' · x '+b.x+' · y '+b.y):('Nijedna kesa nije izabrana ('+bags.length+' kesa). Klikni kesu.');
-  CTRL.forEach(function(c){var r=rows[c[0]];r.range.disabled=r.num.disabled=!b;if(b){r.range.value=b[c[0]];r.num.value=b[c[0]];}});
+  CTRL.forEach(function(c){var r=rows[c[0]];r.range.disabled=r.num.disabled=!b;if(b){r.range.value=(b[c[0]]==null?1:b[c[0]]);r.num.value=(b[c[0]]==null?1:b[c[0]]);}});
 }
 function buildPanel(){
   if(panel)return;
@@ -117,6 +137,7 @@ function buildPanel(){
     function set(v){var b=target();if(!b)return;v=+v;if(!isFinite(v))return;b[c[0]]=v;rg.value=v;nm.value=v;if(mode==='table'){saveTable();renderTable();applyAllTable();}else{paint(b,els[sel]);save();}}
     rg.addEventListener('input',function(){set(rg.value);});nm.addEventListener('change',function(){set(nm.value);});
     w.append(rg,nm);panel.append(l,w);rows[c[0]]={range:rg,num:nm};
+    if(c[0]==='br'){l.classList.add('wb-row-br');w.classList.add('wb-row-br');}
   });
   var bs=document.createElement('div');bs.className='wb-b';panel.appendChild(bs);
   function B(t,f){var x=document.createElement('button');x.type='button';x.textContent=t;x.onclick=f;bs.appendChild(x);}
@@ -154,7 +175,7 @@ function takeWhole(i){
     if(rec.mixed){(rec.items||[]).forEach(function(r,k){if(countOf(r)>0)makeMarketBag(r,k);});showToast('Iz mesane kese je izvadjeno '+(rec.items||[]).length+' kesa na sto.');CooksterSave.schedule();return;}
     var el=makeMarketBag(rec,0);if(!el)return;
     var sp=screenToScene(mouse.x,mouse.y);el.style.visibility='hidden';
-    setPose(el,sp.x,sp.y,surfaceScaleFor(el,'table',sp.y));startHolding(el);CooksterSave.schedule();
+    el.dataset.hookIdx=String(i);setPose(el,sp.x,sp.y,surfaceScaleFor(el,'table',sp.y));startHolding(el);CooksterSave.schedule();
   }catch(e){}
 }
 function take(i){
@@ -202,11 +223,17 @@ function applyAllTable(){try{items.forEach(function(it){if(it&&it.dataset&&it.da
 function wrapHold(){
   try{
     var sh=window.startHolding,dh=window.dropHolding;
-    if(typeof sh==='function'&&!sh.__bag){var w1=function(el){var r=sh.apply(this,arguments);try{if(el&&el.dataset&&el.dataset.marketBag==='1')upright(el);}catch(e){}return r;};w1.__bag=1;window.startHolding=w1;}
-    if(typeof dh==='function'&&!dh.__bag){var w2=function(){var h=(typeof holding!=='undefined')?holding:null;var r=dh.apply(this,arguments);try{if(h&&h.dataset&&h.dataset.marketBag==='1'&&!h.classList.contains('held'))settle(h);}catch(e){}return r;};w2.__bag=1;window.dropHolding=w2;}
+    if(typeof sh==='function'&&!sh.__bag){var w1=function(el){var r=sh.apply(this,arguments);try{if(el&&el.dataset&&el.dataset.marketBag==='1'){var fromHook=el.dataset.hookIdx!=null&&el.dataset.hookIdx!=='';hanging(el,!fromHook);}}catch(e){}return r;};w1.__bag=1;window.startHolding=w1;}
+    if(typeof dh==='function'&&!dh.__bag){var w2=function(){
+      var h=(typeof holding!=='undefined')?holding:null;
+      try{if(h&&h.dataset&&h.dataset.marketBag==='1'){var f=nearestFree();if(f>=0){      // pusteno preko kuke: okaci se nazad
+        var rec=recOf(h);try{removeItem(h);}catch(e){}holding=null;try{hidePlacementGhost();hideOriginGhost();updateHover();}catch(e){}
+        slots[f]=rec;if(rec.productKey)probe(rec.productKey);saveSlots();render();try{showToast('Kesa je okacena na kuku.');}catch(e){}return;}}}catch(e){}
+      var r=dh.apply(this,arguments);
+      try{if(h&&h.dataset&&h.dataset.marketBag==='1'&&!h.classList.contains('held'))settle(h);}catch(e){}return r;};w2.__bag=1;window.dropHolding=w2;}
   }catch(e){}
 }
 function init(){wrapHold();bags=load();slots=loadSlots();slots.length=Math.min(slots.length,bags.length);slots.forEach(function(r){if(r&&r.productKey)probe(r.productKey);});render();buildPanel();}
-window.CooksterWallBags={settle:settle,upright:upright,srcFor:srcFor,table:function(){return tableCfg;},tableSize:tableSize,applyTable:applyTable,get:function(){return bags;},render:render,open:function(){toggle(true);},hang:hang,take:take,takeWhole:takeWhole,slots:function(){return slots;}};
+window.CooksterWallBags={settle:settle,hanging:hanging,srcFor:srcFor,table:function(){return tableCfg;},tableSize:tableSize,applyTable:applyTable,get:function(){return bags;},render:render,open:function(){toggle(true);},hang:hang,take:take,takeWhole:takeWhole,slots:function(){return slots;}};
 if(document.readyState==='complete')init();else window.addEventListener('load',init);
 })();
