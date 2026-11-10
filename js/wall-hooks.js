@@ -9,7 +9,7 @@ function build(){
   var sc=document.getElementById('scene');if(!sc||sc.querySelector('.wall-hook'))return;
   HOOKS.forEach(function(h){
     var i=document.createElement('img');i.className='wall-hook';i.draggable=false;i.src='assets/ui/wall/kuka.webp?v=2';i.alt='';
-    i.style.cssText='position:absolute;pointer-events:none;z-index:3;height:'+H+'px;left:'+(h.x-H*.2)+'px;top:'+(h.y-H*.12)+'px;filter:drop-shadow(1px 2px 1.5px rgba(30,12,0,.55))';
+    i.style.cssText='position:absolute;pointer-events:none;z-index:3;height:'+H+'px;left:'+(h.x-H*.2)+'px;top:'+(h.y-H*.12)+'px;transform:rotate(-16deg);filter:drop-shadow(1px 2px 1.5px rgba(30,12,0,.55))';
     sc.appendChild(i);
   });
 }
