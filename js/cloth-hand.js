@@ -144,7 +144,7 @@ function krpaGone(){
   for(var i=0;i<l.length;i++){var e=l[i];if(e&&e.dataset&&(e.dataset.itemId===ID||(e.dataset.itemId==='nacve'&&e.dataset.inCloth==='1')))return true;}
   return false;
 }
-setInterval(function(){var h=hookEl();if(h)h.style.display=krpaGone()?'none':'';},300);
+setInterval(function(){var h=hookEl();if(h)h.style.display='none';},300);      // the cloth no longer hangs at the stove: it lies in the right drawer (js/kitchen-fixtures.js)
 function overHook(x,y){
   if(!hook||!hook.isConnected||hook.style.display==='none'||!hookA)return false;
   var r=hook.getBoundingClientRect(),u=(x-r.left)/r.width,v=(y-r.top)/r.height;

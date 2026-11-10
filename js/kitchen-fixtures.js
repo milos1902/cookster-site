@@ -130,7 +130,8 @@ setInterval(updateJars,150);
 var TOOLS=[
   {id:'kasika_mesanje',src:'assets/new_props/kasika_1.png?v=2',cx:935,cy:662,w:58,h:142,rot:90,k:.82,label:'drvena kašika'},
   {id:'kutlaca_ajvar',src:'assets/calibration_props/ajvar_jars/kutlaca_ajvar.png',cx:1075,cy:664,w:112,h:112,rot:0,k:.9,label:'drvena kutlača'},
-  {id:'daska',src:'assets/new_props/daska_sa_nozem.png?v=1',cx:1010,cy:632,w:330,h:108,rot:0,k:.46,label:'daska i nož'}      // the board with the knife on it: it lies at the back of the drawer
+  {id:'daska',src:'assets/new_props/daska_sa_nozem.png?v=1',cx:1010,cy:632,w:330,h:108,rot:0,k:.46,label:'daska i nož'},      // the board with the knife on it: it lies at the back of the drawer
+  {id:'kal_krpa',src:'assets/calibration_props/krpa/krpa_ruka.webp?v=1',cx:1128,cy:645,w:143,h:254,rot:90,k:.3,label:'krpa'}      // the cloth for the dough (it hung at the stove)
 ];
 var TOOL_IN={l:860,t:605,r:1165,b:712},toolClip=null;
 function toolOut(t){try{
