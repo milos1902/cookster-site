@@ -8,7 +8,7 @@
 (function(){
 'use strict';
 if(window.CooksterSarmaTray)return;
-var TRAY='kal_01_okrugli_pleh',MAXN=14;
+var TRAY='kal_01_okrugli_pleh',MAXN=50;
 var FLOOR={cx:.50,cy:.50,rx:.45,ry:.315};      // the floor of the tray in the picture (fractions of its box)
 var SOFT=.72,PUSH=.42,MAXSTEP=.0045;      // heavy and soft: a weak push, divided by the weight of the sarma, and a small cap of the move in one step (nothing jumps away)
 var SETS={f:{src:'assets/sarma/f8.webp',len:.31,asp:.46},g:{src:'assets/sarma3/g8.webp',len:.33,asp:.43}};
