@@ -10,23 +10,25 @@
 if(window.CooksterSarma)return;
 var ID='kal_01_list_kupusa',N=9,STEP=.085,HINTS={start:'Klikni dva puta na donji deo lista da preklopiš nadev.',left:'Klikni na levu stranu lista.',right:'Klikni na desnu stranu lista.',roll:'Okreći točkić miša nagore da umotaš sarmu.'};
 // two looks of the sarma (every new leaf takes one of them by its number): the fat homemade sarma (assets/sarma/f0..f8) and the narrow one on an upright leaf (assets/sarma3/g0..g8)
-var SETS=[{dir:'assets/sarma/f',pre:'f',scale:1},{dir:'assets/sarma3/g',pre:'g',scale:1.25}];
+var SETS=[{dir:'assets/sarma/f',pre:'f',scale:1},{dir:'assets/sarma3/g',pre:'g',scale:1.1}];
 function hashStr(t){var h=2166136261;for(var i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}h^=h>>>15;h=Math.imul(h,2246822519)>>>0;h^=h>>>13;return h>>>0;}
 SETS.forEach(function(S){S.fr=[];for(var i=0;i<N;i++){var im=new Image();im.src=S.dir+i+'.webp?v=3';S.fr.push(im);}});
+if(!document.getElementById('sarmaCss')){var css=document.createElement('style');css.id='sarmaCss';css.textContent='.contact-shadow-sprite.sarma-noshadow{display:none!important;visibility:hidden!important}.sarma-frames>img[data-off]{display:none!important}';document.head.appendChild(css);}
 function toast(m){try{showToast(m);}catch(e){}}
 function setup(el){
   if(el._sm)return;var set=SETS[hashStr(el.dataset.instanceId||'x')%SETS.length],FR=set.fr;
   var st=el._sm={set:set,filled:false,stage:0,roll:0,x:0,target:0,imgs:[],anim:0};
-  var body=el.querySelector('.body');if(body)body.style.visibility='hidden';
+  var body=el.querySelector('.body');if(body){body.style.setProperty('display','none','important');body.removeAttribute('src');}      // the plain picture of the leaf is gone for good (it showed again behind the sarma when the item was picked up: the game copies the item for its ghost)
   var host=document.createElement('div');host.className='sarma-frames';host.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;transform-origin:50% 100%;transform:scale('+set.scale+')';
   for(var i=0;i<N;i++){var m=document.createElement('img');m.src=FR[i].src;m.draggable=false;m.alt='';m.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;opacity:0;filter:drop-shadow(1px 2px 2px rgba(30,15,0,.4))';host.appendChild(m);st.imgs.push(m);}
   el.appendChild(host);draw(el);
 }
 function draw(el){
   var st=el._sm,x=st.x;
+  try{if(el._contactShadow)el._contactShadow.classList.add('sarma-noshadow');el.dataset.noSunShadow='1';}catch(e){}      // the shadow of the game stays at the foot of the box, far below the rolled sarma: the pictures carry their own soft shadow
   // the pictures are NOT cross-faded over a long way (two different folds at once looked like a ghost): one picture at a time, with a very short soft cut around the middle between two pictures
   var lo=Math.floor(x),f=x-lo,W=.16,a=f<.5-W?0:f>.5+W?1:(f-(.5-W))/(2*W);
-  for(var i=0;i<N;i++){var o=i===lo?1-a:(i===lo+1?a:0);st.imgs[i].style.opacity=o.toFixed(3);}
+  for(var i=0;i<N;i++){var o=i===lo?1-a:(i===lo+1?a:0);st.imgs[i].style.opacity=o.toFixed(3);if(o<.01)st.imgs[i].setAttribute('data-off','1');else st.imgs[i].removeAttribute('data-off');}      // the game forces opacity 1 on the pictures of its ghost copy (the item in the hand): a hidden frame must be display:none so it cannot show behind
   el.dataset.sarmaRolled=(st.filled&&st.stage>=4&&st.roll>=.995)?'1':'';el.dataset.sarmaFilled=st.filled?'1':'';
 }
 function targetOf(st){return !st.filled?0:(st.stage<4?1+st.stage:5+3*st.roll);}
