@@ -16032,10 +16032,13 @@ window.CooksterMarketTrade=Object.freeze({
    const records=CooksterState.market.pendingBags.map(x=>({...x}));
    CooksterState.market.pendingBags.length=0;
    closeMarket();
-   const made=spawnCollectedMarketBags(records);
+   let toTable=records,hung=0;
+   try{if(window.CooksterWallBags){toTable=CooksterWallBags.hang(records);hung=records.length-toTable.length;}}catch(_){toTable=records;}   // kese se kace na kuke (js/wall-bags.js); sto ako nema mesta
+   if(hung)showToast(hung===1?'Kesa je okacena na kuku.':'Kese su okacene na kuke.');
+   const made=toTable.length?spawnCollectedMarketBags(toTable):[];
    CooksterSave.schedule();
    window.dispatchEvent(new CustomEvent('cookster:market-bags-changed',{detail:{collected:true}}));
-   return {ok:true,count:made.length};
+   return {ok:true,count:made.length+hung};
  }
 });
 
