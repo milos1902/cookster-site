@@ -12,14 +12,15 @@ function defaults(){return JSON.parse(JSON.stringify(DEFAULTS));}
 function norm(b){return {x:+b.x,y:+b.y,h:+b.h||72,rz:+b.rz||0,rx:+b.rx||0,ry:+b.ry||0,p:+b.p||500};}
 var bags=[],els=[],sel=-1,open=false,showAll=true;
 // kesa NA STOLU (ona koja se uzme sa kuke i spusti na sto / drzi u ruci): isti oblik podesavanja; nema x,y (stoji gde je spustena), h = visina px
-var TABLE_KEY='cookster.wall-bags.table.v3',TABLE_DEF={h:240,rz:2,rx:28,ry:0,p:800,br:1};   // tvoj izvoz iz alata (10.11.)
+var TABLE_KEY='cookster.wall-bags.table.v3',TABLE_DEF={h:240,rz:2,rx:28,ry:0,p:800,br:1.18};   // tvoj izvoz iz alata (10.11.)
 function loadTable(){try{var r=JSON.parse(localStorage.getItem(TABLE_KEY)||'null');if(r&&isFinite(r.h))return {h:+r.h,rz:+r.rz||0,rx:+r.rx||0,ry:+r.ry||0,p:+r.p||900,br:(isFinite(+r.br)&&+r.br>0)?+r.br:1};}catch(e){}return JSON.parse(JSON.stringify(TABLE_DEF));}
 var tableCfg=loadTable(),mode='hooks',tableEl=null;
 function saveTable(){try{localStorage.setItem(TABLE_KEY,JSON.stringify(tableCfg));}catch(e){}}
 // slike kesa po povrcu koje postoje (ostalo: osnovna torba)
 var KNOWN={sargarepa:1,paradajz:1,paprika_zelena:1,paprika_crvena:1,luk:1,krastavac:1,kupus:1,patlidzan:1,tikvice:1,rotkvice:1};
 function srcFor(key){return KNOWN[key]?('assets/ui/wall/kesa_'+key+'.webp?v=1'):'assets/ui/wall/kesa.webp?v=2';}
-function brF(){return tableCfg.br&&tableCfg.br!==1?'brightness('+tableCfg.br+')':'';}
+function syncBr(){try{document.documentElement.style.setProperty('--wbbr',tableCfg.br||1);}catch(e){}}
+function brF(){syncBr();return tableCfg.br&&tableCfg.br!==1?'brightness('+tableCfg.br+')':'';}
 function tableTransform(c){return 'perspective('+c.p+'px) rotateX('+c.rx+'deg) rotateY('+c.ry+'deg) rotateZ('+c.rz+'deg)';}
 // primeni podesavanja stola na kesu-predmet (img.body): velicinu i nagibe, oslonac je dno
 function applyTable(itemEl){var b=itemEl&&itemEl.querySelector&&itemEl.querySelector('.body');if(!b)return;b.style.transformOrigin='50% 100%';b.style.transform=tableTransform(tableCfg);}
@@ -218,7 +219,7 @@ function hang(records){
 }
 function applyAllTable(){try{items.forEach(function(it){if(it&&it.dataset&&it.dataset.marketBag==='1')applyTable(it);});}catch(e){}}
 // KESA U RUCI (kopija pod kursorom): velicina raste postepeno sa udaljenoscu od kuka, njise se kad se pomera mis, a kad se podigne sa stola preliva se iz polozaja na stolu u viseci (sa odskokom)
-(function(){var st=document.createElement('style');st.textContent='.contact-shadow-sprite.wb-noshadow{display:none!important}.cookster-backpack-held-preview .market-bag-item{display:none!important}';document.head.appendChild(st);})();
+(function(){var st=document.createElement('style');st.textContent='.contact-shadow-sprite.wb-noshadow{display:none!important}.cookster-backpack-held-preview .market-bag-item{display:none!important}body .item.market-bag-item.hovered>.body{filter:brightness(var(--wbbr,1)) drop-shadow(1px 0 0 #46d45c) drop-shadow(-1px 0 0 #46d45c) drop-shadow(0 1px 0 #46d45c) drop-shadow(0 -1px 0 #46d45c)!important}';document.head.appendChild(st);})();
 var holdObs=null;
 function hideReal(h){
   try{
@@ -266,18 +267,24 @@ function holdTick(){
   hold.sv=(hold.sv||0)+(vxs-(hold.sv||0))*Math.min(1,dt*10);          // zaglađena brzina misa (px/s)
   var acc=hold.psv==null?0:(hold.sv-hold.psv)/dt;hold.psv=hold.sv;      // ubrzanje tacke okacenja
   var W=2*Math.PI*.7,Z=.26;                                           // prirodna frekvencija ~0.85 Hz, slabo gasenje: ~3 lepa zamaha
-  var lean=Math.max(-3,Math.min(3,hold.sv*.0025));                     // blago naginjanje dok se mis brzo krece
-  var force=Math.max(-10,Math.min(10,acc*.0028));                      // zamah od ubrzanja
+  var lean=Math.max(-5,Math.min(5,hold.sv*.004));                     // blago naginjanje dok se mis brzo krece
+  var force=Math.max(-18,Math.min(18,acc*.0048));                      // zamah od ubrzanja
   var n=Math.max(1,Math.round(dt/.008)),h8=dt/n;
   for(var q=0;q<n;q++){hold.vel+=(-W*W*(hold.ang-lean)-2*Z*W*hold.vel+W*W*force*.5)*h8;hold.ang+=hold.vel*h8;}
-  hold.ang=Math.max(-16,Math.min(16,hold.ang));
+  hold.ang=Math.max(-26,Math.min(26,hold.ang));
   // prelaz sto -> viseci (samo kad je uzeta sa stola)
   var u=hold.fromTable?sstep((now-hold.t0)/520):1;
   var idx=h.dataset.hookIdx!=null&&h.dataset.hookIdx!==''?+h.dataset.hookIdx:2,hk=bags[Math.max(0,Math.min(bags.length-1,idx))]||{p:500,rx:0,ry:10,rz:-12,h:90};
   var gh=g.offsetHeight||204,best=1e9,hh=hk.h;
   for(var i=0;i<bags.length;i++){var d=Math.hypot(bags[i].x-sp.x,(bags[i].y+bags[i].h)-sp.y);if(d<best){best=d;hh=bags[i].h;}}
-  var t=sstep((best-50)/560),sc=lerp(Math.min(1,hh/gh),1,t);
-  var c=tableCfg,p=lerp(c.p,hk.p,u),rx=lerp(c.rx,hk.rx,u),ry=lerp(c.ry,hk.ry,u),rz=lerp(c.rz,lerp(hk.rz,0,t),u)+hold.ang*u;
+  var bi=0;for(var j=0;j<bags.length;j++){if(Math.hypot(bags[j].x-sp.x,(bags[j].y+bags[j].h)-sp.y)<=best+.01){bi=j;break;}}
+  var ey=Math.max(233,Math.min(576,sp.y)),edgeX=452.1+(376.1-452.1)*(ey-233)/(576-233);      // leva ivica stola (tablePoly) na visini misa
+  var tt=Math.max(0,Math.min(1,(edgeX-sp.x)/Math.max(1,edgeX-bags[bi].x))),t=1-tt;
+  var K=[{x:bags[bi].x,h:hh},{x:176,h:73},{x:282,h:92},{x:edgeX,h:gh}],H=gh;      // visine kese na putu do kuke (tvoje dve tacke na podu: x176 -> 73, x282 -> 92)
+  if(sp.x<=K[0].x)H=K[0].h;else if(sp.x>=K[3].x)H=gh;else for(var kk=0;kk<3;kk++){if(sp.x<=K[kk+1].x){H=lerp(K[kk].h,K[kk+1].h,(sp.x-K[kk].x)/Math.max(1,K[kk+1].x-K[kk].x));break;}}
+  var sc=Math.min(1,H/gh);      // na stolu pun razmer; tek preko leve ivice ravnomerno do kuke
+  var fs=sstep((sp.x-bags[bi].x)/Math.max(20,176-bags[bi].x));      // otkacena: nagib sa kuke nestaje dok se odmice, do x176 visi pod pravim uglom (tvoje tacke)
+  var c=tableCfg,p=lerp(c.p,hk.p,u),rx=lerp(c.rx,hk.rx,u),ry=lerp(c.ry,lerp(hk.ry,12.3,fs),u),rz=lerp(c.rz,lerp(hk.rz,0,fs),u)+hold.ang*u;
   var bounce=Math.sin(Math.PI*u),sy=1+.11*bounce*(hold.fromTable?1:0),lift=-9*bounce*(hold.fromTable?1:0);
   bd.style.transformOrigin=lerp(50,APEX*100,u).toFixed(1)+'% '+lerp(100,0,u).toFixed(1)+'%';
   bd.style.transform='translateY('+lift.toFixed(1)+'px) perspective('+p.toFixed(0)+'px) rotateX('+rx.toFixed(2)+'deg) rotateY('+ry.toFixed(2)+'deg) rotateZ('+rz.toFixed(2)+'deg) scale(1,'+sy.toFixed(3)+')';
@@ -298,7 +305,7 @@ function wrapHold(){
       try{if(h&&h.dataset&&h.dataset.marketBag==='1'){stopWatch();showReal(h);if(!h.classList.contains('held'))settle(h);}}catch(e){}return r;};w2.__bag=1;window.dropHolding=w2;}
   }catch(e){}
 }
-function init(){wrapHold();bags=load();slots=loadSlots();slots.length=Math.min(slots.length,bags.length);slots.forEach(function(r){if(r&&r.productKey)probe(r.productKey);});render();buildPanel();}
+function init(){syncBr();wrapHold();bags=load();slots=loadSlots();slots.length=Math.min(slots.length,bags.length);slots.forEach(function(r){if(r&&r.productKey)probe(r.productKey);});render();buildPanel();}
 window.CooksterWallBags={settle:settle,hanging:hanging,srcFor:srcFor,table:function(){return tableCfg;},tableSize:tableSize,applyTable:applyTable,get:function(){return bags;},render:render,open:function(){toggle(true);},hang:hang,take:take,takeWhole:takeWhole,slots:function(){return slots;}};
 if(document.readyState==='complete')init();else window.addEventListener('load',init);
 })();

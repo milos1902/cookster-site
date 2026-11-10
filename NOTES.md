@@ -1332,3 +1332,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Kesa (wall-bags.js 21): popravljeno nestajanje kese posle spustanja (skrivanje prave kese samo dok ima klasu held); klatno vezano za stvarnu poziciju kopije (ne za mis), mekse (0.7 Hz, gasenje 0.26).
 - Kesa (wall-bags.js 22): druga "kesa ispred" je bila contact-shadow-sprite prave kese (igra je crtala svetlu siluetu uz kopiju) - sada klasa `wb-noshadow` (display none !important) dok se nosi; nagib sa zida (rz) se skida sa udaljavanjem od kuke pa je njihanje simetricno oko uspravnog (ranije se videlo samo desno).
 - Kesa u ruci (wall-bags.js 23): prava kesa se skriva preko MutationObserver-a (visibility hidden + opacity 0, important): cim igra promeni njen stil dok se nosi, vraca se skrivena pre crtanja (nema vise "kopije koja stoji" ispred klatna); posle spustanja se vraca.
+- 10.11.: kese - smanjenje tek preko leve ivice stola (tablePoly) ravnomerno do kuke; hover ne gubi osvetljenje (--wbbr); jace klaćenje (wall-bags v26).
+- 10.11.: velicina kese u ruci po x: kuka -> x176 h73 -> x282 h92 -> ivica stola (punа) (tvoje dve tacke, wall-bags v28).
+- 10.11.: kesa u ruci: cim se otkaci, nagib sa kuke nestaje do x176 (rz 0, ry 12.3) - wall-bags v29.
