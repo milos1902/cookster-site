@@ -522,6 +522,13 @@
     }
     draw(){
       const ps=(this.list||(this.list=[...this.pieces.values()])).slice().sort((a,b)=>a.layer-b.layer||a.y-b.y);
+      // what is DRAWN follows the simulated place a little behind it (a low-pass filter): pieces pressed against the wall are pushed in and out by the neighbours every frame (a tiny shake), the eye would see it as jumping
+      let residual=false;
+      for(const p of ps){
+        if(p.ox===undefined||Math.abs(p.x-p.ox)>4||Math.abs(p.y-p.oy)>4){p.ox=p.x;p.oy=p.y;p.or=p.rot;continue;}
+        p.ox+=(p.x-p.ox)*.3;p.oy+=(p.y-p.oy)*.3;p.or+=(p.rot-p.or)*.3;
+        if(Math.abs(p.x-p.ox)>.03||Math.abs(p.y-p.oy)>.03)residual=true;
+      }
       for(const c of this.liveCanvases()){
         const el=c.el,w=el.clientWidth,h=el.clientHeight;
         if(!w||!h)continue;
@@ -535,9 +542,9 @@
           const e=p.entry;if(!e.ready)continue;
           g.save();
           // each layer sits higher; the heap is a little domed in the middle
-          const rho=Math.min(1,Math.hypot((p.x-this.cx)/46,(p.y-this.cy)/(this.H*.44)));
+          const rho=Math.min(1,Math.hypot((p.ox-this.cx)/46,(p.oy-this.cy)/(this.H*.44)));
           const lift=p.layer*1.7+(1-rho*rho)*1.6*(this.layers-1)/4;
-          g.translate(p.x*sc,(p.y-lift)*sc);g.rotate(p.rot);
+          g.translate(p.ox*sc,(p.oy-lift)*sc);g.rotate(p.or);
           // a cheap soft shadow under pieces lying on others (a blurred shadow per piece is far too slow)
           // (no shadow under the pieces: with many pieces the little shadows added up to a dark see-through patch under the whole heap)
           const dx=-p.ax*p.k*sc,dy=-p.ay*p.k*sc,dw=p.sw*p.k*sc,dh=p.sh*p.k*sc;
@@ -552,7 +559,7 @@
         const tint=TINT[Math.max(1,Math.min(7,c.stage))-1];
         if(tint){g.globalCompositeOperation='source-atop';g.fillStyle=tint;g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';}
       }
-      this.dirty=false;
+      this.dirty=residual;
     }
   }
 
@@ -599,6 +606,6 @@
     debugBed:v=>{const s=sims.get(v);return s?{cover:s.cover,units:s.units,parts:(s.parts||[]).map(p=>({k:p.storageKey,c:p.count,d:p.def&&p.def.dicedSrc,f:p.def&&p.def.friedDicedSrc})),img:[...imgCache.entries()].map(([k,e])=>[k.slice(-30),e.ready])}:null;},
     debugSim:v=>{const s=sims.get(v);return s?{fill:s.fill,H:s.H,cx:s.cx,cy:s.cy,area:s.area,layers:s.layers,ymin:Math.min(...s.poly.map(q=>q.y)),ymax:Math.max(...s.poly.map(q=>q.y)),xmin:Math.min(...s.poly.map(q=>q.x)),xmax:Math.max(...s.poly.map(q=>q.x))}:null;},
     debugBench(vessel,n){const s=sims.get(vessel);if(!s)return null;const now=performance.now();s.activeUntil=now+1e6;let t0=performance.now();for(let i=0;i<n;i++)s.step(now+i*16);const st=(performance.now()-t0)/n;t0=performance.now();for(let i=0;i<n;i++){s.dirty=true;s.draw();}return {step:st,draw:(performance.now()-t0)/n};},
-    debugPieces(vessel){return [...(sims.get(vessel)?.pieces.values()||[])].map(p=>({id:p.id,x:p.x,y:p.y}));}
+    debugPieces(vessel){return [...(sims.get(vessel)?.pieces.values()||[])].map(p=>({id:p.id,x:p.x,y:p.y,ox:p.ox,oy:p.oy}));}
   };
 })();

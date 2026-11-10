@@ -1347,3 +1347,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - 10.11.: stare tegle soli/ulja (staple_so_*, staple_ulje_*, slike zacin_1/zacin_2) obrisane: spawnStaple('so'/'ulje') ne radi nista, a ucitavanje igre brise sacuvane. Uputstvo: ulje = prava flasa kal_01_flasa_ulja, so = nova tegla (dataset.spices) - tutorial v7.
 - 10.11.: okacene kese vece (h 99,98,105,110,122,148; korisnikov izvoz) - wall-bags v34.
 - 10.11.: bez sake (cursor:none u sceni, doku i HUD-u), bela tackica kursora 8 -> 5 px (game.css 3.09).
+- 10.11.: poskakivanje sadrzaja uz zid posude: crta se sa niskopropusnim filterom (p.ox/oy/or, 0.3) - piece-sim v55.1; reversal rate uz zid 56% -> 5.6%.
