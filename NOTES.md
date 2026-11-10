@@ -1382,3 +1382,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - 10.11.: metla: velika meka prasina (oblaci sa gradijentom, do 230, prate metlu i lebde suprotno od zamaha; kitchen-clean v6125, dustClouds). Zvuk metle (swish, sum kroz filter) je generisan kodom u kitchen-clean.js - nije menjan.
 - 10.11.: prasina metle realisticnija (kitchen-clean v6126): oblak od vise mekih mrlja koje se razilaze i vrtlože + sitne cestice (trunje) koje odlete iza metle i padaju.
 - 10.11.: komsinica susret_2 tekst promenjen: 'Tako smo mi, dete, još dok je Savka bila tu: tek kucnemo, a ona nam već sprema.' (neighbor v16). Glas susret_2.mp3 je jos stari: Milos snima novi, zameniti fajl assets/audio/komsinica/susret_2.mp3.
+- 10.11.: novac na dasci prozora je prava slika (assets/effects/novac.webp, ChatGPT, 360x246, providna) umesto SVG-a (neighbor v17); sirina 86 px na dasci.

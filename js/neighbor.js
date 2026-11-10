@@ -169,8 +169,8 @@ function onHandoverClick(e){
   }
 }
 ['pointerdown','click','pointerup','mousedown'].forEach(function(t){window.addEventListener(t,onHandoverClick,true);});
-// banknotes on the sill (drawn here, a picture of them can replace it): a click takes them, with the sound of coins
-var NOTE_SVG="data:image/svg+xml;utf8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60"><g transform="rotate(-6 60 30)"><rect x="6" y="8" width="104" height="46" rx="4" fill="#b9d9a6" stroke="#3f6b3a" stroke-width="2"/><rect x="12" y="14" width="92" height="34" rx="2" fill="none" stroke="#5c8c55" stroke-width="1.5"/><circle cx="34" cy="31" r="11" fill="#9ccb87" stroke="#3f6b3a" stroke-width="1.5"/><text x="74" y="36" font-family="Georgia,serif" font-size="20" font-weight="bold" fill="#2f5a2c" text-anchor="middle">DIN</text></g><g transform="translate(8 -3) rotate(5 60 30)"><rect x="6" y="8" width="104" height="46" rx="4" fill="#cfe5bd" stroke="#3f6b3a" stroke-width="2"/><circle cx="34" cy="31" r="11" fill="#b4d79f" stroke="#3f6b3a" stroke-width="1.5"/><text x="74" y="36" font-family="Georgia,serif" font-size="20" font-weight="bold" fill="#2f5a2c" text-anchor="middle">DIN</text></g></svg>');
+// banknotes and coins on the sill (a picture made in ChatGPT, assets/effects/novac.webp): a click takes them, with the sound of coins
+var NOTE_SRC='assets/effects/novac.webp?v=1';
 function coinSound(){
   try{
     var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;var ac=window.__nbAc||(window.__nbAc=new AC());if(ac.state==='suspended')ac.resume();
@@ -185,8 +185,8 @@ function coinSound(){
 }
 function leaveMoney(O,id){
   var sc=document.getElementById('scene');if(!sc)return;
-  var im=document.createElement('img');im.id='nbNotes';im.src=NOTE_SVG;im.draggable=false;im.title='Novac — klik da uzmeš';
-  im.style.cssText='position:absolute;left:'+(SILL.cx-34)+'px;top:'+(SILL.by-64)+'px;width:68px;z-index:45;cursor:none;opacity:0;transition:opacity .5s ease,transform .25s ease;filter:drop-shadow(1px 3px 2px rgba(20,8,0,.5))';
+  var im=document.createElement('img');im.id='nbNotes';im.src=NOTE_SRC;im.draggable=false;im.title='Novac — klik da uzmeš';
+  im.style.cssText='position:absolute;left:'+(SILL.cx-43)+'px;top:'+(SILL.by-66)+'px;width:86px;z-index:45;cursor:none;opacity:0;transition:opacity .5s ease,transform .25s ease;filter:drop-shadow(1px 3px 2px rgba(20,8,0,.5))';
   sc.appendChild(im);requestAnimationFrame(function(){im.style.opacity='1';});
   sub('Uzmi novac sa daske prozora (klik).',6000);
   var took=false;
