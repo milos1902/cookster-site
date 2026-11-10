@@ -78,16 +78,29 @@ function bubbles(x,y,n){
   for(var i=0;i<n;i++){var r=4+Math.random()*Math.random()*14;bub.push({x:x+(Math.random()-.5)*70,y:y+(Math.random()-.5)*46,vx:(Math.random()-.5)*22,vy:-10-Math.random()*34,r:r,t:0,life:1.1+Math.random()*1.3,ph:Math.random()*6.28,wob:6+Math.random()*10});}
   if(bub.length>520)bub.splice(0,bub.length-520);
 }
+// dust of the broom: big soft clouds (a gradient, not hard dots) that follow the broom, spread out, drift against the sweep and slowly fade
+var clouds=[];
+function dustClouds(x,y,n,dx,dy){
+  var l=Math.hypot(dx,dy)||1;
+  for(var i=0;i<n;i++)clouds.push({x:x+(Math.random()-.5)*90,y:y+10+(Math.random()-.5)*34,vx:-dx/l*(8+Math.random()*20)+(Math.random()-.5)*22,vy:-dy/l*(4+Math.random()*10)-6-Math.random()*16,r:16+Math.random()*26,t:0,life:1.3+Math.random()*1.5,a:.12+Math.random()*.13});
+  if(clouds.length>230)clouds.splice(0,clouds.length-230);
+}
 var lastT=0;
 function tick(now){
   requestAnimationFrame(tick);var dt=Math.min(.05,(now-lastT)/1000||.016);lastT=now;
   draw();
-  if(!dust.length&&!bub.length){if(fx._busy){fg.clearRect(0,0,W,H);fx._busy=false;}return;}
+  if(!dust.length&&!bub.length&&!clouds.length){if(fx._busy){fg.clearRect(0,0,W,H);fx._busy=false;}return;}
   fx._busy=true;fg.clearRect(0,0,W,H);
   for(var i=dust.length-1;i>=0;i--){
     var p=dust[i];p.t+=dt;if(p.t>=p.life){dust.splice(i,1);continue;}
     p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.98;var k=1-p.t/p.life;
     fg.fillStyle='rgba(176,150,112,'+(p.a*k).toFixed(3)+')';fg.beginPath();fg.arc(p.x,p.y,p.r*(1+(1-k)*.8),0,6.2832);fg.fill();
+  }
+  for(var q=clouds.length-1;q>=0;q--){
+    var c=clouds[q];c.t+=dt;if(c.t>=c.life){clouds.splice(q,1);continue;}
+    c.x+=c.vx*dt;c.y+=c.vy*dt;c.vx*=.985;var u=c.t/c.life,rr=c.r*(1+u*1.1),al=c.a*(u<.15?u/.15:1-(u-.15)/.85);
+    var gr=fg.createRadialGradient(c.x,c.y,rr*.1,c.x,c.y,rr);gr.addColorStop(0,'rgba(190,166,128,'+al.toFixed(3)+')');gr.addColorStop(1,'rgba(190,166,128,0)');
+    fg.fillStyle=gr;fg.beginPath();fg.arc(c.x,c.y,rr,0,6.2832);fg.fill();
   }
   for(var j=bub.length-1;j>=0;j--){
     var b=bub[j];b.t+=dt;if(b.t>=b.life){bub.splice(j,1);continue;}
@@ -142,7 +155,7 @@ function stamp(x,y,b){
       if(sweepOf[id]!==curSweep){sweepOf[id]=curSweep;applied[id]=0;}
       if(w>applied[id]){level[id]=Math.max(0,level[id]-(w-applied[id])/3.6);applied[id]=w;hit=true;if(level[id]<.004)level[id]=0;}
     }}
-  if(hit){dirty=true;if(tool==='metla')puff(x,y+8,2,true);}
+  if(hit){dirty=true;if(tool==='metla')puff(x,y+8,3,true);}
   return touched;
 }
 function onMove(e){
@@ -156,6 +169,7 @@ function onMove(e){
   else travel=0;
   var steps=Math.max(1,Math.ceil(dist/9)),any=0;
   for(var i=1;i<=steps;i++){var t=i/steps;any+=stamp(px+dx*t,py+dy*t,b);}
+  if(tool==='metla')dustClouds(p.x,p.y,Math.min(5,1+Math.round(dist/9)),dx,dy);      // a big cloud of dust follows the broom
   if(tool==='sundjer')bubbles(p.x,p.y+6,Math.min(9,2+Math.round(dist/5)));      // the sponge makes a lot of soap bubbles all along its way
   var dt=Math.max(1,now-pt),speed=dist/dt*1000;
   if(tool==='metla')swish(speed);
