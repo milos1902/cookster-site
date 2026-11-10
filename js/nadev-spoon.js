@@ -17,9 +17,8 @@ function nadevPan(e){
 function spoon(){
   if(NS.el&&NS.el.isConnected)return NS.el;
   var d=document.createElement('div');d.id='nadevSpoon';d.style.cssText='position:absolute;left:0;top:0;width:'+W+'px;height:'+H+'px;pointer-events:none;display:none;z-index:11600;transform-origin:50% 16%';
-  var im=document.createElement('img');im.src='assets/new_props/kasika_1.png?v=2';im.draggable=false;im.style.cssText='width:100%;height:100%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))';
-  var f=document.createElement('div');f.style.cssText='position:absolute;left:14%;top:3%;width:72%;height:24%;border-radius:50%;background:radial-gradient(ellipse at 40% 30%,#b9703f,#8a4a26 70%,#6b3a1d);box-shadow:inset 0 -2px 3px rgba(40,15,5,.5);z-index:3';
-  d.appendChild(im);d.appendChild(f);scene.appendChild(d);NS.el=d;return d;
+  var im=document.createElement('img');im.src='assets/sarma/kasika_nadev.webp?v=1';im.draggable=false;im.style.cssText='width:100%;height:100%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))';      // the picture of the spoon WITH the real filling in its bowl
+  d.appendChild(im);scene.appendChild(d);NS.el=d;return d;
 }
 function place(){var p=screenToScene(mouse.x,mouse.y);spoon().style.transform='translate3d('+(p.x-W/2).toFixed(1)+'px,'+(p.y-H*.16).toFixed(1)+'px,0)';}
 function show(on){spoon().style.display=on?'block':'none';document.body.classList.toggle('mini-spoon-on',!!on);if(on){try{miniSpoonHide();}catch(e){}}}
