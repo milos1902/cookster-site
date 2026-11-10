@@ -2,11 +2,11 @@
    - with EMPTY hands a short click (no movement) on the filling in a pan (the food of the pan: minced meat for the filling 'mleveno_nadev_diced', rice with it) takes ONE portion: the pan loses
      PORTION doses of the filling (and the same share of the rice) and a small spoon with the filling stays at the cursor. A press with a movement is the stirring, as always.
    - a click on the lower part of an EMPTY leaf (List kupusa, js/sarma.js) puts the portion on it (the leaf shows the filling); Esc or a right click gives the portion back to the pan.
-   One pack of the meat (6 doses) is 10 sarmas: one portion is 0.6 of a dose. */
+   One pack of the meat (6 doses) is 10 sarmas: one portion is 0.4 of a dose. */
 (function(){
 'use strict';
 if(window.CooksterNadevSpoon)return;
-var NK='mleveno_nadev_diced',RK='pirinac_diced',PORTION=.6,W=62,H=154;      // a big spoon (the wooden one), not the small stirring spoon
+var NK='mleveno_nadev_diced',RK='pirinac_diced',PORTION=.4,W=62,H=154;      // a big spoon (the wooden one), not the small stirring spoon
 var NS={el:null,loaded:false,pan:null,rice:0,down:null};
 function emptyHands(){try{return !(typeof holding!=='undefined'&&holding&&!holding._mini);}catch(e){return true;}}      // the small stirring spoon (holding._mini) is not a thing in the hand
 function units(v,k){try{return Math.max(0,+((CooksterPan.read(v).ingredients||{})[k])||0);}catch(e){return 0;}}
@@ -58,7 +58,7 @@ window.addEventListener('pointerdown',function(e){
 window.addEventListener('pointerup',function(e){
   var d=NS.down;NS.down=null;
   if(!d||e.button!==0||NS.loaded||!emptyHands())return;
-  if(Math.hypot(e.clientX-d.x,e.clientY-d.y)>9||performance.now()-d.t>380)return;      // a movement or a long press: it was the stirring
+  if(Math.hypot(e.clientX-d.x,e.clientY-d.y)>16||performance.now()-d.t>700)return;      // a movement or a long press: it was the stirring
   var v=d.v,have=units(v,NK);if(have<=0.001||!v.isConnected)return;
   var take=Math.min(PORTION,have);if(have-take<.2)take=have;      // the last small rest goes onto the spoon together with the last portion
   var rice=units(v,RK),share=take>=have-1e-6?rice:Math.min(rice,rice*take/have);
