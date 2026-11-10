@@ -283,7 +283,8 @@ function holdTick(){
   var K=[{x:bags[bi].x,h:hh},{x:176,h:73},{x:282,h:92},{x:edgeX,h:gh}],H=gh;      // visine kese na putu do kuke (tvoje dve tacke na podu: x176 -> 73, x282 -> 92)
   if(sp.x<=K[0].x)H=K[0].h;else if(sp.x>=K[3].x)H=gh;else for(var kk=0;kk<3;kk++){if(sp.x<=K[kk+1].x){H=lerp(K[kk].h,K[kk+1].h,(sp.x-K[kk].x)/Math.max(1,K[kk+1].x-K[kk].x));break;}}
   var sc=Math.min(1,H/gh);      // na stolu pun razmer; tek preko leve ivice ravnomerno do kuke
-  var c=tableCfg,p=lerp(c.p,hk.p,u),rx=lerp(c.rx,hk.rx,u),ry=lerp(c.ry,hk.ry,u),rz=lerp(c.rz,lerp(hk.rz,0,t),u)+hold.ang*u;
+  var fs=sstep((sp.x-bags[bi].x)/Math.max(20,176-bags[bi].x));      // otkacena: nagib sa kuke nestaje dok se odmice, do x176 visi pod pravim uglom (tvoje tacke)
+  var c=tableCfg,p=lerp(c.p,hk.p,u),rx=lerp(c.rx,hk.rx,u),ry=lerp(c.ry,lerp(hk.ry,12.3,fs),u),rz=lerp(c.rz,lerp(hk.rz,0,fs),u)+hold.ang*u;
   var bounce=Math.sin(Math.PI*u),sy=1+.11*bounce*(hold.fromTable?1:0),lift=-9*bounce*(hold.fromTable?1:0);
   bd.style.transformOrigin=lerp(50,APEX*100,u).toFixed(1)+'% '+lerp(100,0,u).toFixed(1)+'%';
   bd.style.transform='translateY('+lift.toFixed(1)+'px) perspective('+p.toFixed(0)+'px) rotateX('+rx.toFixed(2)+'deg) rotateY('+ry.toFixed(2)+'deg) rotateZ('+rz.toFixed(2)+'deg) scale(1,'+sy.toFixed(3)+')';
