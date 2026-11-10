@@ -12245,8 +12245,8 @@ function makeMarketBag(record,index=0){
   const pos={x:160+col*118,y:590+row*92};
   const id=record.id||`market_bag_${Date.now()}_${++marketBagSpawnCounter}`;
   const el=makeItem({
-    id,label:`Кеса — ${label}`,src:MARKET_BAG_ASSET,
-    x:pos.x,y:pos.y,w:112,h:112,z:++zCounter,
+    id,label:`Кеса — ${label}`,src:(window.CooksterWallBags?CooksterWallBags.srcFor(key):MARKET_BAG_ASSET),
+    x:pos.x,y:pos.y,w:(window.CooksterWallBags?CooksterWallBags.tableSize().w:112),h:(window.CooksterWallBags?CooksterWallBags.tableSize().h:112),z:++zCounter,
     snapProfile:'flat',shadowProfile:'tiny'
   });
   el.classList.add('market-bag-item');
@@ -12267,7 +12267,8 @@ function makeMarketBag(record,index=0){
   if(vegKey)el.dataset.vegKey=vegKey;
   el.dataset.collisionProfile='flat';
   renderMarketBag(el);
-  setPose(el,pos.x+56,pos.y+112,1);
+  try{window.CooksterWallBags&&CooksterWallBags.applyTable(el);}catch(_){}      // velicina i nagibi iz alata Kese (Kesa na stolu)
+  setPose(el,pos.x+(window.CooksterWallBags?CooksterWallBags.tableSize().w/2:56),pos.y+(window.CooksterWallBags?CooksterWallBags.tableSize().h:112),1);
   setTimeout(()=>dropBounce(el),30+index*25);
   return el;
 }
