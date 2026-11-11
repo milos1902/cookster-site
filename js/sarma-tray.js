@@ -124,7 +124,7 @@ function draw(el){
 }
 function drawCooked(g,w,h,a){
   if(!cookImg.complete||!cookImg.naturalWidth)return;
-  g.save();g.globalAlpha=a;g.drawImage(cookImg,.05*w,.185*h,.9*w,.63*h);g.restore();
+  g.save();g.globalAlpha=a;g.drawImage(cookImg,.02*w,.15*h,.96*w,.7*h);g.restore();
 }
 function hit(el,cx,cy){
   var st=sys(el),p=local(el,cx,cy),best=null,bd=1e9;
