@@ -10,7 +10,7 @@
 if(window.CooksterSarmaTray)return;
 var TRAY='kal_01_okrugli_pleh',MAXN=50;
 var FLOOR={cx:.50,cy:.50,rx:.45,ry:.315};      // the floor of the tray in the picture (fractions of its box)
-var SOFT=.72,PUSH=.42,MAXSTEP=.0045;      // heavy and soft: a weak push, divided by the weight of the sarma, and a small cap of the move in one step (nothing jumps away)
+var SOFT=.97,PUSH=.5,MAXSTEP=.0045;      // heavy and soft: a weak push, divided by the weight of the sarma, and a small cap of the move in one step (nothing jumps away)
 var SETS={f:{src:'assets/sarma/f8.webp',len:.31,asp:.46},g:{src:'assets/sarma3/g8.webp',len:.33,asp:.43}};
 var spr={};
 Object.keys(SETS).forEach(function(k){var im=new Image();im.onload=function(){      // crop to the solid part (the rolled sarma is a small part of the picture)
@@ -89,12 +89,24 @@ function relax(st,iters){
     for(var k=0;k<L.length;k++)wallFix(L[k]);      // the wall of the tray: a sarma can never go through it (also not the one in the hand)
   }
 }
+// how deep sarma a sinks into the others (0 = touching, 1 = fully inside): the largest overlap of its circles with the circles of any other sarma, in fractions of the contact distance
+function depth(st,a){
+  var worst=0,pa=pts(a);
+  for(var i=0;i<st.list.length;i++){var b=st.list[i];if(b===a)continue;
+    if(Math.hypot(a.x-b.x,a.y-b.y)>a.len*.5+b.len*.5)continue;
+    var pb=pts(b);
+    for(var p=0;p<3;p++)for(var q=0;q<3;q++){var d=Math.hypot(pb[q].x-pa[p].x,pb[q].y-pa[p].y),min=a.r+b.r;if(d<min)worst=Math.max(worst,(min-d)/min);}
+  }
+  return worst;
+}
 function tick(el){
   var st=sys(el);st.raf=0;
   var before=st.list.map(function(s){return [s.x,s.y,s.a];});
-  if(st.drag){var d=st.drag,t=st.target;if(t){d.x+=Math.max(-.02,Math.min(.02,(t.x-d.x)*.45));d.y+=Math.max(-.02,Math.min(.02,(t.y-d.y)*.45));wallFix(d);}}
+  var dragTry=null,depth0=st.drag?depth(st,st.drag):0;
+  if(st.drag&&st.target){var d0=st.drag,t0=st.target;dragTry={x:d0.x+Math.max(-.02,Math.min(.02,(t0.x-d0.x)*.45)),y:d0.y+Math.max(-.02,Math.min(.02,(t0.y-d0.y)*.45)),px:d0.x,py:d0.y};}
+  if(dragTry){st.drag.x=dragTry.x;st.drag.y=dragTry.y;wallFix(st.drag);}
   var x0=st.list.map(function(q){return [q.x,q.y,q.a];});
-  relax(st,8);
+  relax(st,12);
   // heavy: in one frame a sarma that is pushed may only go a very little way and turn a little (nothing jumps away), only the sarma in the hand follows the mouse freely
   st.list.forEach(function(q,i){
     if(q.pin>0)q.pin--;if(st.drag===q)return;
@@ -103,6 +115,15 @@ function tick(el){
     q.a=Math.max(-.07,Math.min(.07,q.a*.9));      // locked: horizontal
     wallFix(q);
   });
+  if(dragTry){      // HARD bodies: the sarma in the hand pushes the others (they give way slowly, they are heavy) but never goes through them: if it sank in, it stays / slides along
+    var D=st.drag,nx=D.x,ny=D.y;
+    var lim=Math.max(.12,depth0+.01);      // (a jammed full tray: it may not sink in any deeper than it already is)
+    if(depth(st,D)>lim){
+      D.x=nx;D.y=dragTry.py;wallFix(D);
+      if(depth(st,D)>lim){D.x=dragTry.px;D.y=ny;wallFix(D);
+        if(depth(st,D)>lim){D.x=dragTry.px;D.y=dragTry.py;}}
+    }
+  }
   var mv=0;st.list.forEach(function(s,i){mv=Math.max(mv,Math.abs(s.x-before[i][0])+Math.abs(s.y-before[i][1])+Math.abs(s.a-before[i][2])*.05);});
   draw(el);
   if(mv>.0006||st.drag||st.active>0){st.active=Math.max(0,st.active-1);st.raf=requestAnimationFrame(function(){tick(el);});}
@@ -299,5 +320,5 @@ setInterval(function(){
     });
   }catch(e){}
 },500);
-window.CooksterSarmaTray={tinted:tinted,sets:SETS,holdFinished:holdFinished,done:donenessOf,cook:cookOf,burn:burnOf,trayWithSarmasAt:trayWithSarmasAt,addWater:addWater,water:waterOf,lidOn:lidOn,lidOff:lidOff,add:add,sys:sys,kick:kick,hit:hit,count:function(el){return sys(el).list.length;}};
+window.CooksterSarmaTray={depth:function(el,s){return depth(sys(el),s);},tinted:tinted,sets:SETS,holdFinished:holdFinished,done:donenessOf,cook:cookOf,burn:burnOf,trayWithSarmasAt:trayWithSarmasAt,addWater:addWater,water:waterOf,lidOn:lidOn,lidOff:lidOff,add:add,sys:sys,kick:kick,hit:hit,count:function(el){return sys(el).list.length;}};
 })();

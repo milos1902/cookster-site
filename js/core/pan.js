@@ -25,7 +25,8 @@
       mix:+src.mix||0,
       burnt:!!src.burnt,
       served:!!src.served,
-      dry:+src.dry||0,idle:+src.idle||0,scorched:!!src.scorched
+      dry:+src.dry||0,idle:+src.idle||0,scorched:!!src.scorched,
+      stirMeter:src.stirMeter==null?1:Math.max(0,Math.min(1,+src.stirMeter)),stirOn:!!src.stirOn
     };
   }
   function empty(){
@@ -39,7 +40,8 @@
       mix:0,
       burnt:false,
       served:false,
-      dry:0,idle:0,scorched:false
+      dry:0,idle:0,scorched:false,
+      stirMeter:1,stirOn:false
     };
   }
 
@@ -87,7 +89,7 @@
     const active=(d.batches||[]).filter(b=>(+b.count||0)>0);
     const total=active.reduce((s,b)=>s+(+b.count||0),0);
     if(total<=0){
-      d.doneness=0;d.overcook=0;d.burnt=false;d.dry=0;d.idle=0;d.scorched=false;
+      d.doneness=0;d.overcook=0;d.burnt=false;d.dry=0;d.idle=0;d.scorched=false;d.stirMeter=1;d.stirOn=false;
       return d;
     }
     d.doneness=active.reduce((s,b)=>s+(+b.doneness||0)*(+b.count||0),0)/total;
@@ -137,6 +139,7 @@
     d.mix=Math.max(0,Math.min(1,+src.mix||0));
     d.served=!!src.served;
     d.dry=Math.max(0,+src.dry||0);d.idle=Math.max(0,+src.idle||0);d.scorched=!!src.scorched;
+    d.stirMeter=src.stirMeter==null?1:Math.max(0,Math.min(1,+src.stirMeter));d.stirOn=!!src.stirOn;
 
     const legacySeed={
       doneness:Math.max(0,+((src.doneness!==undefined)?src.doneness:src.cook)||0),
@@ -270,18 +273,16 @@
         }
       }
     }
-    {
+    {      // the STIRRING BAR ("Mesanje"): it starts full and drains from right to left while food is heating in the vessel (not with a quiet fire + oil/liquid, simmerSafe);
+      // stirring fills it fast (CooksterPan.stir); at ZERO the food sticks and burns. A pan with no oil and no liquid drains it twice as fast.
       const live=d.batches.filter(b=>!b.burnt&&b.count>0);
-      const dryHeat=heating&&d.heat>=.4&&(+d.staples.oil||0)<=0&&!(opts&&opts.wet)&&live.length>0;
-      if(dryHeat){
-        d.idle=(+d.idle||0)+dt;
-        if(d.idle>DRY_IDLE_FREE)d.dry=(+d.dry||0)+dt*d.heat;
-        else d.dry=Math.max(0,(+d.dry||0)-dt*2);
-        if(d.dry>=DRY_BURN_SECONDS){for(const b of live){b.doneness=1;b.overcook=2;b.burnt=true;}d.scorched=true;}
-      }else{
-        d.dry=Math.max(0,(+d.dry||0)-dt);
-        if(!heating)d.idle=0;
-      }
+      const on=heating&&d.heat>=.3&&!simmerSafe&&live.length>0;
+      d.stirOn=on;
+      if(on){
+        const drainSeconds=(fireLevel===1?42:(fireLevel===2?32:24))/(((+d.staples.oil||0)<=0&&!(opts&&opts.wet))?2:1);
+        d.stirMeter=Math.max(0,(+d.stirMeter>=0?+d.stirMeter:1)-dt*Math.min(1,d.heat/targetHeat)/drainSeconds);
+        if(d.stirMeter<=0){for(const b of live){b.doneness=1;b.overcook=2;b.burnt=true;}d.scorched=true;}
+      }else if(!live.length)d.stirMeter=1;
     }
     // an egg left in a hot pan sets very slowly even without stirring (about 90 s)
     if(heating&&d.heat>=.5)for(const b of d.batches)if(b.key==='jaje'&&(+b.curd||0)<1)b.curd=Math.min(1,(+b.curd||0)+dt/90);
@@ -307,6 +308,7 @@
     const active=(d.batches||[]).filter(b=>(+b.count||0)>0&&!b.burnt);
     if(!active.length)return d;
     d.idle=0;   // stirring: nothing sticks to the pan
+    if(d.stirOn!==false)d.stirMeter=Math.min(1,(+d.stirMeter>=0?+d.stirMeter:1)+(activeSeconds>0?Math.min(.12,+activeSeconds):effort*.06)*.4);      // the stirring bar fills about 8 times faster than it drains
 
     // v198.5.10: two seconds of VALID stirring motion fully blends the dish.
     const mixDt=Math.max(0,Math.min(.12,+activeSeconds||0));
