@@ -32,6 +32,16 @@ function local(el,cx,cy){
 function sys(el){return el._sarmas||(el._sarmas={list:[],cv:null,active:0,drag:null,raf:0});}
 function body(s){var h=s.len*.5-s.r;return {h:Math.max(0,h)};}
 function pts(s){var h=body(s).h,c=Math.cos(s.a),sn=Math.sin(s.a);return [{x:s.x-c*h,y:s.y-sn*h},{x:s.x,y:s.y},{x:s.x+c*h,y:s.y+sn*h}];}
+// the wall: every one of the three circles of a sarma (its two ends and its middle) stays inside the floor of the tray with its WHOLE size; the end of the sarma touches the wall and stops
+function wallFix(s){
+  var R=FLOOR.rx;
+  for(var pass=0;pass<4;pass++){
+    var P=pts(s),mx=0,my=0,worst=0;
+    for(var m=0;m<3;m++){var dd=Math.hypot(P[m].x,P[m].y),lim=R-s.r*.96;if(dd>lim){var o=(dd-lim)/(dd||1e-6);var ox=-P[m].x*o,oy=-P[m].y*o;if(Math.hypot(ox,oy)>worst){worst=Math.hypot(ox,oy);mx=ox;my=oy;}}}
+    if(worst<1e-5)break;
+    s.x+=mx;s.y+=my;
+  }
+}
 function relax(st,iters){
   var L=st.list,R=FLOOR.rx;
   for(var it=0;it<iters;it++){
@@ -53,16 +63,13 @@ function relax(st,iters){
         }
       }
     }
-    for(var k=0;k<L.length;k++){var s=L[k];if(st.drag===s)continue;      // the wall of the tray
-      var P=pts(s),mx=0,my=0;
-      for(var m=0;m<3;m++){var dd=Math.hypot(P[m].x,P[m].y),lim=R-s.r*.3;if(dd>lim){var o=(dd-lim)/dd;mx-=P[m].x*o;my-=P[m].y*o;}}
-      s.x+=mx*.5;s.y+=my*.5;}
+    for(var k=0;k<L.length;k++)wallFix(L[k]);      // the wall of the tray: a sarma can never go through it (also not the one in the hand)
   }
 }
 function tick(el){
   var st=sys(el);st.raf=0;
   var before=st.list.map(function(s){return [s.x,s.y,s.a];});
-  if(st.drag){var d=st.drag,t=st.target;if(t){d.x+=Math.max(-.02,Math.min(.02,(t.x-d.x)*.45));d.y+=Math.max(-.02,Math.min(.02,(t.y-d.y)*.45));var lim=FLOOR.rx-d.r*.3,rr=Math.hypot(d.x,d.y);if(rr>lim){d.x*=lim/rr;d.y*=lim/rr;}}}
+  if(st.drag){var d=st.drag,t=st.target;if(t){d.x+=Math.max(-.02,Math.min(.02,(t.x-d.x)*.45));d.y+=Math.max(-.02,Math.min(.02,(t.y-d.y)*.45));wallFix(d);}}
   var x0=st.list.map(function(q){return [q.x,q.y,q.a];});
   relax(st,8);
   // heavy: in one frame a sarma that is pushed may only go a very little way and turn a little (nothing jumps away), only the sarma in the hand follows the mouse freely
@@ -71,6 +78,7 @@ function tick(el){
     var dx=q.x-x0[i][0],dy=q.y-x0[i][1],dd=Math.hypot(dx,dy),cap=.0034/(q.m||1);
     if(dd>cap){q.x=x0[i][0]+dx*cap/dd;q.y=x0[i][1]+dy*cap/dd;}
     q.a=Math.max(-.07,Math.min(.07,q.a*.9));      // locked: horizontal
+    wallFix(q);
   });
   var mv=0;st.list.forEach(function(s,i){mv=Math.max(mv,Math.abs(s.x-before[i][0])+Math.abs(s.y-before[i][1])+Math.abs(s.a-before[i][2])*.05);});
   draw(el);
@@ -121,7 +129,7 @@ function add(el,set,cx,cy,rotDeg){
   var rr=Math.hypot(p.x,p.y),lim=FLOOR.rx-len*S.asp*.5*.3;if(rr>lim){p.x*=lim/rr;p.y*=lim/rr;rr=lim;}
   var tang=0;      // horizontal only      // along the circle round the middle of the tray (the first rings round the edge, then inwards); the middle one lies freely
   var ang=(Math.random()-.5)*.1;      // every sarma lies flat on the bottom, horizontally (a few degrees of wobble at most); the turning of the wheel in the hand does not count in the tray
-  st.list.push({x:p.x,y:p.y,a:ang,len:len,r:len*S.asp*.5,set:set,pin:90,m:.8+Math.random()*1.7});      // m: the weight (a light one .8 ... a heavy one 2.5)
+  var ns={x:p.x,y:p.y,a:ang,len:len,r:len*S.asp*.5,set:set,pin:90,m:.8+Math.random()*1.7};wallFix(ns);st.list.push(ns);      // m: the weight (a light one .8 ... a heavy one 2.5)
   kick(el,60);return true;
 }
 function trayAt(e){var it=(typeof itemAt==='function')?itemAt(e.clientX,e.clientY):null;return isTray(it)?it:null;}
