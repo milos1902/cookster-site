@@ -51,3 +51,9 @@ Poslednje ažuriranje: oktobar 2026 (posle PR-ova do #262).
 1. Pročitaj ovaj fajl, pa `NOTES.md` (naslovi sa `## `).
 2. Pitaj Miloša šta želi sledeće ili kreni od liste „Otvoreno“.
 3. Prvo reproduciraj problem u Playwright-u, pa popravi, pa novi PR po pravilima gore.
+
+## Plan napretka (Milošova ideja, 11.11., još NIJE rađeno)
+- Uzor: igra Waterpark Simulator (zvezdice i mali zadaci; kad se uradi nešto, otvori se nešto novo; više paralelnih puteva). Nije gledana uživo (sajtovi nisu dozvoljeni u sesiji), samo opis iz pretrage.
+- Ideja: na početku je kafana **porušena**: polomljeni stolovi, polomljen šank. Igrač dobija mali **čekić**; udaranjem po predmetu on se popravlja (više udaraca, vidi se napredak). Popravljeno otvara kafanu / sledeći korak.
+- Za prvu verziju treba: alat čekić (`data-tool-ui`), stanje popravke po predmetu (npr. 0..1 ili broj udaraca), prsten napretka iznad predmeta, zvuk udarca (zvuk ne mogu da čujem), slike polomljenih verzija stolova i šanka (privremeno: tamnije/nakrivljeno preko postojećih; prave slike pravi Miloš ili Higgsfield UZ PITANJE o kreditima).
+- Otvoreno: koliko udaraca po predmetu; da li popravka košta novac ili materijal (daske, ekseri); šta tačno otključava popravljena kafana (gosti, jelovnik); redosled u odnosu na uputstvo (čišćenje kuhinje, komšinica, salata, tikvice).
