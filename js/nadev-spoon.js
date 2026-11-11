@@ -54,7 +54,8 @@ window.addEventListener('pointerdown',function(e){
       }
     }
     var onPan=null;try{onPan=foodVesselAt(e.clientX,e.clientY);}catch(x){}
-    if(onPan||leaf){e.stopImmediatePropagation();e.preventDefault();}      // nothing else happens while the spoon is full (no stirring, the leaf is not picked up)
+    if(onPan||leaf){e.stopImmediatePropagation();e.preventDefault();      // nothing else happens while the spoon is full (no stirring, the leaf is not picked up)
+      if(performance.now()-(NS.hintAt||0)>4000){NS.hintAt=performance.now();try{showToast('Kašika je puna nadeva. Stavi nadev na list kupusa, ili ga vrati: desni klik ili Esc.');}catch(x){}}}
     return;
   }
 },true);
@@ -62,14 +63,14 @@ window.addEventListener('pointerdown',function(e){
 var freeAt=0,wasFree=true;
 setInterval(function(){var f=emptyHands();if(f&&!wasFree)freeAt=performance.now();wasFree=f;},30);      // when the hands became empty (the click that put something down must not be taken for a scoop)
 window.addEventListener('pointerdown',function(e){
-  if(e.button!==0)return;NS.down=null;
+  if(e.button!==0)return;NS.down=null;NS.stirMoved=false;
   if(NS.pdHold)return;
   if(emptyHands()&&!NS.loaded&&performance.now()-freeAt>500){var v=nadevPan(e);if(v)NS.down={x:e.clientX,y:e.clientY,t:performance.now(),v:v};}
 },true);
 window.addEventListener('pointerup',function(e){
   var d=NS.down;NS.down=null;
   if(!d||e.button!==0||NS.loaded||!emptyHands())return;
-  if(Math.hypot(e.clientX-d.x,e.clientY-d.y)>16||performance.now()-d.t>700)return;      // a movement or a long press: it was the stirring
+  if(NS.stirMoved||Math.hypot(e.clientX-d.x,e.clientY-d.y)>5||performance.now()-d.t>350)return;      // any movement (more than 5 px) or a press longer than a third of a second: it was the stirring, not a scoop
   var v=d.v,have=units(v,NK);if(have<=0.001||!v.isConnected)return;
   var take=Math.min(PORTION,have);if(have-take<.04)take=have;      // the last small rest goes onto the spoon together with the last portion
   var rice=units(v,RK),share=take>=have-1e-6?rice:Math.min(rice,rice*take/have);
@@ -77,6 +78,7 @@ window.addEventListener('pointerup',function(e){
   NS.loaded=true;NS.pan=v;NS.rice=share;window.CooksterNadevLoaded=true;place();show(true);
   try{playImpactSound(v,'pickup');}catch(x){}
 },true);
+window.addEventListener('pointermove',function(e){if(NS.down&&Math.hypot(e.clientX-NS.down.x,e.clientY-NS.down.y)>5)NS.stirMoved=true;},true);
 window.addEventListener('pointermove',function(){if(NS.loaded){if(!emptyHands()){giveBack();return;}show(true);place();}},false);
 window.addEventListener('keydown',function(e){if(e.key==='Escape')giveBack();},false);
 window.CooksterNadevSpoon={consume:function(){NS.loaded=false;window.CooksterNadevLoaded=false;show(false);},PORTION:PORTION,loaded:function(){return NS.loaded;},giveBack:giveBack};
