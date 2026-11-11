@@ -210,6 +210,12 @@ setInterval(function(){var hs=heldSarma();if(hs&&hs._rot)applyRot(hs);},120);
 window.addEventListener('pointerdown',function(e){
   if(e.button!==0)return;
   var tr=trayAt(e);
+  var hf=null;try{var hh=holding;if(hh&&hh.dataset&&(hh.dataset.itemId==='sarma_debela'||hh.dataset.itemId==='sarma_uska'))hf=hh;}catch(x){}
+  if(hf&&tr&&!tr._lid){      // a baked sarma taken out earlier goes back into the tray
+    e.stopImmediatePropagation();e.preventDefault();gestureSwallow=true;
+    if(add(tr,hf.dataset.itemId==='sarma_uska'?'g':'f',e.clientX,e.clientY)){try{removeItem(hf);holding=null;hidePlacementGhost();hideOriginGhost();clearPourTarget();updateHover();}catch(x){}try{playImpactSound(tr,'drop');}catch(x){}}
+    return;
+  }
   var hs=heldSarma();
   if(hs){      // a finished sarma in the hand: a click on the tray lays it in
     var t=tr;if(!t)return;
@@ -232,7 +238,7 @@ window.addEventListener('pointerdown',function(e){
   try{(window.items||items).forEach(function(it){if(isTray(it)&&it._sarmas&&it._sarmas.list.length){var s=hit(it,e.clientX,e.clientY);if(s&&!cand)cand={tray:it,s:s};}});}catch(x){}
   if(cand){
     e.stopImmediatePropagation();e.preventDefault();gestureSwallow=true;
-    var st=sys(cand.tray);st.drag=cand.s;st.target=local(cand.tray,e.clientX,e.clientY);st.dragTray=cand.tray;kick(cand.tray,10);
+    var st=sys(cand.tray);st.dragStart={t:Date.now(),x:e.clientX,y:e.clientY};st.drag=cand.s;st.target=local(cand.tray,e.clientX,e.clientY);st.dragTray=cand.tray;kick(cand.tray,10);
   }
 },true);
 window.addEventListener('pointermove',function(e){
@@ -242,7 +248,13 @@ window.addEventListener('pointermove',function(e){
 function endDrag(){
   try{(window.items||items).forEach(function(it){if(isTray(it)&&it._sarmas&&it._sarmas.drag){var st=it._sarmas;st.drag=null;st.target=null;kick(it,30);}});}catch(x){}
 }
-window.addEventListener('pointerup',function(e){if(gestureSwallow){e.stopImmediatePropagation();gestureSwallow=false;}endDrag();},true);
+window.addEventListener('pointerup',function(e){
+  var quick=null;      // a short click on a sarma (not a drag) takes it OUT of the tray at any phase (raw too); a longer press and moving drags it inside the tray
+  try{(window.items||items).forEach(function(it){var q=it._sarmas;if(isTray(it)&&q&&q.drag&&q.dragStart&&!it._lid&&Date.now()-q.dragStart.t<350&&Math.hypot(e.clientX-q.dragStart.x,e.clientY-q.dragStart.y)<7)quick={tray:it,s:q.drag};});}catch(x){}
+  if(gestureSwallow){e.stopImmediatePropagation();gestureSwallow=false;}
+  endDrag();
+  if(quick){var qs=sys(quick.tray),ix=qs.list.indexOf(quick.s);if(ix>=0){qs.list.splice(ix,1);kick(quick.tray,20);holdFinished(quick.s.set,donenessOf(quick.tray),e,quick.tray);gestureSwallow=true;setTimeout(function(){gestureSwallow=false;},200);}}
+},true);
 ['click','mouseup','mousedown'].forEach(function(t){window.addEventListener(t,function(e){if(gestureSwallow&&t!=='mousedown'){e.stopImmediatePropagation();}},true);});
 // ---- the LID of the tray (assets/calibration_props/okrugli_pleh_poklopac.webp, the item "Poklopac za okrugli pleh" of the Kitchen elements) ----
 // with the lid in the hand a click on the tray puts it on (it covers the sarmas); with empty hands a click on a covered tray takes the lid off (it goes into the hand).
