@@ -106,7 +106,7 @@ function draw(el){
   }
   var ck=cookOf(el);
   var list=st.list.slice().sort(function(a,b){return a.y-b.y;});
-  if(ck>=.5){drawCooked(g,w,h,1,0,1);drawCooked(g,w,h,(ck-.5)*2,0,2);drawCooked(g,w,h,burnOf(el),0,3);g.restore();return;}      // cooked: only the pictures (light -> golden -> burnt)
+  if(ck>=.5||burnOf(el)>0){drawCooked(g,w,h,1,0,1);drawCooked(g,w,h,(ck-.5)*2,0,2);drawCooked(g,w,h,burnOf(el),0,3);g.restore();return;}      // cooked: only the pictures (light -> golden -> burnt)
   g.globalAlpha=1-ck*2;
   list.forEach(function(s){
     var im=spr[s.set];if(!im)return;
@@ -225,22 +225,41 @@ function trayWithSarmasAt(x,y){
 }
 function waterOf(tr){return Math.max(0,Math.min(1,(tr._water||0)));}
 function addWater(tr,units){tr._water=Math.min(1,waterOf(tr)+units/WATER_FULL);tr.dataset.sarmaWater=tr._water.toFixed(3);kick(tr,4);try{CooksterSave.schedule();}catch(e){}}
-// ---- COOKING: while the tray stands in the OVEN the sarmas simmer; after about 60 seconds they are cooked. The picture of the cooked sarmas (assets/sarma/pleh_kuvane.webp, made in ChatGPT) replaces the raw ones
-// little by little (cross-fade) and stays when the tray is taken out of the oven. The juice (water) slowly boils away a little while cooking. ----
-var COOK_SECONDS=60,BURN_SECONDS=40,cookImgs=[1,2,3].map(function(n){var i=new Image();i.src='assets/sarma/pleh_kuvane_'+n+'.webp?v=2';return i;});
-function burnOf(tr){return Math.max(0,Math.min(1,tr._burn||0));}
+// ---- COOKING (game time, 1 real minute = 1 game hour): the sarmas need 3 HOURS of game time on a QUIET fire (the damper closed): 2.5 hours COVERED with the lid, then the last 30 minutes UNCOVERED (they go golden).
+// The pictures (assets/sarma/pleh_kuvane_1..3.webp, made in ChatGPT): raw -> light (covered time) -> golden (uncovered time) -> burnt (only when the juice is gone and the tray still stands on the fire).
+// Only the time with the fire ON counts; the lid must be on for the first 2.5 h (the lid taken off early stops the cooking and the juice boils away faster), and for the browning (the last 30 min) it must be off.
+// The juice boils away slowly (lid on) or faster (lid off); an OPEN damper (strong fire) boils it away 4 times faster. No juice -> after about 20 game minutes the sarmas burn. ----
+var COVER_MIN=150,OPEN_MIN=30,BURN_MIN=20,cookImgs=[1,2,3].map(function(n){var i=new Image();i.src='assets/sarma/pleh_kuvane_'+n+'.webp?v=2';return i;});
 function cookOf(tr){return Math.max(0,Math.min(1,tr._cook||0));}
+function burnOf(tr){return Math.max(0,Math.min(1,tr._burn||0));}
+var lastGM=null,lastReal=Date.now();
+function gameMin(){try{if(window.CooksterDay&&CooksterDay.minute)return CooksterDay.minute();}catch(e){}return Date.now()/1000;}
+function fireState(){      // {on, quiet}
+  var on=false,quiet=false;
+  try{on=!!(stoveState&&stoveState.fireOn&&(+stoveState.fireLevel||0)>0);}catch(e){}
+  try{quiet=!!damperClosed();}catch(e){}
+  return {on:on,quiet:quiet};
+}
 setInterval(function(){
-  try{(window.items||items).forEach(function(tr){
-    if(!isTray(tr)||!tr._sarmas||!tr._sarmas.list.length)return;
-    if(tr.dataset.inOven==='1'&&!tr._lidBlocks){
-      var w=waterOf(tr),c=cookOf(tr);
-      if(c<1){tr._cook=Math.min(1,c+.5/COOK_SECONDS);tr.dataset.sarmaCook=tr._cook.toFixed(3);kick(tr,3);}
-      // the juice boils away: slowly while cooking, faster when cooked; with no water left the cooked sarmas start to burn (golden -> burnt)
-      if(w>0){tr._water=Math.max(0,w-(c<1?.0006:.004));tr.dataset.sarmaWater=tr._water.toFixed(3);}
-      else if(c>=1&&burnOf(tr)<1){tr._burn=Math.min(1,burnOf(tr)+.5/BURN_SECONDS);tr.dataset.sarmaBurn=tr._burn.toFixed(3);kick(tr,3);}
-    }
-  });}catch(e){}
+  try{
+    var gm=gameMin(),dm=lastGM==null?0:gm-lastGM;lastGM=gm;
+    if(!(dm>0&&dm<30))dm=0;      // the clock stands (pause, the end of the day) or jumps (a new day): nothing happens
+    if(!dm)return;
+    var fs=fireState();if(!fs.on)return;
+    (window.items||items).forEach(function(tr){
+      if(!isTray(tr)||!tr._sarmas||!tr._sarmas.list.length||tr.dataset.inOven!=='1')return;
+      var cov=tr._cov||0,unc=tr._unc||0,lid=!!tr._lid,w=waterOf(tr),heat=fs.quiet?1:4;
+      if(w>0){      // the juice boils away
+        var use=(lid?1/450:1/110)*dm*heat;tr._water=Math.max(0,w-use);tr.dataset.sarmaWater=tr._water.toFixed(3);w=tr._water;
+        if(cov<COVER_MIN&&lid)cov=Math.min(COVER_MIN,cov+dm);
+        else if(cov>=COVER_MIN&&!lid)unc=Math.min(OPEN_MIN,unc+dm);
+        tr._cov=cov;tr._unc=unc;tr._cook=.5*cov/COVER_MIN+.5*unc/OPEN_MIN;tr.dataset.sarmaCook=tr._cook.toFixed(3);
+      }else if(burnOf(tr)<1){      // no juice: they burn
+        tr._burn=Math.min(1,burnOf(tr)+dm/BURN_MIN);tr.dataset.sarmaBurn=tr._burn.toFixed(3);
+      }
+      kick(tr,3);
+    });
+  }catch(e){}
 },500);
 window.CooksterSarmaTray={cook:cookOf,burn:burnOf,trayWithSarmasAt:trayWithSarmasAt,addWater:addWater,water:waterOf,lidOn:lidOn,lidOff:lidOff,add:add,sys:sys,kick:kick,hit:hit,count:function(el){return sys(el).list.length;}};
 })();
