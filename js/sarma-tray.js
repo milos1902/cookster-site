@@ -32,6 +32,16 @@ function local(el,cx,cy){
 function sys(el){return el._sarmas||(el._sarmas={list:[],cv:null,active:0,drag:null,raf:0});}
 function body(s){var h=s.len*.5-s.r;return {h:Math.max(0,h)};}
 function pts(s){var h=body(s).h,c=Math.cos(s.a),sn=Math.sin(s.a);return [{x:s.x-c*h,y:s.y-sn*h},{x:s.x,y:s.y},{x:s.x+c*h,y:s.y+sn*h}];}
+// the wall: every one of the three circles of a sarma (its two ends and its middle) stays inside the floor of the tray with its WHOLE size; the end of the sarma touches the wall and stops
+function wallFix(s){
+  var R=FLOOR.rx;
+  for(var pass=0;pass<4;pass++){
+    var P=pts(s),mx=0,my=0,worst=0;
+    for(var m=0;m<3;m++){var dd=Math.hypot(P[m].x,P[m].y),lim=R-s.r*.96;if(dd>lim){var o=(dd-lim)/(dd||1e-6);var ox=-P[m].x*o,oy=-P[m].y*o;if(Math.hypot(ox,oy)>worst){worst=Math.hypot(ox,oy);mx=ox;my=oy;}}}
+    if(worst<1e-5)break;
+    s.x+=mx;s.y+=my;
+  }
+}
 function relax(st,iters){
   var L=st.list,R=FLOOR.rx;
   for(var it=0;it<iters;it++){
@@ -53,16 +63,13 @@ function relax(st,iters){
         }
       }
     }
-    for(var k=0;k<L.length;k++){var s=L[k];if(st.drag===s)continue;      // the wall of the tray
-      var P=pts(s),mx=0,my=0;
-      for(var m=0;m<3;m++){var dd=Math.hypot(P[m].x,P[m].y),lim=R-s.r*.3;if(dd>lim){var o=(dd-lim)/dd;mx-=P[m].x*o;my-=P[m].y*o;}}
-      s.x+=mx*.5;s.y+=my*.5;}
+    for(var k=0;k<L.length;k++)wallFix(L[k]);      // the wall of the tray: a sarma can never go through it (also not the one in the hand)
   }
 }
 function tick(el){
   var st=sys(el);st.raf=0;
   var before=st.list.map(function(s){return [s.x,s.y,s.a];});
-  if(st.drag){var d=st.drag,t=st.target;if(t){d.x+=Math.max(-.02,Math.min(.02,(t.x-d.x)*.45));d.y+=Math.max(-.02,Math.min(.02,(t.y-d.y)*.45));var lim=FLOOR.rx-d.r*.3,rr=Math.hypot(d.x,d.y);if(rr>lim){d.x*=lim/rr;d.y*=lim/rr;}}}
+  if(st.drag){var d=st.drag,t=st.target;if(t){d.x+=Math.max(-.02,Math.min(.02,(t.x-d.x)*.45));d.y+=Math.max(-.02,Math.min(.02,(t.y-d.y)*.45));wallFix(d);}}
   var x0=st.list.map(function(q){return [q.x,q.y,q.a];});
   relax(st,8);
   // heavy: in one frame a sarma that is pushed may only go a very little way and turn a little (nothing jumps away), only the sarma in the hand follows the mouse freely
@@ -70,7 +77,8 @@ function tick(el){
     if(q.pin>0)q.pin--;if(st.drag===q)return;
     var dx=q.x-x0[i][0],dy=q.y-x0[i][1],dd=Math.hypot(dx,dy),cap=.0034/(q.m||1);
     if(dd>cap){q.x=x0[i][0]+dx*cap/dd;q.y=x0[i][1]+dy*cap/dd;}
-    var da=q.a-x0[i][2],ca=.012/(q.m||1);if(Math.abs(da)>ca)q.a=x0[i][2]+Math.sign(da)*ca;
+    q.a=Math.max(-.07,Math.min(.07,q.a*.9));      // locked: horizontal
+    wallFix(q);
   });
   var mv=0;st.list.forEach(function(s,i){mv=Math.max(mv,Math.abs(s.x-before[i][0])+Math.abs(s.y-before[i][1])+Math.abs(s.a-before[i][2])*.05);});
   draw(el);
@@ -96,7 +104,10 @@ function draw(el){
     g.fillStyle=gr;g.fillRect(0,top,w,h);
     g.fillStyle='rgba(255,226,160,.32)';g.fillRect(0,top,w,Math.max(1.6,h*.014));
   }
+  var ck=cookOf(el);
   var list=st.list.slice().sort(function(a,b){return a.y-b.y;});
+  if(ck>=.5){drawCooked(g,w,h,1,0,1);drawCooked(g,w,h,(ck-.5)*2,0,2);drawCooked(g,w,h,burnOf(el),0,3);g.restore();return;}      // cooked: only the pictures (light -> golden -> burnt)
+  g.globalAlpha=1-ck*2;
   list.forEach(function(s){
     var im=spr[s.set];if(!im)return;
     var dxs=Math.cos(s.a),dys=kk*Math.sin(s.a),ls=Math.hypot(dxs,dys),ang=Math.atan2(dys,dxs);
@@ -107,8 +118,13 @@ function draw(el){
     g.shadowColor='rgba(20,10,0,.45)';g.shadowBlur=3;g.shadowOffsetY=2;
     g.drawImage(im,-lenPx/2,-hh/2,lenPx,hh);g.restore();
   });
+  g.globalAlpha=1;if(ck>0)drawCooked(g,w,h,ck*2,0,1);
   if(wl>.45){var tint=Math.min(.3,(wl-.45)*.55);g.fillStyle='rgba(150,70,30,'+tint.toFixed(3)+')';g.fillRect(0,0,w,h);}
   g.restore();
+}
+function drawCooked(g,w,h,a,_x,ph){
+  var im=cookImgs[(ph||1)-1];if(!im||!im.complete||!im.naturalWidth||a<=0)return;
+  g.save();g.globalAlpha=Math.min(1,a);g.drawImage(im,.02*w,.085*h,.96*w,.77*h);g.restore();
 }
 function hit(el,cx,cy){
   var st=sys(el),p=local(el,cx,cy),best=null,bd=1e9;
@@ -119,10 +135,9 @@ function add(el,set,cx,cy,rotDeg){
   var st=sys(el);if(st.list.length>=MAXN){toast('Pleh je pun.');return false;}
   var S=SETS[set]||SETS.f,len=S.len,p=cx==null?{x:0,y:0}:local(el,cx,cy);
   var rr=Math.hypot(p.x,p.y),lim=FLOOR.rx-len*S.asp*.5*.3;if(rr>lim){p.x*=lim/rr;p.y*=lim/rr;rr=lim;}
-  var tang=Math.atan2(p.y,p.x)+Math.PI/2;      // along the circle round the middle of the tray (the first rings round the edge, then inwards); the middle one lies freely
-  var ang=rr<FLOOR.rx*.22?(Math.random()-.5)*1.2:tang+(Math.random()-.5)*.25;
-  if(typeof rotDeg==='number'){var kk=(FLOOR.ry*boxRatio(el))/FLOOR.rx,rs=rotDeg*Math.PI/180;ang=Math.atan2(Math.sin(rs)/kk,Math.cos(rs));}      // the player turned it with the wheel: it goes in exactly like that
-  st.list.push({x:p.x,y:p.y,a:ang,len:len,r:len*S.asp*.5,set:set,pin:90,m:.8+Math.random()*1.7});      // m: the weight (a light one .8 ... a heavy one 2.5)
+  var tang=0;      // horizontal only      // along the circle round the middle of the tray (the first rings round the edge, then inwards); the middle one lies freely
+  var ang=(Math.random()-.5)*.1;      // every sarma lies flat on the bottom, horizontally (a few degrees of wobble at most); the turning of the wheel in the hand does not count in the tray
+  var ns={x:p.x,y:p.y,a:ang,len:len,r:len*S.asp*.5,set:set,pin:90,m:.8+Math.random()*1.7};wallFix(ns);st.list.push(ns);      // m: the weight (a light one .8 ... a heavy one 2.5)
   kick(el,60);return true;
 }
 function trayAt(e){var it=(typeof itemAt==='function')?itemAt(e.clientX,e.clientY):null;return isTray(it)?it:null;}
@@ -146,7 +161,7 @@ window.addEventListener('pointerdown',function(e){
     var t=tr;if(!t)return;
     var set=(hs._sm&&hs._sm.set&&hs._sm.set.pre)||'f';
     e.stopImmediatePropagation();e.preventDefault();gestureSwallow=true;
-    if(add(t,set,e.clientX,e.clientY,hs._rot!==undefined?hs._rot:undefined)){
+    if(add(t,set,e.clientX,e.clientY)){
       try{removeItem(hs);holding=null;hidePlacementGhost();hideOriginGhost();clearPourTarget();updateHover();}catch(x){}
       try{playImpactSound(t,'drop');}catch(x){}
     }
@@ -205,10 +220,27 @@ window.addEventListener('pointerdown',function(e){
 var WATER_FULL=100;      // 100 units of the pitcher fill the tray to the top of the sarmas (a full pitcher is 100 units)
 function trayWithSarmasAt(x,y){
   var found=null;try{(window.items||items).forEach(function(it){if(!isTray(it)||it._lid||!it._sarmas||!it._sarmas.list.length)return;var r=it.getBoundingClientRect();
-    var u=(x-r.left)/Math.max(1,r.width),v=(y-r.top)/Math.max(1,r.height);if(u>.04&&u<.96&&v>.05&&v<.9)found=it;});}catch(e){}
+    var u=(x-r.left)/Math.max(1,r.width),v=(y-r.top)/Math.max(1,r.height);if(u>-.15&&u<1.15&&v>-.3&&v<1.12)found=it;});}catch(e){}      // a big target: also next to the tray and above it (the spout of the pitcher is over the tray, the water falls in)
   return found;
 }
 function waterOf(tr){return Math.max(0,Math.min(1,(tr._water||0)));}
 function addWater(tr,units){tr._water=Math.min(1,waterOf(tr)+units/WATER_FULL);tr.dataset.sarmaWater=tr._water.toFixed(3);kick(tr,4);try{CooksterSave.schedule();}catch(e){}}
-window.CooksterSarmaTray={trayWithSarmasAt:trayWithSarmasAt,addWater:addWater,water:waterOf,lidOn:lidOn,lidOff:lidOff,add:add,sys:sys,kick:kick,hit:hit,count:function(el){return sys(el).list.length;}};
+// ---- COOKING: while the tray stands in the OVEN the sarmas simmer; after about 60 seconds they are cooked. The picture of the cooked sarmas (assets/sarma/pleh_kuvane.webp, made in ChatGPT) replaces the raw ones
+// little by little (cross-fade) and stays when the tray is taken out of the oven. The juice (water) slowly boils away a little while cooking. ----
+var COOK_SECONDS=60,BURN_SECONDS=40,cookImgs=[1,2,3].map(function(n){var i=new Image();i.src='assets/sarma/pleh_kuvane_'+n+'.webp?v=2';return i;});
+function burnOf(tr){return Math.max(0,Math.min(1,tr._burn||0));}
+function cookOf(tr){return Math.max(0,Math.min(1,tr._cook||0));}
+setInterval(function(){
+  try{(window.items||items).forEach(function(tr){
+    if(!isTray(tr)||!tr._sarmas||!tr._sarmas.list.length)return;
+    if(tr.dataset.inOven==='1'&&!tr._lidBlocks){
+      var w=waterOf(tr),c=cookOf(tr);
+      if(c<1){tr._cook=Math.min(1,c+.5/COOK_SECONDS);tr.dataset.sarmaCook=tr._cook.toFixed(3);kick(tr,3);}
+      // the juice boils away: slowly while cooking, faster when cooked; with no water left the cooked sarmas start to burn (golden -> burnt)
+      if(w>0){tr._water=Math.max(0,w-(c<1?.0006:.004));tr.dataset.sarmaWater=tr._water.toFixed(3);}
+      else if(c>=1&&burnOf(tr)<1){tr._burn=Math.min(1,burnOf(tr)+.5/BURN_SECONDS);tr.dataset.sarmaBurn=tr._burn.toFixed(3);kick(tr,3);}
+    }
+  });}catch(e){}
+},500);
+window.CooksterSarmaTray={cook:cookOf,burn:burnOf,trayWithSarmasAt:trayWithSarmasAt,addWater:addWater,water:waterOf,lidOn:lidOn,lidOff:lidOff,add:add,sys:sys,kick:kick,hit:hit,count:function(el){return sys(el).list.length;}};
 })();
