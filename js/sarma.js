@@ -44,7 +44,7 @@ function relPos(el,e){var r=el.getBoundingClientRect();return {x:(e.clientX-r.le
     if(e.button!==0)return;
     try{if(typeof holding!=='undefined'&&holding)return;}catch(x){}
     var it=over(e);if(!it)return;setup(it);var st=it._sm,p=relPos(it,e),want=null;
-    if(!st.filled){if(t==='pointerdown'&&p.y>.5&&!window.CooksterNadevLoaded)toast(HINTS.fill);return;}      // an empty leaf: it is picked up as always; the filling is put with the spoon
+    if(!st.filled){if(t==='pointerdown'&&p.y>.5)toast(HINTS.fill);return;}      // an empty leaf: it is picked up as always; the filling is put with the spoon
     if(st.stage===0||st.stage===1){if(p.y>.5)want='bottom';}
     else if(st.stage===2){if(p.x<.5)want='left';else if(t==='pointerdown')toast(HINTS.left);}
     else if(st.stage===3){if(p.x>=.5)want='right';else if(t==='pointerdown')toast(HINTS.right);}

@@ -5868,7 +5868,7 @@ function placeMiniSpoon(clientX,clientY,vessel){
 }
 window.addEventListener('pointermove',e=>{
  if(stirring)return;
- const blocked=holding||window.CooksterNadevLoaded||window.CooksterMastLoaded||quickWheelOpen||pouring||oilPouring||panWashing||cleaning||picking||placing||(e.buttons&1)||(e.target&&e.target.closest&&e.target.closest('[data-tool-ui],#dlPanel,.overlay,.modal'))||(window.CooksterSinkZoom&&CooksterSinkZoom.isOpen&&CooksterSinkZoom.isOpen());
+ const blocked=holding||quickWheelOpen||pouring||oilPouring||panWashing||cleaning||picking||placing||(e.buttons&1)||(e.target&&e.target.closest&&e.target.closest('[data-tool-ui],#dlPanel,.overlay,.modal'))||(window.CooksterSinkZoom&&CooksterSinkZoom.isOpen&&CooksterSinkZoom.isOpen());
  const v=blocked?null:foodVesselAt(e.clientX,e.clientY);
  if(!v){if(miniVessel)miniSpoonHide();return;}
  miniVessel=v;placeMiniSpoon(e.clientX,e.clientY,v);document.body.classList.add('mini-spoon-on');
