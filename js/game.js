@@ -10522,6 +10522,15 @@ cookingHudStyle.textContent=`
 .cookster-cooking-hud .cook-progress-bar>i>img{position:absolute;left:0;top:0;width:229px;height:100%;max-width:none;pointer-events:none}
 .cookster-cooking-hud.ready .cook-progress-bar>i,.cookster-cooking-hud.browned .cook-progress-bar>i,.cookster-cooking-hud.burnt .cook-progress-bar>i{background:none}
 .cookster-cooking-hud .cook-safe-mark{display:none}
+/* the STIRRING bar ("Mešanje"): above the cooking bar; full at the start, drains from right to left; stirring fills it; at zero the food burns */
+.cookster-cooking-hud .cook-stir{display:none;position:relative;width:200px;height:20px;margin:0 auto 4px;border-radius:11px;background:rgba(29,18,11,.9);box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 6px rgba(0,0,0,.35);overflow:hidden}
+.cookster-cooking-hud.stir-on .cook-stir{display:block}
+.cookster-cooking-hud .cook-stir>i{position:absolute;left:2px;top:2px;bottom:2px;width:calc(100% - 4px);border-radius:9px;background:linear-gradient(180deg,#9bd35a,#5f9b2c);transform-origin:left center;transition:transform .12s linear,background .3s}
+.cookster-cooking-hud .cook-stir.mid>i{background:linear-gradient(180deg,#f0c24a,#c8892a)}
+.cookster-cooking-hud .cook-stir.low>i{background:linear-gradient(180deg,#ef6a4a,#b52d1b)}
+.cookster-cooking-hud .cook-stir.low{animation:cookStirPulse .5s ease-in-out infinite alternate}
+@keyframes cookStirPulse{from{box-shadow:0 0 0 rgba(255,60,40,0)}to{box-shadow:0 0 9px rgba(255,60,40,.9)}}
+.cookster-cooking-hud .cook-stir>b{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;font:700 11px/1 system-ui,sans-serif;letter-spacing:.06em;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none}
 `;
 document.head.appendChild(cookingHudStyle);
 
@@ -10542,12 +10551,13 @@ function ensureCookingEffects(vessel){
     vessel.querySelectorAll?.(':scope > .pan-status,:scope > .cooking-status').forEach(n=>n.remove());
     const status=document.createElement('div');
     status.className='cookster-cooking-hud';
-    status.innerHTML='<div class="cook-state-label">Sirovo</div><div class="cook-progress-bar"><i><img src="assets/ui_cook/traka_boja.webp?v=1" alt="" draggable="false"></i><b class="cook-safe-mark"></b></div>';
+    status.innerHTML='<div class="cook-stir"><i></i><b>Mešanje</b></div><div class="cook-state-label">Sirovo</div><div class="cook-progress-bar"><i><img src="assets/ui_cook/traka_boja.webp?v=1" alt="" draggable="false"></i><b class="cook-safe-mark"></b></div>';
     document.body.appendChild(status);vessel._panStatus=status;
     vessel._cookStateLabel=status.querySelector('.cook-state-label');
     vessel._cookProgressFill=status.querySelector('.cook-progress-bar>i');
   }
   if(vessel._panStatus){
+    vessel._stirBox??=vessel._panStatus.querySelector('.cook-stir');vessel._stirFill??=vessel._panStatus.querySelector('.cook-stir>i');
     vessel._cookStateLabel??=vessel._panStatus.querySelector('.cook-state-label');
     vessel._cookProgressFill??=vessel._panStatus.querySelector('.cook-progress-bar>i');
   }
@@ -14581,6 +14591,14 @@ function updateCookingStatus(vessel,modelOverride=null,stateOverride=null,countO
     }
   }
 
+  {      // the stirring bar above the cooking bar
+    const on=visible&&!!model.stirOn&&!isBurnt,m=Math.max(0,Math.min(1,+model.stirMeter>=0?+model.stirMeter:1));
+    vessel._panStatus.classList.toggle('stir-on',on);
+    if(on&&vessel._stirFill){
+      vessel._stirFill.style.transform=`scaleX(${m.toFixed(3)})`;
+      vessel._stirBox.classList.toggle('low',m<.25);vessel._stirBox.classList.toggle('mid',m>=.25&&m<.55);
+    }
+  }
   const progressBucket=Math.round(progress*200); // 0.5% visual resolution
   if(vessel._cookProgressBucket!==progressBucket){
     vessel._cookProgressBucket=progressBucket;
@@ -15179,11 +15197,11 @@ function simulateCookingVessel(vessel,dt,now){
    showToast(`${vessel.dataset.label||'Jelo'} je gotovo — skloni posuđe sa vatre!`);
  }
  if(thermal.becameBurnt){
-   showToast(model.scorched?`${vessel.dataset.label||'Jelo'}: nije bilo ulja i niko nije mešao, hrana se zalepila i zagorela!`:`${vessel.dataset.label||'Jelo'} je ostalo predugo na vatri i deo hrane je zagoreo!`);
+   showToast(model.scorched?`${vessel.dataset.label||'Jelo'}: niko nije mešao, hrana se zalepila i zagorela!`:`${vessel.dataset.label||'Jelo'} je ostalo predugo na vatri i deo hrane je zagoreo!`);
  }
- // a warning before it burns: hot and dry (no oil), and nobody stirs
- if((+model.dry||0)>=4&&vessel.dataset.dryWarned!=='1'&&!model.burnt){vessel.dataset.dryWarned='1';showToast('Nema ulja i niko ne meša — hrana će se zalepiti i zagoreti! Mešaj ili dodaj ulje.');}
- if((+model.dry||0)<1)delete vessel.dataset.dryWarned;
+ // a warning before it burns: the stirring bar is nearly empty
+ if(model.stirOn&&(+model.stirMeter||0)<.22&&vessel.dataset.dryWarned!=='1'&&!model.burnt){vessel.dataset.dryWarned='1';showToast('Mešaj! Hrana će se zalepiti i zagoreti.');}
+ if(!model.stirOn||(+model.stirMeter||0)>=.5)delete vessel.dataset.dryWarned;
  if(count<=0)delete vessel.dataset.readyAnnounced;
 
  const counts=model.ingredients||{};
