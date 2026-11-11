@@ -31,9 +31,9 @@ Ovo je spisak za tebe (Miloš) da ga zalepiš u ChatGPT. Redom: prvo opšta prav
 
 ## Grupa 4: dnevni izveštaj
 - `izvestaj_okvir.png` (veliki pergament, sa trakom za naslov)
-- `recenzije_dobre_okvir.png` (zelenkast), `recenzije_loše_okvir.png` (crvenkast) — prazni, za 4 reda
+- `recenzije_dobre_okvir.png` (zelenkast), `recenzije_lose_okvir.png` (crvenkast) — prazni, za 4 reda
 - `recenzija_red.png`, `smajli_srecan.png`, `smajli_neutralan.png`, `smajli_ljut.png`, `smajli_mrzovoljan.png`
-- `bakšis_traka_prazna.png`, `bakšis_traka_puna.png`
+- `baksis_traka_prazna.png`, `baksis_traka_puna.png`
 - `dugme_zatvori.png` (zeleno, prazno), svaka u stanjima: normalno, hover, pritisnuto, onemogućeno (`_n`, `_h`, `_p`, `_x` na kraju imena)
 
 ## Grupa 5: alati i popravke (čekić)
