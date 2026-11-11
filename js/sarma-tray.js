@@ -106,8 +106,8 @@ function draw(el){
   }
   var ck=cookOf(el);
   var list=st.list.slice().sort(function(a,b){return a.y-b.y;});
-  if(ck>=1){drawCooked(g,w,h,1);g.restore();return;}      // fully cooked: only the picture of the cooked sarmas
-  g.globalAlpha=1-ck;
+  if(ck>=.5){drawCooked(g,w,h,1,0,1);drawCooked(g,w,h,(ck-.5)*2,0,2);drawCooked(g,w,h,burnOf(el),0,3);g.restore();return;}      // cooked: only the pictures (light -> golden -> burnt)
+  g.globalAlpha=1-ck*2;
   list.forEach(function(s){
     var im=spr[s.set];if(!im)return;
     var dxs=Math.cos(s.a),dys=kk*Math.sin(s.a),ls=Math.hypot(dxs,dys),ang=Math.atan2(dys,dxs);
@@ -118,13 +118,13 @@ function draw(el){
     g.shadowColor='rgba(20,10,0,.45)';g.shadowBlur=3;g.shadowOffsetY=2;
     g.drawImage(im,-lenPx/2,-hh/2,lenPx,hh);g.restore();
   });
-  g.globalAlpha=1;if(ck>0)drawCooked(g,w,h,ck);
+  g.globalAlpha=1;if(ck>0)drawCooked(g,w,h,ck*2,0,1);
   if(wl>.45){var tint=Math.min(.3,(wl-.45)*.55);g.fillStyle='rgba(150,70,30,'+tint.toFixed(3)+')';g.fillRect(0,0,w,h);}
   g.restore();
 }
-function drawCooked(g,w,h,a){
-  if(!cookImg.complete||!cookImg.naturalWidth)return;
-  g.save();g.globalAlpha=a;g.drawImage(cookImg,.02*w,.085*h,.96*w,.77*h);g.restore();
+function drawCooked(g,w,h,a,_x,ph){
+  var im=cookImgs[(ph||1)-1];if(!im||!im.complete||!im.naturalWidth||a<=0)return;
+  g.save();g.globalAlpha=Math.min(1,a);g.drawImage(im,.02*w,.085*h,.96*w,.77*h);g.restore();
 }
 function hit(el,cx,cy){
   var st=sys(el),p=local(el,cx,cy),best=null,bd=1e9;
@@ -227,7 +227,8 @@ function waterOf(tr){return Math.max(0,Math.min(1,(tr._water||0)));}
 function addWater(tr,units){tr._water=Math.min(1,waterOf(tr)+units/WATER_FULL);tr.dataset.sarmaWater=tr._water.toFixed(3);kick(tr,4);try{CooksterSave.schedule();}catch(e){}}
 // ---- COOKING: while the tray stands in the OVEN the sarmas simmer; after about 60 seconds they are cooked. The picture of the cooked sarmas (assets/sarma/pleh_kuvane.webp, made in ChatGPT) replaces the raw ones
 // little by little (cross-fade) and stays when the tray is taken out of the oven. The juice (water) slowly boils away a little while cooking. ----
-var COOK_SECONDS=60,cookImg=new Image();cookImg.src='assets/sarma/pleh_kuvane.webp?v=1';
+var COOK_SECONDS=60,BURN_SECONDS=40,cookImgs=[1,2,3].map(function(n){var i=new Image();i.src='assets/sarma/pleh_kuvane_'+n+'.webp?v=1';return i;});
+function burnOf(tr){return Math.max(0,Math.min(1,tr._burn||0));}
 function cookOf(tr){return Math.max(0,Math.min(1,tr._cook||0));}
 setInterval(function(){
   try{(window.items||items).forEach(function(tr){
@@ -235,9 +236,11 @@ setInterval(function(){
     if(tr.dataset.inOven==='1'&&!tr._lidBlocks){
       var w=waterOf(tr),c=cookOf(tr);
       if(c<1){tr._cook=Math.min(1,c+.5/COOK_SECONDS);tr.dataset.sarmaCook=tr._cook.toFixed(3);kick(tr,3);}
-      if(w>0&&c<1){tr._water=Math.max(0,w-.00012*5);tr.dataset.sarmaWater=tr._water.toFixed(3);}
+      // the juice boils away: slowly while cooking, faster when cooked; with no water left the cooked sarmas start to burn (golden -> burnt)
+      if(w>0){tr._water=Math.max(0,w-(c<1?.0006:.004));tr.dataset.sarmaWater=tr._water.toFixed(3);}
+      else if(c>=1&&burnOf(tr)<1){tr._burn=Math.min(1,burnOf(tr)+.5/BURN_SECONDS);tr.dataset.sarmaBurn=tr._burn.toFixed(3);kick(tr,3);}
     }
   });}catch(e){}
 },500);
-window.CooksterSarmaTray={cook:cookOf,trayWithSarmasAt:trayWithSarmasAt,addWater:addWater,water:waterOf,lidOn:lidOn,lidOff:lidOff,add:add,sys:sys,kick:kick,hit:hit,count:function(el){return sys(el).list.length;}};
+window.CooksterSarmaTray={cook:cookOf,burn:burnOf,trayWithSarmasAt:trayWithSarmasAt,addWater:addWater,water:waterOf,lidOn:lidOn,lidOff:lidOff,add:add,sys:sys,kick:kick,hit:hit,count:function(el){return sys(el).list.length;}};
 })();
