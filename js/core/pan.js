@@ -273,10 +273,11 @@
         }
       }
     }
-    {      // the STIRRING BAR ("Mesanje"): it starts full and drains from right to left while food is heating in the vessel (not with a quiet fire + oil/liquid, simmerSafe);
+    {      // the STIRRING BAR ("Mesanje"): it starts full and drains from right to left while food is heating in the vessel (not with a quiet fire + liquid in the vessel);
       // stirring fills it fast (CooksterPan.stir); at ZERO the food sticks and burns. A pan with no oil and no liquid drains it twice as fast.
       const live=d.batches.filter(b=>!b.burnt&&b.count>0);
-      const on=heating&&d.heat>=.3&&!simmerSafe&&live.length>0;
+      const barSafe=fireLevel===1&&!!(opts&&opts.wet);      // only a quiet fire with LIQUID in the vessel needs no stirring (oil or lard alone does not protect: it must be stirred)
+      const on=heating&&d.heat>=.3&&!barSafe&&live.length>0;
       d.stirOn=on;
       if(on){
         const drainSeconds=(fireLevel===1?42:(fireLevel===2?32:24))/(((+d.staples.oil||0)<=0&&!(opts&&opts.wet))?2:1);
