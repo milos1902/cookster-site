@@ -227,7 +227,7 @@ function waterOf(tr){return Math.max(0,Math.min(1,(tr._water||0)));}
 function addWater(tr,units){tr._water=Math.min(1,waterOf(tr)+units/WATER_FULL);tr.dataset.sarmaWater=tr._water.toFixed(3);kick(tr,4);try{CooksterSave.schedule();}catch(e){}}
 // ---- COOKING: while the tray stands in the OVEN the sarmas simmer; after about 60 seconds they are cooked. The picture of the cooked sarmas (assets/sarma/pleh_kuvane.webp, made in ChatGPT) replaces the raw ones
 // little by little (cross-fade) and stays when the tray is taken out of the oven. The juice (water) slowly boils away a little while cooking. ----
-var COOK_SECONDS=60,BURN_SECONDS=40,cookImgs=[1,2,3].map(function(n){var i=new Image();i.src='assets/sarma/pleh_kuvane_'+n+'.webp?v=1';return i;});
+var COOK_SECONDS=60,BURN_SECONDS=40,cookImgs=[1,2,3].map(function(n){var i=new Image();i.src='assets/sarma/pleh_kuvane_'+n+'.webp?v=2';return i;});
 function burnOf(tr){return Math.max(0,Math.min(1,tr._burn||0));}
 function cookOf(tr){return Math.max(0,Math.min(1,tr._cook||0));}
 setInterval(function(){
