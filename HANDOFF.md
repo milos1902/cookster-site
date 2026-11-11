@@ -57,3 +57,10 @@ Poslednje ažuriranje: oktobar 2026 (posle PR-ova do #262).
 - Ideja: na početku je kafana **porušena**: polomljeni stolovi, polomljen šank. Igrač dobija mali **čekić**; udaranjem po predmetu on se popravlja (više udaraca, vidi se napredak). Popravljeno otvara kafanu / sledeći korak.
 - Za prvu verziju treba: alat čekić (`data-tool-ui`), stanje popravke po predmetu (npr. 0..1 ili broj udaraca), prsten napretka iznad predmeta, zvuk udarca (zvuk ne mogu da čujem), slike polomljenih verzija stolova i šanka (privremeno: tamnije/nakrivljeno preko postojećih; prave slike pravi Miloš ili Higgsfield UZ PITANJE o kreditima).
 - Otvoreno: koliko udaraca po predmetu; da li popravka košta novac ili materijal (daske, ekseri); šta tačno otključava popravljena kafana (gosti, jelovnik); redosled u odnosu na uputstvo (čišćenje kuhinje, komšinica, salata, tikvice).
+- **Šta se vidi na Milošovim snimcima Waterpark Simulatora (11.11.):**
+  - Gore levo: dan i sat, status „OPEN“, novac sa malim „+ zarada“, broj gostiju sa ograničenjem (30/50: ograničenje raste sa napretkom), dva okrugla dugmeta (čišćenje, pogled na park).
+  - Gore u sredini: radnici sa slikom zadatka i peščanikom (zauzeti).
+  - Gore desno: nivo (8) i traka iskustva (40/100 XP), ispod „TASK LIST“ sa naslovom „Road to the Fourth Star“ (zvezdice pokazuju koliko je preostalo): jedan glavni zadatak sa brojačem (0/20) + manji dnevni zadaci („Restock ...“).
+  - Dole: traka sa 6 alata (ruka, čekić, brisač, kofa, malj, valjak) sa brojevima 1–6; levo savet za tastere.
+  - U režimu gradnje: kartice (Pools, Slides, Utility, Decorations); na svakoj stavci su zvezdice koliko je potrebno; zaključane stavke su tamne (otključavaju se zvezdicama); poruke „Royal is waiting for Lemonade“ (gost čeka).
+- **Moguće za Cookster (predlog, nije dogovoreno):** ocena kafane u zvezdicama sa listom zadataka gore desno („Put do druge zvezdice“: očisti kuhinju, popravi sto čekićem, popravi šank, posluži 5 gostiju...); svaka zvezdica otključava predmete u Kuhinjskim elementima (prikaz zvezdica na kartici, zaključano = tamno), recepte i broj gostiju; čekić je jedan od alata u traci (ruka, čekić, sunđer, metla).
