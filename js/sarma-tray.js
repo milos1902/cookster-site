@@ -23,9 +23,19 @@ function donenessOf(tr){return cookOf(tr)*2+burnOf(tr);}
 var TINTS=[[0,[255,255,255,1]],[1,[235,228,150,1]],[2,[225,150,70,1]],[3,[70,48,34,1]]];      // multiplied over the sprite (keeps its texture)
 function tintCol(d){var i=0;while(i<TINTS.length-2&&d>TINTS[i+1][0])i++;var a=TINTS[i],b=TINTS[i+1],t=Math.max(0,Math.min(1,(d-a[0])/(b[0]-a[0])));return a[1].map(function(v,k){return v+(b[1][k]-v)*t;});}
 var tintCache={};
+// REAL pictures of the baked sarmas (Miloš, ChatGPT), per kind: light/golden/burnt. For a kind without them the colouring above is used.
+var PHASE_SRC={f:['assets/sarma/f_pec_1.webp','assets/sarma/f_pec_2.webp','assets/sarma/f_pec_3.webp']};
+var phaseImg={};Object.keys(PHASE_SRC).forEach(function(k){phaseImg[k]=PHASE_SRC[k].map(function(u){var i=new Image();i.src=u+'?v=1';return i;});});
+function phaseReady(set){var a=phaseImg[set];return !!a&&a.every(function(i){return i.complete&&i.naturalWidth;});}
 function tinted(set,d){
   var im=spr[set];if(!im)return null;var q=Math.round(d*12);if(q<=0)return im;
   var key=set+q;if(tintCache[key]&&tintCache[key].src===im)return tintCache[key].c;
+  if(phaseReady(set)){      // cross-fade raw -> light -> golden -> burnt between the real pictures
+    var dd=q/12,seq=[im].concat(phaseImg[set]),i0=Math.min(2,Math.floor(dd)),t=dd-i0,A=seq[i0],B=seq[i0+1];
+    var cc=document.createElement('canvas');cc.width=im.width;cc.height=im.height;var gg=cc.getContext('2d');
+    gg.drawImage(A,0,0,cc.width,cc.height);gg.globalAlpha=Math.max(0,Math.min(1,t));gg.drawImage(B,0,0,cc.width,cc.height);
+    tintCache[key]={src:im,c:cc};return cc;
+  }
   var c=document.createElement('canvas');c.width=im.width;c.height=im.height;var g=c.getContext('2d');
   var col=tintCol(q/12);g.fillStyle='rgb('+Math.round(col[0])+','+Math.round(col[1])+','+Math.round(col[2])+')';g.fillRect(0,0,c.width,c.height);
   g.globalCompositeOperation='multiply';g.drawImage(im,0,0);g.globalCompositeOperation='destination-in';g.drawImage(im,0,0);
