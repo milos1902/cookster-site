@@ -140,7 +140,7 @@ function msPlace(extra){
   d.style.transform='translate3d('+(p.x-MW/2).toFixed(1)+'px,'+(p.y-MH*.16).toFixed(1)+'px,0) rotateZ('+(extra||0)+'deg)';
 }
 function msShow(on){var d=msEl();d.style.display=on?'block':'none';document.body.classList.toggle('mini-spoon-on',!!on);}
-function msLoad(on){MS.loaded=on;var l=document.getElementById('mastSpoonLump');if(l)l.style.display=on?'block':'none';}
+function msLoad(on){MS.loaded=on;window.CooksterMastLoaded=!!on;var l=document.getElementById('mastSpoonLump');if(l)l.style.display=on?'block':'none';}
 // the small spoon belongs only to the SURFACE of the lard (the opening of the bucket): on the rest of the bucket (the wall, the handle) the cursor works as always, so the bucket can be taken
 function overBucket(e){
   var it=(typeof itemAt==='function')?itemAt(e.clientX,e.clientY):null;if(!isBucket(it))return null;
