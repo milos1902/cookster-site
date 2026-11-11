@@ -158,15 +158,20 @@ function add(el,set,cx,cy,rotDeg){
   kick(el,60);return true;
 }
 function takeOut(tr,s,e){
-  var id=s.set==='g'?'sarma_uska':'sarma_debela',def=null;try{def=(CooksterCatalog.CALIBRATION_ONLY_ITEMS||[]).find(function(x){return x.id===id;})||kitchenDefForId(id);}catch(x){}if(!def)return;
   var st=sys(tr),ix=st.list.indexOf(s);if(ix<0)return;st.list.splice(ix,1);kick(tr,20);
-  var d=donenessOf(tr),im=tinted(s.set,d),S=SETS[s.set],w=def.w,h=Math.round(w*S.asp);
+  holdFinished(s.set,donenessOf(tr),e,tr);
+}
+// a finished (cooked) sarma as an item in the hand; d = its doneness (0 raw ... 3 burnt); also used by the vessels (js/sarma-vessel.js)
+function holdFinished(set,d,e,fromEl){
+  var id=set==='g'?'sarma_uska':'sarma_debela',def=null;try{def=(CooksterCatalog.CALIBRATION_ONLY_ITEMS||[]).find(function(x){return x.id===id;})||kitchenDefForId(id);}catch(x){}if(!def)return null;
+  var im=tinted(set,d),S=SETS[set],w=def.w,h=Math.round(w*S.asp);
   var p0=screenToScene(e.clientX,e.clientY);
   var el=makeItem({...def,w:w,h:h,instanceId:nextItemInstanceId(def.id),x:p0.x-w/2,y:p0.y-h/2,z:++zCounter});
-  if(!el)return;
+  if(!el)return null;
   try{var img=el.querySelector('img');if(img&&im){img.src=im.toDataURL('image/png');}}catch(x){}
-  el.dataset.sarmaCooked=d.toFixed(2);el.dataset.surfaceZone='table';
-  try{setPose(el,p0.x,p0.y,+tr.dataset.vis||1);}catch(x){}try{startHolding(el);}catch(x){}
+  el.dataset.sarmaCooked=(+d).toFixed(2);el.dataset.surfaceZone='table';
+  try{setPose(el,p0.x,p0.y,fromEl?(+fromEl.dataset.vis||1):1);}catch(x){}try{startHolding(el);}catch(x){}
+  return el;
 }
 function trayAt(e){var it=(typeof itemAt==='function')?itemAt(e.clientX,e.clientY):null;return isTray(it)?it:null;}
 function heldSarma(){try{var h=holding;return h&&h.dataset&&h.dataset.sarmaRolled==='1'?h:null;}catch(e){return null;}}
@@ -294,5 +299,5 @@ setInterval(function(){
     });
   }catch(e){}
 },500);
-window.CooksterSarmaTray={cook:cookOf,burn:burnOf,trayWithSarmasAt:trayWithSarmasAt,addWater:addWater,water:waterOf,lidOn:lidOn,lidOff:lidOff,add:add,sys:sys,kick:kick,hit:hit,count:function(el){return sys(el).list.length;}};
+window.CooksterSarmaTray={tinted:tinted,sets:SETS,holdFinished:holdFinished,done:donenessOf,cook:cookOf,burn:burnOf,trayWithSarmasAt:trayWithSarmasAt,addWater:addWater,water:waterOf,lidOn:lidOn,lidOff:lidOff,add:add,sys:sys,kick:kick,hit:hit,count:function(el){return sys(el).list.length;}};
 })();
