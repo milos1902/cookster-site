@@ -212,7 +212,7 @@ window.addEventListener('pointerdown',function(e){
 var WATER_FULL=100;      // 100 units of the pitcher fill the tray to the top of the sarmas (a full pitcher is 100 units)
 function trayWithSarmasAt(x,y){
   var found=null;try{(window.items||items).forEach(function(it){if(!isTray(it)||it._lid||!it._sarmas||!it._sarmas.list.length)return;var r=it.getBoundingClientRect();
-    var u=(x-r.left)/Math.max(1,r.width),v=(y-r.top)/Math.max(1,r.height);if(u>.04&&u<.96&&v>.05&&v<.9)found=it;});}catch(e){}
+    var u=(x-r.left)/Math.max(1,r.width),v=(y-r.top)/Math.max(1,r.height);if(u>-.15&&u<1.15&&v>-.3&&v<1.12)found=it;});}catch(e){}      // a big target: also next to the tray and above it (the spout of the pitcher is over the tray, the water falls in)
   return found;
 }
 function waterOf(tr){return Math.max(0,Math.min(1,(tr._water||0)));}
