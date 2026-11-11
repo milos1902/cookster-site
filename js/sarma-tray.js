@@ -104,7 +104,10 @@ function draw(el){
     g.fillStyle=gr;g.fillRect(0,top,w,h);
     g.fillStyle='rgba(255,226,160,.32)';g.fillRect(0,top,w,Math.max(1.6,h*.014));
   }
+  var ck=cookOf(el);
   var list=st.list.slice().sort(function(a,b){return a.y-b.y;});
+  if(ck>=1){drawCooked(g,w,h,1);g.restore();return;}      // fully cooked: only the picture of the cooked sarmas
+  g.globalAlpha=1-ck;
   list.forEach(function(s){
     var im=spr[s.set];if(!im)return;
     var dxs=Math.cos(s.a),dys=kk*Math.sin(s.a),ls=Math.hypot(dxs,dys),ang=Math.atan2(dys,dxs);
@@ -115,8 +118,13 @@ function draw(el){
     g.shadowColor='rgba(20,10,0,.45)';g.shadowBlur=3;g.shadowOffsetY=2;
     g.drawImage(im,-lenPx/2,-hh/2,lenPx,hh);g.restore();
   });
+  g.globalAlpha=1;if(ck>0)drawCooked(g,w,h,ck);
   if(wl>.45){var tint=Math.min(.3,(wl-.45)*.55);g.fillStyle='rgba(150,70,30,'+tint.toFixed(3)+')';g.fillRect(0,0,w,h);}
   g.restore();
+}
+function drawCooked(g,w,h,a){
+  if(!cookImg.complete||!cookImg.naturalWidth)return;
+  g.save();g.globalAlpha=a;g.drawImage(cookImg,.05*w,.185*h,.9*w,.63*h);g.restore();
 }
 function hit(el,cx,cy){
   var st=sys(el),p=local(el,cx,cy),best=null,bd=1e9;
@@ -217,5 +225,19 @@ function trayWithSarmasAt(x,y){
 }
 function waterOf(tr){return Math.max(0,Math.min(1,(tr._water||0)));}
 function addWater(tr,units){tr._water=Math.min(1,waterOf(tr)+units/WATER_FULL);tr.dataset.sarmaWater=tr._water.toFixed(3);kick(tr,4);try{CooksterSave.schedule();}catch(e){}}
-window.CooksterSarmaTray={trayWithSarmasAt:trayWithSarmasAt,addWater:addWater,water:waterOf,lidOn:lidOn,lidOff:lidOff,add:add,sys:sys,kick:kick,hit:hit,count:function(el){return sys(el).list.length;}};
+// ---- COOKING: while the tray stands in the OVEN the sarmas simmer; after about 60 seconds they are cooked. The picture of the cooked sarmas (assets/sarma/pleh_kuvane.webp, made in ChatGPT) replaces the raw ones
+// little by little (cross-fade) and stays when the tray is taken out of the oven. The juice (water) slowly boils away a little while cooking. ----
+var COOK_SECONDS=60,cookImg=new Image();cookImg.src='assets/sarma/pleh_kuvane.webp?v=1';
+function cookOf(tr){return Math.max(0,Math.min(1,tr._cook||0));}
+setInterval(function(){
+  try{(window.items||items).forEach(function(tr){
+    if(!isTray(tr)||!tr._sarmas||!tr._sarmas.list.length)return;
+    if(tr.dataset.inOven==='1'&&!tr._lidBlocks){
+      var w=waterOf(tr),c=cookOf(tr);
+      if(c<1){tr._cook=Math.min(1,c+.5/COOK_SECONDS);tr.dataset.sarmaCook=tr._cook.toFixed(3);kick(tr,3);}
+      if(w>0&&c<1){tr._water=Math.max(0,w-.00012*5);tr.dataset.sarmaWater=tr._water.toFixed(3);}
+    }
+  });}catch(e){}
+},500);
+window.CooksterSarmaTray={cook:cookOf,trayWithSarmasAt:trayWithSarmasAt,addWater:addWater,water:waterOf,lidOn:lidOn,lidOff:lidOff,add:add,sys:sys,kick:kick,hit:hit,count:function(el){return sys(el).list.length;}};
 })();
