@@ -70,7 +70,7 @@ function tick(el){
     if(q.pin>0)q.pin--;if(st.drag===q)return;
     var dx=q.x-x0[i][0],dy=q.y-x0[i][1],dd=Math.hypot(dx,dy),cap=.0034/(q.m||1);
     if(dd>cap){q.x=x0[i][0]+dx*cap/dd;q.y=x0[i][1]+dy*cap/dd;}
-    var da=q.a-x0[i][2],ca=.012/(q.m||1);if(Math.abs(da)>ca)q.a=x0[i][2]+Math.sign(da)*ca;
+    q.a=Math.max(-.07,Math.min(.07,q.a*.9));      // locked: horizontal
   });
   var mv=0;st.list.forEach(function(s,i){mv=Math.max(mv,Math.abs(s.x-before[i][0])+Math.abs(s.y-before[i][1])+Math.abs(s.a-before[i][2])*.05);});
   draw(el);
@@ -119,9 +119,8 @@ function add(el,set,cx,cy,rotDeg){
   var st=sys(el);if(st.list.length>=MAXN){toast('Pleh je pun.');return false;}
   var S=SETS[set]||SETS.f,len=S.len,p=cx==null?{x:0,y:0}:local(el,cx,cy);
   var rr=Math.hypot(p.x,p.y),lim=FLOOR.rx-len*S.asp*.5*.3;if(rr>lim){p.x*=lim/rr;p.y*=lim/rr;rr=lim;}
-  var tang=Math.atan2(p.y,p.x)+Math.PI/2;      // along the circle round the middle of the tray (the first rings round the edge, then inwards); the middle one lies freely
-  var ang=rr<FLOOR.rx*.22?(Math.random()-.5)*1.2:tang+(Math.random()-.5)*.25;
-  if(typeof rotDeg==='number'){var kk=(FLOOR.ry*boxRatio(el))/FLOOR.rx,rs=rotDeg*Math.PI/180;ang=Math.atan2(Math.sin(rs)/kk,Math.cos(rs));}      // the player turned it with the wheel: it goes in exactly like that
+  var tang=0;      // horizontal only      // along the circle round the middle of the tray (the first rings round the edge, then inwards); the middle one lies freely
+  var ang=(Math.random()-.5)*.1;      // every sarma lies flat on the bottom, horizontally (a few degrees of wobble at most); the turning of the wheel in the hand does not count in the tray
   st.list.push({x:p.x,y:p.y,a:ang,len:len,r:len*S.asp*.5,set:set,pin:90,m:.8+Math.random()*1.7});      // m: the weight (a light one .8 ... a heavy one 2.5)
   kick(el,60);return true;
 }
@@ -146,7 +145,7 @@ window.addEventListener('pointerdown',function(e){
     var t=tr;if(!t)return;
     var set=(hs._sm&&hs._sm.set&&hs._sm.set.pre)||'f';
     e.stopImmediatePropagation();e.preventDefault();gestureSwallow=true;
-    if(add(t,set,e.clientX,e.clientY,hs._rot!==undefined?hs._rot:undefined)){
+    if(add(t,set,e.clientX,e.clientY)){
       try{removeItem(hs);holding=null;hidePlacementGhost();hideOriginGhost();clearPourTarget();updateHover();}catch(x){}
       try{playImpactSound(t,'drop');}catch(x){}
     }
