@@ -61,11 +61,12 @@ window.addEventListener('pointerdown',function(e){
 },true);
 // the press is noted on 'mousedown' (the game stops the 'pointerdown' of its own stirring before it reaches us): where, when and over which pan
 var freeAt=0,wasFree=true;
-setInterval(function(){var f=emptyHands();if(f&&!wasFree)freeAt=performance.now();wasFree=f;},30);      // when the hands became empty (the click that put something down must not be taken for a scoop)
+setInterval(function(){try{if(typeof stirring!=='undefined'&&stirring)NS.lastStir=performance.now();}catch(e){}var f=emptyHands();if(f&&!wasFree)freeAt=performance.now();wasFree=f;},30);      // when the hands became empty (the click that put something down must not be taken for a scoop)
+// (a quick new press right after stirring - between two stirring strokes - is NOT a scoop: lastStir)
 window.addEventListener('pointerdown',function(e){
   if(e.button!==0)return;NS.down=null;NS.stirMoved=false;
   if(NS.pdHold)return;
-  if(emptyHands()&&!NS.loaded&&performance.now()-freeAt>500){var v=nadevPan(e);if(v)NS.down={x:e.clientX,y:e.clientY,t:performance.now(),v:v};}
+  if(emptyHands()&&!NS.loaded&&performance.now()-freeAt>500&&performance.now()-(NS.lastStir||-1e9)>2000){var v=nadevPan(e);if(v)NS.down={x:e.clientX,y:e.clientY,t:performance.now(),v:v};}
 },true);
 window.addEventListener('pointerup',function(e){
   var d=NS.down;NS.down=null;
@@ -79,7 +80,7 @@ window.addEventListener('pointerup',function(e){
   try{playImpactSound(v,'pickup');}catch(x){}
 },true);
 window.addEventListener('pointermove',function(e){if(NS.down&&Math.hypot(e.clientX-NS.down.x,e.clientY-NS.down.y)>5)NS.stirMoved=true;},true);
-window.addEventListener('pointermove',function(){if(NS.loaded){if(!emptyHands()){giveBack();return;}show(true);place();}},false);
+window.addEventListener('pointermove',function(){try{if(typeof stirring!=='undefined'&&stirring&&NS.loaded){giveBack();return;}}catch(e){}if(NS.loaded){if(!emptyHands()){giveBack();return;}show(true);place();}},false);
 window.addEventListener('keydown',function(e){if(e.key==='Escape')giveBack();},false);
 window.CooksterNadevSpoon={consume:function(){NS.loaded=false;window.CooksterNadevLoaded=false;show(false);},PORTION:PORTION,loaded:function(){return NS.loaded;},giveBack:giveBack};
 })();
