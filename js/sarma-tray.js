@@ -24,7 +24,7 @@ var TINTS=[[0,[255,255,255,1]],[1,[235,228,150,1]],[2,[225,150,70,1]],[3,[70,48,
 function tintCol(d){var i=0;while(i<TINTS.length-2&&d>TINTS[i+1][0])i++;var a=TINTS[i],b=TINTS[i+1],t=Math.max(0,Math.min(1,(d-a[0])/(b[0]-a[0])));return a[1].map(function(v,k){return v+(b[1][k]-v)*t;});}
 var tintCache={};
 // REAL pictures of the baked sarmas (Miloš, ChatGPT), per kind: light/golden/burnt. For a kind without them the colouring above is used.
-var PHASE_SRC={f:['assets/sarma/f_pec_1.webp','assets/sarma/f_pec_2.webp','assets/sarma/f_pec_3.webp']};
+var PHASE_SRC={f:['assets/sarma/f_pec_1.webp','assets/sarma/f_pec_2.webp','assets/sarma/f_pec_3.webp'],g:['assets/sarma3/g_pec_1.webp','assets/sarma3/g_pec_2.webp','assets/sarma3/g_pec_3.webp']};
 var phaseImg={};Object.keys(PHASE_SRC).forEach(function(k){phaseImg[k]=PHASE_SRC[k].map(function(u){var i=new Image();i.src=u+'?v=1';return i;});});
 function phaseReady(set){var a=phaseImg[set];return !!a&&a.every(function(i){return i.complete&&i.naturalWidth;});}
 function tinted(set,d){
