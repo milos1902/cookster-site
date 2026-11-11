@@ -1,6 +1,6 @@
 /* Cookster: the filling for the sarma is taken from the pan with a SPOON and put on the cabbage leaf.
-   - with EMPTY hands a short click (no movement) on the filling in a pan (the food of the pan: minced meat for the filling 'mleveno_nadev_diced', rice with it) takes ONE portion: the pan loses
-     PORTION doses of the filling (and the same share of the rice) and a small spoon with the filling stays at the cursor. A press with a movement is the stirring, as always.
+   - with EMPTY hands a RIGHT click on the filling in a pan (the food of the pan: minced meat for the filling 'mleveno_nadev_diced', rice with it) takes ONE portion: the pan loses
+     PORTION doses of the filling (and the same share of the rice) and a big spoon with the filling stays at the cursor. The LEFT click / press is only the stirring (it never takes the filling).
    - a click on the lower part of an EMPTY leaf (List kupusa, js/sarma.js) puts the portion on it (the leaf shows the filling); Esc or a right click gives the portion back to the pan.
    One pack of the meat (6 doses) is 10 sarmas: one portion is 0.4 of a dose. */
 (function(){
@@ -40,7 +40,12 @@ function giveBack(){
 }
 window.addEventListener('pointerdown',function(e){
   NS.pdHold=!emptyHands();NS.pdT=performance.now();      // was something in the hand when this press began? (then it is putting down, not scooping)
-  if(e.button===2&&NS.loaded){giveBack();return;}
+  if(e.button===2&&NS.loaded){giveBack();NS.rcHandled=true;return;}
+  if(e.button===2&&emptyHands()&&!NS.loaded){      // right click on the filling: take one portion on the spoon
+    var v2=nadevPan(e);
+    if(v2&&scoop(v2,e)){e.stopImmediatePropagation();e.preventDefault();NS.rcHandled=true;}
+    return;
+  }
   if(e.button!==0)return;
   if(NS.loaded&&emptyHands()){
     var leaf=window.CooksterSarma&&CooksterSarma.leafAt(e);
@@ -62,24 +67,17 @@ window.addEventListener('pointerdown',function(e){
 // the press is noted on 'mousedown' (the game stops the 'pointerdown' of its own stirring before it reaches us): where, when and over which pan
 var freeAt=0,wasFree=true;
 setInterval(function(){try{if(typeof stirring!=='undefined'&&stirring)NS.lastStir=performance.now();}catch(e){}var f=emptyHands();if(f&&!wasFree)freeAt=performance.now();wasFree=f;},30);      // when the hands became empty (the click that put something down must not be taken for a scoop)
-// (a quick new press right after stirring - between two stirring strokes - is NOT a scoop: lastStir)
-window.addEventListener('pointerdown',function(e){
-  if(e.button!==0)return;NS.down=null;NS.stirMoved=false;
-  if(NS.pdHold)return;
-  if(emptyHands()&&!NS.loaded&&performance.now()-freeAt>500&&performance.now()-(NS.lastStir||-1e9)>2000){var v=nadevPan(e);if(v)NS.down={x:e.clientX,y:e.clientY,t:performance.now(),v:v};}
-},true);
-window.addEventListener('pointerup',function(e){
-  var d=NS.down;NS.down=null;
-  if(!d||e.button!==0||NS.loaded||!emptyHands())return;
-  if(NS.stirMoved||Math.hypot(e.clientX-d.x,e.clientY-d.y)>5||performance.now()-d.t>350)return;      // any movement (more than 5 px) or a press longer than a third of a second: it was the stirring, not a scoop
-  var v=d.v,have=units(v,NK);if(have<=0.001||!v.isConnected)return;
+// the SCOOP is the RIGHT click on the filling in a pan (the left click is only for stirring: a short left click never takes the filling)
+function scoop(v,e){
+  var have=units(v,NK);if(have<=0.001||!v.isConnected)return false;
   var take=Math.min(PORTION,have);if(have-take<.04)take=have;      // the last small rest goes onto the spoon together with the last portion
   var rice=units(v,RK),share=take>=have-1e-6?rice:Math.min(rice,rice*take/have);
-  try{setUnits(v,NK,have-take);if(share>0)setUnits(v,RK,rice-share);renderCookwareContents(v);}catch(x){return;}
+  try{setUnits(v,NK,have-take);if(share>0)setUnits(v,RK,rice-share);renderCookwareContents(v);}catch(x){return false;}
   NS.loaded=true;NS.pan=v;NS.rice=share;window.CooksterNadevLoaded=true;place();show(true);
   try{playImpactSound(v,'pickup');}catch(x){}
-},true);
-window.addEventListener('pointermove',function(e){if(NS.down&&Math.hypot(e.clientX-NS.down.x,e.clientY-NS.down.y)>5)NS.stirMoved=true;},true);
+  return true;
+}
+window.addEventListener('contextmenu',function(e){if(NS.rcHandled){NS.rcHandled=false;e.preventDefault();e.stopImmediatePropagation();}},true);
 window.addEventListener('pointermove',function(){try{if(typeof stirring!=='undefined'&&stirring&&NS.loaded){giveBack();return;}}catch(e){}if(NS.loaded){if(!emptyHands()){giveBack();return;}show(true);place();}},false);
 window.addEventListener('keydown',function(e){if(e.key==='Escape')giveBack();},false);
 window.CooksterNadevSpoon={consume:function(){NS.loaded=false;window.CooksterNadevLoaded=false;show(false);},PORTION:PORTION,loaded:function(){return NS.loaded;},giveBack:giveBack};

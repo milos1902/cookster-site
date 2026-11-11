@@ -5812,6 +5812,7 @@ function endStirring(finished=false,message=''){
    holding.style.zIndex='9999';
  }
  stirring=false;stirVessel=null;stirPointerId=null;stirLastAngle=null;stirDirection=0;stirArc=0;stirLastTime=0;stirLastMixBucket=-1;
+ try{if(miniSpoon&&miniSpoon.style.display==='none')miniGhostClean();}catch(_){}
  if(stirDipEl)stirDipEl.style.display='none';
  stirLastX=0;stirLastY=0;stirScreenRect=null;
  stirPendingEffort=0;stirPendingActive=0;stirLastApplyAt=0;
@@ -5842,7 +5843,9 @@ function miniSpoonEl(){
  const im=document.createElement('img');im.className='body';im.src='assets/new_props/kasika_1.png?v=2';im.draggable=false;im.style.cssText='width:100%;height:100%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))';
  d.appendChild(im);scene.appendChild(d);return miniSpoon=d;
 }
-function miniSpoonHide(){if(miniSpoon)miniSpoon.style.display='none';miniVessel=null;document.body.classList.remove('mini-spoon-on');}
+function miniSpoonHide(){if(miniSpoon)miniSpoon.style.display='none';miniVessel=null;document.body.classList.remove('mini-spoon-on');miniGhostClean();}
+// the placement ghost keeps a COPY of the small spoon (class ghost-item-copy mini-spoon) while it is in the hand; if it is not removed it stays on the screen as a second, frozen small spoon
+function miniGhostClean(){try{document.querySelectorAll('.ghost-item-copy.mini-spoon').forEach(n=>n.remove());}catch(_){}try{if(!holding||holding._mini)hidePlacementGhost();}catch(_){}}
 function foodVesselAt(x,y){      // a vessel with food in it, the point is over its food (the content of the vessel)
  if(lidAt(x,y))return null;
  let best=null,bz=-1;
@@ -5865,7 +5868,7 @@ function placeMiniSpoon(clientX,clientY,vessel){
 }
 window.addEventListener('pointermove',e=>{
  if(stirring)return;
- const blocked=holding||quickWheelOpen||pouring||oilPouring||panWashing||cleaning||picking||placing||(e.buttons&1)||(e.target&&e.target.closest&&e.target.closest('[data-tool-ui],#dlPanel,.overlay,.modal'))||(window.CooksterSinkZoom&&CooksterSinkZoom.isOpen&&CooksterSinkZoom.isOpen());
+ const blocked=holding||window.CooksterNadevLoaded||window.CooksterMastLoaded||quickWheelOpen||pouring||oilPouring||panWashing||cleaning||picking||placing||(e.buttons&1)||(e.target&&e.target.closest&&e.target.closest('[data-tool-ui],#dlPanel,.overlay,.modal'))||(window.CooksterSinkZoom&&CooksterSinkZoom.isOpen&&CooksterSinkZoom.isOpen());
  const v=blocked?null:foodVesselAt(e.clientX,e.clientY);
  if(!v){if(miniVessel)miniSpoonHide();return;}
  miniVessel=v;placeMiniSpoon(e.clientX,e.clientY,v);document.body.classList.add('mini-spoon-on');
