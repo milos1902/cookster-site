@@ -1547,3 +1547,14 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Provereno u headless Chromiumu: dan --amb-b 0.90, noć 0.55; ranac tamniji noću. Nije testirano na telefonu niti u svim satima.
 - Ispravka: prvi put je filter bio pregažen drugim stilovima (ranac-test.js, ui-soft-shadow.css), pa se nije videla razlika. Sada !important (css v2); proveren computed filter: dan 0.90, noć 0.55 za ranac, gornju traku i dock.
 - Ranac spusten (BOTTOM 937, SCALE 0.24, dugmad srazmerno), da ne prekriva otvoren fioku. ranac-test.js v3.
+
+## Kuhinjski elementi u pergament stilu
+- js/ke-pergament.js (v1) + css/ke-pergament.css (v1): nov prozor preko stare strane (strana_kuhinjski_elementi_prazna.webp). Moja kuhinja / Prodavnica, filteri, pretraga, novac. Klik = na sto (ili kupovina). Kartica opisa desno prikazuje predmet pod mišem; dugme "Stavi u ranac" -> CooksterRecentItems.push (max 6). Piće ostaje u starom prozoru; ?starihud vraća stari.
+- Ilustracije: 18 novih isečeno iz dve slike (assets/ui/predmeti/n_*.png). Pogođeno po izgledu: plava činija sa cvetićima = vangla_srednja, velika šarena = kal_02_cinija_velika, plavi lonac = serpa_velika, plava šerpa = lavor_emajl_veliki, kalup = pravougaoni pleh. Presa (n_presa.png) nema predmet u igri pa nije povezana.
+- Opis je prazan (predmeti nemaju tekst); šoljica = zapremina (samo tegle imaju), kućica = na stolu / u elementima.
+- Ispravka: kartice predmeta su sada slike pg_kartica_posude_n/h.png (2 kolone), a kartica opisa je razvučena preko cele desne ploče stranice (x 1090-1540, y 316-968). ke-pergament v2/v3.
+- Kartice predmeta bez malog polja (pg_kartica_posude_n_bez.png / _h_bez.png; polje je zatrpano papirom). Ilustracija je na sredini kartice, naziv ispod; u prodavnici cena pod nazivom. Stanje (na stolu / u elementima) ostaje samo na desnoj kartici. ke-pergament js v3, css v4.
+- Kartice predmeta manje, 4 u redu (css v5).
+- Kartice predmeta bez naziva: samo slika (naziv je na velikoj kartici desno); u prodavnici samo cena ispod slike. js v4, css v6.
+- Tabovi i pilule (filteri) su sada tvoje slike: pg_tab_aktivan/neaktivan, pg_pilula_aktivna/h/n. js v5, css v7.
+- Tabovi i pilule opet su samo oni iz slike stranice (bez mojih preklopljenih slika, to je dalo duple ivice). Tekst stoji preko njih; izbor drugog taba/filtera prikazan kopijom crvenog/bledog dela iste slike. js v8, css v9.
