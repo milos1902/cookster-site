@@ -1537,3 +1537,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Stari drveni okvir sa 6 polja NIJE bio u sobi nego zasebna slika (img.ui-overlay-element, assets/ui/custom_elements/drvena_traka_sest_polja.png). toolbar-art.js v2 je sakriva. Pozadina sobe (stove_states_v3) je čista.
 - Senke (css/ui-visible-shadow.css v1): jasne, vidljive senke ispod novih elemenata (gornja traka, meni ploča i dugme, traka alata). Drugi chat je dodao vrlo blagu senku u css/ui-soft-shadow.css; ova je jača i ne menja je.
 - RANAC (slike, bez sečenja, providne PNG, ChatGPT): assets/ui/ranac/ranac_3_final.png (1536x1024), ranac_6_final.png (1774x887), ranac_10_final.png (2000x667). Sa šipkom i pločicama sa kukama. Ubacuje se u igru kad se napravi logika fiksnih mesta (3/6/10) i dugme 'Stavi u ranac'.
+- Ranci iste veličine slota (200 px po kartici): assets/ui/ranac/ranac_3_slot200.png, ranac_6_slot200.png, ranac_10_slot200.png (skalirani originali, providni).
