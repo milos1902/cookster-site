@@ -3,5 +3,5 @@
 #istragaBtn,#drBtn,#toolsSwitchBtn,#dayClock,#ovBtn,#nbBtn,#dlBtn,#ssBtn,#wbBtn,#saveTransfer,
 #hud button,
 #cooksterBottomButtonLayer .cookster-bottom-button{
-  filter:drop-shadow(0 2px 3px rgba(40,20,6,.28));
+  filter:drop-shadow(0 1px 5px rgba(40,20,6,.14));
 }

@@ -1529,7 +1529,7 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Testirano Playwright-om (prelazak preko svih ikonica i zastajanje u razmaku: ostaje otvoren; izlaz van menija: zatvara se). Osećaj u pravoj igri procenjuje Miloš.
 
 ## Meka senka ispod UI elemenata (css/ui-soft-shadow.css)
-- Dodata `filter: drop-shadow(0 2px 3px rgba(40,20,6,.28))` na dugmad: Beležnica, Završi dan, Alati, Ovo/Nb/Dl/Ss/Wb dugmad, sat dana, Kutlača/Animacije/Kese (`.cookster-bottom-button`), `#hud` dugmad, `#saveTransfer`.
+- Dodata `filter: drop-shadow(0 1px 5px rgba(40,20,6,.14))` na dugmad: Beležnica, Završi dan, Alati, Ovo/Nb/Dl/Ss/Wb dugmad, sat dana, Kutlača/Animacije/Kese (`.cookster-bottom-button`), `#hud` dugmad, `#saveTransfer`.
 - Ne ide na `#chud` i `#ndock` (već imaju senku).
 - Nije urađeno: traka sa slotovima dole u sredini (nije mi bila jasna klasa; treba je naći pa dodati isti filter).
 - Testirano screenshotom; intenzitet procenjuje Miloš.
