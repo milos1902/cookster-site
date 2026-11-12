@@ -25,9 +25,10 @@ css.textContent=[
 document.head.appendChild(css);
 var bar=document.createElement('div');bar.id='chud';['l','m','ra','rb','rc'].forEach(function(k){var p=document.createElement('div');p.className='ch-p ch-'+k;bar.appendChild(p);});
 function cell(x){var c=document.createElement('div');c.className='ch-c';c.style.left='calc(var(--bw)*'+x+')';bar.appendChild(c);return c;}
-var cDate=cell(.179),cTime=cell(.397),cMoney=cell(.686),cWx=cell(.9945);
+var cDate=cell(.179),cTime=cell(.397),cMoney=cell(.538),cWx=cell(.9945);
 var sDate=document.createElement('span'),sTime=document.createElement('span');sTime.className='ch-t';
 cDate.appendChild(sDate);cTime.appendChild(sTime);
+cMoney.style.transform='none';cMoney.style.justifyContent='flex-start';      // the coins always stand at the left of their compartment, the same distance from the line (0.031 of the bar width) as the time is from its line
 var iCoin=new Image();iCoin.src=IC+'ikona_novac.png';iCoin.alt='';var sMoney=document.createElement('span');cMoney.append(iCoin,sMoney);
 var iWx=new Image();iWx.alt='';var sWx=document.createElement('span');cWx.append(iWx,sWx);
 document.body.appendChild(bar);document.body.classList.add('chud-on');
