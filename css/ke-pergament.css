@@ -31,3 +31,9 @@ body.ke-pg-on #kePg{display:block}
 #kePg .pg-card .cgo{position:absolute;left:9.5%;width:80%;top:77.8%;height:9.8%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.55cqw;color:#fff3dc;cursor:pointer;text-shadow:0 .1cqw .2cqw rgba(60,15,5,.7)}
 #kePg .pg-card .cgo:hover{filter:brightness(1.1)}
 #kePg .pg-card.empty>*:not(.cbg){display:none}
+/* the drawn buttons: tabs 500x130, pills 300x90 */
+#kePg .pg-tab{background:url(../assets/ui/pergament/pg_tab_neaktivan.png) center/100% 100% no-repeat;padding-top:1cqw;color:#7a4a2a}
+#kePg .pg-tab.on{background-image:url(../assets/ui/pergament/pg_tab_aktivan.png);color:#fff3dc;text-shadow:0 .1cqw .2cqw rgba(60,15,5,.6)}
+#kePg .pg-pill{background:url(../assets/ui/pergament/pg_pilula_n.png) center/100% 100% no-repeat;border-radius:0}
+#kePg .pg-pill:hover{background-image:url(../assets/ui/pergament/pg_pilula_h.png)}
+#kePg .pg-pill.on{background-image:url(../assets/ui/pergament/pg_pilula_aktivna.png);color:#fff3dc;text-shadow:0 .1cqw .2cqw rgba(60,15,5,.6)}

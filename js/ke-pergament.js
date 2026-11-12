@@ -31,12 +31,12 @@ function render(){
   if(!root)build();
   Array.prototype.slice.call(root.children).forEach(function(c){if(!c.classList.contains('pg-bg'))root.removeChild(c);});
   var A=function(c,x,y,w,h,txt){var e=el('div','pg-a '+c,css(x,y,w,h),txt);root.appendChild(e);return e;};
-  var t1=A('pg-tab'+(TAB==='own'?' on':''),96,194,334,64,'Moja kuhinja');t1.style.background=TAB==='own'?'#b24a2c':'#ecd9b5';t1.style.color=TAB==='own'?'#fff3dc':'#7a4a2a';t1.style.borderRadius='1.2cqw 1.2cqw 0 0';
+  var t1=A('pg-tab'+(TAB==='own'?' on':''),96,184,312,74,'Moja kuhinja');
   t1.onclick=function(){TAB='own';render();};
-  var t2=A('pg-tab'+(TAB==='shop'?' on':''),440,194,316,64,'Prodavnica');t2.style.background=TAB==='shop'?'#b24a2c':'#ecd9b5';t2.style.color=TAB==='shop'?'#fff3dc':'#7a4a2a';t2.style.borderRadius='1.2cqw 1.2cqw 0 0';
+  var t2=A('pg-tab'+(TAB==='shop'?' on':''),430,184,312,74,'Prodavnica');
   t2.onclick=function(){TAB='shop';render();};
-  var pw=[[94,120],[234,122],[376,124],[530,138],[690,138]];
-  FILTS.forEach(function(f,i){var p=A('pg-pill'+(FILT===f[0]?' on':''),pw[i][0],280,pw[i][1],44,f[1]);p.style.background=FILT===f[0]?'#b24a2c':'#f1dfbb';p.onclick=function(){FILT=f[0];render();};});
+  var pl=[94,234,376,530,690];
+  FILTS.forEach(function(f,i){var p=A('pg-pill'+(FILT===f[0]?' on':''),pl[i],282,133,40,f[1]);p.onclick=function(){FILT=f[0];render();};});
   var s=A('pg-search',1084,202,424,46);var inp=el('input');inp.placeholder='Traži';inp.value=Q;inp.oninput=function(){Q=inp.value.trim().toLowerCase();list();};s.appendChild(inp);
   var m=A('pg-money',1262,90,146,50);m.textContent=(typeof money!=='undefined'?money:0)+' дин';
   A('pg-btn',1470,90,60,56).onclick=close;

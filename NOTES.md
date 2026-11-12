@@ -1556,3 +1556,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Kartice predmeta bez malog polja (pg_kartica_posude_n_bez.png / _h_bez.png; polje je zatrpano papirom). Ilustracija je na sredini kartice, naziv ispod; u prodavnici cena pod nazivom. Stanje (na stolu / u elementima) ostaje samo na desnoj kartici. ke-pergament js v3, css v4.
 - Kartice predmeta manje, 4 u redu (css v5).
 - Kartice predmeta bez naziva: samo slika (naziv je na velikoj kartici desno); u prodavnici samo cena ispod slike. js v4, css v6.
+- Tabovi i pilule (filteri) su sada tvoje slike: pg_tab_aktivan/neaktivan, pg_pilula_aktivna/h/n. js v5, css v7.
