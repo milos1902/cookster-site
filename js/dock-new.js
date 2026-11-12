@@ -1,57 +1,64 @@
-/* Cookster: the NEW corner dock (bottom left) in the new UI style. Replaces the wooden plate with the arc of js/game-menu.js (the plate also showed the date, time, money and weather: those are in the new top bar, js/hud-top.js).
-   One round button (assets/ui/hud/hud_round_cream_*) in the corner. Mouse over it, or a click on it, opens an arc of six round green buttons with icons; the same actions as before:
-   Kuhinjski elementi, Frižider, Piće, Pijaca, Knjiga recepata, Sačuvaj / Učitaj. Esc or a click elsewhere closes a pinned dock.
-   js/game-menu.js still runs (it keeps the old HUD buttons hidden and moves the developer buttons) but its plate is hidden. ?starihud in the address turns the whole new dock + top bar off. */
+/* Cookster: the NEW corner dock (bottom left). The picture of the menu (assets/ui/dock/meni_ploca.webp, 887x1774: a linen panel with 2 x 4 round buttons) opens out of the round button that always stays in the corner
+   (assets/ui/dock/glavno_dugme.png, cut from the same picture: the cream button with the dishes). Mouse OVER the button (or a click on it, which pins the menu) opens the panel; it closes when the mouse leaves.
+   The panel is a picture; over each of its buttons lies an invisible round hotspot with the action: Snimanje (phone), Kuhinjski elementi, Frižider, Piće, Pijaca, Knjiga recepata, Sačuvaj / Učitaj.
+   The old phone button at the left (#recBtn) is hidden: the phone is now in the menu. ?starihud in the address turns the whole new dock + top bar off. */
 (function(){
 'use strict';
 if(window.CooksterDockNew||/[?&]starihud(=|&|$)/.test(location.search))return;
-var H='assets/ui/hud/',H2='assets/ui/hud2/';
-var BUTTONS=[
-  {label:'Kuhinjski elementi',icon:H2+'icon_cookware.png',act:function(){press('kitchenElementsBtn');}},
-  {label:'Frižider',icon:H2+'icon_fridge.png',act:function(){if(window.CooksterMince)CooksterMince.fromFridge();else toast('Frižider: uskoro.');}},
-  {label:'Piće',icon:H+'icon_drink.png',act:function(){press('drinksBtn');}},
-  {label:'Pijaca',icon:H+'icon_basket.png',act:function(){press('marketBtn');}},
-  {label:'Knjiga recepata',icon:H+'icon_recipes.png',act:function(){var t=document.querySelector('#savkaBookRoot .savka-book-tab');if(t)t.click();else toast('Knjiga recepata nije dostupna ovde.');}},
-  {label:'Sačuvaj / Učitaj',icon:H2+'icon_save.png',act:function(b){gearMenu(b);}}
+var A='assets/ui/dock/';
+var IW=887,IH=1774,RING=316,BOX=90;      // the picture, the diameter of the ring of a button in the picture, the size of the main button on the screen (px)
+var S=BOX/(RING+8);      // screen px per picture px
+var MAIN=[272,1385],COL=[272,610],ROW=[397,727,1057];      // centre of the main button and of the other buttons in the picture
+var BTNS=[
+  {label:'Snimanje recepta',c:COL[0],r:ROW[0],act:function(){press('recBtn');}},
+  {label:'Kuhinjski elementi',c:COL[1],r:ROW[0],act:function(){press('kitchenElementsBtn');}},
+  {label:'Frižider',c:COL[0],r:ROW[1],act:function(){if(window.CooksterMince)CooksterMince.fromFridge();else toast('Frižider: uskoro.');}},
+  {label:'Piće',c:COL[1],r:ROW[1],act:function(){press('drinksBtn');}},
+  {label:'Pijaca',c:COL[0],r:ROW[2],act:function(){press('marketBtn');}},
+  {label:'Knjiga recepata',c:COL[1],r:ROW[2],act:function(){var t=document.querySelector('#savkaBookRoot .savka-book-tab');if(t)t.click();else toast('Knjiga recepata nije dostupna ovde.');}},
+  {label:'Sačuvaj / Učitaj',c:COL[1],r:MAIN[1],act:function(b){gearMenu(b);}}
 ];
 function toast(m){try{showToast(m);}catch(e){}}
 function press(id){var b=document.getElementById(id);if(b)b.click();else toast('Nije dostupno.');}
-var MAIN=88,BTN=68,R=235;      // px: size of the main button, size of the small ones, radius of the arc
+var PX=function(v){return (v*S).toFixed(2)+'px';};
 var css=document.createElement('style');
 css.textContent=[
 'body.cdock-on #cdock{display:none!important}',
+'body.cdock-new #recBtn{opacity:0!important;pointer-events:none!important}',
 'body.pantry-open #ndock,body.garden-open #ndock,body.market-open #ndock{display:none}',
-'#ndock{position:fixed;left:14px;bottom:14px;width:'+MAIN+'px;height:'+MAIN+'px;z-index:1900;user-select:none;-webkit-user-select:none}',
-'#ndock .nd-main,#ndock .nd-b{position:absolute;border:0;padding:0;border-radius:50%;background-color:transparent;outline:0;box-shadow:none;cursor:pointer;background-size:100% 100%;background-repeat:no-repeat;filter:drop-shadow(0 3px 4px rgba(30,14,4,.5))}',
-'#ndock .nd-main{left:0;top:0;width:'+MAIN+'px;height:'+MAIN+'px;background-image:url('+H+'hud_round_cream_n.png);z-index:3}',
-'#ndock .nd-main:hover,#ndock.open .nd-main{background-image:url('+H+'hud_round_cream_h.png)}',
-'#ndock .nd-main:active{background-image:url('+H+'hud_round_cream_p.png)}',
-'#ndock .nd-main img,#ndock .nd-b img{position:absolute;left:19%;top:19%;width:62%;height:62%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 1px 1px rgba(30,14,4,.4))}',
-'#ndock .nd-b{width:'+BTN+'px;height:'+BTN+'px;background-image:url('+H+'hud_round_green_n.png);left:'+((MAIN-BTN)/2)+'px;top:'+((MAIN-BTN)/2)+'px;transform:translate(0,0) scale(.3);opacity:0;pointer-events:none;transition:transform .22s cubic-bezier(.3,.8,.3,1),opacity .18s;z-index:2}',
-'#ndock.open .nd-b{opacity:1;pointer-events:auto;transform:translate(var(--dx),var(--dy)) scale(1)}',
-'#ndock .nd-b:hover{background-image:url('+H+'hud_round_green_h.png)}#ndock .nd-b:active{background-image:url('+H+'hud_round_green_p.png)}',
-'#ndock .nd-tip{position:absolute;left:0;top:0;padding:6px 14px;background:url('+H+'hud_toolbar_tooltip.png) 0 0/100% 100% no-repeat;font:700 15px Georgia,serif;color:#6a2a14;white-space:nowrap;display:none;pointer-events:none;z-index:4;filter:drop-shadow(0 2px 3px rgba(30,14,4,.4))}',
+'#ndock{position:fixed;left:27px;bottom:46px;width:'+BOX+'px;height:'+BOX+'px;z-index:1900;user-select:none;-webkit-user-select:none}',
+'#ndock .nd-panel{position:absolute;left:'+PX(-(MAIN[0]-(RING+8)/2)-(RING+8)/2*0)+';top:0;width:'+PX(IW)+';height:'+PX(IH)+';background:url('+A+'meni_ploca.webp) 0 0/100% 100% no-repeat;transform-origin:'+PX(MAIN[0])+' '+PX(MAIN[1])+';transform:scale(.2);opacity:0;pointer-events:none;transition:transform .24s cubic-bezier(.3,.8,.3,1),opacity .18s;filter:drop-shadow(0 4px 8px rgba(30,14,4,.5));z-index:1}',
+'#ndock.open .nd-panel{transform:scale(1);opacity:1;pointer-events:auto}',
+'#ndock .nd-main{position:absolute;left:0;top:0;width:'+BOX+'px;height:'+BOX+'px;border:0;padding:0;border-radius:50%;background:url('+A+'glavno_dugme.png) 0 0/100% 100% no-repeat;background-color:transparent;outline:0;box-shadow:none;cursor:pointer;z-index:3;filter:drop-shadow(0 3px 4px rgba(30,14,4,.5))}',
+'#ndock .nd-main:hover,#ndock.open .nd-main{background-image:url('+A+'glavno_dugme_h.png)}',
+'#ndock .nd-h{position:absolute;border:0;padding:0;border-radius:50%;background:transparent;outline:0;box-shadow:none;cursor:pointer}',
+'#ndock .nd-h:hover{box-shadow:0 0 0 3px rgba(255,214,90,.95),0 0 14px 4px rgba(255,196,60,.7);background:rgba(255,236,170,.12)}',
+'#ndock .nd-tip{position:absolute;padding:6px 14px;background:url(assets/ui/hud/hud_toolbar_tooltip.png) 0 0/100% 100% no-repeat;font:700 15px Georgia,serif;color:#6a2a14;white-space:nowrap;display:none;pointer-events:none;z-index:4;filter:drop-shadow(0 2px 3px rgba(30,14,4,.4))}',
 '#ndock .nd-tip.on{display:block}'
 ].join('\n');
 document.head.appendChild(css);
 var dock=document.createElement('div');dock.id='ndock';
-var main=document.createElement('button');main.type='button';main.className='nd-main';main.setAttribute('aria-label','Meni');
-var mi=new Image();mi.src=H+'icon_dishes.png';mi.alt='';main.appendChild(mi);dock.appendChild(main);
+var panel=document.createElement('div');panel.className='nd-panel';
+// the panel is placed so that the centre of its bottom left button lies on the centre of the main button
+panel.style.left=(BOX/2-MAIN[0]*S).toFixed(2)+'px';panel.style.top=(BOX/2-MAIN[1]*S).toFixed(2)+'px';
+dock.appendChild(panel);
+var main=document.createElement('button');main.type='button';main.className='nd-main';main.setAttribute('aria-label','Meni');dock.appendChild(main);
 var tip=document.createElement('div');tip.className='nd-tip';dock.appendChild(tip);
 var pinned=false,closeT=0;
 function setOpen(v){dock.classList.toggle('open',!!v);if(!v){tip.classList.remove('on');hideGear();}}
 function keep(){clearTimeout(closeT);setOpen(true);}
-function later(){clearTimeout(closeT);if(pinned)return;closeT=setTimeout(function(){setOpen(false);},160);}
-var btns=BUTTONS.map(function(d,i){
-  var a=(i/(BUTTONS.length-1))*Math.PI/2;      // from straight up (0) to straight right (90 degrees)
-  var b=document.createElement('button');b.type='button';b.className='nd-b';b.setAttribute('aria-label',d.label);b.title=d.label;
-  b.style.setProperty('--dx',(Math.sin(a)*R)+'px');b.style.setProperty('--dy',(-Math.cos(a)*R)+'px');
-  var im=new Image();im.src=d.icon;im.alt='';b.appendChild(im);
+function later(){clearTimeout(closeT);if(pinned)return;closeT=setTimeout(function(){setOpen(false);},220);}
+var hot=BTNS.map(function(d){
+  var b=document.createElement('button');b.type='button';b.className='nd-h';b.setAttribute('aria-label',d.label);b.title=d.label;
+  var r=RING/2;b.style.left=PX(d.c-r)+'';b.style.top=PX(d.r-r);b.style.width=PX(RING);b.style.height=PX(RING);
   b.addEventListener('click',function(e){e.stopPropagation();d.act(b);});
-  b.addEventListener('mouseenter',function(){tip.textContent=d.label;tip.style.left=((MAIN-BTN)/2+Math.sin(a)*R+BTN+8)+'px';tip.style.top=((MAIN-BTN)/2-Math.cos(a)*R+BTN/2-16)+'px';tip.classList.add('on');keep();});
-  b.addEventListener('mouseleave',function(){tip.classList.remove('on');later();});
-  dock.appendChild(b);return b;
+  b.addEventListener('mouseenter',function(){tip.textContent=d.label;keep();});
+  b.addEventListener('mouseleave',later);
+  panel.appendChild(b);d.el=b;return d;
 });
+// the labels of the hotspots: shown to the right of the panel
+panel.addEventListener('mouseover',function(e){var h=e.target.closest&&e.target.closest('.nd-h');if(h){var pr=panel.getBoundingClientRect(),dr=dock.getBoundingClientRect(),r=h.getBoundingClientRect();tip.textContent=h.getAttribute('aria-label');tip.style.left=(pr.right-dr.left+6)+'px';tip.style.top=(r.top-dr.top+r.height/2-16)+'px';tip.classList.add('on');}else tip.classList.remove('on');});
+panel.addEventListener('mouseenter',keep);panel.addEventListener('mouseleave',function(){tip.classList.remove('on');later();});
 main.addEventListener('mouseenter',keep);main.addEventListener('mouseleave',later);
 main.addEventListener('click',function(){pinned=!pinned;if(pinned)keep();else setOpen(false);});
 window.addEventListener('keydown',function(e){if(e.key==='Escape'&&(pinned||dock.classList.contains('open'))){pinned=false;setOpen(false);}},true);
@@ -72,16 +79,16 @@ function gearMenu(anchor){
   var gw=gear.offsetWidth,gh=gear.offsetHeight;
   gear.style.left=Math.max(6,Math.min(innerWidth-gw-6,r.right+8))+'px';gear.style.top=Math.max(6,Math.min(innerHeight-gh-6,r.top+r.height/2-gh/2))+'px';
 }
-function btnRect(title){for(var i=0;i<btns.length;i++){if((btns[i].getAttribute('aria-label')||'').indexOf(title)>=0){var r=btns[i].getBoundingClientRect();return r.width>1?r:null;}}return null;}
-document.body.appendChild(dock);
-// the developer buttons (Kutlača, Animacije gostiju, Kese...) are fixed at the bottom left: those that lie over the new dock and its arc are moved to its right side
+function btnRect(title){for(var i=0;i<hot.length;i++){if(hot[i].label.indexOf(title)>=0){var r=hot[i].el.getBoundingClientRect();return r.width>1?r:null;}}return null;}
+document.body.appendChild(dock);document.body.classList.add('cdock-new');
+// the developer buttons (Kutlača, Animacije gostiju, Kese...) are fixed at the bottom left: those that lie over the dock and its panel are moved to its right side
 function clearTools(){
   try{
-    var zone={l:0,t:innerHeight-(MAIN+R+BTN),r:MAIN+R+BTN,b:innerHeight};
+    var zone={l:0,t:innerHeight-IH*S-20,r:27+IW*S+20,b:innerHeight};
     document.querySelectorAll('button[data-tool-ui]').forEach(function(bt){
       if(bt.dataset.ndMoved||getComputedStyle(bt).position!=='fixed')return;
       var r=bt.getBoundingClientRect();if(!r.width||r.right<zone.l||r.left>zone.r||r.bottom<zone.t||r.top>zone.b)return;
-      bt.style.left=Math.round(zone.r+14)+'px';bt.dataset.ndMoved='1';
+      bt.style.left=Math.round(zone.r+10)+'px';bt.dataset.ndMoved='1';
     });
   }catch(e){}
 }
