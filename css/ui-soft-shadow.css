@@ -1,0 +1,7 @@
+/* Cookster: a very soft shadow under the small UI elements (buttons, the clock, the tool buttons, the bottom buttons).
+   Same warm brown as the menu and top bar, so every element sits on the scene the same way. */
+#istragaBtn,#drBtn,#toolsSwitchBtn,#dayClock,#ovBtn,#nbBtn,#dlBtn,#ssBtn,#wbBtn,#saveTransfer,
+#hud button,
+#cooksterBottomButtonLayer .cookster-bottom-button{
+  filter:drop-shadow(0 2px 3px rgba(40,20,6,.28));
+}

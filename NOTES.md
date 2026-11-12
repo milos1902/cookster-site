@@ -1527,3 +1527,9 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - `BOX` 90 -> 72 px (sve ostalo se računa iz njega), pozicija 22/37 px.
 - Meni se više ne gasi kad miš prođe između ikonica: `mouseover`/`mouseout` na celom `#ndock` (pozadina + ikonice), gasi se tek kad miš izađe iz celog menija (220 ms). Stari uzrok: ulazak sa ikonice na pozadinu ne otkazuje gašenje jer `mouseenter` na pozadini ne ide ponovo.
 - Testirano Playwright-om (prelazak preko svih ikonica i zastajanje u razmaku: ostaje otvoren; izlaz van menija: zatvara se). Osećaj u pravoj igri procenjuje Miloš.
+
+## Meka senka ispod UI elemenata (css/ui-soft-shadow.css)
+- Dodata `filter: drop-shadow(0 2px 3px rgba(40,20,6,.28))` na dugmad: Beležnica, Završi dan, Alati, Ovo/Nb/Dl/Ss/Wb dugmad, sat dana, Kutlača/Animacije/Kese (`.cookster-bottom-button`), `#hud` dugmad, `#saveTransfer`.
+- Ne ide na `#chud` i `#ndock` (već imaju senku).
+- Nije urađeno: traka sa slotovima dole u sredini (nije mi bila jasna klasa; treba je naći pa dodati isti filter).
+- Testirano screenshotom; intenzitet procenjuje Miloš.
