@@ -13,15 +13,16 @@ body.ke-pg-on #kePg{display:block}
 #kePg .pg-search{display:flex;align-items:center;padding-left:3.2cqw}
 #kePg .pg-search input{width:100%;background:none;border:0;outline:0;font:inherit;font-size:1.35cqw;color:#4a2a14}
 #kePg .pg-back{display:flex;align-items:center;justify-content:flex-end;padding-right:1.2cqw;font-weight:700;font-size:1.3cqw;color:#5a3418;cursor:pointer}
-#kePg .pg-list{overflow-y:auto;overflow-x:hidden;display:grid;grid-template-columns:repeat(5,1fr);grid-auto-rows:max-content;gap:1.2cqw;padding:.8cqw 1cqw 1.5cqw 0;scrollbar-width:thin;scrollbar-color:#b98a55 transparent}
-#kePg .pg-tile{position:relative;height:15cqw;border-radius:1.2cqw;background:rgba(255,246,222,.45);border:.15cqw solid rgba(150,100,55,.35);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:.6cqw .6cqw .8cqw;cursor:pointer;transition:background .12s,transform .12s}
-#kePg .pg-tile:hover,#kePg .pg-tile.sel{background:rgba(255,240,205,.85);border-color:#b7532f}
-#kePg .pg-tile.dim{opacity:.5}
-#kePg .pg-tile .im{flex:1;width:100%;min-height:0;object-fit:contain;filter:drop-shadow(.2cqw .35cqw .3cqw rgba(60,30,10,.35))}
-#kePg .pg-tile .nm{margin-top:.5cqw;font-size:1.15cqw;font-weight:700;text-align:center;line-height:1.1}
-#kePg .pg-tile .tg{position:absolute;top:.5cqw;right:.7cqw;font-size:.95cqw;font-weight:800;color:#2e7d3a}
+#kePg .pg-list{overflow-y:auto;overflow-x:hidden;display:grid;grid-template-columns:repeat(2,1fr);grid-auto-rows:max-content;gap:1.1cqw;padding:.6cqw 1cqw 1.5cqw 0;scrollbar-width:thin;scrollbar-color:#b98a55 transparent}
+#kePg .pg-tile{position:relative;aspect-ratio:520/300;background:url(../assets/ui/pergament/pg_kartica_posude_n.png) center/100% 100% no-repeat;cursor:pointer;transition:transform .12s}
+#kePg .pg-tile:hover,#kePg .pg-tile.sel{background-image:url(../assets/ui/pergament/pg_kartica_posude_h.png)}
+#kePg .pg-tile:hover{transform:translateY(-.15cqw)}
+#kePg .pg-tile.dim .im,#kePg .pg-tile.dim .nm{opacity:.55}
+#kePg .pg-tile .im{position:absolute;left:7%;top:13%;width:43%;height:74%;object-fit:contain;filter:drop-shadow(.2cqw .35cqw .3cqw rgba(60,30,10,.35))}
+#kePg .pg-tile .nm{position:absolute;left:54%;top:15%;width:38%;font-size:1.4cqw;font-weight:800;line-height:1.1}
+#kePg .pg-tile .tg{position:absolute;left:61.5%;top:73%;width:26%;height:17%;display:flex;align-items:center;justify-content:center;font-size:.8cqw;white-space:nowrap;font-weight:800;color:#6a3d1c;text-align:center}
 #kePg .pg-empty{grid-column:1/-1;padding:3cqw;text-align:center;font-size:1.4cqw;opacity:.7}
-#kePg .pg-card{position:absolute;left:68.1%;top:28.7%;width:27.1%;height:57.8%}
+#kePg .pg-card{position:absolute;left:66.56%;top:27.04%;width:31.4%;height:62.9%}   /* the picture is stretched so the paper of the card covers the whole panel of the page (x 1090-1540, y 316-968 of 1600x1100) */
 #kePg .pg-card .cbg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;filter:drop-shadow(0 .5cqw .9cqw rgba(60,30,10,.4))}
 #kePg .pg-card .cim{position:absolute;left:14%;top:7%;width:72%;height:27%;object-fit:contain}
 #kePg .pg-card .cnm{position:absolute;left:8%;width:84%;top:34.5%;text-align:center;font-weight:800;font-size:1.55cqw;line-height:1.05}
