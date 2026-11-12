@@ -1533,3 +1533,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Ne ide na `#chud` i `#ndock` (već imaju senku).
 - Nije urađeno: traka sa slotovima dole u sredini (nije mi bila jasna klasa; treba je naći pa dodati isti filter).
 - Testirano screenshotom; intenzitet procenjuje Miloš.
+- Traka alata dole u sredini (js/toolbar-art.js v1): nova slika assets/ui/hud/hud_toolbar.png iza 6 postojećih klik-dugmadi (recent items), dugmad postavljena na centre slotova (50x36 px), slika 0.30 px po px slike, centar (838,872). Stari drveni okvir iz pozadine sobe ostaje vidljiv iznad i ispod (ugrađen u sliku sobe): treba čista pozadina ili odluka. ?starihud vraća staro. Provereno headless (6 dugmadi, bez grešaka). Nije provereno: prevlačenje i Zadnje korišćeno uživo.
