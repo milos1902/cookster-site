@@ -1555,3 +1555,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Ispravka: kartice predmeta su sada slike pg_kartica_posude_n/h.png (2 kolone), a kartica opisa je razvučena preko cele desne ploče stranice (x 1090-1540, y 316-968). ke-pergament v2/v3.
 - Kartice predmeta bez malog polja (pg_kartica_posude_n_bez.png / _h_bez.png; polje je zatrpano papirom). Ilustracija je na sredini kartice, naziv ispod; u prodavnici cena pod nazivom. Stanje (na stolu / u elementima) ostaje samo na desnoj kartici. ke-pergament js v3, css v4.
 - Kartice predmeta manje, 4 u redu (css v5).
+- Kartice predmeta bez naziva: samo slika (naziv je na velikoj kartici desno); u prodavnici samo cena ispod slike. js v4, css v6.
