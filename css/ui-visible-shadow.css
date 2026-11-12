@@ -1,6 +1,6 @@
-/* Cookster: clearly visible shadows under the new UI elements (top bar, dock, tool bar), so they stand off the scene.
-   Shadow: a tight dark edge, dropped slightly down and to the right, plus a wider soft part. */
-#chud{filter:drop-shadow(1px 3px 2px rgba(25,12,3,.7)) drop-shadow(2px 6px 6px rgba(25,12,3,.45))}
-#ndock .nd-main{filter:drop-shadow(1px 3px 2px rgba(25,12,3,.7)) drop-shadow(2px 6px 6px rgba(25,12,3,.45))}
-#ndock .nd-panel{filter:drop-shadow(2px 5px 3px rgba(25,12,3,.65)) drop-shadow(4px 10px 10px rgba(25,12,3,.45))}
-img.ct-art{filter:drop-shadow(1px 3px 2px rgba(25,12,3,.7)) drop-shadow(2px 6px 6px rgba(25,12,3,.45))}
+/* Cookster: visible but gentle shadows under the new UI elements (top bar, dock, tool bar, rack), so they stand off the scene.
+   Shadow: a thin dark edge, dropped slightly down and to the right, plus a soft part. Lowered from the first version. */
+#chud{filter:drop-shadow(1px 2px 1px rgba(25,12,3,.4)) drop-shadow(2px 4px 4px rgba(25,12,3,.22))}
+#ndock .nd-main{filter:drop-shadow(1px 2px 1px rgba(25,12,3,.4)) drop-shadow(2px 4px 4px rgba(25,12,3,.22))}
+#ndock .nd-panel{filter:drop-shadow(1px 3px 2px rgba(25,12,3,.38)) drop-shadow(2px 6px 6px rgba(25,12,3,.22))}
+img.ct-art{filter:drop-shadow(1px 2px 1px rgba(25,12,3,.4)) drop-shadow(2px 4px 4px rgba(25,12,3,.22))}
