@@ -6,11 +6,11 @@
 'use strict';
 if(window.CooksterRanacTest)return;
 var DW=1672,DH=941;
-var OPTS=[3,6,10],IDX=1,SCALE=0.27;      // SCALE: design px per picture px (same for all three: cards have the same size)
+var OPTS=[3,6,10],IDX=1,SCALE=0.24;      // SCALE: design px per picture px (same for all three: cards have the same size)
 var META={3:{w:1034,h:874,tags:[274.0,518.5,762.5],top:169,bot:667},
           6:{w:1774,h:887,tags:[278.5,526.0,768.0,1009.0,1251.0,1498.5],top:172,bot:677},
           10:{w:2769,h:897,tags:[281.5,531.5,776.5,1020.5,1264.0,1508.0,1751.5,1995.0,2240.0,2490.0],top:174,bot:685}};
-var BOTTOM=905,CX=836;      // the rack's cards end at this design y; the rack is centred at this design x
+var BOTTOM=937,CX=836;      // the rack's cards end at this design y; the rack is centred at this design x
 var css=document.createElement('style');
 css.textContent=[
 '#ranacTestBtn{position:fixed;left:1016px;top:860px;z-index:2000;padding:6px 12px;border:2px solid #351b0d;border-radius:10px;background:#e8c27a;color:#351b0d;font:800 14px Georgia,serif;cursor:pointer;box-shadow:0 2px 4px rgba(20,10,4,.5)}',
@@ -31,7 +31,7 @@ function layout(){
   bs.forEach(function(b,i){
     if(i>=m.tags.length){b.style.display='none';return;}
     b.style.display='';
-    var cx=left+m.tags[i]*SCALE,bw=46,bh=84,cy=top+((m.top+m.bot)/2)*SCALE;
+    var cx=left+m.tags[i]*SCALE,bw=46*SCALE/.27,bh=84*SCALE/.27,cy=top+((m.top+m.bot)/2)*SCALE;
     b.style.setProperty('left',pct(cx-bw/2,DW),'important');b.style.setProperty('top',pct(cy-bh/2,DH),'important');
     b.style.setProperty('width',pct(bw,DW),'important');b.style.setProperty('height',pct(bh,DH),'important');
   });
