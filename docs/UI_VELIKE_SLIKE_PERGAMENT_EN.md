@@ -33,3 +33,17 @@ Kitchen items, Drinks, Fridge, Market: full-page images (1672 x 941) in this sam
 
 ---
 Notes for Claude: after the ZIPs arrive I replace the old frames (window_frame_*, window_title_strip, izvestaj_okvir, recenzije_*, hud_tasks_panel, zadaci_okvir, card_*, dialog_okvir, novi_dan_okvir, kartica_stavka_*, kartica_recept_*) and read the magenta masks for exact content rectangles. Old files stay in the repo (no deletion).
+
+## GROUP P4: parts of a page in the parchment style (for Kitchen items, Drinks, Fridge, Market...)
+Same style as the attached reference page (soft irregular linen/parchment edges, red embroidery, brass-clip look). EMPTY, no text. Each a separate PNG on a transparent background; add a `_mask.png` (flat magenta #FF00FF over every EMPTY content area) where marked [mask].
+- `pg_tab_aktivan.png` (500 x 130) [mask]: active tab, deep red with a cross-stitch edge pattern on the left and right, empty centre
+- `pg_tab_neaktivan.png` (500 x 130) [mask]: inactive tab, pale parchment, empty centre
+- `pg_pilula_n.png`, `pg_pilula_h.png`, `pg_pilula_aktivna.png` (300 x 90) [mask]: category pill; normal pale, hover with a soft warm glow, active deep red
+- `pg_pretraga.png` (800 x 100) [mask]: search field with a drawn magnifier glass on the left, empty rest
+- `pg_kartica_posude_n.png`, `pg_kartica_posude_h.png` (520 x 300) [mask]: small item card with embroidery in two top corners and two bottom corners, empty picture area on the left, empty name area on the right, empty small count plate at the bottom right
+- `pg_desna_ploca.png` (520 x 700) [mask]: detail panel: embroidery corners, large empty picture area on top, ornamental divider with a red motif, empty name strip, empty description area, two empty stat rows with a drawn small icon on the left (a measuring cup and a small house). NO button at the bottom.
+- `pg_dugme_nazad_n.png`, `_h.png`, `_p.png` (360 x 100): "back" button, parchment with a thin dark outline, a drawn arrow pointing left on the left side, empty rest
+- `pg_klizac_staza.png` (40 x 800), `pg_klizac_ruckica.png` (40 x 200): slim scrollbar track and thumb
+- `pg_donja_traka.png` (1400 x 100) [mask]: slim bottom bar with a drawn small mouse icon on the left of an empty text area
+- `pg_novac_plocica.png` (300 x 100) [mask]: small plate with a gold coin on the left, empty rest
+- `pg_zatvori_dugme_n.png`, `_h.png`, `_p.png` (140 x 140): round close button with a drawn X, parchment with a dark outline
