@@ -22,7 +22,7 @@ css.textContent=[
 'body.cdock-on #cdock{display:none!important}',
 'body.pantry-open #ndock,body.garden-open #ndock,body.market-open #ndock{display:none}',
 '#ndock{position:fixed;left:14px;bottom:14px;width:'+MAIN+'px;height:'+MAIN+'px;z-index:1900;user-select:none;-webkit-user-select:none}',
-'#ndock .nd-main,#ndock .nd-b{position:absolute;border:0;padding:0;border-radius:50%;cursor:pointer;background-size:100% 100%;background-repeat:no-repeat;filter:drop-shadow(0 3px 4px rgba(30,14,4,.5))}',
+'#ndock .nd-main,#ndock .nd-b{position:absolute;border:0;padding:0;border-radius:50%;background-color:transparent;outline:0;box-shadow:none;cursor:pointer;background-size:100% 100%;background-repeat:no-repeat;filter:drop-shadow(0 3px 4px rgba(30,14,4,.5))}',
 '#ndock .nd-main{left:0;top:0;width:'+MAIN+'px;height:'+MAIN+'px;background-image:url('+H+'hud_round_cream_n.png);z-index:3}',
 '#ndock .nd-main:hover,#ndock.open .nd-main{background-image:url('+H+'hud_round_cream_h.png)}',
 '#ndock .nd-main:active{background-image:url('+H+'hud_round_cream_p.png)}',
