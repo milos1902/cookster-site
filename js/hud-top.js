@@ -9,19 +9,26 @@ var IC='assets/ui/napredak/ikone/',BAR='assets/ui/hud/hud_top_bar.png';
 var css=document.createElement('style');
 css.textContent=[
 'body.chud-on #hud{visibility:hidden;pointer-events:none}',
-'body.chud-on #saveTransfer{left:calc(clamp(400px,32vw,600px) + 26px)!important}',
-'#chud{position:fixed;left:12px;top:6px;width:clamp(400px,32vw,600px);aspect-ratio:1000/160;z-index:1890;pointer-events:none;user-select:none;-webkit-user-select:none;container-type:inline-size;background:url('+BAR+') 0 0/100% 100% no-repeat;filter:drop-shadow(0 2px 3px rgba(30,14,4,.45))}',
+'#chud{--bw:clamp(280px,21.5vw,460px);position:fixed;left:6.9vw;top:3px;width:calc(var(--bw)*1.193);height:calc(var(--bw)*.16);z-index:1890;pointer-events:none;user-select:none;-webkit-user-select:none;container-type:inline-size;filter:drop-shadow(0 2px 3px rgba(30,14,4,.45))}',
+'body.chud-on #saveTransfer{left:calc(6.9vw + clamp(280px,21.5vw,460px)*1.193 + 14px)!important}',
 'body.pantry-open #chud,body.garden-open #chud,body.market-open #chud{display:none}',
-'#chud .ch-c{position:absolute;top:0;height:100%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:1.2cqw;white-space:nowrap;font-family:"Paytone One","CooksterSerif",Georgia,serif;font-weight:400;font-synthesis:none;color:#7a1e14;text-shadow:0 .25cqw 0 rgba(255,236,200,.5);font-size:4.3cqw;line-height:1}',
-'#chud .ch-c img{height:8.2cqw;width:auto;display:block;filter:drop-shadow(0 .3cqw .3cqw rgba(40,20,6,.35))}',
-'#chud .ch-t{font-size:5.6cqw}'
+'#chud .ch-p{position:absolute;top:0;height:100%;background-repeat:no-repeat;background-size:100% 100%}',
+'#chud .ch-l{left:0;width:calc(var(--bw)*.515 + 1.5px);background-image:url('+BAR.replace('.png','_L.png')+')}',
+'#chud .ch-m{left:calc(var(--bw)*.515);width:calc(var(--bw)*.343 + 1.5px);background-image:url('+BAR.replace('.png','_M.png')+')}',
+'#chud .ch-ra{left:calc(var(--bw)*.858);width:calc(var(--bw)*.145 + 1.5px);background-image:url('+BAR.replace('.png','_Ra.png')+')}',
+'#chud .ch-rb{left:calc(var(--bw)*1.003);width:calc(var(--bw)*.09 + 1.5px);background-image:url('+BAR.replace('.png','_Rb.png')+')}',
+'#chud .ch-rc{left:calc(var(--bw)*1.093);width:calc(var(--bw)*.1);background-image:url('+BAR.replace('.png','_Rc.png')+')}',
+'#chud .ch-c{position:absolute;top:0;height:100%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:calc(var(--bw)*.012);white-space:nowrap;font-family:"Paytone One","CooksterSerif",Georgia,serif;font-weight:400;font-synthesis:none;color:#7a1e14;text-shadow:0 calc(var(--bw)*.0025) 0 rgba(255,236,200,.5);font-size:calc(var(--bw)*.043);line-height:1}',
+'#chud .ch-c img{height:calc(var(--bw)*.082);width:auto;display:block;filter:drop-shadow(0 calc(var(--bw)*.003) calc(var(--bw)*.003) rgba(40,20,6,.35))}',
+'#chud .ch-t{font-size:calc(var(--bw)*.056)}'
 ].join('\n');
 document.head.appendChild(css);
-var bar=document.createElement('div');bar.id='chud';
-function cell(x){var c=document.createElement('div');c.className='ch-c';c.style.left=x+'%';bar.appendChild(c);return c;}
-var cDate=cell(17.9),cTime=cell(39.7),cMoney=cell(61.5),cWx=cell(82.6);
+var bar=document.createElement('div');bar.id='chud';['l','m','ra','rb','rc'].forEach(function(k){var p=document.createElement('div');p.className='ch-p ch-'+k;bar.appendChild(p);});
+function cell(x){var c=document.createElement('div');c.className='ch-c';c.style.left='calc(var(--bw)*'+x+')';bar.appendChild(c);return c;}
+var cDate=cell(.179),cTime=cell(.397),cMoney=cell(.538),cWx=cell(.9945);
 var sDate=document.createElement('span'),sTime=document.createElement('span');sTime.className='ch-t';
 cDate.appendChild(sDate);cTime.appendChild(sTime);
+cMoney.style.transform='none';cMoney.style.justifyContent='flex-start';      // the coins always stand at the left of their compartment, the same distance from the line (0.031 of the bar width) as the time is from its line
 var iCoin=new Image();iCoin.src=IC+'ikona_novac.png';iCoin.alt='';var sMoney=document.createElement('span');cMoney.append(iCoin,sMoney);
 var iWx=new Image();iWx.alt='';var sWx=document.createElement('span');cWx.append(iWx,sWx);
 document.body.appendChild(bar);document.body.classList.add('chud-on');
