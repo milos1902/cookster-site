@@ -54,9 +54,8 @@ function list(){
     var onT=false;try{onT=!d.infinite&&equipmentIsInKitchen(d.id);}catch(_){}
     var t=el('div','pg-tile'+(onT&&TAB==='own'?' dim':'')+(SEL&&SEL.id===d.id?' sel':''));
     var im=el('img','im');im.src=ART[d.id]||d.src;im.alt='';im.draggable=false;t.appendChild(im);
-    t.appendChild(el('div','nm','',d.label));
-    if(TAB==='own')t.appendChild(el('div','tg','',onT?'NA STOLU':'U ELEMENTIMA'));
-    if(TAB==='shop')t.appendChild(el('div','tg','',(typeof FREE_MODE!=='undefined'&&FREE_MODE)?'BESPLATNO':(d.price||0)+' дин'));
+    var nm=el('div','nm','',d.label);t.appendChild(nm);
+    if(TAB==='shop')nm.appendChild(el('span','tg','',(typeof FREE_MODE!=='undefined'&&FREE_MODE)?'BESPLATNO':(d.price||0)+' дин'));
     t.onmouseenter=function(){SEL=d;card();Array.prototype.forEach.call(L.children,function(c){c.classList.toggle('sel',c===t);});};
     t.onclick=function(){act(d,onT);};
     L.appendChild(t);
