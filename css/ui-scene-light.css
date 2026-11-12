@@ -1,6 +1,5 @@
-/* Cookster: the new UI takes the light of the room. The day-light code (js/day-light.js, render) sets --amb-b (brightness: darker at night, a little
-   lifted by the warm haze of morning and evening) and --amb-s (saturation) on the page; the new elements use them, so the top bar, the dock and the rack
-   stand in the same light as the room. The shadows stay (same drop-shadow list, after the brightness). */
-#chud{filter:brightness(var(--amb-b,1)) saturate(var(--amb-s,1)) drop-shadow(1px 2px 1px rgba(25,12,3,.4)) drop-shadow(2px 4px 4px rgba(25,12,3,.22))}
-#ndock .nd-main,#ndock .nd-panel{filter:brightness(var(--amb-b,1)) saturate(var(--amb-s,1)) drop-shadow(1px 2px 1px rgba(25,12,3,.4)) drop-shadow(2px 4px 4px rgba(25,12,3,.22))}
-img.ct-rack{filter:brightness(var(--amb-b,1)) saturate(var(--amb-s,1)) drop-shadow(1px 2px 1px rgba(25,12,3,.4)) drop-shadow(2px 4px 4px rgba(25,12,3,.22))}
+/* Cookster: the new UI takes the light of the room. js/day-light.js (render) sets --amb-b (brightness, darker at night) and --amb-s (saturation) on the page;
+   the top bar, the dock and the rack use them. !important because other styles (ranac-test.js, ui-soft-shadow.css) set their own filter later and would hide this. */
+#chud{filter:brightness(var(--amb-b,1)) saturate(var(--amb-s,1)) drop-shadow(0 2px 3px rgba(30,14,4,.45))!important}
+#ndock .nd-main,#ndock .nd-panel{filter:brightness(var(--amb-b,1)) saturate(var(--amb-s,1)) drop-shadow(1px 2px 1px rgba(25,12,3,.4)) drop-shadow(2px 4px 4px rgba(25,12,3,.22))!important}
+img.ct-rack{filter:brightness(var(--amb-b,1)) saturate(var(--amb-s,1)) drop-shadow(1px 2px 1px rgba(25,12,3,.4)) drop-shadow(2px 4px 4px rgba(25,12,3,.22))!important}
