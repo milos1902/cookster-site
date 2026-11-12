@@ -5,6 +5,8 @@
 (function(){
 'use strict';
 if(/[?&]starihud(=|&|$)/.test(location.search))return;
+// the old wooden 6-slot bar is a separate picture on top of the scene (assets/ui/custom_elements/drvena_traka_sest_polja.png): hidden, the new bar replaces it
+var hideCss=document.createElement('style');hideCss.textContent='img.ui-overlay-element[src*="drvena_traka_sest_polja"]{display:none!important}';document.head.appendChild(hideCss);
 var DW=1672,DH=941;
 var S=0.30;                     // design px per picture px
 var CX=838,CY=872;              // centre of the bar on the design (the old bar was here)
