@@ -1541,3 +1541,8 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Ranci (ista veličina kartice, širina kartice ~225 px u slici, kao 6-kartični): ranac_3.png (1034x874), ranac_6.png (1774x887, referenca), ranac_10.png (2769x897). js/ranac-test.js v1: test dugme 'Ranac: 3/6/10' pored trake alata (klik ciklira) i prikaz ranca iznad trake (samo za razvoj, ne menja traku alata).
 - OBRISAN stari drveni okvir sa 6 polja iz DEFAULT_UI_LAYOUT (game.js 3.331): u novoj igri ga nema, u starim snimcima ga i dalje sakriva toolbar-art.js. Na njegovo mesto je postavljen novi ranac (ranac-test.js; dugme 3/6/10 za razvoj).
 - RANAC NA DONJOJ SREDINI (ranac-test.js v2, toolbar-art.js v3): stara traka alata (hud_toolbar) se više ne postavlja; ranac (3/6/10 kartica, ista veličina) je na donjem sredini, a 6 prozirnih dugmadi za poslednje predmete su postavljene na sredine kartica (3 ili 10 kartica: prikazuje se prvih 3 ili 6 dugmadi). Dugme 'Ranac: 3/6/10' za razvoj. Stari drveni okvir obrisan iz rasporeda (game.js 3.331). Provereno headless: ranac 6 na mestu, 6 dugmadi. Nije provereno: 10 kartica u punom ekranu, klik na kartice (logika za 3/6/10 još nije).
+
+## Svetlo igre na UI elementima
+- Novi fajl css/ui-scene-light.css (v1, u index.html): ranac, gornja traka i dock dobijaju brightness(--amb-b) i saturate(--amb-s) iz day-light.js, pa prate dan/noć kao scena. Senke iste.
+- Provereno u headless Chromiumu: dan --amb-b 0.90, noć 0.55; ranac tamniji noću. Nije testirano na telefonu niti u svim satima.
+- Ispravka: prvi put je filter bio pregažen drugim stilovima (ranac-test.js, ui-soft-shadow.css), pa se nije videla razlika. Sada !important (css v2); proveren computed filter: dan 0.90, noć 0.55 za ranac, gornju traku i dock.
