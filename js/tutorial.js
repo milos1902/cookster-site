@@ -12,9 +12,10 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(st));}catch(e){}}
 var $=function(q){return document.querySelector(q);};
 function body(c){return document.body.classList.contains(c);}
 function rectOf(el){if(!el)return null;var r=el.getBoundingClientRect();return r.width>1&&r.height>1?r:null;}
-function dockOpen(){var d=$('#cdock');return !!d&&d.classList.contains('cd-open');}
-function plateRect(){return rectOf($('#cdock .cd-box'));}
-function dockBtn(title){var bs=document.querySelectorAll('#cdock .cd-b');for(var i=0;i<bs.length;i++){if(((bs[i].getAttribute('aria-label')||'')+' '+(bs[i].title||'')).indexOf(title)>=0)return rectOf(bs[i]);}return null;}
+function dockOpen(){var n=window.CooksterDockNew;if(n)return n.isOpen();var d=$('#cdock');return !!d&&d.classList.contains('cd-open');}
+function plateRect(){var n=window.CooksterDockNew;if(n)return rectOf(n.main);return rectOf($('#cdock .cd-box'));}
+function dockWord(){return window.CooksterDockNew?'okruglom dugmetu dole levo':'drvenom polju dole levo, tamo gde je sat';}
+function dockBtn(title){var n=window.CooksterDockNew;if(n)return n.btnRect(title);var bs=document.querySelectorAll('#cdock .cd-b');for(var i=0;i<bs.length;i++){if(((bs[i].getAttribute('aria-label')||'')+' '+(bs[i].title||'')).indexOf(title)>=0)return rectOf(bs[i]);}return null;}
 
 // ---------- stanje igre (za provere koraka) ----------
 function allItems(){try{return items.slice();}catch(e){return [];}}
@@ -46,8 +47,8 @@ function boughtNow(){var h=document.getElementById('marketHaggleStep');if(h&&h.c
 // ---------- koraci ----------
 // text: sta Savka kaze; target: funkcija koja vraca pravougaonik (ekran) na koji strelica pokazuje; done: kad je korak gotov; button: "Dalje" umesto provere
 var STEPS=[
-  {id:'dock',text:'Za salatu trebaju nam sastojci. Pređi mišem preko drvenog polja dole levo, tamo gde je sat. Otvoriće se ikonice.',target:plateRect,done:function(){return dockOpen()||body('market-open');}},
-  {id:'market',text:function(){return dockOpen()?'Klikni na pijacu, ikonicu sa tezgom. Treba nam povrće.':'Zadrži miš na drvenom polju sa satom, da se ikonice otvore.';},
+  {id:'dock',text:function(){return 'Za salatu trebaju nam sastojci. Pređi mišem preko '+dockWord()+'. Otvoriće se ikonice.';},target:plateRect,done:function(){return dockOpen()||body('market-open');}},
+  {id:'market',text:function(){return dockOpen()?'Klikni na pijacu, ikonicu sa tezgom. Treba nam povrće.':'Zadrži miš na '+(window.CooksterDockNew?'okruglom dugmetu':'drvenom polju sa satom')+', da se ikonice otvore.';},
    target:function(){return dockOpen()?(dockBtn('Pijaca')||plateRect()):plateRect();},done:function(){return body('market-open');}},
   {id:'pick',requires:function(){return body('market-open')?null:'market';},
    text:'Ovo je pijaca. Za salatu nam treba paradajz: klikni na gomilu paradajza.',
@@ -76,7 +77,7 @@ var STEPS=[
    target:function(){return itemRect('kal_01_flasa_ulja');},done:function(){return vesselHas(/^(ulje|oil)$/);}},
   {id:'salad',enter:function(){try{CooksterNeighbor.expectSalad();}catch(e){}},text:'Srpska salata je gotova! Komšinica će svratiti po nju. Sačekaj da kucne na prozor.',
    done:function(){try{return CooksterNeighbor.delivered('salad');}catch(e){return true;}}},
-  {id:'z_dock',text:function(){return dockOpen()?'Klikni na pijacu, kupi tikvice.':'Pređi mišem preko drvenog polja sa satom, pa na pijacu.';},
+  {id:'z_dock',text:function(){return dockOpen()?'Klikni na pijacu, kupi tikvice.':'Pređi mišem preko '+(window.CooksterDockNew?'okruglog dugmeta':'drvenog polja sa satom')+', pa na pijacu.';},
    target:function(){return dockOpen()?(dockBtn('Pijaca')||plateRect()):plateRect();},done:function(){return body('market-open');}},
   {id:'z_pick',requires:function(){return body('market-open')?null:'z_dock';},text:'Klikni na gomilu tikvica.',
    target:function(){return rectOf($('#marketHoverLayer .market-pile[data-key="tikvice"]'));},
