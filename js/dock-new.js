@@ -6,7 +6,7 @@
 'use strict';
 if(window.CooksterDockNew||/[?&]starihud(=|&|$)/.test(location.search))return;
 var A='assets/ui/dock/';
-var IW=887,IH=1774,RING=316,BOX=90;      // the picture, the diameter of the ring of a button in the picture, the size of the main button on the screen (px)
+var IW=887,IH=1774,RING=316,BOX=72;      // the picture, the diameter of the ring of a button in the picture, the size of the main button on the screen (px)
 var S=BOX/(RING+8);      // screen px per picture px
 var MAIN=[272,1385],COL=[272,610],ROW=[397,727,1057];      // centre of the main button and of the other buttons in the picture
 var BTNS=[
@@ -26,7 +26,7 @@ css.textContent=[
 'body.cdock-on #cdock{display:none!important}',
 'body.cdock-new #recBtn{opacity:0!important;pointer-events:none!important}',
 'body.pantry-open #ndock,body.garden-open #ndock,body.market-open #ndock{display:none}',
-'#ndock{position:fixed;left:27px;bottom:46px;width:'+BOX+'px;height:'+BOX+'px;z-index:1900;user-select:none;-webkit-user-select:none}',
+'#ndock{position:fixed;left:22px;bottom:37px;width:'+BOX+'px;height:'+BOX+'px;z-index:1900;user-select:none;-webkit-user-select:none}',
 '#ndock .nd-panel{position:absolute;left:'+PX(-(MAIN[0]-(RING+8)/2)-(RING+8)/2*0)+';top:0;width:'+PX(IW)+';height:'+PX(IH)+';background:url('+A+'meni_ploca_2.webp) 0 0/100% 100% no-repeat;transform-origin:'+PX(MAIN[0])+' '+PX(MAIN[1])+';transform:scale(.2);opacity:0;pointer-events:none;transition:transform .24s cubic-bezier(.3,.8,.3,1),opacity .18s;filter:drop-shadow(0 4px 8px rgba(30,14,4,.5));z-index:1}',
 '#ndock.open .nd-panel{transform:scale(1);opacity:1;pointer-events:auto}',
 '#ndock .nd-main{position:absolute;left:0;top:0;width:'+BOX+'px;height:'+BOX+'px;border:0;padding:0;border-radius:50%;background:url('+A+'glavno_dugme.png) 0 0/100% 100% no-repeat;background-color:transparent;outline:0;box-shadow:none;cursor:pointer;z-index:3;filter:drop-shadow(0 3px 4px rgba(30,14,4,.5))}',
@@ -53,7 +53,8 @@ var hot=BTNS.map(function(d){
   b.addEventListener('mouseleave',later);
   panel.appendChild(b);d.el=b;return d;
 });
-panel.addEventListener('mouseenter',keep);panel.addEventListener('mouseleave',later);
+// the whole menu (picture, gaps between the icons, the icons themselves) is ONE hover area: every move inside it cancels the closing
+dock.addEventListener('mouseover',keep);dock.addEventListener('mouseout',function(e){if(e.relatedTarget&&dock.contains(e.relatedTarget))return;later();});
 main.addEventListener('mouseenter',keep);main.addEventListener('mouseleave',later);
 main.addEventListener('click',function(){pinned=!pinned;if(pinned)keep();else setOpen(false);});
 window.addEventListener('keydown',function(e){if(e.key==='Escape'&&(pinned||dock.classList.contains('open'))){pinned=false;setOpen(false);}},true);
@@ -79,7 +80,7 @@ document.body.appendChild(dock);document.body.classList.add('cdock-new');
 // the developer buttons (Kutlača, Animacije gostiju, Kese...) are fixed at the bottom left: those that lie over the dock and its panel are moved to its right side
 function clearTools(){
   try{
-    var zone={l:0,t:innerHeight-IH*S-20,r:27+IW*S+20,b:innerHeight};
+    var zone={l:0,t:innerHeight-IH*S-20,r:22+IW*S+20,b:innerHeight};
     document.querySelectorAll('button[data-tool-ui]').forEach(function(bt){
       if(bt.dataset.ndMoved||getComputedStyle(bt).position!=='fixed')return;
       var r=bt.getBoundingClientRect();if(!r.width||r.right<zone.l||r.left>zone.r||r.bottom<zone.t||r.top>zone.b)return;
