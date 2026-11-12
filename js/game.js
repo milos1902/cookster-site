@@ -4809,7 +4809,6 @@ function trayRecord(r,f=TRAY_SCALE){
 const DEFAULT_UI_LAYOUT=[
   {id:'ui_instance_6c8fb386-e40c-4f14-9760-6f71e685bf7f',typeId:'ui_drvena_traka_krug',x:213,y:110,w:197,h:131,angle:0,z:5},
   {id:'ui_instance_6fdf77f7-5896-487b-81b8-aecd80f185f2',typeId:'ui_drvena_traka_dva_polja',x:418,y:123,w:238,h:159,angle:0,z:6},
-  {id:'ui_instance_f9d9eb81-3763-4fdd-bab5-e273264ffbbc',typeId:'ui_drvena_traka_sest_polja',x:836,y:996,w:516,h:291,angle:0,z:7},
   {id:'ui_instance_e4bd577d-8559-4cf0-b494-77cdcafb4a70',typeId:'ui_osvetljeni_kvadratni_panel',x:796,y:917,w:96,h:120,angle:0,z:13},
  ].map(r=>trayRecord(r)).filter(record=>!REMOVED_SIDE_BOTTOM_UI_INSTANCE_IDS.has(record.id));
 const LOCKED_BOTTOM_TRAY_INSTANCE_IDS=new Set(
