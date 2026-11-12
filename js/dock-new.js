@@ -1,4 +1,4 @@
-/* Cookster: the NEW corner dock (bottom left). The picture of the menu (assets/ui/dock/meni_ploca.webp, 887x1774: a linen panel with 2 x 4 round buttons) opens out of the round button that always stays in the corner
+/* Cookster: the NEW corner dock (bottom left). The picture of the menu (assets/ui/dock/meni_ploca_2.webp, 887x1774: a linen panel with 2 x 4 round buttons) opens out of the round button that always stays in the corner
    (assets/ui/dock/glavno_dugme.png, cut from the same picture: the cream button with the dishes). Mouse OVER the button (or a click on it, which pins the menu) opens the panel; it closes when the mouse leaves.
    The panel is a picture; over each of its buttons lies an invisible round hotspot with the action: Snimanje (phone), Kuhinjski elementi, Frižider, Piće, Pijaca, Knjiga recepata, Sačuvaj / Učitaj.
    The old phone button at the left (#recBtn) is hidden: the phone is now in the menu. ?starihud in the address turns the whole new dock + top bar off. */
@@ -16,7 +16,7 @@ var BTNS=[
   {label:'Piće',c:COL[1],r:ROW[1],act:function(){press('drinksBtn');}},
   {label:'Pijaca',c:COL[0],r:ROW[2],act:function(){press('marketBtn');}},
   {label:'Knjiga recepata',c:COL[1],r:ROW[2],act:function(){var t=document.querySelector('#savkaBookRoot .savka-book-tab');if(t)t.click();else toast('Knjiga recepata nije dostupna ovde.');}},
-  {label:'Sačuvaj / Učitaj',c:COL[1],r:MAIN[1],act:function(b){gearMenu(b);}}
+  {label:'Podešavanja',c:COL[1],r:MAIN[1],act:function(b){gearMenu(b);}}
 ];
 function toast(m){try{showToast(m);}catch(e){}}
 function press(id){var b=document.getElementById(id);if(b)b.click();else toast('Nije dostupno.');}
@@ -27,14 +27,12 @@ css.textContent=[
 'body.cdock-new #recBtn{opacity:0!important;pointer-events:none!important}',
 'body.pantry-open #ndock,body.garden-open #ndock,body.market-open #ndock{display:none}',
 '#ndock{position:fixed;left:27px;bottom:46px;width:'+BOX+'px;height:'+BOX+'px;z-index:1900;user-select:none;-webkit-user-select:none}',
-'#ndock .nd-panel{position:absolute;left:'+PX(-(MAIN[0]-(RING+8)/2)-(RING+8)/2*0)+';top:0;width:'+PX(IW)+';height:'+PX(IH)+';background:url('+A+'meni_ploca.webp) 0 0/100% 100% no-repeat;transform-origin:'+PX(MAIN[0])+' '+PX(MAIN[1])+';transform:scale(.2);opacity:0;pointer-events:none;transition:transform .24s cubic-bezier(.3,.8,.3,1),opacity .18s;filter:drop-shadow(0 4px 8px rgba(30,14,4,.5));z-index:1}',
+'#ndock .nd-panel{position:absolute;left:'+PX(-(MAIN[0]-(RING+8)/2)-(RING+8)/2*0)+';top:0;width:'+PX(IW)+';height:'+PX(IH)+';background:url('+A+'meni_ploca_2.webp) 0 0/100% 100% no-repeat;transform-origin:'+PX(MAIN[0])+' '+PX(MAIN[1])+';transform:scale(.2);opacity:0;pointer-events:none;transition:transform .24s cubic-bezier(.3,.8,.3,1),opacity .18s;filter:drop-shadow(0 4px 8px rgba(30,14,4,.5));z-index:1}',
 '#ndock.open .nd-panel{transform:scale(1);opacity:1;pointer-events:auto}',
 '#ndock .nd-main{position:absolute;left:0;top:0;width:'+BOX+'px;height:'+BOX+'px;border:0;padding:0;border-radius:50%;background:url('+A+'glavno_dugme.png) 0 0/100% 100% no-repeat;background-color:transparent;outline:0;box-shadow:none;cursor:pointer;z-index:3;filter:drop-shadow(0 3px 4px rgba(30,14,4,.5))}',
 '#ndock .nd-main:hover,#ndock.open .nd-main{background-image:url('+A+'glavno_dugme_h.png)}',
 '#ndock .nd-h{position:absolute;border:0;padding:0;border-radius:50%;background:transparent;outline:0;box-shadow:none;cursor:pointer}',
 '#ndock .nd-h:hover{box-shadow:0 0 0 3px rgba(255,214,90,.95),0 0 14px 4px rgba(255,196,60,.7);background:rgba(255,236,170,.12)}',
-'#ndock .nd-tip{position:absolute;padding:6px 14px;background:url(assets/ui/hud/hud_toolbar_tooltip.png) 0 0/100% 100% no-repeat;font:700 15px Georgia,serif;color:#6a2a14;white-space:nowrap;display:none;pointer-events:none;z-index:4;filter:drop-shadow(0 2px 3px rgba(30,14,4,.4))}',
-'#ndock .nd-tip.on{display:block}'
 ].join('\n');
 document.head.appendChild(css);
 var dock=document.createElement('div');dock.id='ndock';
@@ -43,22 +41,19 @@ var panel=document.createElement('div');panel.className='nd-panel';
 panel.style.left=(BOX/2-MAIN[0]*S).toFixed(2)+'px';panel.style.top=(BOX/2-MAIN[1]*S).toFixed(2)+'px';
 dock.appendChild(panel);
 var main=document.createElement('button');main.type='button';main.className='nd-main';main.setAttribute('aria-label','Meni');dock.appendChild(main);
-var tip=document.createElement('div');tip.className='nd-tip';dock.appendChild(tip);
 var pinned=false,closeT=0;
-function setOpen(v){dock.classList.toggle('open',!!v);if(!v){tip.classList.remove('on');hideGear();}}
+function setOpen(v){dock.classList.toggle('open',!!v);if(!v){hideGear();}}
 function keep(){clearTimeout(closeT);setOpen(true);}
 function later(){clearTimeout(closeT);if(pinned)return;closeT=setTimeout(function(){setOpen(false);},220);}
 var hot=BTNS.map(function(d){
-  var b=document.createElement('button');b.type='button';b.className='nd-h';b.setAttribute('aria-label',d.label);b.title=d.label;
+  var b=document.createElement('button');b.type='button';b.className='nd-h';b.setAttribute('aria-label',d.label);
   var r=RING/2;b.style.left=PX(d.c-r)+'';b.style.top=PX(d.r-r);b.style.width=PX(RING);b.style.height=PX(RING);
   b.addEventListener('click',function(e){e.stopPropagation();d.act(b);});
-  b.addEventListener('mouseenter',function(){tip.textContent=d.label;keep();});
+  b.addEventListener('mouseenter',keep);
   b.addEventListener('mouseleave',later);
   panel.appendChild(b);d.el=b;return d;
 });
-// the labels of the hotspots: shown to the right of the panel
-panel.addEventListener('mouseover',function(e){var h=e.target.closest&&e.target.closest('.nd-h');if(h){var pr=panel.getBoundingClientRect(),dr=dock.getBoundingClientRect(),r=h.getBoundingClientRect();tip.textContent=h.getAttribute('aria-label');tip.style.left=(pr.right-dr.left+6)+'px';tip.style.top=(r.top-dr.top+r.height/2-16)+'px';tip.classList.add('on');}else tip.classList.remove('on');});
-panel.addEventListener('mouseenter',keep);panel.addEventListener('mouseleave',function(){tip.classList.remove('on');later();});
+panel.addEventListener('mouseenter',keep);panel.addEventListener('mouseleave',later);
 main.addEventListener('mouseenter',keep);main.addEventListener('mouseleave',later);
 main.addEventListener('click',function(){pinned=!pinned;if(pinned)keep();else setOpen(false);});
 window.addEventListener('keydown',function(e){if(e.key==='Escape'&&(pinned||dock.classList.contains('open'))){pinned=false;setOpen(false);}},true);
