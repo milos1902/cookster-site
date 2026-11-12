@@ -1547,3 +1547,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Provereno u headless Chromiumu: dan --amb-b 0.90, noć 0.55; ranac tamniji noću. Nije testirano na telefonu niti u svim satima.
 - Ispravka: prvi put je filter bio pregažen drugim stilovima (ranac-test.js, ui-soft-shadow.css), pa se nije videla razlika. Sada !important (css v2); proveren computed filter: dan 0.90, noć 0.55 za ranac, gornju traku i dock.
 - Ranac spusten (BOTTOM 937, SCALE 0.24, dugmad srazmerno), da ne prekriva otvoren fioku. ranac-test.js v3.
+
+## Senke uskladjene
+- Gornja traka (#chud) u css/ui-scene-light.css (v3) ima iste smanjene senke kao dock i ranac (1px 2px 1px .4 + 2px 4px 4px .22), a ne senku iz ui-soft-shadow. PR #686 (ui-visible-shadow v2) ima iste vrednosti pa je sada suvisan.
