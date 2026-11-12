@@ -31,12 +31,21 @@ function render(){
   if(!root)build();
   Array.prototype.slice.call(root.children).forEach(function(c){if(!c.classList.contains('pg-bg'))root.removeChild(c);});
   var A=function(c,x,y,w,h,txt){var e=el('div','pg-a '+c,css(x,y,w,h),txt);root.appendChild(e);return e;};
-  var t1=A('pg-tab'+(TAB==='own'?' on':''),96,184,312,74,'Moja kuhinja');
+  // The page picture already has the tabs and the pills drawn (first tab and first pill red). Here only text lies over them; to show another choice the drawn
+  // red / pale piece is copied from the same page picture over the right place (crop), so nothing new is drawn.
+  var PG=P+'strana_kuhinjski_elementi_prazna.webp';
+  function crop(x,y,w,h,sx,sy,sw,sh){var e=A('pg-crop',x,y,w,h);e.style.background='url('+PG+') '+(sx/(1600-sw)*100)+'% '+(sy/(1100-sh)*100)+'%/'+(1600/sw*100)+'% '+(1100/sh*100)+'% no-repeat';return e;}
+  var RT=[94,194,340,66],PT=[438,194,318,66],RP=[90,276,128,52],PP=[230,276,130,52];
+  if(TAB==='shop'){crop(96,194,334,64,PT[0],PT[1],PT[2],PT[3]);crop(440,194,316,64,RT[0],RT[1],RT[2],RT[3]);}
+  var t1=A('pg-tab'+(TAB==='own'?' on':''),96,194,334,64,'Moja kuhinja');
   t1.onclick=function(){TAB='own';render();};
-  var t2=A('pg-tab'+(TAB==='shop'?' on':''),430,184,312,74,'Prodavnica');
+  var t2=A('pg-tab'+(TAB==='shop'?' on':''),440,194,316,64,'Prodavnica');
   t2.onclick=function(){TAB='shop';render();};
-  var pl=[94,234,376,530,690];
-  FILTS.forEach(function(f,i){var p=A('pg-pill'+(FILT===f[0]?' on':''),pl[i],282,133,40,f[1]);p.onclick=function(){FILT=f[0];render();};});
+  var pw=[[94,120],[234,122],[376,124],[530,138],[690,138]];
+  FILTS.forEach(function(f,i){
+    if(FILT===f[0]&&i>0)crop(pw[i][0]-4,276,pw[i][1]+8,52,RP[0],RP[1],RP[2],RP[3]);
+    if(i===0&&FILT!=='all')crop(pw[0][0]-4,276,pw[0][1]+8,52,PP[0],PP[1],PP[2],PP[3]);
+    var p=A('pg-pill'+(FILT===f[0]?' on':''),pw[i][0],280,pw[i][1],44,f[1]);p.onclick=function(){FILT=f[0];render();};});
   var s=A('pg-search',1084,202,424,46);var inp=el('input');inp.placeholder='Traži';inp.value=Q;inp.oninput=function(){Q=inp.value.trim().toLowerCase();list();};s.appendChild(inp);
   var m=A('pg-money',1262,90,146,50);m.textContent=(typeof money!=='undefined'?money:0)+' дин';
   A('pg-btn',1470,90,60,56).onclick=close;

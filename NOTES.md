@@ -1557,3 +1557,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Kartice predmeta manje, 4 u redu (css v5).
 - Kartice predmeta bez naziva: samo slika (naziv je na velikoj kartici desno); u prodavnici samo cena ispod slike. js v4, css v6.
 - Tabovi i pilule (filteri) su sada tvoje slike: pg_tab_aktivan/neaktivan, pg_pilula_aktivna/h/n. js v5, css v7.
+- Tabovi i pilule opet su samo oni iz slike stranice (bez mojih preklopljenih slika, to je dalo duple ivice). Tekst stoji preko njih; izbor drugog taba/filtera prikazan kopijom crvenog/bledog dela iste slike. js v8, css v9.
