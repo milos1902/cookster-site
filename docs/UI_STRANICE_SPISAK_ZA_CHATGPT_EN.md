@@ -8,6 +8,8 @@ Style: the same hand-painted Serbian village UI as my previous groups and the re
 Fully TRANSPARENT background outside the page. NO white outline, NO halo. Clean edges.
 NO text, NO numbers, NO letters, NO example items, NO example pictures. Every content area is EMPTY (plain linen/parchment).
 NO "place on table" button: items are placed by clicking the item card.
+Also return a second copy of every page named `..._mask.png` where every EMPTY content area (title strip, tabs, search field, pills, item grid, detail picture area, name strip, description area, stat rows, back button, hint line) is filled with flat pure magenta (#FF00FF).
+If I attach my reference image, redraw that page exactly (same layout and proportions), but EMPTY.
 
 ## PAGE 1: `strana_kuhinjski_elementi.png` (+ `_mask.png`)
 Layout (as in my reference sheet, but with these exact empty areas):
