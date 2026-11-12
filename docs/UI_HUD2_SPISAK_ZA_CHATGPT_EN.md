@@ -52,7 +52,7 @@ Same style as my existing hammer, bucket, sponge, broom, sledgehammer, hand:
 - `kartica_stavka_n.png`, `_h.png`, `_izabrana.png`, `_zakljucana.png` - item card (400 x 520): empty picture area on top, empty name strip, empty price plate at the bottom
 - `kartica_recept_n.png`, `_h.png`, `_zakljucana.png` - recipe card (500 x 640): empty picture area, a row of 3 empty star slots at the bottom
 - `kolicina_okvir.png` - quantity stepper frame (360 x 110) with empty centre
-- `cena_pločica.png` -> name it `cena_plocica.png` - price plate with a coin on the left, empty (300 x 100)
+- `cena_plocica.png` - price plate with a coin on the left, empty (300 x 100)
 - `etiketa_kategorija_n.png`, `_aktivna.png` - category filter pill (300 x 90), EMPTY
 
 ## GROUP I7: HUD extras
