@@ -1565,3 +1565,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Lista kartica pomerena malo dole i udesno (112,352 umesto 94,340), velika kartica desno malo ulevo (65.4% umesto 66.56%). ke-pergament js v9, css v10.
 - Ispravka: lista kartica vraćena na staro mesto; umesto pomeranja svaka kartica ima senku malo dole i desno (1px 2px 1px .4 + 2px 4px 4px .22). css v11, js v10.
 - Hover na kartici: kartica ostaje na mestu, slika u njoj se malo poveća (scale 1.1). css v12.
+- Scroll mišem radi na listi kartica (capture wheel na #kitchenElementsScene, registrovan pre game.js; core/tool-shield.js preskače slušaoce na document/window). js v12.
