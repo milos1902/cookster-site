@@ -669,7 +669,7 @@ function updateMask(host,now,force){
   if(!mk){mk=document.createElement('canvas');mk.width=160;mk.height=94;mx=mk.getContext('2d');}
   mx.setTransform(1,0,0,1,0,0);mx.clearRect(0,0,mk.width,mk.height);
   var cs=host.querySelectorAll('.vessel-content canvas,.pan-content canvas'),n=0;
-  mx.filter='blur(1px)';
+  mx.filter=BELOW?'blur(5px)':'blur(1px)';
   for(var i=0;i<cs.length;i++){var c=cs[i];if(c===cv||!c.width||!c.height)continue;try{mx.drawImage(c,0,0,mk.width,mk.height);n++;}catch(e){}}
   mx.filter='none';
   // no food canvas found: if the content layer of the vessel is shown (there IS food, drawn some other way) the effect covers the whole food area, otherwise (empty vessel) nothing is shown
@@ -678,6 +678,8 @@ function updateMask(host,now,force){
 }
 function stirringNow(){try{return typeof stirring!=='undefined'&&!!stirring&&!!stirVessel;}catch(e){return false}}
 var px=0,py=0;window.addEventListener('pointermove',function(e){px=e.clientX;py=e.clientY;},{passive:true});
+var BELOW=/[?&]mesanjeispod/.test(location.search);      // the effect lies UNDER the food pieces (shows in the gaps and a little around them); toggle: CooksterStirBelow(true/false)
+window.CooksterStirBelow=function(v){BELOW=!!v;if(cv)cv.dataset.z='';return BELOW;};
 var env=0,hostKeep=null,prevOn=false,revR=3,REST=.3,dirAcc=0,dirSgn=1,swirlPhase=0,SPEED=1;       // SPEED: one knob, 1 = the same speed as the dish
 function frame(t){
   requestAnimationFrame(frame);
@@ -700,6 +702,7 @@ function frame(t){
   if(cv.parentNode!==h0){h0.appendChild(cv);if(fl)fl.clear();fresh=true;}
   if(cv.dataset.on!=='1')fresh=true;
   cv.style.display='block';cv.dataset.on='1';
+  try{var cEl=h0._vesselContent||h0._panContent,zc=cEl?(parseInt(getComputedStyle(cEl).zIndex,10)||5):5,zWant=String(BELOW?Math.max(0,zc-1):9);if(cv.style.zIndex!==zWant)cv.style.zIndex=zWant;cv.style.transform=BELOW?'translateY(2px)':'none';}catch(e){}
   var r=cv.getBoundingClientRect();if(r.width<8||r.height<8)return;
   if(!fl){fl=createFluid(cv);if(!fl){failed=true;return;}fresh=true;}
   var w=Math.max(64,Math.min(256,Math.round(r.width))),h=Math.max(64,Math.min(256,Math.round(r.height)));
@@ -710,7 +713,7 @@ function frame(t){
   }
   prevOn=on;
   if(on)revR=Math.min(3,revR+dt*.9);        // spreads from the spoon to the rim in about a second and a half
-  fl.setCalm(!on);fl.setEnv(env);
+  fl.setCalm(!on);fl.setEnv(Math.min(1,env*(BELOW?1.5:1)));
   (function(){var cx=(px-r.left)/r.width,cy=1-(py-r.top)/r.height;if(on)revC=[Math.max(0,Math.min(1,cx)),Math.max(0,Math.min(1,cy))];fl.setReveal(revC[0],revC[1],revR);})();
   // The speed is the speed of the DISH: the game turns the food with stirAngularVelocity (deg/s, it ramps up slowly while stirring and dies down after the spoon
   // is let go). The fluid is driven by the same number, so both start, turn and stop together. The mouse gives only the direction and a little local stirring.
