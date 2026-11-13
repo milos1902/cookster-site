@@ -22,7 +22,7 @@ body.ke-pg-on #kePg{display:block}
 #kePg .pg-tile.shop .im{top:9%;height:64%}
 #kePg .pg-tile .tg{position:absolute;left:8%;top:76%;width:84%;text-align:center;font-size:.9cqw;font-weight:800;color:#8a3a1e}
 #kePg .pg-empty{grid-column:1/-1;padding:3cqw;text-align:center;font-size:1.4cqw;opacity:.7}
-#kePg .pg-card{position:absolute;left:66.56%;top:27.04%;width:31.4%;height:62.9%}   /* the picture is stretched so the paper of the card covers the whole panel of the page (x 1090-1540, y 316-968 of 1600x1100) */
+#kePg .pg-card{position:absolute;left:65.4%;top:27.04%;width:31.4%;height:62.9%}   /* the picture is stretched so the paper of the card covers the whole panel of the page (x 1090-1540, y 316-968 of 1600x1100) */
 #kePg .pg-card .cbg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;filter:drop-shadow(0 .5cqw .9cqw rgba(60,30,10,.4))}
 #kePg .pg-card .cim{position:absolute;left:14%;top:7%;width:72%;height:27%;object-fit:contain}
 #kePg .pg-card .cnm{position:absolute;left:8%;width:84%;top:34.5%;text-align:center;font-weight:800;font-size:1.55cqw;line-height:1.05}
