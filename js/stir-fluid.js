@@ -570,16 +570,18 @@ const STEAM_SRC=`
     varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uTexture;uniform float uEnv;uniform vec2 uWave;
     float dens(vec2 uv){vec3 c=texture2D(uTexture,uv).rgb;return max(c.r,max(c.g,c.b));}
     void main(){
-      float d=clamp(dens(vUv)*2.2,0.0,1.0);
-      vec2 g=vec2(dens(vR)-dens(vL),dens(vT)-dens(vB))*10.0;
-      float lit=clamp(0.9+g.x*-0.25+g.y*0.25,0.7,1.1);            // a little light and shade in the curls
-      float edge=smoothstep(0.0,0.16,vUv.x)*smoothstep(1.0,0.84,vUv.x)*smoothstep(1.0,0.55,vUv.y);   // soft at the sides and at the top
-      float a=smoothstep(0.03,0.6,d)*0.55*edge*uEnv;
-      vec3 col=mix(vec3(0.80,0.80,0.82),vec3(1.0),lit*0.6);
-      col*=mix(1.0,0.42,uWave.x);                                    // burnt: grey smoke
+      // the higher it goes the wider and softer it gets: more taps spread sideways with the height (thin at the food, wide and airy above)
+      float sp=0.004+0.07*vUv.y;
+      float d=0.0;
+      for(int i=-4;i<=4;i++){float k=float(i)/4.0;d+=dens(vUv+vec2(k*sp,0.0))*(1.0-0.55*abs(k));}
+      d=clamp(d/5.2*2.6,0.0,1.0);
+      float lit=0.92+0.1*sin(vUv.y*14.0+d*5.0);
+      float edge=smoothstep(0.0,0.12,vUv.x)*smoothstep(1.0,0.88,vUv.x)*smoothstep(1.0,0.45,vUv.y);
+      float a=smoothstep(0.02,0.45,d)*0.9*edge*uEnv*(1.0-0.5*vUv.y);
+      vec3 col=mix(vec3(0.84,0.84,0.86),vec3(1.0),lit*0.7);
+      col*=mix(1.0,0.42,uWave.x);
       gl_FragColor=vec4(col*a,a);
-    }
-`;
+    }`;
 const displayShader=compileShader(gl.FRAGMENT_SHADER,(opts&&opts.steam)?STEAM_SRC:MAIN_SRC);
 const clearProgram=new Program(baseVertexShader,clearShader);
 const splatProgram=new Program(baseVertexShader,splatShader);
@@ -789,7 +791,7 @@ function Layer(){
       for(var k=0;k<K;k++){var ang=L.swirlPhase+k*Math.PI*2/K,ca=Math.cos(ang),sa=Math.sin(ang);fl.splat(.5+rr*ca,.5+rr*sa,-sa*L.dirSgn*add,ca*L.dirSgn*add,{r:tint.r*.25*sw,g:tint.g*.25*sw,b:tint.b*.25*sw});}
     }
     // simmering: bubbles burst here and there, more often and stronger the more done the food is
-    if(mode==='simmer'||(mode!=='stir'&&simP>0)){
+    if(false){
       var s=.45+.55*Math.max(0,Math.min(1,(simP-.5)*2));
       L.bub+=dt*(2.2+4.5*s);
       while(L.bub>=1){L.bub-=1;L.bubble(s);}
@@ -803,32 +805,50 @@ function Layer(){
 // STEAM from the vessel (it replaces the white smoke of the old css, .pan-smoke): a column of white curls rises from the opening of the vessel and fades
 var steams=[];
 function Steam(){
-  var S={key:null,cv:null,fl:null,env:0,ph:Math.random()*10};
-  S.hide=function(){if(S.cv&&S.cv.dataset.on==='1'){S.cv.dataset.on='0';S.cv.style.display='none';if(S.fl)S.fl.clear();}};
-  S.update=function(host,t,dt,s,grey){
+  var S={key:null,cv:null,bc:null,bx:null,fl:null,env:0,ph:Math.random()*10,parts:[],acc:0,t0:0};
+  S.hide=function(){if(S.cv&&S.cv.dataset.on==='1'){S.cv.dataset.on='0';S.cv.style.display='none';if(S.bc)S.bc.style.display='none';if(S.fl)S.fl.clear();S.parts=[];}};
+  S.update=function(host,t,dt,s,grey,simP){
     var on=s>0;
     S.env=Math.max(0,Math.min(1,S.env+(on?dt/1.2:-dt/1.6)));
     if(!on&&S.env<=.003){S.hide();return false;}
     if(!host||!host.isConnected)return false;
-    var cv=S.cv;
-    if(!cv){cv=S.cv=document.createElement('canvas');cv.style.cssText='position:absolute;left:calc(var(--vessel-food-left,19.5%) - 7%);top:calc(var(--vessel-food-top,16.8%) - 120%);width:calc(var(--vessel-food-width,69.5%) + 14%);height:130%;pointer-events:none;z-index:14;';cv.width=96;cv.height=160;}
-    if(cv.parentNode!==host){host.appendChild(cv);if(S.fl)S.fl.clear();}
-    cv.style.display='block';cv.dataset.on='1';
+    var cv=S.cv,box='left:calc(var(--vessel-food-left,19.5%) - 12%);top:calc(var(--vessel-food-top,16.8%) - 215%);width:calc(var(--vessel-food-width,69.5%) + 24%);height:250%;pointer-events:none;';
+    if(!cv){
+      cv=S.cv=document.createElement('canvas');cv.style.cssText='position:absolute;'+box+'z-index:14;';cv.width=96;cv.height=240;
+      S.bc=document.createElement('canvas');S.bc.style.cssText='position:absolute;'+box+'z-index:15;';S.bc.width=120;S.bc.height=300;S.bx=S.bc.getContext('2d');
+    }
+    if(cv.parentNode!==host){host.appendChild(cv);host.appendChild(S.bc);if(S.fl)S.fl.clear();S.parts=[];}
+    cv.style.display='block';S.bc.style.display='block';cv.dataset.on='1';
     var r=cv.getBoundingClientRect();if(r.width<8||r.height<8)return false;
-    if(!S.fl){S.fl=createFluid(cv,{steam:true,config:{SIM_RESOLUTION:96,DYE_RESOLUTION:256,DENSITY_DISSIPATION:0.7,VELOCITY_DISSIPATION:0.4,CURL:26,SPLAT_RADIUS:0.14}});if(!S.fl){failed=true;return false;}}
-    var fl=S.fl,w=Math.max(48,Math.min(144,Math.round(r.width))),h=Math.max(48,Math.min(168,Math.round(r.height)));
+    if(!S.fl){S.fl=createFluid(cv,{steam:true,config:{SIM_RESOLUTION:64,DYE_RESOLUTION:256,DENSITY_DISSIPATION:0.2,VELOCITY_DISSIPATION:0.15,CURL:14,SPLAT_RADIUS:0.03}});if(!S.fl){failed=true;return false;}}
+    var fl=S.fl,w=Math.max(48,Math.min(110,Math.round(r.width))),h=Math.max(96,Math.min(260,Math.round(r.height)));
     if(cv.width!==w||cv.height!==h)fl.resize(w,h);
     fl.setCalm(false,false);fl.setEnv(S.env);fl.setWave(grey,0);
     if(on){
-      // new smoke rises from the opening of the vessel (the lower part of this canvas), a little to the sides, driven up with a light wind
+      // two thin plumes leave the food and go up without stopping: a new puff is sent before the one before has died away
       var tt=t/1000+S.ph;
-      for(var k=0;k<3;k++){
-        var x=.5+(Math.random()-.5)*.5,y=.06+Math.random()*.05;
-        var wind=Math.sin(tt*.8+x*5)*5+(Math.random()-.5)*5;
-        fl.splat(x,y,wind,(16+16*Math.random())*(.5+.5*s),{r:.30*s,g:.30*s,b:.30*s});
+      for(var k=0;k<2;k++){
+        var bx=k?.62:.38,x=bx+Math.sin(tt*.9+k*2.1)*.035,y=.03;
+        var sway=Math.sin(tt*1.3+k*3.0+x*6)*2.2;
+        fl.splat(x,y,sway,(30+10*Math.random())*(.55+.45*s),{r:.15*s,g:.15*s,b:.15*s});
+        for(var hh=.14;hh<.95;hh+=.14)fl.splat(x+Math.sin(tt*.7+hh*5+k)*.05,hh,sway*.5,22*(.55+.45*s),{r:0,g:0,b:0});      // the warm air keeps pulling it up along the whole way (it does not stop)
       }
     }
     fl.step(dt);fl.render();
+    // bubbles: small round balloons come out of the food, go up and keep going in the air until they fade away (no bursting inside the food)
+    var bc=S.bc,bx2=S.bx,rw=r.width,rh=r.height;
+    var bw=Math.max(60,Math.min(160,Math.round(rw))),bh=Math.max(150,Math.min(380,Math.round(rh)));
+    if(bc.width!==bw||bc.height!==bh){bc.width=bw;bc.height=bh;}
+    if(simP>0){S.acc+=dt*(1.2+3.2*Math.max(0,Math.min(1,(simP-.5)*2)));while(S.acc>=1){S.acc-=1;if(S.parts.length<24)S.parts.push({x:.30+Math.random()*.40,y:.02,r:2+Math.random()*3.2,vy:.07+Math.random()*.06,ph:Math.random()*6.28,age:0});}}
+    bx2.clearRect(0,0,bc.width,bc.height);
+    for(var i=S.parts.length-1;i>=0;i--){
+      var q=S.parts[i];q.age+=dt;q.y+=q.vy*dt*(1+q.y*1.2);q.x+=Math.sin(q.age*2.2+q.ph)*.0025;
+      if(q.y>.92){S.parts.splice(i,1);continue;}
+      var al=Math.min(1,q.age/.5)*(1-q.y/.92)*.85,px_=q.x*bc.width,py_=bc.height-q.y*bc.height,rr=q.r*(1+q.y*.9)*(bc.width/110);
+      var g=bx2.createRadialGradient(px_-rr*.3,py_-rr*.35,rr*.1,px_,py_,rr);
+      g.addColorStop(0,'rgba(255,255,255,'+(al*.9)+')');g.addColorStop(.55,'rgba(255,255,255,'+(al*.22)+')');g.addColorStop(1,'rgba(255,255,255,'+(al*.55)+')');
+      bx2.fillStyle=g;bx2.beginPath();bx2.arc(px_,py_,rr,0,6.2832);bx2.fill();
+    }
     return true;
   };
   return S;
@@ -842,7 +862,6 @@ function frame(t){
   scanSim(t);
   var sv=stirVesselNow(),want=[];
   if(sv)want.push({v:sv,mode:'stir',p:simOf(sv)});
-  simList.forEach(function(o){if(o.v!==sv&&want.length<MAXL)want.push({v:o.v,mode:'simmer',p:o.p});});
   // layers of the vessels that are not wanted any more: they sink (rest) until they fade away; gone vessels are dropped
   layers=layers.filter(function(L){return !(L.key&&!L.key.isConnected&&(!L.cv||L.cv.dataset.on!=='1'));});
   want.forEach(function(w){var L=layerFor(w.v);if(!L){if(layers.length>=MAXL+1)return;L=Layer();L.key=w.v;layers.push(L);}L.want=w;});
@@ -855,7 +874,7 @@ function frame(t){
   steams=steams.filter(function(S){return !(S.key&&!S.key.isConnected&&(!S.cv||S.cv.dataset.on!=='1'));});
   var sw=steamList.slice(0,MAXL);
   sw.forEach(function(o){var S=steamFor(o.v);if(!S){if(steams.length>=MAXL+1)return;S=Steam();S.key=o.v;steams.push(S);}S.want=o;});
-  steams.forEach(function(S){var o=S.want;S.want=null;if(o)S.update(S.key,t,dt,o.s,o.grey);else S.update(S.key,t,dt,0,0);});
+  steams.forEach(function(S){var o=S.want;S.want=null;if(o)S.update(S.key,t,dt,o.s,o.grey,simOf(S.key));else S.update(S.key,t,dt,0,0,0);});
   document.documentElement.dataset.sfLayers=String(layers.length);
 }
 requestAnimationFrame(frame);
