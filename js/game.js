@@ -15915,6 +15915,7 @@ function startHolding(el,pointerEvent=null){
 }
 
 function popArtPuff(cx,by,vis=1,opacity=.96,rot=0){
+  try{if(window.CooksterLandPuff&&window.CooksterLandPuff(cx,by,vis,opacity))return null;}catch(_){}      // smoke made by the fluid (js/stir-fluid.js); the old video below is the fallback
   // One transparent WebM contains the synchronized left/right impact puffs.
   const p=document.createElement('video');
   p.className='pop-puff-img';

@@ -1640,3 +1640,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Leva fioka (kitchen-fixtures.js v814): isto kao desna: obrisani kadrovi assets/drawers/left_1..16.webp, umesto njih left_front.webp i left_inside.webp koje GSAP pomera (tegle, razdelnik i senka prate je preko postojećeg mapPoint-a).
 - Vrata ložišta (game.js v3.332, applyFireboxDoorTransition): vrata se zaokreću oko šarke (stisnu se, zameni se slika, otvore se uz blagi odskok).
 - Vrata rerne i fioka sa drvima ispod rerne (gsapPop): slika izrasta iz ivice/šarke uz blagi odskok pri otvaranju i savija se pri zatvaranju. Bez GSAP-a vraća se na staro ponašanje.
+
+## Dim pri spuštanju predmeta preko simulacije tečnosti
+- js/stir-fluid.js: CooksterLandPuff(cx,by,vis,opacity) pravi dim levo i desno od predmeta koji je pao (jedno platno preko cele scene, aktivno ~3 s posle udara); game.js popArtPuff ga zove, a stari video puff_impact.webm ostaje kao rezervna varijanta kad nema WebGL.
