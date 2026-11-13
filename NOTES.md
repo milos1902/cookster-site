@@ -1627,3 +1627,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - assets/vendor/gsap.min.js (GSAP 3.15.1, licenca "no charge", gsap.com/standard-license) učitava se pre kitchen-fixtures.js (v813).
 - Desna fioka (DR.right.cont) više nema 15 kadrova iz videa (obrisani assets/drawers/right_1..15.webp). Umesto toga dve slike isečene iz otvorene fioke: right_front.webp i right_inside.webp; pomeraju se brojem p (0 zatvorena - 1 otvorena) koji menja gsap.to (otvaranje 0.62 s sa blagim odskokom back.out, zatvaranje 0.42 s power3.in). Senka, alati u fioci i klik rade kao do sada.
 - Leva fioka je ostala sa video kadrovima (isti postupak kad se potvrdi da ova valja).
+- Gornja traka malo svetlija (brightness x1.22 u ui-scene-light.css), da bude iste svetline kao ranac.
