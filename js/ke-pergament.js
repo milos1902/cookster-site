@@ -50,7 +50,7 @@ function render(){
   var m=A('pg-money',1262,90,146,50);m.textContent=(typeof money!=='undefined'?money:0)+' дин';
   A('pg-btn',1470,90,60,56).onclick=close;
   var b=A('pg-back',94,990,188,46,'Nazad');b.onclick=close;
-  var L=A('pg-list',112,352,942,608);L.id='kePgList';
+  var L=A('pg-list',94,340,966,620);L.id='kePgList';
   var cd=el('div','pg-card');root.appendChild(cd);
   list();
 }
