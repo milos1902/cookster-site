@@ -103,6 +103,13 @@ function sync(){
 function init(){
   sc=document.getElementById('kitchenElementsScene');if(!sc)return;
   new MutationObserver(sync).observe(sc,{attributes:true,attributeFilter:['class']});
+  // game.js catches the wheel on this whole window (capture, on the scene) and scrolls only the columns of the old card, so the list would never move. This listener is added first,
+  // on the scene itself (core/tool-shield.js only wraps listeners on window/document), so it runs before that one and scrolls the list.
+  sc.addEventListener('wheel',function(e){
+    if(!document.body.classList.contains('ke-pg-on'))return;
+    var L=document.getElementById('kePgList');if(!L||!L.contains(e.target))return;
+    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();L.scrollTop+=e.deltaY;
+  },{capture:true,passive:false});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&document.body.classList.contains('ke-pg-on'))close();});
   sync();
 }
