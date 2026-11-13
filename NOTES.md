@@ -1608,3 +1608,8 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - js/stir-fluid.js v23: ako posuda ima stirVisible, platno efekta zauzima taj prostor (clip-path poligon) umesto elipse hrane; maska hrane se mapira u taj prostor. Talasi: slika se podiže uz obod sa grebenom koji se okreće sa mešanjem (visina 0.10 sa zonom, 0.035 bez, srazmerno brzini mešanja).
 - Ako zona nije nacrtana, ponasanje je kao do sada (elipsa hrane) + blagi talas.
 - Dugme "Maska posude" (alat za kalibraciju) vraceno: bilo je u starom #hud koji nova gornja traka sakriva, pa se nije videlo. Sada je fiksno dugme desno (iznad "Senke sunca"), data-tool-ui + data-cookster-tool (prati prekidac Alati). tool js v16, css v9.
+
+## Krčkanje i para pomoću simulacije tečnosti (stir-fluid.js v26)
+- Krčkanje: kad posuda na vatri (klasa sizzling) ima hranu i traka gotovosti stigne na pola ili više (ne izgoreno), u hrani pucaju mehurići i šalju prstenove kroz hranu (u boji hrane). Što je gotovije, to češće i jače. Stari beli kružići iz css-a i .stir-bubbles su sakriveni (body.sf-on), ako postoji WebGL.
+- Para: bela/siva para (zamenjuje .pan-smoke) diže se iz otvora posude u mekim uvojcima, od 12% trake gotovosti (kao stari dim), sivlja kad je zagorelo. Svaka posuda ima svoj sloj; najviše 3 posude odjednom.
+- Mešanje radi kao i do sada (svaka posuda ima svoj sloj).
