@@ -1,5 +1,6 @@
 /* Cookster — vessel food visibility calibration tool */
 #vesselFoodMaskBtn{
+  position:fixed;right:12px;bottom:212px;z-index:2147483500;border:2px solid #174b3b;border-radius:9px;font:700 13px/1 system-ui,sans-serif;padding:9px 12px;cursor:pointer;box-shadow:1px 2px 1px rgba(25,12,3,.4);
   border-color:#174b3b;
   background:#d6f2d4;
   color:#173d30;
@@ -113,6 +114,11 @@
   border-color:#237345;
   background:#d5f1dc;
   box-shadow:0 0 0 3px rgba(46,125,50,.18);
+}
+.vfmm-mode.active[data-mode="stirVisible"]{
+  border-color:#b8650f;
+  background:#ffe6c4;
+  box-shadow:0 0 0 3px rgba(230,130,20,.2);
 }
 .vfmm-mode.active[data-mode="bottom"]{
   border-color:#1e668d;
@@ -236,6 +242,7 @@
 }
 .vfmm-polygon.mask{fill:rgba(229,62,48,.28);stroke:#b6291e}
 .vfmm-polygon.foodVisible{fill:rgba(66,185,107,.29);stroke:#208047}
+.vfmm-polygon.stirVisible{fill:rgba(240,150,30,.26);stroke:#c06a0a}
 .vfmm-polygon.bottom{fill:rgba(73,169,221,.30);stroke:#1e729e}
 .vfmm-line{
   fill:none;
@@ -247,6 +254,7 @@
 }
 .vfmm-line.mask{stroke:#e53e30}
 .vfmm-line.foodVisible{stroke:#36a961}
+.vfmm-line.stirVisible{stroke:#e8891a}
 .vfmm-line.bottom{stroke:#2e8fbd}
 .vfmm-point{
   stroke:#fff;
@@ -257,6 +265,7 @@
 .vfmm-point:active{cursor:grabbing}
 .vfmm-point.mask{fill:#e53e30}
 .vfmm-point.foodVisible{fill:#42b96b}
+.vfmm-point.stirVisible{fill:#f0961e}
 .vfmm-point.bottom{fill:#49a9dd}
 .vfmm-depth-line{
   fill:none;
