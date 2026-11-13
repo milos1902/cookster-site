@@ -1583,3 +1583,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Platno leži u .pan-content / _vesselContent posude koja se meša (izmerena površina hrane); vrh kašike = pokazivač, svaki potez ubacuje brzinu i boju (splat). Boja sosa je za sada fiksna (crveno-narandžasta).
 - Proveren samo samostalni test (CooksterStirFluid.test) u headless Chromiumu; pravo mešanje sa kašikom nije probano.
 - Ispravka probe (stir-fluid.js v6): platno je sada direktno u posudi (kao igrine .stir-ripples, na --vessel-food-left/top/width/height); ranije je bilo u nevidljivom sloju _vesselContent (display:none), pa se nije videlo nista. Jaca boja traga. Provereno samo simuliranim mesanjem (stirring/stirVessel postavljeni iz testa), ne pravim klikom.
+- Proba mesanja (v8): iz Milosevog snimka ekrana: trag u boji sosa se nije video na crvenoj hrani, pa je sada svetao, topao (krem/narandzasti) trag, veci poluprecnik, jaci potez, elipticni isecak. Provereno samo simulirano.

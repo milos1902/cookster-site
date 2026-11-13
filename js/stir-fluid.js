@@ -104,7 +104,7 @@ function supportRenderTextureFormat (gl, internalFormat, format, type) {
     return status == gl.FRAMEBUFFER_COMPLETE;
 }
 function createFluid(canvas){
-const config={SIM_RESOLUTION:128,DYE_RESOLUTION:512,DENSITY_DISSIPATION:0.6,VELOCITY_DISSIPATION:0.35,PRESSURE:0.8,PRESSURE_ITERATIONS:20,CURL:30,SPLAT_RADIUS:0.22,SPLAT_FORCE:6000};
+const config={SIM_RESOLUTION:128,DYE_RESOLUTION:512,DENSITY_DISSIPATION:0.9,VELOCITY_DISSIPATION:0.3,PRESSURE:0.8,PRESSURE_ITERATIONS:20,CURL:30,SPLAT_RADIUS:0.34,SPLAT_FORCE:6000};
 const got=getWebGLContext(canvas);if(!got||!got.gl||!got.ext.formatRGBA||!got.ext.formatRG||!got.ext.formatR)return null;
 const gl=got.gl,ext=got.ext;
 class Program {
@@ -541,7 +541,7 @@ function step (dt) {
 const displayShader=compileShader(gl.FRAGMENT_SHADER,`
     precision highp float;precision mediump sampler2D;
     varying vec2 vUv;uniform sampler2D uTexture;
-    void main(){vec3 c=texture2D(uTexture,vUv).rgb;float d=clamp(max(c.r,max(c.g,c.b))*1.6,0.0,1.0);vec3 col=mix(vec3(0.46,0.13,0.035),vec3(0.84,0.27,0.07),d);float a=d*0.7;gl_FragColor=vec4(col*a,a);}
+    void main(){vec3 c=texture2D(uTexture,vUv).rgb;float d=clamp(max(c.r,max(c.g,c.b))*2.2,0.0,1.0);vec3 col=mix(vec3(1.0,0.50,0.30),vec3(1.0,0.86,0.70),d);float a=smoothstep(0.02,0.5,d)*0.5;gl_FragColor=vec4(col*a,a);}
 `);
 const clearProgram=new Program(baseVertexShader,clearShader);
 const splatProgram=new Program(baseVertexShader,splatShader);
@@ -594,7 +594,7 @@ return {splat,step,render,resize,force:config.SPLAT_FORCE};
 
 // ---- the game side -----------------------------------------------------------------------------------------------------------------------------
 // While the player stirs (game.js: stirring, stirVessel), a canvas lies over the food of that vessel (placed like the game's own .stir-ripples: directly in the vessel, at --vessel-food-left/top/width/height, the measured area of the food). The tip of the spoon = the pointer; every move of it puts speed and colour into the fluid (splat).
-var cv=null,fl=null,failed=false,last=null,lastT=0,tint={r:.5,g:.14,b:.04};
+var cv=null,fl=null,failed=false,last=null,lastT=0,tint={r:.5,g:.5,b:.5};
 function target(){
   try{return (typeof stirring!=='undefined'&&stirring&&stirVessel)?stirVessel:null;}catch(e){return null}
 }
@@ -604,7 +604,7 @@ function frame(t){
   if(failed)return;
   var host=target(),dt=Math.min(.033,(t-lastT)/1000||.016);lastT=t;
   if(!host){if(cv&&cv.dataset.on==='1'){cv.dataset.on='0';cv.style.display='none';}last=null;return;}
-  if(!cv){cv=document.createElement('canvas');cv.style.cssText='position:absolute;left:var(--vessel-food-left,19.5%);top:var(--vessel-food-top,16.8%);width:var(--vessel-food-width,69.5%);height:var(--vessel-food-height,56.8%);pointer-events:none;z-index:9;border-radius:50%;';cv.width=cv.height=256;}
+  if(!cv){cv=document.createElement('canvas');cv.style.cssText='position:absolute;left:var(--vessel-food-left,19.5%);top:var(--vessel-food-top,16.8%);width:var(--vessel-food-width,69.5%);height:var(--vessel-food-height,56.8%);pointer-events:none;z-index:9;border-radius:50%;clip-path:ellipse(50% 50% at 50% 50%);';cv.width=cv.height=256;}
   if(cv.parentNode!==host){host.appendChild(cv);}
   cv.style.display='block';cv.dataset.on='1';
   var r=cv.getBoundingClientRect();if(r.width<8||r.height<8)return;
@@ -613,7 +613,7 @@ function frame(t){
   if(cv.width!==w||cv.height!==h)fl.resize(w,h);
   var x=(px-r.left)/r.width,y=1-(py-r.top)/r.height;
   if(last&&x>-.1&&x<1.1&&y>-.1&&y<1.1){
-    var dx=(x-last.x)*fl.force*.4,dy=(y-last.y)*fl.force*.4;
+    var dx=(x-last.x)*fl.force*.7,dy=(y-last.y)*fl.force*.7;
     if(dx||dy)fl.splat(x,y,dx,dy,tint);
   }
   last={x:x,y:y};
