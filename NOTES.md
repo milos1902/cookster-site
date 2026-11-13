@@ -1601,3 +1601,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## Mešanje: opcija "ispod hrane" (probno)
 - stir-fluid.js v21: sloj efekta može da leži ISPOD komada hrane (z-index sloja hrane minus 1, spušten 2 px, blaži maska 5px da se vidi u procepima i malo oko komada). Uključuje se sa ?mesanjeispod ili u konzoli CooksterStirBelow(true) / (false). Podrazumevano ISKLJUČENO (kao do sada: efekat preko hrane).
+- v22: bez tamnih "senki" na pocetku mesanja: senka (shade) ne ide ispod 0.88 (bilo 0.35), boja hrane ne tamni ispod 0.95 (bilo 0.80); ostaju svetlije trake.
