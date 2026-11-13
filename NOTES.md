@@ -1577,3 +1577,8 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Obrisano: automatsko dodavanje u ranac kad se nešto uzme u ruku.
 - Desni klik na džep: "Skloni iz ranca" (ostali se pomere ulevo). Desni klik više ne uzima predmet (ui-bottom-buttons.js v2.88).
 - Broj mesta: 6 (MAX u recent-items.js, CooksterRecentItems.setSlots(n) za 3 na početku igre pa 6 kasnije; džepovi preko n se samo sakriju dugmad, slika pojasa ostaje sa 6 džepova).
+
+## PROBA: tečnost pri mešanju (samo uz ?mesanje2)
+- js/stir-fluid.js (v4): simulacija tečnosti (WebGL) prepisana iz WebGL-Fluid-Simulation (Pavel Dobryakov, MIT, licenca u zaglavlju fajla); izbačeno: analitika, reklame, bloom, sunčeve zrake, GUI. Bez ?mesanje2 se ne učitava ništa.
+- Platno leži u .pan-content / _vesselContent posude koja se meša (izmerena površina hrane); vrh kašike = pokazivač, svaki potez ubacuje brzinu i boju (splat). Boja sosa je za sada fiksna (crveno-narandžasta).
+- Proveren samo samostalni test (CooksterStirFluid.test) u headless Chromiumu; pravo mešanje sa kašikom nije probano.
