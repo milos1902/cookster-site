@@ -552,11 +552,11 @@ const MAIN_SRC=`
       float d=clamp(dens(vUv+off)*2.4,0.0,1.0);
       // light and shade from the slope of the dye (like the original's SHADING): same red-orange of the sauce, darker and lighter streaks
       vec2 g=vec2(dens(vR+off)-dens(vL+off),dens(vT+off)-dens(vB+off))*26.0;
-      float shade=clamp(1.0+g.x*-0.9+g.y*0.9,0.35,1.8);
+      float shade=clamp(1.0+g.x*-0.9+g.y*0.9,0.88,1.6);
       vec4 fm=texture2D(uMask,vUv+off);
       vec4 cc=texture2D(uColor,vUv+off);                         // colours of the food, carried and mixed by the stirring (red tomato + green pepper mix where they meet)
       vec3 food=cc.rgb/max(cc.a,0.05);
-      vec3 base=min(food*mix(0.80,1.12,d),vec3(1.0));
+      vec3 base=min(food*mix(0.95,1.1,d),vec3(1.0));
       float m=smoothstep(0.12,0.55,fm.a);
       float a=smoothstep(0.01,0.22,d)*0.62*m*uEnv;      // only where the stirring really moved the dye: no hazy copy of the food over the food at the start
       // every stirring starts from the spoon and spreads slowly toward the rim (uRev = centre x, centre y, radius, aspect)
