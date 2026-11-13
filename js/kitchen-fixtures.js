@@ -134,7 +134,9 @@ var TOOLS=[
   {id:'kal_krpa',src:'assets/calibration_props/krpa/krpa_ruka.webp?v=1',cx:1128,cy:645,w:143,h:254,rot:90,k:.3,label:'krpa'}      // the cloth for the dough (it hung at the stove)
 ];
 var TOOL_IN={l:860,t:605,r:1165,b:712},toolClip=null;
+function boardOnTableForGood(){try{return localStorage.getItem('cookster.neighbor.v1')==='1';}catch(e){return false}}      // after the meeting with the neighbour the board and the knife live on the table, no more in the drawer
 function toolOut(t){try{
+  if(t.id==='daska'&&boardOnTableForGood())return true;
   if((window.items||items).some(function(el){return el.dataset&&el.dataset.itemId===t.id}))return true;
   if(typeof backpackContents!=='undefined'&&backpackContents.some(function(el){return el&&el.dataset&&el.dataset.itemId===t.id}))return true;
 }catch(e){}return false}
@@ -163,6 +165,27 @@ function toolAt(p){
   for(var i=0;i<TOOLS.length;i++){var o=TOOLS[i];if(!toolOut(o)&&inR(p,toolBox(o)))return o}
   return null;
 }
+// After the meeting with the neighbour the board (with the knife) is always on the table: if it is missing (a new world after the meeting, an old save, ...) it is put on the table
+function ensureBoard(){
+  try{
+    if(!boardOnTableForGood())return;
+    var all=window.items||items;
+    if(all.some(function(el){return el.dataset&&el.dataset.itemId==='daska'}))return;
+    if(typeof holding!=='undefined'&&holding&&holding.dataset&&holding.dataset.itemId==='daska')return;
+    if(typeof backpackContents!=='undefined'&&backpackContents.some(function(el){return el&&el.dataset&&el.dataset.itemId==='daska'}))return;
+    var def=null;(CooksterCatalog.ITEMS||[]).forEach(function(d){if(d.id==='daska')def=d});if(!def)return;
+    var x=843,y=558;      // the place of the board on the table (from its table calibration)
+    var el=makeItem(Object.assign({},def,{instanceId:nextItemInstanceId('daska'),x:x-def.w/2,y:y-def.h,z:++zCounter}));
+    if(!el)return;el.dataset.surfaceZone='table';
+    setPose(el,x,y,surfaceScaleFor(el,'table',y));
+    var kn=getKnifeEl();
+    if(!kn){var kd=null;(CooksterCatalog.ITEMS||[]).forEach(function(d){if(d.id==='noz')kd=d});if(kd)kn=makeItem(Object.assign({},kd,{instanceId:nextItemInstanceId('noz'),x:x-kd.w/2,y:y-kd.h,z:++zCounter}));}
+    ensureKnifeAlwaysOnBoard(el);
+    updateTools();
+    try{CooksterSave.schedule()}catch(e){}
+  }catch(e){}
+}
+setInterval(ensureBoard,2000);
 function takeTool(o){
   try{
     var def=null;(CooksterCatalog.ITEMS||[]).forEach(function(d){if(d.id===o.id)def=d});
@@ -199,7 +222,7 @@ function takeJar(j){
 function tryDrop(item){
   try{
     if(item&&item.dataset&&DR.right.idx===DR.right.N){
-      var to=null;TOOLS.forEach(function(o){if(o.id===item.dataset.itemId)to=o});
+      var to=null;TOOLS.forEach(function(o){if(o.id===item.dataset.itemId&&!(o.id==='daska'&&boardOnTableForGood()))to=o});
       if(to&&inR(screenToScene(mouse.x,mouse.y),TOOL_IN)){
         removeItem(item);holding=null;
         try{hidePlacementGhost();hideOriginGhost();clearPanTargets();updateHover()}catch(e){}
