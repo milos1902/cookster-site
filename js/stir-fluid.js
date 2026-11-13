@@ -739,7 +739,7 @@ function frame(t){
 }
 requestAnimationFrame(frame);
 window.CooksterStirSpeed=function(v){SPEED=+v||1;return SPEED;};
-window.__sfDebug=function(){return {maskN:maskN,env:env,keep:!!hostKeep,conn:!!(hostKeep&&hostKeep.isConnected),seen:seen,failed:failed};};
+window.__sfDebug=function(){return {maskN:maskN,env:env,revR:revR,prevOn:prevOn,om:(typeof stirAngularVelocity!=="undefined"?stirAngularVelocity:null),stir:(typeof stirring!=="undefined"?stirring:null),keep:!!hostKeep,conn:!!(hostKeep&&hostKeep.isConnected),seen:seen,failed:failed};};
 window.CooksterStirFluid={test:function(host){        // for testing: a canvas with a rotating splat in the given element
   var c=document.createElement('canvas');c.width=c.height=256;c.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;';host.appendChild(c);
   var f=createFluid(c);if(!f)return false;var a=0;
