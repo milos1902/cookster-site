@@ -1601,4 +1601,19 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## Mešanje: opcija "ispod hrane" (probno)
 - stir-fluid.js v21: sloj efekta može da leži ISPOD komada hrane (z-index sloja hrane minus 1, spušten 2 px, blaži maska 5px da se vidi u procepima i malo oko komada). Uključuje se sa ?mesanjeispod ili u konzoli CooksterStirBelow(true) / (false). Podrazumevano ISKLJUČENO (kao do sada: efekat preko hrane).
-- v22: bez tamnih "senki" na pocetku mesanja: senka (shade) ne ide ispod 0.88 (bilo 0.35), boja hrane ne tamni ispod 0.95 (bilo 0.80); ostaju svetlije trake.
+
+## Kalibracija: nova zona "Deo gde se hrana vidi pri mešanju i njihanju" + talasi uz zidove
+- Alat za kalibraciju hrane u posudama (js/vessel-food-mask-tool.js v15, css v8): novo narandžasto dugme/sloj stirVisible (poligon u procentima slike posude, kao ostale zone); snima se kao i ostalo (Sačuvaj ovu posudu / izvoz JSON).
+- js/core/vessel-food-calibration.js v21: convert/get nose stirVisible, nova funkcija CooksterVesselFoodCalibration.stirArea(vessel) -> {box, poly}.
+- js/stir-fluid.js v23: ako posuda ima stirVisible, platno efekta zauzima taj prostor (clip-path poligon) umesto elipse hrane; maska hrane se mapira u taj prostor. Talasi: slika se podiže uz obod sa grebenom koji se okreće sa mešanjem (visina 0.10 sa zonom, 0.035 bez, srazmerno brzini mešanja).
+- Ako zona nije nacrtana, ponasanje je kao do sada (elipsa hrane) + blagi talas.
+- Dugme "Maska posude" (alat za kalibraciju) vraceno: bilo je u starom #hud koji nova gornja traka sakriva, pa se nije videlo. Sada je fiksno dugme desno (iznad "Senke sunca"), data-tool-ui + data-cookster-tool (prati prekidac Alati). tool js v16, css v9.
+
+## Krčkanje i para pomoću simulacije tečnosti (stir-fluid.js v26)
+- Krčkanje: kad posuda na vatri (klasa sizzling) ima hranu i traka gotovosti stigne na pola ili više (ne izgoreno), u hrani pucaju mehurići i šalju prstenove kroz hranu (u boji hrane). Što je gotovije, to češće i jače. Stari beli kružići iz css-a i .stir-bubbles su sakriveni (body.sf-on), ako postoji WebGL.
+- Para: bela/siva para (zamenjuje .pan-smoke) diže se iz otvora posude u mekim uvojcima, od 12% trake gotovosti (kao stari dim), sivlja kad je zagorelo. Svaka posuda ima svoj sloj; najviše 3 posude odjednom.
+- Mešanje radi kao i do sada (svaka posuda ima svoj sloj).
+- v30: para = dva tanka stuba iz hrane koji idu stalno na gore (toplo vazduh vuče duž celog puta), sve šire i providnije što su više (shader širi uzorak sa visinom), visok sloj (250% posude). Mehurići krčkanja u hrani izbrisani; umesto njih mali okrugli balončići izlaze iz hrane i lebde na gore kroz vazduh dok ne izblede (2D platno, od 50% trake).
+
+## Bez tamnih senki pri mešanju (v31)
+- Senčenje traka ne ide ispod 0.88 (bilo 0.35), boja hrane ne tamni ispod 0.95 (bilo 0.80).

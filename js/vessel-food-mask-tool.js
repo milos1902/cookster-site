@@ -32,6 +32,7 @@
   const MODE_LABELS={
     mask:'Maska koja prekriva hranu',
     foodVisible:'Deo gde se hrana vidi',
+    stirVisible:'Deo gde se hrana vidi pri mešanju i njihanju',
     bottom:'Zona dna šerpe',
     depthBottom:'Tačka dna posude',
     depthTop:'Tačka vrha hrane'
@@ -44,7 +45,7 @@
   let root=null,stage=null,img=null,svg=null,select=null,statusEl=null,card=null;
 
   function clone(value){return JSON.parse(JSON.stringify(value));}
-  function emptyShape(){return {soft:1.5,mask:[],foodVisible:[],bottom:[],depth:{bottom:null,foodTop:null}};}
+  function emptyShape(){return {soft:1.5,mask:[],foodVisible:[],stirVisible:[],bottom:[],depth:{bottom:null,foodTop:null}};}
   function normalizePoint(p){
     return {
       x:+Math.max(0,Math.min(100,+p?.x||0)).toFixed(3),
@@ -57,7 +58,7 @@
     if(!data.vessels||typeof data.vessels!=='object')data.vessels={};
     VESSELS.forEach(v=>{
       if(!data.vessels[v.id])data.vessels[v.id]=emptyShape();
-      ['mask','foodVisible','bottom'].forEach(k=>{
+      ['mask','foodVisible','bottom','stirVisible'].forEach(k=>{
         if(!Array.isArray(data.vessels[v.id][k]))data.vessels[v.id][k]=[];
         data.vessels[v.id][k]=data.vessels[v.id][k].map(normalizePoint);
       });
@@ -73,14 +74,14 @@
   }
   // A vessel that the owner has not drawn yet and that has a built-in profile in the game (js/data/vessel-food-cal-export.js, js/core/vessel-food-calibration.js)
   // is shown with that profile, so it can be corrected instead of being drawn from nothing. It is saved in the browser only after it is changed.
-  const seedOf=sh=>JSON.stringify({soft:sh.soft,mask:sh.mask,foodVisible:sh.foodVisible,bottom:sh.bottom,depth:sh.depth});
+  const seedOf=sh=>JSON.stringify({soft:sh.soft,mask:sh.mask,foodVisible:sh.foodVisible,stirVisible:sh.stirVisible,bottom:sh.bottom,depth:sh.depth});
   function seedFromGame(id,sh){
     if(sh.saved||sh.cleared)return;
-    if(sh.mask.length||sh.foodVisible.length||sh.bottom.length||(sh.depth&&(sh.depth.bottom||sh.depth.foodTop)))return;   // something is already drawn
+    if(sh.mask.length||sh.foodVisible.length||(sh.stirVisible&&sh.stirVisible.length)||sh.bottom.length||(sh.depth&&(sh.depth.bottom||sh.depth.foodTop)))return;   // something is already drawn
     const C=window.CooksterVesselFoodCalibration;let pr=null;try{pr=C&&C.get&&C.get(id);}catch(_){}
     if(!pr||!Array.isArray(pr.foodVisible)||pr.foodVisible.length<3)return;
     const toObj=l=>(l||[]).map(q=>normalizePoint({x:q[0],y:q[1]}));
-    sh.mask=toObj(pr.mask);sh.foodVisible=toObj(pr.foodVisible);sh.bottom=toObj(pr.bottom);
+    sh.mask=toObj(pr.mask);sh.foodVisible=toObj(pr.foodVisible);sh.stirVisible=toObj(pr.stirVisible);sh.bottom=toObj(pr.bottom);
     sh.depth={bottom:pr.depth&&pr.depth.bottom?normalizePoint({x:pr.depth.bottom[0],y:pr.depth.bottom[1]}):null,foodTop:pr.depth&&pr.depth.foodTop?normalizePoint({x:pr.depth.foodTop[0],y:pr.depth.foodTop[1]}):null};
     Object.defineProperty(sh,'_seed',{value:seedOf(sh),writable:true,enumerable:false,configurable:true});
   }
@@ -108,7 +109,7 @@
       const C=window.CooksterVesselFoodCalibration;if(!C||!C.setLive)return;
       const c=data.vessels&&data.vessels[currentId];if(!c)return;
       const xy=l=>(l||[]).map(p=>[p.x,p.y]),pt=p=>p?[p.x,p.y]:null;
-      C.setLive(currentId,{soft:c.soft,mask:xy(c.mask),foodVisible:xy(c.foodVisible),bottom:xy(c.bottom),depth:{bottom:pt(c.depth&&c.depth.bottom),foodTop:pt(c.depth&&c.depth.foodTop)}});
+      C.setLive(currentId,{soft:c.soft,mask:xy(c.mask),foodVisible:xy(c.foodVisible),stirVisible:xy(c.stirVisible),bottom:xy(c.bottom),depth:{bottom:pt(c.depth&&c.depth.bottom),foodTop:pt(c.depth&&c.depth.foodTop)}});
       window.dispatchEvent(new CustomEvent('cookster:vessel-calibration',{detail:{id:currentId}}));
     });
   }
@@ -152,7 +153,7 @@
       grid.appendChild(svgEl('line',{x1:0,y1:n,x2:100,y2:n},'vfmm-grid'));
     });
     svg.appendChild(grid);
-    ['mask','foodVisible','bottom'].forEach(kind=>{
+    ['mask','foodVisible','stirVisible','bottom'].forEach(kind=>{
       const points=current()[kind]||[];
       if(points.length>=3){
         svg.appendChild(svgEl('polygon',{points:points.map(p=>`${p.x},${p.y}`).join(' ')},`vfmm-polygon ${kind} vfmm-dynamic`));
@@ -376,7 +377,8 @@
     const button=document.createElement('button');
     button.id='vesselFoodMaskBtn';button.type='button';
     button.textContent='📐 Maska posude';button.title='Nacrtaj masku i vidljivi deo hrane za svaku posudu';
-    hud.appendChild(button);
+    button.setAttribute('data-tool-ui','1');button.setAttribute('data-cookster-tool','1');      // a fixed button like the other tools (the old #hud is hidden by the new top bar, so a button inside it was never seen)
+    document.body.appendChild(button);
     root=document.createElement('div');
     root.id='vesselFoodMaskTool';
      root.innerHTML=`<div class="vfmm-card" role="dialog" aria-modal="true" aria-labelledby="vfmmTitle">
@@ -397,6 +399,7 @@
         <div><span class="vfmm-label">Šta trenutno crtaš?</span><div class="vfmm-mode-list">
           <button class="vfmm-mode active" data-mode="mask" type="button">🔴 Maska koja prekriva hranu<small>Deo slike koji treba da bude iznad hrane.</small></button>
           <button class="vfmm-mode" data-mode="foodVisible" type="button">🟢 Deo gde se hrana vidi<small>Unutrašnji prostor u kom hrana sme da bude vidljiva.</small></button>
+           <button class="vfmm-mode" data-mode="stirVisible" type="button">🟠 Deo gde se hrana vidi pri mešanju i njihanju<small>Prostor u kom se vidi efekat mešanja i talasi: dokle sme da ide uz zidove (obično malo veći od zelenog).</small></button>
            <button class="vfmm-mode" data-mode="bottom" type="button">🔵 Zona dna šerpe<small>Obuhvati celo dno koje treba prvo popuniti povrćem.</small></button>
           <button class="vfmm-mode" data-mode="depthBottom" type="button">🟡 Tačka dna posude<small>Najniža tačka dna — jedna tačka po posudi.</small></button>
           <button class="vfmm-mode" data-mode="depthTop" type="button">🟣 Tačka vrha hrane<small>Dokle najviše sme da ide hrana — jedna tačka po posudi.</small></button>
