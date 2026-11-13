@@ -540,16 +540,18 @@ function step (dt) {
 
 const displayShader=compileShader(gl.FRAGMENT_SHADER,`
     precision highp float;precision mediump sampler2D;
-    varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uTexture;uniform sampler2D uMask;
+    varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uTexture;uniform sampler2D uMask;uniform float uEnv;
     float dens(vec2 uv){vec3 c=texture2D(uTexture,uv).rgb;return max(c.r,max(c.g,c.b));}
     void main(){
       float d=clamp(dens(vUv)*2.4,0.0,1.0);
       // light and shade from the slope of the dye (like the original's SHADING): same red-orange of the sauce, darker and lighter streaks
       vec2 g=vec2(dens(vR)-dens(vL),dens(vT)-dens(vB))*26.0;
       float shade=clamp(1.0+g.x*-0.9+g.y*0.9,0.35,1.8);
-      vec3 base=mix(vec3(0.60,0.11,0.07),vec3(0.93,0.30,0.15),d);
-      float m=smoothstep(0.12,0.55,texture2D(uMask,vUv).a);
-      float a=smoothstep(0.01,0.22,d)*0.95*m;
+      vec4 fm=texture2D(uMask,vUv);
+      vec3 food=fm.rgb/max(fm.a,0.05);                       // the colour of the food at this place (a green pepper stays green, fresh tomato stays bright)
+      vec3 base=min(food*mix(0.80,1.12,d),vec3(1.0));
+      float m=smoothstep(0.12,0.55,fm.a);
+      float a=smoothstep(0.01,0.22,d)*0.95*m*uEnv;
       gl_FragColor=vec4(base*shade*a,a);
     }
 `);
@@ -588,6 +590,7 @@ function splat(x,y,dx,dy,color){
   gl.uniform3f(splatProgram.uniforms.color,color.r,color.g,color.b);
   blit(dye.write);dye.swap();
 }
+let envV=1;
 const maskTex=gl.createTexture();
 function setMask(c){            // c: a canvas whose opaque part is where the food really is (the fluid shows only there); null = everywhere
   gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,maskTex);
@@ -595,7 +598,7 @@ function setMask(c){            // c: a canvas whose opaque part is where the fo
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
   if(c)gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,c);
-  else gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([255,255,255,255]));
+  else gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([205,62,40,255]));
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
   gl.activeTexture(gl.TEXTURE0);
 }
@@ -606,13 +609,15 @@ function render(){
   gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
   displayProgram.bind();
   gl.uniform2f(displayProgram.uniforms.texelSize,1/gl.drawingBufferWidth,1/gl.drawingBufferHeight);
-  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,maskTex);gl.uniform1i(displayProgram.uniforms.uMask,1);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,maskTex);gl.uniform1i(displayProgram.uniforms.uMask,1);gl.uniform1f(displayProgram.uniforms.uEnv,envV);
   gl.uniform1i(displayProgram.uniforms.uTexture,dye.read.attach(0));
   blit(null);
 }
 function resize(w,h){canvas.width=w;canvas.height=h;initFramebuffers();}
 initFramebuffers();
-return {splat,step,render,resize,setMask,force:config.SPLAT_FORCE};
+function clearAll(){[dye.read,dye.write,velocity.read,velocity.write].forEach(f=>{gl.bindFramebuffer(gl.FRAMEBUFFER,f.fbo);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);});}
+function setCalm(c){config.VELOCITY_DISSIPATION=c?0.5:0.25;config.DENSITY_DISSIPATION=c?0.5:0.7;}      // after the spoon is let go the swirl keeps turning and slowly dies down
+return {splat,step,render,resize,setMask,clear:clearAll,setCalm,setEnv:v=>{envV=v;},force:config.SPLAT_FORCE};
 }
 
 // ---- the game side -----------------------------------------------------------------------------------------------------------------------------
@@ -635,25 +640,36 @@ function updateMask(host,now){
   fl.setMask(n?mk:null);
 }
 var px=0,py=0;window.addEventListener('pointermove',function(e){px=e.clientX;py=e.clientY;},{passive:true});
+var env=0,hostKeep=null;
 function frame(t){
   requestAnimationFrame(frame);
   if(failed)return;
   var host=target(),dt=Math.min(.033,(t-lastT)/1000||.016);lastT=t;
-  if(!host){if(cv&&cv.dataset.on==='1'){cv.dataset.on='0';cv.style.display='none';}last=null;return;}
+  var on=!!host;if(on)hostKeep=host;
+  // the effect fades in from the food when the stirring starts (0.5 s) and, when the spoon is let go, keeps turning and fades slowly back into the food (about 4 s), merging with the dish below
+  env=Math.max(0,Math.min(1,env+(on?dt/.5:-dt/4.0)));
+  if(!on&&env<=.003){
+    if(cv&&cv.dataset.on==='1'){cv.dataset.on='0';cv.style.display='none';if(fl)fl.clear();}
+    last=null;hostKeep=null;return;
+  }
+  var h0=host||hostKeep;if(!h0)return;
   if(!cv){cv=document.createElement('canvas');cv.style.cssText='position:absolute;left:var(--vessel-food-left,19.5%);top:var(--vessel-food-top,16.8%);width:var(--vessel-food-width,69.5%);height:var(--vessel-food-height,56.8%);pointer-events:none;z-index:9;border-radius:50%;clip-path:ellipse(50% 50% at 50% 50%);';cv.width=cv.height=256;}
-  if(cv.parentNode!==host){host.appendChild(cv);}
+  if(cv.parentNode!==h0){h0.appendChild(cv);if(fl)fl.clear();}
   cv.style.display='block';cv.dataset.on='1';
   var r=cv.getBoundingClientRect();if(r.width<8||r.height<8)return;
   if(!fl){fl=createFluid(cv);if(!fl){failed=true;return;}}
   var w=Math.max(64,Math.min(256,Math.round(r.width))),h=Math.max(64,Math.min(256,Math.round(r.height)));
   if(cv.width!==w||cv.height!==h)fl.resize(w,h);
-  var x=(px-r.left)/r.width,y=1-(py-r.top)/r.height;
-  if(last&&x>-.1&&x<1.1&&y>-.1&&y<1.1){
-    var dx=(x-last.x)*fl.force*1.6,dy=(y-last.y)*fl.force*1.6;
-    if(dx||dy)fl.splat(x,y,dx,dy,tint);
-  }
-  last={x:x,y:y};
-  updateMask(host,t);
+  fl.setCalm(!on);fl.setEnv(env);
+  if(on){
+    var x=(px-r.left)/r.width,y=1-(py-r.top)/r.height;
+    if(last&&x>-.1&&x<1.1&&y>-.1&&y<1.1){
+      var dx=(x-last.x)*fl.force*1.6,dy=(y-last.y)*fl.force*1.6;
+      if(dx||dy)fl.splat(x,y,dx,dy,tint);
+    }
+    last={x:x,y:y};
+  }else last=null;
+  updateMask(h0,t);
   fl.step(dt);fl.render();
 }
 requestAnimationFrame(frame);

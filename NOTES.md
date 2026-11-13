@@ -1586,3 +1586,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Proba mesanja (v9): trag u istoj crveno-narandzastoj boji kao sos (tamne i svetle trake po nagibu boje, ne krem), veci poluprecnik, jaci potez, sporije nestajanje. Zamenjuje PR #700 (krem boja).
 - Proba mesanja (v10): jači efekat u istoj boji sosa: jače senčenje traka, jači i širi potez. PR #701.
 - Proba mesanja (v11): efekat se vidi samo gde je hrana stvarno (maska iz platna hrane .vessel-content/.pan-content canvas, svakih ~110 ms), ne preko cele posude kao da je puna. Provereno lazno: dve mrlje hrane pri dnu -> tecnost samo tamo. Nije provereno sa pravom hranom.
+- Proba mesanja (v13): boja traga = boja hrane ispod (uzima se sa platna hrane: zelena paprika ostaje zelena); efekat se pojavljuje postepeno (0,5 s) i, kad se pusti mesanje, nastavlja da se polako okrece i ~4 s se utapa u jelo ispod. Provereno lazno (zelena hrana).
