@@ -1589,3 +1589,11 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Proba mesanja (v13): boja traga = boja hrane ispod (uzima se sa platna hrane: zelena paprika ostaje zelena); efekat se pojavljuje postepeno (0,5 s) i, kad se pusti mesanje, nastavlja da se polako okrece i ~4 s se utapa u jelo ispod. Provereno lazno (zelena hrana).
 - Proba mesanja (v15): boje se mesaju (drugi sloj nosi boje hrane i pomera ih strujanjem; crvena + zelena daju prelaz), sloj ostaje iznad hrane providan (REST .3) dok se posuda ne isprazni, i polako se vraca u boje hrane; sve providnije (alfa .62). Provereno lazno: crvena + zelena mrlja.
 - Proba mesanja (v16): kad se ne nadje platno hrane, a posuda ima hranu, efekat pokriva celu povrsinu hrane; prazna posuda = bez efekta (ranije je bez platna pokrivao sve crveno).
+
+## Mešanje: tečnost je sada stalno uključena
+- js/stir-fluid.js v17: više nije iza ?mesanje2 nego radi uvek; ?bezmesanja ga isključuje (poređenje ili ako zasmeta). Ako WebGL ne postoji, tiho ne radi ništa.
+
+## Mešanje: ista brzina kao jelo, svako mešanje kreće od kašike
+- js/stir-fluid.js v19: tečnost se pokreće istim brojem kao i jelo (stirAngularVelocity iz game.js: polako se ubrzava dok se meša, posle puštanja opada), pa počinju, okreću se i staju zajedno. Miš daje samo smer i malo lokalnog mešanja. Dugme za brzinu: CooksterStirSpeed(1) u konzoli (1 = kao jelo).
+- Svako novo mešanje kreće od nule: sloj se resetuje i širi se iz kašike ka obodu (~1,5 s), ne pojavljuje se odmah do ivice.
+- Uključuje i izmenu iz PR #703 (stalno uključeno, ?bezmesanja isključuje).
