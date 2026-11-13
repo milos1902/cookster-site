@@ -593,14 +593,10 @@ return {splat,step,render,resize,force:config.SPLAT_FORCE};
 }
 
 // ---- the game side -----------------------------------------------------------------------------------------------------------------------------
-// While the player stirs (game.js: stirring, stirVessel), a canvas lies over the food of that vessel (its .pan-content / _vesselContent, which already is the
-// measured area of the food). The tip of the spoon = the pointer; every move of it puts speed and colour into the fluid (splat).
-var cv=null,fl=null,failed=false,last=null,lastT=0,tint={r:.16,g:.045,b:.012};
+// While the player stirs (game.js: stirring, stirVessel), a canvas lies over the food of that vessel (placed like the game's own .stir-ripples: directly in the vessel, at --vessel-food-left/top/width/height, the measured area of the food). The tip of the spoon = the pointer; every move of it puts speed and colour into the fluid (splat).
+var cv=null,fl=null,failed=false,last=null,lastT=0,tint={r:.5,g:.14,b:.04};
 function target(){
-  try{
-    if(typeof stirring==='undefined'||!stirring||!stirVessel)return null;
-    return (typeof isPanItem==='function'&&isPanItem(stirVessel))?stirVessel._panContent:stirVessel._vesselContent;
-  }catch(e){return null}
+  try{return (typeof stirring!=='undefined'&&stirring&&stirVessel)?stirVessel:null;}catch(e){return null}
 }
 var px=0,py=0;window.addEventListener('pointermove',function(e){px=e.clientX;py=e.clientY;},{passive:true});
 function frame(t){
@@ -608,10 +604,10 @@ function frame(t){
   if(failed)return;
   var host=target(),dt=Math.min(.033,(t-lastT)/1000||.016);lastT=t;
   if(!host){if(cv&&cv.dataset.on==='1'){cv.dataset.on='0';cv.style.display='none';}last=null;return;}
-  if(!cv){cv=document.createElement('canvas');cv.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:8;';cv.width=cv.height=256;}
+  if(!cv){cv=document.createElement('canvas');cv.style.cssText='position:absolute;left:var(--vessel-food-left,19.5%);top:var(--vessel-food-top,16.8%);width:var(--vessel-food-width,69.5%);height:var(--vessel-food-height,56.8%);pointer-events:none;z-index:9;border-radius:50%;';cv.width=cv.height=256;}
   if(cv.parentNode!==host){host.appendChild(cv);}
   cv.style.display='block';cv.dataset.on='1';
-  var r=host.getBoundingClientRect();if(r.width<8||r.height<8)return;
+  var r=cv.getBoundingClientRect();if(r.width<8||r.height<8)return;
   if(!fl){fl=createFluid(cv);if(!fl){failed=true;return;}}
   var w=Math.max(64,Math.min(256,Math.round(r.width))),h=Math.max(64,Math.min(256,Math.round(r.height)));
   if(cv.width!==w||cv.height!==h)fl.resize(w,h);
