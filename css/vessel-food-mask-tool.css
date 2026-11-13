@@ -1,5 +1,6 @@
 /* Cookster — vessel food visibility calibration tool */
 #vesselFoodMaskBtn{
+  position:fixed;right:12px;bottom:212px;z-index:2147483500;border:2px solid #174b3b;border-radius:9px;font:700 13px/1 system-ui,sans-serif;padding:9px 12px;cursor:pointer;box-shadow:1px 2px 1px rgba(25,12,3,.4);
   border-color:#174b3b;
   background:#d6f2d4;
   color:#173d30;
