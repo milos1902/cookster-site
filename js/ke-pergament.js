@@ -6,6 +6,7 @@ if(/[?&]starihud/.test(location.search))return;
 var P='assets/ui/pergament/',ART={},SEL=null,TAB='own',FILT='all',Q='';
 ['daska_serviranje','kal_01_okrugli_pleh','kal_02_cediljka','kal_02_cinija_mala','kal_02_drvena_kasika','kal_02_duboki_tanjir','kal_02_oklagija','tiganj_mali','vangla_mala'].forEach(function(k){ART[k]='assets/ui/predmeti/'+k+'.png';});
 ['oval_tanjir','kal_01_okrugli_pleh_poklopac','kal_01_pravougaoni_pleh','kal_02_tanjir_ravni','vangla_srednja','kal_02_cinija_velika','serpa_velika','lavor_emajl_veliki','tiganj_veliki','zacin_biber','zacin_tucana','zacin_lovor','kal_01_tegla_mala','zacin_paprika','kal_01_mleveno_nadev','kal_01_tegla_velika'].forEach(function(k){ART[k]='assets/ui/predmeti/n_'+k+'.png';});
+window.CooksterItemArt=ART;        // the same pictures in the rack (js/recent-items.js)
 var FILTS=[['all','Sve'],['pots','Posuđe'],['tools','Alati'],['spice','Začini'],['other','Ostalo']];
 function kind(d){var c=d.category||d.type;if(/^zacin_/.test(d.id))return'spice';if(c==='cookware'||c==='container')return'pots';if(c==='tool'||/kasika|oklagija|cediljka|noz|daska$/.test(d.id))return'tools';return'other';}
 function css(x,y,w,h){return'left:'+x/16+'%;top:'+y/11+'%;width:'+w/16+'%;height:'+h/11+'%;';}

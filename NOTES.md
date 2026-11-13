@@ -1566,3 +1566,8 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Ispravka: lista kartica vraćena na staro mesto; umesto pomeranja svaka kartica ima senku malo dole i desno (1px 2px 1px .4 + 2px 4px 4px .22). css v11, js v10.
 - Hover na kartici: kartica ostaje na mestu, slika u njoj se malo poveća (scale 1.1). css v12.
 - Scroll mišem radi na listi kartica (capture wheel na #kitchenElementsScene, registrovan pre game.js; core/tool-shield.js preskače slušaoce na document/window). js v12.
+
+## Nov ranac: pojas sa šest džepova
+- assets/ui/ranac/ranac_dzepovi.png (2000x667) zamenjuje sve stare rance (obrisani ranac_3/6/10.png i test dugme "Ranac: N"). js/ranac-test.js v5: jedan pojas, 6 dugmadi na džepovima, pojas ispod dugmadi (z-index 0), pa se vide predmeti u džepovima.
+- Predmeti u rancu koriste nove ilustracije (window.CooksterItemArt iz ke-pergament.js, recent-items.js v6). Ranac je podignut (donja ivica pojasa na y 935).
+- Ranac sada ima samo 6 mesta; 3/6/10 sa otključavanjem napretkom se ukida, javi ako treba nazad.
