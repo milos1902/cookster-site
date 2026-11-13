@@ -157,6 +157,7 @@
 
     button.addEventListener('pointerdown',event=>{
       event.stopPropagation();
+      if(event.button&&event.button!==0)return;      // only the left button takes the item; the right button opens "Skloni iz ranca" (js/recent-items.js)
       clearPressed(button);
       button.classList.add('is-pressed');
       activePresses.set(event.pointerId,{

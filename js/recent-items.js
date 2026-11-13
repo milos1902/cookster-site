@@ -1,8 +1,9 @@
-/* Zadnje korišćeno: šest kvadratića dole pokazuju poslednje predmete koje je igrač uzeo (najnoviji je prvi).
-   Klik na kvadratić uvek pravi novu kopiju tog predmeta u ruci (osim stvari koje postoje samo jednom: zvonce, šiljak, rail, kanta, bure, mlin, začini), pa ne mora da se ulazi u Kuhinjske elemente. */
+/* RANAC: šest džepova dole. Na početku igre je prazan. Predmet ulazi samo dugmetom "Stavi u ranac" (prozor Kuhinjski elementi) i staje na PRVO mesto (ostali se pomere udesno,
+   ako je pun, poslednji ispada). Ništa se više ne dodaje samo od sebe kad se nešto uzme. Desni klik na džep: "Skloni iz ranca".
+   Klik na džep uvek pravi novu kopiju tog predmeta u ruci (osim stvari koje postoje samo jednom: zvonce, šiljak, rail, kanta, bure, mlin, začini), pa ne mora da se ulazi u Kuhinjske elemente. */
 (function(){
   'use strict';
-  const KEY='cookster.recent-items.v1',MAX=6;
+  const KEY='cookster.rack.v2';let MAX=6;   // MAX = number of slots (3 at the start of the game later, then 6)
   let recent=[];
   try{const r=JSON.parse(localStorage.getItem(KEY));if(Array.isArray(r))recent=r.filter(x=>typeof x==='string').slice(0,MAX);}catch(_){}
   const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(recent));}catch(_){}};
@@ -12,6 +13,25 @@
     if(recent[0]===id)return;
     recent=[id].concat(recent.filter(x=>x!==id)).slice(0,MAX);
     save();render(true);
+  }
+  function remove(i){if(i<0||i>=recent.length)return;recent.splice(i,1);save();render(true);}
+  function setSlots(n){MAX=Math.max(1,Math.min(6,n|0));recent=recent.slice(0,MAX);save();render(true);}
+  let menu=null;
+  function closeMenu(){if(menu){menu.remove();menu=null;}}
+  function openMenu(i,x,y){
+    closeMenu();
+    menu=document.createElement('div');menu.setAttribute('data-tool-ui','1');
+    menu.style.cssText='position:fixed;z-index:70000;left:'+x+'px;top:'+y+'px;padding:8px 14px;border:2px solid #8a5a30;border-radius:10px;background:#f4e4bf;color:#4a2a14;font:700 14px Georgia,serif;cursor:pointer;box-shadow:1px 3px 6px rgba(25,12,3,.45)';
+    menu.textContent='Skloni iz ranca';
+    menu.addEventListener('click',e=>{e.stopPropagation();remove(i);closeMenu();});
+    menu.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();});
+    document.body.appendChild(menu);
+  }
+  document.addEventListener('pointerdown',e=>{if(menu&&!menu.contains(e.target))closeMenu();},true);
+  window.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu();});
+  function bindMenu(b,i){
+    if(b.dataset.rackMenu)return;b.dataset.rackMenu='1';
+    b.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();if(recent[i])openMenu(i,e.clientX,e.clientY);});
   }
   function buttons(){
     const b=(window.__COOKSTER_BOTTOM_BUTTONS__&&window.__COOKSTER_BOTTOM_BUTTONS__.buttons)||[];
@@ -25,15 +45,16 @@
     if(!force&&sig===lastSig&&ok)return;
     lastSig=sig;
     bs.forEach((b,i)=>{
+      bindMenu(b,i);
+      b.style.display=i<MAX?'':'none';
       b.querySelector('.cookster-recent-icon')?.remove();
       const def=recent[i]&&defOf(recent[i]);
-      if(!def){b.title='Zadnje korišćeno · prazno';return;}
+      if(!def){b.removeAttribute('title');b.setAttribute('aria-label','Ranac: prazno mesto');return;}
       const img=document.createElement('img');
       img.className='cookster-recent-icon';img.src=(window.CooksterItemArt&&CooksterItemArt[def.id])||def.src;img.alt='';img.draggable=false;
       img.setAttribute('aria-hidden','true');
       b.appendChild(img);
-      b.title='Zadnje korišćeno · '+(def.label||def.id);
-      b.setAttribute('aria-label','Zadnje korišćeno: '+(def.label||def.id));
+      b.removeAttribute('title');b.setAttribute('aria-label','Ranac: '+(def.label||def.id));
     });
   }
   // zuti sjaj: ide na dugme koje je kliknuto, dok ta stvar stoji u ruci; kad se spusti, nestaje
@@ -77,11 +98,10 @@
   function tick(){
     requestAnimationFrame(tick);
     const h=(typeof holding!=='undefined')?holding:null;
-    if(h&&h!==lastHeld)push(h.dataset&&h.dataset.itemId);
     lastHeld=h;
     if(glowSlot>=0&&!h&&performance.now()-glowAt>300)clearGlow();
     render(false);
   }
   requestAnimationFrame(tick);
-  window.CooksterRecentItems={activate,push,get:()=>recent.slice()};
+  window.CooksterRecentItems={activate,push,remove,setSlots,get:()=>recent.slice()};
 })();

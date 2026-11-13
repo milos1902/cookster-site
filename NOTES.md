@@ -1571,3 +1571,9 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - assets/ui/ranac/ranac_dzepovi.png (2000x667) zamenjuje sve stare rance (obrisani ranac_3/6/10.png i test dugme "Ranac: N"). js/ranac-test.js v5: jedan pojas, 6 dugmadi na džepovima, pojas ispod dugmadi (z-index 0), pa se vide predmeti u džepovima.
 - Predmeti u rancu koriste nove ilustracije (window.CooksterItemArt iz ke-pergament.js, recent-items.js v6). Ranac je podignut (donja ivica pojasa na y 935).
 - Ranac sada ima samo 6 mesta; 3/6/10 sa otključavanjem napretkom se ukida, javi ako treba nazad.
+
+## Ranac: nova logika
+- Ranac je na početku prazan (novi ključ cookster.rack.v2; staro "zadnje korišćeno" se ne čita). Predmet ulazi samo dugmetom "Stavi u ranac" (Kuhinjski elementi) i staje na PRVO mesto; ostali se pomere udesno, ako je pun poslednji ispada; ako je već u rancu, samo se premesti na prvo mesto.
+- Obrisano: automatsko dodavanje u ranac kad se nešto uzme u ruku.
+- Desni klik na džep: "Skloni iz ranca" (ostali se pomere ulevo). Desni klik više ne uzima predmet (ui-bottom-buttons.js v2.88).
+- Broj mesta: 6 (MAX u recent-items.js, CooksterRecentItems.setSlots(n) za 3 na početku igre pa 6 kasnije; džepovi preko n se samo sakriju dugmad, slika pojasa ostaje sa 6 džepova).
