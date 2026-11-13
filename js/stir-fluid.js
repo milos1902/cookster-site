@@ -103,8 +103,9 @@ function supportRenderTextureFormat (gl, internalFormat, format, type) {
     let status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
     return status == gl.FRAMEBUFFER_COMPLETE;
 }
-function createFluid(canvas){
+function createFluid(canvas,opts){
 const config={SIM_RESOLUTION:128,DYE_RESOLUTION:512,DENSITY_DISSIPATION:0.7,VELOCITY_DISSIPATION:0.25,PRESSURE:0.8,PRESSURE_ITERATIONS:20,CURL:30,SPLAT_RADIUS:0.42,SPLAT_FORCE:6000};
+if(opts&&opts.config)Object.assign(config,opts.config);
 const got=getWebGLContext(canvas);if(!got||!got.gl||!got.ext.formatRGBA||!got.ext.formatRG||!got.ext.formatR)return null;
 const gl=got.gl,ext=got.ext;
 class Program {
@@ -538,7 +539,7 @@ function step (dt) {
     dye.swap();
 }
 
-const displayShader=compileShader(gl.FRAGMENT_SHADER,`
+const MAIN_SRC=`
     precision highp float;precision mediump sampler2D;
     varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uTexture;uniform sampler2D uMask;uniform sampler2D uColor;uniform float uEnv;uniform vec4 uRev;uniform vec2 uWave;
     float dens(vec2 uv){vec3 c=texture2D(uTexture,uv).rgb;return max(c.r,max(c.g,c.b));}
@@ -563,7 +564,25 @@ const displayShader=compileShader(gl.FRAGMENT_SHADER,`
       a*=1.0-smoothstep(uRev.z-0.12,uRev.z,dist);
       gl_FragColor=vec4(base*shade*a,a);
     }
-`);
+`;
+const STEAM_SRC=`
+    precision highp float;precision mediump sampler2D;
+    varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uTexture;uniform float uEnv;uniform vec2 uWave;
+    float dens(vec2 uv){vec3 c=texture2D(uTexture,uv).rgb;return max(c.r,max(c.g,c.b));}
+    void main(){
+      // the higher it goes the wider and softer it gets: more taps spread sideways with the height (thin at the food, wide and airy above)
+      float sp=0.004+0.07*vUv.y;
+      float d=0.0;
+      for(int i=-4;i<=4;i++){float k=float(i)/4.0;d+=dens(vUv+vec2(k*sp,0.0))*(1.0-0.55*abs(k));}
+      d=clamp(d/5.2*2.6,0.0,1.0);
+      float lit=0.92+0.1*sin(vUv.y*14.0+d*5.0);
+      float edge=smoothstep(0.0,0.12,vUv.x)*smoothstep(1.0,0.88,vUv.x)*smoothstep(1.0,0.45,vUv.y);
+      float a=smoothstep(0.02,0.45,d)*0.9*edge*uEnv*(1.0-0.5*vUv.y);
+      vec3 col=mix(vec3(0.84,0.84,0.86),vec3(1.0),lit*0.7);
+      col*=mix(1.0,0.42,uWave.x);
+      gl_FragColor=vec4(col*a,a);
+    }`;
+const displayShader=compileShader(gl.FRAGMENT_SHADER,(opts&&opts.steam)?STEAM_SRC:MAIN_SRC);
 const clearProgram=new Program(baseVertexShader,clearShader);
 const splatProgram=new Program(baseVertexShader,splatShader);
 const advectionProgram=new Program(baseVertexShader,advectionShader);
@@ -656,112 +675,221 @@ function relaxColors(k){                        // the colour layer slowly goes 
   blit(colDye.read);
   gl.disable(gl.BLEND);
 }
-function setCalm(c){config.VELOCITY_DISSIPATION=1.5;config.DENSITY_DISSIPATION=c?0.05:0.7;}      // after the spoon is let go the swirl keeps turning and slowly dies down
+function setCalm(c,sim){config.VELOCITY_DISSIPATION=1.5;config.DENSITY_DISSIPATION=sim?1.3:(c?0.05:0.7);}      // after the spoon is let go the swirl keeps turning and slowly dies down
 return {splat,step:dt=>{step(dt);advectColor(dt);},render,resize,setMask,loadColors,relaxColors,clear:clearAll,setCalm,setEnv:v=>{envV=v;},setWave:(a,ph)=>{waveV=[a,ph];},setReveal:(cx,cy,r)=>{revV=[cx,cy,r,canvas.width/canvas.height];},force:config.SPLAT_FORCE};
 }
 
 // ---- the game side -----------------------------------------------------------------------------------------------------------------------------
-// While the player stirs (game.js: stirring, stirVessel), a canvas lies over the food of that vessel (placed like the game's own .stir-ripples: directly in the vessel, at --vessel-food-left/top/width/height, the measured area of the food). The tip of the spoon = the pointer; every move of it puts speed and colour into the fluid (splat).
-var cv=null,fl=null,failed=false,last=null,lastT=0,tint={r:.5,g:.5,b:.5};
-function target(){
-  try{return (typeof stirring!=='undefined'&&stirring&&stirVessel)?stirVessel:null;}catch(e){return null}
-}
-// The fluid must show only where the food really is (two pieces on the bottom of the pot = the fluid only there, not over the whole top of the pot).
-// The food of a vessel is drawn on canvases (piece-sim-canvas ...) in its content layer, which has the same box as this canvas: their opaque part is the mask.
-var revC=[.5,.5],mk=null,mx=null,lastMask=0,maskN=0,wasOn=false,seen=false;
-function updateMask(host,now,force){
-  if(!force&&now-lastMask<110)return;lastMask=now;
-  if(!mk){mk=document.createElement('canvas');mk.width=160;mk.height=94;mx=mk.getContext('2d');}
-  mx.setTransform(1,0,0,1,0,0);mx.clearRect(0,0,mk.width,mk.height);
-  var cs=host.querySelectorAll('.vessel-content canvas,.pan-content canvas'),n=0;
-  mx.filter=BELOW?'blur(5px)':'blur(1px)';
-  var cr=cv.getBoundingClientRect(),cEl=host._vesselContent||host._panContent,fr=cEl?cEl.getBoundingClientRect():null,dx0=0,dy0=0,dw=mk.width,dh=mk.height;
-  if(fr&&fr.width>2&&fr.height>2&&cr.width>2&&cr.height>2){dx0=(fr.left-cr.left)/cr.width*mk.width;dy0=(fr.top-cr.top)/cr.height*mk.height;dw=fr.width/cr.width*mk.width;dh=fr.height/cr.height*mk.height;}
-  for(var i=0;i<cs.length;i++){var c=cs[i];if(c===cv||!c.width||!c.height)continue;try{mx.drawImage(c,dx0,dy0,dw,dh);n++;}catch(e){}}
-  mx.filter='none';
-  // no food canvas found: if the content layer of the vessel is shown (there IS food, drawn some other way) the effect covers the whole food area, otherwise (empty vessel) nothing is shown
-  var hasFood=false;try{var cl=host._vesselContent||host._panContent;hasFood=!!cl&&getComputedStyle(cl).display!=='none';}catch(e){}
-  maskN=n||(hasFood?1:0);fl.setMask(n||!hasFood?mk:null);fl.relaxColors(stirringNow()?0.012:0.03);
-}
-function stirringNow(){try{return typeof stirring!=='undefined'&&!!stirring&&!!stirVessel;}catch(e){return false}}
+// One layer (a canvas + its own fluid) per vessel that needs the effect: the vessel that is being stirred, and the vessels that simmer (heating, with the bar of the doneness
+// at the halfway point or more). The canvas lies over the food of the vessel (placed like the game's own .stir-ripples, directly in the vessel, at the measured area of the food, or at
+// the area drawn in the tool "Deo gde se hrana vidi pri mešanju i njihanju"). While stirring: the tip of the spoon and the angular speed of the dish drive the fluid;
+// while simmering: bubbles burst here and there and send rings through the food (instead of the white dots of the old css).
+var tint={r:.5,g:.5,b:.5},failed=false,lastT=0,SPEED=1,REST=.3,SIM=.6,MAXL=3;
+var BELOW=/[?&]mesanjeispod/.test(location.search);      // the effect lies UNDER the food pieces; toggle: CooksterStirBelow(true/false)
+window.CooksterStirBelow=function(v){BELOW=!!v;return BELOW;};
+window.CooksterStirSpeed=function(v){SPEED=+v||1;return SPEED;};
 var px=0,py=0;window.addEventListener('pointermove',function(e){px=e.clientX;py=e.clientY;},{passive:true});
-var BELOW=/[?&]mesanjeispod/.test(location.search);      // the effect lies UNDER the food pieces (shows in the gaps and a little around them); toggle: CooksterStirBelow(true/false)
-window.CooksterStirBelow=function(v){BELOW=!!v;if(cv)cv.dataset.z='';return BELOW;};
-var areaKey='',curArea=null;
-function applyArea(h0){
-  var a=null;try{a=window.CooksterVesselFoodCalibration&&CooksterVesselFoodCalibration.stirArea&&CooksterVesselFoodCalibration.stirArea(h0);}catch(e){}
-  var key=a?JSON.stringify(a):'';
-  if(key===areaKey)return;areaKey=key;curArea=a;
-  if(a){var b=a.box;cv.style.left=b.left+'%';cv.style.top=b.top+'%';cv.style.width=b.width+'%';cv.style.height=b.height+'%';cv.style.clipPath='polygon('+a.poly.map(function(q){return q[0]+'% '+q[1]+'%';}).join(',')+')';cv.style.borderRadius='0';}
-  else{cv.style.left='var(--vessel-food-left,19.5%)';cv.style.top='var(--vessel-food-top,16.8%)';cv.style.width='var(--vessel-food-width,69.5%)';cv.style.height='var(--vessel-food-height,56.8%)';cv.style.clipPath='ellipse(50% 50% at 50% 50%)';cv.style.borderRadius='50%';}
+function stirringNow(){try{return typeof stirring!=='undefined'&&!!stirring&&!!stirVessel;}catch(e){return false}}
+function stirVesselNow(){try{return stirringNow()?stirVessel:null;}catch(e){return null}}
+function angSpeed(){try{return (typeof stirAngularVelocity!=='undefined')?+stirAngularVelocity||0:0;}catch(e){return 0}}
+// the vessels that simmer: heating (class sizzling), with food, the doneness at the halfway point or more (the bar), not burnt
+var simList=[],steamList=[],simAt=0;
+function scanSim(now){
+  if(now-simAt<300)return;simAt=now;
+  var out=[],sm=[];
+  try{
+    (window.items||items).forEach(function(v){
+      if(!v||!v.classList||!v.isConnected)return;
+      if(!(v._vesselContent||v._panContent))return;
+      var sz=v.classList.contains('sizzling');
+      var m=CooksterPan.read(v),n=Object.keys((m&&m.ingredients)||{}).length;if(!n)return;
+      var heat=+m.heat||0;if(!sz&&heat<=.1)return;
+      var st=(window.CooksterFoodStateMachine&&CooksterFoodStateMachine.vesselState(m))||{progress:+m.doneness||0};
+      var p=Math.max(0,Math.min(1,+st.progress||0)),ph=(st.phase&&st.phase.id)||'',burnt=ph==='burnt'||!!m.burnt;
+      if(sz&&p>=.5&&!burnt)out.push({v:v,p:p});
+      if(p>=.12)sm.push({v:v,s:burnt?1:Math.max(.3,Math.min(1,(p-.12)/.5)),grey:burnt||ph==='browned'?(burnt?1:.5):0});      // the steam of the game: from 12% of the bar, also while the pan cools
+    });
+  }catch(e){}
+  simList=out;steamList=sm;
 }
-var env=0,hostKeep=null,prevOn=false,revR=3,REST=.3,dirAcc=0,dirSgn=1,swirlPhase=0,SPEED=1;       // SPEED: one knob, 1 = the same speed as the dish
+function simOf(v){for(var i=0;i<simList.length;i++)if(simList[i].v===v)return simList[i].p;return 0;}
+var layers=[];
+function Layer(){
+  var L={host:null,cv:null,fl:null,last:null,env:0,prevOn:false,revR:3,revC:[.5,.5],dirAcc:0,dirSgn:1,swirlPhase:0,maskN:0,lastMask:0,mk:null,mx:null,areaKey:'',curArea:null,bub:0,mode:'rest'};
+  L.updateMask=function(host,now,force){
+    if(!force&&now-L.lastMask<110)return;L.lastMask=now;
+    if(!L.mk){L.mk=document.createElement('canvas');L.mk.width=160;L.mk.height=94;L.mx=L.mk.getContext('2d');}
+    var mk=L.mk,mx=L.mx,cv=L.cv;
+    mx.setTransform(1,0,0,1,0,0);mx.clearRect(0,0,mk.width,mk.height);
+    var cs=host.querySelectorAll('.vessel-content canvas,.pan-content canvas'),n=0;
+    mx.filter=BELOW?'blur(5px)':'blur(1px)';
+    var cr=cv.getBoundingClientRect(),cEl=host._vesselContent||host._panContent,fr=cEl?cEl.getBoundingClientRect():null,dx0=0,dy0=0,dw=mk.width,dh=mk.height;
+    if(fr&&fr.width>2&&fr.height>2&&cr.width>2&&cr.height>2){dx0=(fr.left-cr.left)/cr.width*mk.width;dy0=(fr.top-cr.top)/cr.height*mk.height;dw=fr.width/cr.width*mk.width;dh=fr.height/cr.height*mk.height;}
+    for(var i=0;i<cs.length;i++){var c=cs[i];if(c===cv||!c.width||!c.height)continue;try{mx.drawImage(c,dx0,dy0,dw,dh);n++;}catch(e){}}
+    mx.filter='none';
+    // no food canvas found: if the content layer of the vessel is shown (there IS food, drawn some other way) the effect covers the whole food area, otherwise (empty vessel) nothing is shown
+    var hasFood=false;try{var cl=host._vesselContent||host._panContent;hasFood=!!cl&&getComputedStyle(cl).display!=='none';}catch(e){}
+    L.maskN=n||(hasFood?1:0);L.fl.setMask(n||!hasFood?mk:null);L.fl.relaxColors(L.mode==='stir'?0.012:0.03);
+  };
+  L.applyArea=function(h0){
+    var cv=L.cv,a=null;try{a=window.CooksterVesselFoodCalibration&&CooksterVesselFoodCalibration.stirArea&&CooksterVesselFoodCalibration.stirArea(h0);}catch(e){}
+    var key=a?JSON.stringify(a):'';
+    if(key===L.areaKey)return;L.areaKey=key;L.curArea=a;
+    if(a){var b=a.box;cv.style.left=b.left+'%';cv.style.top=b.top+'%';cv.style.width=b.width+'%';cv.style.height=b.height+'%';cv.style.clipPath='polygon('+a.poly.map(function(q){return q[0]+'% '+q[1]+'%';}).join(',')+')';cv.style.borderRadius='0';}
+    else{cv.style.left='var(--vessel-food-left,19.5%)';cv.style.top='var(--vessel-food-top,16.8%)';cv.style.width='var(--vessel-food-width,69.5%)';cv.style.height='var(--vessel-food-height,56.8%)';cv.style.clipPath='ellipse(50% 50% at 50% 50%)';cv.style.borderRadius='50%';}
+  };
+  L.hide=function(){if(L.cv&&L.cv.dataset.on==='1'){L.cv.dataset.on='0';L.cv.style.display='none';if(L.fl)L.fl.clear();}L.last=null;L.prevOn=false;};
+  // a bubble bursts: a bright ring spreads from the place (a push outward + a little dye), the food moves a little
+  L.bubble=function(s){
+    var fl=L.fl,ang=Math.random()*Math.PI*2,rad=Math.sqrt(Math.random())*.36;
+    var x=.5+Math.cos(ang)*rad,y=.5+Math.sin(ang)*rad*.9,K=7,r0=.03,f=(14+16*Math.random())*s;
+    for(var k=0;k<K;k++){var a=k*Math.PI*2/K,ca=Math.cos(a),sa=Math.sin(a);fl.splat(x+ca*r0,y+sa*r0,ca*f,sa*f,{r:.14*s,g:.14*s,b:.14*s});}
+    fl.splat(x,y,0,0,{r:.12*s,g:.12*s,b:.12*s});
+  };
+  // mode: 'stir' (the spoon), 'simmer' (bubbles), 'rest' (what is left after the stirring)
+  L.update=function(host,t,dt,mode,simP){
+    var on=mode==='stir',alive=host&&host.isConnected&&(on||mode==='simmer'||L.maskN>0);
+    L.mode=mode;L.host=host;
+    var goal=on?1:(mode==='simmer'?SIM:(alive?REST:0));
+    L.env=Math.max(0,Math.min(1,L.env+(L.env<goal?dt/(mode==='simmer'?1.6:.5):-dt/4.0)));
+    if(L.env>goal&&!on)L.env=Math.max(goal,L.env);
+    if(!on&&L.env<=.003&&!alive){L.hide();return false;}
+    if(!host)return false;
+    var cv=L.cv;
+    if(!cv){cv=L.cv=document.createElement('canvas');cv.style.cssText='position:absolute;left:var(--vessel-food-left,19.5%);top:var(--vessel-food-top,16.8%);width:var(--vessel-food-width,69.5%);height:var(--vessel-food-height,56.8%);pointer-events:none;z-index:9;border-radius:50%;clip-path:ellipse(50% 50% at 50% 50%);';cv.width=cv.height=256;}
+    var fresh=false;
+    if(cv.parentNode!==host){host.appendChild(cv);if(L.fl)L.fl.clear();fresh=true;}
+    if(cv.dataset.on!=='1')fresh=true;
+    cv.style.display='block';cv.dataset.on='1';L.applyArea(host);
+    try{var cEl=host._vesselContent||host._panContent,zc=cEl?(parseInt(getComputedStyle(cEl).zIndex,10)||5):5,zWant=String(BELOW?Math.max(0,zc-1):9);if(cv.style.zIndex!==zWant)cv.style.zIndex=zWant;cv.style.transform=BELOW?'translateY(2px)':'none';}catch(e){}
+    var r=cv.getBoundingClientRect();if(r.width<8||r.height<8)return false;
+    if(!L.fl){L.fl=createFluid(cv);if(!L.fl){failed=true;return false;}fresh=true;}
+    var fl=L.fl,w=Math.max(64,Math.min(256,Math.round(r.width))),h=Math.max(64,Math.min(256,Math.round(r.height)));
+    if(cv.width!==w||cv.height!==h){fl.resize(w,h);fresh=true;}
+    if(fresh){L.updateMask(host,t,true);fl.loadColors();}
+    var om=angSpeed(),sN=Math.min(1,Math.abs(om)/48),sNs=on?sN:0;
+    if(on&&!L.prevOn){fl.clear();L.updateMask(host,t,true);fl.loadColors();L.revR=0;L.env=0;L.last=null;}       // a new stirring: start from zero again, from the spoon
+    L.prevOn=on;
+    if(on)L.revR=Math.min(3,L.revR+dt*.9);else if(mode==='simmer')L.revR=3;
+    fl.setCalm(!on,mode==='simmer');fl.setEnv(Math.min(1,L.env*(BELOW?1.5:1)));fl.setWave((L.curArea?.10:.035)*sNs*L.env,L.swirlPhase);
+    (function(){var cx=(px-r.left)/r.width,cy=1-(py-r.top)/r.height;if(on)L.revC=[Math.max(0,Math.min(1,cx)),Math.max(0,Math.min(1,cy))];fl.setReveal(L.revC[0],L.revC[1],L.revR);})();
+    if(on){
+      var x=(px-r.left)/r.width,y=1-(py-r.top)/r.height;
+      if(L.last&&x>-.1&&x<1.1&&y>-.1&&y<1.1){
+        var mdx=x-L.last.x,mdy=y-L.last.y;
+        L.dirAcc=L.dirAcc*.9+((x-.5)*mdy-(y-.5)*mdx)*60;      // + = counter-clockwise (y up)
+        if(sN>.02){var f=fl.force*.35*sN;if(mdx||mdy)fl.splat(x,y,mdx*f,mdy*f,tint);}
+      }
+      L.last={x:x,y:y};
+    }else L.last=null;
+    if(Math.abs(L.dirAcc)>.05)L.dirSgn=L.dirAcc>0?1:-1;
+    // the fluid goes round at the angular speed of the dish (the number of the game), so both start, turn and stop together
+    var sw=on||sN>.02?sN:0;
+    if(sw>.02){
+      var wrad=Math.abs(om)*Math.PI/180,K=8,rr=.27,add=wrad*rr*128*dt*1.5*SPEED;
+      L.swirlPhase+=dt*wrad*L.dirSgn;
+      for(var k=0;k<K;k++){var ang=L.swirlPhase+k*Math.PI*2/K,ca=Math.cos(ang),sa=Math.sin(ang);fl.splat(.5+rr*ca,.5+rr*sa,-sa*L.dirSgn*add,ca*L.dirSgn*add,{r:tint.r*.25*sw,g:tint.g*.25*sw,b:tint.b*.25*sw});}
+    }
+    // simmering: bubbles burst here and there, more often and stronger the more done the food is
+    if(false){
+      var s=.45+.55*Math.max(0,Math.min(1,(simP-.5)*2));
+      L.bub+=dt*(2.2+4.5*s);
+      while(L.bub>=1){L.bub-=1;L.bubble(s);}
+    }
+    L.updateMask(host,t);
+    fl.step(dt);fl.render();
+    return true;
+  };
+  return L;
+}
+// STEAM from the vessel (it replaces the white smoke of the old css, .pan-smoke): a column of white curls rises from the opening of the vessel and fades
+var steams=[];
+function Steam(){
+  var S={key:null,cv:null,bc:null,bx:null,fl:null,env:0,ph:Math.random()*10,parts:[],acc:0,t0:0};
+  S.hide=function(){if(S.cv&&S.cv.dataset.on==='1'){S.cv.dataset.on='0';S.cv.style.display='none';if(S.bc)S.bc.style.display='none';if(S.fl)S.fl.clear();S.parts=[];}};
+  S.update=function(host,t,dt,s,grey,simP){
+    var on=s>0;
+    S.env=Math.max(0,Math.min(1,S.env+(on?dt/1.2:-dt/1.6)));
+    if(!on&&S.env<=.003){S.hide();return false;}
+    if(!host||!host.isConnected)return false;
+    var cv=S.cv,box='left:calc(var(--vessel-food-left,19.5%) - 12%);top:calc(var(--vessel-food-top,16.8%) - 215%);width:calc(var(--vessel-food-width,69.5%) + 24%);height:250%;pointer-events:none;';
+    if(!cv){
+      cv=S.cv=document.createElement('canvas');cv.style.cssText='position:absolute;'+box+'z-index:14;';cv.width=96;cv.height=240;
+      S.bc=document.createElement('canvas');S.bc.style.cssText='position:absolute;'+box+'z-index:15;';S.bc.width=120;S.bc.height=300;S.bx=S.bc.getContext('2d');
+    }
+    if(cv.parentNode!==host){host.appendChild(cv);host.appendChild(S.bc);if(S.fl)S.fl.clear();S.parts=[];}
+    cv.style.display='block';S.bc.style.display='block';cv.dataset.on='1';
+    var r=cv.getBoundingClientRect();if(r.width<8||r.height<8)return false;
+    if(!S.fl){S.fl=createFluid(cv,{steam:true,config:{SIM_RESOLUTION:64,DYE_RESOLUTION:256,DENSITY_DISSIPATION:0.2,VELOCITY_DISSIPATION:0.15,CURL:14,SPLAT_RADIUS:0.03}});if(!S.fl){failed=true;return false;}}
+    var fl=S.fl,w=Math.max(48,Math.min(110,Math.round(r.width))),h=Math.max(96,Math.min(260,Math.round(r.height)));
+    if(cv.width!==w||cv.height!==h)fl.resize(w,h);
+    fl.setCalm(false,false);fl.setEnv(S.env);fl.setWave(grey,0);
+    if(on){
+      // two thin plumes leave the food and go up without stopping: a new puff is sent before the one before has died away
+      var tt=t/1000+S.ph;
+      for(var k=0;k<2;k++){
+        var bx=k?.62:.38,x=bx+Math.sin(tt*.9+k*2.1)*.035,y=.03;
+        var sway=Math.sin(tt*1.3+k*3.0+x*6)*2.2;
+        fl.splat(x,y,sway,(30+10*Math.random())*(.55+.45*s),{r:.15*s,g:.15*s,b:.15*s});
+        for(var hh=.14;hh<.95;hh+=.14)fl.splat(x+Math.sin(tt*.7+hh*5+k)*.05,hh,sway*.5,22*(.55+.45*s),{r:0,g:0,b:0});      // the warm air keeps pulling it up along the whole way (it does not stop)
+      }
+    }
+    fl.step(dt);fl.render();
+    // bubbles: small round balloons come out of the food, go up and keep going in the air until they fade away (no bursting inside the food)
+    var bc=S.bc,bx2=S.bx,rw=r.width,rh=r.height;
+    var bw=Math.max(60,Math.min(160,Math.round(rw))),bh=Math.max(150,Math.min(380,Math.round(rh)));
+    if(bc.width!==bw||bc.height!==bh){bc.width=bw;bc.height=bh;}
+    if(simP>0){S.acc+=dt*(1.2+3.2*Math.max(0,Math.min(1,(simP-.5)*2)));while(S.acc>=1){S.acc-=1;if(S.parts.length<24)S.parts.push({x:.30+Math.random()*.40,y:.02,r:2+Math.random()*3.2,vy:.07+Math.random()*.06,ph:Math.random()*6.28,age:0});}}
+    bx2.clearRect(0,0,bc.width,bc.height);
+    for(var i=S.parts.length-1;i>=0;i--){
+      var q=S.parts[i];q.age+=dt;q.y+=q.vy*dt*(1+q.y*1.2);q.x+=Math.sin(q.age*2.2+q.ph)*.0025;
+      if(q.y>.92){S.parts.splice(i,1);continue;}
+      var al=Math.min(1,q.age/.5)*(1-q.y/.92)*.85,px_=q.x*bc.width,py_=bc.height-q.y*bc.height,rr=q.r*(1+q.y*.9)*(bc.width/110);
+      var g=bx2.createRadialGradient(px_-rr*.3,py_-rr*.35,rr*.1,px_,py_,rr);
+      g.addColorStop(0,'rgba(255,255,255,'+(al*.9)+')');g.addColorStop(.55,'rgba(255,255,255,'+(al*.22)+')');g.addColorStop(1,'rgba(255,255,255,'+(al*.55)+')');
+      bx2.fillStyle=g;bx2.beginPath();bx2.arc(px_,py_,rr,0,6.2832);bx2.fill();
+    }
+    return true;
+  };
+  return S;
+}
+function steamFor(v){for(var i=0;i<steams.length;i++)if(steams[i].key===v)return steams[i];return null;}
+function layerFor(v){for(var i=0;i<layers.length;i++)if(layers[i].host===v||layers[i].key===v)return layers[i];return null;}
 function frame(t){
   requestAnimationFrame(frame);
   if(failed)return;
-  var host=target(),dt=Math.min(.033,(t-lastT)/1000||.016);lastT=t;
-  var on=!!host;if(on){hostKeep=host;seen=true;}
-  // The first time the player stirs, the effect fades in from the food (0.5 s). When the spoon is let go it keeps turning slowly and sinks into the dish
-  // (about 4 s) but stays above the food as a thin, transparent layer (REST) that mixes with it, until the vessel is emptied or taken away.
-  var alive=!!hostKeep&&hostKeep.isConnected&&(on||maskN>0);
-  var goal=on?1:(alive?REST:0);
-  env=Math.max(0,Math.min(1,env+(env<goal?dt/.5:-dt/4.0)));
-  if(env>goal&&!on)env=Math.max(goal,env);
-  if(!on&&env<=.003&&!alive){
-    if(cv&&cv.dataset.on==='1'){cv.dataset.on='0';cv.style.display='none';if(fl)fl.clear();}
-    last=null;hostKeep=null;seen=false;wasOn=false;return;
-  }
-  var h0=host||hostKeep;if(!h0)return;
-  if(!cv){cv=document.createElement('canvas');cv.style.cssText='position:absolute;left:var(--vessel-food-left,19.5%);top:var(--vessel-food-top,16.8%);width:var(--vessel-food-width,69.5%);height:var(--vessel-food-height,56.8%);pointer-events:none;z-index:9;border-radius:50%;clip-path:ellipse(50% 50% at 50% 50%);';cv.width=cv.height=256;}
-  var fresh=false;
-  if(cv.parentNode!==h0){h0.appendChild(cv);if(fl)fl.clear();fresh=true;}
-  if(cv.dataset.on!=='1')fresh=true;
-  cv.style.display='block';cv.dataset.on='1';applyArea(h0);
-  try{var cEl=h0._vesselContent||h0._panContent,zc=cEl?(parseInt(getComputedStyle(cEl).zIndex,10)||5):5,zWant=String(BELOW?Math.max(0,zc-1):9);if(cv.style.zIndex!==zWant)cv.style.zIndex=zWant;cv.style.transform=BELOW?'translateY(2px)':'none';}catch(e){}
-  var r=cv.getBoundingClientRect();if(r.width<8||r.height<8)return;
-  if(!fl){fl=createFluid(cv);if(!fl){failed=true;return;}fresh=true;}
-  var w=Math.max(64,Math.min(256,Math.round(r.width))),h=Math.max(64,Math.min(256,Math.round(r.height)));
-  if(cv.width!==w||cv.height!==h){fl.resize(w,h);fresh=true;}
-  if(fresh){updateMask(h0,t,true);fl.loadColors();}
-  var sN0=0;try{sN0=Math.min(1,Math.abs((typeof stirAngularVelocity!=='undefined')?+stirAngularVelocity||0:0)/48);}catch(e){}
-  if(on&&!prevOn){        // a new stirring: start from zero again, from the spoon, as the first time
-    fl.clear();updateMask(h0,t,true);fl.loadColors();revR=0;env=0;last=null;
-  }
-  prevOn=on;
-  if(on)revR=Math.min(3,revR+dt*.9);        // spreads from the spoon to the rim in about a second and a half
-  fl.setCalm(!on);fl.setEnv(Math.min(1,env*(BELOW?1.5:1)));fl.setWave((curArea?.10:.035)*sN0*env,swirlPhase);
-  (function(){var cx=(px-r.left)/r.width,cy=1-(py-r.top)/r.height;if(on)revC=[Math.max(0,Math.min(1,cx)),Math.max(0,Math.min(1,cy))];fl.setReveal(revC[0],revC[1],revR);})();
-  // The speed is the speed of the DISH: the game turns the food with stirAngularVelocity (deg/s, it ramps up slowly while stirring and dies down after the spoon
-  // is let go). The fluid is driven by the same number, so both start, turn and stop together. The mouse gives only the direction and a little local stirring.
-  var om=0;try{om=(typeof stirAngularVelocity!=='undefined')?+stirAngularVelocity||0:0;}catch(e){}
-  var sN=Math.min(1,Math.abs(om)/48);
-  if(on){
-    var x=(px-r.left)/r.width,y=1-(py-r.top)/r.height;
-    if(last&&x>-.1&&x<1.1&&y>-.1&&y<1.1){
-      var mdx=x-last.x,mdy=y-last.y;
-      dirAcc=dirAcc*.9+((x-.5)*mdy-(y-.5)*mdx)*60;      // + = turning counter-clockwise (y up), - = clockwise
-      if(sN>.02){var f=fl.force*.35*sN;if(mdx||mdy)fl.splat(x,y,mdx*f,mdy*f,tint);}
-    }
-    last={x:x,y:y};
-  }else last=null;
-  if(Math.abs(dirAcc)>.05)dirSgn=dirAcc>0?1:-1;
-  if(sN>.02){
-    var wrad=Math.abs(om)*Math.PI/180,K=8,rr=.27,add=wrad*rr*128*dt*1.5*SPEED;       // ring of pushes: the fluid goes round at the angular speed of the dish
-    swirlPhase+=dt*wrad*dirSgn;
-    for(var k=0;k<K;k++){
-      var ang=swirlPhase+k*Math.PI*2/K,ca=Math.cos(ang),sa=Math.sin(ang);
-      fl.splat(.5+rr*ca,.5+rr*sa,-sa*dirSgn*add,ca*dirSgn*add,{r:tint.r*.25*sN,g:tint.g*.25*sN,b:tint.b*.25*sN});
-    }
-  }
-  updateMask(h0,t);
-  fl.step(dt);fl.render();
+  var dt=Math.min(.033,(t-lastT)/1000||.016);lastT=t;
+  scanSim(t);
+  var sv=stirVesselNow(),want=[];
+  if(sv)want.push({v:sv,mode:'stir',p:simOf(sv)});
+  // layers of the vessels that are not wanted any more: they sink (rest) until they fade away; gone vessels are dropped
+  layers=layers.filter(function(L){return !(L.key&&!L.key.isConnected&&(!L.cv||L.cv.dataset.on!=='1'));});
+  want.forEach(function(w){var L=layerFor(w.v);if(!L){if(layers.length>=MAXL+1)return;L=Layer();L.key=w.v;layers.push(L);}L.want=w;});
+  layers.forEach(function(L){
+    var w=L.want;L.want=null;
+    if(w)L.update(w.v,t,dt,w.mode,w.p);
+    else L.update(L.key,t,dt,'rest',0);
+  });
+  // steam: the vessels that smoke (the bar of the doneness is past 12%, heating); the others fade
+  steams=steams.filter(function(S){return !(S.key&&!S.key.isConnected&&(!S.cv||S.cv.dataset.on!=='1'));});
+  var sw=steamList.slice(0,MAXL);
+  sw.forEach(function(o){var S=steamFor(o.v);if(!S){if(steams.length>=MAXL+1)return;S=Steam();S.key=o.v;steams.push(S);}S.want=o;});
+  steams.forEach(function(S){var o=S.want;S.want=null;if(o)S.update(S.key,t,dt,o.s,o.grey,simOf(S.key));else S.update(S.key,t,dt,0,0,0);});
+  document.documentElement.dataset.sfLayers=String(layers.length);
 }
 requestAnimationFrame(frame);
-window.CooksterStirSpeed=function(v){SPEED=+v||1;return SPEED;};
-window.__sfDebug=function(){return {maskN:maskN,env:env,revR:revR,prevOn:prevOn,om:(typeof stirAngularVelocity!=="undefined"?stirAngularVelocity:null),stir:(typeof stirring!=="undefined"?stirring:null),keep:!!hostKeep,conn:!!(hostKeep&&hostKeep.isConnected),seen:seen,failed:failed};};
+window.__sfDebug=function(){return {steams:steams.map(function(S){return +S.env.toFixed(2);}),steamN:steamList.length,layers:layers.map(function(L){return {mode:L.mode,env:+L.env.toFixed(2),maskN:L.maskN,hasFl:!!L.fl};}),sim:simList.length,failed:failed};};
 window.CooksterStirFluid={test:function(host){        // for testing: a canvas with a rotating splat in the given element
   var c=document.createElement('canvas');c.width=c.height=256;c.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;';host.appendChild(c);
   var f=createFluid(c);if(!f)return false;var a=0;
   (function loop(){a+=.18;f.splat(.5+.25*Math.cos(a),.5+.25*Math.sin(a),-Math.sin(a)*f.force*.04,Math.cos(a)*f.force*.04,tint);f.step(.016);f.render();requestAnimationFrame(loop);})();
   return true;}};
+// the white dots and the little bubbles of the old css are not shown any more: the fluid does it (only when the fluid can work: WebGL)
+(function(){
+  var ok=false;try{var c=document.createElement('canvas');ok=!!(c.getContext('webgl2')||c.getContext('webgl'));}catch(e){}
+  if(!ok)return;
+  var st=document.createElement('style');
+  st.textContent='body.sf-on .item.sizzling .pan-content.visible::after,body.sf-on .item.sizzling .vessel-content.visible::after,body.sf-on .item.sizzling.stirring-vessel .vessel-content.visible::before,body.sf-on .item.sizzling.stirring-vessel .pan-content.visible::before{content:none!important;background:none!important}body.sf-on .stir-bubbles,body.sf-on .pan-smoke{display:none!important}';
+  document.head.appendChild(st);document.body.classList.add('sf-on');
+})();
 })();

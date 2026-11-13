@@ -1613,3 +1613,8 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - js/data/vessel-food-cal-export.js v10: serpa_velika dobija stirVisible (20 tačaka iz izvoza koji je Miloš poslao); efekat mešanja za tu posudu sada koristi njegovu zonu (box left 13.6, top 4.3, širina 71.8, visina 65.1 u 
 ## Zona mešanja za veliku šerpu ugrađena
 - js/data/vessel-food-cal-export.js v10: serpa_velika dobija stirVisible (20 tačaka iz izvoza koji je Miloš poslao); efekat mešanja za tu posudu sada koristi njegovu zonu (okvir: levo 13.6, vrh 4.3, širina 71.8, visina 65.1, u procentima). Ostale posude iz izvoza nisu menjane (njihov stirVisible je prazan).
+## Krčkanje i para pomoću simulacije tečnosti (stir-fluid.js v26)
+- Krčkanje: kad posuda na vatri (klasa sizzling) ima hranu i traka gotovosti stigne na pola ili više (ne izgoreno), u hrani pucaju mehurići i šalju prstenove kroz hranu (u boji hrane). Što je gotovije, to češće i jače. Stari beli kružići iz css-a i .stir-bubbles su sakriveni (body.sf-on), ako postoji WebGL.
+- Para: bela/siva para (zamenjuje .pan-smoke) diže se iz otvora posude u mekim uvojcima, od 12% trake gotovosti (kao stari dim), sivlja kad je zagorelo. Svaka posuda ima svoj sloj; najviše 3 posude odjednom.
+- Mešanje radi kao i do sada (svaka posuda ima svoj sloj).
+- v30: para = dva tanka stuba iz hrane koji idu stalno na gore (toplo vazduh vuče duž celog puta), sve šire i providnije što su više (shader širi uzorak sa visinom), visok sloj (250% posude). Mehurići krčkanja u hrani izbrisani; umesto njih mali okrugli balončići izlaze iz hrane i lebde na gore kroz vazduh dok ne izblede (2D platno, od 50% trake).
