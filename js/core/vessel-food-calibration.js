@@ -140,8 +140,8 @@
   const poly3=(l,min)=>{const r=Array.isArray(l)&&l.length>=3?l.map(pair).filter(Boolean):null;return r&&r.length>=3&&area2(r)>=min?r:null;};      // (a polygon of 3 points that is a tiny sliver is not a drawing)
   function convert(shape){
     const o={};if(!shape)return o;
-    const m=poly3(shape.mask,150),f=poly3(shape.foodVisible,100),b=poly3(shape.bottom,50),db=pair(shape.depth&&shape.depth.bottom),dt=pair(shape.depth&&shape.depth.foodTop);
-    if(m)o.mask=m;if(f)o.foodVisible=f;if(b)o.bottom=b;
+    const m=poly3(shape.mask,150),f=poly3(shape.foodVisible,100),sv=poly3(shape.stirVisible,100),b=poly3(shape.bottom,50),db=pair(shape.depth&&shape.depth.bottom),dt=pair(shape.depth&&shape.depth.foodTop);
+    if(m)o.mask=m;if(f)o.foodVisible=f;if(sv)o.stirVisible=sv;if(b)o.bottom=b;
     if(db||dt)o.depth={bottom:db,foodTop:dt};
     return o;
   }
@@ -192,7 +192,7 @@
     // a vessel that has only a GUESSED profile but whose area of the food was drawn by Miloš: the guessed front mask (made for the guessed area) is dropped, otherwise it cuts off the lower part of his area (a notch under the food)
     const ownFood=(lv&&lv.foodVisible)||(df&&df.foodVisible);
     const mask=(lv&&lv.mask)||(df&&df.mask)||((base&&base.guess&&ownFood)?null:(base&&base.mask))||null;
-    const p={mask,foodVisible:pick('foodVisible'),bottom:pick('bottom'),depth:{bottom:dep('bottom'),foodTop:dep('foodTop')}};
+    const p={mask,foodVisible:pick('foodVisible'),stirVisible:pick('stirVisible'),bottom:pick('bottom'),depth:{bottom:dep('bottom'),foodTop:dep('foodTop')}};
     // a profile that is not complete cannot be used (the game then keeps what it had)
     const ok=p.foodVisible&&p.depth.bottom&&p.depth.foodTop;
     liveCache[id]={base,p:ok?p:base};return liveCache[id].p;
@@ -222,6 +222,16 @@
       wrap.dataset.foodVisibilityArea='imported';
     }
     return true;
+  }
+  // the area where the stirring effect and the waves are seen (drawn in the tool as "Deo gde se hrana vidi pri mešanju i njihanju"): a box and a polygon in percent of the vessel
+  function stirArea(vessel){
+    const profile=get(vessel);
+    const pl=profile&&profile.stirVisible;
+    if(!Array.isArray(pl)||pl.length<3)return null;
+    let l=100,t=100,r=0,b=0;
+    for(const [x,y] of pl){l=Math.min(l,x);t=Math.min(t,y);r=Math.max(r,x);b=Math.max(b,y);}
+    const w=Math.max(1,r-l),h=Math.max(1,b-t);
+    return {box:{left:l,top:t,width:w,height:h},poly:pl.map(([x,y])=>[+(((x-l)/w)*100).toFixed(2),+(((y-t)/h)*100).toFixed(2)])};
   }
   function depthProgress(vessel,n){
     const profile=get(vessel);
@@ -321,6 +331,7 @@
     get:v=>copy(get(v)),
     frame:v=>copy(frameFor(v)),
     applyToVessel,
+    stirArea,
     depthProgress,
     pointAtDepth,
     horizontalRangeAtDepth,

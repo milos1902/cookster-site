@@ -1601,3 +1601,9 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## Mešanje: opcija "ispod hrane" (probno)
 - stir-fluid.js v21: sloj efekta može da leži ISPOD komada hrane (z-index sloja hrane minus 1, spušten 2 px, blaži maska 5px da se vidi u procepima i malo oko komada). Uključuje se sa ?mesanjeispod ili u konzoli CooksterStirBelow(true) / (false). Podrazumevano ISKLJUČENO (kao do sada: efekat preko hrane).
+
+## Kalibracija: nova zona "Deo gde se hrana vidi pri mešanju i njihanju" + talasi uz zidove
+- Alat za kalibraciju hrane u posudama (js/vessel-food-mask-tool.js v15, css v8): novo narandžasto dugme/sloj stirVisible (poligon u procentima slike posude, kao ostale zone); snima se kao i ostalo (Sačuvaj ovu posudu / izvoz JSON).
+- js/core/vessel-food-calibration.js v21: convert/get nose stirVisible, nova funkcija CooksterVesselFoodCalibration.stirArea(vessel) -> {box, poly}.
+- js/stir-fluid.js v23: ako posuda ima stirVisible, platno efekta zauzima taj prostor (clip-path poligon) umesto elipse hrane; maska hrane se mapira u taj prostor. Talasi: slika se podiže uz obod sa grebenom koji se okreće sa mešanjem (visina 0.10 sa zonom, 0.035 bez, srazmerno brzini mešanja).
+- Ako zona nije nacrtana, ponasanje je kao do sada (elipsa hrane) + blagi talas.
