@@ -582,7 +582,20 @@ const STEAM_SRC=`
       col*=mix(1.0,0.42,uWave.x);
       gl_FragColor=vec4(col*a,a);
     }`;
-const displayShader=compileShader(gl.FRAGMENT_SHADER,(opts&&opts.steam)?STEAM_SRC:MAIN_SRC);
+const LAND_SRC=`
+    precision highp float;precision mediump sampler2D;
+    varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uTexture;uniform float uEnv;uniform vec2 uWave;
+    float dens(vec2 uv){vec3 c=texture2D(uTexture,uv).rgb;return max(c.r,max(c.g,c.b));}
+    void main(){
+      float d=clamp(dens(vUv)*2.4,0.0,1.0);
+      vec2 g=vec2(dens(vR)-dens(vL),dens(vT)-dens(vB))*8.0;
+      float lit=clamp(0.93+g.x*-0.2+g.y*0.25,0.75,1.1);
+      float a=smoothstep(0.02,0.5,d)*0.55*uEnv;
+      vec3 col=vec3(0.90,0.88,0.84)*lit;
+      gl_FragColor=vec4(col*a,a);
+    }
+`;
+const displayShader=compileShader(gl.FRAGMENT_SHADER,(opts&&opts.flat)?LAND_SRC:((opts&&opts.steam)?STEAM_SRC:MAIN_SRC));
 const clearProgram=new Program(baseVertexShader,clearShader);
 const splatProgram=new Program(baseVertexShader,splatShader);
 const advectionProgram=new Program(baseVertexShader,advectionShader);
@@ -884,6 +897,39 @@ window.CooksterStirFluid={test:function(host){        // for testing: a canvas w
   var f=createFluid(c);if(!f)return false;var a=0;
   (function loop(){a+=.18;f.splat(.5+.25*Math.cos(a),.5+.25*Math.sin(a),-Math.sin(a)*f.force*.04,Math.cos(a)*f.force*.04,tint);f.step(.016);f.render();requestAnimationFrame(loop);})();
   return true;}};
+// ---- the puff of dust when a thing lands on the table: smoke made by the fluid, thrown out to the left and to the right of the thing and drifting away in the air ----
+var LP={cv:null,fl:null,on:false,idle:0,last:0,fails:false};
+function landLoop(t){
+  if(!LP.on)return;
+  requestAnimationFrame(landLoop);
+  var dt=Math.min(.033,(t-LP.last)/1000||.016);LP.last=t;
+  LP.fl.setEnv(1);LP.fl.step(dt);LP.fl.render();
+  LP.idle+=dt;
+  if(LP.idle>3.2){LP.on=false;LP.cv.style.display='none';LP.fl.clear();}
+}
+window.CooksterLandPuff=function(cx,by,vis,opacity){
+  if(failed||LP.fails||/[?&]bezmesanja/.test(location.search))return false;
+  var sc=document.getElementById('scene');if(!sc)return false;
+  if(!LP.cv){
+    LP.cv=document.createElement('canvas');LP.cv.width=420;LP.cv.height=236;
+    LP.cv.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:9996;display:none';
+    sc.appendChild(LP.cv);
+    LP.fl=createFluid(LP.cv,{flat:true,config:{SIM_RESOLUTION:128,DYE_RESOLUTION:420,DENSITY_DISSIPATION:0.55,VELOCITY_DISSIPATION:0.9,CURL:22,SPLAT_RADIUS:0.05}});
+    if(!LP.fl){LP.fails=true;return false;}
+  }
+  if(LP.cv.parentNode!==sc)sc.appendChild(LP.cv);
+  LP.cv.style.display='block';
+  var v=Math.max(.5,Math.min(1.3,vis||1)),x0=cx/1672,y0=1-(by-2)/941,half=(55+30*v)/1672;
+  for(var side=-1;side<=1;side+=2){
+    for(var i=0;i<4;i++){
+      var x=x0+side*(half+i*.004+Math.random()*.004),y=y0+(Math.random()-.3)*.012;
+      LP.fl.splat(x,y,side*(55+45*Math.random())*v,(6+14*Math.random()),{r:.45*opacity,g:.45*opacity,b:.45*opacity});
+    }
+  }
+  LP.idle=0;
+  if(!LP.on){LP.on=true;LP.last=performance.now();requestAnimationFrame(landLoop);}
+  return true;
+};
 // the white dots and the little bubbles of the old css are not shown any more: the fluid does it (only when the fluid can work: WebGL)
 (function(){
   var ok=false;try{var c=document.createElement('canvas');ok=!!(c.getContext('webgl2')||c.getContext('webgl'));}catch(e){}
