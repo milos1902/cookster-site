@@ -1617,3 +1617,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## Para prozirnija, bez odsečene linije
 - Para se pojavljuje postepeno (~7 s do pune vidljivosti), ukupno prozirnija (alfa 0.6, bila 0.9), sivkasta; dole mekano izrasta iz hrane (nema odsečene linije), izvor 12% iznad dna platna.
+
+## Nova gornja traka (datum, sat, novac, vreme)
+- Slika assets/ui/hud/hud_top_bar_novi.png (platnena traka, 4 pretinca; isečena iz Milošove slike, sunce uklonjeno iz slike da se živa ikona vremena crta preko). js/hud-top.js v8: jedna slika umesto delova L/M/Ra/Rb/Rc; novčići su u slici (bez zasebne ikone), ikona vremena i dalje živa (sunce/mesec/kiša). Stari delovi hud_top_bar_*.png ostaju u repou, ali se ne koriste.
