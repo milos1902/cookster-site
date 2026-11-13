@@ -540,7 +540,7 @@ function step (dt) {
 
 const displayShader=compileShader(gl.FRAGMENT_SHADER,`
     precision highp float;precision mediump sampler2D;
-    varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uTexture;uniform sampler2D uMask;uniform sampler2D uColor;uniform float uEnv;
+    varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uTexture;uniform sampler2D uMask;uniform sampler2D uColor;uniform float uEnv;uniform vec4 uRev;
     float dens(vec2 uv){vec3 c=texture2D(uTexture,uv).rgb;return max(c.r,max(c.g,c.b));}
     void main(){
       float d=clamp(dens(vUv)*2.4,0.0,1.0);
@@ -553,6 +553,9 @@ const displayShader=compileShader(gl.FRAGMENT_SHADER,`
       vec3 base=min(food*mix(0.80,1.12,d),vec3(1.0));
       float m=smoothstep(0.12,0.55,fm.a);
       float a=(0.35+0.65*smoothstep(0.01,0.22,d))*0.62*m*uEnv;
+      // every stirring starts from the spoon and spreads slowly toward the rim (uRev = centre x, centre y, radius, aspect)
+      float dist=length((vUv-uRev.xy)*vec2(uRev.w,1.0));
+      a*=1.0-smoothstep(uRev.z-0.25,uRev.z,dist);
       gl_FragColor=vec4(base*shade*a,a);
     }
 `);
@@ -598,7 +601,7 @@ function splat(x,y,dx,dy,color){
   gl.uniform3f(splatProgram.uniforms.color,color.r,color.g,color.b);
   blit(dye.write);dye.swap();
 }
-let envV=1;
+let envV=1,revV=[.5,.5,3,1];
 const maskTex=gl.createTexture();
 function setMask(c){            // c: a canvas whose opaque part is where the food really is (the fluid shows only there); null = everywhere
   gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,maskTex);
@@ -617,7 +620,7 @@ function render(){
   gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
   displayProgram.bind();
   gl.uniform2f(displayProgram.uniforms.texelSize,1/gl.drawingBufferWidth,1/gl.drawingBufferHeight);
-  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,maskTex);gl.uniform1i(displayProgram.uniforms.uMask,1);gl.uniform1f(displayProgram.uniforms.uEnv,envV);gl.uniform1i(displayProgram.uniforms.uColor,colDye.read.attach(2));
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,maskTex);gl.uniform1i(displayProgram.uniforms.uMask,1);gl.uniform1f(displayProgram.uniforms.uEnv,envV);gl.uniform4f(displayProgram.uniforms.uRev,revV[0],revV[1],revV[2],revV[3]);gl.uniform1i(displayProgram.uniforms.uColor,colDye.read.attach(2));
   gl.uniform1i(displayProgram.uniforms.uTexture,dye.read.attach(0));
   blit(null);
 }
@@ -648,8 +651,8 @@ function relaxColors(k){                        // the colour layer slowly goes 
   blit(colDye.read);
   gl.disable(gl.BLEND);
 }
-function setCalm(c){config.VELOCITY_DISSIPATION=c?0.6:0.25;config.DENSITY_DISSIPATION=c?0.05:0.7;}      // after the spoon is let go the swirl keeps turning and slowly dies down
-return {splat,step:dt=>{step(dt);advectColor(dt);},render,resize,setMask,loadColors,relaxColors,clear:clearAll,setCalm,setEnv:v=>{envV=v;},force:config.SPLAT_FORCE};
+function setCalm(c){config.VELOCITY_DISSIPATION=1.5;config.DENSITY_DISSIPATION=c?0.05:0.7;}      // after the spoon is let go the swirl keeps turning and slowly dies down
+return {splat,step:dt=>{step(dt);advectColor(dt);},render,resize,setMask,loadColors,relaxColors,clear:clearAll,setCalm,setEnv:v=>{envV=v;},setReveal:(cx,cy,r)=>{revV=[cx,cy,r,canvas.width/canvas.height];},force:config.SPLAT_FORCE};
 }
 
 // ---- the game side -----------------------------------------------------------------------------------------------------------------------------
@@ -660,7 +663,7 @@ function target(){
 }
 // The fluid must show only where the food really is (two pieces on the bottom of the pot = the fluid only there, not over the whole top of the pot).
 // The food of a vessel is drawn on canvases (piece-sim-canvas ...) in its content layer, which has the same box as this canvas: their opaque part is the mask.
-var mk=null,mx=null,lastMask=0,maskN=0,wasOn=false,seen=false;
+var revC=[.5,.5],mk=null,mx=null,lastMask=0,maskN=0,wasOn=false,seen=false;
 function updateMask(host,now,force){
   if(!force&&now-lastMask<110)return;lastMask=now;
   if(!mk){mk=document.createElement('canvas');mk.width=96;mk.height=56;mx=mk.getContext('2d');}
@@ -675,7 +678,7 @@ function updateMask(host,now,force){
 }
 function stirringNow(){try{return typeof stirring!=='undefined'&&!!stirring&&!!stirVessel;}catch(e){return false}}
 var px=0,py=0;window.addEventListener('pointermove',function(e){px=e.clientX;py=e.clientY;},{passive:true});
-var env=0,hostKeep=null,REST=.3;
+var env=0,hostKeep=null,prevOn=false,revR=3,REST=.3,dirAcc=0,dirSgn=1,swirlPhase=0,SPEED=1;       // SPEED: one knob, 1 = the same speed as the dish
 function frame(t){
   requestAnimationFrame(frame);
   if(failed)return;
@@ -702,19 +705,40 @@ function frame(t){
   var w=Math.max(64,Math.min(256,Math.round(r.width))),h=Math.max(64,Math.min(256,Math.round(r.height)));
   if(cv.width!==w||cv.height!==h){fl.resize(w,h);fresh=true;}
   if(fresh){updateMask(h0,t,true);fl.loadColors();}
+  if(on&&!prevOn){        // a new stirring: start from zero again, from the spoon, as the first time
+    fl.clear();updateMask(h0,t,true);fl.loadColors();revR=0;env=0;last=null;
+  }
+  prevOn=on;
+  if(on)revR=Math.min(3,revR+dt*.9);        // spreads from the spoon to the rim in about a second and a half
   fl.setCalm(!on);fl.setEnv(env);
+  (function(){var cx=(px-r.left)/r.width,cy=1-(py-r.top)/r.height;if(on)revC=[Math.max(0,Math.min(1,cx)),Math.max(0,Math.min(1,cy))];fl.setReveal(revC[0],revC[1],revR);})();
+  // The speed is the speed of the DISH: the game turns the food with stirAngularVelocity (deg/s, it ramps up slowly while stirring and dies down after the spoon
+  // is let go). The fluid is driven by the same number, so both start, turn and stop together. The mouse gives only the direction and a little local stirring.
+  var om=0;try{om=(typeof stirAngularVelocity!=='undefined')?+stirAngularVelocity||0:0;}catch(e){}
+  var sN=Math.min(1,Math.abs(om)/48);
   if(on){
     var x=(px-r.left)/r.width,y=1-(py-r.top)/r.height;
     if(last&&x>-.1&&x<1.1&&y>-.1&&y<1.1){
-      var dx=(x-last.x)*fl.force*1.6,dy=(y-last.y)*fl.force*1.6;
-      if(dx||dy)fl.splat(x,y,dx,dy,tint);
+      var mdx=x-last.x,mdy=y-last.y;
+      dirAcc=dirAcc*.9+((x-.5)*mdy-(y-.5)*mdx)*60;      // + = turning counter-clockwise (y up), - = clockwise
+      if(sN>.02){var f=fl.force*.35*sN;if(mdx||mdy)fl.splat(x,y,mdx*f,mdy*f,tint);}
     }
     last={x:x,y:y};
   }else last=null;
+  if(Math.abs(dirAcc)>.05)dirSgn=dirAcc>0?1:-1;
+  if(sN>.02){
+    var wrad=Math.abs(om)*Math.PI/180,K=8,rr=.27,add=wrad*rr*128*dt*1.5*SPEED;       // ring of pushes: the fluid goes round at the angular speed of the dish
+    swirlPhase+=dt*wrad*dirSgn;
+    for(var k=0;k<K;k++){
+      var ang=swirlPhase+k*Math.PI*2/K,ca=Math.cos(ang),sa=Math.sin(ang);
+      fl.splat(.5+rr*ca,.5+rr*sa,-sa*dirSgn*add,ca*dirSgn*add,{r:tint.r*.25*sN,g:tint.g*.25*sN,b:tint.b*.25*sN});
+    }
+  }
   updateMask(h0,t);
   fl.step(dt);fl.render();
 }
 requestAnimationFrame(frame);
+window.CooksterStirSpeed=function(v){SPEED=+v||1;return SPEED;};
 window.__sfDebug=function(){return {maskN:maskN,env:env,keep:!!hostKeep,conn:!!(hostKeep&&hostKeep.isConnected),seen:seen,failed:failed};};
 window.CooksterStirFluid={test:function(host){        // for testing: a canvas with a rotating splat in the given element
   var c=document.createElement('canvas');c.width=c.height=256;c.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;';host.appendChild(c);
