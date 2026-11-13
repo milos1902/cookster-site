@@ -1597,3 +1597,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - js/stir-fluid.js v19: tečnost se pokreće istim brojem kao i jelo (stirAngularVelocity iz game.js: polako se ubrzava dok se meša, posle puštanja opada), pa počinju, okreću se i staju zajedno. Miš daje samo smer i malo lokalnog mešanja. Dugme za brzinu: CooksterStirSpeed(1) u konzoli (1 = kao jelo).
 - Svako novo mešanje kreće od nule: sloj se resetuje i širi se iz kašike ka obodu (~1,5 s), ne pojavljuje se odmah do ivice.
 - Uključuje i izmenu iz PR #703 (stalno uključeno, ?bezmesanja isključuje).
+- v20: bez zamucenja na pocetku mesanja: sloj se vidi samo gde je mesanje stvarno pomerilo boju (ranije je providna zamucena kopija hrane lezala preko hrane), ostriji rub otkrivanja, veca rezolucija boje (160x94, blur 1px).

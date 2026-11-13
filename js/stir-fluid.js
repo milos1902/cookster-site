@@ -552,10 +552,10 @@ const displayShader=compileShader(gl.FRAGMENT_SHADER,`
       vec3 food=cc.rgb/max(cc.a,0.05);
       vec3 base=min(food*mix(0.80,1.12,d),vec3(1.0));
       float m=smoothstep(0.12,0.55,fm.a);
-      float a=(0.35+0.65*smoothstep(0.01,0.22,d))*0.62*m*uEnv;
+      float a=smoothstep(0.01,0.22,d)*0.62*m*uEnv;      // only where the stirring really moved the dye: no hazy copy of the food over the food at the start
       // every stirring starts from the spoon and spreads slowly toward the rim (uRev = centre x, centre y, radius, aspect)
       float dist=length((vUv-uRev.xy)*vec2(uRev.w,1.0));
-      a*=1.0-smoothstep(uRev.z-0.25,uRev.z,dist);
+      a*=1.0-smoothstep(uRev.z-0.12,uRev.z,dist);
       gl_FragColor=vec4(base*shade*a,a);
     }
 `);
@@ -666,10 +666,10 @@ function target(){
 var revC=[.5,.5],mk=null,mx=null,lastMask=0,maskN=0,wasOn=false,seen=false;
 function updateMask(host,now,force){
   if(!force&&now-lastMask<110)return;lastMask=now;
-  if(!mk){mk=document.createElement('canvas');mk.width=96;mk.height=56;mx=mk.getContext('2d');}
+  if(!mk){mk=document.createElement('canvas');mk.width=160;mk.height=94;mx=mk.getContext('2d');}
   mx.setTransform(1,0,0,1,0,0);mx.clearRect(0,0,mk.width,mk.height);
   var cs=host.querySelectorAll('.vessel-content canvas,.pan-content canvas'),n=0;
-  mx.filter='blur(2px)';
+  mx.filter='blur(1px)';
   for(var i=0;i<cs.length;i++){var c=cs[i];if(c===cv||!c.width||!c.height)continue;try{mx.drawImage(c,0,0,mk.width,mk.height);n++;}catch(e){}}
   mx.filter='none';
   // no food canvas found: if the content layer of the vessel is shown (there IS food, drawn some other way) the effect covers the whole food area, otherwise (empty vessel) nothing is shown
