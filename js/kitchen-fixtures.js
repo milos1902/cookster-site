@@ -8,12 +8,12 @@ var W=1672,H=941;
 var N=15;                                                       // the drawer is drawn in (20 steps (frames of the animation: assets/drawers/<left|right>_<1..15>.webp, 0 = closed)
 var DR={
   left:{x:380,y:585,N:16,G:[0,0,.007,.03,.06,.10,.15,.18,.27,.33,.45,.54,.66,.77,.87,1,1.03],p:0,idx:0,to:0,label:'leva fioka',x0:485,x1:825,dx0:-39,dx1:-3,dy:153,el:null,ims:[]},
-  right:{x:828,y:585,N:15,G:[0,0,.016,.04,.087,.135,.19,.214,.27,.357,.444,.563,.635,.77,.873,1],p:0,idx:0,to:0,label:'desna fioka',x0:835,x1:1170,dx0:-8,dx1:31,dy:124,el:null,ims:[]}
+  right:{x:828,y:585,N:15,cont:true,p:0,idx:0,to:0,label:'desna fioka',x0:835,x1:1170,dx0:-8,dx1:31,dy:124,el:null,ims:[]}
 };
 var GRILL={l:225,t:20,r:760,b:235},ZOOM_SRC='assets/grill_zoom.webp?v=2';
 var imgs={};
 function load(src){var im=imgs[src];if(!im){im=imgs[src]=new Image();im.src=src}return im}
-Object.keys(DR).forEach(function(k){for(var i=1;i<=DR[k].N;i++)DR[k].ims[i]=load('assets/drawers/'+k+'_'+i+'.webp?v=11')});
+Object.keys(DR).forEach(function(k){if(DR[k].cont)return;for(var i=1;i<=DR[k].N;i++)DR[k].ims[i]=load('assets/drawers/'+k+'_'+i+'.webp?v=11')});
 // the open drawer is a small picture (a frame of the video, with its shadow on the floor) over the kitchen: above the occluders of the table, below all the things of the player
 function ensureEl(d){
   if(d.el&&d.el.isConnected)return true;
@@ -35,8 +35,31 @@ function shadows(){
     g.beginPath();g.ellipse((x0+x1)/2+22,yb+9,(x1-x0)/2+2,19,0,0,Math.PI*2);g.fill();g.restore();
   });
 }
+// the right drawer has no video: two pictures (the front and the inside, cut out of the open drawer) are moved by the number p (0 closed ... 1 open) that GSAP changes
+var RF={w:378,fh:99,ih:108,lip:602};
+function paintCont(k){
+  var d=DR[k],sc=document.getElementById('scene');if(!sc)return;
+  shadows();
+  if(!d.fr||!d.fr.isConnected){
+    d.box=document.createElement('div');d.box.style.cssText='position:absolute;left:0;top:0;width:1672px;height:941px;z-index:26;pointer-events:none;display:none;overflow:visible';
+    d.ins=document.createElement('img');d.fr=document.createElement('img');
+    d.ins.src='assets/drawers/right_inside.webp?v=1';d.fr.src='assets/drawers/right_front.webp?v=1';
+    [d.ins,d.fr].forEach(function(e){e.draggable=false;e.style.cssText='position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none'});
+    d.clip=document.createElement('div');d.clip.style.cssText='position:absolute;left:0;top:'+RF.lip+'px;width:1672px;height:400px;overflow:hidden';
+    d.inner=document.createElement('div');d.inner.style.cssText='position:absolute;left:0;top:-'+RF.lip+'px;width:1672px;height:941px';
+    d.inner.appendChild(d.ins);d.inner.appendChild(d.fr);d.clip.appendChild(d.inner);d.box.appendChild(d.clip);sc.appendChild(d.box);
+  }
+  var t=Math.max(0,Math.min(1,d.p));
+  if(t<=0){d.box.style.display='none';d.vis=0;return}
+  var L=d.x0+d.dx0*t,R=d.x1+d.dx1*t,s=(R-L)/RF.w,top=605+107*t;
+  d.fr.style.transform='translate('+L.toFixed(2)+'px,'+top.toFixed(2)+'px) scale('+s.toFixed(4)+')';
+  d.ins.style.transform='translate('+L.toFixed(2)+'px,'+(top-RF.ih*s).toFixed(2)+'px) scale('+s.toFixed(4)+')';
+  d.box.style.display='block';d.vis=d.idx||1;
+  updateTools();
+}
 function paint(k){
-  var d=DR[k];if(!ensureEl(d))return;
+  var d=DR[k];if(d.cont)return paintCont(k);
+  if(!ensureEl(d))return;
   shadows();
   if(!d.idx){d.el.style.display='none';d.vis=0;return}
   // the things in the drawer (jars, tools) follow the picture that is REALLY shown: a frame is shown only when it is decoded, and then the things are redrawn with it
@@ -49,12 +72,18 @@ function paint(k){
 }
 function setP(k,v){
   var d=DR[k];d.p=Math.max(0,Math.min(1,v));var i=Math.round(d.p*d.N);
+  if(d.cont){d.idx=i;paint(k);return}
   if(i!==d.idx){d.idx=i;paint(k);if(!i){if(k==='left')updateJars();else updateTools()}}
 }
 // a click on the drawer: it opens (or closes) in 0.3 s
 function toggle(k){
   var d=DR[k];d.to=d.to?0:1;
   try{playImpactSound(k==='left'?drawerLeftSoundTarget:drawerRightSoundTarget,d.to?'open':'close')}catch(e){}   // the sounds are chosen in the sound tool ("Leva fioka stola", "Desna fioka stola": open / close)
+  if(d.cont&&window.gsap){
+    window.gsap.killTweensOf(d);
+    window.gsap.to(d,d.to?{p:1,duration:.62,ease:'back.out(1.35)',onUpdate:function(){setP(k,d.p)}}:{p:0,duration:.42,ease:'power3.in',onUpdate:function(){setP(k,d.p)}});
+    return;
+  }
   var from=d.p,to=d.to,t0=performance.now(),dur=300,token=d.tok=(d.tok||0)+1;
   (function step(now){
     if(d.tok!==token)return;
@@ -85,7 +114,7 @@ var JAR_WIDEN=1.32;   // horizontal stretch of the jars in the drawer (the old p
 var ROW={back:{full:92,sink:22},front:{full:82,sink:20}};
 JARS.forEach(function(j){j.im=load('assets/drawers/jar_'+j.id+'.webp?v=4');j.el=null;j.slot=-1;j.cx0=(j.box.l+j.box.r)/2;j.b0=j.box.b;j.bb=JAR_BB[j.id]});
 (function(){var def=['paprika','tucana','biber','so','secer','lovor'];def.forEach(function(id,i){JARS.forEach(function(j){if(j.id===id){j.slot=i;slotJar[i]=id}})})})();
-function gOf(d){return d.G[d.idx]||0}
+function gOf(d){return d.cont?d.p:(d.G[d.idx]||0)}
 var DRAWER_IN={l:462,t:603,r:818,b:756};                        // the inside of the open left drawer
 var jarClip=null;
 function jarOut(j){try{return(window.items||items).some(function(el){return el.dataset&&el.dataset.itemId==='zacin_'+j.id})}catch(e){return false}}

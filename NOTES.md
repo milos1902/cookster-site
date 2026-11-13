@@ -1622,3 +1622,8 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## Nova gornja traka (datum, sat, novac, vreme)
 - Slika assets/ui/hud/hud_top_bar_novi.png (platnena traka, 4 pretinca; isečena iz Milošove slike, sunce uklonjeno iz slike da se živa ikona vremena crta preko). js/hud-top.js v8: jedna slika umesto delova L/M/Ra/Rb/Rc; novčići su u slici (bez zasebne ikone), ikona vremena i dalje živa (sunce/mesec/kiša). Stari delovi hud_top_bar_*.png ostaju u repou, ali se ne koriste.
+
+## Desna fioka: animacija preko GSAP-a (bez video kadrova)
+- assets/vendor/gsap.min.js (GSAP 3.15.1, licenca "no charge", gsap.com/standard-license) učitava se pre kitchen-fixtures.js (v813).
+- Desna fioka (DR.right.cont) više nema 15 kadrova iz videa (obrisani assets/drawers/right_1..15.webp). Umesto toga dve slike isečene iz otvorene fioke: right_front.webp i right_inside.webp; pomeraju se brojem p (0 zatvorena - 1 otvorena) koji menja gsap.to (otvaranje 0.62 s sa blagim odskokom back.out, zatvaranje 0.42 s power3.in). Senka, alati u fioci i klik rade kao do sada.
+- Leva fioka je ostala sa video kadrovima (isti postupak kad se potvrdi da ova valja).
