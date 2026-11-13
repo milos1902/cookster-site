@@ -377,7 +377,8 @@
     const button=document.createElement('button');
     button.id='vesselFoodMaskBtn';button.type='button';
     button.textContent='📐 Maska posude';button.title='Nacrtaj masku i vidljivi deo hrane za svaku posudu';
-    hud.appendChild(button);
+    button.setAttribute('data-tool-ui','1');button.setAttribute('data-cookster-tool','1');      // a fixed button like the other tools (the old #hud is hidden by the new top bar, so a button inside it was never seen)
+    document.body.appendChild(button);
     root=document.createElement('div');
     root.id='vesselFoodMaskTool';
      root.innerHTML=`<div class="vfmm-card" role="dialog" aria-modal="true" aria-labelledby="vfmmTitle">

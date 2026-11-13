@@ -1607,3 +1607,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - js/core/vessel-food-calibration.js v21: convert/get nose stirVisible, nova funkcija CooksterVesselFoodCalibration.stirArea(vessel) -> {box, poly}.
 - js/stir-fluid.js v23: ako posuda ima stirVisible, platno efekta zauzima taj prostor (clip-path poligon) umesto elipse hrane; maska hrane se mapira u taj prostor. Talasi: slika se podiže uz obod sa grebenom koji se okreće sa mešanjem (visina 0.10 sa zonom, 0.035 bez, srazmerno brzini mešanja).
 - Ako zona nije nacrtana, ponasanje je kao do sada (elipsa hrane) + blagi talas.
+- Dugme "Maska posude" (alat za kalibraciju) vraceno: bilo je u starom #hud koji nova gornja traka sakriva, pa se nije videlo. Sada je fiksno dugme desno (iznad "Senke sunca"), data-tool-ui + data-cookster-tool (prati prekidac Alati). tool js v16, css v9.
