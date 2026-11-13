@@ -1548,6 +1548,8 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Ispravka: prvi put je filter bio pregažen drugim stilovima (ranac-test.js, ui-soft-shadow.css), pa se nije videla razlika. Sada !important (css v2); proveren computed filter: dan 0.90, noć 0.55 za ranac, gornju traku i dock.
 - Ranac spusten (BOTTOM 937, SCALE 0.24, dugmad srazmerno), da ne prekriva otvoren fioku. ranac-test.js v3.
 
+## Senke uskladjene
+- Gornja traka (#chud) u css/ui-scene-light.css (v3) ima iste smanjene senke kao dock i ranac (1px 2px 1px .4 + 2px 4px 4px .22), a ne senku iz ui-soft-shadow. PR #686 (ui-visible-shadow v2) ima iste vrednosti pa je sada suvisan.
 ## Kuhinjski elementi u pergament stilu
 - js/ke-pergament.js (v1) + css/ke-pergament.css (v1): nov prozor preko stare strane (strana_kuhinjski_elementi_prazna.webp). Moja kuhinja / Prodavnica, filteri, pretraga, novac. Klik = na sto (ili kupovina). Kartica opisa desno prikazuje predmet pod mišem; dugme "Stavi u ranac" -> CooksterRecentItems.push (max 6). Piće ostaje u starom prozoru; ?starihud vraća stari.
 - Ilustracije: 18 novih isečeno iz dve slike (assets/ui/predmeti/n_*.png). Pogođeno po izgledu: plava činija sa cvetićima = vangla_srednja, velika šarena = kal_02_cinija_velika, plavi lonac = serpa_velika, plava šerpa = lavor_emajl_veliki, kalup = pravougaoni pleh. Presa (n_presa.png) nema predmet u igri pa nije povezana.
