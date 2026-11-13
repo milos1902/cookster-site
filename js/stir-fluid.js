@@ -576,9 +576,9 @@ const STEAM_SRC=`
       for(int i=-4;i<=4;i++){float k=float(i)/4.0;d+=dens(vUv+vec2(k*sp,0.0))*(1.0-0.55*abs(k));}
       d=clamp(d/5.2*2.6,0.0,1.0);
       float lit=0.92+0.1*sin(vUv.y*14.0+d*5.0);
-      float edge=smoothstep(0.0,0.12,vUv.x)*smoothstep(1.0,0.88,vUv.x)*smoothstep(1.0,0.45,vUv.y);
-      float a=smoothstep(0.02,0.45,d)*0.9*edge*uEnv*(1.0-0.5*vUv.y);
-      vec3 col=mix(vec3(0.84,0.84,0.86),vec3(1.0),lit*0.7);
+      float edge=smoothstep(0.0,0.14,vUv.x)*smoothstep(1.0,0.86,vUv.x)*smoothstep(1.0,0.4,vUv.y)*smoothstep(0.03,0.30,vUv.y);      // soft at the sides, at the top and at the bottom: it grows out of the food, no cut line
+      float a=smoothstep(0.03,0.6,d)*0.6*edge*uEnv*(1.0-0.45*vUv.y);
+      vec3 col=mix(vec3(0.80,0.80,0.83),vec3(0.97),lit*0.7);
       col*=mix(1.0,0.42,uWave.x);
       gl_FragColor=vec4(col*a,a);
     }`;
@@ -809,7 +809,7 @@ function Steam(){
   S.hide=function(){if(S.cv&&S.cv.dataset.on==='1'){S.cv.dataset.on='0';S.cv.style.display='none';if(S.bc)S.bc.style.display='none';if(S.fl)S.fl.clear();S.parts=[];}};
   S.update=function(host,t,dt,s,grey,simP){
     var on=s>0;
-    S.env=Math.max(0,Math.min(1,S.env+(on?dt/1.2:-dt/1.6)));
+    S.env=Math.max(0,Math.min(1,S.env+(on?dt/7:-dt/2.5)));
     if(!on&&S.env<=.003){S.hide();return false;}
     if(!host||!host.isConnected)return false;
     var cv=S.cv,box='left:calc(var(--vessel-food-left,19.5%) - 12%);top:calc(var(--vessel-food-top,16.8%) - 215%);width:calc(var(--vessel-food-width,69.5%) + 24%);height:250%;pointer-events:none;';
@@ -828,10 +828,10 @@ function Steam(){
       // two thin plumes leave the food and go up without stopping: a new puff is sent before the one before has died away
       var tt=t/1000+S.ph;
       for(var k=0;k<2;k++){
-        var bx=k?.62:.38,x=bx+Math.sin(tt*.9+k*2.1)*.035,y=.03;
+        var bx=k?.62:.38,x=bx+Math.sin(tt*.9+k*2.1)*.035,y=.12;
         var sway=Math.sin(tt*1.3+k*3.0+x*6)*2.2;
         fl.splat(x,y,sway,(30+10*Math.random())*(.55+.45*s),{r:.15*s,g:.15*s,b:.15*s});
-        for(var hh=.14;hh<.95;hh+=.14)fl.splat(x+Math.sin(tt*.7+hh*5+k)*.05,hh,sway*.5,22*(.55+.45*s),{r:0,g:0,b:0});      // the warm air keeps pulling it up along the whole way (it does not stop)
+        for(var hh=.26;hh<.95;hh+=.14)fl.splat(x+Math.sin(tt*.7+hh*5+k)*.05,hh,sway*.5,22*(.55+.45*s),{r:0,g:0,b:0});      // the warm air keeps pulling it up along the whole way (it does not stop)
       }
     }
     fl.step(dt);fl.render();

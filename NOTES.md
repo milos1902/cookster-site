@@ -1614,3 +1614,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Para: bela/siva para (zamenjuje .pan-smoke) diže se iz otvora posude u mekim uvojcima, od 12% trake gotovosti (kao stari dim), sivlja kad je zagorelo. Svaka posuda ima svoj sloj; najviše 3 posude odjednom.
 - Mešanje radi kao i do sada (svaka posuda ima svoj sloj).
 - v30: para = dva tanka stuba iz hrane koji idu stalno na gore (toplo vazduh vuče duž celog puta), sve šire i providnije što su više (shader širi uzorak sa visinom), visok sloj (250% posude). Mehurići krčkanja u hrani izbrisani; umesto njih mali okrugli balončići izlaze iz hrane i lebde na gore kroz vazduh dok ne izblede (2D platno, od 50% trake).
+
+## Para prozirnija, bez odsečene linije
+- Para se pojavljuje postepeno (~7 s do pune vidljivosti), ukupno prozirnija (alfa 0.6, bila 0.9), sivkasta; dole mekano izrasta iz hrane (nema odsečene linije), izvor 12% iznad dna platna.
