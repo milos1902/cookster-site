@@ -29,7 +29,7 @@
       const def=recent[i]&&defOf(recent[i]);
       if(!def){b.title='Zadnje korišćeno · prazno';return;}
       const img=document.createElement('img');
-      img.className='cookster-recent-icon';img.src=def.src;img.alt='';img.draggable=false;
+      img.className='cookster-recent-icon';img.src=(window.CooksterItemArt&&CooksterItemArt[def.id])||def.src;img.alt='';img.draggable=false;
       img.setAttribute('aria-hidden','true');
       b.appendChild(img);
       b.title='Zadnje korišćeno · '+(def.label||def.id);
