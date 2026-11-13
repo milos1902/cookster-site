@@ -540,7 +540,7 @@ function step (dt) {
 
 const displayShader=compileShader(gl.FRAGMENT_SHADER,`
     precision highp float;precision mediump sampler2D;
-    varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uTexture;uniform sampler2D uMask;uniform float uEnv;
+    varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uTexture;uniform sampler2D uMask;uniform sampler2D uColor;uniform float uEnv;
     float dens(vec2 uv){vec3 c=texture2D(uTexture,uv).rgb;return max(c.r,max(c.g,c.b));}
     void main(){
       float d=clamp(dens(vUv)*2.4,0.0,1.0);
@@ -548,10 +548,11 @@ const displayShader=compileShader(gl.FRAGMENT_SHADER,`
       vec2 g=vec2(dens(vR)-dens(vL),dens(vT)-dens(vB))*26.0;
       float shade=clamp(1.0+g.x*-0.9+g.y*0.9,0.35,1.8);
       vec4 fm=texture2D(uMask,vUv);
-      vec3 food=fm.rgb/max(fm.a,0.05);                       // the colour of the food at this place (a green pepper stays green, fresh tomato stays bright)
+      vec4 cc=texture2D(uColor,vUv);                         // colours of the food, carried and mixed by the stirring (red tomato + green pepper mix where they meet)
+      vec3 food=cc.rgb/max(cc.a,0.05);
       vec3 base=min(food*mix(0.80,1.12,d),vec3(1.0));
       float m=smoothstep(0.12,0.55,fm.a);
-      float a=smoothstep(0.01,0.22,d)*0.95*m*uEnv;
+      float a=(0.35+0.65*smoothstep(0.01,0.22,d))*0.62*m*uEnv;
       gl_FragColor=vec4(base*shade*a,a);
     }
 `);
@@ -564,7 +565,13 @@ const vorticityProgram=new Program(baseVertexShader,vorticityShader);
 const pressureProgram=new Program(baseVertexShader,pressureShader);
 const gradienSubtractProgram=new Program(baseVertexShader,gradientSubtractShader);
 const displayProgram=new Program(baseVertexShader,displayShader);
-let dye,velocity,divergence,curl,pressure;
+const copyShader=compileShader(gl.FRAGMENT_SHADER,`
+    precision mediump float;precision mediump sampler2D;
+    varying highp vec2 vUv;uniform sampler2D uTexture;
+    void main(){gl_FragColor=texture2D(uTexture,vUv);}
+`);
+const copyProgram=new Program(baseVertexShader,copyShader);
+let dye,velocity,divergence,curl,pressure,colDye;
 function getResolution(r){let ar=canvas.width/canvas.height;if(ar<1)ar=1/ar;const min=Math.round(r),max=Math.round(r*ar);return canvas.width>canvas.height?{width:max,height:min}:{width:min,height:max};}
 function initFramebuffers(){
   const simRes=getResolution(config.SIM_RESOLUTION),dyeRes=getResolution(config.DYE_RESOLUTION);
@@ -572,6 +579,7 @@ function initFramebuffers(){
   const filtering=ext.supportLinearFiltering?gl.LINEAR:gl.NEAREST;
   gl.disable(gl.BLEND);
   dye=createDoubleFBO(dyeRes.width,dyeRes.height,rgba.internalFormat,rgba.format,texType,filtering);
+  colDye=createDoubleFBO(dyeRes.width,dyeRes.height,rgba.internalFormat,rgba.format,texType,filtering);
   velocity=createDoubleFBO(simRes.width,simRes.height,rg.internalFormat,rg.format,texType,filtering);
   divergence=createFBO(simRes.width,simRes.height,r.internalFormat,r.format,texType,gl.NEAREST);
   curl=createFBO(simRes.width,simRes.height,r.internalFormat,r.format,texType,gl.NEAREST);
@@ -609,15 +617,39 @@ function render(){
   gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
   displayProgram.bind();
   gl.uniform2f(displayProgram.uniforms.texelSize,1/gl.drawingBufferWidth,1/gl.drawingBufferHeight);
-  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,maskTex);gl.uniform1i(displayProgram.uniforms.uMask,1);gl.uniform1f(displayProgram.uniforms.uEnv,envV);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,maskTex);gl.uniform1i(displayProgram.uniforms.uMask,1);gl.uniform1f(displayProgram.uniforms.uEnv,envV);gl.uniform1i(displayProgram.uniforms.uColor,colDye.read.attach(2));
   gl.uniform1i(displayProgram.uniforms.uTexture,dye.read.attach(0));
   blit(null);
 }
 function resize(w,h){canvas.width=w;canvas.height=h;initFramebuffers();}
 initFramebuffers();
 function clearAll(){[dye.read,dye.write,velocity.read,velocity.write].forEach(f=>{gl.bindFramebuffer(gl.FRAMEBUFFER,f.fbo);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);});}
-function setCalm(c){config.VELOCITY_DISSIPATION=c?0.5:0.25;config.DENSITY_DISSIPATION=c?0.5:0.7;}      // after the spoon is let go the swirl keeps turning and slowly dies down
-return {splat,step,render,resize,setMask,clear:clearAll,setCalm,setEnv:v=>{envV=v;},force:config.SPLAT_FORCE};
+function advectColor(dt){                       // the colours are carried by the same flow as the dye (no fading)
+  advectionProgram.bind();
+  gl.uniform2f(advectionProgram.uniforms.texelSize,velocity.texelSizeX,velocity.texelSizeY);
+  if(!ext.supportLinearFiltering)gl.uniform2f(advectionProgram.uniforms.dyeTexelSize,colDye.texelSizeX,colDye.texelSizeY);
+  gl.uniform1i(advectionProgram.uniforms.uVelocity,velocity.read.attach(0));
+  gl.uniform1i(advectionProgram.uniforms.uSource,colDye.read.attach(1));
+  gl.uniform1f(advectionProgram.uniforms.dt,dt);
+  gl.uniform1f(advectionProgram.uniforms.dissipation,0.0);
+  blit(colDye.write);colDye.swap();
+}
+function loadColors(){                          // hard copy: the colour layer = the food as it is now
+  gl.disable(gl.BLEND);copyProgram.bind();
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,maskTex);gl.activeTexture(gl.TEXTURE0);
+  gl.uniform1i(copyProgram.uniforms.uTexture,1);
+  blit(colDye.write);colDye.swap();
+}
+function relaxColors(k){                        // the colour layer slowly goes back to the real food (k = how much per call)
+  copyProgram.bind();
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,maskTex);gl.activeTexture(gl.TEXTURE0);
+  gl.uniform1i(copyProgram.uniforms.uTexture,1);
+  gl.enable(gl.BLEND);gl.blendColor(0,0,0,k);gl.blendFunc(gl.CONSTANT_ALPHA,gl.ONE_MINUS_CONSTANT_ALPHA);
+  blit(colDye.read);
+  gl.disable(gl.BLEND);
+}
+function setCalm(c){config.VELOCITY_DISSIPATION=c?0.6:0.25;config.DENSITY_DISSIPATION=c?0.05:0.7;}      // after the spoon is let go the swirl keeps turning and slowly dies down
+return {splat,step:dt=>{step(dt);advectColor(dt);},render,resize,setMask,loadColors,relaxColors,clear:clearAll,setCalm,setEnv:v=>{envV=v;},force:config.SPLAT_FORCE};
 }
 
 // ---- the game side -----------------------------------------------------------------------------------------------------------------------------
@@ -628,38 +660,46 @@ function target(){
 }
 // The fluid must show only where the food really is (two pieces on the bottom of the pot = the fluid only there, not over the whole top of the pot).
 // The food of a vessel is drawn on canvases (piece-sim-canvas ...) in its content layer, which has the same box as this canvas: their opaque part is the mask.
-var mk=null,mx=null,lastMask=0;
-function updateMask(host,now){
-  if(now-lastMask<110)return;lastMask=now;
+var mk=null,mx=null,lastMask=0,maskN=0,wasOn=false,seen=false;
+function updateMask(host,now,force){
+  if(!force&&now-lastMask<110)return;lastMask=now;
   if(!mk){mk=document.createElement('canvas');mk.width=96;mk.height=56;mx=mk.getContext('2d');}
   mx.setTransform(1,0,0,1,0,0);mx.clearRect(0,0,mk.width,mk.height);
   var cs=host.querySelectorAll('.vessel-content canvas,.pan-content canvas'),n=0;
   mx.filter='blur(2px)';
   for(var i=0;i<cs.length;i++){var c=cs[i];if(c===cv||!c.width||!c.height)continue;try{mx.drawImage(c,0,0,mk.width,mk.height);n++;}catch(e){}}
   mx.filter='none';
-  fl.setMask(n?mk:null);
+  maskN=n;fl.setMask(n?mk:null);fl.relaxColors(stirringNow()?0.012:0.03);
 }
+function stirringNow(){try{return typeof stirring!=='undefined'&&!!stirring&&!!stirVessel;}catch(e){return false}}
 var px=0,py=0;window.addEventListener('pointermove',function(e){px=e.clientX;py=e.clientY;},{passive:true});
-var env=0,hostKeep=null;
+var env=0,hostKeep=null,REST=.3;
 function frame(t){
   requestAnimationFrame(frame);
   if(failed)return;
   var host=target(),dt=Math.min(.033,(t-lastT)/1000||.016);lastT=t;
-  var on=!!host;if(on)hostKeep=host;
-  // the effect fades in from the food when the stirring starts (0.5 s) and, when the spoon is let go, keeps turning and fades slowly back into the food (about 4 s), merging with the dish below
-  env=Math.max(0,Math.min(1,env+(on?dt/.5:-dt/4.0)));
-  if(!on&&env<=.003){
+  var on=!!host;if(on){hostKeep=host;seen=true;}
+  // The first time the player stirs, the effect fades in from the food (0.5 s). When the spoon is let go it keeps turning slowly and sinks into the dish
+  // (about 4 s) but stays above the food as a thin, transparent layer (REST) that mixes with it, until the vessel is emptied or taken away.
+  var alive=!!hostKeep&&hostKeep.isConnected&&(on||maskN>0);
+  var goal=on?1:(alive?REST:0);
+  env=Math.max(0,Math.min(1,env+(env<goal?dt/.5:-dt/4.0)));
+  if(env>goal&&!on)env=Math.max(goal,env);
+  if(!on&&env<=.003&&!alive){
     if(cv&&cv.dataset.on==='1'){cv.dataset.on='0';cv.style.display='none';if(fl)fl.clear();}
-    last=null;hostKeep=null;return;
+    last=null;hostKeep=null;seen=false;wasOn=false;return;
   }
   var h0=host||hostKeep;if(!h0)return;
   if(!cv){cv=document.createElement('canvas');cv.style.cssText='position:absolute;left:var(--vessel-food-left,19.5%);top:var(--vessel-food-top,16.8%);width:var(--vessel-food-width,69.5%);height:var(--vessel-food-height,56.8%);pointer-events:none;z-index:9;border-radius:50%;clip-path:ellipse(50% 50% at 50% 50%);';cv.width=cv.height=256;}
-  if(cv.parentNode!==h0){h0.appendChild(cv);if(fl)fl.clear();}
+  var fresh=false;
+  if(cv.parentNode!==h0){h0.appendChild(cv);if(fl)fl.clear();fresh=true;}
+  if(cv.dataset.on!=='1')fresh=true;
   cv.style.display='block';cv.dataset.on='1';
   var r=cv.getBoundingClientRect();if(r.width<8||r.height<8)return;
-  if(!fl){fl=createFluid(cv);if(!fl){failed=true;return;}}
+  if(!fl){fl=createFluid(cv);if(!fl){failed=true;return;}fresh=true;}
   var w=Math.max(64,Math.min(256,Math.round(r.width))),h=Math.max(64,Math.min(256,Math.round(r.height)));
-  if(cv.width!==w||cv.height!==h)fl.resize(w,h);
+  if(cv.width!==w||cv.height!==h){fl.resize(w,h);fresh=true;}
+  if(fresh){updateMask(h0,t,true);fl.loadColors();}
   fl.setCalm(!on);fl.setEnv(env);
   if(on){
     var x=(px-r.left)/r.width,y=1-(py-r.top)/r.height;
@@ -673,6 +713,7 @@ function frame(t){
   fl.step(dt);fl.render();
 }
 requestAnimationFrame(frame);
+window.__sfDebug=function(){return {maskN:maskN,env:env,keep:!!hostKeep,conn:!!(hostKeep&&hostKeep.isConnected),seen:seen,failed:failed};};
 window.CooksterStirFluid={test:function(host){        // for testing: a canvas with a rotating splat in the given element
   var c=document.createElement('canvas');c.width=c.height=256;c.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;';host.appendChild(c);
   var f=createFluid(c);if(!f)return false;var a=0;
