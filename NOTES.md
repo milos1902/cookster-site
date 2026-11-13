@@ -1589,3 +1589,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Proba mesanja (v13): boja traga = boja hrane ispod (uzima se sa platna hrane: zelena paprika ostaje zelena); efekat se pojavljuje postepeno (0,5 s) i, kad se pusti mesanje, nastavlja da se polako okrece i ~4 s se utapa u jelo ispod. Provereno lazno (zelena hrana).
 - Proba mesanja (v15): boje se mesaju (drugi sloj nosi boje hrane i pomera ih strujanjem; crvena + zelena daju prelaz), sloj ostaje iznad hrane providan (REST .3) dok se posuda ne isprazni, i polako se vraca u boje hrane; sve providnije (alfa .62). Provereno lazno: crvena + zelena mrlja.
 - Proba mesanja (v16): kad se ne nadje platno hrane, a posuda ima hranu, efekat pokriva celu povrsinu hrane; prazna posuda = bez efekta (ranije je bez platna pokrivao sve crveno).
+
+## Mešanje: tečnost je sada stalno uključena
+- js/stir-fluid.js v17: više nije iza ?mesanje2 nego radi uvek; ?bezmesanja ga isključuje (poređenje ili ako zasmeta). Ako WebGL ne postoji, tiho ne radi ništa.

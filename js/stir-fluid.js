@@ -1,4 +1,4 @@
-/* Cookster: PROBA (samo uz ?mesanje2) - tečnost koja se vrti u posudi dok se meša.
+/* Cookster: tečnost koja se vrti u posudi dok se meša (stalno uključeno; ?bezmesanja ga isključuje, npr. za poređenje).
    Simulacija tečnosti na grafičkoj kartici (WebGL): delovi su prepisani iz "WebGL Fluid Simulation" (Pavel Dobryakov), MIT licenca:
 
    MIT License
@@ -14,7 +14,7 @@
    Izbačeno iz originala: analitika, reklame, bloom, sunčeve zrake, panel sa podešavanjima. Dodato: crtanje u posudi i unos poteza kašike iz igre (na dnu fajla). */
 (function(){
 'use strict';
-if(!/[?&]mesanje2/.test(location.search))return;
+if(/[?&]bezmesanja/.test(location.search))return;
 function getWebGLContext (canvas) {
     const params = { alpha: true, depth: false, stencil: false, antialias: false, preserveDrawingBuffer: false };
 
