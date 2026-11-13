@@ -1719,18 +1719,29 @@ function applyFireboxDoorTransition(opening){
  const layer=ensureFireboxDoorLayer();
  layer.getAnimations?.().forEach(a=>a.cancel());
  scene.style.backgroundImage=`url("${new URL(window.CooksterKitchenFx?CooksterKitchenFx.compose(fireboxBaseSrc()):fireboxBaseSrc(),document.baseURI).href}")`;
- layer.style.backgroundImage=`url("${new URL(DOOR_OVERLAYS[opening?'open':'close'],document.baseURI).href}")`;
+ const urlOf=k=>`url("${new URL(DOOR_OVERLAYS[k],document.baseURI).href}")`;
  layer.style.display='block';layer.style.opacity='1';layer.style.transform='none';
  layer.style.transformOrigin=`${FIREBOX_HINGE_ORIGIN.x}px ${FIREBOX_HINGE_ORIGIN.y}px`;
  fireboxDoorLayerState=!!opening;
- // Keep the hinge side fixed. Only the opposite side stretches and settles.
- layer.animate?.([
-   {transform:'scaleX(1) scaleY(1)'},
-   {transform:'scaleX(1.09) scaleY(1.018)',offset:.18},
-   {transform:'scaleX(.988) scaleY(.996)',offset:.62},
-   {transform:'scaleX(1.014) scaleY(1.004)',offset:.80},
-   {transform:'scaleX(1) scaleY(1)'}
- ],{duration:1000,easing:'cubic-bezier(.22,.78,.25,1)',fill:'none'});
+ const g=window.gsap;
+ if(g){
+   // GSAP: the door turns about its hinge: the old picture is squeezed edge-on, the new one opens out again with a little spring
+   g.killTweensOf(layer);
+   layer.style.backgroundImage=urlOf(opening?'close':'open');
+   g.timeline()
+     .to(layer,{scaleX:.1,scaleY:1.012,duration:.2,ease:'power2.in'})
+     .add(()=>{layer.style.backgroundImage=urlOf(opening?'open':'close');})
+     .to(layer,{scaleX:1,scaleY:1,duration:.55,ease:'back.out(1.8)',clearProps:'transform'});
+ }else{
+   layer.style.backgroundImage=urlOf(opening?'open':'close');
+   layer.animate?.([
+     {transform:'scaleX(1) scaleY(1)'},
+     {transform:'scaleX(1.09) scaleY(1.018)',offset:.18},
+     {transform:'scaleX(.988) scaleY(.996)',offset:.62},
+     {transform:'scaleX(1.014) scaleY(1.004)',offset:.80},
+     {transform:'scaleX(1) scaleY(1)'}
+   ],{duration:1000,easing:'cubic-bezier(.22,.78,.25,1)',fill:'none'});
+ }
  refreshCookstoveHeating(false);updateFireboxEffects();
 }
 function clearFireBurnTimer(){
@@ -1919,9 +1930,25 @@ function updateFireboxEffects(){
 }
 
 // the open oven door is a small picture (assets/stove_states_v3/oven_door_open.webp) over the kitchen, not a whole new scene: the firebox, the fire and everything else are drawn exactly as when the oven is closed
+// GSAP: a picture that grows out of its hinge / edge when it opens and folds back when it closes (the oven door drops forward from the bottom edge of the opening, the wood drawer slides out from under the oven)
+function gsapPop(img,open,origin,from,dur){
+ if(!img)return;
+ const g=window.gsap;
+ if(!g){img.style.display=open?'block':'none';return;}
+ if(img._popOpen===open&&(img.style.display==='block')===open)return;
+ img._popOpen=open;
+ g.killTweensOf(img);
+ img.style.transformOrigin=origin;
+ if(open){
+   img.style.display='block';
+   g.fromTo(img,{scaleY:from.y,scaleX:from.x,opacity:.2},{scaleY:1,scaleX:1,opacity:1,duration:dur,ease:'back.out(1.25)',clearProps:'transform,opacity'});
+ }else{
+   g.to(img,{scaleY:from.y,scaleX:from.x,opacity:.2,duration:dur*.7,ease:'power2.in',onComplete:()=>{if(img._popOpen===false){img.style.display='none';g.set(img,{clearProps:'transform,opacity'});}}});
+ }
+}
 function syncOvenDoorPicture(){
  const img=document.getElementById('ovenDoorOpen');
- if(img)img.style.display=stoveState.ovenOpen?'block':'none';
+ gsapPop(img,!!stoveState.ovenOpen,'50% 105px',{x:.96,y:.04},.6);
  const l=document.getElementById('ovenItems');
  if(l)l.style.display=stoveState.ovenOpen?'block':'none';   // closed oven: what is inside is not seen and cannot be clicked
 }
@@ -1946,7 +1973,7 @@ function toggleCookstoveFirebox(){
 function setOvenDrawer(open){
  ovenDrawerOpen=!!open;
  const img=document.getElementById('ovenDrawerOpen'),btn=document.getElementById('drawerHotspot');
- if(img)img.style.display=ovenDrawerOpen?'block':'none';
+ gsapPop(img,ovenDrawerOpen,'50% 0px',{x:.9,y:.12},.55);
  if(btn){const r=ovenDrawerOpen?OVEN_DRAWER_RECT.open:OVEN_DRAWER_RECT.closed;btn.style.width=(r.right-r.left)+'px';btn.style.height=(r.bottom-r.top)+'px';}
  playImpactSound(drawerRightSoundTarget,ovenDrawerOpen?'open':'close');
 }
