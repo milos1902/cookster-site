@@ -1598,3 +1598,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Svako novo mešanje kreće od nule: sloj se resetuje i širi se iz kašike ka obodu (~1,5 s), ne pojavljuje se odmah do ivice.
 - Uključuje i izmenu iz PR #703 (stalno uključeno, ?bezmesanja isključuje).
 - v20: bez zamucenja na pocetku mesanja: sloj se vidi samo gde je mesanje stvarno pomerilo boju (ranije je providna zamucena kopija hrane lezala preko hrane), ostriji rub otkrivanja, veca rezolucija boje (160x94, blur 1px).
+
+## Mešanje: opcija "ispod hrane" (probno)
+- stir-fluid.js v21: sloj efekta može da leži ISPOD komada hrane (z-index sloja hrane minus 1, spušten 2 px, blaži maska 5px da se vidi u procepima i malo oko komada). Uključuje se sa ?mesanjeispod ili u konzoli CooksterStirBelow(true) / (false). Podrazumevano ISKLJUČENO (kao do sada: efekat preko hrane).
