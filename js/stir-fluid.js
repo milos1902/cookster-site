@@ -669,7 +669,9 @@ function updateMask(host,now,force){
   mx.filter='blur(2px)';
   for(var i=0;i<cs.length;i++){var c=cs[i];if(c===cv||!c.width||!c.height)continue;try{mx.drawImage(c,0,0,mk.width,mk.height);n++;}catch(e){}}
   mx.filter='none';
-  maskN=n;fl.setMask(n?mk:null);fl.relaxColors(stirringNow()?0.012:0.03);
+  // no food canvas found: if the content layer of the vessel is shown (there IS food, drawn some other way) the effect covers the whole food area, otherwise (empty vessel) nothing is shown
+  var hasFood=false;try{var cl=host._vesselContent||host._panContent;hasFood=!!cl&&getComputedStyle(cl).display!=='none';}catch(e){}
+  maskN=n||(hasFood?1:0);fl.setMask(n||!hasFood?mk:null);fl.relaxColors(stirringNow()?0.012:0.03);
 }
 function stirringNow(){try{return typeof stirring!=='undefined'&&!!stirring&&!!stirVessel;}catch(e){return false}}
 var px=0,py=0;window.addEventListener('pointermove',function(e){px=e.clientX;py=e.clientY;},{passive:true});
