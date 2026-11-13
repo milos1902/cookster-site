@@ -545,10 +545,10 @@ const displayShader=compileShader(gl.FRAGMENT_SHADER,`
     void main(){
       float d=clamp(dens(vUv)*2.4,0.0,1.0);
       // light and shade from the slope of the dye (like the original's SHADING): same red-orange of the sauce, darker and lighter streaks
-      vec2 g=vec2(dens(vR)-dens(vL),dens(vT)-dens(vB))*14.0;
-      float shade=clamp(1.0+g.x*-0.9+g.y*0.9,0.55,1.55);
-      vec3 base=mix(vec3(0.70,0.15,0.09),vec3(0.95,0.32,0.17),d);
-      float a=smoothstep(0.015,0.30,d)*0.9;
+      vec2 g=vec2(dens(vR)-dens(vL),dens(vT)-dens(vB))*26.0;
+      float shade=clamp(1.0+g.x*-0.9+g.y*0.9,0.35,1.8);
+      vec3 base=mix(vec3(0.60,0.11,0.07),vec3(0.93,0.30,0.15),d);
+      float a=smoothstep(0.01,0.22,d)*0.95;
       gl_FragColor=vec4(base*shade*a,a);
     }
 `);
@@ -622,7 +622,7 @@ function frame(t){
   if(cv.width!==w||cv.height!==h)fl.resize(w,h);
   var x=(px-r.left)/r.width,y=1-(py-r.top)/r.height;
   if(last&&x>-.1&&x<1.1&&y>-.1&&y<1.1){
-    var dx=(x-last.x)*fl.force*1.1,dy=(y-last.y)*fl.force*1.1;
+    var dx=(x-last.x)*fl.force*1.6,dy=(y-last.y)*fl.force*1.6;
     if(dx||dy)fl.splat(x,y,dx,dy,tint);
   }
   last={x:x,y:y};
