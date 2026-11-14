@@ -2,30 +2,27 @@
 #ktBtn{position:fixed;right:12px;top:58px;z-index:2100;padding:8px 14px;border-radius:12px;border:3px solid #3a1f10;background:#e7c778;color:#3a1f10;font:800 15px Georgia,serif;box-shadow:0 3px 0 #765414;cursor:pointer}
 #ktBtn:hover{filter:brightness(1.08)}
 body.kt-open #ktBtn{display:none}
-#ktRoot{position:fixed;inset:0;z-index:2147483600;display:none;align-items:center;justify-content:center;background:rgba(22,12,7,.78);font-family:Georgia,'Times New Roman',serif;color:#3a1f10;user-select:none}
+#ktRoot{position:fixed;inset:0;overflow:hidden;z-index:2147483600;display:none;align-items:center;justify-content:center;background:rgba(22,12,7,.78);font-family:Georgia,'Times New Roman',serif;color:#3a1f10;user-select:none}
 body.kt-open #ktRoot{display:flex}
-#ktPanel{position:relative;width:min(1560px,97vw);height:min(900px,95vh);display:flex;flex-direction:column;border-radius:20px;border:8px solid #5b3a1c;box-shadow:inset 0 0 0 3px #b98a4d,0 14px 40px rgba(0,0,0,.6);
- background:radial-gradient(ellipse at 50% 30%,#f2e3bd,#e4cf9f 70%,#cdb27a);overflow:hidden}
-#ktTop{position:relative;flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:6px 16px;border-bottom:4px solid #b98a4d;background:linear-gradient(#ead7a6,#dcc48b);min-height:104px}
-.kt-badge{position:relative;width:86px;height:87px;background:url(../assets/ui/napredak/zvezde/znacka_nivo.png) 0 0/100% 100% no-repeat;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
-.kt-badge b{font-size:26px;line-height:1;margin-top:-2px}
-.kt-badge small{position:absolute;bottom:14px;font-size:9px;opacity:.7}
-#ktTabs{display:flex;gap:6px;margin-left:10px}
-.kt-tab{position:relative;width:176px;height:92px;background-size:100% 100%;background-repeat:no-repeat;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:23px;color:#7a4a2a}
-.kt-tab small{font-size:14px;opacity:.85;margin-top:2px}
-.kt-tab.on{color:#3a1f10}
-.kt-tab:not(.on){filter:saturate(.7) brightness(.95)}
-.kt-res{margin-left:auto;display:flex;gap:10px;align-items:center}
+#ktPanel{position:absolute;left:50%;top:50%;width:1514px;height:1014px;transform:translate(-50%,-50%) scale(var(--k,1));transform-origin:50% 50%;background:url(../assets/ui/karta/okvir.webp) 0 0/100% 100% no-repeat;overflow:hidden}
+.kt-badge{position:absolute;left:40px;top:34px;width:92px;height:93px;background:url(../assets/ui/napredak/zvezde/znacka_nivo.png) 0 0/100% 100% no-repeat;display:flex;align-items:center;justify-content:center}
+.kt-badge b{font-size:28px;line-height:1;margin-top:-2px}
+.kt-res{position:absolute;right:56px;top:40px;display:flex;gap:12px;align-items:center}
 .kt-pl{position:relative;display:flex;align-items:center;justify-content:flex-end;background-size:100% 100%;background-repeat:no-repeat;font-weight:800;color:#3a1f10}
-.kt-res .kt-pl{width:190px;height:66px;padding-right:20px;font-size:22px;white-space:nowrap}
-.kt-x{width:46px;height:46px;border-radius:50%;border:4px solid #3a1f10;background:#e7c778;font:900 24px Arial;color:#3a1f10;cursor:pointer;box-shadow:0 3px 0 #765414;margin-left:6px}
-#ktBoard{position:relative;flex:1 1 auto;overflow-x:auto;overflow-y:hidden;cursor:grab;scrollbar-width:thin;scrollbar-color:#8a5a2a #e2cd9b;
- background:linear-gradient(rgba(120,80,30,.07) 1px,transparent 1px) 0 0/48px 48px,linear-gradient(90deg,rgba(120,80,30,.07) 1px,transparent 1px) 0 0/48px 48px}
+.kt-res .kt-pl{width:200px;height:70px;padding-right:22px;font-size:24px;white-space:nowrap}
+.kt-x{width:50px;height:50px;border-radius:50%;border:4px solid #3a1f10;background:#e7c778;font:900 26px Arial;color:#3a1f10;cursor:pointer;box-shadow:0 3px 0 #765414;margin-left:8px}
+.kt-tab{position:absolute;top:160px;height:72px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;font-weight:800;font-size:25px;color:#7a4a2a;background-size:100% 100%;background-repeat:no-repeat}
+.kt-tab small{font-size:15px;opacity:.85}
+.kt-tab.on{color:#fff3dc;background-image:url(../assets/ui/karta/tab_crveni.webp);text-shadow:0 1px 2px rgba(60,10,5,.7)}
+.kt-tab:not(.on):hover{filter:brightness(1.05)}
+#ktNazad{position:absolute;left:100px;top:933px;width:166px;height:46px;cursor:pointer}
+#ktBoard{position:absolute;left:0;top:238px;width:1514px;height:680px;overflow-x:auto;overflow-y:hidden;cursor:grab;scrollbar-width:none;background:url(../assets/ui/karta/papir.webp) 0 0/auto 100% repeat-x}
+#ktBoard::-webkit-scrollbar{display:none}
 #ktBoard.drag{cursor:grabbing}
 #ktInner{position:relative;height:100%}
 #ktInner svg{position:absolute;left:0;top:0;pointer-events:none}
-.kt-dark{position:absolute;top:0;bottom:0;background:rgba(70,40,12,.22)}
-.kt-gate{position:absolute;top:0;bottom:0;width:6px;margin-left:-3px;background:repeating-linear-gradient(#e2b24a 0 14px,transparent 14px 22px)}
+.kt-dark{position:absolute;top:0;bottom:0;background:rgba(70,40,12,.2)}
+.kt-gate{position:absolute;top:0;bottom:0;width:37px;margin-left:-18px;background:url(../assets/ui/karta/razdvojnica.webp) 0 0/100% 100% no-repeat;z-index:2}
 .kt-lock{position:absolute;background:url(../assets/ui/napredak/zvezde/katanac_zvezda.png) 0 0/100% 100% no-repeat;display:flex;align-items:center;justify-content:center;z-index:3;filter:drop-shadow(0 4px 6px rgba(40,20,5,.5))}
 .kt-lock b{font-size:44px;line-height:1;margin-top:26%;color:#3a1f10;text-shadow:0 1px 0 rgba(255,230,160,.8)}
 .kt-card{position:absolute;background-size:100% 100%;background-repeat:no-repeat;cursor:pointer;background-image:url(../assets/ui/pergament/pg_kartica_posude_n_bez.png);
@@ -60,12 +57,11 @@ body.kt-open #ktRoot{display:flex}
 #ktTip b{display:block;font-size:17px;border-bottom:2px solid #3a1f10;margin-bottom:5px;padding-bottom:2px}
 #ktTip em{display:block;font-style:normal;margin-top:5px;font-weight:700}
 #ktTip .need{color:#a3321c;font-weight:700}
-#ktFoot{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:6px 16px;border-top:3px solid #b98a4d;background:#dcc48b;font-size:14px;font-weight:700}
+#ktFoot{position:absolute;left:300px;right:40px;top:927px;height:56px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}
 #ktFoot button{padding:5px 11px;border-radius:9px;border:2px solid #3a1f10;background:#e7c778;color:#3a1f10;font:800 13px Georgia,serif;cursor:pointer}
 #ktFoot .sp{flex:1}
-#ktToast{position:absolute;left:50%;bottom:54px;transform:translateX(-50%);background:#3a1f10;color:#fff3dc;padding:8px 18px;border-radius:12px;font-weight:700;font-size:16px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:5}
+#ktToast{position:absolute;left:50%;top:880px;transform:translateX(-50%);background:#3a1f10;color:#fff3dc;padding:8px 18px;border-radius:12px;font-weight:700;font-size:16px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:5}
 #ktToast.on{opacity:1}
 
 .kt-or{position:absolute;left:50%;top:-3%;transform:translateX(-50%);padding:1px 9px;border-radius:10px;background:#e2b24a;border:2px solid #7a5418;color:#3a1f10;font:900 calc(var(--ch)*.075) Georgia,serif;letter-spacing:.5px;z-index:2;box-shadow:0 2px 3px rgba(40,20,5,.4)}
 .kt-or.dbl{background:#d9694a;color:#fff3dc;border-color:#7d2412}
-.kt-tab{width:150px}
