@@ -15888,7 +15888,29 @@ function startHolding(el,pointerEvent=null){
 }
 
 function popArtPuff(cx,by,vis=1,opacity=.96,rot=0){
-  try{if(window.CooksterLandPuff&&window.CooksterLandPuff(cx,by,vis,opacity))return null;}catch(_){}      // smoke made by the fluid (js/stir-fluid.js); the old video below is the fallback
+  // a short stylized puff (about 0.3 s): little round clouds pop out of the lower left and the lower right corner of the thing and spread outward and a little up
+  try{
+    const v=Math.max(.5,Math.min(1.3,vis||1)),half=42+36*v;
+    const box=document.createElement('div');
+    box.className='pop-puff-css';
+    box.style.cssText=`position:absolute;left:${cx}px;top:${by}px;width:0;height:0;pointer-events:none;z-index:9997`;
+    for(const side of [-1,1]){
+      for(let i=0;i<3;i++){
+        const r=(9+Math.random()*6+i*2)*v,dx=side*(half+i*6-4),dy=-2-i*2;
+        const c=document.createElement('div');
+        c.style.cssText=`position:absolute;left:${dx-r}px;top:${dy-r}px;width:${r*2}px;height:${r*2}px;border-radius:50%;background:radial-gradient(circle at 36% 30%,rgba(255,255,255,${opacity}) 0,rgba(244,236,222,${opacity*.92}) 52%,rgba(222,208,186,${opacity*.55}) 100%);box-shadow:inset -1px -2px 2px rgba(150,125,95,.28)`;
+        box.appendChild(c);
+        c.animate([
+          {transform:'translate(0,0) scale(.25)',opacity:0},
+          {transform:`translate(${side*5}px,-3px) scale(.9)`,opacity:1,offset:.28},
+          {transform:`translate(${side*(16+i*7)}px,${-9-i*4}px) scale(1.5)`,opacity:0}
+        ],{duration:300,delay:i*28,easing:'cubic-bezier(.2,.7,.3,1)',fill:'both'});
+      }
+    }
+    scene.appendChild(box);
+    setTimeout(()=>box.remove(),520);
+    return box;
+  }catch(_){}
   // One transparent WebM contains the synchronized left/right impact puffs.
   const p=document.createElement('video');
   p.className='pop-puff-img';
