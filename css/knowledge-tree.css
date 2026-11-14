@@ -119,3 +119,5 @@ body.kt-open #ktRoot{display:flex}
 #ktFoot{top:92px;left:300px;right:520px;height:40px;z-index:5}
 .kt-stage{top:36px!important}
 .kt-corner{display:none}
+/* Bez tamnog polja i velikog katanca preko zaključanih zvezdica: zaključani krugovi su već sivi sa katancem */
+.kt-dark,.kt-lock{display:none}
