@@ -7,9 +7,26 @@
 (function(){
 'use strict';
 if(window.CooksterProgress)return;
-var KEY='cookster.napredak.v1',S={zn:0,star:1,done:{}};
-try{var j=JSON.parse(localStorage.getItem(KEY)||'null');if(j&&typeof j==='object'){S.zn=+j.zn||0;S.star=Math.max(1,Math.min(5,+j.star||1));S.done=j.done||{};}}catch(e){}
+var KEY='cookster.napredak.v1',S={zn:0,star:1,done:{},served:0,last:{day:0,food:0},daily:{day:0,done:{}}};
+try{var j=JSON.parse(localStorage.getItem(KEY)||'null');if(j&&typeof j==='object'){S.zn=+j.zn||0;S.star=Math.max(1,Math.min(5,+j.star||1));S.done=j.done||{};S.served=+j.served||0;S.last=j.last||{day:0,food:0};S.daily=j.daily||{day:0,done:{}};}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+// ---------- SVI BROJEVI NA JEDNOM MESTU (laka prva zvezda; podešava se posle probe) ----------
+var CFG={
+  stars:[20,80,250,700,2000],        // koliko jela treba poslužiti od jedne zvezdice do sledeće (zvezda 1->2, 2->3, ...)
+  starBonusZn:5,                      // znanje za novu zvezdicu
+  names:['druge','treće','četvrte','pete'],
+  dailyShown:3                        // koliko dnevnih zadataka na dan
+};
+var DAILY=[      // dnevni zadaci: uslov čita pregled dana (CooksterDayReport), nagrada u znanju
+  {id:'d_jela3',text:'Posluži 3 jela danas',zn:2,done:function(D){return D.food>=3;}},
+  {id:'d_zarada',text:'Zaradi 300 din danas',zn:2,done:function(D){return D.earned>=300;}},
+  {id:'d_pica2',text:'Posluži 2 pića danas',zn:1,done:function(D){return D.drinks>=2;}},
+  {id:'d_savrs',text:'Dobij jednu savršenu ocenu',zn:3,done:function(D){return D.perfect>=1;}},
+  {id:'d_jela5',text:'Posluži 5 jela danas',zn:3,done:function(D){return D.food>=5;}}
+];
+function dayState(){try{return CooksterDayReport.state();}catch(e){return null;}}
+function today(){var D=dayState();return D?D.day:0;}
+function ordinal(){return CFG.names[Math.min(S.star,CFG.names.length)-1]||'';}      // zvezda 1 -> cilj je druga
 // ---------- stanje igre ----------
 function allItems(){try{return items.slice();}catch(e){return [];}}
 function vessels(){return allItems().filter(function(e){try{return isContainerItem(e);}catch(x){return false;}});}
@@ -43,7 +60,7 @@ var P=window.CooksterProgress={
   addZn:function(n){S.zn=Math.max(0,S.zn+(+n||0));save();render();},
   spendZn:function(n){S.zn=Math.max(0,S.zn-(+n||0));save();render();},
   setStar:function(n){S.star=Math.max(1,Math.min(5,n|0));save();},
-  reset:function(){S={zn:0,star:1,done:{}};recent={};save();render();},
+  reset:function(){S={zn:0,star:1,done:{},served:0,last:{day:0,food:0},daily:{day:0,done:{}}};recent={};save();render();},
   tasks:TASKS,isDone:function(id){return !!S.done[id];}
 };
 if(/[?&]zadaci=0\b/.test(location.search))return;
@@ -55,7 +72,7 @@ css.textContent=[
 '#zadaciBox .zt{position:absolute;left:22%;right:22%;top:3.2%;height:11.5%;display:flex;align-items:center;justify-content:center;gap:8px;font-size:19px;color:#7a1e14;letter-spacing:.05em}#zadaciBox .zt small{font-size:14px;color:#3a1f10}',
 '#zadaciBox .zl{position:absolute;left:7.5%;right:7.5%;top:21%;display:flex;flex-direction:column;gap:4px}',
 '#zadaciBox .zr{position:relative;aspect-ratio:394/108;background:url('+Z+'zadatak_red_prazan.png) 0 0/100% 100% no-repeat;display:flex;align-items:center;padding:0 44px 0 62px;font-size:13px;line-height:1.1;transition:opacity .4s}',
-'#zadaciBox .zr.on{background-image:url('+Z+'zadatak_red_glavni.png)}',
+'#zadaciBox .zr.main{background-image:url('+Z+'zadatak_red_glavni.png)}#zadaciBox .zr.main .zx{color:#7a1e14}#zadaciBox .zr.main .zk{font-size:15px;color:#7a1e14}',
 '#zadaciBox .zr.done{background-image:url('+Z+'zadatak_red_gotov.png)}',
 '#zadaciBox .zr.done .zx{text-decoration:line-through;opacity:.55}',
 '#zadaciBox .zr.on .zx{color:#7a1e14}',
@@ -67,29 +84,53 @@ css.textContent=[
 document.head.appendChild(css);
 var box=document.createElement('div');box.id='zadaciBox';box.setAttribute('data-tool-ui','1');document.body.appendChild(box);
 var cur='';
+// aktivne vrste: prvo uvodni (redom), kad su gotovi i kafana radi: dnevni
+function dailyToday(){
+  var d=today();if(!d)return [];
+  if(S.daily.day!==d){S.daily={day:d,done:{}};save();}
+  var out=[];for(var i=0;i<CFG.dailyShown;i++)out.push(DAILY[(d+i)%DAILY.length]);return out;
+}
+function tutorialLeft(){return TASKS.some(function(t){return !S.done[t.id];});}
+function list(){
+  var now=Date.now(),src=tutorialLeft()?TASKS.filter(function(t){return !S.done[t.id]||(recent[t.id]&&now-recent[t.id]<1500);}):dailyToday().filter(function(t){return !S.daily.done[t.id]||(recent[t.id]&&now-recent[t.id]<1500);});
+  return src;
+}
+function isDone(t){return !!S.done[t.id]||!!(S.daily.done&&S.daily.done[t.id]);}
 function render(){
   if(!box)return;
-  var now=Date.now(),n=0,vis=[];
+  var goal=CFG.stars[S.star-1],vis=list().slice(0,2),n=0;
   TASKS.forEach(function(t){if(S.done[t.id])n++;});
-  TASKS.forEach(function(t){if(vis.length<3&&(!S.done[t.id]||(recent[t.id]&&now-recent[t.id]<1500)))vis.push(t);});
-  var first=-1;vis.forEach(function(t,i){if(first<0&&!S.done[t.id])first=i;});
-  var h='<div class="zt">ZADACI<small>'+n+'/'+TASKS.length+'</small></div><div class="zl">';
-  vis.forEach(function(t,i){
-    h+='<div class="zr'+(S.done[t.id]?' done':(i===first?' on':''))+'"><span class="zx">'+t.text+'</span>'+(t.zn?'<span class="zk"><img src="'+K+'ikona_znanje.webp" alt="">+'+t.zn+'</span>':'')+'</div>';
+  var h='<div class="zt">ZADACI'+(tutorialLeft()?'<small>'+n+'/'+TASKS.length+'</small>':'')+'</div><div class="zl">';
+  if(goal)h+='<div class="zr main"><span class="zx">Put do '+ordinal()+' zvezde</span><span class="zk">'+Math.min(goal,S.starServed||0)+'/'+goal+'</span></div>';
+  vis.forEach(function(t){
+    h+='<div class="zr'+(isDone(t)?' done':'')+'"><span class="zx">'+t.text+'</span>'+(t.zn?'<span class="zk"><img src="'+K+'ikona_znanje.webp" alt="">+'+t.zn+'</span>':'')+'</div>';
   });
   h+='</div><div class="zb"><img src="'+K+'ikona_znanje.webp" alt="">'+S.zn+'</div>';
   if(h!==cur){cur=h;box.innerHTML=h;}
 }
+function reward(t){if(t.zn)S.zn+=t.zn;recent[t.id]=Date.now();try{showToast('Zadatak gotov: '+t.text+(t.zn?'  (+'+t.zn+' znanja)':''));}catch(e){}}
 function check(){
-  var any=false;
+  var any=false,D=dayState();
+  // jela poslužena (za zvezdu): razlika u pregledu dana
+  if(D){
+    var add=D.day===S.last.day?Math.max(0,D.food-S.last.food):D.food;
+    if(add>0){S.starServed=(S.starServed||0)+add;any=true;}
+    if(D.day!==S.last.day||D.food!==S.last.food){S.last={day:D.day,food:D.food};any=true;}
+    var goal=CFG.stars[S.star-1];
+    if(goal&&(S.starServed||0)>=goal&&S.star<5){S.star++;S.starServed=0;S.zn+=CFG.starBonusZn;any=true;try{showToast('Nova zvezdica! Imaš '+S.star+' (+'+CFG.starBonusZn+' znanja)');}catch(e){}}
+  }
+  // uvodni zadaci
   TASKS.forEach(function(t){
     if(S.done[t.id])return;
     if(t.watch){try{t.watch();}catch(e){}}
     var ok=false;try{ok=!!t.done();}catch(e){}
-    if(ok){
-      S.done[t.id]=true;recent[t.id]=Date.now();any=true;if(t.zn)S.zn+=t.zn;
-      try{showToast('Zadatak gotov: '+t.text+(t.zn?'  (+'+t.zn+' znanja)':''));}catch(e){}
-    }
+    if(ok){S.done[t.id]=true;any=true;reward(t);}
+  });
+  // dnevni zadaci (tek kad je uvod gotov)
+  if(D&&!tutorialLeft())dailyToday().forEach(function(t){
+    if(S.daily.done[t.id])return;
+    var ok=false;try{ok=!!t.done(D);}catch(e){}
+    if(ok){S.daily.done[t.id]=true;any=true;reward(t);}
   });
   if(any)save();
   render();
