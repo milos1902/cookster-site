@@ -121,3 +121,6 @@ body.kt-open #ktRoot{display:flex}
 .kt-corner{display:none}
 /* Bez tamnog polja i velikog katanca preko zaključanih zvezdica: zaključani krugovi su već sivi sa katancem */
 .kt-dark,.kt-lock{display:none}
+
+/* Treće stanje: otključano, a nije kupljeno = plavi krug */
+.kt-card.st-can .kt-ring,.kt-card.st-can:hover .kt-ring,.kt-card.sel .kt-ring{background-image:url(../assets/ui/karta/kr_o.webp)}
