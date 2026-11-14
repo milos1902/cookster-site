@@ -1,0 +1,64 @@
+/* Karta znanja (Savkina knjiga): prozor sa tri taba, 4 reda, vodoravno klizanje. Slike: assets/ui/napredak/drvo i zvezde. */
+#ktBtn{position:fixed;right:12px;top:58px;z-index:2100;padding:8px 14px;border-radius:12px;border:3px solid #3a1f10;background:#e7c778;color:#3a1f10;font:800 15px Georgia,serif;box-shadow:0 3px 0 #765414;cursor:pointer}
+#ktBtn:hover{filter:brightness(1.08)}
+body.kt-open #ktBtn{display:none}
+#ktRoot{position:fixed;inset:0;z-index:2147483600;display:none;align-items:center;justify-content:center;background:rgba(22,12,7,.78);font-family:Georgia,'Times New Roman',serif;color:#3a1f10;user-select:none}
+body.kt-open #ktRoot{display:flex}
+#ktPanel{position:relative;width:min(1560px,97vw);height:min(900px,95vh);display:flex;flex-direction:column;border-radius:20px;border:8px solid #5b3a1c;box-shadow:inset 0 0 0 3px #b98a4d,0 14px 40px rgba(0,0,0,.6);
+ background:radial-gradient(ellipse at 50% 30%,#f2e3bd,#e4cf9f 70%,#cdb27a);overflow:hidden}
+#ktTop{position:relative;flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:6px 16px;border-bottom:4px solid #b98a4d;background:linear-gradient(#ead7a6,#dcc48b);min-height:104px}
+.kt-badge{position:relative;width:86px;height:87px;background:url(../assets/ui/napredak/zvezde/znacka_nivo.png) 0 0/100% 100% no-repeat;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.kt-badge b{font-size:26px;line-height:1;margin-top:-2px}
+.kt-badge small{position:absolute;bottom:14px;font-size:9px;opacity:.7}
+#ktTabs{display:flex;gap:6px;margin-left:10px}
+.kt-tab{position:relative;width:200px;height:96px;background-size:100% 100%;background-repeat:no-repeat;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:23px;color:#7a4a2a}
+.kt-tab small{font-size:14px;opacity:.85;margin-top:2px}
+.kt-tab.on{color:#3a1f10}
+.kt-tab:not(.on){filter:saturate(.7) brightness(.95)}
+.kt-res{margin-left:auto;display:flex;gap:10px;align-items:center}
+.kt-pl{position:relative;display:flex;align-items:center;justify-content:flex-end;background-size:100% 100%;background-repeat:no-repeat;font-weight:800;color:#3a1f10}
+.kt-res .kt-pl{width:190px;height:66px;padding-right:20px;font-size:22px;white-space:nowrap}
+.kt-x{width:46px;height:46px;border-radius:50%;border:4px solid #3a1f10;background:#e7c778;font:900 24px Arial;color:#3a1f10;cursor:pointer;box-shadow:0 3px 0 #765414;margin-left:6px}
+#ktBoard{position:relative;flex:1 1 auto;overflow-x:auto;overflow-y:hidden;cursor:grab;scrollbar-width:thin;scrollbar-color:#8a5a2a #e2cd9b;
+ background:linear-gradient(rgba(120,80,30,.07) 1px,transparent 1px) 0 0/48px 48px,linear-gradient(90deg,rgba(120,80,30,.07) 1px,transparent 1px) 0 0/48px 48px}
+#ktBoard.drag{cursor:grabbing}
+#ktInner{position:relative;height:100%}
+#ktInner svg{position:absolute;left:0;top:0;pointer-events:none}
+.kt-dark{position:absolute;top:0;bottom:0;background:rgba(70,40,12,.22)}
+.kt-gate{position:absolute;top:0;bottom:0;width:6px;margin-left:-3px;background:repeating-linear-gradient(#e2b24a 0 14px,transparent 14px 22px)}
+.kt-lock{position:absolute;background:url(../assets/ui/napredak/zvezde/katanac_zvezda.png) 0 0/100% 100% no-repeat;display:flex;align-items:center;justify-content:center;z-index:3;filter:drop-shadow(0 4px 6px rgba(40,20,5,.5))}
+.kt-lock b{font-size:44px;line-height:1;margin-top:26%;color:#3a1f10;text-shadow:0 1px 0 rgba(255,230,160,.8)}
+.kt-card{position:absolute;background-size:100% 100%;background-repeat:no-repeat;cursor:pointer;filter:drop-shadow(0 4px 5px rgba(40,20,5,.35));transition:transform .12s}
+.kt-card.st-done{background-image:url(../assets/ui/napredak/drvo/cvor_kupljen.png)}
+.kt-card.st-can{background-image:url(../assets/ui/napredak/drvo/cvor_otkljucan.png)}
+.kt-card.st-can:hover,.kt-card.sel{background-image:url(../assets/ui/napredak/drvo/cvor_oznacen.png);transform:translateY(-2px)}
+.kt-card.st-lock{background-image:url(../assets/ui/napredak/drvo/cvor_zakljucan.png);cursor:not-allowed}
+.kt-card.shake{animation:ktshake .35s}
+@keyframes ktshake{20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+.kt-in{position:absolute;inset:15% 10% 11% 10%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;pointer-events:none}
+.kt-ic{height:36%;aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+.kt-ic img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(1px 2px 1px rgba(40,20,5,.4))}
+.kt-ic span{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f6dc9a,#c9962a);border:2px solid #7a5418;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:calc(var(--ch)*.085);color:#3a1f10;line-height:1}
+.kt-ic span.q{background:radial-gradient(circle at 35% 30%,#d6ecf3,#6aa7bd);border-color:#2f5f72}
+.kt-ic span.s{background:radial-gradient(circle at 35% 30%,#e7d1f0,#9a6fb0);border-color:#5b3a73}
+.kt-nm{font-weight:800;font-size:calc(var(--ch)*.1);line-height:1.04;text-align:center;color:#4a2a14;max-height:2.2em;overflow:hidden}
+.kt-co{display:flex;gap:4px;justify-content:center}
+.kt-co .kt-pl{height:calc(var(--ch)*.2);width:calc(var(--ch)*.5);padding-right:calc(var(--ch)*.05);font-size:calc(var(--ch)*.088);letter-spacing:-.2px}
+.kt-co .kt-pl.bad{color:#c0291a}
+.kt-sr{position:absolute;left:12%;top:8%;display:flex;gap:1px;filter:drop-shadow(0 1px 1px rgba(40,20,5,.5))}
+.kt-sr i{width:calc(var(--ch)*.1);height:calc(var(--ch)*.1);background:url(../assets/ui/napredak/zvezde/zvezda_prazna.png) 0 0/100% 100% no-repeat}
+.kt-sr i.f{background-image:url(../assets/ui/napredak/zvezde/zvezda_puna.png)}
+.kt-ok{position:absolute;right:3%;top:2%;width:calc(var(--ch)*.19);height:calc(var(--ch)*.19);border-radius:50%;background:#fff;border:3px solid #3f6d26;color:#3f6d26;font:900 calc(var(--ch)*.12) Arial;display:flex;align-items:center;justify-content:center}
+.st-lock .kt-ic img{filter:grayscale(1);opacity:.45}
+.st-lock .kt-ic span{filter:grayscale(1);opacity:.5}
+.st-lock .kt-nm{color:#7a6f58}
+.st-lock .kt-co{opacity:.8}
+#ktTip{position:fixed;z-index:2147483601;display:none;width:300px;background:#fffaf0;border:3px solid #6a3f1c;border-radius:6px;padding:9px 13px 11px;font-size:15px;line-height:1.28;box-shadow:0 8px 16px rgba(40,20,5,.45);pointer-events:none}
+#ktTip b{display:block;font-size:17px;border-bottom:2px solid #3a1f10;margin-bottom:5px;padding-bottom:2px}
+#ktTip em{display:block;font-style:normal;margin-top:5px;font-weight:700}
+#ktTip .need{color:#a3321c;font-weight:700}
+#ktFoot{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:6px 16px;border-top:3px solid #b98a4d;background:#dcc48b;font-size:14px;font-weight:700}
+#ktFoot button{padding:5px 11px;border-radius:9px;border:2px solid #3a1f10;background:#e7c778;color:#3a1f10;font:800 13px Georgia,serif;cursor:pointer}
+#ktFoot .sp{flex:1}
+#ktToast{position:absolute;left:50%;bottom:54px;transform:translateX(-50%);background:#3a1f10;color:#fff3dc;padding:8px 18px;border-radius:12px;font-weight:700;font-size:16px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:5}
+#ktToast.on{opacity:1}
