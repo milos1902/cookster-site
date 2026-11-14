@@ -379,7 +379,7 @@ function showBig(c,d){
     tl.to(icon,{y:-D*.4,duration:.4,ease:'back.out(1.7)',force3D:false},.1);      // krug "baci" ikonicu: ona izleti brzo, preleti i smiri se
     tl.to(icon,{scale:1.5,duration:.4,ease:'back.out(2.2)',force3D:false},.1);
     tl.fromTo(icon,{rotation:-9},{rotation:0,duration:.5,ease:'elastic.out(1,.45)',force3D:false,immediateRender:false},.1);      // ikonica je brža: ide istim tempom kao krug i ne zaostaje      // kreće zajedno sa krugom i ne staje ni na jedan frejm dok ne stigne van kruga
-    BIG.bt=gsap.fromTo(bi,{opacity:0,y:D*.05},{opacity:1,y:0,duration:.3,ease:'power1.out',delay:.41});
+    BIG.bt=gsap.fromTo(bi,{opacity:0},{opacity:1,duration:.22,ease:'none',delay:.14});      // tekst izlazi ISPOD ikonice dok ona izleće, pa ga ikonica oslobađa
     tl.fromTo(bc,{opacity:0},{opacity:1,duration:.3,ease:'power1.out'},.3);
   }else{d.style.transform='translate('+dx+'px,'+dy+'px) scale('+k+')';icon.style.transform='translateY('+(-D*.4)+'px) scale(1.5)';ring.style.filter=f1;sh.style.opacity=1;}
 }
