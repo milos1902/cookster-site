@@ -34,7 +34,7 @@ function el(t,c,txt){var e=document.createElement(t);if(c)e.className=c;if(txt!=
 // ---- slike predmeta iz igre (ako postoje)
 function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'dj');}
 var artCache={};
-var ART_OVR={'Nož':'assets/new_props/daska_sa_nozem.png','Veća daska':'assets/new_props/daska_sa_nozem.png','Majstorska daska':'assets/new_props/daska_sa_nozem.png','Oštar nož':'assets/new_props/daska_sa_nozem.png','Majstorski nož':'assets/new_props/daska_sa_nozem.png','Nož za meso':'assets/new_props/daska_sa_nozem.png','Nož majstora kuvara':'assets/new_props/daska_sa_nozem.png'};
+var ART_OVR={'Bakarni tiganj':'assets/ui/karta/ikone/bakarni_tiganj.webp','Majstorski tiganj':'assets/ui/karta/ikone/majstorski_tiganj.webp','Bakarna šerpa':'assets/ui/karta/ikone/bakarna_serpa.webp','Veći kapacitet 1':'assets/ui/karta/ikone/veci_kapacitet_1.webp','Male tegle':'assets/ui/karta/ikone/male_tegle.webp','Velike tegle':'assets/ui/karta/ikone/velike_tegle.webp','Oval tanjir':'assets/ui/karta/ikone/oval_tanjir.webp','Servis za slavlje':'assets/ui/karta/ikone/servis_slavlje.webp','Rerna 1':'assets/ui/karta/ikone/rerna.webp','Roštilj':'assets/ui/karta/ikone/rostilj.webp','Nož':'assets/new_props/daska_sa_nozem.png','Veća daska':'assets/new_props/daska_sa_nozem.png','Majstorska daska':'assets/new_props/daska_sa_nozem.png','Oštar nož':'assets/new_props/daska_sa_nozem.png','Majstorski nož':'assets/new_props/daska_sa_nozem.png','Nož za meso':'assets/new_props/daska_sa_nozem.png','Nož majstora kuvara':'assets/new_props/daska_sa_nozem.png'};
 function artFor(c){
   if(c.y==='L'||c.y==='Q'||c.y==='S')return null;
   if(artCache[c.id]!==undefined)return artCache[c.id];
