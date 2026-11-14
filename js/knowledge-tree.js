@@ -208,7 +208,6 @@ function renderBoard(){
     d.dataset.id=c.id;
     d.appendChild(el('div','kt-ring'));
     d.appendChild(el('div','kt-st','★'+c.s));
-    if(st==='done')d.appendChild(el('div','kt-ok','✓'));
     var inn=el('div','kt-in'),ic=el('div','kt-ic'),src=artFor(c);
     if(src){var im=el('img');im.src=src;im.alt='';im.draggable=false;ic.appendChild(im);}
     else{var sp=el('span',c.y==='Q'?'q':c.y==='S'?'s':'',badgeText(c));ic.appendChild(sp);}
