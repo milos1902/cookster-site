@@ -1716,3 +1716,7 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## Šipke platna su slika drvenog štapa (js/ke-unroll.js v7)
 - Umesto nacrtane šipke koristi se slika koju je poslao vlasnik: `assets/ui/pergament/pg_sipka.webp` (1935x31, providna pozadina, izrezana iz slike 2000x667). Visina se računa iz širine (31/1935), malo je šira od platna.
+
+## Kuhinjski elementi: opet obično otvaranje, ostale samo šipke (js/ke-unroll.js v8)
+- Animacija otvaranja/zatvaranja je uklonjena (sjene su kasnile): prozor se otvara i zatvara odmah, sa svim sjenama i običnom tamnom pozadinom. Ostale su samo dve drvene šipke (pg_sipka.webp) na gornjoj i donjoj ivici dok je prozor otvoren. Slike se i dalje učitavaju unapred.
+- mo.js (assets/vendor/mo.umd.js) nije više učitan u index.html (fajl je ostao za kasnije).
