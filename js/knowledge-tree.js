@@ -259,7 +259,7 @@ function showTipOld(c,d){
 var TIPT=0,FLAG=null;
 // Čipkasta zastavica: izlazi iza kruga na koji se zadržiš i širi se udesno (ili ulevo uz ivicu); visina joj je tačno visina čipke tog kruga
 function flagCss(){if(document.getElementById('ktFlagCss'))return;var st=document.createElement('style');st.id='ktFlagCss';st.textContent=
-'.kt-flag{position:absolute;pointer-events:none;overflow:hidden;filter:drop-shadow(1px 3px 3px rgba(40,22,6,.38))}'+
+'.kt-flag-o{position:absolute;pointer-events:none;overflow:hidden}.kt-flag{position:absolute;pointer-events:none;will-change:transform;filter:drop-shadow(1px 3px 3px rgba(40,22,6,.38))}'+
 '.kt-flag .fb{position:absolute;inset:0}.kt-flag .fb i{position:absolute;top:0;height:100%;background-repeat:no-repeat;background-size:auto 100%}'+
 '.kt-flag .fm{background-repeat:repeat-x!important;background-image:url('+K+'zast_m.webp)}.kt-flag .fl{left:0;background-image:url('+K+'zast_l.webp);background-position:left center}'+
 '.kt-flag .fr{right:0;background-image:url('+K+'zast_r.webp);background-position:right center}'+
@@ -272,43 +272,52 @@ function flagCss(){if(document.getElementById('ktFlagCss'))return;var st=documen
 function showTip(c,d){
   if(!d.classList.contains('kt-lay'))return showTipOld(c,d);
   killFlag(true);flagCss();
-  var st=status(c),pc=price(c),D=d.offsetWidth,H=Math.round(D*.95),cx=d.offsetLeft+D/2,cy=d.offsetTop+D/2,sc=H/520,capL=140*sc,tile=123*sc,capR=294*sc;
-  var want=Math.max(H*3.3,270),k=Math.max(1,Math.ceil((want-capL-capR)/tile)),W=Math.round(capL+k*tile+capR);
-  var scr=window.CooksterTreeScroll?CooksterTreeScroll.get():0,flip=false,over=cx+W-(scr+board.clientWidth-14);
-  if(over>0&&window.CooksterTreeScroll&&CooksterTreeScroll.by)CooksterTreeScroll.by(over);      // always opens to the right; if it does not fit, the map slides a little
-  var left=flip?cx-W:cx;
-  var f=el('div','kt-flag'),cl=function(v,a,b){return Math.max(a,Math.min(b,v));},nf=cl(H*.14,12,22),ef=cl(H*.09,10,15),plH=cl(H*.17,17,32);
-  f.style.cssText+='left:'+left+'px;top:'+Math.round(cy-H/2)+'px;width:'+W+'px;height:'+H+'px;font-size:'+ef+'px;z-index:5999';
-  var fb=el('div','fb');if(flip)fb.style.transform='scaleX(-1)';
-  var il=el('i','fl'),im=el('i','fm'),ir=el('i','fr');il.style.width=Math.round(capL)+'px';ir.style.width=Math.round(capR)+'px';im.style.left=Math.round(capL)+'px';im.style.right=Math.round(capR)+'px';
-  fb.appendChild(im);fb.appendChild(il);fb.appendChild(ir);f.appendChild(fb);
-  var fc=el('div','fc'),padIn=Math.round(D/2+Math.max(8,H*.08)),padOut=Math.round(capR*.62);
-  fc.style[flip?'paddingRight':'paddingLeft']=padIn+'px';fc.style[flip?'paddingLeft':'paddingRight']=padOut+'px';
-  fc.style.paddingTop=Math.round(H*.2)+'px';fc.style.paddingBottom=Math.round(H*.2)+'px';
+  var st=status(c),pc=price(c),D=d.offsetWidth,H=Math.round(D*1.12),cx=d.offsetLeft+D/2,cy=d.offsetTop+D/2,sc=H/520,capL=140*sc,tile=123*sc,capR=294*sc;
+  var cl=function(v,a,b){return Math.max(a,Math.min(b,v));},nf=cl(H*.19,17,30),ef=cl(H*.125,13,20),plH=cl(H*.21,22,38);
+  var padIn=Math.round(D/2+Math.max(8,H*.08)),padOut=Math.round(capR*.62);
+  // sadržaj (ime, zvezdice, opis levo; cena desno)
+  var fc=el('div','fc');
+  fc.style.paddingLeft=padIn+'px';fc.style.paddingRight=padOut+'px';fc.style.paddingTop=Math.round(H*.2)+'px';fc.style.paddingBottom=Math.round(H*.2)+'px';
   var fx=el('div','fx'),fn=el('div','fn',c.n);fn.style.fontSize=nf+'px';fx.appendChild(fn);
   var fs=el('div','fs');for(var q=1;q<=5;q++){var si=el('i',q<=c.s?'f':'');si.style.width=si.style.height=Math.round(nf*.8)+'px';fs.appendChild(si);}fx.appendChild(fs);
-  var fe=el('div','fe',c.e);fe.style.maxHeight='2.2em';fe.style.overflow='hidden';fx.appendChild(fe);fc.appendChild(fx);
+  var fe=el('div','fe',c.e);fe.style.maxHeight='2.2em';fe.style.overflow='hidden';fe.style.maxWidth='13em';fx.appendChild(fe);fx.style.flex='0 1 auto';fc.appendChild(fx);
   var fp=el('div','fp');
   if(st==='done'){fp.appendChild(el('div','fk','Kupljeno'));}
   else{
-    if(pc.z){var a1=el('div','kt-pl'+(S.zn<pc.z?' bad':''));a1.style.backgroundImage='url('+K+'ikona_zvezda.webp)';a1.appendChild(el('span','',String(pc.z)));fp.appendChild(a1);}
+    if(pc.z){var a1=el('div','kt-pl'+(S.zn<pc.z?' bad':''));a1.style.backgroundImage='url('+K+'ikona_zvezda.webp?v=2)';a1.appendChild(el('span','',String(pc.z)));fp.appendChild(a1);}
     if(pc.d){var a2=el('div','kt-pl'+(S.din<pc.d?' bad':''));a2.style.backgroundImage='url('+K+'ikona_novac.webp?v=2)';a2.appendChild(el('span','',pc.d>=1000?(pc.d/1000).toString().replace('.',',')+'k':String(pc.d)));fp.appendChild(a2);}
-    Array.prototype.forEach.call(fp.querySelectorAll('.kt-pl'),function(x){x.style.height=plH+'px';x.style.setProperty('--pl',Math.round(plH*1.25)+'px');x.style.width=Math.round(plH*2.9)+'px';x.style.paddingRight=Math.round(plH*.28)+'px';x.style.fontSize=Math.round(plH*.55)+'px';});
+    Array.prototype.forEach.call(fp.querySelectorAll('.kt-pl'),function(x){x.style.height=plH+'px';x.style.setProperty('--pl',Math.round(plH*1.25)+'px');x.style.paddingRight=Math.round(plH*.28)+'px';x.style.fontSize=Math.round(plH*.55)+'px';});
     var need='';if(st==='lock')need='Fali: '+missing(c).join(', ');else if(st==='can'&&!afford(c)){var ff=[];if(S.zn<pc.z)ff.push((pc.z-S.zn)+' znanja');if(S.din<pc.d)ff.push((pc.d-S.din)+' din');need='Fali: '+ff.join(', ');}
     else if(c.x){var go=groupOther(c);need=(go&&!isBought(c))?'×2 (izabrao si „'+go.n+'")':'Izbor „ILI"';}
     if(need)fp.appendChild(el('div','fq',need));
   }
-  fc.appendChild(fp);f.appendChild(fc);
-  var z0=d.style.zIndex;d.style.zIndex=6000;d.parentNode.appendChild(f);
-  FLAG={el:f,card:d,z:z0,flip:flip,W:W};
-  var from=flip?'inset(0 0 0 '+(W-D*.62)+'px)':'inset(0 '+(W-D*.62)+'px 0 0)',to='inset(0 0 0 0)';
-  if(window.gsap)gsap.fromTo(f,{clipPath:from},{clipPath:to,duration:.5,ease:'power3.out',clearProps:'clipPath'});
+  fc.appendChild(fp);
+  // izmeri prirodnu širinu sadržaja, pa skrati zastavicu da nema praznog prostora
+  var mw=el('div','kt-flag');mw.style.cssText='position:fixed;left:-9999px;top:0;width:4000px;height:'+H+'px;visibility:hidden;font-size:'+ef+'px';
+  var m2=fc.cloneNode(true);m2.style.position='static';m2.style.display='inline-flex';m2.style.width='max-content';m2.style.height=H+'px';mw.appendChild(m2);document.body.appendChild(mw);
+  var nat=Math.ceil(m2.getBoundingClientRect().width);mw.remove();
+  var k=Math.max(1,Math.ceil((nat-capL-capR)/tile)),W=Math.round(capL+k*tile+capR);
+  // zastavica (pomera se samo transformacijom: glatko) u okviru koji je odseca levo od centra kruga
+  var o=el('div','kt-flag-o'),f=el('div','kt-flag'),PAD=10;
+  o.style.cssText+='left:'+cx+'px;top:'+Math.round(cy-H/2-PAD)+'px;width:'+(W+PAD)+'px;height:'+(H+2*PAD)+'px;z-index:5999';
+  f.style.cssText+='left:0;top:'+PAD+'px;width:'+W+'px;height:'+H+'px;font-size:'+ef+'px';
+  var fb=el('div','fb'),il=el('i','fl'),im=el('i','fm'),ir=el('i','fr');il.style.width=Math.round(capL)+'px';ir.style.width=Math.round(capR)+'px';im.style.left=Math.round(capL)+'px';im.style.right=Math.round(capR)+'px';
+  fb.appendChild(im);fb.appendChild(il);fb.appendChild(ir);f.appendChild(fb);f.appendChild(fc);o.appendChild(f);
+  var scr=window.CooksterTreeScroll?CooksterTreeScroll.get():0,over=cx+W-(scr+board.clientWidth-14);
+  if(over>0&&window.CooksterTreeScroll&&CooksterTreeScroll.by)CooksterTreeScroll.by(over);      // uvek se otvara udesno; ako ne stane, karta se malo pomeri
+  var z0=d.style.zIndex;d.style.zIndex=6000;d.parentNode.appendChild(o);
+  var hide=-(W-D*.3);
+  FLAG={el:o,f:f,card:d,z:z0,hide:hide};
+  if(window.gsap){      // izlazi iza kruga: klizi udesno, malo se razvuče po visini i prelije; tekst izblede tek kad zastavica skoro stigne
+    var tl=gsap.timeline();
+    tl.fromTo(f,{x:hide,scaleY:.72,opacity:0,transformOrigin:'0% 50%'},{x:0,scaleY:1,opacity:1,duration:.55,ease:'power3.out',force3D:true},0);
+    tl.fromTo(fc,{opacity:0,x:-14},{opacity:1,x:0,duration:.3,ease:'power2.out'},.28);
+  }
 }
 function killFlag(now){
   if(!FLAG)return;var F=FLAG;FLAG=null;var fin=function(){F.el.remove();if(F.card)F.card.style.zIndex=F.z;};
   if(now||!window.gsap){fin();return;}
-  var W=F.W,D=F.card.offsetWidth,to=F.flip?'inset(0 0 0 '+(W-D*.62)+'px)':'inset(0 '+(W-D*.62)+'px 0 0)';
-  gsap.to(F.el,{clipPath:to,duration:.28,ease:'power2.in',onComplete:fin});
+  gsap.to(F.f,{x:F.hide,duration:.24,ease:'power2.in',force3D:true,onComplete:fin});
 }
 function hideTip(){clearTimeout(TIPT);tip.style.display='none';killFlag(false);}
 
