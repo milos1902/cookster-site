@@ -101,7 +101,7 @@ function build(){
 }
 function isOpen(){return document.body.classList.contains('kt-open');}
 function metrics(){
-  var h=board.clientHeight||600,rowH=Math.floor((h-20)/4),ch=Math.max(96,rowH-12),cw=Math.round(ch*1.344),colW=cw+Math.round(ch*.36);
+  var h=board.clientHeight||600,rowH=Math.floor((h-20)/4),ch=Math.max(96,rowH-12),cw=Math.round(ch*1.62),colW=cw+Math.round(ch*.36);
   M={ch:ch,cw:cw,rowH:rowH,colW:colW,padL:30,padT:12};
   M.w=M.padL+COLS*colW+30;
 }

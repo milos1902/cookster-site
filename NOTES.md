@@ -1740,3 +1740,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## Karta znanja: peti tab „Izbori" (js/knowledge-tree.js v4, data v4)
 - Dodato 24 kartice: specijalizacije (Kafedžija / Roštiljdžija / Pekar, grupa „ILI"), cjenovnik (raspon cijene), poznavanje gostiju 1–3, jelo dana, Pekara (ILI sa Terasom iz taba Kafana). Pravilo „ILI": uzima se jedan izbor, drugi iz iste grupe košta duplo (oznaka ILI na kartici, ×2 kad je drugi izbor). Cijene iz istog modela (docs/dizajn/CIJENE_KARTICA.md). Probno, ne mijenja igru.
+
+## Karta znanja: kartice kao pločice iz Kuhinjskih elemenata (css/knowledge-tree.css v5, js/knowledge-tree.js v5)
+- Kartice u karti sada koriste istu pločicu kao Kuhinjski elementi (`pg_kartica_posude_n_bez.png` / `_h_bez.png`): kupljeno = zeleni vezeni rub + kvačica, može = zlatni sjaj, zaključano = sivo sa malim katancem. Kartica je malo šira (omjer 1,62).

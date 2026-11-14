@@ -28,14 +28,17 @@ body.kt-open #ktRoot{display:flex}
 .kt-gate{position:absolute;top:0;bottom:0;width:6px;margin-left:-3px;background:repeating-linear-gradient(#e2b24a 0 14px,transparent 14px 22px)}
 .kt-lock{position:absolute;background:url(../assets/ui/napredak/zvezde/katanac_zvezda.png) 0 0/100% 100% no-repeat;display:flex;align-items:center;justify-content:center;z-index:3;filter:drop-shadow(0 4px 6px rgba(40,20,5,.5))}
 .kt-lock b{font-size:44px;line-height:1;margin-top:26%;color:#3a1f10;text-shadow:0 1px 0 rgba(255,230,160,.8)}
-.kt-card{position:absolute;background-size:100% 100%;background-repeat:no-repeat;cursor:pointer;filter:drop-shadow(0 4px 5px rgba(40,20,5,.35));transition:transform .12s}
-.kt-card.st-done{background-image:url(../assets/ui/napredak/drvo/cvor_kupljen.png)}
-.kt-card.st-can{background-image:url(../assets/ui/napredak/drvo/cvor_otkljucan.png)}
-.kt-card.st-can:hover,.kt-card.sel{background-image:url(../assets/ui/napredak/drvo/cvor_oznacen.png);transform:translateY(-2px)}
-.kt-card.st-lock{background-image:url(../assets/ui/napredak/drvo/cvor_zakljucan.png);cursor:not-allowed}
+.kt-card{position:absolute;background-size:100% 100%;background-repeat:no-repeat;cursor:pointer;background-image:url(../assets/ui/pergament/pg_kartica_posude_n_bez.png);
+ filter:drop-shadow(1px 2px 1px rgba(25,12,3,.4)) drop-shadow(2px 4px 4px rgba(25,12,3,.22));transition:transform .12s}      /* ista pločica kao u Kuhinjskim elementima */
+.kt-card.st-can:hover,.kt-card.sel{background-image:url(../assets/ui/pergament/pg_kartica_posude_h_bez.png);transform:translateY(-2px)}
+.kt-card.st-can{filter:drop-shadow(0 0 5px rgba(226,178,74,.85)) drop-shadow(1px 2px 1px rgba(25,12,3,.4)) drop-shadow(2px 4px 4px rgba(25,12,3,.22))}
+.kt-card.st-done::before{content:'';position:absolute;inset:6% 4%;border:3px solid rgba(86,140,52,.85);border-radius:6px;pointer-events:none}
+.kt-card.st-lock{cursor:not-allowed;filter:grayscale(.9) brightness(.9) contrast(.95) drop-shadow(1px 2px 1px rgba(25,12,3,.35))}
+.kt-card.st-lock::after{content:'';position:absolute;right:5%;top:8%;width:calc(var(--ch)*.2);height:calc(var(--ch)*.25);pointer-events:none;
+ background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 25'><path d='M5 11V7a5 5 0 0 1 10 0v4' fill='none' stroke='%237a5418' stroke-width='2.4'/><rect x='2' y='11' width='16' height='12' rx='2.5' fill='%23c9962a' stroke='%237a5418' stroke-width='1.6'/><circle cx='10' cy='16.5' r='1.8' fill='%237a5418'/></svg>") center/contain no-repeat}
 .kt-card.shake{animation:ktshake .35s}
 @keyframes ktshake{20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
-.kt-in{position:absolute;inset:15% 10% 11% 10%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;pointer-events:none}
+.kt-in{position:absolute;inset:13% 9% 10% 9%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;pointer-events:none}
 .kt-ic{height:36%;aspect-ratio:1;display:flex;align-items:center;justify-content:center}
 .kt-ic img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(1px 2px 1px rgba(40,20,5,.4))}
 .kt-ic span{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f6dc9a,#c9962a);border:2px solid #7a5418;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:calc(var(--ch)*.085);color:#3a1f10;line-height:1}
@@ -48,7 +51,7 @@ body.kt-open #ktRoot{display:flex}
 .kt-sr{position:absolute;left:12%;top:8%;display:flex;gap:1px;filter:drop-shadow(0 1px 1px rgba(40,20,5,.5))}
 .kt-sr i{width:calc(var(--ch)*.1);height:calc(var(--ch)*.1);background:url(../assets/ui/napredak/zvezde/zvezda_prazna.png) 0 0/100% 100% no-repeat}
 .kt-sr i.f{background-image:url(../assets/ui/napredak/zvezde/zvezda_puna.png)}
-.kt-ok{position:absolute;right:3%;top:2%;width:calc(var(--ch)*.19);height:calc(var(--ch)*.19);border-radius:50%;background:#fff;border:3px solid #3f6d26;color:#3f6d26;font:900 calc(var(--ch)*.12) Arial;display:flex;align-items:center;justify-content:center}
+.kt-ok{position:absolute;right:2%;top:-3%;width:calc(var(--ch)*.19);height:calc(var(--ch)*.19);border-radius:50%;background:#fff;border:3px solid #3f6d26;color:#3f6d26;font:900 calc(var(--ch)*.12) Arial;display:flex;align-items:center;justify-content:center}
 .st-lock .kt-ic img{filter:grayscale(1);opacity:.45}
 .st-lock .kt-ic span{filter:grayscale(1);opacity:.5}
 .st-lock .kt-nm{color:#7a6f58}
