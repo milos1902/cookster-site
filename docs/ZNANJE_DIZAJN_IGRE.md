@@ -30,7 +30,7 @@ Detaljni dokumenti iz razgovora su u `docs/dizajn/` (spisak na kraju). Podaci ka
 - Cena nekad znanje, nekad novac, nekad oba. Karta je retko popunjena (kao kod Waterparka), cena je crvena kad igrač ne može da plati.
 - Slike za karticu (okviri, strelice, tabovi, cene, katanci) je nacrtao Miloš u `assets/ui/napredak/`. **Miloš će nacrtati novi dizajn pozadine** karte u ChatGPT-u.
 - **Cijene kartica su izračunate po krivoj troškova** (`docs/dizajn/CIJENE_KARTICA.md`): korist i cijena usklađene, trougaona kriva za nivoe, darežljivo na početku i strože kasnije. Zarada po danu je pretpostavka, nije mjerena.
-- Kod nas ima oko 234 kartice (Kuhinja 61, Kafana 61, Kuća 58, Recepti 54). Probni prozor je u `js/knowledge-tree.js`. **Ne menja igru** (brojači su samo u pregledaču).
+- Kod nas ima 258 kartica u 5 tabova (Kuhinja 61, Kafana 61, Kuća 58, Recepti 54, Izbori 24). Probni prozor je u `js/knowledge-tree.js`. **Ne menja igru** (brojači su samo u pregledaču).
 - Primećeno: kod Waterparka neka kartica ima **dve ulazne strelice**, kod nas su gotovo sve jedna. Miloš je rekao da to ne treba sad menjati.
 
 **Jelovnik**
@@ -39,6 +39,13 @@ Detaljni dokumenti iz razgovora su u `docs/dizajn/` (spisak na kraju). Podaci ka
 **Ostalo**
 - Dugmad za razvoj (Maska posude, Senke sunca...) ostaju vidljiva, igra je u razvoju.
 - Prozor „Kuhinjski elementi": otvara se odmah, sa svim senkama, uz dve drvene šipke (slika `pg_sipka.webp`). Miloš je odbacio animaciju sa kočenjem.
+
+**Odluke sa kompromisom (Miloš je rekao „slažem se sa svim", 14.11.)** — u probnoj karti su u petom tabu **„Izbori"** (24 kartice):
+1. **Specijalizacija na ★3** (Kafedžija, Roštiljdžija, Pekar): izabereš jednu granu (+1 prestiž i +10% cijena za jela te grane), druge dvije kasnije koštaju **duplo**. Znak „ILI" na kartici.
+2. **Cjenovnik koji sam postavljaš** (raspon 90–120%, pa 80–140%, pa 70–160% preporučene cijene) + kartice **„Poznavanje gostiju 1–3"** koje otkrivaju sklonosti i granicu cijene (informacija, ne broj).
+3. **Jelo dana** (rizik ili sigurnost): +50% bakšiš ako ocjena 4+, −10% ugleda dana ako ne.
+4. **Terasa ili Pekara na ★4** (izbor „ILI", drugi košta duplo): Terasa je u tabu Kafana, Pekara u tabu Izbori.
+Ni jedan od ovih izbora **ne postoji u igri** (nema ocjene gostiju ni prestiža jela). Prvo se pravi ocjena gostiju i prestiž.
 
 ## 2. Predlozi o kojima Miloš još nije odlučio (nemoj ih smatrati dogovorenim)
 - Stalni gosti sa zadacima i **žetonima** umesto Putnika (kao tri lika u muzeju u Waterparku).

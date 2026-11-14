@@ -62,3 +62,7 @@ body.kt-open #ktRoot{display:flex}
 #ktFoot .sp{flex:1}
 #ktToast{position:absolute;left:50%;bottom:54px;transform:translateX(-50%);background:#3a1f10;color:#fff3dc;padding:8px 18px;border-radius:12px;font-weight:700;font-size:16px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:5}
 #ktToast.on{opacity:1}
+
+.kt-or{position:absolute;left:50%;top:-3%;transform:translateX(-50%);padding:1px 9px;border-radius:10px;background:#e2b24a;border:2px solid #7a5418;color:#3a1f10;font:900 calc(var(--ch)*.075) Georgia,serif;letter-spacing:.5px;z-index:2;box-shadow:0 2px 3px rgba(40,20,5,.4)}
+.kt-or.dbl{background:#d9694a;color:#fff3dc;border-color:#7d2412}
+.kt-tab{width:150px}

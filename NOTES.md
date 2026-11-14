@@ -1737,3 +1737,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## Cijene kartica izračunate krivom troškova (js/data/knowledge-tree-data.js v3, docs/dizajn/CIJENE_KARTICA.md)
 - Cijene 234 kartice više nisu procjena na oko: korist (V) se računa iz učinka (procenat × težina × zarada na zvezdici, jedinice, nivo prestiža), cijena = V × faktor darežljivosti × trougaona kriva za nivoe, pa se dijeli na znanje (gornja granica po zvezdici) i novac. Model je dokumentovan u `docs/dizajn/CIJENE_KARTICA.md`, sa provjerom koliko dana treba da se kupi odjeljak. Zarada po danu je pretpostavka i nije mjerena u igri.
+
+## Karta znanja: peti tab „Izbori" (js/knowledge-tree.js v4, data v4)
+- Dodato 24 kartice: specijalizacije (Kafedžija / Roštiljdžija / Pekar, grupa „ILI"), cjenovnik (raspon cijene), poznavanje gostiju 1–3, jelo dana, Pekara (ILI sa Terasom iz taba Kafana). Pravilo „ILI": uzima se jedan izbor, drugi iz iste grupe košta duplo (oznaka ILI na kartici, ×2 kad je drugi izbor). Cijene iz istog modela (docs/dizajn/CIJENE_KARTICA.md). Probno, ne mijenja igru.
