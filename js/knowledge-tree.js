@@ -107,12 +107,12 @@ function build(){
   window.addEventListener('resize',function(){if(isOpen())fit();});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen()){e.stopPropagation();close();}},true);
 }
-var TABX=[[82,366],[372,638],[646,911],[919,1185],[1193,1487]];
-function kk(){return Math.min(innerWidth*.98/1514,innerHeight*.98/1014);}
+var TABX=[[83,364],[372,636],[641,906],[912,1178],[1184,1451]];
+function kk(){return Math.min(innerWidth*.98/1536,innerHeight*.98/1024);}
 function fit(){panel.style.setProperty('--k',kk());}
 function isOpen(){return document.body.classList.contains('kt-open');}
 function metrics(){
-  var h=680,rowH=Math.floor((h-20)/4),D=124;
+  var h=674,rowH=Math.floor((h-20)/4),D=124;
   M={D:D,ch:rowH-6,cw:176,rowH:rowH,colW:270,padL:46,padT:12};
   M.w=M.padL+COLS*M.colW+30;
 }
