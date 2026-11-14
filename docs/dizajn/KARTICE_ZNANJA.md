@@ -1,9 +1,9 @@
 # Cookster: kartice karte znanja (sadržaj svih kartica, cijene po krivoj troškova)
 
 Svaka kartica ima: ikonu, naziv, zvezdice (koju ★ traži), cijenu (znanje ✦ i/ili novac, crveno kad igrač ne može da plati) i stanje. U opisu na lebdenje: opis, šta daje, šta traži.
-Tekst je na ekavici. **Cijene su izračunate** (vidi `CIJENE_KARTICA.md`): kolona **Vrijednost** je koliko učinak kartice vredi (u dinarima-ekvivalentu), a **Cijena** je ono što igrač plaća.
+Tekst je na ekavici. **Cijene su izračunate** (vidi `CIJENE_KARTICA.md`): kolona **Vrijednost** je koliko učinak kartice vredi (dinar-ekvivalent), a **Cijena** je ono što igrač plaća.
 
-Oznake: ✓ početno · N novi predmet · L nivo nadogradnje · P posebno · S osoblje · Q pomoć igraču. U igri: ✔ postoji · ➕ treba napraviti · ✎ treba nacrtati sliku.
+Oznake: ✓ početno · N novi predmet · L nivo nadogradnje · P posebno · S osoblje · Q pomoć igraču. U igri: ✔ postoji · ➕ treba napraviti · ✎ treba nacrtati sliku. **ILI** = izbor od kojeg se uzima samo jedan (drugi košta duplo).
 
 
 ## TAB: KUHINJA
@@ -125,7 +125,7 @@ Oznake: ✓ početno · N novi predmet · L nivo nadogradnje · P posebno · S o
 | 8 | **6 stolova** | 3 | N | ✦ 3 + 900 дин | 1500 | Prava kafana. | 6 stolova. | 4 stola | ➕ treba napraviti |
 | 9 | **Strpljenje gostiju 2** | 3 | L | ✦ 5 | 720 | Strpljivi gosti. | Gosti čekaju 30% duže. | Strpljenje gostiju 1 | ➕ treba napraviti |
 | 10 | **Kapacitet gostiju 3** | 3 | L | ✦ 8 + 3.200 дин | 2400 | Gužva je znak ugleda. | Kafana prima 24 gosta. | Kapacitet gostiju 2 | ➕ treba napraviti |
-| 11 | **Terasa: stolovi** | 4 | P | ✦ 11 + 4.000 дин | 5400 | Napolju je lepše kad je toplo. | Otključava terasu sa stolovima. | Kapacitet gostiju 3 | ✎ treba nacrtati |
+| 11 | **Terasa: stolovi (ILI: TP)** | 4 | P | ✦ 11 + 4.000 дин | 5400 | Napolju je lepše kad je toplo. | Otključava terasu sa stolovima. | Kapacitet gostiju 3 | ✎ treba nacrtati |
 | 12 | **Suncobrani** | 4 | N | ✦ 6 + 2.250 дин | 3000 | Hlad u podne. | Terasa: gosti ostaju duže po vrelini. | Terasa: stolovi | ✎ treba nacrtati |
 | 13 | **Strpljenje gostiju 3** | 4 | L | ✦ 6 + 2.100 дин | 1440 | Gosti vole ovu kafanu. | Gosti čekaju 45% duže. | Strpljenje gostiju 2 | ➕ treba napraviti |
 | 14 | **Velika terasa** | 5 | P | ✦ 23 + 8.250 дин | 9900 | Cela bašta pod suncobranima. | Terasa prima još 12 gostiju. | Suncobrani | ✎ treba nacrtati |
@@ -330,3 +330,50 @@ Oznake: ✓ početno · N novi predmet · L nivo nadogradnje · P posebno · S o
 | 14 | **Slava meni** | 5 | P | ✦ 23 + 8.250 дин | 9900 | Za velike prilike. | Otključava meni za slavu (događaj Slava). | Zimski meni | ➕ treba napraviti |
 | 15 | **Komplet 4** | 5 | L | ✦ 1 + 600 дин | 240 | Prvo domaćin, pa gost. | Majstorski znak: komplet +1 prestiž. | Komplet 3 | ➕ treba napraviti |
 | 16 | **Majstor kafedžija** | 5 | P | ✦ 24 + 8.850 дин | 10500 | Kafa, rakija i vino kao u staro doba. | Sva pića +1 prestiž. | Kafa 4 | ➕ treba napraviti |
+
+
+## TAB: IZBORI
+
+### Specijalizacija: Kafedžija
+
+| c | Naziv | ★ | Vrsta | Cijena | Vrijednost | Opis | Daje | Traži | U igri |
+|---|---|---|---|---|---|---|---|---|---|
+| 8 | **Kafedžija (ILI: SPEC)** | 3 | P | ✦ 6 + 2.500 дин | 3700 | Kafa, rakija i vino iz tvojih ruku. | Sva pića +1 prestiž i naplaćuju se 10% skuplje. | — | ➕ treba napraviti |
+| 9 | **Kafedžija 2** | 3 | L | ✦ 1 | 120 | Ruka se uvježba. | Ocjena jela iz grane +5%. | Kafedžija | ➕ treba napraviti |
+| 10 | **Domaća kafa sa kajmakom** | 3 | N | ✦ 3 + 900 дин | 1500 | Za one koji znaju. | Otključava specijalitet (piće). | Kafedžija | ➕ treba napraviti |
+| 11 | **Kafedžija 3** | 4 | L | ✦ 2 + 650 дин | 450 | Gosti znaju kod koga idu. | Jela iz grane se naplaćuju 10% skuplje. | Kafedžija 2 | ➕ treba napraviti |
+| 13 | **Kafanski majstor** | 4 | P | ✦ 13 + 5.000 дин | 6600 | Kafa kakvu pamte. | Sva pića +2 prestiža. | Kafedžija 3 | ➕ treba napraviti |
+
+### Specijalizacija: Roštiljdžija
+
+| c | Naziv | ★ | Vrsta | Cijena | Vrijednost | Opis | Daje | Traži | U igri |
+|---|---|---|---|---|---|---|---|---|---|
+| 8 | **Roštiljdžija (ILI: SPEC)** | 3 | P | ✦ 6 + 2.500 дин | 3700 | Meso sa žara. | Sva mesna jela +1 prestiž i naplaćuju se 10% skuplje. | — | ➕ treba napraviti |
+| 9 | **Roštiljdžija 2** | 3 | L | ✦ 1 | 120 | Ruka se uvježba. | Ocjena jela iz grane +5%. | Roštiljdžija | ➕ treba napraviti |
+| 10 | **Plata za društvo** | 3 | N | ✦ 3 + 900 дин | 1500 | Za cijelu ekipu. | Otključava specijalitet (meso sa roštilja). | Roštiljdžija | ➕ treba napraviti |
+| 11 | **Roštiljdžija 3** | 4 | L | ✦ 2 + 650 дин | 450 | Gosti znaju kod koga idu. | Jela iz grane se naplaćuju 10% skuplje. | Roštiljdžija 2 | ➕ treba napraviti |
+| 13 | **Majstor žara** | 4 | P | ✦ 13 + 5.000 дин | 6600 | Zna se kad se okrene. | Sva mesna jela +2 prestiža. | Roštiljdžija 3 | ➕ treba napraviti |
+
+### Specijalizacija: Pekar
+
+| c | Naziv | ★ | Vrsta | Cijena | Vrijednost | Opis | Daje | Traži | U igri |
+|---|---|---|---|---|---|---|---|---|---|
+| 8 | **Pekar (ILI: SPEC)** | 3 | P | ✦ 6 + 2.500 дин | 3700 | Hleb, pogača i pita. | Hleb, pogača i pita +1 prestiž i naplaćuju se 10% skuplje. | — | ➕ treba napraviti |
+| 9 | **Pekar 2** | 3 | L | ✦ 1 | 120 | Ruka se uvježba. | Ocjena jela iz grane +5%. | Pekar | ➕ treba napraviti |
+| 10 | **Pita sa sirom** | 3 | N | ✦ 3 + 900 дин | 1500 | Topla, iz peći. | Otključava specijalitet (pita). | Pekar | ➕ treba napraviti |
+| 11 | **Pekar 3** | 4 | L | ✦ 2 + 650 дин | 450 | Gosti znaju kod koga idu. | Jela iz grane se naplaćuju 10% skuplje. | Pekar 2 | ➕ treba napraviti |
+| 13 | **Majstor peći** | 4 | P | ✦ 13 + 5.000 дин | 6600 | Testo ne laže. | Hleb, pogača i pita +2 prestiža. | Pekar 3 | ➕ treba napraviti |
+
+### Cjenovnik, gosti, jelo dana, pekara
+
+| c | Naziv | ★ | Vrsta | Cijena | Vrijednost | Opis | Daje | Traži | U igri |
+|---|---|---|---|---|---|---|---|---|---|
+| 4 | **Cjenovnik** | 2 | P | ✦ 4 + 1.650 дин | 3060 | Sam postavljaš cijenu jela. | Otključava cjenovnik: cijena jela od 90% do 120% preporučene. | — | ➕ treba napraviti |
+| 5 | **Poznavanje gostiju 1** | 2 | Q | ✦ 3 | 840 | Šta gosti vole. | Pokazuje sklonosti stalnih gostiju (jelo koje vole). | Cjenovnik | ➕ treba napraviti |
+| 6 | **Jelo dana** | 2 | P | ✦ 3 + 1.200 дин | 2260 | Svako jutro jedno jelo posebno. | Biraš jelo dana: +50% bakšiš ako ocjena 4+, −10% ugleda dana ako ne. | Cjenovnik | ➕ treba napraviti |
+| 7 | **Cjenovnik 2** | 2 | L | ✦ 3 | 480 | Znaš koliko vrijediš. | Cijena jela od 80% do 140% preporučene. | Cjenovnik | ➕ treba napraviti |
+| 8 | **Poznavanje gostiju 2** | 3 | Q | ✦ 9 | 1800 | Do kad ide njihov novčanik. | Pokazuje do koje cijene koja grupa gostiju plaća. | Poznavanje gostiju 1 | ➕ treba napraviti |
+| 10 | **Cjenovnik 3** | 3 | L | ✦ 1 | 50 | Cijene po tvom. | Cijena jela od 70% do 160% preporučene. | Cjenovnik 2 | ➕ treba napraviti |
+| 11 | **Pekara (ILI: TP)** | 4 | P | ✦ 11 + 4.000 дин | 5400 | Miris svježeg hleba po cijelom selu. | Otključava pekaru (hleb i kolači, stabilna zarada). Drugi izbor od Terase. | Poznavanje gostiju 2 | ➕ treba napraviti |
+| 12 | **Poznavanje gostiju 3** | 4 | Q | ✦ 16 + 950 дин | 3600 | Svi ih znaš. | Srca iznad gostiju: vidiš omiljeni sastojak svake grupe. | Poznavanje gostiju 2 | ➕ treba napraviti |
+| 13 | **Jelo dana 2** | 4 | L | ✦ 1 + 600 дин | 450 | Dan počinje sa specijalom. | Bonus jela dana +75% bakšiša. | Jelo dana | ➕ treba napraviti |

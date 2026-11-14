@@ -7,7 +7,7 @@
 if(window.CooksterTree)return;
 var D=window.CooksterTreeData;if(!D||!D.cards)return;
 var A='assets/ui/napredak/',KEY='cookster.tree.demo.v1';
-var TABS=[['Kuhinja','kuhinja'],['Kafana','kafana'],['Kuća','odrzavanje'],['Recepti','kafana']];      // treći tab za sada koristi sliku "odrzavanje" (bez teksta) dok se ne nacrta nova
+var TABS=[['Kuhinja','kuhinja'],['Kafana','kafana'],['Kuća','odrzavanje'],['Recepti','kafana'],['Izbori','kuhinja']];      // treći tab za sada koristi sliku "odrzavanje" (bez teksta) dok se ne nacrta nova
 var COLS=16,SEC={1:[1,3],2:[4,7],3:[8,10],4:[11,13],5:[14,16]};
 var cards=D.cards.map(function(c,i){c.id=c.t+'|'+c.n;c.i=i;return c;});
 var byId={};cards.forEach(function(c){byId[c.id]=c;});
@@ -31,6 +31,7 @@ function artFor(c){
   artCache[c.id]=src;return src;
 }
 function badgeText(c){
+  if(/^Cjenovnik/.test(c.n))return '↔';
   var m=/(\d+)\s*%/.exec(c.e);if(m)return '+'+m[1]+'%';
   m=/\+(\d+)/.exec(c.e);if(m)return '+'+m[1];
   m=/(\d+)\s*(mesta|gostiju|gosta|jela|stolova)/.exec(c.e);if(m)return m[1];
@@ -58,7 +59,11 @@ function missing(c){
   parents(c).forEach(function(p){if(!isBought(p))m.push(p.n);});
   return m;
 }
-function afford(c){return S.zn>=c.z&&S.din>=c.d;}
+function groupOther(c){      // grupa „ILI": ako je već kupljena druga kartica iz iste grupe, ova košta duplo
+  if(!c.x)return null;for(var i=0;i<cards.length;i++){var o=cards[i];if(o!==c&&o.x===c.x&&isBought(o))return o;}return null;
+}
+function price(c){var m=groupOther(c)&&!isBought(c)?2:1;return {z:c.z*m,d:c.d*m,dbl:m===2};}
+function afford(c){var p=price(c);return S.zn>=p.z&&S.din>=p.d;}
 // ---- DOM
 var root,panel,top,tabsEl,board,inner,tip,toast,foot,badgeEl,znEl,dinEl,svg,M={};
 function build(){
@@ -150,10 +155,12 @@ function renderBoard(){
     else{var sp=el('span',c.y==='Q'?'q':c.y==='S'?'s':'',badgeText(c));ic.appendChild(sp);}
     inn.appendChild(ic);inn.appendChild(el('div','kt-nm',c.n));
     var co=el('div','kt-co');
-    if(st!=='done'&&(c.z||c.d)){
-      if(c.z){var a1=el('div','kt-pl'+(S.zn<c.z?' bad':''));a1.style.backgroundImage='url('+A+'drvo/cena_bodovi.png)';a1.appendChild(el('span','',String(c.z)));co.appendChild(a1);}
-      if(c.d){var a2=el('div','kt-pl'+(S.din<c.d?' bad':''));a2.style.backgroundImage='url('+A+'drvo/cena_novac.png)';a2.appendChild(el('span','',c.d>=1000?(c.d/1000).toString().replace('.',',')+'k':String(c.d)));co.appendChild(a2);}
+    var pr=price(c);
+    if(st!=='done'&&(pr.z||pr.d)){
+      if(pr.z){var a1=el('div','kt-pl'+(S.zn<pr.z?' bad':''));a1.style.backgroundImage='url('+A+'drvo/cena_bodovi.png)';a1.appendChild(el('span','',String(pr.z)));co.appendChild(a1);}
+      if(pr.d){var a2=el('div','kt-pl'+(S.din<pr.d?' bad':''));a2.style.backgroundImage='url('+A+'drvo/cena_novac.png)';a2.appendChild(el('span','',pr.d>=1000?(pr.d/1000).toString().replace('.',',')+'k':String(pr.d)));co.appendChild(a2);}
     }
+    if(c.x)d.appendChild(el('div','kt-or'+(groupOther(c)&&st!=='done'?' dbl':''),groupOther(c)&&st!=='done'?'×2':'ILI'));
     inn.appendChild(co);d.appendChild(inn);
     d.addEventListener('mouseenter',function(e){showTip(c,d);});d.addEventListener('mouseleave',hideTip);
     d.addEventListener('click',function(){onCard(c,d);});
@@ -163,8 +170,9 @@ function renderBoard(){
 function showTip(c,d){
   var st=status(c),h='<b>'+c.n+'</b>'+c.o+'<em>Daje: '+c.e+'</em>';
   if(c.q)h+='<em>Traži: ★'+c.s+(c.q?', '+c.q:'')+'</em>';else if(c.y!=='✓')h+='<em>Traži: ★'+c.s+'</em>';
+  if(c.x){var go=groupOther(c);h+='<em>'+(go&&!isBought(c)?'Izabrao si „'+go.n+'". Ovaj izbor košta duplo.':'Izbor „ILI": uzimaš samo jedan, drugi košta duplo.')+'</em>';}
   if(st==='lock'){h+='<em class="need">Fali: '+missing(c).join(', ')+'</em>';}
-  else if(st==='can'&&!afford(c)){var f=[];if(S.zn<c.z)f.push('✦ '+(c.z-S.zn)+' znanja');if(S.din<c.d)f.push((c.d-S.din)+' дин');h+='<em class="need">Fali: '+f.join(', ')+'</em>';}
+  else if(st==='can'&&!afford(c)){var pp2=price(c),f=[];if(S.zn<pp2.z)f.push('✦ '+(pp2.z-S.zn)+' znanja');if(S.din<pp2.d)f.push((pp2.d-S.din)+' дин');h+='<em class="need">Fali: '+f.join(', ')+'</em>';}
   else if(st==='can')h+='<em>Klikni da kupiš.</em>';
   if(c.g!=='OK'){h+='<em style="font-weight:400;font-size:12px;opacity:.75">'+(c.g==='NOVO'?'(u igri još ne postoji)':'(treba nacrtati sliku)')+'</em>';}
   tip.innerHTML=h;tip.style.display='block';
@@ -178,7 +186,7 @@ function onCard(c,d){
   if(st==='done'){say('Već imaš: '+c.n+'.');return;}
   if(st==='lock'){d.classList.remove('shake');void d.offsetWidth;d.classList.add('shake');say('Zaključano. Fali: '+missing(c).join(', ')+'.');return;}
   if(!afford(c)){d.classList.remove('shake');void d.offsetWidth;d.classList.add('shake');say('Nemaš dovoljno za '+c.n+'.');return;}
-  S.zn-=c.z;S.din-=c.d;S.bought[c.id]=1;save();refresh();say('Kupljeno: '+c.n+'.');
+  var pp=price(c);S.zn-=pp.z;S.din-=pp.d;S.bought[c.id]=1;save();refresh();say('Kupljeno: '+c.n+'.');
 }
 function refresh(){
   badgeEl.innerHTML='<b>★'+S.star+'</b>';
