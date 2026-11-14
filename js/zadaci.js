@@ -69,7 +69,7 @@ var css=document.createElement('style');
 css.textContent=[
 '@font-face{font-family:"Paytone One";src:url(assets/fonts/PaytoneOne-Regular.ttf) format("truetype");font-display:swap}',
 '#zadaciBox{position:fixed;right:12px;top:104px;width:300px;height:316px;z-index:1895;background:url('+Z+'zadaci_okvir.png) 0 0/100% 100% no-repeat;filter:drop-shadow(0 5px 8px rgba(30,15,5,.45));font-family:"Paytone One","CooksterSerif",Georgia,serif;font-weight:400;color:#3a1f10;user-select:none}',
-'#zadaciBox .zt{position:absolute;left:22%;right:22%;top:3.2%;height:11.5%;display:flex;align-items:center;justify-content:center;gap:8px;font-size:19px;color:#7a1e14;letter-spacing:.05em}#zadaciBox .zt small{font-size:14px;color:#3a1f10}',
+'#zadaciBox .zt{position:absolute;left:20%;right:20%;top:3.2%;height:11.5%;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;white-space:nowrap;color:#7a1e14;letter-spacing:.05em}#zadaciBox .zt small{font-size:14px;color:#3a1f10}',
 '#zadaciBox .zl{position:absolute;left:7.5%;right:7.5%;top:21%;display:flex;flex-direction:column;gap:4px}',
 '#zadaciBox .zr{position:relative;aspect-ratio:394/108;background:url('+Z+'zadatak_red_prazan.png) 0 0/100% 100% no-repeat;display:flex;align-items:center;padding:0 44px 0 62px;font-size:13px;line-height:1.1;transition:opacity .4s}',
 '#zadaciBox .zr.main{background-image:url('+Z+'zadatak_red_glavni.png)}#zadaciBox .zr.main .zx{color:#7a1e14}#zadaciBox .zr.main .zk{font-size:15px;color:#7a1e14}',
@@ -100,8 +100,9 @@ function render(){
   if(!box)return;
   var goal=CFG.stars[S.star-1],vis=list().slice(0,2),n=0;
   TASKS.forEach(function(t){if(S.done[t.id])n++;});
-  var h='<div class="zt">ZADACI'+(tutorialLeft()?'<small>'+n+'/'+TASKS.length+'</small>':'')+'</div><div class="zl">';
-  if(goal)h+='<div class="zr main"><span class="zx">Put do '+ordinal()+' zvezde</span><span class="zk">'+Math.min(goal,S.starServed||0)+'/'+goal+'</span></div>';
+  var h='<div class="zt">LISTA ZADATAKA</div><div class="zl">';
+  if(tutorialLeft())h+='<div class="zr main"><span class="zx">Put do prve zvezde</span><span class="zk">'+n+'/'+TASKS.length+'</span></div>';
+  else if(goal)h+='<div class="zr main"><span class="zx">Put do '+ordinal()+' zvezde</span><span class="zk">'+Math.min(goal,S.starServed||0)+'/'+goal+'</span></div>';
   vis.forEach(function(t){
     h+='<div class="zr'+(isDone(t)?' done':'')+'"><span class="zx">'+t.text+'</span>'+(t.zn?'<span class="zk"><img src="'+K+'ikona_znanje.webp" alt="">+'+t.zn+'</span>':'')+'</div>';
   });
@@ -112,7 +113,7 @@ function reward(t){if(t.zn)S.zn+=t.zn;recent[t.id]=Date.now();try{showToast('Zad
 function check(){
   var any=false,D=dayState();
   // jela poslužena (za zvezdu): razlika u pregledu dana
-  if(D){
+  if(D&&!tutorialLeft()){
     var add=D.day===S.last.day?Math.max(0,D.food-S.last.food):D.food;
     if(add>0){S.starServed=(S.starServed||0)+add;any=true;}
     if(D.day!==S.last.day||D.food!==S.last.food){S.last={day:D.day,food:D.food};any=true;}
