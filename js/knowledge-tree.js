@@ -169,7 +169,7 @@ function layoutExtras(){
     var lf=null,rt=null,dl=1e9,dr=1e9;
     cl.forEach(function(o){var d=Math.hypot(o.cx-w.cx,o.cy-w.cy);if(o.cx<w.cx&&d<dl){dl=d;lf=o;}if(o.cx>=w.cx&&d<dr){dr=d;rt=o;}});
     var d=el('div','kt-wire'+(lf&&isBought(lf.c)?'':' off'));
-    d.style.backgroundImage='url('+K+'konci/'+w.f+'.webp)';d.style.left=(w.cx-w.w/2)+'px';d.style.top=(w.cy-w.h/2)+'px';d.style.width=w.w+'px';d.style.height=w.h+'px';d.style.zIndex=w.z||1;
+    d.style.backgroundImage='url('+K+'konci/'+w.f+'.webp?v=2)';d.style.left=(w.cx-w.w/2)+'px';d.style.top=(w.cy-w.h/2)+'px';d.style.width=w.w+'px';d.style.height=w.h+'px';d.style.zIndex=w.z||1;
     d.style.transform='rotate('+(w.r||0)+'deg)'+(w.fl?' scaleX(-1)':'');inner.appendChild(d);
   });
 }
@@ -196,7 +196,7 @@ function renderBoard(){
     parents(c).forEach(function(p){
       var A1=pos(p),B1=pos(c),px=A1.x+M.cw/2,py=A1.y+M.D/2,cx=B1.x+M.cw/2,cy=B1.y+M.D/2,w=el('div','kt-wire'+(isBought(p)?'':' off')),dx=cx-px;
       var v=pickWire(p,c,cy<py?'up':Math.abs(cy-py)<2?'flat':'down',dx,Math.abs(cy-py)),dy=Math.abs(cy-py),sy=v.k==='flat'?Math.min(dx/v.W,(v.H/v.W>.2?90:48)/v.H):dy/Math.abs(v.wr-v.wl);
-      w.style.backgroundImage='url('+K+'konci/'+v.n+'.webp)';w.style.left=px+'px';w.style.width=dx+'px';w.style.height=(v.H*sy)+'px';w.style.top=(py-v.wl*sy)+'px';
+      w.style.backgroundImage='url('+K+'konci/'+v.n+'.webp?v=2)';w.style.left=px+'px';w.style.width=dx+'px';w.style.height=(v.H*sy)+'px';w.style.top=(py-v.wl*sy)+'px';
       if(v.f)w.style.transform='scaleX(-1)';
       inner.appendChild(w);
     });
