@@ -1731,3 +1731,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Karta znanja: četvrti tab „Recepti" (js/knowledge-tree.js v3, data v2)
 - Dodat tab „Recepti" (54 kartice): jela kao lanci (otključavanje + nivoi 2–4 + „majstor" znak), kompleti, sezonski meniji, nivoi pića. Četiri reda: Povrće i variva, Meso i roštilj, Kiselo/hleb/kolači, Pića/kompleti/sezona. Ukupno sada 234 kartice u 4 taba.
 - Probno kao i ostalo: ne mijenja igru. Četvrti tab koristi sliku tab „kafana" sa tekstom „Recepti" dok se ne nacrta nova.
+
+## Znanje o dizajnu igara (docs/ZNANJE_DIZAJN_IGRE.md, docs/dizajn/)
+- Novi dokument sa svim što smo pročitali i dogovorili (Waterpark Simulator, Pizza Connection 3, Quantic Foundry, GDKeys, Schellovi lensovi, Game Balance/Design Concepts, Game Programming Patterns...) i sa dogovorenim odlukama (Putnika nema, igra nema kraj, zvezdice po kvalitetu zadataka, karta znanja). Ne menja igru. Dokumenti iz razgovora su kopirani u `docs/dizajn/`. HANDOFF.md i docs/PRENOS_NOVI_CHAT.md upućuju na ovaj fajl.

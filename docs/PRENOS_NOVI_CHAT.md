@@ -1,5 +1,7 @@
 # PRENOS ZA NOVI CHAT: Cookster
 
+> **Dizajn igre:** posle ovog fajla pročitaj `docs/ZNANJE_DIZAJN_IGRE.md` (dogovoreno za zadatke, zvezdice, kartu znanja, jelovnik; Putnika nema, igra nema kraj) i po potrebi `docs/dizajn/`.
+
 Ovo je kompletan prenos. Novi chat treba da pročita OVAJ fajl, pa `NOTES.md` (naslovi sa `## `).
 
 ## 1. Ko je Miloš i pravila rada

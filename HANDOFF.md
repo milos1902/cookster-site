@@ -1,5 +1,7 @@
 # Cookster – predaja posla novom chatu (čitaj PRVO)
 
+> **DIZAJN IGRE (novo, 14.11.2026):** pročitaj `docs/ZNANJE_DIZAJN_IGRE.md`. Tamo je sve što smo pročitali i dogovorili za zadatke, zvezdice, kartu znanja i jelovnik (Putnika nema, igra nema kraj).
+
 Ovo je kratak pregled gde smo stali. Detalji svake funkcije su u `NOTES.md` (veliki fajl, u njemu traži po naslovu).
 Poslednje ažuriranje: oktobar 2026 (posle PR-ova do #262).
 
