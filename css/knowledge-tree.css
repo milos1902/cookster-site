@@ -111,3 +111,6 @@ body.kt-open #ktRoot{display:flex}
 .kt-lay.st-done::after{content:'';position:absolute;left:calc(50% + var(--D)*.16);top:calc(var(--D)*.62);width:calc(var(--D)*.3);height:calc(var(--D)*.3);pointer-events:none;z-index:3;background:url(../assets/ui/karta/znak_kupljeno.webp) center/contain no-repeat;filter:drop-shadow(0 2px 2px rgba(40,22,6,.45))}
 .kt-card.st-lock.kt-lay::after{left:calc(50% + var(--D)*.16);top:calc(var(--D)*.62);width:calc(var(--D)*.3);height:calc(var(--D)*.3);background:url(../assets/ui/karta/znak_katanac.webp) center/contain no-repeat;filter:drop-shadow(0 2px 2px rgba(40,22,6,.45))}
 .kt-stage{position:absolute;left:150px;top:0;height:100%}
+
+/* Znaci (kvačica, katanac) su iste veličine na svakom krugu; položaj prati veličinu kruga */
+.kt-lay.st-done::after,.kt-card.st-lock.kt-lay::after{width:34px;height:34px}
