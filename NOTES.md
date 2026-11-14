@@ -1734,3 +1734,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## Znanje o dizajnu igara (docs/ZNANJE_DIZAJN_IGRE.md, docs/dizajn/)
 - Novi dokument sa svim što smo pročitali i dogovorili (Waterpark Simulator, Pizza Connection 3, Quantic Foundry, GDKeys, Schellovi lensovi, Game Balance/Design Concepts, Game Programming Patterns...) i sa dogovorenim odlukama (Putnika nema, igra nema kraj, zvezdice po kvalitetu zadataka, karta znanja). Ne menja igru. Dokumenti iz razgovora su kopirani u `docs/dizajn/`. HANDOFF.md i docs/PRENOS_NOVI_CHAT.md upućuju na ovaj fajl.
+
+## Cijene kartica izračunate krivom troškova (js/data/knowledge-tree-data.js v3, docs/dizajn/CIJENE_KARTICA.md)
+- Cijene 234 kartice više nisu procjena na oko: korist (V) se računa iz učinka (procenat × težina × zarada na zvezdici, jedinice, nivo prestiža), cijena = V × faktor darežljivosti × trougaona kriva za nivoe, pa se dijeli na znanje (gornja granica po zvezdici) i novac. Model je dokumentovan u `docs/dizajn/CIJENE_KARTICA.md`, sa provjerom koliko dana treba da se kupi odjeljak. Zarada po danu je pretpostavka i nije mjerena u igri.
