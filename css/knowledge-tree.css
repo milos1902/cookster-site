@@ -91,3 +91,15 @@ body.kt-open #ktRoot{display:flex}
 .kt-lay .kt-ic span{font-size:calc(var(--D)*.2)}
 /* Crvene pregrade između zvezdica su uklonjene; granicu pokazuju samo tamno polje i katanac dok zvezdica nije dosegnuta */
 .kt-gate{display:none}
+
+/* Isti font kao u igri (sat i vreme gore): Paytone One */
+@font-face{font-family:'Paytone One';src:url(../assets/fonts/PaytoneOne-Regular.ttf) format('truetype');font-display:swap}
+#ktRoot,#ktTip,.kt-tab,.kt-pl,.kt-badge,.kt-st,.kt-or,#ktToast,#ktFoot,#ktFoot button,.kt-x{font-family:'Paytone One','CooksterSerif',Georgia,serif;font-weight:400;font-synthesis:none}
+#ktFoot button{font-weight:400;font-size:13px}
+.kt-tab{color:#7a1e14;text-shadow:0 1px 0 rgba(255,236,200,.55)}
+.kt-tab.on{color:#fff3dc;text-shadow:0 1px 2px rgba(60,10,5,.7)}
+.kt-tab small{font-size:15px}
+.kt-badge b{color:#7a1e14}
+#ktTip .tp-nm{color:#7a1e14;font-size:21px}
+#ktTip .tp-e{font-weight:400;color:#3a1f10}
+#ktTip .tp-o{font-style:normal}

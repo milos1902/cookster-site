@@ -111,7 +111,7 @@ function build(){
   board=el('div');board.id='ktBoard';inner=el('div');inner.id='ktInner';board.appendChild(inner);
   foot=el('div');foot.id='ktFoot';
   
-  [['Probno:',null],['+10 znanja',function(){S.zn+=10;}],['+500 дин',function(){S.din+=500;}],['Zvezdica −',function(){S.star=Math.max(1,S.star-1);}],['Zvezdica +',function(){S.star=Math.min(5,S.star+1);}],
+  [['Probno:',null],['+10 znanja',function(){S.zn+=10;}],['+500 din',function(){S.din+=500;}],['Zvezdica −',function(){S.star=Math.max(1,S.star-1);}],['Zvezdica +',function(){S.star=Math.min(5,S.star+1);}],
    ['Počni ispočetka',function(){S.bought={};S.zn=42;S.din=1250;S.star=2;}]].forEach(function(b){if(!b[1]){foot.appendChild(el('span','',b[0]));return;}var bt=el('button','',b[0]);bt.onclick=function(){b[1]();save();refresh();};foot.appendChild(bt);});
   
   toast=el('div');toast.id='ktToast';
@@ -240,7 +240,7 @@ function showTip(c,d){
   }
   if(c.x){var go=groupOther(c);h+='<p class="tp-n">'+(go&&!isBought(c)?'Izabrao si „'+go.n+'". Ovaj izbor košta duplo.':'Izbor „ILI": uzimaš samo jedan, drugi košta duplo.')+'</p>';}
   if(st==='lock')h+='<p class="tp-need">Fali: '+missing(c).join(', ')+'</p>';
-  else if(st==='can'&&!afford(c)){var f=[];if(S.zn<pc.z)f.push('✦ '+(pc.z-S.zn)+' znanja');if(S.din<pc.d)f.push((pc.d-S.din)+' дин');h+='<p class="tp-need">Fali: '+f.join(', ')+'</p>';}
+  else if(st==='can'&&!afford(c)){var f=[];if(S.zn<pc.z)f.push('✦ '+(pc.z-S.zn)+' znanja');if(S.din<pc.d)f.push((pc.d-S.din)+' din');h+='<p class="tp-need">Fali: '+f.join(', ')+'</p>';}
   else if(st==='can')h+='<p class="tp-n">Klikni da kupiš.</p>';
   if(c.g!=='OK')h+='<p class="tp-s">'+(c.g==='NOVO'?'(u igri još ne postoji)':'(treba nacrtati sliku)')+'</p>';
   tip.innerHTML=h;tip.style.display='block';
@@ -258,7 +258,7 @@ function onCard(c,d){
 }
 function refresh(){
   badgeEl.innerHTML='<b>★'+S.star+'</b>';
-  znEl.textContent=S.zn;dinEl.textContent=S.din+' дин';
+  znEl.textContent=S.zn;dinEl.textContent=S.din+' din';
   renderTabs();renderBoard();hideTip();
 }
 function open(){if(!root)build();document.body.classList.add('kt-open');fit();refresh();}
