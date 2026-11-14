@@ -14,6 +14,16 @@
     recent=[id].concat(recent.filter(x=>x!==id)).slice(0,MAX);
     save();render(true);
   }
+  // put: id goes to the slot i (the others move aside; the last one drops out when the rack is full); move: a thing from the slot a to the slot b
+  function put(id,i){
+    if(!id||!defOf(id))return false;
+    const rest=recent.filter(x=>x!==id),at=Math.max(0,Math.min(rest.length,i|0));
+    rest.splice(at,0,id);recent=rest.slice(0,MAX);save();render(true);return true;
+  }
+  function move(a,b){
+    if(a<0||a>=recent.length||b<0||a===b)return;
+    const id=recent[a];recent.splice(a,1);recent.splice(Math.min(b,recent.length),0,id);recent=recent.slice(0,MAX);save();render(true);
+  }
   function remove(i){if(i<0||i>=recent.length)return;recent.splice(i,1);save();render(true);}
   function setSlots(n){MAX=Math.max(1,Math.min(6,n|0));recent=recent.slice(0,MAX);save();render(true);}
   let menu=null;
@@ -103,5 +113,5 @@
     render(false);
   }
   requestAnimationFrame(tick);
-  window.CooksterRecentItems={activate,push,remove,setSlots,get:()=>recent.slice()};
+  window.CooksterRecentItems={activate,push,put,move,remove,menu:(i,x,y)=>{if(recent[i])openMenu(i,x,y);},setSlots,get:()=>recent.slice()};
 })();

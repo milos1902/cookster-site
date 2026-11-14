@@ -1657,3 +1657,9 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Dim pri spuštanju (v3.338): po uzoru na Milošev snimak iz druge igre: pune (neprovidne) okrugle kuglice krem boje, po 4 + sitne tačkice sa svake strane predmeta, uz donju ivicu; razilaze se napolje i malo nadole i blede za ~0,4 s.
 
 - Dim pri spuštanju (v3.339): udaljenost oblačića od sredine prati širinu predmeta koji pada (nađe se predmet na tom mestu: offsetWidth x vis; bez njega staro računanje po vis); oblačići su mekši, dimasti (6 po strani, neravni oblici, mekani prelaz boje, blagi blur, uvijaju se napolje i gore, ~0,5 s).
+
+## Ranac u kartici: 6 kvadratića + prevuci i pusti
+- Kartica opisa (ke-pergament.js v14, css v13, recent-items.js v8): umesto crvenog dugmeta "Stavi u ranac" 6 prozirnih kvadratića (3+3) = šest džepova ranca. Prevuci karticu iz liste na kvadratić -> predmet ide u ranac na to mesto; prevuci iz kvadrata na drugi kvadrat -> premesti; prevuci iz kvadrata na listu ili desni klik -> skloni iz ranca. Ranac dole se menja sam.
+- Slika kartice bez dugmeta: assets/ui/pergament/kartica_opis_bez_dugmeta.png (dugme privremeno prekriveno u slici). Miloš će nacrtati novu sliku sa 6 kvadratića; tada zameniti sliku i poravnati RK_X/RK_Y u ke-pergament.js.
+- recent-items.js: nove funkcije put(id,i), move(a,b), menu(i,x,y).
+- Nova slika kartice sa ranac ikonom i 6 kvadratića (Milošova): assets/ui/pergament/kartica_opis_ranac.png; kvadrati poravnati (RK_X 32/51/70, RK_Y 71.3/82.9, 18.3x11.1 posto). ke-pergament js v15, css v14. Privremena slika bez dugmeta obrisana.

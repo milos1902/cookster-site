@@ -52,7 +52,7 @@ function render(){
   A('pg-btn',1470,90,60,56).onclick=close;
   var b=A('pg-back',94,990,188,46,'Nazad');b.onclick=close;
   var L=A('pg-list',94,340,966,620);L.id='kePgList';
-  var cd=el('div','pg-card');root.appendChild(cd);
+  var cd=el('div','pg-card');root.appendChild(cd);buildRack(cd);
   list();
 }
 function list(){
@@ -67,7 +67,8 @@ function list(){
     t.setAttribute('aria-label',d.label);      // no name on the card: only the picture (the name is on the big card on the right)
     if(TAB==='shop'){t.classList.add('shop');t.appendChild(el('div','tg','',(typeof FREE_MODE!=='undefined'&&FREE_MODE)?'BESPLATNO':(d.price||0)+' дин'));}
     t.onmouseenter=function(){SEL=d;card();Array.prototype.forEach.call(L.children,function(c){c.classList.toggle('sel',c===t);});};
-    t.onclick=function(){act(d,onT);};
+    t.onclick=function(){if(Date.now()-justDragged<350)return;act(d,onT);};
+    t.addEventListener('pointerdown',function(e){if(TAB!=='own'||e.button!==0)return;beginDrag(e,{from:'list',id:d.id,label:d.label});});
     L.appendChild(t);
   });
   if(!SEL||ds.indexOf(SEL)<0)SEL=ds[0]||null;
@@ -80,21 +81,71 @@ function act(d,onT){
   if(spawnKitchenEquipment(d.id)){close();try{updateHover();}catch(_){}}
 }
 function card(){
-  var c=root.querySelector('.pg-card');if(!c)return;c.innerHTML='';
+  var c=root.querySelector('.pg-card');if(!c)return;
+  Array.prototype.slice.call(c.children).forEach(function(x){if(!x.classList.contains('pg-rack'))c.removeChild(x);});
   var d=SEL;c.classList.toggle('empty',!d);
-  var bg=el('img','cbg');bg.src=P+'kartica_opis_ikone.png';bg.alt='';c.appendChild(bg);
+  var bg=el('img','cbg');bg.src=P+'kartica_opis_ranac.png';bg.alt='';c.insertBefore(bg,c.firstChild);
   if(!d)return;
-  var im=el('img','cim');im.src=ART[d.id]||d.src;im.alt='';c.appendChild(im);
-  c.appendChild(el('div','cnm','',d.label));
-  c.appendChild(el('div','cds','',d.desc||d.description||''));
+  var im=el('img','cim');im.src=ART[d.id]||d.src;im.alt='';c.insertBefore(im,c.querySelector('.pg-rack'));
+  c.insertBefore(el('div','cnm','',d.label),c.querySelector('.pg-rack'));
+  c.insertBefore(el('div','cds','',d.desc||d.description||''),c.querySelector('.pg-rack'));
   var cap=d.capacityMl?d.capacityMl+' ml':'—';
-  c.appendChild(el('div','cr','top:59.4%;',cap));
+  c.insertBefore(el('div','cr','top:59.4%;',cap),c.querySelector('.pg-rack'));
   var onT=false;try{onT=!d.infinite&&equipmentIsInKitchen(d.id);}catch(_){}
-  c.appendChild(el('div','cr','top:66.4%;',TAB==='shop'?'U prodavnici':(onT?'Na stolu':'U elementima')));
-  var g=el('div','cgo','','Stavi u ranac');
-  g.onclick=function(){if(TAB==='shop'){showToast('Prvo kupi ovaj element.');return;}
-    try{CooksterRecentItems.push(d.id);showToast('U ranac: '+d.label+'.');}catch(_){}};
-  c.appendChild(g);
+  c.insertBefore(el('div','cr','top:66.4%;',TAB==='shop'?'U prodavnici':(onT?'Na stolu':'U elementima')),c.querySelector('.pg-rack'));
+}
+// ---- the rack in the card: six transparent squares (3 above, 3 below) = the six pockets of the rack at the bottom of the screen.
+// Drag a card from the list onto a square: the thing goes into the rack (at that place). Drag a thing from a square onto another square: it moves; drag it out onto the list (or the right
+// mouse button on it: "Skloni iz ranca"): it leaves the rack. The rack at the bottom changes by itself (js/recent-items.js).
+var RK_X=[32.0,51.0,70.0],RK_Y=[71.3,82.9];      // the squares drawn in the card picture (percent of the card)
+function buildRack(cd){
+  var rk=el('div','pg-rack');cd.appendChild(rk);
+  for(var i=0;i<6;i++){
+    var sl=el('div','rk-slot','left:'+RK_X[i%3]+'%;top:'+RK_Y[(i/3)|0]+'%;');sl.dataset.i=String(i);
+    sl.addEventListener('pointerdown',function(e){var i=+this.dataset.i,id=rackIds()[i];if(!id||e.button!==0)return;beginDrag(e,{from:'slot',idx:i,id:id});});
+    sl.addEventListener('contextmenu',function(e){e.preventDefault();e.stopPropagation();try{CooksterRecentItems.menu(+this.dataset.i,e.clientX,e.clientY);}catch(_){}});
+    rk.appendChild(sl);
+  }
+  refreshRack();
+}
+function rackIds(){try{return CooksterRecentItems.get();}catch(_){return [];}}
+function artOf(id){var d=null;try{d=kitchenEquipmentDef(id);}catch(_){}return ART[id]||(d&&d.src)||'';}
+var rackKey='';
+function refreshRack(){
+  var ids=rackIds(),key=ids.join('|');if(key===rackKey&&document.querySelector('#kePg .rk-slot img'))return;rackKey=key;
+  var slots=document.querySelectorAll('#kePg .rk-slot');
+  Array.prototype.forEach.call(slots,function(sl,i){
+    sl.innerHTML='';var id=ids[i];sl.classList.toggle('full',!!id);
+    if(id){var im=el('img');im.src=artOf(id);im.alt='';im.draggable=false;sl.appendChild(im);}
+  });
+}
+var DRAG=null,justDragged=0;
+function beginDrag(e,info){
+  var x0=e.clientX,y0=e.clientY,started=false,ghost=null;
+  function slotAt(x,y){var t=document.elementFromPoint(x,y);return t&&t.closest?t.closest('.rk-slot'):null;}
+  function mv(ev){
+    if(!started){if(Math.abs(ev.clientX-x0)+Math.abs(ev.clientY-y0)<7)return;started=true;DRAG=info;
+      ghost=el('img','rk-ghost');ghost.src=artOf(info.id);ghost.draggable=false;document.body.appendChild(ghost);document.body.classList.add('rk-dragging');}
+    ghost.style.left=ev.clientX+'px';ghost.style.top=ev.clientY+'px';
+    var sl=slotAt(ev.clientX,ev.clientY);
+    Array.prototype.forEach.call(document.querySelectorAll('#kePg .rk-slot'),function(q){q.classList.toggle('over',q===sl);});
+    var L=document.getElementById('kePgList');var inList=!!(L&&L.contains(document.elementFromPoint(ev.clientX,ev.clientY)));
+    document.body.classList.toggle('rk-removing',info.from==='slot'&&inList);
+  }
+  function up(ev){
+    document.removeEventListener('pointermove',mv,true);document.removeEventListener('pointerup',up,true);document.removeEventListener('pointercancel',up,true);
+    if(!started)return;
+    justDragged=Date.now();
+    var sl=slotAt(ev.clientX,ev.clientY),L=document.getElementById('kePgList'),inList=!!(L&&L.contains(document.elementFromPoint(ev.clientX,ev.clientY)));
+    try{
+      if(info.from==='list'){if(sl){if(CooksterRecentItems.put(info.id,+sl.dataset.i))showToast('U ranac: '+(info.label||'')+'.');}}
+      else{if(sl)CooksterRecentItems.move(info.idx,+sl.dataset.i);else if(inList){CooksterRecentItems.remove(info.idx);showToast('Skinuto iz ranca.');}}
+    }catch(_){}
+    if(ghost)ghost.remove();DRAG=null;document.body.classList.remove('rk-dragging','rk-removing');
+    Array.prototype.forEach.call(document.querySelectorAll('#kePg .rk-slot'),function(q){q.classList.remove('over');});
+    rackKey='';refreshRack();
+  }
+  document.addEventListener('pointermove',mv,true);document.addEventListener('pointerup',up,true);document.addEventListener('pointercancel',up,true);
 }
 function sync(){
   var open=sc.classList.contains('open')&&(typeof kitchenPanelMode==='undefined'||kitchenPanelMode==='equipment');
@@ -112,6 +163,7 @@ function init(){
     e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();L.scrollTop+=e.deltaY;
   },{capture:true,passive:false});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&document.body.classList.contains('ke-pg-on'))close();});
+  setInterval(function(){if(document.body.classList.contains('ke-pg-on'))refreshRack();},250);
   sync();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
