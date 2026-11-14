@@ -220,12 +220,20 @@ function fluidWater(g,w,h,dt,now){
       f.splat(x,y,(Math.random()-.5)*14,-(260+260*q)*fl,dye(.5*fl),.0022+.0026*fl);}
     // where it lands: the water hits the bottom and is thrown to both sides, over the whole sink
     if(streamLen>.85&&!under){
-      // only the stream hitting the plug and the spray that jumps from it to the left and to the right (no water lying in the sink): short, fast sprays that die away quickly
-      for(var s=-1;s<=1;s+=2){for(var k=0;k<3;k++){
-        f.splat(lu+s*(.004+.008*Math.random()),vL+.006+Math.random()*.012,s*(170+200*Math.random())*fl,(90+190*Math.random())*fl,dye(.6*fl),.0065);}}
-      f.splat(lu,vL+.004,0,110*fl,dye(.55*fl),.009);
+      // the water hits the plug and BOUNCES: from the plug it goes up and out in an arc to the left and an arc to the right and falls back (like water that bounces off something)
+      for(var s=-1;s<=1;s+=2){
+        for(var a=0;a<2;a++){
+          var Wd=(.05+.045*Math.random())*fl,Hh=(.045+.045*Math.random())*fl,M=9;
+          for(var m=0;m<=M;m++){
+            var q=m/M,ax=lu+s*Wd*q,ay=vL+.006+Hh*4*q*(1-q);
+            var tx=s*Wd,ty=Hh*4*(1-2*q),L=Math.hypot(tx,ty)||1;      // the direction of the arc at this point
+            f.splat(ax,ay,tx/L*(260-120*q)*fl,ty/L*(260-120*q)*fl,dye((.55-.3*q)*fl),.0035);
+          }
+        }
+      }
+      f.splat(lu,vL+.004,0,60*fl,dye(.4*fl),.006);
     }
-    wfUntil=now+2600;
+    wfUntil=now+5000;
   }
   if(now<wfUntil){
     f.step(Math.min(.033,dt||.016));f.render();
