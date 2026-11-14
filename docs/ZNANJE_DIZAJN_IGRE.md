@@ -29,6 +29,7 @@ Detaljni dokumenti iz razgovora su u `docs/dizajn/` (spisak na kraju). Podaci ka
 - Svaki tab: **4 reda × 16 kolona**, kolone podeljene na **5 odeljaka po zvezdici**, zlatne linije između, veliki katanac sa zvezdicom, vodoravno klizanje (točkić miša i prevlačenje).
 - Cena nekad znanje, nekad novac, nekad oba. Karta je retko popunjena (kao kod Waterparka), cena je crvena kad igrač ne može da plati.
 - Slike za karticu (okviri, strelice, tabovi, cene, katanci) je nacrtao Miloš u `assets/ui/napredak/`. **Miloš će nacrtati novi dizajn pozadine** karte u ChatGPT-u.
+- **Cijene kartica su izračunate po krivoj troškova** (`docs/dizajn/CIJENE_KARTICA.md`): korist i cijena usklađene, trougaona kriva za nivoe, darežljivo na početku i strože kasnije. Zarada po danu je pretpostavka, nije mjerena.
 - Kod nas ima oko 234 kartice (Kuhinja 61, Kafana 61, Kuća 58, Recepti 54). Probni prozor je u `js/knowledge-tree.js`. **Ne menja igru** (brojači su samo u pregledaču).
 - Primećeno: kod Waterparka neka kartica ima **dve ulazne strelice**, kod nas su gotovo sve jedna. Miloš je rekao da to ne treba sad menjati.
 
