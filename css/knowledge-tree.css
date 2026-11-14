@@ -126,3 +126,6 @@ body.kt-open #ktRoot{display:flex}
 .kt-card.st-can .kt-ring,.kt-card.st-can:hover .kt-ring,.kt-card.sel .kt-ring{background-image:url(../assets/ui/karta/kr_o.webp)}
 /* Plavi krug bez zlatnog sjaja: sjaj je bojio čipku drugačije od ostalih krugova i konaca */
 .kt-card.st-can .kt-ring{filter:drop-shadow(1px 3px 3px rgba(40,22,6,.4))}
+
+/* Ikone u krugovima su manje, da ne idu od ivice do ivice */
+.kt-lay .kt-ic{width:68%;height:68%}
