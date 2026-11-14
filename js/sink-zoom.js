@@ -202,11 +202,16 @@ stage.insertBefore(fx,svg);
 var valve={left:{open:0,target:0,ang:0},right:{open:0,target:0,ang:0}};
 var fxRun=false,tLast=0,flow=0,streamLen=0,ripT=0,drops=[];
 // the stream and the splash are made by a fluid simulation (js/stir-fluid.js) drawn into the canvas of the effects (so the front walls of the vessels still hide it)
-var wf=null,wfCv=null,wfUntil=0,wfTried=false;
+var wf=null,wfCv=null,wfUntil=0,wfTried=false,wfFails=0,wfNext=0;
 function waterFluid(){
-  if(wf||wfTried)return wf;wfTried=true;
-  try{if(!window.CooksterWaterFluid||/[?&]bezmesanja/.test(location.search))return null;
-    wfCv=document.createElement('canvas');wfCv.width=960;wfCv.height=540;wf=window.CooksterWaterFluid(wfCv);}catch(e){wf=null;}
+  if(wf)return wf;
+  var t=performance.now();if(wfTried&&(wfFails>=4||t<wfNext))return null;       // if it fails, it tries again a few times (another effect or the browser may have taken the WebGL contexts)
+  wfTried=true;
+  try{if(!window.CooksterWaterFluid||/[?&]bezmesanja/.test(location.search)){wfFails=9;return null;}
+    wfCv=document.createElement('canvas');wfCv.width=960;wfCv.height=540;
+    wfCv.addEventListener('webglcontextlost',function(e){e.preventDefault();wf=null;wfTried=false;wfFails=0;});     // the browser took the context away: make a new one
+    wf=window.CooksterWaterFluid(wfCv);}catch(e){wf=null;}
+  if(!wf){wfFails++;wfNext=t+1500;}
   return wf;
 }
 function dye(k){return {r:k,g:k,b:k};}

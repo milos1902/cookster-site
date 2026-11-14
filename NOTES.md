@@ -1689,3 +1689,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## Sudopera: voda se odbija od čepa (sink-zoom.js v32, stir-fluid.js v41)
 - Mlaz pada na čep, iz čepa prska lukovima levo i desno i ostaje po podu i ivicama (DENSITY_DISSIPATION 1.6); posle zatvaranja slavine nestaje ~5 s.
+
+## Sudopera: voda se obnavlja ako WebGL zakaže (sink-zoom.js v33, stir-fluid.js v42)
+- Voda više ne zavisi od `failed` zastavice drugih efekata (para, mešanje); ako ne uspe, pokušava još do 4 puta na 1,5 s; ako pregledač oduzme WebGL kontekst, pravi novi.
