@@ -5028,6 +5028,7 @@ function zoomGameAt(clientX,clientY,direction){
  offsetY=clientY-before.y*scale;
  applyCamera();
  if(holding&&!picking){moveHeld();updatePlacementGhost();}
+ else if(!holding&&!placing&&!picking){hidePlacementGhost();hideOriginGhost();}      // zooming with nothing in the hand: no copy of an item may stay on the screen
 }
 window.addEventListener('wheel',e=>{
  if(document.body.classList.contains('scene-zone-calibration-active'))return;
@@ -7015,6 +7016,16 @@ function tweenItemPickup(el){
 }
 /* Every item hangs 6 px above its place while it is carried (as the board does by itself), so letting it go is one short drop straight down onto the table: the item starts exactly where the picture of it was.
    (Before, only the board did this: the others were first shown 6 px higher than their picture, so they jumped up and fell back = a hop.) */
+// Safety net: the copy that follows the cursor (placement ghost) exists only while something is held. If it stays visible when nothing is held (it was seen for half a second after
+// zooming in or out), it is hidden again: the check runs every frame, and the frames of the animations of picking up / putting down are left alone.
+let ghostIdleFrames=0;
+(function ghostWatchdog(){
+ requestAnimationFrame(ghostWatchdog);
+ const g=placementGhost;
+ if(g&&g.style.display!=='none'&&!holding&&!placing&&!picking){
+   if(++ghostIdleFrames>=2){hidePlacementGhost();hideOriginGhost();ghostIdleFrames=0;}
+ }else ghostIdleFrames=0;
+})();
 (function ghostLiftLoop(){
  requestAnimationFrame(ghostLiftLoop);
  const g=placementGhost;if(!g)return;
