@@ -210,7 +210,7 @@ function renderBoard(){
     d.appendChild(el('div','kt-st','★'+c.s));
     var inn=el('div','kt-in'),ic=el('div','kt-ic'),src=artFor(c);
     if(src){var im=el('img');im.src=src;im.alt='';im.draggable=false;ic.appendChild(im);}
-    else{var sp=el('span',c.y==='Q'?'q':c.y==='S'?'s':'',badgeText(c));ic.appendChild(sp);}
+    else if(!LAYMODE){var sp=el('span',c.y==='Q'?'q':c.y==='S'?'s':'',badgeText(c));ic.appendChild(sp);}
     inn.appendChild(ic);d.appendChild(inn);
     d.appendChild(el('div','kt-nm',c.n));
     var co=el('div','kt-co'),pr=price(c);
@@ -227,6 +227,8 @@ function renderBoard(){
 }
 function showTip(c,d){
   var st=status(c),h='<b>'+c.n+'</b>'+c.o+'<em>Daje: '+c.e+'</em>';
+  h+='<em>Zvezdica: ★'+c.s+'</em>';
+  if(st!=='done'){var pc=price(c),cs=[];if(pc.z)cs.push('✦ '+pc.z+' znanja');if(pc.d)cs.push(pc.d+' дин');if(cs.length)h+='<em>Cena: '+cs.join(' + ')+'</em>';}else h+='<em>Kupljeno.</em>';
   if(c.q)h+='<em>Traži: ★'+c.s+(c.q?', '+c.q:'')+'</em>';else if(c.y!=='✓')h+='<em>Traži: ★'+c.s+'</em>';
   if(c.x){var go=groupOther(c);h+='<em>'+(go&&!isBought(c)?'Izabrao si „'+go.n+'". Ovaj izbor košta duplo.':'Izbor „ILI": uzimaš samo jedan, drugi košta duplo.')+'</em>';}
   if(st==='lock'){h+='<em class="need">Fali: '+missing(c).join(', ')+'</em>';}
