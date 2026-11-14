@@ -2,6 +2,23 @@
 
 <html lang="sr">
 <head>
+<script>/* PROBNA NOVA IGRA: ?novaigra u adresi = igra počinje čisto i čuva u odvojenom prostoru (ključevi sa predznakom "ng:"), pa se tvoja trenutna igra ne dira. ?novaigra&ispocetka briše probni napredak. Bez ?novaigra sve radi kao pre. */
+(function(){
+  if(!/[?&]novaigra\b/.test(location.search))return;
+  var P='ng:',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem,k=S.key,L=Object.getOwnPropertyDescriptor(S,'length');
+  function mine(o){return o===window.localStorage;}
+  var ng=[];function scan(){ng=[];for(var i=0;i<len();i++){var n=k.call(window.localStorage,i);if(n&&n.indexOf(P)===0)ng.push(n.slice(P.length));}return ng;}
+  function len(){return L.get.call(window.localStorage);}
+  if(/[?&]ispocetka\b/.test(location.search)){var del=[];for(var i=0;i<len();i++){var n=k.call(window.localStorage,i);if(n&&n.indexOf(P)===0)del.push(n);}del.forEach(function(n){r.call(window.localStorage,n);});}
+  S.getItem=function(n){return mine(this)?g.call(this,P+n):g.call(this,n);};
+  S.setItem=function(n,v){return mine(this)?s.call(this,P+n,v):s.call(this,n,v);};
+  S.removeItem=function(n){return mine(this)?r.call(this,P+n):r.call(this,n);};
+  S.key=function(i){if(!mine(this))return k.call(this,i);return scan()[i]===undefined?null:scan()[i];};
+  if(L&&L.get)Object.defineProperty(S,'length',{get:function(){return mine(this)?scan().length:L.get.call(this);},configurable:true});
+  window.__NOVA_IGRA=true;
+  document.addEventListener('DOMContentLoaded',function(){var b=document.createElement('div');b.textContent='PROBNA NOVA IGRA';b.setAttribute('data-tool-ui','1');b.style.cssText='position:fixed;left:50%;bottom:3px;transform:translateX(-50%);z-index:2147483000;padding:2px 12px;border-radius:10px;background:#7a1e14;color:#fff3dc;font:700 11px system-ui,sans-serif;letter-spacing:.08em;opacity:.85;pointer-events:none';document.body.appendChild(b);});
+})();
+</script>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Cookster 2D</title>
@@ -210,7 +227,7 @@
 <script src="js/istraga.js?v=5"></script>
 <script src="js/kafa.js?v=3"></script>
 <script src="js/board-shadow-tool.js?v=2"></script>
-<script src="js/game.js?v=3.347"></script>
+<script src="js/game.js?v=3.348"></script>
 <script src="js/meat-menu.js?v=1"></script>
 <script src="js/kitchen-clean.js?v=6133"></script>
 <script src="js/oven-items-tool.js?v=4"></script>

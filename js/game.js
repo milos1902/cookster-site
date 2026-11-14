@@ -4939,7 +4939,7 @@ function nextItemInstanceId(base='item'){
   return `${safe}__${Date.now().toString(36)}_${itemInstanceCounter.toString(36)}`;
 }
 
-const FREE_MODE=true;   // while the game is being built everything is free: money never goes down
+const FREE_MODE=!window.__NOVA_IGRA;   // while the game is being built everything is free: money never goes down
 let scale=1,fitScale=1,offsetX=0,offsetY=0,money=Math.max(CooksterState.player.money,FREE_MODE?99999:0),zCounter=80,toastTimer=null;
 let quickWheelOpen=false,quickWheelPointerId=null,quickWheelActiveId=null,quickWheelCenter={x:0,y:0},quickWheelLastToolId='noz',quickWheelOpenTimeout=0;
 let mouse={x:innerWidth/2,y:innerHeight/2},items=[],holding=null,hoverItem=null,rotating=null,rotateStartX=0,rotateStartY=0,rotateStartAngle=0,rotateStartTilt=0,placementGhost=null,placementState=null,originGhost=null,originState=null,placing=false,picking=false;

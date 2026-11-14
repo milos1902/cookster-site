@@ -1771,3 +1771,9 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Karta znanja sada koristi prave brojeve: znanje iz `CooksterProgress`, novac iz igre (`money`/`setMoney`), kupovina troši oba. Kartica "Stara kafana" (tab Kafana) košta 5 znanja i otključava kafanu (`CooksterTavernLock.set(false)`).
 - Dugmad "Probno" u karti rade na pravim brojevima (+10 znanja, +500 din, zvezdica +/-, ispočetka = i zaključava kafanu).
 - Nije urađeno: zvezdica se puni iz zadataka (zasad je ★1), uputstvo (tutorial.js) se ne pali samo, ostale kartice ne otključavaju ništa u igri.
+
+## Probna nova igra (?novaigra)
+- `index.html?novaigra` (adresa) pokreće igru čisto, sa odvojenim čuvanjem: skripta na vrhu `index.html` preusmerava `localStorage` na ključeve sa predznakom `ng:`, pa se obična igra ne dira. `?novaigra&ispocetka` briše probni napredak. Dole na ekranu stoji crvena oznaka "PROBNA NOVA IGRA".
+- U probnoj igri je `FREE_MODE` isključen (`js/game.js`: `const FREE_MODE=!window.__NOVA_IGRA`), pa novac počinje od 1000 (`js/core/state.js`) i kupovina stvarno košta; kafana je zaključana, kuhinja prljava, komšinica i zadaci počinju iz početka.
+- Obična igra (bez `?novaigra`) radi isto kao pre (`FREE_MODE` uključen, novac 99.999).
+- Nije urađeno: početni skup stvari (u probnoj igri su još sve stvari iz "Kuhinjskih elemenata" odmah dostupne).
