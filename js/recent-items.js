@@ -70,7 +70,7 @@
       img.className='cookster-recent-icon';img.src=(window.CooksterItemArt&&CooksterItemArt[def.id])||def.src;img.alt='';img.draggable=false;
       img.setAttribute('aria-hidden','true');
       b.appendChild(img);
-      if(popSlot===i){popSlot=-1;try{img.animate([{transform:'translate(-50%,-50%) scale(.2)',opacity:0},{transform:'translate(-50%,-50%) scale(1.18)',opacity:1,offset:.6},{transform:'translate(-50%,-50%) scale(1)',opacity:1}],{duration:320,delay:200,easing:'cubic-bezier(.3,.8,.3,1)',fill:'backwards'});}catch(_){}}
+      if(popSlot===i){popSlot=-1;try{img.animate([{transform:'translate(-50%,-50%) scale(.2)',opacity:0},{transform:'translate(-50%,-50%) scale(1.18)',opacity:1,offset:.6},{transform:'translate(-50%,-50%) scale(1)',opacity:1}],{duration:240,delay:250,easing:'cubic-bezier(.3,.8,.3,1)',fill:'both'});}catch(_){}}
       b.removeAttribute('title');b.setAttribute('aria-label','Ranac: '+(def.label||def.id));
     });
   }
@@ -130,8 +130,9 @@
       if(!recent.includes(hid)&&firstEmpty()<0){try{showToast('Ranac je pun.');}catch(_){}return true;}
       const from=mousePt(60),at=(slot<MAX&&!recent[slot])?slot:firstEmpty(),sc1=slotCenter(at);
       window.CooksterReturnHeld();
-      put(hid,at);
-      if(from&&sc1)fly(hid,from,sc1,{s0:1.4,s1:.8,o0:.9,o1:.9,ms:260});popSlot=at;
+      popSlot=at;      // set BEFORE put(): the new icon is drawn already hidden and appears only when the flying picture arrives (before, the copy showed at once and popped again at the next change)
+      if(!put(hid,at)){popSlot=-1;return true;}
+      if(from&&sc1)fly(hid,from,sc1,{s0:1.4,s1:.8,o0:.9,o1:.9,ms:260});
       try{showToast((hdef.label||hid)+' je u rancu.');}catch(_){}
       return true;
     }
