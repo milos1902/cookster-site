@@ -1657,3 +1657,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Dim pri spuštanju (v3.338): po uzoru na Milošev snimak iz druge igre: pune (neprovidne) okrugle kuglice krem boje, po 4 + sitne tačkice sa svake strane predmeta, uz donju ivicu; razilaze se napolje i malo nadole i blede za ~0,4 s.
 
 - Dim pri spuštanju (v3.339): udaljenost oblačića od sredine prati širinu predmeta koji pada (nađe se predmet na tom mestu: offsetWidth x vis; bez njega staro računanje po vis); oblačići su mekši, dimasti (6 po strani, neravni oblici, mekani prelaz boje, blagi blur, uvijaju se napolje i gore, ~0,5 s).
+
+## Duh predmeta koji ostane posle zumiranja (game.js v3.340)
+- "Duh" (.placement-ghost) je kopija predmeta koja prati kursor dok se drži predmet (original je skriven); ne pokazuje mesto sletanja. Ostajao je ~0,5 s kad se zumira bez predmeta u ruci. Dodato: zumiranje bez predmeta u ruci ga odmah skriva, a svaki frejm proverava da li je vidljiv bez predmeta u ruci (2 frejma, ne dira animacije podizanja/spuštanja) i skriva ga.
