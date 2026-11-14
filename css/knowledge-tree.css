@@ -153,3 +153,5 @@ body.kt-open #ktRoot{display:flex}
 
 /* Uvećan krug: slika u punoj boji (nije izbledela) */
 .kt-card.kt-big .kt-ic img{filter:grayscale(.15);opacity:1}
+/* Dok je krug podignut: visoke ikonice (vatra, mlin) ne smeju da zalaze u tekst */
+.kt-card.kt-big .kt-ic img{max-height:70%}
