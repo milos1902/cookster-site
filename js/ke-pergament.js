@@ -22,7 +22,7 @@ function defs(){
 }
 function build(){
   root=el('div');root.id='kePg';
-  var bg=el('img','pg-bg');bg.src=P+'strana_kuhinjski_elementi_prazna.webp';bg.alt='';root.appendChild(bg);
+  var bg=el('img','pg-bg');bg.src=P+'strana_kuhinjski_elementi_prazna.webp?v=2';bg.alt='';root.appendChild(bg);
   root.addEventListener('click',function(e){e.stopPropagation();});
   sc.appendChild(root);
   sc.addEventListener('click',function(e){if(e.target===sc)close();});
@@ -34,7 +34,7 @@ function render(){
   var A=function(c,x,y,w,h,txt){var e=el('div','pg-a '+c,css(x,y,w,h),txt);root.appendChild(e);return e;};
   // The page picture already has the tabs and the pills drawn (first tab and first pill red). Here only text lies over them; to show another choice the drawn
   // red / pale piece is copied from the same page picture over the right place (crop), so nothing new is drawn.
-  var PG=P+'strana_kuhinjski_elementi_prazna.webp';
+  var PG=P+'strana_kuhinjski_elementi_prazna.webp?v=2';
   function crop(x,y,w,h,sx,sy,sw,sh){var e=A('pg-crop',x,y,w,h);e.style.background='url('+PG+') '+(sx/(1600-sw)*100)+'% '+(sy/(1100-sh)*100)+'%/'+(1600/sw*100)+'% '+(1100/sh*100)+'% no-repeat';return e;}
   var RT=[94,194,340,66],PT=[438,194,318,66],RP=[90,276,128,52],PP=[230,276,130,52];
   if(TAB==='shop'){crop(96,194,334,64,PT[0],PT[1],PT[2],PT[3]);crop(440,194,316,64,RT[0],RT[1],RT[2],RT[3]);}
