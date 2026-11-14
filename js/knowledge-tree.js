@@ -375,10 +375,10 @@ function showBig(c,d){
     tl.to(d,{scale:k,x:dx/1,y:dy/1,duration:.4,ease:'back.out(1.35)',force3D:true},0);
     tl.fromTo(ring,{filter:f0},{filter:f1,duration:.42,ease:'power2.out'},0);
     tl.fromTo(sh,{opacity:0,scale:.7},{opacity:1,scale:1,duration:.42,ease:'power2.out'},0);
-    tl.to(icon,{y:-D*.38,scale:1.22,duration:.5,ease:'power2.inOut'},.4);
+    tl.to(icon,{y:-D*.4,scale:1.5,duration:.5,ease:'power2.inOut'},.4);
     tl.fromTo(bi,{opacity:0,y:D*.05},{opacity:1,y:0,duration:.3,ease:'power1.out'},.72);
     tl.fromTo(bc,{opacity:0},{opacity:1,duration:.3,ease:'power1.out'},.3);
-  }else{d.style.transform='translate('+dx+'px,'+dy+'px) scale('+k+')';icon.style.transform='translateY('+(-D*.38)+'px) scale(1.22)';ring.style.filter=f1;sh.style.opacity=1;}
+  }else{d.style.transform='translate('+dx+'px,'+dy+'px) scale('+k+')';icon.style.transform='translateY('+(-D*.4)+'px) scale(1.5)';ring.style.filter=f1;sh.style.opacity=1;}
 }
 function killBig(now){
   if(!BIG)return;var B=BIG;BIG=null;
