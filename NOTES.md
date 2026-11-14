@@ -1667,3 +1667,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Ranac je zaliha, ne kopirka
 - recent-items.js v9: predmet uzet iz džepa napušta ranac (u ruci je / na stolu), predmet vraćen klikom na džep (i prazan) ulazi u taj džep; pun ranac javlja poruku. ke-pergament.js v16: predmet koji je u rancu ili na stolu u listi je zatamnjen ("U RANCU" / "NA STOLU"), ne može da se napravi još jedan niti da se prevuče u ranac. Nema više dupliranja.
 - Kasnije: kupovina/dodavanje više istih predmeta (npr. 3 šerpe) kad igrač napreduje; džep će tada nositi broj.
+
+## Animacija uzimanja iz ranca i vraćanja u ranac (recent-items.js v10)
+- Uzimanje: slika predmeta leti iz džepa do ruke (luk, raste i bledi ~0,3 s). Vraćanje: slika leti iz ruke u džep (~0,26 s), pa slika u džepu iskoči (pop). Zlatni sjaj džepa ugašen (setGlow ne radi ništa). Web Animations API, bez biblioteke (GSAP je uklonjen iz igre).

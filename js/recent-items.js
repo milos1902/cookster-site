@@ -64,14 +64,37 @@
       img.className='cookster-recent-icon';img.src=(window.CooksterItemArt&&CooksterItemArt[def.id])||def.src;img.alt='';img.draggable=false;
       img.setAttribute('aria-hidden','true');
       b.appendChild(img);
+      if(popSlot===i){popSlot=-1;try{img.animate([{transform:'translate(-50%,-50%) scale(.2)',opacity:0},{transform:'translate(-50%,-50%) scale(1.18)',opacity:1,offset:.6},{transform:'translate(-50%,-50%) scale(1)',opacity:1}],{duration:320,delay:200,easing:'cubic-bezier(.3,.8,.3,1)',fill:'backwards'});}catch(_){}}
       b.removeAttribute('title');b.setAttribute('aria-label','Ranac: '+(def.label||def.id));
     });
   }
   // zuti sjaj: ide na dugme koje je kliknuto, dok ta stvar stoji u ruci; kad se spusti, nestaje
   let glowSlot=-1,glowAt=0;
   function clearGlow(){document.querySelectorAll('.cookster-slot-glow').forEach(g=>g.remove());glowSlot=-1;}
+  // ---- animations: a thing flies from its pocket to the hand (take) and from the hand into the pocket (put back); the pocket picture pops in when something arrives
+  const artOf=id=>{const d=defOf(id);return (window.CooksterItemArt&&CooksterItemArt[id])||(d&&d.src)||'';};
+  let popSlot=-1;
+  function fly(id,from,to,opts){
+    try{
+      if(!id||!from||!to||typeof document==='undefined')return;
+      const sz=Math.max(40,Math.min(90,from.size||60));
+      const im=document.createElement('img');im.src=artOf(id);im.alt='';im.draggable=false;
+      im.style.cssText='position:fixed;left:0;top:0;width:'+sz+'px;height:'+sz+'px;object-fit:contain;pointer-events:none;z-index:99998;will-change:transform,opacity;filter:drop-shadow(2px 4px 4px rgba(25,12,3,.45))';
+      document.body.appendChild(im);
+      const dx=to.x-from.x,dy=to.y-from.y,lift=-Math.min(70,Math.hypot(dx,dy)*.22);
+      const a=im.animate([
+        {transform:'translate('+(from.x-sz/2)+'px,'+(from.y-sz/2)+'px) scale('+opts.s0+')',opacity:opts.o0},
+        {transform:'translate('+(from.x+dx*.55-sz/2)+'px,'+(from.y+dy*.55+lift-sz/2)+'px) scale('+((opts.s0+opts.s1)/2*1.12)+')',opacity:1,offset:.55},
+        {transform:'translate('+(to.x-sz/2)+'px,'+(to.y-sz/2)+'px) scale('+opts.s1+')',opacity:opts.o1}
+      ],{duration:opts.ms,easing:'cubic-bezier(.25,.8,.3,1)',fill:'forwards'});
+      a.onfinish=()=>{im.remove();if(opts.done)opts.done();};a.oncancel=()=>im.remove();
+      setTimeout(()=>im.remove(),opts.ms+400);
+    }catch(_){}
+  }
+  function slotCenter(i){const b=buttons()[i];if(!b)return null;const r=b.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,size:Math.min(r.width,r.height)*.95};}
+  function mousePt(sz){try{return {x:mouse.x,y:mouse.y,size:sz};}catch(_){return null;}}
   function setGlow(slot){
-    clearGlow();
+    clearGlow();return;      // no golden glow any more (the thing leaves the pocket with an animation instead)
     const b=buttons()[slot];if(!b)return;
     const g=document.createElement('img');
     g.className='cookster-slot-glow';g.src='assets/ui/custom_elements/osvetljeni_kvadratni_panel.png';g.alt='';g.draggable=false;
@@ -89,16 +112,19 @@
       let hasFood=false;try{hasFood=Object.keys((window.CooksterPan&&CooksterPan.read&&CooksterPan.read(h)||{}).ingredients||{}).length>0;}catch(_){}
       if(!hdef||UNIQUE.test(hid)||hasFood||!window.CooksterReturnHeld){try{showToast(hasFood?'U njemu ima hrane: prvo ga spusti na sto.':'Ovo ne može u ranac: spusti ga na sto.');}catch(_){}return true;}
       if(recent.length>=MAX&&!recent.includes(hid)&&slot>=recent.length){try{showToast('Ranac je pun.');}catch(_){}return true;}
+      const from=mousePt(60),at=Math.min(slot,recent.length),sc1=slotCenter(at);
       window.CooksterReturnHeld();
-      put(hid,Math.min(slot,recent.length));
+      put(hid,at);
+      if(from&&sc1)fly(hid,from,sc1,{s0:1.4,s1:.8,o0:.9,o1:.9,ms:260});popSlot=at;
       try{showToast((hdef.label||hid)+' je u rancu.');}catch(_){}
       return true;
     }
     const id=recent[slot],def=id&&defOf(id);
     if(!def)return false;
+    const sc0=slotCenter(slot);
     // the things that exist once (the bell, the spike, the rail, the bin, the barrel, the mill, the spices) are taken from where they are
     const there=UNIQUE.test(id)?(window.items||items).find(el=>el.dataset.itemId===id&&el!==holding):null;
-    if(there){try{startHolding(there);}catch(_){}recent.splice(slot,1);save();render(true);setGlow(Math.min(slot,MAX-1));return true;}
+    if(there){try{startHolding(there);}catch(_){}if(sc0)fly(id,sc0,mousePt(sc0.size),{s0:.9,s1:1.45,o0:1,o1:0,ms:300});recent.splice(slot,1);save();render(true);setGlow(Math.min(slot,MAX-1));return true;}
     const el=makeItem({...def,instanceId:nextItemInstanceId(id),x:700-def.w/2,y:560-def.h,z:++zCounter});
     if(!el)return false;
     el.dataset.surfaceZone='table';
@@ -106,6 +132,7 @@
     // the new copy stands at (700,560) on the table: it must never be shown, only the copy that follows the mouse (that is the flash that was seen)
     el.dataset.noFlash='1';el.style.visibility='hidden';setTimeout(()=>{delete el.dataset.noFlash;},1500);
     startHolding(el);
+    if(sc0)fly(id,sc0,mousePt(sc0.size),{s0:.9,s1:1.45,o0:1,o1:0,ms:300});      // the picture flies from the pocket to the hand and melts into the thing that follows the mouse
     recent.splice(slot,1);save();render(true);setGlow(Math.min(slot,MAX-1));      // the thing leaves the rack (it is in the hand)
     try{CooksterSave.schedule();}catch(_){}
     return true;
