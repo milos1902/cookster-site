@@ -23,8 +23,12 @@ select,input[type=text]{width:100%;padding:4px;border:2px solid #8a5a2a;border-r
 #bar{background:#dcc48b;padding:6px 10px;border-bottom:3px solid #8a5a2a;font-size:13px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 #bar input[type=range]{width:120px}
 #board{flex:1;overflow:auto;position:relative;background:#cdb27a}
-#cv{position:relative;width:5600px;height:674px;margin:30px 0;background:url(assets/ui/karta/platno.webp) 0 0/auto 100% repeat-x;box-shadow:0 0 0 3px #5b3a1c}
-#cv.grid{background-image:linear-gradient(rgba(120,60,20,.18) 1px,transparent 1px),url(assets/ui/karta/platno.webp);background-size:100% 134px,auto 100%;background-repeat:repeat-x}
+#wrap{position:relative;width:5600px;height:738px;margin:30px 0;background:url(assets/ui/karta/platno_nova.webp?v=2) 0 0/1704px 100% repeat-x;box-shadow:0 0 0 3px #5b3a1c}
+#cv{position:absolute;left:0;top:36px;width:5600px;height:702px}
+#cv.grid{background-image:linear-gradient(rgba(120,60,20,.25) 1px,transparent 1px);background-size:100% 128px}
+#win{position:absolute;left:0;top:0;width:1704px;height:738px;border:3px dashed #c0291a;box-sizing:border-box;pointer-events:none;z-index:3;display:none}
+#win span{position:absolute;right:6px;top:4px;background:#c0291a;color:#fff;font:700 12px Georgia;padding:2px 8px;border-radius:8px}
+
 .it{position:absolute;transform-origin:50% 50%;cursor:move;user-select:none;touch-action:none}
 .it>*{width:100%;height:100%}
 .it img{object-fit:fill}
@@ -61,17 +65,17 @@ select,input[type=text]{width:100%;padding:4px;border:2px solid #8a5a2a;border-r
     <button data-a="big">Veće</button><button data-a="small">Manje</button>
     <button data-a="flip">↔ Okreni</button><button data-a="dup">Kopiraj</button><button data-a="front">Napred</button><button data-a="back">Pozadi</button><button data-a="del">Obriši</button>
     <label><input type="checkbox" id="snap" checked> Magnet 10px</label>
-    <label><input type="checkbox" id="grid"> Redovi</label>
+    <label><input type="checkbox" id="grid"> Redovi</label><label><input type="checkbox" id="winb"> Okvir prozora (1704×738)</label>
     <span id="help">Klikni deo, pa vuci kvadratiće: sa strane = razvuci, ugao = veličina, gore (kružić) = okreni (Shift = po 15°). Desni klik + vuci = izaberi više delova pa ih pomeraj zajedno (Shift/Ctrl klik dodaje ili skida). Strelice pomeraju, [ ] okreću, +/− veličina, Del briše, Esc poništi izbor.</span>
   </div>
-  <div id="board"><div id="cv"></div></div>
+  <div id="board"><div id="wrap"><div id="cv"></div><div id="win"><span>Ovoliko vidi igra odjednom: 1704 × 738</span></div></div></div>
 </div>
 <div id="toast"></div>
 <script src="js/data/knowledge-tree-data.js"></script>
 <script src="js/data/karta-raspored.js"></script>
 <script>
 (function(){
-var TABS=['Kuhinja','Kafana','Kuća','Recepti','Izbori'],KEY='cookster.karta.raspored.v3',WIRES='a1 a2 a3 a4 a5 a6 b1 b2 b3 b4 b5 b6 c2 c_gore c_dole d1 d2 d3 d4 d5 d6'.split(' ');
+var TABS=['Kuhinja','Kafana','Kuća','Recepti','Izbori'],KEY='cookster.karta.raspored.v4',WIRES='a1 a2 a3 a4 a5 a6 b1 b2 b3 b4 b5 b6 c2 c_gore c_dole d1 d2 d3 d4 d5 d6'.split(' ');
 var cards=(window.CooksterTreeData||{cards:[]}).cards;
 var $=function(i){return document.getElementById(i);},cv=$('cv'),tabSel=$('tab'),cur=0,sel=null,msel=[],drag=null,marq=null,uid=1,ov;
 var S;try{S=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}
@@ -178,6 +182,7 @@ $('wid').oninput=function(){if(sel){sel.w=+this.value;refresh();}};$('wid').onch
 $('hei').oninput=function(){if(sel){sel.h=+this.value;refresh();}};$('hei').onchange=persist;
 tabSel.onchange=function(){cur=+tabSel.value;sel=null;msel=[];render();};
 $('q').oninput=renderList;$('blank').onclick=function(){addCircle('');};
+$('winb').onchange=function(){$('win').style.display=this.checked?'block':'none';};
 $('grid').onchange=function(){cv.classList.toggle('grid',this.checked);};
 document.addEventListener('keydown',function(e){
   if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)&&e.target.type!=='range'&&e.target.type!=='checkbox')return;
