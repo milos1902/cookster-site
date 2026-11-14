@@ -11,7 +11,7 @@ body.kt-open #ktRoot{display:flex}
 .kt-badge b{font-size:26px;line-height:1;margin-top:-2px}
 .kt-badge small{position:absolute;bottom:14px;font-size:9px;opacity:.7}
 #ktTabs{display:flex;gap:6px;margin-left:10px}
-.kt-tab{position:relative;width:200px;height:96px;background-size:100% 100%;background-repeat:no-repeat;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:23px;color:#7a4a2a}
+.kt-tab{position:relative;width:176px;height:92px;background-size:100% 100%;background-repeat:no-repeat;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:23px;color:#7a4a2a}
 .kt-tab small{font-size:14px;opacity:.85;margin-top:2px}
 .kt-tab.on{color:#3a1f10}
 .kt-tab:not(.on){filter:saturate(.7) brightness(.95)}

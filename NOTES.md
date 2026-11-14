@@ -1727,3 +1727,7 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - **Samo probno:** brojači (znanje 42, novac 1250, ★2) i „kupljeno" se čuvaju u pregledaču (`cookster.tree.demo.v1`) i **ne mijenjaju igru**. Dugmad dolje (+10 znanja, +500 дин, zvezdica −/+, počni ispočetka) služe samo za gledanje stanja.
 - Treći tab koristi sliku „odrzavanje" (bez teksta) dok se ne nacrta nova; tekst je preko slike.
 - Pozadina i okvir prozora su privremeni (CSS), Miloš će nacrtati novi dizajn pozadine.
+
+## Karta znanja: četvrti tab „Recepti" (js/knowledge-tree.js v3, data v2)
+- Dodat tab „Recepti" (54 kartice): jela kao lanci (otključavanje + nivoi 2–4 + „majstor" znak), kompleti, sezonski meniji, nivoi pića. Četiri reda: Povrće i variva, Meso i roštilj, Kiselo/hleb/kolači, Pića/kompleti/sezona. Ukupno sada 234 kartice u 4 taba.
+- Probno kao i ostalo: ne mijenja igru. Četvrti tab koristi sliku tab „kafana" sa tekstom „Recepti" dok se ne nacrta nova.

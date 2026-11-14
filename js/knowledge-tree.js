@@ -7,7 +7,7 @@
 if(window.CooksterTree)return;
 var D=window.CooksterTreeData;if(!D||!D.cards)return;
 var A='assets/ui/napredak/',KEY='cookster.tree.demo.v1';
-var TABS=[['Kuhinja','kuhinja'],['Kafana','kafana'],['Kuća','odrzavanje']];      // treći tab za sada koristi sliku "odrzavanje" (bez teksta) dok se ne nacrta nova
+var TABS=[['Kuhinja','kuhinja'],['Kafana','kafana'],['Kuća','odrzavanje'],['Recepti','kafana']];      // treći tab za sada koristi sliku "odrzavanje" (bez teksta) dok se ne nacrta nova
 var COLS=16,SEC={1:[1,3],2:[4,7],3:[8,10],4:[11,13],5:[14,16]};
 var cards=D.cards.map(function(c,i){c.id=c.t+'|'+c.n;c.i=i;return c;});
 var byId={};cards.forEach(function(c){byId[c.id]=c;});
