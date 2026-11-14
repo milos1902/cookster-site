@@ -66,19 +66,21 @@ var P=window.CooksterProgress={
 if(/[?&]zadaci=0\b/.test(location.search))return;
 var K='assets/ui/karta/',Z='assets/ui/napredak/zadaci/',recent={};
 var css=document.createElement('style');
+// nova tabla (tabla_platno.webp 987x1178): naslov u gornjoj traci, tri polja pergamenta sa kućicom; mere su u procentima table
 css.textContent=[
 '@font-face{font-family:"Paytone One";src:url(assets/fonts/PaytoneOne-Regular.ttf) format("truetype");font-display:swap}',
-'#zadaciBox{position:fixed;right:12px;top:104px;width:300px;height:316px;z-index:1895;background:url('+Z+'zadaci_okvir.png) 0 0/100% 100% no-repeat;filter:drop-shadow(0 5px 8px rgba(30,15,5,.45));font-family:"Paytone One","CooksterSerif",Georgia,serif;font-weight:400;color:#3a1f10;user-select:none}',
-'#zadaciBox .zt{position:absolute;left:20%;right:20%;top:3.2%;height:11.5%;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;white-space:nowrap;color:#7a1e14;letter-spacing:.05em}#zadaciBox .zt small{font-size:14px;color:#3a1f10}',
-'#zadaciBox .zl{position:absolute;left:7.5%;right:7.5%;top:21%;display:flex;flex-direction:column;gap:4px}',
-'#zadaciBox .zr{position:relative;aspect-ratio:394/108;background:url('+Z+'zadatak_red_prazan.png) 0 0/100% 100% no-repeat;display:flex;align-items:center;padding:0 44px 0 62px;font-size:13px;line-height:1.1;transition:opacity .4s}',
-'#zadaciBox .zr.main{background-image:url('+Z+'zadatak_red_glavni.png)}#zadaciBox .zr.main .zx{color:#7a1e14}#zadaciBox .zr.main .zk{font-size:15px;color:#7a1e14}',
-'#zadaciBox .zr.done{background-image:url('+Z+'zadatak_red_gotov.png)}',
-'#zadaciBox .zr.done .zx{text-decoration:line-through;opacity:.55}',
-'#zadaciBox .zr.on .zx{color:#7a1e14}',
-'#zadaciBox .zk{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:2px;font-size:14px}#zadaciBox .zk img{height:20px}',
-'#zadaciBox .zr.done .zk{opacity:.45}',
-'#zadaciBox .zb{position:absolute;right:6px;top:calc(100% + 4px);width:150px;height:51px;background:url('+Z+'brojac_okvir.png) 0 0/100% 100% no-repeat;display:flex;align-items:center;justify-content:center;gap:6px;font-size:21px}#zadaciBox .zb img{height:30px}',
+'#zadaciBox{position:fixed;right:12px;top:100px;width:300px;aspect-ratio:987/1178;z-index:1895;background:url('+Z+'tabla_platno.webp) 0 0/100% 100% no-repeat;filter:drop-shadow(0 5px 8px rgba(30,15,5,.45));font-family:"Paytone One","CooksterSerif",Georgia,serif;font-weight:400;color:#3a1f10;user-select:none}',
+'#zadaciBox .zt{position:absolute;left:12%;right:12%;top:1.5%;height:12.5%;display:flex;align-items:center;justify-content:center;font-size:21px;color:#7a1e14;letter-spacing:.06em;white-space:nowrap;text-shadow:0 1px 0 rgba(255,240,205,.7)}',
+'#zadaciBox .zr{position:absolute;left:4.2%;right:4.4%;height:21.4%}',
+'#zadaciBox .zr:nth-of-type(1){top:19.1%}#zadaciBox .zr:nth-of-type(2){top:43.2%}#zadaciBox .zr:nth-of-type(3){top:67.5%}',
+'#zadaciBox .zx{position:absolute;left:19%;right:25%;top:0;bottom:0;display:flex;align-items:center;font-size:15px;line-height:1.12}',
+'#zadaciBox .zr.main .zx{color:#7a1e14;font-size:16px}',
+'#zadaciBox .zr.main:before{content:"";position:absolute;inset:3% 1%;border:2px solid rgba(214,163,40,.9);border-radius:12px;pointer-events:none;box-shadow:0 0 6px rgba(226,178,74,.7)}',
+'#zadaciBox .zk{position:absolute;right:3%;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:3px;font-size:15px}#zadaciBox .zk img{height:22px}',
+'#zadaciBox .zr.main .zk{color:#7a1e14;font-size:17px}',
+'#zadaciBox .zc{position:absolute;left:5.5%;top:50%;width:8.6%;aspect-ratio:1;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;color:#3f7a22;font:900 30px Arial}',
+'#zadaciBox .zr.done .zc:before{content:"✓"}',
+'#zadaciBox .zr.done .zx{text-decoration:line-through;opacity:.55}#zadaciBox .zr.done .zk{opacity:.45}',
 'body.menu-open #zadaciBox,body.main-menu-open #zadaciBox,body.kt-open #zadaciBox,body.market-open #zadaciBox,body.pantry-open #zadaciBox,body.garden-open #zadaciBox{display:none}'
 ].join('\n');
 document.head.appendChild(css);
@@ -101,12 +103,12 @@ function render(){
   var goal=CFG.stars[S.star-1],vis=list().slice(0,2),n=0;
   TASKS.forEach(function(t){if(S.done[t.id])n++;});
   var h='<div class="zt">LISTA ZADATAKA</div><div class="zl">';
-  if(tutorialLeft())h+='<div class="zr main"><span class="zx">Put do prve zvezde</span><span class="zk">'+n+'/'+TASKS.length+'</span></div>';
-  else if(goal)h+='<div class="zr main"><span class="zx">Put do '+ordinal()+' zvezde</span><span class="zk">'+Math.min(goal,S.starServed||0)+'/'+goal+'</span></div>';
+  if(tutorialLeft())h+='<div class="zr main"><span class="zc"></span><span class="zx">Put do prve zvezde</span><span class="zk">'+n+'/'+TASKS.length+'</span></div>';
+  else if(goal)h+='<div class="zr main"><span class="zc"></span><span class="zx">Put do '+ordinal()+' zvezde</span><span class="zk">'+Math.min(goal,S.starServed||0)+'/'+goal+'</span></div>';
   vis.forEach(function(t){
-    h+='<div class="zr'+(isDone(t)?' done':'')+'"><span class="zx">'+t.text+'</span>'+(t.zn?'<span class="zk"><img src="'+K+'ikona_znanje.webp" alt="">+'+t.zn+'</span>':'')+'</div>';
+    h+='<div class="zr'+(isDone(t)?' done':'')+'"><span class="zc"></span><span class="zx">'+t.text+'</span>'+(t.zn?'<span class="zk"><img src="'+K+'ikona_znanje.webp" alt="">+'+t.zn+'</span>':'')+'</div>';
   });
-  h+='</div><div class="zb"><img src="'+K+'ikona_znanje.webp" alt="">'+S.zn+'</div>';
+  h+='</div>';
   if(h!==cur){cur=h;box.innerHTML=h;}
 }
 function reward(t){if(t.zn)S.zn+=t.zn;recent[t.id]=Date.now();try{showToast('Zadatak gotov: '+t.text+(t.zn?'  (+'+t.zn+' znanja)':''));}catch(e){}}
