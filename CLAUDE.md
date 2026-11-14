@@ -29,3 +29,9 @@
 - `node -e "new Function(require('fs').readFileSync('js/<fajl>.js','utf8'))"` za sintaksu.
 - Verzije u `index.html` (`?v=`) podigni kad menjaš JS/CSS, da se ne vidi keš.
 - Test igre: `python3 -m http.server 8765`, Playwright (već instaliran, `NODE_PATH=$(npm root -g)`), ulaz u igru: klik (835,415), pa (1570,891).
+
+## Pomoćnici (`.claude/agents/`, model Haiku, jeftini)
+- `pretrazivac`: nađi/pročitaj kod i vrati kratak odgovor (samo čita).
+- `merac-testova`: pokreni igru u pregledaču, izmeri brzine/greške/ikonice (ne menja repo).
+- `secac-slika`: pripremi Miloševu sliku za igru (iseci, margina, 384 px, `.webp`).
+- Koristi ih samo kad Miloš kaže (npr. „koristi pomoćnika ..."); dizajn i animacije radi glavni agent.
