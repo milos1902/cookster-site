@@ -177,6 +177,7 @@ function renderBoard(){
   metrics();inner.innerHTML='';inner.style.width=M.w+'px';
   inner.style.setProperty('--D',M.D+'px');
   var LAYMODE=!!LT[S.tab],mine=cards.filter(function(c){return c.t===S.tab;});
+  var HOLDER=null;if(LAYMODE){HOLDER=inner;var STG=el('div','kt-stage');HOLDER.appendChild(STG);inner=STG;}
   if(LAYMODE)layoutExtras();
   if(LAYMODE){var k1=el('div','kt-corner');k1.style.left='4px';k1.style.top='4px';inner.appendChild(k1);var k2=el('div','kt-corner br');k2.style.left=(M.w-116)+'px';k2.style.top='570px';inner.appendChild(k2);}
   else{
@@ -225,6 +226,7 @@ function renderBoard(){
     d.addEventListener('click',function(){onCard(c,d);});
     inner.appendChild(d);
   });
+  if(HOLDER){inner=HOLDER;HOLDER.style.width=(M.w+300)+'px';}
 }
 function showTip(c,d){
   var st=status(c),src=artFor(c),pc=price(c),h='';
