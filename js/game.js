@@ -15586,17 +15586,11 @@ function beginCutAction(mode='dice'){
        if(juicy)cutJuiceBurst(target,cutJuice,targetCx+6*tVis,targetBy+4*tVis,tVis,(targetKey==='luk'?.35:1)*Math.min(1,.5+cycle/Math.max(1,chopCount)));
      }catch(_){}
    }
-   const drop=30*chopWave;
+   const drop=25*chopWave;      // a little shorter than before (it was 30): the knife goes a little less deep
    const lift=14*(1-chopWave);
    const slide=-1.5*chopWave;
    let dropY=-lift+drop;
    knife.style.transform=`rotate(${baseAngle}deg) translateY(${dropY.toFixed(1)}px) translateX(${slide.toFixed(1)}px)`;
-   // the knife goes only down to the bottom line of the thing on the board (it must not go through it and below it): if its lowest point is under that line, it is lifted by the difference
-   try{
-     const tb=target.querySelector('.body')||target,kr=knife.getBoundingClientRect(),tr=tb.getBoundingClientRect();
-     const over=(kr.bottom-(tr.bottom-1))/Math.max(.2,scale);
-     if(over>0){dropY-=over/Math.cos(baseAngle*Math.PI/180);knife.style.transform=`rotate(${baseAngle}deg) translateY(${dropY.toFixed(1)}px) translateX(${slide.toFixed(1)}px)`;}
-   }catch(_){}
    animateCutTargetCompression(target,Math.pow(Math.max(0,chopWave),2.7));
    if(cutOv){cutOv.style.clipPath=`inset(${(100-62*Math.max(0,chopWave)).toFixed(1)}% 0 0 0)`;const ob=cutOv.querySelector('.body'),tb=target.querySelector('.body');if(ob&&tb){ob.style.transform=tb.style.transform;ob.style.transformOrigin=tb.style.transformOrigin;}}
    updateCutProgress(p,tCx,progY);
