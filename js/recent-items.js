@@ -70,7 +70,7 @@
       img.className='cookster-recent-icon';img.src=(window.CooksterItemArt&&CooksterItemArt[def.id])||def.src;img.alt='';img.draggable=false;
       img.setAttribute('aria-hidden','true');
       b.appendChild(img);
-      if(popSlot===i){popSlot=-1;try{if(window.gsap){window.gsap.fromTo(img,{xPercent:-50,yPercent:-50,scale:.2,opacity:0},{xPercent:-50,yPercent:-50,scale:1,opacity:1,duration:.45,delay:.2,ease:'back.out(2.4)',clearProps:'opacity'});}else img.animate([{transform:'translate(-50%,-50%) scale(.2)',opacity:0},{transform:'translate(-50%,-50%) scale(1.18)',opacity:1,offset:.6},{transform:'translate(-50%,-50%) scale(1)',opacity:1}],{duration:320,delay:200,easing:'cubic-bezier(.3,.8,.3,1)',fill:'backwards'});}catch(_){}}
+      if(popSlot===i){popSlot=-1;try{img.animate([{transform:'translate(-50%,-50%) scale(.2)',opacity:0},{transform:'translate(-50%,-50%) scale(1.18)',opacity:1,offset:.6},{transform:'translate(-50%,-50%) scale(1)',opacity:1}],{duration:320,delay:200,easing:'cubic-bezier(.3,.8,.3,1)',fill:'backwards'});}catch(_){}}
       b.removeAttribute('title');b.setAttribute('aria-label','Ranac: '+(def.label||def.id));
     });
   }
