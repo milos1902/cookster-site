@@ -146,3 +146,10 @@ body.kt-open #ktRoot{display:flex}
 .kt-res .kt-pl:nth-child(2){--pi:68px;padding-left:76px}
 /* Zastavica: zvezda i novčići su iste širine, ikonice poravnate levo jedna iznad druge, brojevi u istoj koloni */
 .kt-flag .fp .kt-pl{width:calc(var(--pl,22px) + 3.2em)!important;justify-content:flex-start!important}
+
+/* Dok je krug uvećan: bez malog katanca/znaka (već je u disku) i bez senke koja se razvlači */
+.kt-card.kt-big::after{display:none}
+.kt-card.kt-big .kt-ring{filter:drop-shadow(2px 5px 6px rgba(40,22,6,.45))}
+
+/* Uvećan krug: slika u punoj boji (nije izbledela) */
+.kt-card.kt-big .kt-ic img{filter:grayscale(.15);opacity:1}

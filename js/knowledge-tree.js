@@ -37,6 +37,7 @@ var artCache={};
 var ART_OVR={'Bakarni tiganj':'assets/ui/karta/ikone/bakarni_tiganj.webp','Majstorski tiganj':'assets/ui/karta/ikone/majstorski_tiganj.webp','Bakarna šerpa':'assets/ui/karta/ikone/bakarna_serpa.webp','Veći kapacitet 1':'assets/ui/karta/ikone/veci_kapacitet_1.webp','Male tegle':'assets/ui/karta/ikone/male_tegle.webp','Velike tegle':'assets/ui/karta/ikone/velike_tegle.webp','Oval tanjir':'assets/ui/karta/ikone/oval_tanjir.webp','Servis za slavlje':'assets/ui/karta/ikone/servis_slavlje.webp','Rerna 1':'assets/ui/karta/ikone/rerna.webp','Roštilj':'assets/ui/karta/ikone/rostilj.webp','Nož':'assets/new_props/daska_sa_nozem.png','Veća daska':'assets/new_props/daska_sa_nozem.png','Majstorska daska':'assets/new_props/daska_sa_nozem.png','Oštar nož':'assets/new_props/daska_sa_nozem.png','Majstorski nož':'assets/new_props/daska_sa_nozem.png','Nož za meso':'assets/new_props/daska_sa_nozem.png','Nož majstora kuvara':'assets/new_props/daska_sa_nozem.png'};
 Object.assign(ART_OVR,{'Vatra traje duže 1':'assets/ui/karta/ikone/vatra_duze.webp','Vatra traje duže 2':'assets/ui/karta/ikone/vatra_duze.webp','Brže prženje 1':'assets/ui/karta/ikone/brze_prazenje.webp','Brže prženje 2':'assets/ui/karta/ikone/brze_prazenje.webp','Brže sečenje 1':'assets/ui/karta/ikone/brze_secenje.webp','Brže sečenje 2':'assets/ui/karta/ikone/brze_secenje.webp','Mlin za meso':'assets/ui/karta/ikone/mlin_meso.webp','Mlevenje mesa 1':'assets/ui/karta/ikone/mlevenje_mesa.webp','Mlevenje mesa 2':'assets/ui/karta/ikone/mlevenje_mesa.webp'});      // ikonice 2 (Vatra, prženje, sečenje, mlin)
 function artFor(c){
+  if(ART_OVR[c.n])return ART_OVR[c.n];      // nacrtana ikonica ima prednost i za bonus kartice
   if(c.y==='L'||c.y==='Q'||c.y==='S')return null;
   if(artCache[c.id]!==undefined)return artCache[c.id];
   var src=ART_OVR[c.n]||null;
@@ -229,7 +230,7 @@ function renderBoard(){
     }
     if(c.x)d.appendChild(el('div','kt-or'+(groupOther(c)&&st!=='done'?' dbl':''),groupOther(c)&&st!=='done'?'×2':'ILI'));
     d.appendChild(co);
-    d.addEventListener('mouseenter',function(e){clearTimeout(TIPT);TIPT=setTimeout(function(){showTip(c,d);},1000);});d.addEventListener('mouseleave',function(){clearTimeout(TIPT);hideTip();});
+    d.addEventListener('mouseenter',function(e){clearTimeout(TIPT);TIPT=setTimeout(function(){showTip(c,d);},d.classList.contains('kt-lay')?500:1000);});d.addEventListener('mouseleave',function(){clearTimeout(TIPT);hideTip();});
     d.addEventListener('click',function(){onCard(c,d);});
     inner.appendChild(d);
   });
@@ -270,7 +271,7 @@ function flagCss(){if(document.getElementById('ktFlagCss'))return;var st=documen
 '.kt-flag .fe{color:#3a1f10;opacity:.95}.kt-flag .fp{display:flex;flex-direction:column;align-items:flex-end;gap:.25em;flex:0 0 auto}'+
 '.kt-flag .fp .kt-pl{background-size:100% 100%;background-repeat:no-repeat;display:flex;align-items:center;justify-content:flex-end;color:#3a1f10}'+
 '.kt-flag .fp .kt-pl.bad{color:#c0291a}.kt-flag .fq{color:#a3321c;font-size:.8em;text-align:right;max-width:11em}.kt-flag .fk{color:#3f6d26}';document.head.appendChild(st);}
-function showTip(c,d){
+function showFlag(c,d){
   if(!d.classList.contains('kt-lay'))return showTipOld(c,d);
   killFlag(true);flagCss();
   var st=status(c),pc=price(c),D=d.offsetWidth,H=Math.round(D*1.12),cx=d.offsetLeft+D/2,cy=d.offsetTop+D/2,sc=H/520,capL=140*sc,tile=123*sc,capR=294*sc;
@@ -320,7 +321,65 @@ function killFlag(now){
   if(now||!window.gsap){fin();return;}
   gsap.to(F.f,{x:F.hide,duration:.24,ease:'power2.in',force3D:true,onComplete:fin});
 }
-function hideTip(){clearTimeout(TIPT);tip.style.display='none';killFlag(false);}
+// ---- Uvećanje kruga: kad se zadržiš na krugu, on poraste (više od duplo), ikonica se podigne i smanji, ispod nje ide ime, zvezdice i cena;
+// ispod kruga stoji kratak opis i šta fali. (Zastavica ostaje u kodu kao showFlag, ali se ne koristi.)
+var BIG=null;
+function bigCss(){if(document.getElementById('ktBigCss'))return;var st=document.createElement('style');st.id='ktBigCss';st.textContent=
+'.kt-card.kt-big{z-index:6000!important}.kt-bi,.kt-bc{position:absolute;pointer-events:none;text-align:center;font-family:"Paytone One","CooksterSerif",Georgia,serif;font-weight:400;color:#7a1e14;line-height:1.05}'+
+'.kt-bi{left:50%;transform:translateX(-50%)}.kt-bi .bn{color:#7a1e14}.kt-bi .bs{display:flex;gap:1px;justify-content:center}.kt-bi .bs i{display:block;background:url('+A+'zvezde/zvezda_prazna.png) 0 0/100% 100% no-repeat}.kt-bi .bs i.f{background-image:url('+A+'zvezde/zvezda_puna.png)}'+
+'.kt-bi .bp{display:flex;gap:.7em;justify-content:center;align-items:center;color:#3a1f10}.kt-bi .bp span{display:flex;align-items:center;gap:.25em}.kt-bi .bp img{display:block;height:1.25em;width:auto}.kt-bi .bp .bad{color:#c0291a}.kt-bi .bk{color:#3f6d26}'+
+'.kt-bc{left:50%;transform:translateX(-50%);color:#3a1f10;text-shadow:0 1px 0 rgba(255,246,224,.9),0 0 6px rgba(255,240,205,.9)}.kt-bc .bf{color:#a3321c;margin-top:.25em}';
+document.head.appendChild(st);}
+function showBig(c,d){
+  killBig(true);bigCss();
+  var st=status(c),pc=price(c),D=d.offsetWidth,F=430,k=F/D;      // svi krugovi, veliki i mali, rastu na istu konačnu veličinu
+  var icon=d.querySelector('.kt-in');
+  // položaj: krug i opis ispod ostaju unutar vidljivog dela karte
+  var cx=d.offsetLeft+D/2,cy=d.offsetTop+D/2,scr=window.CooksterTreeScroll?CooksterTreeScroll.get():0,bw=board.clientWidth,bh=board.clientHeight,capH=10;
+  var dx=0,dy=0,left=cx-F/2-(scr+10),right=(scr+bw-10)-(cx+F/2);if(left<0)dx=-left;else if(right<0)dx=right;
+  var top=cy-F/2-8,bot=(bh-8)-(cy+F/2+capH);if(top<0)dy=-top;else if(bot<0)dy=bot;
+  var u=function(px){return (px/k).toFixed(2)+'px';};      // veličina u konačnim pikselima, preračunata za uvećanje
+  // ime, zvezdice i cena (unutar diska)
+  var bi=el('div','kt-bi');bi.style.top=(D*.535)+'px';bi.style.width=(D*.62)+'px';
+  var bn=el('div','bn',c.n);bn.style.fontSize=u(c.n.length>14?20:25);bi.appendChild(bn);
+  var bs=el('div','bs');bs.style.margin=u(3)+' 0';for(var q=1;q<=5;q++){var si=el('i',q<=c.s?'f':'');si.style.width=si.style.height=u(20);bs.appendChild(si);}bi.appendChild(bs);
+  var bp=el('div','bp');bp.style.fontSize=u(23);
+  if(st==='done'){bp.appendChild(el('span','bk','Kupljeno'));}
+  else{
+    if(pc.z){var s1=el('span',S.zn<pc.z?'bad':'');var i1=el('img');i1.src=K+'ikona_zvezda.webp?v=2';s1.appendChild(i1);s1.appendChild(document.createTextNode(String(pc.z)));bp.appendChild(s1);}
+    if(pc.d){var s2=el('span',S.din<pc.d?'bad':'');var i2=el('img');i2.src=K+'ikona_novac.webp?v=2';s2.appendChild(i2);s2.appendChild(document.createTextNode(pc.d>=1000?(pc.d/1000).toString().replace('.',',')+'k':String(pc.d)));bp.appendChild(s2);}
+  }
+  bi.appendChild(bp);
+  // opis i šta fali (ispod kruga, na platnu)
+  var bc=el('div','kt-bc');bc.style.top=(D/2+(F/2+8)/k)+'px';bc.style.width=(F*1.15/k)+'px';bc.style.fontSize=u(15);
+  var eff=String(c.e||'').split(/\.\s/)[0].replace(/\.$/,'');bc.appendChild(el('div','',eff));
+  var need='';if(st==='lock')need='Fali: '+missing(c)[0];else if(st==='can'&&!afford(c)){need='Fali: '+((S.zn<pc.z)?'znanje':'novac');}
+  else if(c.x){need=(groupOther(c)&&!isBought(c))?'Košta duplo':'Izbor „ILI"';}
+  if(need)bc.appendChild(el('div','bf',need));
+  var ring=d.querySelector('.kt-ring'),sh=el('div','kt-sh');sh.style.cssText='position:absolute;left:50%;top:'+(D/2+F*.40/k)+'px;width:'+(F*.78/k)+'px;height:'+(F*.2/k)+'px;margin-left:'+(-F*.39/k)+'px;border-radius:50%;background:radial-gradient(ellipse at center,rgba(40,22,6,.5),rgba(40,22,6,0) 70%);pointer-events:none;opacity:0';
+  d.insertBefore(sh,d.firstChild);d.appendChild(bi);d.classList.add('kt-big');      // opis ispod kruga je izbačen: sve bitno je u krugu
+  var f0='drop-shadow(1px 3px 3px rgba(40,22,6,.4))',f1='drop-shadow(0px '+(14/k)+'px '+(18/k)+'px rgba(40,22,6,.34))';
+  BIG={card:d,icon:icon,bi:bi,bc:bc,D:D,ring:ring,sh:sh,f0:f0};
+  if(window.gsap){
+    var tl=gsap.timeline();
+    tl.to(d,{scale:k,x:dx/1,y:dy/1,duration:.4,ease:'back.out(1.35)',force3D:true},0);
+    tl.to(icon,{y:-D*.1,scale:1.06,duration:.4,ease:'power2.out'},0);
+    tl.fromTo(ring,{filter:f0},{filter:f1,duration:.42,ease:'power2.out'},0);
+    tl.fromTo(sh,{opacity:0,scale:.7},{opacity:1,scale:1,duration:.42,ease:'power2.out'},0);
+    tl.fromTo(bi,{opacity:0},{opacity:1,duration:.25,ease:'power1.out'},.18);
+    tl.fromTo(bc,{opacity:0},{opacity:1,duration:.3,ease:'power1.out'},.3);
+  }else{d.style.transform='translate('+dx+'px,'+dy+'px) scale('+k+')';icon.style.transform='translateY('+(-D*.1)+'px) scale(1.06)';ring.style.filter=f1;sh.style.opacity=1;}
+}
+function killBig(now){
+  if(!BIG)return;var B=BIG;BIG=null;
+  var fin=function(){if(B.sh.parentNode)B.sh.remove();if(B.ring)B.ring.style.filter='';if(B.bi.parentNode)B.bi.remove();if(B.bc.parentNode)B.bc.remove();B.card.classList.remove('kt-big');if(window.gsap){gsap.set(B.card,{clearProps:'transform'});gsap.set(B.icon,{clearProps:'transform'});}else{B.card.style.transform='';B.icon.style.transform='';}};
+  if(now||!window.gsap){if(window.gsap)gsap.killTweensOf([B.card,B.icon,B.bi,B.bc,B.ring,B.sh]);fin();return;}
+  gsap.killTweensOf([B.bi,B.bc]);gsap.to([B.bi,B.bc],{opacity:0,duration:.12});
+  gsap.to(B.icon,{y:0,scale:1,duration:.22,ease:'power2.in'});gsap.to(B.ring,{filter:B.f0,duration:.22});gsap.to(B.sh,{opacity:0,duration:.18});
+  gsap.to(B.card,{scale:1,x:0,y:0,duration:.22,ease:'power2.in',onComplete:fin});
+}
+function showTip(c,d){if(d.classList.contains('kt-lay'))return showBig(c,d);return showFlag(c,d);}
+function hideTip(){clearTimeout(TIPT);tip.style.display='none';killFlag(false);killBig(false);}
 
 function say(m){toast.textContent=m;toast.classList.add('on');clearTimeout(say.t);say.t=setTimeout(function(){toast.classList.remove('on');},1900);}
 function onCard(c,d){
