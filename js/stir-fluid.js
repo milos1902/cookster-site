@@ -982,7 +982,7 @@ window.CooksterJuiceCanvas=function(color,wpx,hpx){
 // ---- WATER in the sink close-up (js/sink-zoom.js): a canvas with its own fluid; the stream and the splash are made by pushing water into it
 window.CooksterWaterFluid=function(cv,config){
   if(failed)return null;
-  var fl=createFluid(cv,{water:true,config:Object.assign({SIM_RESOLUTION:128,DYE_RESOLUTION:512,DENSITY_DISSIPATION:4.2,VELOCITY_DISSIPATION:1.6,CURL:1,SPLAT_RADIUS:0.01,PRESSURE_ITERATIONS:14},config||{})});
+  var fl=createFluid(cv,{water:true,config:Object.assign({SIM_RESOLUTION:128,DYE_RESOLUTION:512,DENSITY_DISSIPATION:1.6,VELOCITY_DISSIPATION:2.6,CURL:0,SPLAT_RADIUS:0.01,PRESSURE_ITERATIONS:14},config||{})});
   if(!fl)return null;fl.setEnv(1);return fl;
 };
 // the white dots and the little bubbles of the old css are not shown any more: the fluid does it (only when the fluid can work: WebGL)

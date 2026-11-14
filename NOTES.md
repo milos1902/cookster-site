@@ -1686,3 +1686,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Voda u sudoperi preko simulacije tečnosti (sink-zoom.js v31, stir-fluid.js v40)
 - Mlaz i prskanje u krupnom planu sudopere prave se simulacijom tečnosti (CooksterWaterFluid u stir-fluid.js): tanak mlaz pada iz slavine tačno na čep slivnika (crni krug, centar ~49.4%, 58.4% slike, nađeno iz slike), a sa čepa prska levo i desno, stalno dok teče. Ne ostaje voda u sudoperi (kratki mlazevi koji brzo nestaju).
 - Crta se samo unutar kalibrisanog otvora sudopere (cal.rim) i kroz isti canvas efekata, pa prednji zidovi posuda i dalje sakrivaju vodu (cutFront). Stari mlaz (pantljika) i slika prskanja koriste se samo ako nema WebGL-a.
+
+## Sudopera: voda se odbija od čepa (sink-zoom.js v32, stir-fluid.js v41)
+- Mlaz pada na čep, iz čepa prska lukovima levo i desno i ostaje po podu i ivicama (DENSITY_DISSIPATION 1.6); posle zatvaranja slavine nestaje ~5 s.
