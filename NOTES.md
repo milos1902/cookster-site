@@ -1713,3 +1713,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Uzrok kočenja: dok se platno otkrivalo, sve sjene (`drop-shadow`) u prozoru su se crtale iznova u svakom kadru. Sada su sjene isključene dok traje animacija (`body.ke-anim`) i prozor je na posebnom sloju.
 - mo.js je ostavljao ~76 elemenata po otvaranju (prozor je bio sve sporiji): sada se brišu 0,9 s posle prašine.
 - Prvo otvaranje posle osvežavanja: slike prozora (~100) se učitavaju i dekodiraju u pozadini ~2 s posle starta, jedna po jedna (`prewarm`).
+
+## Šipke platna su slika drvenog štapa (js/ke-unroll.js v7)
+- Umesto nacrtane šipke koristi se slika koju je poslao vlasnik: `assets/ui/pergament/pg_sipka.webp` (1935x31, providna pozadina, izrezana iz slike 2000x667). Visina se računa iz širine (31/1935), malo je šira od platna.

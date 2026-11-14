@@ -12,18 +12,18 @@ document.head.appendChild(st);
 var was=false,fx=null,top=null,bot=null,sc=null,closing=false,orig=null;
 function target(){return document.body.classList.contains('ke-pg-on')?document.getElementById('kePg'):null;}
 function layer(){if(fx)return fx;fx=document.createElement('div');fx.id='keFx';fx.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:65001';document.body.appendChild(fx);return fx;}
+var ROD='assets/ui/pergament/pg_sipka.webp',RR=31/1935;      // the picture of the wooden rod (1935x31): the rolls of the cloth
 function rod(){
   var d=document.createElement('div');d.className='ke-rod';
-  d.style.cssText='position:fixed;border-radius:99px;background:linear-gradient(#ecc98c,#a8773d 50%,#6a431b);box-shadow:0 .35cqw .7cqw rgba(30,14,4,.55),inset 0 .12cqw 0 rgba(255,240,205,.65);will-change:transform';
-  ['left','right'].forEach(function(s){var k=document.createElement('div');k.style.cssText='position:absolute;top:50%;'+s+':-.55em;width:1.5em;height:1.5em;margin-top:-.75em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f3d9a4,#a8773d 60%,#5e3a16);box-shadow:0 2px 4px rgba(30,14,4,.5)';d.appendChild(k);});
+  d.style.cssText='position:fixed;background:url('+ROD+') 0 0/100% 100% no-repeat;filter:drop-shadow(0 3px 4px rgba(30,14,4,.5));will-change:transform';
   layer().appendChild(d);return d;
 }
 function geom(el){var r=el.getBoundingClientRect(),W=r.width,H=r.height;
   return {r:r,W:W,H:H,x0:r.left+W*CX0,x1:r.left+W*CX1,yT:r.top+H*CY0,yB:r.top+H*CY1,cy:r.top+H/2,h:Math.max(9,W*.0105)};}
 function put(g,p){      // p: 0 = the rolls together in the middle, 1 = at the edges; the cloth shows between them
   var yT=g.cy+(g.yT-g.cy)*p,yB=g.cy+(g.yB-g.cy)*p;
-  [top,bot].forEach(function(d,i){var y=i?yB:yT;d.style.left=g.x0-g.W*.006+'px';d.style.width=g.x1-g.x0+g.W*.012+'px';d.style.height=g.h+'px';d.style.fontSize=g.h*.62+'px';
-    d.style.top=y-g.h/2+'px';});
+  var rw=g.x1-g.x0+g.W*.012,rh=rw*RR;      // the rods are a little wider than the cloth
+  [top,bot].forEach(function(d,i){var y=i?yB:yT;d.style.left=g.x0-g.W*.006+'px';d.style.width=rw+'px';d.style.height=rh+'px';d.style.top=y-rh/2+'px';});
   var t=Math.max(0,yT-g.r.top),b=Math.max(0,g.r.bottom-yB);
   g.el.style.clipPath='inset('+t+'px 0px '+b+'px 0px)';
 }
@@ -59,7 +59,7 @@ function closeAnimated(){
   return true;
 }
 function prewarm(){      // the pictures of the window are loaded and decoded in the background after the start, so the first opening does not wait for them
-  var P='assets/ui/pergament/',list=[P+'strana_kuhinjski_elementi_prazna.webp?v=2',P+'pg_kartica_posude_n_bez.png',P+'pg_kartica_posude_h_bez.png',P+'kartica_opis_ranac.png'];
+  var P='assets/ui/pergament/',list=[P+'pg_sipka.webp',P+'strana_kuhinjski_elementi_prazna.webp?v=2',P+'pg_kartica_posude_n_bez.png',P+'pg_kartica_posude_h_bez.png',P+'kartica_opis_ranac.png'];
   try{var A=window.CooksterItemArt||{};Object.keys(A).forEach(function(k){list.push(A[k]);});}catch(e){}
   try{if(typeof KITCHEN_EQUIPMENT!=='undefined')KITCHEN_EQUIPMENT.forEach(function(d){if(d.src&&list.indexOf(d.src)<0)list.push(d.src);});}catch(e){}
   var i=0;(function next(){if(i>=list.length)return;var im=new Image();im.decoding='async';im.src=list[i++];
