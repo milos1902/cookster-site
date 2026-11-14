@@ -106,7 +106,7 @@ function build(){
   tabsEl=panel;
   var nz=el('div');nz.id='ktNazad';nz.title='Nazad';nz.onclick=close;panel.appendChild(nz);
   var res=el('div','kt-res');
-  var pz=el('div','kt-pl');pz.style.backgroundImage='url('+K+'ikona_zvezda.webp)';znEl=el('span');pz.appendChild(znEl);
+  var pz=el('div','kt-pl');pz.style.backgroundImage='url('+K+'ikona_znanje.webp)';znEl=el('span');pz.appendChild(znEl);
   var pd=el('div','kt-pl');pd.style.backgroundImage='url('+K+'ikona_novac.webp?v=2)';dinEl=el('span');pd.appendChild(dinEl);
   res.appendChild(pz);res.appendChild(pd);
   var x=el('button','kt-x','✕');x.onclick=close;res.appendChild(x);
@@ -227,7 +227,7 @@ function renderBoard(){
     d.appendChild(el('div','kt-nm',c.n));
     var co=el('div','kt-co'),pr=price(c);
     if(st!=='done'&&(pr.z||pr.d)){
-      if(pr.z){var a1=el('div','kt-pl'+(S.zn<pr.z?' bad':''));a1.style.backgroundImage='url('+K+'ikona_zvezda.webp)';a1.appendChild(el('span','',String(pr.z)));co.appendChild(a1);}
+      if(pr.z){var a1=el('div','kt-pl'+(S.zn<pr.z?' bad':''));a1.style.backgroundImage='url('+K+'ikona_znanje.webp)';a1.appendChild(el('span','',String(pr.z)));co.appendChild(a1);}
       if(pr.d){var a2=el('div','kt-pl'+(S.din<pr.d?' bad':''));a2.style.backgroundImage='url('+K+'ikona_novac.webp?v=2)';a2.appendChild(el('span','',pr.d>=1000?(pr.d/1000).toString().replace('.',',')+'k':String(pr.d)));co.appendChild(a2);}
     }
     if(c.x)d.appendChild(el('div','kt-or'+(groupOther(c)&&st!=='done'?' dbl':''),groupOther(c)&&st!=='done'?'×2':'ILI'));
@@ -253,7 +253,7 @@ function showTipOld(c,d){
   if(st==='done')h+='<div class="tp-ok">Kupljeno</div>';
   else if(pc.z||pc.d){
     h+='<div class="tp-pr">';
-    if(pc.z)h+='<div class="kt-pl'+(S.zn<pc.z?' bad':'')+'" style="background-image:url('+K+'ikona_zvezda.webp)"><span>'+pc.z+'</span></div>';
+    if(pc.z)h+='<div class="kt-pl'+(S.zn<pc.z?' bad':'')+'" style="background-image:url('+K+'ikona_znanje.webp)"><span>'+pc.z+'</span></div>';
     if(pc.d)h+='<div class="kt-pl'+(S.din<pc.d?' bad':'')+'" style="background-image:url('+K+'ikona_novac.webp?v=2)"><span>'+(pc.d>=1000?(pc.d/1000).toString().replace('.',',')+'k':pc.d)+'</span></div>';
     h+='</div>';
   }
@@ -294,7 +294,7 @@ function showFlag(c,d){
   var fp=el('div','fp');
   if(st==='done'){fp.appendChild(el('div','fk','Kupljeno'));}
   else{
-    if(pc.z){var a1=el('div','kt-pl'+(S.zn<pc.z?' bad':''));a1.style.backgroundImage='url('+K+'ikona_zvezda.webp?v=2)';a1.appendChild(el('span','',String(pc.z)));fp.appendChild(a1);}
+    if(pc.z){var a1=el('div','kt-pl'+(S.zn<pc.z?' bad':''));a1.style.backgroundImage='url('+K+'ikona_znanje.webp?v=2)';a1.appendChild(el('span','',String(pc.z)));fp.appendChild(a1);}
     if(pc.d){var a2=el('div','kt-pl'+(S.din<pc.d?' bad':''));a2.style.backgroundImage='url('+K+'ikona_novac.webp?v=2)';a2.appendChild(el('span','',pc.d>=1000?(pc.d/1000).toString().replace('.',',')+'k':String(pc.d)));fp.appendChild(a2);}
     Array.prototype.forEach.call(fp.querySelectorAll('.kt-pl'),function(x){x.style.height=plH+'px';x.style.setProperty('--pl',Math.round(plH*1.25)+'px');x.style.paddingRight=Math.round(plH*.28)+'px';x.style.fontSize=Math.round(plH*.55)+'px';});
     var need='';if(st==='lock')need='Fali: '+missing(c).join(', ');else if(st==='can'&&!afford(c)){var ff=[];if(S.zn<pc.z)ff.push((pc.z-S.zn)+' znanja');if(S.din<pc.d)ff.push((pc.d-S.din)+' din');need='Fali: '+ff.join(', ');}
@@ -354,7 +354,7 @@ function showBig(c,d){
   var bp=el('div','bp');bp.style.fontSize=u(23);
   if(st==='done'){bp.appendChild(el('span','bk','Kupljeno'));}
   else{
-    if(pc.z){var s1=el('span',S.zn<pc.z?'bad':'');var i1=el('img');i1.src=K+'ikona_zvezda.webp?v=2';s1.appendChild(i1);s1.appendChild(document.createTextNode(String(pc.z)));bp.appendChild(s1);}
+    if(pc.z){var s1=el('span',S.zn<pc.z?'bad':'');var i1=el('img');i1.src=K+'ikona_znanje.webp?v=2';s1.appendChild(i1);s1.appendChild(document.createTextNode(String(pc.z)));bp.appendChild(s1);}
     if(pc.d){var s2=el('span',S.din<pc.d?'bad':'');var i2=el('img');i2.src=K+'ikona_novac.webp?v=2';s2.appendChild(i2);s2.appendChild(document.createTextNode(pc.d>=1000?(pc.d/1000).toString().replace('.',',')+'k':String(pc.d)));bp.appendChild(s2);}
   }
   bi.appendChild(bp);
