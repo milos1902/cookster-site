@@ -78,29 +78,35 @@
     g.style.cssText='position:absolute;left:-13%;top:-28%;width:126%;height:157%;z-index:0;pointer-events:none;object-fit:contain';
     b.prepend(g);glowSlot=slot;glowAt=performance.now();
   }
+  // The rack is a STOCK, not a copier: a thing that is taken from a pocket leaves the rack (it is on the table now, or in the hand); a thing that is put back (a click on a pocket with the
+  // thing in the hand) goes into that pocket again. A thing that is in the rack (or lies on the table) cannot be made a second time from the window "Kuhinjski elementi".
+  // (Later the player will be able to get / buy more of the same thing, for example three pots: then a pocket holds a number.)
+  const UNIQUE=/^(siljak_narudzbine|zvonce_konobar|ticket_rail|kanta_set_zatvorena|mlin_za_mes.|kaca_.*|zacin_.*)$/;
   function activate(slot){
-    const id=recent[slot],def=id&&defOf(id);
-    if(!def)return false;
-    // a click always makes a NEW copy (two bowls, three glasses...); only the things that exist once (the bell, the spike, the rail, the bin, the barrel, the mill, the spices) are taken from where they are
-    const UNIQUE=/^(siljak_narudzbine|zvonce_konobar|ticket_rail|kanta_set_zatvorena|mlin_za_mes.|kaca_.*|zacin_.*)$/;
-    // something is in the hand: a click on a square puts it BACK (it is a copy that came from a square); if the clicked square holds another thing, that one is taken next
+    // something is in the hand: a click on a pocket puts it BACK into the rack (into that pocket)
     if(typeof holding!=='undefined'&&holding){
       const h=holding,hid=h.dataset&&h.dataset.itemId,hdef=hid&&defOf(hid);
       let hasFood=false;try{hasFood=Object.keys((window.CooksterPan&&CooksterPan.read&&CooksterPan.read(h)||{}).ingredients||{}).length>0;}catch(_){}
-      if(!hdef||UNIQUE.test(hid)||hasFood||!window.CooksterReturnHeld){try{showToast(hasFood?'U njemu ima hrane: prvo ga spusti na sto.':'Ovo ne može da se vrati u kvadratić: spusti ga na sto.');}catch(_){}return true;}
+      if(!hdef||UNIQUE.test(hid)||hasFood||!window.CooksterReturnHeld){try{showToast(hasFood?'U njemu ima hrane: prvo ga spusti na sto.':'Ovo ne može u ranac: spusti ga na sto.');}catch(_){}return true;}
+      if(recent.length>=MAX&&!recent.includes(hid)&&slot>=recent.length){try{showToast('Ranac je pun.');}catch(_){}return true;}
       window.CooksterReturnHeld();
-      try{showToast((hdef.label||hid)+' je vraćen u kvadratić.');}catch(_){}
-      if(hid===id)return true;
+      put(hid,Math.min(slot,recent.length));
+      try{showToast((hdef.label||hid)+' je u rancu.');}catch(_){}
+      return true;
     }
+    const id=recent[slot],def=id&&defOf(id);
+    if(!def)return false;
+    // the things that exist once (the bell, the spike, the rail, the bin, the barrel, the mill, the spices) are taken from where they are
     const there=UNIQUE.test(id)?(window.items||items).find(el=>el.dataset.itemId===id&&el!==holding):null;
-    if(there){try{startHolding(there);}catch(_){}setGlow(slot);return true;}
+    if(there){try{startHolding(there);}catch(_){}recent.splice(slot,1);save();render(true);setGlow(Math.min(slot,MAX-1));return true;}
     const el=makeItem({...def,instanceId:nextItemInstanceId(id),x:700-def.w/2,y:560-def.h,z:++zCounter});
     if(!el)return false;
     el.dataset.surfaceZone='table';
     setPose(el,700,560,surfaceScaleFor(el,'table',560));
     // the new copy stands at (700,560) on the table: it must never be shown, only the copy that follows the mouse (that is the flash that was seen)
     el.dataset.noFlash='1';el.style.visibility='hidden';setTimeout(()=>{delete el.dataset.noFlash;},1500);
-    startHolding(el);setGlow(slot);
+    startHolding(el);
+    recent.splice(slot,1);save();render(true);setGlow(Math.min(slot,MAX-1));      // the thing leaves the rack (it is in the hand)
     try{CooksterSave.schedule();}catch(_){}
     return true;
   }
@@ -113,5 +119,5 @@
     render(false);
   }
   requestAnimationFrame(tick);
-  window.CooksterRecentItems={activate,push,put,move,remove,menu:(i,x,y)=>{if(recent[i])openMenu(i,x,y);},setSlots,get:()=>recent.slice()};
+  window.CooksterRecentItems={activate,push,put,move,remove,menu:(i,x,y)=>{if(recent[i])openMenu(i,x,y);},setSlots,has:id=>recent.includes(id),get:()=>recent.slice()};
 })();

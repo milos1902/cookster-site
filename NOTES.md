@@ -1663,3 +1663,7 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Slika kartice bez dugmeta: assets/ui/pergament/kartica_opis_bez_dugmeta.png (dugme privremeno prekriveno u slici). Miloš će nacrtati novu sliku sa 6 kvadratića; tada zameniti sliku i poravnati RK_X/RK_Y u ke-pergament.js.
 - recent-items.js: nove funkcije put(id,i), move(a,b), menu(i,x,y).
 - Nova slika kartice sa ranac ikonom i 6 kvadratića (Milošova): assets/ui/pergament/kartica_opis_ranac.png; kvadrati poravnati (RK_X 32/51/70, RK_Y 71.3/82.9, 18.3x11.1 posto). ke-pergament js v15, css v14. Privremena slika bez dugmeta obrisana.
+
+## Ranac je zaliha, ne kopirka
+- recent-items.js v9: predmet uzet iz džepa napušta ranac (u ruci je / na stolu), predmet vraćen klikom na džep (i prazan) ulazi u taj džep; pun ranac javlja poruku. ke-pergament.js v16: predmet koji je u rancu ili na stolu u listi je zatamnjen ("U RANCU" / "NA STOLU"), ne može da se napravi još jedan niti da se prevuče u ranac. Nema više dupliranja.
+- Kasnije: kupovina/dodavanje više istih predmeta (npr. 3 šerpe) kad igrač napreduje; džep će tada nositi broj.

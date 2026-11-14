@@ -62,13 +62,16 @@ function list(){
   var own=ownedKitchenEquipment();
   ds.forEach(function(d){
     var onT=false;try{onT=!d.infinite&&equipmentIsInKitchen(d.id);}catch(_){}
+    var inR=rackIds().indexOf(d.id)>=0;
+    if(inR&&TAB==='own')onT=true;
     var t=el('div','pg-tile'+(onT&&TAB==='own'?' dim':'')+(SEL&&SEL.id===d.id?' sel':''));
     var im=el('img','im');im.src=ART[d.id]||d.src;im.alt='';im.draggable=false;t.appendChild(im);
     t.setAttribute('aria-label',d.label);      // no name on the card: only the picture (the name is on the big card on the right)
+    if(inR&&TAB==='own')t.appendChild(el('div','tg','','U RANCU'));
     if(TAB==='shop'){t.classList.add('shop');t.appendChild(el('div','tg','',(typeof FREE_MODE!=='undefined'&&FREE_MODE)?'BESPLATNO':(d.price||0)+' дин'));}
     t.onmouseenter=function(){SEL=d;card();Array.prototype.forEach.call(L.children,function(c){c.classList.toggle('sel',c===t);});};
     t.onclick=function(){if(Date.now()-justDragged<350)return;act(d,onT);};
-    t.addEventListener('pointerdown',function(e){if(TAB!=='own'||e.button!==0)return;beginDrag(e,{from:'list',id:d.id,label:d.label});});
+    t.addEventListener('pointerdown',function(e){if(TAB!=='own'||e.button!==0||onT)return;beginDrag(e,{from:'list',id:d.id,label:d.label});});
     L.appendChild(t);
   });
   if(!SEL||ds.indexOf(SEL)<0)SEL=ds[0]||null;
@@ -77,7 +80,7 @@ function list(){
 function act(d,onT){
   if(TAB==='shop'){var pr=+d.price||0;if(money<pr){showToast('Nema dovoljno novca.');return;}
     setMoney(money-pr);CooksterState.progression.kitchenEquipment.push(d.id);showToast('Kupljeno: '+d.label+'.');try{renderKitchenElements();}catch(_){}render();return;}
-  if(onT){showToast('Već je na radnoj površini.');return;}
+  if(onT){showToast(rackIds().indexOf(d.id)>=0?'Već je u rancu.':'Već je na radnoj površini.');return;}
   if(spawnKitchenEquipment(d.id)){close();try{updateHover();}catch(_){}}
 }
 function card(){
@@ -92,7 +95,7 @@ function card(){
   var cap=d.capacityMl?d.capacityMl+' ml':'—';
   c.insertBefore(el('div','cr','top:59.4%;',cap),c.querySelector('.pg-rack'));
   var onT=false;try{onT=!d.infinite&&equipmentIsInKitchen(d.id);}catch(_){}
-  c.insertBefore(el('div','cr','top:66.4%;',TAB==='shop'?'U prodavnici':(onT?'Na stolu':'U elementima')),c.querySelector('.pg-rack'));
+  c.insertBefore(el('div','cr','top:66.4%;',TAB==='shop'?'U prodavnici':(rackIds().indexOf(d.id)>=0?'U rancu':(onT?'Na stolu':'U elementima'))),c.querySelector('.pg-rack'));
 }
 // ---- the rack in the card: six transparent squares (3 above, 3 below) = the six pockets of the rack at the bottom of the screen.
 // Drag a card from the list onto a square: the thing goes into the rack (at that place). Drag a thing from a square onto another square: it moves; drag it out onto the list (or the right
@@ -138,7 +141,7 @@ function beginDrag(e,info){
     justDragged=Date.now();
     var sl=slotAt(ev.clientX,ev.clientY),L=document.getElementById('kePgList'),inList=!!(L&&L.contains(document.elementFromPoint(ev.clientX,ev.clientY)));
     try{
-      if(info.from==='list'){if(sl){if(CooksterRecentItems.put(info.id,+sl.dataset.i))showToast('U ranac: '+(info.label||'')+'.');}}
+      if(info.from==='list'){if(sl){var full=rackIds().length>=6&&rackIds().indexOf(info.id)<0;if(full)showToast('Ranac je pun.');else if(CooksterRecentItems.put(info.id,+sl.dataset.i))showToast('U ranac: '+(info.label||'')+'.');}}
       else{if(sl)CooksterRecentItems.move(info.idx,+sl.dataset.i);else if(inList){CooksterRecentItems.remove(info.idx);showToast('Skinuto iz ranca.');}}
     }catch(_){}
     if(ghost)ghost.remove();DRAG=null;document.body.classList.remove('rk-dragging','rk-removing');
