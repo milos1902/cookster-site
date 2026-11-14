@@ -121,10 +121,12 @@ function build(){
   document.body.appendChild(root);
   root.addEventListener('mousedown',function(e){if(e.target===root)close();});
   board.addEventListener('wheel',function(e){e.preventDefault();e.stopPropagation();board.scrollLeft+=(Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY);},{passive:false});
-  var drag=null,moved=false;
-  board.addEventListener('pointerdown',function(e){if(e.button!==0)return;drag={x:e.clientX,l:board.scrollLeft};moved=false;});
-  window.addEventListener('pointermove',function(e){if(!drag)return;var dx=(e.clientX-drag.x)/kk();if(!moved&&Math.abs(dx)>6){moved=true;board.classList.add('drag');hideTip();}if(moved)board.scrollLeft=drag.l-dx;});
-  window.addEventListener('pointerup',function(){drag=null;board.classList.remove('drag');setTimeout(function(){moved=false;},0);});
+  var drag=null,moved=false,vel=0,lastX=0,lastT=0,raf=0;
+  function stopGlide(){if(raf){cancelAnimationFrame(raf);raf=0;}}
+  function glide(){stopGlide();var prev=performance.now();(function step(now){var dt=Math.min(40,now-prev);prev=now;board.scrollLeft+=vel*dt;vel*=Math.pow(0.0035,dt/1000);if(Math.abs(vel)>0.02&&board.scrollLeft>0&&board.scrollLeft<board.scrollWidth-board.clientWidth)raf=requestAnimationFrame(step);else raf=0;})(prev);}
+  board.addEventListener('pointerdown',function(e){if(e.button!==0)return;stopGlide();vel=0;lastX=e.clientX;lastT=performance.now();drag={x:e.clientX,l:board.scrollLeft};moved=false;});
+  window.addEventListener('pointermove',function(e){if(!drag)return;var dx=(e.clientX-drag.x)/kk();if(!moved&&Math.abs(dx)>6){moved=true;board.classList.add('drag');hideTip();}if(moved){board.scrollLeft=drag.l-dx;var nw=performance.now(),dtt=nw-lastT;if(dtt>0){var iv=(lastX-e.clientX)/dtt;vel=vel*0.6+iv*0.4;}lastX=e.clientX;lastT=nw;}});
+  window.addEventListener('pointerup',function(){var was=drag&&moved;drag=null;board.classList.remove('drag');if(was&&performance.now()-lastT<90&&Math.abs(vel)>0.05)glide();setTimeout(function(){moved=false;},0);});
   board.addEventListener('click',function(e){if(moved){e.stopPropagation();e.preventDefault();}},true);      // after a drag the card under the mouse is not clicked
   window.addEventListener('resize',function(){if(isOpen())fit();});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen()){e.stopPropagation();close();}},true);
