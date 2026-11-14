@@ -1648,3 +1648,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## Dim pri spuštanju predmeta preko simulacije tečnosti
 - js/stir-fluid.js: CooksterLandPuff(cx,by,vis,opacity) pravi dim levo i desno od predmeta koji je pao (jedno platno preko cele scene, aktivno ~3 s posle udara); game.js popArtPuff ga zove, a stari video puff_impact.webm ostaje kao rezervna varijanta kad nema WebGL.
+
+## Vraćeno na staro: fioke i vrata šporeta (Milošov zahtev)
+- Obe fioke opet koriste kadrove iz videa (assets/drawers/left_*, right_*), vrata ložišta, vrata rerne i fioka sa drvima su kao pre GSAP-a. GSAP (assets/vendor/gsap.min.js) uklonjen. Zadržano: dim pri spuštanju predmeta (#720), senke pri mešanju (#718) i ostalo ranije.
