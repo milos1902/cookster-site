@@ -126,7 +126,7 @@ function build(){
   function apply(){inner.style.transform='translate3d('+(-P.x).toFixed(2)+'px,0,0)';}
   function stopGlide(){if(tw){tw.kill();tw=null;}}
   function glideTo(x,dur,ease){x=Math.max(0,Math.min(maxX(),x));stopGlide();if(window.gsap){tw=gsap.to(P,{x:x,duration:dur,ease:ease||'power4.out',onUpdate:apply,onComplete:function(){tw=null;}});}else{P.x=x;apply();}}
-  window.CooksterTreeScroll={reset:function(){stopGlide();P.x=0;apply();},get:function(){return P.x;}};
+  window.CooksterTreeScroll={reset:function(){stopGlide();P.x=0;apply();},get:function(){return P.x;},by:function(dx){glideTo((tw?tw.vars.x:P.x)+dx,0.7,'power3.out');}};
   board.addEventListener('wheel',function(e){e.preventDefault();e.stopPropagation();var d=(Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY);var base=tw?tw.vars.x:P.x;glideTo(base+d*1.6,0.9,'power3.out');},{passive:false});
   board.addEventListener('pointerdown',function(e){if(e.button!==0)return;stopGlide();vel=0;lastX=e.clientX;lastT=performance.now();drag={x:e.clientX,l:P.x};moved=false;});
   window.addEventListener('pointermove',function(e){if(!drag)return;var dx=(e.clientX-drag.x)/kk();if(!moved&&Math.abs(dx)>6){moved=true;board.classList.add('drag');hideTip();}if(moved){P.x=Math.max(0,Math.min(maxX(),drag.l-dx));apply();var nw=performance.now(),dtt=nw-lastT;if(dtt>0){var iv=(lastX-e.clientX)/kk()/dtt;vel=vel*0.7+iv*0.3;}lastX=e.clientX;lastT=nw;}});
@@ -234,7 +234,7 @@ function renderBoard(){
   });
   if(HOLDER){inner=HOLDER;HOLDER.style.width=M.w+'px';}
 }
-function showTip(c,d){
+function showTipOld(c,d){
   var st=status(c),src=artFor(c),pc=price(c),h='';
   h+='<div class="tp-top">'+(src?'<img class="tp-img" src="'+src+'" alt="">':'')+'<div><b class="tp-nm">'+c.n+'</b>';
   var stars='';for(var k=1;k<=5;k++)stars+='<i'+(k<=c.s?' class="f"':'')+'></i>';
@@ -256,8 +256,62 @@ function showTip(c,d){
   var r=d.getBoundingClientRect(),w=330,x=r.right+6;if(x+w>innerWidth-8)x=r.left-w-6;
   var y=Math.min(Math.max(8,r.top+r.height/2-tip.offsetHeight/2),innerHeight-tip.offsetHeight-8);tip.style.left=Math.max(8,x)+'px';tip.style.top=y+'px';
 }
-var TIPT=0;
-function hideTip(){clearTimeout(TIPT);tip.style.display='none';}
+var TIPT=0,FLAG=null;
+// Čipkasta zastavica: izlazi iza kruga na koji se zadržiš i širi se udesno (ili ulevo uz ivicu); visina joj je tačno visina čipke tog kruga
+function flagCss(){if(document.getElementById('ktFlagCss'))return;var st=document.createElement('style');st.id='ktFlagCss';st.textContent=
+'.kt-flag{position:absolute;pointer-events:none;overflow:hidden;filter:drop-shadow(1px 3px 3px rgba(40,22,6,.38))}'+
+'.kt-flag .fb{position:absolute;inset:0}.kt-flag .fb i{position:absolute;top:0;height:100%;background-repeat:no-repeat;background-size:auto 100%}'+
+'.kt-flag .fm{background-repeat:repeat-x!important;background-image:url('+K+'zast_m.webp)}.kt-flag .fl{left:0;background-image:url('+K+'zast_l.webp);background-position:left center}'+
+'.kt-flag .fr{right:0;background-image:url('+K+'zast_r.webp);background-position:right center}'+
+'.kt-flag .fc{position:absolute;inset:0;display:flex;align-items:center;gap:1.4em;font-family:"Paytone One","CooksterSerif",Georgia,serif;font-weight:400;color:#7a1e14;line-height:1.05}'+
+'.kt-flag .fx{flex:1;min-width:0}.kt-flag .fn{color:#7a1e14;white-space:nowrap}.kt-flag .fs{display:flex;gap:2px;margin:.15em 0}'+
+'.kt-flag .fs i{display:block;background:url('+A+'zvezde/zvezda_prazna.png) 0 0/100% 100% no-repeat}.kt-flag .fs i.f{background-image:url('+A+'zvezde/zvezda_puna.png)}'+
+'.kt-flag .fe{color:#3a1f10;opacity:.95}.kt-flag .fp{display:flex;flex-direction:column;align-items:flex-end;gap:.25em;flex:0 0 auto}'+
+'.kt-flag .fp .kt-pl{background-size:100% 100%;background-repeat:no-repeat;display:flex;align-items:center;justify-content:flex-end;color:#3a1f10}'+
+'.kt-flag .fp .kt-pl.bad{color:#c0291a}.kt-flag .fq{color:#a3321c;font-size:.8em;text-align:right;max-width:11em}.kt-flag .fk{color:#3f6d26}';document.head.appendChild(st);}
+function showTip(c,d){
+  if(!d.classList.contains('kt-lay'))return showTipOld(c,d);
+  killFlag(true);flagCss();
+  var st=status(c),pc=price(c),D=d.offsetWidth,H=Math.round(D*.95),cx=d.offsetLeft+D/2,cy=d.offsetTop+D/2,sc=H/520,capL=140*sc,tile=123*sc,capR=294*sc;
+  var want=Math.max(H*3.3,270),k=Math.max(1,Math.ceil((want-capL-capR)/tile)),W=Math.round(capL+k*tile+capR);
+  var scr=window.CooksterTreeScroll?CooksterTreeScroll.get():0,flip=false,over=cx+W-(scr+board.clientWidth-14);
+  if(over>0&&window.CooksterTreeScroll&&CooksterTreeScroll.by)CooksterTreeScroll.by(over);      // always opens to the right; if it does not fit, the map slides a little
+  var left=flip?cx-W:cx;
+  var f=el('div','kt-flag'),cl=function(v,a,b){return Math.max(a,Math.min(b,v));},nf=cl(H*.14,12,22),ef=cl(H*.09,10,15),plH=cl(H*.17,17,32);
+  f.style.cssText+='left:'+left+'px;top:'+Math.round(cy-H/2)+'px;width:'+W+'px;height:'+H+'px;font-size:'+ef+'px;z-index:5999';
+  var fb=el('div','fb');if(flip)fb.style.transform='scaleX(-1)';
+  var il=el('i','fl'),im=el('i','fm'),ir=el('i','fr');il.style.width=Math.round(capL)+'px';ir.style.width=Math.round(capR)+'px';im.style.left=Math.round(capL)+'px';im.style.right=Math.round(capR)+'px';
+  fb.appendChild(im);fb.appendChild(il);fb.appendChild(ir);f.appendChild(fb);
+  var fc=el('div','fc'),padIn=Math.round(D/2+Math.max(8,H*.08)),padOut=Math.round(capR*.62);
+  fc.style[flip?'paddingRight':'paddingLeft']=padIn+'px';fc.style[flip?'paddingLeft':'paddingRight']=padOut+'px';
+  fc.style.paddingTop=Math.round(H*.2)+'px';fc.style.paddingBottom=Math.round(H*.2)+'px';
+  var fx=el('div','fx'),fn=el('div','fn',c.n);fn.style.fontSize=nf+'px';fx.appendChild(fn);
+  var fs=el('div','fs');for(var q=1;q<=5;q++){var si=el('i',q<=c.s?'f':'');si.style.width=si.style.height=Math.round(nf*.8)+'px';fs.appendChild(si);}fx.appendChild(fs);
+  var fe=el('div','fe',c.e);fe.style.maxHeight='2.2em';fe.style.overflow='hidden';fx.appendChild(fe);fc.appendChild(fx);
+  var fp=el('div','fp');
+  if(st==='done'){fp.appendChild(el('div','fk','Kupljeno'));}
+  else{
+    if(pc.z){var a1=el('div','kt-pl'+(S.zn<pc.z?' bad':''));a1.style.backgroundImage='url('+A+'drvo/cena_bodovi.png)';a1.appendChild(el('span','',String(pc.z)));fp.appendChild(a1);}
+    if(pc.d){var a2=el('div','kt-pl'+(S.din<pc.d?' bad':''));a2.style.backgroundImage='url('+A+'drvo/cena_novac.png)';a2.appendChild(el('span','',pc.d>=1000?(pc.d/1000).toString().replace('.',',')+'k':String(pc.d)));fp.appendChild(a2);}
+    Array.prototype.forEach.call(fp.querySelectorAll('.kt-pl'),function(x){x.style.height=plH+'px';x.style.width=Math.round(plH*2.9)+'px';x.style.paddingRight=Math.round(plH*.28)+'px';x.style.fontSize=Math.round(plH*.55)+'px';});
+    var need='';if(st==='lock')need='Fali: '+missing(c).join(', ');else if(st==='can'&&!afford(c)){var ff=[];if(S.zn<pc.z)ff.push((pc.z-S.zn)+' znanja');if(S.din<pc.d)ff.push((pc.d-S.din)+' din');need='Fali: '+ff.join(', ');}
+    else if(c.x){var go=groupOther(c);need=(go&&!isBought(c))?'×2 (izabrao si „'+go.n+'")':'Izbor „ILI"';}
+    if(need)fp.appendChild(el('div','fq',need));
+  }
+  fc.appendChild(fp);f.appendChild(fc);
+  var z0=d.style.zIndex;d.style.zIndex=6000;d.parentNode.appendChild(f);
+  FLAG={el:f,card:d,z:z0,flip:flip,W:W};
+  var from=flip?'inset(0 0 0 '+(W-D*.62)+'px)':'inset(0 '+(W-D*.62)+'px 0 0)',to='inset(0 0 0 0)';
+  if(window.gsap)gsap.fromTo(f,{clipPath:from},{clipPath:to,duration:.5,ease:'power3.out',clearProps:'clipPath'});
+}
+function killFlag(now){
+  if(!FLAG)return;var F=FLAG;FLAG=null;var fin=function(){F.el.remove();if(F.card)F.card.style.zIndex=F.z;};
+  if(now||!window.gsap){fin();return;}
+  var W=F.W,D=F.card.offsetWidth,to=F.flip?'inset(0 0 0 '+(W-D*.62)+'px)':'inset(0 '+(W-D*.62)+'px 0 0)';
+  gsap.to(F.el,{clipPath:to,duration:.28,ease:'power2.in',onComplete:fin});
+}
+function hideTip(){clearTimeout(TIPT);tip.style.display='none';killFlag(false);}
+
 function say(m){toast.textContent=m;toast.classList.add('on');clearTimeout(say.t);say.t=setTimeout(function(){toast.classList.remove('on');},1900);}
 function onCard(c,d){
   var st=status(c);
