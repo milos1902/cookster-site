@@ -120,13 +120,17 @@ function build(){
   tip=el('div');tip.id='ktTip';root.appendChild(tip);
   document.body.appendChild(root);
   root.addEventListener('mousedown',function(e){if(e.target===root)close();});
-  board.addEventListener('wheel',function(e){e.preventDefault();e.stopPropagation();board.scrollLeft+=(Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY);},{passive:false});
-  var drag=null,moved=false,vel=0,lastX=0,lastT=0,raf=0;
-  function stopGlide(){if(raf){cancelAnimationFrame(raf);raf=0;}}
-  function glide(){stopGlide();var prev=performance.now();(function step(now){var dt=Math.min(40,now-prev);prev=now;board.scrollLeft+=vel*dt;vel*=Math.pow(0.06,dt/1000);if(Math.abs(vel)>0.01&&board.scrollLeft>0&&board.scrollLeft<board.scrollWidth-board.clientWidth)raf=requestAnimationFrame(step);else raf=0;})(prev);}
-  board.addEventListener('pointerdown',function(e){if(e.button!==0)return;stopGlide();vel=0;lastX=e.clientX;lastT=performance.now();drag={x:e.clientX,l:board.scrollLeft};moved=false;});
-  window.addEventListener('pointermove',function(e){if(!drag)return;var dx=(e.clientX-drag.x)/kk();if(!moved&&Math.abs(dx)>6){moved=true;board.classList.add('drag');hideTip();}if(moved){board.scrollLeft=drag.l-dx;var nw=performance.now(),dtt=nw-lastT;if(dtt>0){var iv=(lastX-e.clientX)/dtt;vel=(vel*0.6+iv*0.4)*1.0;}lastX=e.clientX;lastT=nw;}});
-  window.addEventListener('pointerup',function(){var was=drag&&moved;drag=null;board.classList.remove('drag');if(was&&performance.now()-lastT<110&&Math.abs(vel)>0.05){vel*=1.5;glide();}setTimeout(function(){moved=false;},0);});
+  // klizanje karte: pomera se transformacijom (glatko, na grafičkoj kartici), a kočenje vodi GSAP
+  var drag=null,moved=false,vel=0,lastX=0,lastT=0,tw=null,P={x:0};
+  function maxX(){return Math.max(0,(inner.scrollWidth||parseFloat(inner.style.width)||0)-board.clientWidth);}
+  function apply(){inner.style.transform='translate3d('+(-P.x).toFixed(2)+'px,0,0)';}
+  function stopGlide(){if(tw){tw.kill();tw=null;}}
+  function glideTo(x,dur,ease){x=Math.max(0,Math.min(maxX(),x));stopGlide();if(window.gsap){tw=gsap.to(P,{x:x,duration:dur,ease:ease||'power4.out',onUpdate:apply,onComplete:function(){tw=null;}});}else{P.x=x;apply();}}
+  window.CooksterTreeScroll={reset:function(){stopGlide();P.x=0;apply();},get:function(){return P.x;}};
+  board.addEventListener('wheel',function(e){e.preventDefault();e.stopPropagation();var d=(Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY);var base=tw?tw.vars.x:P.x;glideTo(base+d*1.6,0.9,'power3.out');},{passive:false});
+  board.addEventListener('pointerdown',function(e){if(e.button!==0)return;stopGlide();vel=0;lastX=e.clientX;lastT=performance.now();drag={x:e.clientX,l:P.x};moved=false;});
+  window.addEventListener('pointermove',function(e){if(!drag)return;var dx=(e.clientX-drag.x)/kk();if(!moved&&Math.abs(dx)>6){moved=true;board.classList.add('drag');hideTip();}if(moved){P.x=Math.max(0,Math.min(maxX(),drag.l-dx));apply();var nw=performance.now(),dtt=nw-lastT;if(dtt>0){var iv=(lastX-e.clientX)/kk()/dtt;vel=vel*0.7+iv*0.3;}lastX=e.clientX;lastT=nw;}});
+  window.addEventListener('pointerup',function(){var was=drag&&moved;drag=null;board.classList.remove('drag');if(was&&performance.now()-lastT<110&&Math.abs(vel)>0.05){var dist=vel*1000*0.9;glideTo(P.x+dist,Math.min(3.4,1.4+Math.abs(vel)*1.1),'power4.out');}setTimeout(function(){moved=false;},0);});
   board.addEventListener('click',function(e){if(moved){e.stopPropagation();e.preventDefault();}},true);      // after a drag the card under the mouse is not clicked
   window.addEventListener('resize',function(){if(isOpen())fit();});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen()){e.stopPropagation();close();}},true);
@@ -148,7 +152,7 @@ function renderTabs(){
     var d=el('div','kt-tab'+(S.tab===i?' on':''));
     d.style.left=TABX[i][0]+'px';d.style.width=(TABX[i][1]-TABX[i][0])+'px';
     d.appendChild(el('span','',tb[0]));d.appendChild(el('small','',n+'/'+tot));
-    d.onclick=function(){S.tab=i;save();board.scrollLeft=0;refresh();};
+    d.onclick=function(){S.tab=i;save();if(window.CooksterTreeScroll)CooksterTreeScroll.reset();refresh();};
     panel.appendChild(d);
   });
 }
