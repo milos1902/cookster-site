@@ -371,12 +371,12 @@ function showBig(c,d){
   var f0='drop-shadow(1px 3px 3px rgba(40,22,6,.4))',f1='drop-shadow(0px '+(14/k)+'px '+(18/k)+'px rgba(40,22,6,.34))';
   BIG={card:d,icon:icon,bi:bi,bc:bc,D:D,ring:ring,sh:sh,f0:f0};
   if(window.gsap){
-    var tl=gsap.timeline();
+    var tl=gsap.timeline();BIG.tl=tl;
     tl.to(d,{scale:k,x:dx/1,y:dy/1,duration:.4,ease:'back.out(1.35)',force3D:false},0);      // krug kao ranije: brz
     tl.fromTo(ring,{filter:f0},{filter:f1,duration:.42,ease:'power2.out'},0);
     tl.fromTo(sh,{opacity:0,scale:.7},{opacity:1,scale:1,duration:.42,ease:'power2.out'},0);
-    tl.to(icon,{y:-D*.4,scale:1.5,duration:.38,ease:'none',force3D:false},0);      // ikonica je brža: ide istim tempom kao krug i ne zaostaje      // kreće zajedno sa krugom i ne staje ni na jedan frejm dok ne stigne van kruga
-    tl.fromTo(bi,{opacity:0,y:D*.05},{opacity:1,y:0,duration:.3,ease:'power1.out'},.4);
+    tl.to(icon,{y:-D*.4,scale:1.5,duration:.26,ease:'none',force3D:false},0);      // ikonica je brža: ide istim tempom kao krug i ne zaostaje      // kreće zajedno sa krugom i ne staje ni na jedan frejm dok ne stigne van kruga
+    tl.fromTo(bi,{opacity:0,y:D*.05},{opacity:1,y:0,duration:.3,ease:'power1.out'},.34);
     tl.fromTo(bc,{opacity:0},{opacity:1,duration:.3,ease:'power1.out'},.3);
   }else{d.style.transform='translate('+dx+'px,'+dy+'px) scale('+k+')';icon.style.transform='translateY('+(-D*.4)+'px) scale(1.5)';ring.style.filter=f1;sh.style.opacity=1;}
 }
@@ -384,11 +384,8 @@ function killBig(now){
   if(!BIG)return;var B=BIG;BIG=null;
   var fin=function(){if(B.sh.parentNode)B.sh.remove();if(B.ring)B.ring.style.filter='';if(B.bi.parentNode)B.bi.remove();if(B.bc.parentNode)B.bc.remove();B.card.classList.remove('kt-big');if(window.gsap){gsap.set(B.card,{clearProps:'transform'});gsap.set(B.icon,{clearProps:'transform'});}else{B.card.style.transform='';B.icon.style.transform='';}};
   if(now||!window.gsap){if(window.gsap)gsap.killTweensOf([B.card,B.icon,B.bi,B.bc,B.ring,B.sh]);fin();return;}
-  gsap.killTweensOf([B.bi,B.bc,B.icon,B.card,B.ring,B.sh]);gsap.to([B.bi,B.bc],{opacity:0,duration:.1});
-  var tl=gsap.timeline({onComplete:fin});
-  tl.to(B.icon,{y:0,scale:1,duration:.3,ease:'none',force3D:false},0);      // 1) ikonica ulazi na svoje mesto u krugu
-  tl.to(B.card,{scale:1,x:0,y:0,duration:.4,ease:'none',force3D:false},.3);      // 2) pa se krug spušta (ikonica ide sa njim), istom brzinom
-  tl.to(B.ring,{filter:B.f0,duration:.4,ease:'none'},.3);tl.to(B.sh,{opacity:0,duration:.4,ease:'none'},.3);
+  if(B.tl){B.tl.eventCallback('onComplete',null);B.tl.eventCallback('onReverseComplete',fin);B.tl.timeScale(1).reverse();return;}      // spuštanje = isti pokret unazad, istom brzinom
+  gsap.killTweensOf([B.bi,B.bc,B.icon,B.card,B.ring,B.sh]);fin();
 }
 function showTip(c,d){if(d.classList.contains('kt-lay'))return showBig(c,d);return showFlag(c,d);}
 function hideTip(){clearTimeout(TIPT);tip.style.display='none';killFlag(false);killBig(false);}
