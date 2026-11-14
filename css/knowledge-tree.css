@@ -53,10 +53,23 @@ body.kt-open #ktRoot{display:flex}
 .st-lock .kt-ic img,.st-lock .kt-ic span{filter:grayscale(1);opacity:.5}
 .st-lock .kt-nm{color:#7a6f58}
 .st-lock .kt-co{opacity:.75}
-#ktTip{position:fixed;z-index:2147483601;display:none;width:300px;background:#fffaf0;border:3px solid #6a3f1c;border-radius:6px;padding:9px 13px 11px;font-size:15px;line-height:1.28;box-shadow:0 8px 16px rgba(40,20,5,.45);pointer-events:none}
-#ktTip b{display:block;font-size:17px;border-bottom:2px solid #3a1f10;margin-bottom:5px;padding-bottom:2px}
-#ktTip em{display:block;font-style:normal;margin-top:5px;font-weight:700}
-#ktTip .need{color:#a3321c;font-weight:700}
+#ktTip{position:fixed;z-index:2147483601;display:none;width:330px;box-sizing:border-box;padding:26px 30px 28px;background:url(../assets/ui/pergament/pg_kartica_posude_h_bez.png) 0 0/100% 100% no-repeat;font-size:15px;line-height:1.3;pointer-events:none;filter:drop-shadow(2px 5px 6px rgba(25,12,3,.5))}
+#ktTip .tp-top{display:flex;gap:12px;align-items:center;margin-bottom:6px}
+#ktTip .tp-img{width:64px;height:64px;object-fit:contain;filter:drop-shadow(1px 2px 1px rgba(40,20,5,.4))}
+#ktTip .tp-nm{display:block;font-size:20px;line-height:1.1;color:#3a1f10}
+#ktTip .tp-st{display:flex;gap:2px;margin-top:4px}
+#ktTip .tp-st i{width:18px;height:18px;background:url(../assets/ui/napredak/zvezde/zvezda_prazna.png) 0 0/100% 100% no-repeat}
+#ktTip .tp-st i.f{background-image:url(../assets/ui/napredak/zvezde/zvezda_puna.png)}
+#ktTip p{margin:5px 0}
+#ktTip .tp-o{color:#5a3a22;font-style:italic}
+#ktTip .tp-e{font-weight:800;color:#3a1f10;border-top:2px solid rgba(184,58,34,.55);padding-top:6px}
+#ktTip .tp-pr{display:flex;gap:8px;margin:8px 0 2px}
+#ktTip .tp-pr .kt-pl{height:36px;width:100px;padding-right:14px;font-size:19px}
+#ktTip .tp-pr .kt-pl.bad{color:#c0291a}
+#ktTip .tp-ok{margin:8px 0 2px;font-weight:800;color:#3f6d26}
+#ktTip .tp-need{color:#a3321c;font-weight:800}
+#ktTip .tp-n{font-weight:700}
+#ktTip .tp-s{font-size:12px;opacity:.7}
 #ktFoot{position:absolute;left:300px;right:90px;top:926px;height:56px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}
 #ktFoot button{padding:5px 11px;border-radius:9px;border:2px solid #3a1f10;background:#e7c778;color:#3a1f10;font:800 13px Georgia,serif;cursor:pointer}
 #ktFoot .sp{flex:1}
@@ -71,3 +84,22 @@ body.kt-open #ktRoot{display:flex}
 .kt-lay .kt-co{top:calc(var(--D) - 14px)}
 .kt-lay .kt-ic span{font-size:calc(var(--D)*.15)}
 .kt-wire{transform-origin:50% 50%}
+
+/* U krugu stoji samo slika; ime, cena i zvezdica se vide u oblačiću kad pređeš mišem */
+.kt-lay .kt-nm,.kt-lay .kt-co,.kt-lay .kt-st{display:none}
+.kt-lay .kt-in{top:calc(var(--D)*.19);width:calc(var(--D)*.62);height:calc(var(--D)*.62);margin-left:calc(var(--D)*-.31)}
+.kt-lay .kt-ic span{font-size:calc(var(--D)*.2)}
+/* Crvene pregrade između zvezdica su uklonjene; granicu pokazuju samo tamno polje i katanac dok zvezdica nije dosegnuta */
+.kt-gate{display:none}
+
+/* Isti font kao u igri (sat i vreme gore): Paytone One */
+@font-face{font-family:'Paytone One';src:url(../assets/fonts/PaytoneOne-Regular.ttf) format('truetype');font-display:swap}
+#ktRoot,#ktTip,.kt-tab,.kt-pl,.kt-badge,.kt-st,.kt-or,#ktToast,#ktFoot,#ktFoot button,.kt-x{font-family:'Paytone One','CooksterSerif',Georgia,serif;font-weight:400;font-synthesis:none}
+#ktFoot button{font-weight:400;font-size:13px}
+.kt-tab{color:#7a1e14;text-shadow:0 1px 0 rgba(255,236,200,.55)}
+.kt-tab.on{color:#fff3dc;text-shadow:0 1px 2px rgba(60,10,5,.7)}
+.kt-tab small{font-size:15px}
+.kt-badge b{color:#7a1e14}
+#ktTip .tp-nm{color:#7a1e14;font-size:21px}
+#ktTip .tp-e{font-weight:400;color:#3a1f10}
+#ktTip .tp-o{font-style:normal}

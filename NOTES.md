@@ -1761,3 +1761,7 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Karta znanja čita raspored iz urednika
 - js/data/karta-raspored.js (isto što i karta-raspored.json u korenu): svih 5 tabova. Tab Kuhinja počinje Miloševim rasporedom (1-3-5 krugova); nastavak (pet redova, isti stil, konci iz a/b delova) napravljen je programom i može da se popravi u urednik-karte.html (Učitaj fajl → ispravi → Sačuvaj fajl).
 - Kartice se spajaju sa krugovima po imenu (polje n). Ko je roditelj (otključavanje) uzima se iz najbližeg kruga u prethodnoj koloni; kapije zvezdica stoje između kolona.
+
+## Raspored kartica po logici
+- Kartice su u krugovima raspoređene tako da svaka stoji iza svog uslova (q ili prethodna u redu) i u svojoj zvezdici (program: za svaku kolonu najbolje uparivanje, scipy linear_sum_assignment). Poklapanje uslova sa konцем u mapi: Kuhinja 41 od 61, Kafana 40/61, Kuća 35/58, Recepti 30/54, Izbori 14/24; ostalo ima uslov negde ranije na karti. Krugove možeš dalje da zameniš u uredniku.
+- Zeleni krug znači kupljeno, bez dodatne kvačice (obrisan znak ✓).
