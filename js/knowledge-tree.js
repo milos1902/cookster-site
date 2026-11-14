@@ -416,6 +416,6 @@ function init(){
   var b=el('button','','Karta znanja');b.id='ktBtn';b.setAttribute('data-tool-ui','1');b.onclick=open;document.body.appendChild(b);
   if(/[?&]karta/.test(location.search))setTimeout(open,400);
 }
-window.CooksterTree={open:open,close:close,state:function(){return S;}};
+window.CooksterTree={open:open,close:close,state:function(){return S;},owns:function(t,n){var c=byId[t+'|'+n];return !!c&&isBought(c);}};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

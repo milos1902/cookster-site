@@ -958,7 +958,17 @@ function morningness(){          // 1 at the opening (6:00), falls to 0 at 11:00
   var D=window.CooksterDay,m=D&&D.minute?D.minute():600;
   return m<360?1:(m>=660?0:1-(m-360)/300);
 }
+// PROBNA NOVA IGRA (?novaigra): gosti naručuju samo ono što je otključano na karti znanja (kafa je uvek tu; ostalo se kupuje)
+var NG_NEED={kafa:[1,'Kafa'],rakija:[1,'Rakija'],crno_casa:[1,'Crno i belo vino'],belo_casa:[1,'Crno i belo vino'],crno_flasa:[1,'Crno i belo vino'],belo_flasa:[1,'Crno i belo vino'],kilo:[1,'Crno i belo vino'],kupus:[3,'Kiseli kupus'],paprike:[3,'Belolučane paprike']};
+function ngAllowed(k){if(!window.__NOVA_IGRA)return true;var n=NG_NEED[k];if(!n)return true;try{return CooksterTree.owns(n[0],n[1]);}catch(e){return true;}}
+window.CooksterTavernNG={allowed:ngAllowed};
 function pickOrderKeys(g){
+  var ks=pickOrderKeys0(g);
+  if(!window.__NOVA_IGRA)return ks;
+  ks=ks.filter(ngAllowed);
+  return ks.length?ks:['kafa'];
+}
+function pickOrderKeys0(g){
   var mo=morningness();
   if(mo>0){            // in the morning: mostly coffee and brandy (each guest his own), later it fades into the usual wine and dishes
     var q=Math.random();
