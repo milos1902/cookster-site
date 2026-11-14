@@ -610,7 +610,22 @@ const JUICE_SRC=`
       gl_FragColor=vec4(col*a,a);
     }
 `;
-const displayShader=compileShader(gl.FRAGMENT_SHADER,(opts&&opts.juice)?JUICE_SRC:(opts&&opts.flat)?LAND_SRC:((opts&&opts.steam)?STEAM_SRC:MAIN_SRC));
+const WATER_SRC=`
+    precision highp float;precision mediump sampler2D;
+    varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uTexture;uniform float uEnv;
+    float dens(vec2 uv){vec3 c=texture2D(uTexture,uv).rgb;return max(c.r,max(c.g,c.b));}
+    void main(){
+      float d=dens(vUv);
+      float body=smoothstep(0.015,0.30,d);
+      vec2 g=vec2(dens(vR)-dens(vL),dens(vT)-dens(vB))*14.0;
+      float hi=pow(clamp(0.5+g.x*-0.9+g.y*0.9,0.0,1.0),4.0)*body;       // bright reflections on the curved edges of the water
+      float core=smoothstep(0.25,1.2,d);
+      vec3 col=mix(vec3(0.46,0.72,0.92),vec3(0.93,0.98,1.0),clamp(hi*1.4+core*0.18,0.0,1.0));
+      float a=body*(0.30+0.32*core)*uEnv+hi*0.35*uEnv;
+      gl_FragColor=vec4(col*a,a);
+    }
+`;
+const displayShader=compileShader(gl.FRAGMENT_SHADER,(opts&&opts.water)?WATER_SRC:(opts&&opts.juice)?JUICE_SRC:(opts&&opts.flat)?LAND_SRC:((opts&&opts.steam)?STEAM_SRC:MAIN_SRC));
 const clearProgram=new Program(baseVertexShader,clearShader);
 const splatProgram=new Program(baseVertexShader,splatShader);
 const advectionProgram=new Program(baseVertexShader,advectionShader);
@@ -640,14 +655,14 @@ function initFramebuffers(){
   curl=createFBO(simRes.width,simRes.height,r.internalFormat,r.format,texType,gl.NEAREST);
   pressure=createDoubleFBO(simRes.width,simRes.height,r.internalFormat,r.format,texType,gl.NEAREST);
 }
-function splat(x,y,dx,dy,color){
+function splat(x,y,dx,dy,color,rad){
   splatProgram.bind();
   gl.uniform1i(splatProgram.uniforms.uTarget,velocity.read.attach(0));
   gl.uniform1f(splatProgram.uniforms.aspectRatio,canvas.width/canvas.height);
   gl.uniform2f(splatProgram.uniforms.point,x,y);
   gl.uniform3f(splatProgram.uniforms.color,dx,dy,0.0);
   const ar=canvas.width/canvas.height;
-  gl.uniform1f(splatProgram.uniforms.radius,config.SPLAT_RADIUS/100.0*(ar>1?ar:1));
+  gl.uniform1f(splatProgram.uniforms.radius,(rad>0?rad:config.SPLAT_RADIUS)/100.0*(ar>1?ar:1));
   blit(velocity.write);velocity.swap();
   gl.uniform1i(splatProgram.uniforms.uTarget,dye.read.attach(0));
   gl.uniform3f(splatProgram.uniforms.color,color.r,color.g,color.b);
@@ -963,6 +978,12 @@ window.CooksterJuiceCanvas=function(color,wpx,hpx){
   fl.setTint(rgb[0]/255,rgb[1]/255,rgb[2]/255);fl.setEnv(1);
   var j={cv:cv,fl:fl,until:0};JC.push(j);
   return {cv:cv,splat:function(u,v,dx,dy,k){j.fl.splat(u,v,dx,dy,{r:k,g:k,b:k});j.until=performance.now()+3800;if(!jcOn){jcOn=true;jcLast=performance.now();requestAnimationFrame(jcLoop);}}};
+};
+// ---- WATER in the sink close-up (js/sink-zoom.js): a canvas with its own fluid; the stream and the splash are made by pushing water into it
+window.CooksterWaterFluid=function(cv,config){
+  if(failed)return null;
+  var fl=createFluid(cv,{water:true,config:Object.assign({SIM_RESOLUTION:128,DYE_RESOLUTION:512,DENSITY_DISSIPATION:4.2,VELOCITY_DISSIPATION:1.6,CURL:1,SPLAT_RADIUS:0.01,PRESSURE_ITERATIONS:14},config||{})});
+  if(!fl)return null;fl.setEnv(1);return fl;
 };
 // the white dots and the little bubbles of the old css are not shown any more: the fluid does it (only when the fluid can work: WebGL)
 (function(){

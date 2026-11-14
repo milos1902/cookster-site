@@ -201,6 +201,40 @@ var fx=document.createElement('canvas');fx.className='sz-fx';fx.style.cssText='p
 stage.insertBefore(fx,svg);
 var valve={left:{open:0,target:0,ang:0},right:{open:0,target:0,ang:0}};
 var fxRun=false,tLast=0,flow=0,streamLen=0,ripT=0,drops=[];
+// the stream and the splash are made by a fluid simulation (js/stir-fluid.js) drawn into the canvas of the effects (so the front walls of the vessels still hide it)
+var wf=null,wfCv=null,wfUntil=0,wfTried=false;
+function waterFluid(){
+  if(wf||wfTried)return wf;wfTried=true;
+  try{if(!window.CooksterWaterFluid||/[?&]bezmesanja/.test(location.search))return null;
+    wfCv=document.createElement('canvas');wfCv.width=960;wfCv.height=540;wf=window.CooksterWaterFluid(wfCv);}catch(e){wf=null;}
+  return wf;
+}
+function dye(k){return {r:k,g:k,b:k};}
+function fluidWater(g,w,h,dt,now){
+  var f=waterFluid();if(!f)return false;
+  var T=cal.tap,u=T.spout[0]/100,vS=1-T.spout[1]/100,lu=.494,vL=1-.584,under=vesselUnderStream();      // the water falls onto the plug of the drain (the black circle: found in the picture of the sink) and splashes to the sides from there
+  if(streamLen>.02&&flow>.02){
+    // the stream: a thin column of water that falls from the spout to the place where it lands
+    var N=10,len=vS-vL,fl=Math.min(1,flow*1.1);
+    for(var i=0;i<N;i++){var q=(i+Math.random())/N*streamLen,x=u+(lu-u)*q+(Math.random()-.5)*.0016,y=vS-len*q;
+      f.splat(x,y,(Math.random()-.5)*14,-(260+260*q)*fl,dye(.5*fl),.0022+.0026*fl);}
+    // where it lands: the water hits the bottom and is thrown to both sides, over the whole sink
+    if(streamLen>.85&&!under){
+      // only the stream hitting the plug and the spray that jumps from it to the left and to the right (no water lying in the sink): short, fast sprays that die away quickly
+      for(var s=-1;s<=1;s+=2){for(var k=0;k<3;k++){
+        f.splat(lu+s*(.004+.008*Math.random()),vL+.006+Math.random()*.012,s*(170+200*Math.random())*fl,(90+190*Math.random())*fl,dye(.6*fl),.0065);}}
+      f.splat(lu,vL+.004,0,110*fl,dye(.55*fl),.009);
+    }
+    wfUntil=now+2600;
+  }
+  if(now<wfUntil){
+    f.step(Math.min(.033,dt||.016));f.render();
+    // the water stays inside the sink: it is drawn only inside the calibrated opening of the basin (cal.rim; the floor and the walls lie inside it)
+    g.save();g.beginPath();cal.rim.forEach(function(q,i){g[i?'lineTo':'moveTo'](q[0]/100*w,q[1]/100*h);});g.closePath();g.clip();
+    g.drawImage(wfCv,0,0,w,h);g.restore();return true;
+  }
+  return false;
+}
 var hit=se('g',{});svg.appendChild(hit);
 function layoutHits(){
   while(hit.firstChild)hit.removeChild(hit.firstChild);
@@ -232,10 +266,12 @@ function frame(now){
   var on=flow>.02;
   streamLen+=((on?1:0)-streamLen)*Math.min(1,dt*(on?9:14));
   drawSteam(g,w,h,dt);
-  if(streamLen>.01&&flow>.01){drawWater(g,w,h,now);cutFront(g,w,h);}
+  var usedFluid=fluidWater(g,w,h,dt,now);
+  if(streamLen>.01&&flow>.01){drawWater(g,w,h,now,usedFluid);cutFront(g,w,h);}
+  else if(usedFluid){cutFront(g,w,h);}
   else if(streamLen>.01){streamLen*=.8;}
   g.setTransform(1,0,0,1,0,0);
-  if(moving||streamLen>.02||flow>.02||drops.length||steam.length||valve.left.open>.1)requestAnimationFrame(frame);else fxRun=false;
+  if(moving||streamLen>.02||flow>.02||drops.length||steam.length||valve.left.open>.1||now<wfUntil)requestAnimationFrame(frame);else fxRun=false;
 }
 // the head of a valve: a piece of the picture (a disc around its centre) turned like the cross of a real valve, seen from above at an angle
 var SPR={},NO_COVER=true;
@@ -301,10 +337,11 @@ function vesselUnderStream(){
   try{var Wt=window.CooksterVesselWater,lx=cal.tap.land[0];if(!Wt)return false;
     return sunk.some(function(sv){if(!Wt.has(sv.id))return false;var g=sv._g||itemGeom(sv.id,14),x=sv._x;return x!=null&&Math.abs(x-lx)<=g.w*.6;});}catch(e){return false;}
 }
-function drawWater(g,w,h,now){
+function drawWater(g,w,h,now,skipStream){
   var T=cal.tap,sx=T.spout[0]/100*w,sy=T.spout[1]/100*h,lx=T.land[0]/100*w,ly=T.land[1]/100*h;
   var len=ly-sy,ey=sy+len*streamLen,t=now/1000,wid=(w*.0035)*(.5+flow*1.3);
-  // the stream: a smooth bright ribbon with moving highlights
+  // the stream: a smooth bright ribbon with moving highlights (not when the fluid draws the water)
+  if(skipStream)return;
   g.save();
   var gr=g.createLinearGradient(0,sy,0,ey);gr.addColorStop(0,'rgba(215,240,255,.92)');gr.addColorStop(1,'rgba(160,215,245,.8)');
   g.fillStyle=gr;g.beginPath();
