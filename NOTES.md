@@ -1777,3 +1777,8 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - U probnoj igri je `FREE_MODE` isključen (`js/game.js`: `const FREE_MODE=!window.__NOVA_IGRA`), pa novac počinje od 1000 (`js/core/state.js`) i kupovina stvarno košta; kafana je zaključana, kuhinja prljava, komšinica i zadaci počinju iz početka.
 - Obična igra (bez `?novaigra`) radi isto kao pre (`FREE_MODE` uključen, novac 99.999).
 - Nije urađeno: početni skup stvari (u probnoj igri su još sve stvari iz "Kuhinjskih elemenata" odmah dostupne).
+
+## Probna nova igra: popravke (izgled iz obične igre + gosti po karti)
+- `?novaigra` sada pri prvom ulasku kopira IZGLED i podešavanja iz obične igre (obrisani putokazi, svetla, pozicije), ali ne napredak (`PROGRESS` spisak u shim-u u `index.html`).
+- Gosti u probnoj igri naručuju samo ono što je kupljeno na karti (`NG_NEED` u `js/tavern-scene.js`, `CooksterTree.owns(tab,ime)`); kafa je uvek tu.
+- Nije potvrđeno: mrak u kafani / svetla posle otključavanja.
