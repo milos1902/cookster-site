@@ -1653,3 +1653,5 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Obe fioke opet koriste kadrove iz videa (assets/drawers/left_*, right_*), vrata ložišta, vrata rerne i fioka sa drvima su kao pre GSAP-a. GSAP (assets/vendor/gsap.min.js) uklonjen. Zadržano: dim pri spuštanju predmeta (#720), senke pri mešanju (#718) i ostalo ranije.
 
 - Dim pri spuštanju: kratak stilizovan oblačić (0,3 s): po tri okrugla oblaka iz donjeg levog i donjeg desnog ugla predmeta, šire se napolje i malo gore (CSS u game.js popArtPuff). Fluid dim (CooksterLandPuff) više nije u upotrebi; ostao u stir-fluid.js.
+
+- Dim pri spuštanju (v3.338): po uzoru na Milošev snimak iz druge igre: pune (neprovidne) okrugle kuglice krem boje, po 4 + sitne tačkice sa svake strane predmeta, uz donju ivicu; razilaze se napolje i malo nadole i blede za ~0,4 s.
