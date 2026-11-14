@@ -80,7 +80,8 @@ css.textContent=[
 '#zadaciBox .zr.main .zk{color:#7a1e14;font-size:17px}',
 '#zadaciBox .zc{position:absolute;left:5.5%;top:50%;width:8.6%;aspect-ratio:1;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;color:#3f7a22;font:900 30px Arial}',
 '#zadaciBox .zr.done .zc:before{content:"✓"}',
-'#zadaciBox .zr.done .zx{text-decoration:line-through;opacity:.55}#zadaciBox .zr.done .zk{opacity:.45}',
+'#zadaciBox .zr.done .zx{text-decoration:line-through;opacity:.55}',
+'.zfly{position:fixed;left:0;top:0;z-index:2147483000;pointer-events:none;display:flex;align-items:center;gap:4px;font:400 30px "Paytone One",Georgia,serif;color:#fff3c8;text-shadow:0 2px 0 #7a1e14,0 0 8px #e2b24a,0 3px 6px rgba(0,0,0,.6)}.zfly img{height:34px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}',
 'body.menu-open #zadaciBox,body.main-menu-open #zadaciBox,body.kt-open #zadaciBox,body.market-open #zadaciBox,body.pantry-open #zadaciBox,body.garden-open #zadaciBox{display:none}'
 ].join('\n');
 document.head.appendChild(css);
@@ -106,12 +107,30 @@ function render(){
   if(tutorialLeft())h+='<div class="zr main"><span class="zc"></span><span class="zx">Put do prve zvezde</span><span class="zk">'+n+'/'+TASKS.length+'</span></div>';
   else if(goal)h+='<div class="zr main"><span class="zc"></span><span class="zx">Put do '+ordinal()+' zvezde</span><span class="zk">'+Math.min(goal,S.starServed||0)+'/'+goal+'</span></div>';
   vis.forEach(function(t){
-    h+='<div class="zr'+(isDone(t)?' done':'')+'"><span class="zc"></span><span class="zx">'+t.text+'</span>'+(t.zn?'<span class="zk"><img src="'+K+'ikona_znanje.webp" alt="">+'+t.zn+'</span>':'')+'</div>';
+    h+='<div class="zr'+(isDone(t)?' done':'')+'" data-id="'+t.id+'"><span class="zc"></span><span class="zx">'+t.text+'</span></div>';
   });
   h+='</div>';
   if(h!==cur){cur=h;box.innerHTML=h;}
 }
-function reward(t){if(t.zn)S.zn+=t.zn;recent[t.id]=Date.now();try{showToast('Zadatak gotov: '+t.text+(t.zn?'  (+'+t.zn+' znanja)':''));}catch(e){}}
+// nagrada: broj sa knjigom izleti iz polja zadatka, poskoči, pa poleti do dugmeta "Karta znanja" (bez ispisa nagrade u polju)
+function fly(n,from){
+  if(!n||!window.gsap)return;
+  var f=document.createElement('div');f.className='zfly';f.innerHTML='<img src="'+K+'ikona_znanje.webp" alt="">+'+n;document.body.appendChild(f);
+  var tgt=document.getElementById('ktBtn'),tr=tgt?tgt.getBoundingClientRect():null,fx=from.left+from.width*.2,fy=from.top+from.height*.5;
+  var ex=tr?tr.left+tr.width/2-24:fx-80,ey=tr?tr.top+tr.height/2-16:fy-120;
+  var tl=gsap.timeline({onComplete:function(){f.remove();if(tgt)gsap.fromTo(tgt,{scale:1.18},{scale:1,duration:.4,ease:'back.out(3)'});}});
+  tl.set(f,{x:fx,y:fy,scale:.3,opacity:0,transformOrigin:'0 50%'})
+    .to(f,{scale:1.5,opacity:1,y:fy-46,duration:.4,ease:'back.out(2.4)'})
+    .to(f,{scale:1.5,duration:.25})
+    .to(f,{x:ex,y:ey,scale:.8,duration:.65,ease:'power2.in'})
+    .to(f,{opacity:0,duration:.12},'-=.1');
+}
+function reward(t){
+  if(t.zn)S.zn+=t.zn;recent[t.id]=Date.now();
+  var row=document.querySelector('#zadaciBox [data-id="'+t.id+'"]')||box,rc=row.getBoundingClientRect();
+  fly(t.zn,rc);
+  try{showToast('Zadatak gotov: '+t.text);}catch(e){}
+}
 function check(){
   var any=false,D=dayState();
   // jela poslužena (za zvezdu): razlika u pregledu dana
