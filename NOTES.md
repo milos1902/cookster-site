@@ -1694,3 +1694,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Voda više ne zavisi od `failed` zastavice drugih efekata (para, mešanje); ako ne uspe, pokušava još do 4 puta na 1,5 s; ako pregledač oduzme WebGL kontekst, pravi novi.
 
 - sink-zoom.js v34: ako se nova voda ne napravi, u konzoli piše razlog ([Cookster voda]) i u window.__waterDbg.
+
+## Kuhinjski elementi se odmotavaju iz ikonice (js/ke-unroll.js v1)
+- Pergament prozora "Kuhinjski elementi" raste iz mesta gde je kliknuta ikonica posuđa i otvara se od sredine na gore i dole, 0,5 s (GSAP; bez GSAP-a Web Animations). "Piće" je ostalo kako je bilo. `?bezanimacije` isključuje.
