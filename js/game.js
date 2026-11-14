@@ -15437,6 +15437,41 @@ function startPeelHold(){
 }
 window.addEventListener('keyup',e=>{if(e.key==='e'||e.key==='E')cancelPeelHold();});
 window.addEventListener('blur',cancelPeelHold);
+// ---- cutting on the board (key E): GSAP rhythm of the knife, the jolt of the vegetable, a spray of juice and a stain, and a pop of the pieces at the end ----
+const CHOP_UP=(()=>{try{return window.gsap?gsap.parseEase('power2.out'):null;}catch(_){return null;}})();
+function chopShape(w){      // 0 = knife up, 1 = knife in the vegetable: a fast drop, a short stick in the vegetable, a slower lift (a sine without GSAP)
+  if(!CHOP_UP)return Math.sin(w*Math.PI);
+  if(w<.30)return Math.pow(w/.30,2.4);
+  if(w<.40)return 1;
+  return 1-CHOP_UP((w-.40)/.60);
+}
+const JUICE_COLORS={paradajz:'#d4342a',paprika:'#cf3a2b',luk:'#f1ead4',crni_luk:'#efe6cf',beli_luk:'#f3eedc',tikvica:'#cfe3a0',krastavac:'#d6e8b4',sargarepa:'#f08a2a',kupus:'#e6efc4',patlidzan:'#e9e1b8'};
+function juiceColorOf(target){
+  const key=target?.dataset?.vegKey||'';if(JUICE_COLORS[key])return JUICE_COLORS[key];
+  try{const im=target.querySelector('.body'),c=document.createElement('canvas');c.width=c.height=8;const x=c.getContext('2d');x.drawImage(im,0,0,8,8);const d=x.getImageData(0,0,8,8).data;let r=0,g=0,b=0,n=0;for(let i=0;i<d.length;i+=4){if(d[i+3]>100){r+=d[i];g+=d[i+1];b+=d[i+2];n++;}}if(n)return `rgb(${(r/n)|0},${(g/n)|0},${(b/n)|0})`;}catch(_){}
+  return '#d4342a';
+}
+function cutJuiceBurst(target,color,cx,cy,vis,strength){
+  const g=window.gsap;if(!g)return;
+  const z=(parseInt(target.style.zIndex||0,10)||11000)+2;
+  const n=5+Math.round(3*strength);
+  for(let i=0;i<n;i++){
+    const d=document.createElement('div'),sz=(2.4+Math.random()*3.6)*Math.max(.8,vis);
+    d.style.cssText=`position:absolute;left:${cx-sz/2}px;top:${cy-sz/2}px;width:${sz}px;height:${sz}px;border-radius:50%;background:${color};pointer-events:none;z-index:${z};opacity:.92`;
+    scene.appendChild(d);
+    const dx=(Math.random()-.5)*70*vis,up=(10+Math.random()*26)*vis,down=(14+Math.random()*12)*vis;
+    g.timeline({onComplete:()=>d.remove()})
+     .to(d,{x:dx*.6,y:-up,duration:.16,ease:'power2.out'})
+     .to(d,{x:dx,y:down,opacity:0,scale:.5,duration:.32+Math.random()*.12,ease:'power2.in'});
+  }
+}
+function cutStain(target,color,cx,by,vis){
+  const g=window.gsap;if(!g)return null;
+  const st=document.createElement('div'),w=70*vis;
+  st.style.cssText=`position:absolute;left:${cx-w/2}px;top:${by-w*.2}px;width:${w}px;height:${w*.34}px;border-radius:50%;pointer-events:none;z-index:${(parseInt(target.style.zIndex||0,10)||11000)-1};background:radial-gradient(ellipse at 50% 50%,${color} 0%,transparent 72%);opacity:0;filter:blur(1.5px);mix-blend-mode:multiply`;
+  scene.appendChild(st);g.to(st,{opacity:.34,scaleX:1.1,duration:.5,ease:'power1.out'});
+  return st;
+}
 function beginCutAction(mode='dice'){
  if(isCutting)return;
  {const t0=findCutTargetOnBoard();if(mode==='slices'&&t0&&VEGETABLES[t0.dataset.vegKey]?.meat){showToast('Meso se seče tasterom E.');return;}}      // meat is cut only with E (C is off for meat)
@@ -15496,11 +15531,22 @@ function beginCutAction(mode='dice'){
  // v198.5.127 — occasionally a bit of mess ends up on the floor while
  // chopping (separate from the counter splash trigger while stirring).
  if(Math.random()<0.18)createFloorSpill(targetKey);
+ const juicy=targetKey==='paradajz'||targetKey==='luk';      // juice only for the tomato (red) and a little for the onion (whitish)
+ const cutJuice=juicy?juiceColorOf(target):'';knife._contactCycle=-1;
+ const cutStainEl=juicy?cutStain(target,cutJuice,tCx,tBy-4*tVis,tVis):null;
  function step(now){
    const p=Math.max(0,Math.min(1,(now-start)/duration));
    const cycle=Math.min(chopCount-1,Math.floor(p*chopCount));
    const within=(p*chopCount)-cycle;
-   const chopWave=Math.sin(within*Math.PI);
+   const chopWave=chopShape(within);
+   if(within>=.30&&knife._contactCycle!==cycle){      // the knife is in the vegetable: the jolt and the spray
+     knife._contactCycle=cycle;
+     try{
+       const body=target.querySelector('.body'),dir=(cycle%2?-1:1),g=window.gsap;
+       if(g&&body){const o={k:0};g.to(o,{k:1,duration:.22,ease:'back.out(3)',onUpdate:()=>{body.style.translate=((1-o.k)*dir*2.4).toFixed(2)+'px 0';},onComplete:()=>{body.style.translate='';}});}
+       if(juicy)cutJuiceBurst(target,cutJuice,targetCx+6*tVis,targetBy+4*tVis,tVis,(targetKey==='luk'?.35:1)*Math.min(1,.5+cycle/Math.max(1,chopCount)));
+     }catch(_){}
+   }
    const drop=30*chopWave;
    const lift=14*(1-chopWave);
    const slide=-1.5*chopWave;
@@ -15523,7 +15569,10 @@ function beginCutAction(mode='dice'){
      // has no diced art) can finish the old two-step path.
      showToast(setVegetableDiced(target));
    }
+   knife._contactCycle=-1;
    releaseCutTargetBounce(target);
+   try{const g=window.gsap,body=target.querySelector('.body');if(g&&body){const o={k:.8};g.to(o,{k:1,duration:.55,ease:'back.out(2.6)',onUpdate:()=>{body.style.scale=String(o.k);},onComplete:()=>{body.style.scale='';}});}
+     if(cutStainEl&&g)g.to(cutStainEl,{opacity:0,duration:2.2,delay:7,ease:'none',onComplete:()=>cutStainEl.remove()});}catch(_){}
    mountKnifeAsBoardChild(board);
    destroyCutProgress();
    isCutting=false;document.body.classList.remove('cutting-active');

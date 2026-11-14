@@ -1671,3 +1671,7 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Animacija uzimanja iz ranca i vraćanja u ranac (recent-items.js v10)
 - Uzimanje: slika predmeta leti iz džepa do ruke (luk, raste i bledi ~0,3 s). Vraćanje: slika leti iz ruke u džep (~0,26 s), pa slika u džepu iskoči (pop). Zlatni sjaj džepa ugašen (setGlow ne radi ništa). Web Animations API, bez biblioteke (GSAP je uklonjen iz igre).
 - recent-items.js v11: animacije ranca sada idu preko GSAP-a (assets/vendor/gsap.min.js vraćen u igru, učitava se pre recent-items.js; GSAP 3.15.1, licenca "no charge"). Let po luku (podizanje na sredini), rast/gašenje, pop slike u džepu. Bez GSAP-a pada na Web Animations.
+
+## Sečenje na E: GSAP ritam, odskok, sok (game.js v3.341)
+- Nož ima pravi ritam (brzo spuštanje, kratko "zaglavljivanje" u povrću, sporije podizanje), na svakom udarcu povrće se malo trzne u stranu (GSAP, svojstvo translate), na kraju komadići iskoče (scale back.out).
+- Sok samo kod paradajza (crven) i luka (beličast, slabiji): kapljice lete uvis i padaju, a ispod ostaje mrlja koja posle ~7 s bledi. Daska se ne trese. Boja soka: tabela JUICE_COLORS po vegKey; za druge bi se uzimala prosečna boja slike.
