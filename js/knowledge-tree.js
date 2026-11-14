@@ -129,12 +129,12 @@ function build(){
   window.addEventListener('resize',function(){if(isOpen())fit();});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen()){e.stopPropagation();close();}},true);
 }
-var TABX=[[83,364],[372,636],[641,906],[912,1178],[1184,1451]];
-function kk(){return Math.min(innerWidth*.98/1536,innerHeight*.98/1024);}
+var TABX=[[233,514],[522,786],[791,1056],[1062,1328],[1334,1601]];
+function kk(){return Math.min(innerWidth*.94/1836,innerHeight*.93/1024);}
 function fit(){panel.style.setProperty('--k',kk());}
 function isOpen(){return document.body.classList.contains('kt-open');}
 function metrics(){
-  var h=674,rowH=Math.floor((h-20)/4),D=146;
+  var h=738,rowH=Math.floor((h-20)/4),D=146;
   M={D:D,ch:rowH-6,cw:176,rowH:rowH,colW:250,padL:46,padT:8};
   M.w=M.padL+COLS*M.colW+30;
 }
@@ -161,7 +161,7 @@ function layoutExtras(){
     if(s2>1){var g=el('div','kt-gate');g.style.left=x0+'px';inner.appendChild(g);}
     if(s2>S.star){
       var dk=el('div','kt-dark');dk.style.left=x0+'px';dk.style.width=(x1-x0)+'px';inner.appendChild(dk);
-      var lk=el('div','kt-lock'),lw=150;lk.style.width=lw+'px';lk.style.height=Math.round(lw*1.18)+'px';lk.style.left=Math.round((x0+x1)/2-lw/2)+'px';lk.style.top='250px';
+      var lk=el('div','kt-lock'),lw=150;lk.style.width=lw+'px';lk.style.height=Math.round(lw*1.18)+'px';lk.style.left=Math.round((x0+x1)/2-lw/2)+'px';lk.style.top='285px';
       var b2=el('b','',String(s2));b2.style.fontSize=Math.round(lw*.34)+'px';lk.appendChild(b2);inner.appendChild(lk);
     }
   }
@@ -179,7 +179,7 @@ function renderBoard(){
   var LAYMODE=!!LT[S.tab],mine=cards.filter(function(c){return c.t===S.tab;});
   var HOLDER=null;if(LAYMODE){HOLDER=inner;var STG=el('div','kt-stage');HOLDER.appendChild(STG);inner=STG;}
   if(LAYMODE)layoutExtras();
-  if(LAYMODE){var k1=el('div','kt-corner');k1.style.left='4px';k1.style.top='4px';inner.appendChild(k1);var k2=el('div','kt-corner br');k2.style.left=(M.w-116)+'px';k2.style.top='570px';inner.appendChild(k2);}
+  if(LAYMODE){var k1=el('div','kt-corner');k1.style.left='4px';k1.style.top='4px';inner.appendChild(k1);var k2=el('div','kt-corner br');k2.style.left=(M.w-116)+'px';k2.style.top='640px';inner.appendChild(k2);}
   else{
   // odjeljci po zvezdici: tamno polje + katanac iznad dosegnute zvezdice, zlatne linije
   for(var s=1;s<=5;s++){
@@ -226,7 +226,7 @@ function renderBoard(){
     d.addEventListener('click',function(){onCard(c,d);});
     inner.appendChild(d);
   });
-  if(HOLDER){inner=HOLDER;HOLDER.style.width=(M.w+300)+'px';}
+  if(HOLDER){inner=HOLDER;HOLDER.style.width=M.w+'px';}
 }
 function showTip(c,d){
   var st=status(c),src=artFor(c),pc=price(c),h='';
