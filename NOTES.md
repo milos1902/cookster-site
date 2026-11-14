@@ -1682,3 +1682,7 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Sok na dasci je lokva iz simulacije tečnosti (CooksterJuiceCanvas u stir-fluid.js): sa svakim udarcem noža izlazi sa obe strane predmeta (levo i desno), širi se u lokvu sa mokrom ivicom, ostaje dok se iseckani predmet ne pomeri; kad se spusti na sto, nestaje posle 2 s. Bez WebGL-a vraća se obična mrlja.
 - v3.346: na dasci ostaje samo oko deset sitnih kapljica soka (levo i desno od predmeta), ne lokva; pojavljuju se uz udarce noža, prate iseckani paradajz dok je na dasci, posle spuštanja na sto blede za 2 s. CooksterJuiceCanvas (fluid lokva) u stir-fluid.js je za sada neiskorišćen.
 - v3.347: nož opet ide gore-dole kao pre (uklonjeno ograničenje do donje linije jer je gušilo pokret); spuštanje skraćeno sa 30 na 25 px. Sok ostaje samo na dasci, ne na nožu.
+
+## Voda u sudoperi preko simulacije tečnosti (sink-zoom.js v31, stir-fluid.js v40)
+- Mlaz i prskanje u krupnom planu sudopere prave se simulacijom tečnosti (CooksterWaterFluid u stir-fluid.js): tanak mlaz pada iz slavine tačno na čep slivnika (crni krug, centar ~49.4%, 58.4% slike, nađeno iz slike), a sa čepa prska levo i desno, stalno dok teče. Ne ostaje voda u sudoperi (kratki mlazevi koji brzo nestaju).
+- Crta se samo unutar kalibrisanog otvora sudopere (cal.rim) i kroz isti canvas efekata, pa prednji zidovi posuda i dalje sakrivaju vodu (cutFront). Stari mlaz (pantljika) i slika prskanja koriste se samo ako nema WebGL-a.
