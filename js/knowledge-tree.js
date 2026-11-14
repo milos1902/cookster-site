@@ -69,23 +69,24 @@ var root,panel,top,tabsEl,board,inner,tip,toast,foot,badgeEl,znEl,dinEl,svg,M={}
 function build(){
   root=el('div');root.id='ktRoot';root.setAttribute('data-tool-ui','1');
   panel=el('div');panel.id='ktPanel';
-  top=el('div');top.id='ktTop';
+  top=panel;
   badgeEl=el('div','kt-badge');top.appendChild(badgeEl);
-  tabsEl=el('div');tabsEl.id='ktTabs';top.appendChild(tabsEl);
+  tabsEl=panel;
+  var nz=el('div');nz.id='ktNazad';nz.title='Nazad';nz.onclick=close;panel.appendChild(nz);
   var res=el('div','kt-res');
   var pz=el('div','kt-pl');pz.style.backgroundImage='url('+A+'drvo/cena_bodovi.png)';znEl=el('span');pz.appendChild(znEl);
   var pd=el('div','kt-pl');pd.style.backgroundImage='url('+A+'drvo/cena_novac.png)';dinEl=el('span');pd.appendChild(dinEl);
   res.appendChild(pz);res.appendChild(pd);
   var x=el('button','kt-x','✕');x.onclick=close;res.appendChild(x);
-  top.appendChild(res);
+  panel.appendChild(res);
   board=el('div');board.id='ktBoard';inner=el('div');inner.id='ktInner';board.appendChild(inner);
   foot=el('div');foot.id='ktFoot';
-  foot.innerHTML='<span>Probno (samo za gledanje):</span>';
-  [['+10 znanja',function(){S.zn+=10;}],['+500 дин',function(){S.din+=500;}],['Zvezdica −',function(){S.star=Math.max(1,S.star-1);}],['Zvezdica +',function(){S.star=Math.min(5,S.star+1);}],
-   ['Počni ispočetka',function(){S.bought={};S.zn=42;S.din=1250;S.star=2;}]].forEach(function(b){var bt=el('button','',b[0]);bt.onclick=function(){b[1]();save();refresh();};foot.appendChild(bt);});
-  foot.appendChild(el('span','sp'));foot.appendChild(el('span','','Klizanje: točkić miša ili prevlačenje · Esc zatvara'));
+  
+  [['Probno:',null],['+10 znanja',function(){S.zn+=10;}],['+500 дин',function(){S.din+=500;}],['Zvezdica −',function(){S.star=Math.max(1,S.star-1);}],['Zvezdica +',function(){S.star=Math.min(5,S.star+1);}],
+   ['Počni ispočetka',function(){S.bought={};S.zn=42;S.din=1250;S.star=2;}]].forEach(function(b){if(!b[1]){foot.appendChild(el('span','',b[0]));return;}var bt=el('button','',b[0]);bt.onclick=function(){b[1]();save();refresh();};foot.appendChild(bt);});
+  
   toast=el('div');toast.id='ktToast';
-  panel.appendChild(top);panel.appendChild(board);panel.appendChild(foot);panel.appendChild(toast);
+  panel.appendChild(board);panel.appendChild(foot);panel.appendChild(toast);
   root.appendChild(panel);
   tip=el('div');tip.id='ktTip';root.appendChild(tip);
   document.body.appendChild(root);
@@ -93,28 +94,31 @@ function build(){
   board.addEventListener('wheel',function(e){e.preventDefault();e.stopPropagation();board.scrollLeft+=(Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY);},{passive:false});
   var drag=null,moved=false;
   board.addEventListener('pointerdown',function(e){if(e.button!==0)return;drag={x:e.clientX,l:board.scrollLeft};moved=false;});
-  window.addEventListener('pointermove',function(e){if(!drag)return;var dx=e.clientX-drag.x;if(!moved&&Math.abs(dx)>6){moved=true;board.classList.add('drag');hideTip();}if(moved)board.scrollLeft=drag.l-dx;});
+  window.addEventListener('pointermove',function(e){if(!drag)return;var dx=(e.clientX-drag.x)/kk();if(!moved&&Math.abs(dx)>6){moved=true;board.classList.add('drag');hideTip();}if(moved)board.scrollLeft=drag.l-dx;});
   window.addEventListener('pointerup',function(){drag=null;board.classList.remove('drag');setTimeout(function(){moved=false;},0);});
   board.addEventListener('click',function(e){if(moved){e.stopPropagation();e.preventDefault();}},true);      // after a drag the card under the mouse is not clicked
-  window.addEventListener('resize',function(){if(isOpen())renderBoard();});
+  window.addEventListener('resize',function(){if(isOpen())fit();});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen()){e.stopPropagation();close();}},true);
 }
+var TABX=[[82,366],[372,638],[646,911],[919,1185],[1193,1487]];
+function kk(){return Math.min(innerWidth*.98/1514,innerHeight*.98/1014);}
+function fit(){panel.style.setProperty('--k',kk());}
 function isOpen(){return document.body.classList.contains('kt-open');}
 function metrics(){
-  var h=board.clientHeight||600,rowH=Math.floor((h-20)/4),ch=Math.max(96,rowH-12),cw=Math.round(ch*1.62),colW=cw+Math.round(ch*.36);
+  var h=680,rowH=Math.floor((h-20)/4),ch=Math.max(96,rowH-12),cw=Math.round(ch*1.62),colW=cw+Math.round(ch*.36);
   M={ch:ch,cw:cw,rowH:rowH,colW:colW,padL:30,padT:12};
   M.w=M.padL+COLS*colW+30;
 }
 function pos(c){return {x:M.padL+(c.c-1)*M.colW,y:M.padT+c.r*M.rowH};}
 function renderTabs(){
-  tabsEl.innerHTML='';
+  Array.prototype.slice.call(panel.querySelectorAll('.kt-tab')).forEach(function(n){n.remove();});
   TABS.forEach(function(tb,i){
     var n=0,tot=0;cards.forEach(function(c){if(c.t===i){tot++;if(isBought(c))n++;}});
     var d=el('div','kt-tab'+(S.tab===i?' on':''));
-    d.style.backgroundImage='url('+A+'drvo/drvo_kartica_'+tb[1]+(S.tab===i?'':'_neaktivna')+'.png)';
-    d.appendChild(el('span','',tb[0]));d.appendChild(el('small','',n+' / '+tot));
+    d.style.left=TABX[i][0]+'px';d.style.width=(TABX[i][1]-TABX[i][0])+'px';
+    d.appendChild(el('span','',tb[0]));d.appendChild(el('small','',n+'/'+tot));
     d.onclick=function(){S.tab=i;save();board.scrollLeft=0;refresh();};
-    tabsEl.appendChild(d);
+    panel.appendChild(d);
   });
 }
 function renderBoard(){
@@ -193,7 +197,7 @@ function refresh(){
   znEl.textContent=S.zn;dinEl.textContent=S.din+' дин';
   renderTabs();renderBoard();hideTip();
 }
-function open(){if(!root)build();document.body.classList.add('kt-open');refresh();}
+function open(){if(!root)build();document.body.classList.add('kt-open');fit();refresh();}
 function close(){document.body.classList.remove('kt-open');hideTip();}
 function init(){
   var b=el('button','','Karta znanja');b.id='ktBtn';b.setAttribute('data-tool-ui','1');b.onclick=open;document.body.appendChild(b);
