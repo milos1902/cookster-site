@@ -1708,3 +1708,8 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Valjci OSTAJU na gornjoj i donjoj ivici dok je prozor otvoren (platno je razvučeno između njih). Otvaranje: valjci se razmaknu iz sredine za 0,3 s (blagi prebačaj), zatvaranje: valjci se spoje i prozor nestane u istom trenutku kad se sretnu (ne staje u sredini). Pozadina se zatamni posle otvaranja i svetli pri zatvaranju.
 - Dve štipaljke gore su izbrisane iz slike strana_kuhinjski_elementi_prazna.webp (platno ide sa susednog dela slike); `?v=2` u ke-pergament.js zbog keša. Platno u slici: x 42..1559, y 44..1061 od 1600x1100.
 - Zatvaranje ide kroz `window.closeKitchenElements` (omotano); ako se zatvori nekim drugim putem, valjci se odmah uklone.
+
+## Kuhinjski elementi: bez kočenja pri otvaranju (js/ke-unroll.js v6)
+- Uzrok kočenja: dok se platno otkrivalo, sve sjene (`drop-shadow`) u prozoru su se crtale iznova u svakom kadru. Sada su sjene isključene dok traje animacija (`body.ke-anim`) i prozor je na posebnom sloju.
+- mo.js je ostavljao ~76 elemenata po otvaranju (prozor je bio sve sporiji): sada se brišu 0,9 s posle prašine.
+- Prvo otvaranje posle osvežavanja: slike prozora (~100) se učitavaju i dekodiraju u pozadini ~2 s posle starta, jedna po jedna (`prewarm`).
