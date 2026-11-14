@@ -1680,3 +1680,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Sečenje: nož staje na liniji predmeta, tečnost preko simulacije (game.js v3.345, stir-fluid.js)
 - Nož se spušta samo do donje linije predmeta na dasci (najniža tačka noža ne prelazi donju ivicu paradajza).
 - Sok na dasci je lokva iz simulacije tečnosti (CooksterJuiceCanvas u stir-fluid.js): sa svakim udarcem noža izlazi sa obe strane predmeta (levo i desno), širi se u lokvu sa mokrom ivicom, ostaje dok se iseckani predmet ne pomeri; kad se spusti na sto, nestaje posle 2 s. Bez WebGL-a vraća se obična mrlja.
+- v3.346: na dasci ostaje samo oko deset sitnih kapljica soka (levo i desno od predmeta), ne lokva; pojavljuju se uz udarce noža, prate iseckani paradajz dok je na dasci, posle spuštanja na sto blede za 2 s. CooksterJuiceCanvas (fluid lokva) u stir-fluid.js je za sada neiskorišćen.

@@ -15467,38 +15467,35 @@ function cutJuiceBurst(target,color,cx,cy,vis,strength){
 }
 function cutStain(target,color,cx,by,vis){
   const g=window.gsap;if(!g)return null;
-  const W=230*vis,H=140*vis;
-  let st=null,fluid=null;
-  try{fluid=window.CooksterJuiceCanvas?CooksterJuiceCanvas(color,W,H):null;}catch(_){}
-  if(fluid){st=fluid.cv;st._fluid=fluid;st.style.cssText=`position:absolute;left:0;top:0;width:${W}px;height:${H}px;margin:${-H*.62}px 0 0 ${-W/2}px;pointer-events:none;mix-blend-mode:multiply;opacity:1`;}
-  else{st=document.createElement('div');st.style.cssText=`position:absolute;left:0;top:0;width:${96*vis}px;height:${38*vis}px;margin:${-19*vis}px 0 0 ${-48*vis}px;border-radius:50%;pointer-events:none;background:radial-gradient(ellipse,${color} 0%,${color} 38%,transparent 74%);opacity:0;filter:blur(1.2px);mix-blend-mode:multiply`;g.to(st,{opacity:.55,duration:.45});}
+  // only a few small drops lie on the board (about ten): a holder for them that follows the cut thing
+  const st=document.createElement('div');
+  st.style.cssText=`position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;opacity:1`;
   st.style.zIndex=String((parseInt(target.style.zIndex||0,10)||11000)-1);
+  st._color=color;st._vis=vis;st._n=0;
   scene.appendChild(st);
-  st._W=W;st._H=H;st._cx=cx;st._by=by;
-  // the puddle lies under the cut thing: it follows it while it lies on the board, stays until the thing is picked up and, when the thing is put down somewhere else, fades after 2 s
   let lifted=false,gone=false;
   const tick=setInterval(()=>{
     if(!st.isConnected||!target.isConnected){clearInterval(tick);st.remove();return;}
     const onBoard=target.dataset.attachedToBoard==='1'&&holding!==target;
     if(onBoard&&!lifted){st.style.transform=`translate(${(+target.dataset.cx).toFixed(1)}px,${(+target.dataset.by).toFixed(1)}px)`;st.style.zIndex=String((parseInt(target.style.zIndex||0,10)||11000)-1);}
     else if(!onBoard&&!lifted)lifted=true;
+    // picked up and put down somewhere else: the drops fade after 2 s
     if(lifted&&holding!==target&&!gone){gone=true;clearInterval(tick);g.to(st,{opacity:0,duration:.7,delay:2,ease:'none',onComplete:()=>st.remove()});}
   },120);
   st.style.transform=`translate(${cx}px,${by}px)`;
   return st;
 }
-// a knife stroke pushes juice out of the cut into the puddle (position in scene pixels)
+// a knife stroke leaves one or two small drops on the board, at the left and at the right of the thing (at most about ten in all)
 function cutStainSplat(st,x,y,strength,k=1,halfW=24){
-  const f=st&&st._fluid;if(!f)return;
-  const u0=((x-(st._cx-st._W/2))/st._W),v0=1-((y-(st._by-st._H*.62))/st._H),du=Math.max(.05,halfW/st._W);
-  // the juice comes out on BOTH sides of the cut thing: a push to the left from its left side, a push to the right from its right side (and a little under it)
-  for(const side of [-1,1]){
-    for(let i=0;i<4;i++){
-      const r=Math.random()*.03;
-      f.splat(u0+side*du*(.45+Math.random()*.35),v0+(Math.random()-.4)*.09,side*(55+45*Math.random())*strength,(Math.random()-.55)*28*strength,.55*k);
-    }
+  const g=window.gsap;if(!st||!g||st._n>=10)return;
+  const col=st._color,v=st._vis||1,add=st._n<9?2:1;
+  for(let i=0;i<add&&st._n<10;i++){
+    const side=(st._n%2?1:-1),sz=(2.6+Math.random()*3.4)*Math.max(.85,v)*(k>0?1:1);
+    const d=document.createElement('div');
+    d.style.cssText=`position:absolute;left:${side*(halfW*(.55+Math.random()*.8))-sz/2}px;top:${(Math.random()*9-1)*v}px;width:${sz*1.25}px;height:${sz}px;border-radius:50%;background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.55) 0,${col} 34%,${col} 100%);box-shadow:0 .6px 1px rgba(60,10,6,.35);opacity:.95;transform:scale(0)`;
+    st.appendChild(d);st._n++;
+    g.to(d,{scale:1,duration:.28,ease:'back.out(2.6)'});
   }
-  f.splat(u0,v0-.02,0,-20*strength,.4*k);
 }
 // The part of the knife that is inside the vegetable is hidden: a copy of the vegetable lies above the knife and shows only the lower part (from a line that goes up when the knife goes down)
 function makeCutOverlay(target,knife){
