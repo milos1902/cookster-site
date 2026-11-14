@@ -70,7 +70,7 @@
       img.className='cookster-recent-icon';img.src=(window.CooksterItemArt&&CooksterItemArt[def.id])||def.src;img.alt='';img.draggable=false;
       img.setAttribute('aria-hidden','true');
       b.appendChild(img);
-      if(popSlot===i){popSlot=-1;try{img.animate([{transform:'translate(-50%,-50%)',opacity:0},{transform:'translate(-50%,-50%)',opacity:1}],{duration:90,delay:250,easing:'linear',fill:'both'});}catch(_){}}
+      if(popSlot===i){popSlot=-1;try{img.animate([{opacity:0},{opacity:0,offset:.999},{opacity:1}],{duration:260,delay:0,easing:'linear',fill:'both'});}catch(_){}}
       b.removeAttribute('title');b.setAttribute('aria-label','Ranac: '+(def.label||def.id));
     });
   }
@@ -87,7 +87,7 @@
       const im=document.createElement('img');im.src=artOf(id);im.alt='';im.draggable=false;
       im.style.cssText='position:fixed;left:'+(-sz/2)+'px;top:'+(-sz/2)+'px;width:'+sz+'px;height:'+sz+'px;object-fit:contain;pointer-events:none;z-index:99998;will-change:transform,opacity;filter:drop-shadow(2px 4px 4px rgba(25,12,3,.45))';
       document.body.appendChild(im);
-      const g=window.gsap,dx=to.x-from.x,dy=to.y-from.y,lift=-Math.min(70,Math.hypot(dx,dy)*.22),end=()=>{im.remove();if(opts.done)opts.done();};
+      const g=window.gsap,dx=to.x-from.x,dy=to.y-from.y,lift=-Math.min(70,Math.hypot(dx,dy)*.22),end=()=>{if(opts.hold)setTimeout(()=>im.remove(),opts.hold);else im.remove();if(opts.done)opts.done();};
       setTimeout(()=>im.remove(),opts.ms+600);
       if(g){
         // GSAP: the picture goes along an arc (a quick lift in the middle) while it grows / shrinks and fades
@@ -132,7 +132,8 @@
       window.CooksterReturnHeld();
       popSlot=at;      // set BEFORE put(): the new icon is drawn already hidden and appears only when the flying picture arrives (before, the copy showed at once and popped again at the next change)
       if(!put(hid,at)){popSlot=-1;return true;}
-      if(from&&sc1)fly(hid,from,sc1,{s0:1.4,s1:.8,o0:.9,o1:.9,ms:260});
+      if(from&&sc1){const fsz=Math.max(40,Math.min(90,from.size||60)),land=(sc1.size/.95*.78)/fsz;      // the picture lands exactly the size of the pocket icon (78% of the button)
+        fly(hid,from,sc1,{s0:1.4,s1:land,o0:.9,o1:1,ms:260,hold:120});}
       try{showToast((hdef.label||hid)+' je u rancu.');}catch(_){}
       return true;
     }
