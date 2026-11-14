@@ -595,7 +595,22 @@ const LAND_SRC=`
       gl_FragColor=vec4(col*a,a);
     }
 `;
-const displayShader=compileShader(gl.FRAGMENT_SHADER,(opts&&opts.flat)?LAND_SRC:((opts&&opts.steam)?STEAM_SRC:MAIN_SRC));
+const JUICE_SRC=`
+    precision highp float;precision mediump sampler2D;
+    varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uTexture;uniform float uEnv;uniform vec3 uTint;
+    float dens(vec2 uv){vec3 c=texture2D(uTexture,uv).rgb;return max(c.r,max(c.g,c.b));}
+    void main(){
+      float d=dens(vUv);
+      float body=smoothstep(0.04,0.30,d);                       // the puddle: soft, wet edge
+      vec2 g=vec2(dens(vR)-dens(vL),dens(vT)-dens(vB))*9.0;     // the slope of the puddle: light and shade
+      float rim=clamp(length(g),0.0,1.0);
+      float shine=pow(clamp(0.5+g.x*-0.8+g.y*0.8,0.0,1.0),6.0)*smoothstep(0.1,0.5,d);   // a small bright reflection on the wet edge
+      vec3 col=uTint*(0.78+0.30*smoothstep(0.1,1.0,d))*(1.0-0.22*rim)+vec3(1.0,0.9,0.85)*shine*0.45;
+      float a=body*(0.55+0.4*smoothstep(0.2,1.2,d))*uEnv;
+      gl_FragColor=vec4(col*a,a);
+    }
+`;
+const displayShader=compileShader(gl.FRAGMENT_SHADER,(opts&&opts.juice)?JUICE_SRC:(opts&&opts.flat)?LAND_SRC:((opts&&opts.steam)?STEAM_SRC:MAIN_SRC));
 const clearProgram=new Program(baseVertexShader,clearShader);
 const splatProgram=new Program(baseVertexShader,splatShader);
 const advectionProgram=new Program(baseVertexShader,advectionShader);
@@ -638,7 +653,7 @@ function splat(x,y,dx,dy,color){
   gl.uniform3f(splatProgram.uniforms.color,color.r,color.g,color.b);
   blit(dye.write);dye.swap();
 }
-let envV=1,revV=[.5,.5,3,1],waveV=[0,0];
+let envV=1,revV=[.5,.5,3,1],waveV=[0,0],tintV=[.83,.17,.12];
 const maskTex=gl.createTexture();
 function setMask(c){            // c: a canvas whose opaque part is where the food really is (the fluid shows only there); null = everywhere
   gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,maskTex);
@@ -657,7 +672,7 @@ function render(){
   gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
   displayProgram.bind();
   gl.uniform2f(displayProgram.uniforms.texelSize,1/gl.drawingBufferWidth,1/gl.drawingBufferHeight);
-  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,maskTex);gl.uniform1i(displayProgram.uniforms.uMask,1);gl.uniform1f(displayProgram.uniforms.uEnv,envV);gl.uniform4f(displayProgram.uniforms.uRev,revV[0],revV[1],revV[2],revV[3]);gl.uniform2f(displayProgram.uniforms.uWave,waveV[0],waveV[1]);gl.uniform1i(displayProgram.uniforms.uColor,colDye.read.attach(2));
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,maskTex);gl.uniform1i(displayProgram.uniforms.uMask,1);gl.uniform1f(displayProgram.uniforms.uEnv,envV);if(displayProgram.uniforms.uTint)gl.uniform3f(displayProgram.uniforms.uTint,tintV[0],tintV[1],tintV[2]);gl.uniform4f(displayProgram.uniforms.uRev,revV[0],revV[1],revV[2],revV[3]);gl.uniform2f(displayProgram.uniforms.uWave,waveV[0],waveV[1]);gl.uniform1i(displayProgram.uniforms.uColor,colDye.read.attach(2));
   gl.uniform1i(displayProgram.uniforms.uTexture,dye.read.attach(0));
   blit(null);
 }
@@ -689,7 +704,7 @@ function relaxColors(k){                        // the colour layer slowly goes 
   gl.disable(gl.BLEND);
 }
 function setCalm(c,sim){config.VELOCITY_DISSIPATION=1.5;config.DENSITY_DISSIPATION=sim?1.3:(c?0.05:0.7);}      // after the spoon is let go the swirl keeps turning and slowly dies down
-return {splat,step:dt=>{step(dt);advectColor(dt);},render,resize,setMask,loadColors,relaxColors,clear:clearAll,setCalm,setEnv:v=>{envV=v;},setWave:(a,ph)=>{waveV=[a,ph];},setReveal:(cx,cy,r)=>{revV=[cx,cy,r,canvas.width/canvas.height];},force:config.SPLAT_FORCE};
+return {splat,step:dt=>{step(dt);advectColor(dt);},render,resize,setMask,loadColors,relaxColors,clear:clearAll,setCalm,setEnv:v=>{envV=v;},setTint:(r,g,b)=>{tintV=[r,g,b];},setWave:(a,ph)=>{waveV=[a,ph];},setReveal:(cx,cy,r)=>{revV=[cx,cy,r,canvas.width/canvas.height];},force:config.SPLAT_FORCE};
 }
 
 // ---- the game side -----------------------------------------------------------------------------------------------------------------------------
@@ -929,6 +944,25 @@ window.CooksterLandPuff=function(cx,by,vis,opacity){
   LP.idle=0;
   if(!LP.on){LP.on=true;LP.last=performance.now();requestAnimationFrame(landLoop);}
   return true;
+};
+// ---- JUICE on the cutting board: a small fluid canvas lies on the board under the thing that is cut; every knife stroke pushes juice out of the cut and it spreads into a puddle with a wet edge
+var JC=[],jcOn=false,jcLast=0;
+function jcLoop(t){
+  if(!JC.length){jcOn=false;return;}
+  requestAnimationFrame(jcLoop);
+  var dt=Math.min(.033,(t-jcLast)/1000||.016);jcLast=t;
+  for(var i=JC.length-1;i>=0;i--){var j=JC[i];if(!j.cv.isConnected){JC.splice(i,1);continue;}
+    if(t<j.until){j.fl.step(dt);j.fl.render();}}
+}
+window.CooksterJuiceCanvas=function(color,wpx,hpx){
+  if(failed)return null;
+  var cv=document.createElement('canvas');cv.width=256;cv.height=Math.max(64,Math.round(256*hpx/wpx));
+  var fl=createFluid(cv,{juice:true,config:{SIM_RESOLUTION:96,DYE_RESOLUTION:256,DENSITY_DISSIPATION:0.015,VELOCITY_DISSIPATION:4.5,CURL:0,SPLAT_RADIUS:0.055,PRESSURE_ITERATIONS:14}});
+  if(!fl)return null;
+  var m=/rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(color),h=/^#([0-9a-f]{6})$/i.exec(color),rgb=m?[+m[1],+m[2],+m[3]]:(h?[parseInt(h[1].slice(0,2),16),parseInt(h[1].slice(2,4),16),parseInt(h[1].slice(4,6),16)]:[212,52,42]);
+  fl.setTint(rgb[0]/255,rgb[1]/255,rgb[2]/255);fl.setEnv(1);
+  var j={cv:cv,fl:fl,until:0};JC.push(j);
+  return {cv:cv,splat:function(u,v,dx,dy,k){j.fl.splat(u,v,dx,dy,{r:k,g:k,b:k});j.until=performance.now()+3800;if(!jcOn){jcOn=true;jcLast=performance.now();requestAnimationFrame(jcLoop);}}};
 };
 // the white dots and the little bubbles of the old css are not shown any more: the fluid does it (only when the fluid can work: WebGL)
 (function(){

@@ -15467,22 +15467,38 @@ function cutJuiceBurst(target,color,cx,cy,vis,strength){
 }
 function cutStain(target,color,cx,by,vis){
   const g=window.gsap;if(!g)return null;
-  const st=document.createElement('div'),w=96*vis;
-  st.style.cssText=`position:absolute;left:0;top:0;width:${w}px;height:${w*.4}px;margin:${-w*.2}px 0 0 ${-w/2}px;border-radius:50%;pointer-events:none;z-index:${(parseInt(target.style.zIndex||0,10)||11000)-1};background:radial-gradient(ellipse at 50% 50%,${color} 0%,${color} 38%,transparent 74%);opacity:0;filter:blur(1.2px);mix-blend-mode:multiply`;
+  const W=230*vis,H=140*vis;
+  let st=null,fluid=null;
+  try{fluid=window.CooksterJuiceCanvas?CooksterJuiceCanvas(color,W,H):null;}catch(_){}
+  if(fluid){st=fluid.cv;st._fluid=fluid;st.style.cssText=`position:absolute;left:0;top:0;width:${W}px;height:${H}px;margin:${-H*.62}px 0 0 ${-W/2}px;pointer-events:none;mix-blend-mode:multiply;opacity:1`;}
+  else{st=document.createElement('div');st.style.cssText=`position:absolute;left:0;top:0;width:${96*vis}px;height:${38*vis}px;margin:${-19*vis}px 0 0 ${-48*vis}px;border-radius:50%;pointer-events:none;background:radial-gradient(ellipse,${color} 0%,${color} 38%,transparent 74%);opacity:0;filter:blur(1.2px);mix-blend-mode:multiply`;g.to(st,{opacity:.55,duration:.45});}
+  st.style.zIndex=String((parseInt(target.style.zIndex||0,10)||11000)-1);
   scene.appendChild(st);
-  st._cx=cx;st._by=by;
-  g.to(st,{opacity:.62,scaleX:1.15,duration:.45,ease:'power1.out'});
-  // the stain lies under the cut thing: it follows it while it lies on the board, stays until the thing is picked up and, when the thing is put down somewhere else, fades after 2 s
+  st._W=W;st._H=H;st._cx=cx;st._by=by;
+  // the puddle lies under the cut thing: it follows it while it lies on the board, stays until the thing is picked up and, when the thing is put down somewhere else, fades after 2 s
   let lifted=false,gone=false;
   const tick=setInterval(()=>{
     if(!st.isConnected||!target.isConnected){clearInterval(tick);st.remove();return;}
     const onBoard=target.dataset.attachedToBoard==='1'&&holding!==target;
-    if(onBoard&&!lifted){st.style.transform=`translate(${(+target.dataset.cx).toFixed(1)}px,${(+target.dataset.by-4).toFixed(1)}px)`;st.style.zIndex=String((parseInt(target.style.zIndex||0,10)||11000)-1);}
-    else if(!onBoard&&!lifted){lifted=true;if(st._at==null)st.style.transform=st.style.transform||`translate(${st._cx}px,${st._by}px)`;}
+    if(onBoard&&!lifted){st.style.transform=`translate(${(+target.dataset.cx).toFixed(1)}px,${(+target.dataset.by).toFixed(1)}px)`;st.style.zIndex=String((parseInt(target.style.zIndex||0,10)||11000)-1);}
+    else if(!onBoard&&!lifted)lifted=true;
     if(lifted&&holding!==target&&!gone){gone=true;clearInterval(tick);g.to(st,{opacity:0,duration:.7,delay:2,ease:'none',onComplete:()=>st.remove()});}
   },120);
   st.style.transform=`translate(${cx}px,${by}px)`;
   return st;
+}
+// a knife stroke pushes juice out of the cut into the puddle (position in scene pixels)
+function cutStainSplat(st,x,y,strength,k=1,halfW=24){
+  const f=st&&st._fluid;if(!f)return;
+  const u0=((x-(st._cx-st._W/2))/st._W),v0=1-((y-(st._by-st._H*.62))/st._H),du=Math.max(.05,halfW/st._W);
+  // the juice comes out on BOTH sides of the cut thing: a push to the left from its left side, a push to the right from its right side (and a little under it)
+  for(const side of [-1,1]){
+    for(let i=0;i<4;i++){
+      const r=Math.random()*.03;
+      f.splat(u0+side*du*(.45+Math.random()*.35),v0+(Math.random()-.4)*.09,side*(55+45*Math.random())*strength,(Math.random()-.55)*28*strength,.55*k);
+    }
+  }
+  f.splat(u0,v0-.02,0,-20*strength,.4*k);
 }
 // The part of the knife that is inside the vegetable is hidden: a copy of the vegetable lies above the knife and shows only the lower part (from a line that goes up when the knife goes down)
 function makeCutOverlay(target,knife){
@@ -15569,13 +15585,21 @@ function beginCutAction(mode='dice'){
      try{
        const body=target.querySelector('.body'),dir=(cycle%2?-1:1),g=window.gsap;
        if(g&&body){const o={k:0};g.to(o,{k:1,duration:.22,ease:'back.out(3)',onUpdate:()=>{body.style.translate=((1-o.k)*dir*2.4).toFixed(2)+'px 0';},onComplete:()=>{body.style.translate='';}});}
+       if(juicy&&cutStainEl)cutStainSplat(cutStainEl,tCx,tBy+2*tVis,(targetKey==='luk'?.5:1)*Math.min(1,.6+cycle/Math.max(1,chopCount)),1,Math.max(18,(target.offsetWidth||60)*tVis*.5));
        if(juicy)cutJuiceBurst(target,cutJuice,targetCx+6*tVis,targetBy+4*tVis,tVis,(targetKey==='luk'?.35:1)*Math.min(1,.5+cycle/Math.max(1,chopCount)));
      }catch(_){}
    }
    const drop=30*chopWave;
    const lift=14*(1-chopWave);
    const slide=-1.5*chopWave;
-   knife.style.transform=`rotate(${baseAngle}deg) translateY(${(-lift+drop).toFixed(1)}px) translateX(${slide.toFixed(1)}px)`;
+   let dropY=-lift+drop;
+   knife.style.transform=`rotate(${baseAngle}deg) translateY(${dropY.toFixed(1)}px) translateX(${slide.toFixed(1)}px)`;
+   // the knife goes only down to the bottom line of the thing on the board (it must not go through it and below it): if its lowest point is under that line, it is lifted by the difference
+   try{
+     const tb=target.querySelector('.body')||target,kr=knife.getBoundingClientRect(),tr=tb.getBoundingClientRect();
+     const over=(kr.bottom-(tr.bottom-1))/Math.max(.2,scale);
+     if(over>0){dropY-=over/Math.cos(baseAngle*Math.PI/180);knife.style.transform=`rotate(${baseAngle}deg) translateY(${dropY.toFixed(1)}px) translateX(${slide.toFixed(1)}px)`;}
+   }catch(_){}
    animateCutTargetCompression(target,Math.pow(Math.max(0,chopWave),2.7));
    if(cutOv){cutOv.style.clipPath=`inset(${(100-62*Math.max(0,chopWave)).toFixed(1)}% 0 0 0)`;const ob=cutOv.querySelector('.body'),tb=target.querySelector('.body');if(ob&&tb){ob.style.transform=tb.style.transform;ob.style.transformOrigin=tb.style.transformOrigin;}}
    updateCutProgress(p,tCx,progY);
