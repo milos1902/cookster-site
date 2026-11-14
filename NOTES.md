@@ -1748,3 +1748,12 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Prozor je sada slika koju je Miloš nacrtao (okvir.webp, 1514x1014): gore zaglavlje i pet tabova, dole traka sa "Nazad". Fiksno.
 - Između gornje i donje linije klizi karta (papir.webp se ponavlja). Razdvojnica (crveni vez) stoji na granici svake zvezdice. Dok Miloš ne nacrta posebnu razdvojnicu, koristi se isječak sa desne ivice slike.
 - Prozor se skalira da stane na ekran (CSS --k).
+
+## Karta znanja: čipkasti krugovi i konci
+- Kartice su sada čipkasti krugovi (assets/ui/karta/kr_n/h/z/k.webp: običan, lebdenje, kupljen, zaključan). Ime i cena stoje ispod kruga, zvezdica kao značka gore levo.
+- Veze između kartica su čipkasti konci iz assets/ui/karta/konci/ (20+ komada koje je Miloš nacrtao). Za svaku vezu se bira komad nasumično (po imenu kartica, uvek isti) i prostire se da pogodi razmak i visinu; okrećemo ih i levo-desno. Krugovi pokrivaju krajeve.
+- Pozadina karte je platno (platno.webp, napravljeno iz boje Miloševe slike) dok on ne nacrta pravu.
+
+## Urednik karte znanja (urednik-karte.html)
+- Stranica za slaganje karte rukom: dodaš krug (kartica iz spiska) ili čipkasti konac, vučeš ga mišem, razvlačiš širinu i visinu ručkama sa strane, uvećavaš ugaonom ručkom i okrećeš gornjim kružićem (Shift = po 15°). Magnet 10px, kopiranje, okretanje levo-desno, redosled.
+- Raspored se čuva u pregledaču (cookster.karta.raspored.v2) i u fajl karta-raspored.json (dugme "Sačuvaj fajl"). Igra ga još ne čita; sledeći korak je da se taj fajl ubaci u kartu.

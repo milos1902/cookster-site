@@ -6,7 +6,7 @@
 'use strict';
 if(window.CooksterTree)return;
 var D=window.CooksterTreeData;if(!D||!D.cards)return;
-var A='assets/ui/napredak/',KEY='cookster.tree.demo.v1';
+var A='assets/ui/napredak/',K='assets/ui/karta/',KEY='cookster.tree.demo.v1';
 var TABS=[['Kuhinja','kuhinja'],['Kafana','kafana'],['Kuća','odrzavanje'],['Recepti','kafana'],['Izbori','kuhinja']];      // treći tab za sada koristi sliku "odrzavanje" (bez teksta) dok se ne nacrta nova
 var COLS=16,SEC={1:[1,3],2:[4,7],3:[8,10],4:[11,13],5:[14,16]};
 var cards=D.cards.map(function(c,i){c.id=c.t+'|'+c.n;c.i=i;return c;});
@@ -45,7 +45,12 @@ function parents(c){
   if(c.y==='✓')return [];
   var out=[];
   if(c.q){c.q.split(', ').forEach(function(nm){var p=byId[c.t+'|'+nm.trim()];if(p)out.push(p);});}
-  if(!out.length){var pv=prevInRow(c);if(pv)out.push(pv);}
+  if(!out.length){var pv=prevInRow(c);
+    if(pv&&hash(c.id)%100<45){      // neke veze idu u susedni red (račvanje), samo za izgled i redosled u probi
+      var alt=[c.r-1,c.r+1].filter(function(r){return r>=0&&r<=3;}).map(function(r){return cards.filter(function(x){return x.t===c.t&&x.r===r&&x.c===pv.c;})[0];}).filter(Boolean);
+      if(alt.length)pv=alt[hash(c.id+'a')%alt.length];
+    }
+    if(pv)out.push(pv);}
   return out;
 }
 function status(c){
@@ -59,6 +64,13 @@ function missing(c){
   parents(c).forEach(function(p){if(!isBought(p))m.push(p.n);});
   return m;
 }
+var WIRES=[["a1",749,233,113.3,108.2],["a2",745,231,106.8,111.5],["a3",739,289,179.0,118.2],["a4",746,286,114.5,181.0],["a5",743,216,98.2,104.1],["a6",750,214,94.5,101.8],["b1",607,258,166.5,79.0],["b2",590,263,79.5,177.0],["b3",593,348,260.1,78.0],["b4",595,344,71.9,268.5],["b5",591,232,146.0,78.5],["b6",595,229,72.5,153.7],["c2",592,84,43.5,43.0],["d1",669,237,205.5,29.5],["d2",664,233,23.5,206.5],["d3",651,303,271.5,26.5],["d4",660,301,21.0,266.5],["d5",659,194,164.0,25.5],["d6",668,191,22.0,164.0],["c_gore",584,339,304.5,36.0],["c_dole",590,339,37.0,304.0]].map(function(a){return{n:a[0],W:a[1],H:a[2],wl:a[3],wr:a[4]};}),WV={up:[],down:[],flat:[]};
+WIRES.filter(function(v){return /^(c|d)/.test(v.n);}).forEach(function(v){[0,1].forEach(function(f){var w={n:v.n,W:v.W,H:v.H,f:f,wl:f?v.wr:v.wl,wr:f?v.wl:v.wr},d=w.wr-w.wl;w.k=Math.abs(d)<15?'flat':d<0?'up':'down';WV[w.k].push(w);});});
+function hash(str){var h=7;for(var i=0;i<str.length;i++)h=(h*31+str.charCodeAt(i))>>>0;return h;}
+function pickWire(p,c,kind,dx,dy){var all=WV[kind],sc=function(v){return kind==='flat'?v.H*dx/v.W/90:Math.abs(Math.log((dy/Math.abs(v.wr-v.wl))/(dx/v.W)));};
+  var L=all.filter(function(v){return kind==='flat'?sc(v)<=1:(function(){var r=Math.exp(sc(v));return r>.75&&r<1.6;})();});
+  if(!L.length){var best=all[0];all.forEach(function(v){if(sc(v)<sc(best))best=v;});return best;}
+  return L[hash(p.id+'>'+c.id)%L.length];}
 function groupOther(c){      // grupa „ILI": ako je već kupljena druga kartica iz iste grupe, ova košta duplo
   if(!c.x)return null;for(var i=0;i<cards.length;i++){var o=cards[i];if(o!==c&&o.x===c.x&&isBought(o))return o;}return null;
 }
@@ -100,14 +112,14 @@ function build(){
   window.addEventListener('resize',function(){if(isOpen())fit();});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen()){e.stopPropagation();close();}},true);
 }
-var TABX=[[82,366],[372,638],[646,911],[919,1185],[1193,1487]];
-function kk(){return Math.min(innerWidth*.98/1514,innerHeight*.98/1014);}
+var TABX=[[83,364],[372,636],[641,906],[912,1178],[1184,1451]];
+function kk(){return Math.min(innerWidth*.98/1536,innerHeight*.98/1024);}
 function fit(){panel.style.setProperty('--k',kk());}
 function isOpen(){return document.body.classList.contains('kt-open');}
 function metrics(){
-  var h=680,rowH=Math.floor((h-20)/4),ch=Math.max(96,rowH-12),cw=Math.round(ch*1.62),colW=cw+Math.round(ch*.36);
-  M={ch:ch,cw:cw,rowH:rowH,colW:colW,padL:30,padT:12};
-  M.w=M.padL+COLS*colW+30;
+  var h=674,rowH=Math.floor((h-20)/4),D=146;
+  M={D:D,ch:rowH-6,cw:176,rowH:rowH,colW:250,padL:46,padT:8};
+  M.w=M.padL+COLS*M.colW+30;
 }
 function pos(c){return {x:M.padL+(c.c-1)*M.colW,y:M.padT+c.r*M.rowH};}
 function renderTabs(){
@@ -123,49 +135,47 @@ function renderTabs(){
 }
 function renderBoard(){
   metrics();inner.innerHTML='';inner.style.width=M.w+'px';
-  inner.style.setProperty('--ch',M.ch+'px');inner.style.setProperty('--cw',M.cw+'px');
+  inner.style.setProperty('--D',M.D+'px');
   // odjeljci po zvezdici: tamno polje + katanac iznad dosegnute zvezdice, zlatne linije
   for(var s=1;s<=5;s++){
     var a=SEC[s][0],b=SEC[s][1],x0=M.padL+(a-1)*M.colW-(M.colW-M.cw)/2,x1=M.padL+b*M.colW-(M.colW-M.cw)/2+(s===5?60:0);
     if(s>1){var g=el('div','kt-gate');g.style.left=x0+'px';inner.appendChild(g);}
     if(s>S.star){
       var dk=el('div','kt-dark');dk.style.left=x0+'px';dk.style.width=(x1-x0)+'px';inner.appendChild(dk);
-      var lk=el('div','kt-lock'),lw=Math.round(M.ch*.95);lk.style.width=lw+'px';lk.style.height=Math.round(lw*1.18)+'px';lk.style.left=Math.round((x0+x1)/2-lw/2)+'px';lk.style.top=Math.round(M.padT+M.rowH*2.05)+'px';
+      var lk=el('div','kt-lock'),lw=Math.round(M.D*1.1);lk.style.width=lw+'px';lk.style.height=Math.round(lw*1.18)+'px';lk.style.left=Math.round((x0+x1)/2-lw/2)+'px';lk.style.top=Math.round(M.padT+M.rowH*2.05)+'px';
       var b2=el('b','',String(s));b2.style.fontSize=Math.round(lw*.34)+'px';lk.appendChild(b2);inner.appendChild(lk);
     }
   }
-  // strelice
-  svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('width',M.w);svg.setAttribute('height',M.rowH*4+M.padT+10);inner.appendChild(svg);
+  // konci (čipkaste trake) između kruga roditelja i kruga deteta; krugovi ih pokrivaju na krajevima
   var mine=cards.filter(function(c){return c.t===S.tab;});
   mine.forEach(function(c){
     parents(c).forEach(function(p){
-      var A1=pos(p),B1=pos(c),x1=A1.x+M.cw,y1=A1.y+M.ch/2,x2=B1.x-4,y2=B1.y+M.ch/2,mx=(x1+x2)/2,done=isBought(p),cant=status(c)==='lock'&&!done;
-      var path=document.createElementNS('http://www.w3.org/2000/svg','path');
-      path.setAttribute('d','M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+(x2-9)+','+y2);path.setAttribute('fill','none');
-      path.setAttribute('stroke',done?'#6a3f1c':'#8d8571');path.setAttribute('stroke-width',4);if(!done)path.setAttribute('stroke-dasharray','11 8');
-      svg.appendChild(path);
-      var h=document.createElementNS('http://www.w3.org/2000/svg','path');h.setAttribute('d','M'+(x2-11)+','+(y2-8)+' L'+x2+','+y2+' L'+(x2-11)+','+(y2+8)+' Z');h.setAttribute('fill',done?'#6a3f1c':'#8d8571');svg.appendChild(h);
+      var A1=pos(p),B1=pos(c),px=A1.x+M.cw/2,py=A1.y+M.D/2,cx=B1.x+M.cw/2,cy=B1.y+M.D/2,w=el('div','kt-wire'+(isBought(p)?'':' off')),dx=cx-px;
+      var v=pickWire(p,c,cy<py?'up':Math.abs(cy-py)<2?'flat':'down',dx,Math.abs(cy-py)),dy=Math.abs(cy-py),sy=v.k==='flat'?Math.min(dx/v.W,(v.H/v.W>.2?90:48)/v.H):dy/Math.abs(v.wr-v.wl);
+      w.style.backgroundImage='url('+K+'konci/'+v.n+'.webp)';w.style.left=px+'px';w.style.width=dx+'px';w.style.height=(v.H*sy)+'px';w.style.top=(py-v.wl*sy)+'px';
+      if(v.f)w.style.transform='scaleX(-1)';
+      inner.appendChild(w);
     });
   });
-  // kartice
+  // kartice (čipkasti krugovi)
   mine.forEach(function(c){
     var st=status(c),p=pos(c),d=el('div','kt-card st-'+(st==='done'?'done':st==='can'?'can':'lock'));
     d.style.left=p.x+'px';d.style.top=p.y+'px';d.style.width=M.cw+'px';d.style.height=M.ch+'px';d.dataset.id=c.id;
-    var sr=el('div','kt-sr');for(var k=1;k<=5;k++){var i=el('i',k<=c.s?'f':'');sr.appendChild(i);}d.appendChild(sr);
-    if(st==='done'&&c.y!=='✓')d.appendChild(el('div','kt-ok','✓'));
-    if(st==='done'&&c.y==='✓')d.appendChild(el('div','kt-ok','✓'));
+    d.appendChild(el('div','kt-ring'));
+    d.appendChild(el('div','kt-st','★'+c.s));
+    if(st==='done')d.appendChild(el('div','kt-ok','✓'));
     var inn=el('div','kt-in'),ic=el('div','kt-ic'),src=artFor(c);
     if(src){var im=el('img');im.src=src;im.alt='';im.draggable=false;ic.appendChild(im);}
     else{var sp=el('span',c.y==='Q'?'q':c.y==='S'?'s':'',badgeText(c));ic.appendChild(sp);}
-    inn.appendChild(ic);inn.appendChild(el('div','kt-nm',c.n));
-    var co=el('div','kt-co');
-    var pr=price(c);
+    inn.appendChild(ic);d.appendChild(inn);
+    d.appendChild(el('div','kt-nm',c.n));
+    var co=el('div','kt-co'),pr=price(c);
     if(st!=='done'&&(pr.z||pr.d)){
       if(pr.z){var a1=el('div','kt-pl'+(S.zn<pr.z?' bad':''));a1.style.backgroundImage='url('+A+'drvo/cena_bodovi.png)';a1.appendChild(el('span','',String(pr.z)));co.appendChild(a1);}
       if(pr.d){var a2=el('div','kt-pl'+(S.din<pr.d?' bad':''));a2.style.backgroundImage='url('+A+'drvo/cena_novac.png)';a2.appendChild(el('span','',pr.d>=1000?(pr.d/1000).toString().replace('.',',')+'k':String(pr.d)));co.appendChild(a2);}
     }
     if(c.x)d.appendChild(el('div','kt-or'+(groupOther(c)&&st!=='done'?' dbl':''),groupOther(c)&&st!=='done'?'×2':'ILI'));
-    inn.appendChild(co);d.appendChild(inn);
+    d.appendChild(co);
     d.addEventListener('mouseenter',function(e){showTip(c,d);});d.addEventListener('mouseleave',hideTip);
     d.addEventListener('click',function(){onCard(c,d);});
     inner.appendChild(d);

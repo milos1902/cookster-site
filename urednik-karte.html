@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="sr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Urednik karte znanja</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Georgia,serif;background:#2b1a0e;color:#3a1f10;height:100vh;display:flex;overflow:hidden}
+#side{width:300px;flex:0 0 auto;background:#ead7a6;border-right:4px solid #8a5a2a;display:flex;flex-direction:column;height:100vh}
+#side h1{font-size:18px;margin:10px 12px 4px}
+#side .sec{padding:6px 12px;border-bottom:1px solid #c9ad72}
+#side label{font-size:13px;font-weight:700;display:block;margin:4px 0 2px}
+button,select,input{font:700 13px Georgia,serif;color:#3a1f10}
+button{padding:5px 9px;border-radius:8px;border:2px solid #3a1f10;background:#e7c778;cursor:pointer;margin:2px 2px 2px 0}
+button:hover{filter:brightness(1.08)}
+select,input[type=text]{width:100%;padding:4px;border:2px solid #8a5a2a;border-radius:6px;background:#fffaf0}
+#list{flex:1;overflow:auto;padding:4px 12px}
+.row{padding:4px 6px;border-radius:6px;cursor:pointer;font-size:13px;display:flex;justify-content:space-between}
+.row:hover{background:#f6e7b8}.row.used{opacity:.45}
+#wires{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px 12px;max-height:210px;overflow:auto}
+#wires div{background:#cdb27a url(assets/ui/karta/platno.webp);border:2px solid #8a5a2a;border-radius:6px;height:46px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+#wires img{max-width:94%;max-height:40px}
+#wires div:hover{border-color:#c0291a}
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+#bar{background:#dcc48b;padding:6px 10px;border-bottom:3px solid #8a5a2a;font-size:13px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+#bar input[type=range]{width:120px}
+#board{flex:1;overflow:auto;position:relative;background:#cdb27a}
+#cv{position:relative;width:5600px;height:674px;margin:30px 0;background:url(assets/ui/karta/platno.webp) 0 0/auto 100% repeat-x;box-shadow:0 0 0 3px #5b3a1c}
+#cv.grid{background-image:linear-gradient(rgba(120,60,20,.18) 1px,transparent 1px),url(assets/ui/karta/platno.webp);background-size:100% 134px,auto 100%;background-repeat:repeat-x}
+.it{position:absolute;transform-origin:50% 50%;cursor:move;user-select:none;touch-action:none}
+.it>*{width:100%;height:100%}
+.it img{object-fit:fill}
+.ci{position:relative;background:url(assets/ui/karta/kr_n.webp) 0 0/100% 100% no-repeat;filter:drop-shadow(1px 3px 3px rgba(40,22,6,.4))}
+.ci b{position:absolute;left:50%;top:50%;width:60%;transform:translate(-50%,-50%);text-align:center;font-size:13px;line-height:1.05;color:#4a2a14;pointer-events:none}
+.wi img{filter:drop-shadow(1px 2px 2px rgba(60,35,10,.35));display:block;pointer-events:none}
+#ov{position:absolute;left:0;top:0;width:0;height:0;z-index:99999}
+.hd{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;background:#fff;border:3px solid #c0291a;border-radius:3px;cursor:pointer;touch-action:none}
+.hd-rot{border-radius:50%;background:#e2b24a;cursor:grab}.hd-se{background:#c0291a}
+#help{font-size:12px;opacity:.85}
+#toast{position:fixed;right:14px;bottom:14px;background:#3a1f10;color:#fff3dc;padding:8px 14px;border-radius:10px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.on{opacity:1}
+</style></head><body>
+<div id="side">
+  <h1>Urednik karte znanja</h1>
+  <div class="sec"><label>Tab (grana)</label><select id="tab"></select>
+    <button id="blank">+ Prazan krug</button></div>
+  <div class="sec"><label>Krugovi (kartice) — klikni da dodaš</label><input type="text" id="q" placeholder="traži..."></div>
+  <div id="list"></div>
+  <div class="sec"><label>Čipkasti konci — klikni da dodaš</label></div>
+  <div id="wires"></div>
+  <div class="sec"><button id="save">Sačuvaj fajl</button><button id="load">Učitaj fajl</button><button id="clr">Obriši sve u tabu</button>
+    <input type="file" id="file" accept=".json" style="display:none"></div>
+</div>
+<div id="main">
+  <div id="bar">
+    <span>Označeno:</span>
+    <button data-a="rotm">⟲ −5°</button><button data-a="rotp">⟳ +5°</button>
+    <label>Ugao <input type="range" id="rot" min="-180" max="180" value="0"></label>
+    <label>Širina <input type="range" id="wid" min="16" max="1200" value="100"></label>
+    <label>Visina <input type="range" id="hei" min="16" max="600" value="100"></label>
+    <button data-a="big">Veće</button><button data-a="small">Manje</button>
+    <button data-a="flip">↔ Okreni</button><button data-a="dup">Kopiraj</button><button data-a="front">Napred</button><button data-a="back">Pozadi</button><button data-a="del">Obriši</button>
+    <label><input type="checkbox" id="snap" checked> Magnet 10px</label>
+    <label><input type="checkbox" id="grid"> Redovi</label>
+    <span id="help">Klikni deo, pa vuci kvadratiće: sa strane = razvuci, ugao = veličina, gore (kružić) = okreni (Shift = po 15°). Strelice pomeraju, [ ] okreću, +/− veličina, Del briše.</span>
+  </div>
+  <div id="board"><div id="cv"></div></div>
+</div>
+<div id="toast"></div>
+<script src="js/data/knowledge-tree-data.js"></script>
+<script>
+(function(){
+var TABS=['Kuhinja','Kafana','Kuća','Recepti','Izbori'],KEY='cookster.karta.raspored.v2',WIRES='a1 a2 a3 a4 a5 a6 b1 b2 b3 b4 b5 b6 c2 c_gore c_dole d1 d2 d3 d4 d5 d6'.split(' ');
+var cards=(window.CooksterTreeData||{cards:[]}).cards;
+var $=function(i){return document.getElementById(i);},cv=$('cv'),tabSel=$('tab'),cur=0,sel=null,drag=null,uid=1,ov;
+var S;try{S=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}
+if(!S||!S.tabs)S={v:2,tabs:{0:[],1:[],2:[],3:[],4:[]}};
+TABS.forEach(function(n,i){var o=document.createElement('option');o.value=i;o.textContent=n;tabSel.appendChild(o);});
+function toast(m){var t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove('on');},1600);}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function items(){return S.tabs[cur];}
+function byId(id){return items().filter(function(x){return String(x.id)===String(id);})[0];}
+Object.keys(S.tabs).forEach(function(t){S.tabs[t].forEach(function(x){if(x.id>=uid)uid=x.id+1;});});
+function nz(){return items().reduce(function(m,x){return Math.max(m,x.z||1);},0)+1;}
+function build(it){
+  var d=document.createElement('div');d.className='it '+(it.k==='c'?'cw':'wi');d.dataset.id=it.id;
+  if(it.k==='c'){var c=document.createElement('div');c.className='ci';var b=document.createElement('b');b.textContent=it.n||'';c.appendChild(b);d.appendChild(c);}
+  else{var im=document.createElement('img');im.src='assets/ui/karta/konci/'+it.f+'.webp';im.draggable=false;d.appendChild(im);}
+  place(it,d);return d;
+}
+function place(it,d){
+  d.style.width=it.w+'px';d.style.height=it.h+'px';d.style.left=(it.cx-it.w/2)+'px';d.style.top=(it.cy-it.h/2)+'px';d.style.zIndex=it.z||1;
+  d.style.transform='rotate('+(it.r||0)+'deg)';
+  var inner=d.firstChild;if(inner)inner.style.transform=it.fl?'scaleX(-1)':'';
+}
+function render(){cv.innerHTML='';items().forEach(function(it){cv.appendChild(build(it));});ov=document.createElement('div');ov.id='ov';cv.appendChild(ov);handles();syncBar();renderList();}
+function add(it,w,h){
+  var b=$('board');it.id=uid++;it.z=nz();it.r=0;it.w=w;it.h=h;
+  it.cx=Math.round(b.scrollLeft+b.clientWidth/2);it.cy=Math.round(b.scrollTop+300);
+  items().push(it);sel=it;persist();render();
+}
+function addCircle(n){add({k:'c',n:n},146,146);}
+function addWire(f){var im=new Image();im.onload=function(){var s=Math.min(1,380/im.naturalWidth);add({k:'w',f:f},Math.round(im.naturalWidth*s),Math.round(im.naturalHeight*s));};im.src='assets/ui/karta/konci/'+f+'.webp';}
+function renderList(){
+  var L=$('list'),q=$('q').value.trim().toLowerCase();L.innerHTML='';
+  var used={};items().forEach(function(x){if(x.k==='c'&&x.n)used[x.n]=1;});
+  cards.filter(function(c){return c.t===cur&&(!q||c.n.toLowerCase().indexOf(q)>=0);}).forEach(function(c){
+    var r=document.createElement('div');r.className='row'+(used[c.n]?' used':'');r.innerHTML='<span>'+c.n+'</span><span>★'+c.s+'</span>';
+    r.onclick=function(){addCircle(c.n);};L.appendChild(r);});
+}
+WIRES.forEach(function(n){var d=document.createElement('div'),im=document.createElement('img');im.src='assets/ui/karta/konci/'+n+'.webp';d.appendChild(im);d.onclick=function(){addWire(n);};$('wires').appendChild(d);});
+function syncBar(){$('rot').value=sel?Math.round(sel.r||0):0;$('wid').value=sel?sel.w:100;$('hei').value=sel?sel.h:100;}
+function U(it){var r=(it.r||0)*Math.PI/180;return {ux:Math.cos(r),uy:Math.sin(r),vx:-Math.sin(r),vy:Math.cos(r)};}
+function handles(){
+  if(!ov)return;ov.innerHTML='';if(!sel)return;
+  var u=U(sel),hw=sel.w/2,hh=sel.h/2,pts={
+    e:[sel.cx+u.ux*hw,sel.cy+u.uy*hw],w:[sel.cx-u.ux*hw,sel.cy-u.uy*hw],s:[sel.cx+u.vx*hh,sel.cy+u.vy*hh],n:[sel.cx-u.vx*hh,sel.cy-u.vy*hh],
+    se:[sel.cx+u.ux*hw+u.vx*hh,sel.cy+u.uy*hw+u.vy*hh],rot:[sel.cx-u.vx*(hh+34),sel.cy-u.vy*(hh+34)]};
+  var tip={e:'Vuci: razvuci širinu',w:'Vuci: razvuci širinu',s:'Vuci: razvuci visinu',n:'Vuci: razvuci visinu',se:'Vuci: uvećaj / smanji',rot:'Vuci: okreni'};
+  Object.keys(pts).forEach(function(k){var h=document.createElement('div');h.className='hd hd-'+k;h.dataset.h=k;h.title=tip[k];h.style.left=pts[k][0]+'px';h.style.top=pts[k][1]+'px';ov.appendChild(h);});
+}
+function refresh(){var d=sel&&cv.querySelector('.it[data-id="'+sel.id+'"]');if(d)place(sel,d);handles();syncBar();}
+function pt(e){var r=cv.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
+cv.addEventListener('pointerdown',function(e){
+  var h=e.target.closest('.hd');
+  if(h&&sel){var p=pt(e);drag={mode:h.dataset.h,it:sel,p0:p,cx:sel.cx,cy:sel.cy,w:sel.w,h:sel.h,r:sel.r||0,d0:Math.hypot(p.x-sel.cx,p.y-sel.cy)};e.preventDefault();return;}
+  var d=e.target.closest('.it');
+  if(!d){sel=null;render();return;}
+  var it=byId(d.dataset.id);sel=it;it.z=nz();var p=pt(e);
+  drag={mode:'move',it:it,p0:p,cx:it.cx,cy:it.cy};render();
+});
+window.addEventListener('pointermove',function(e){
+  if(!drag)return;var it=drag.it,p=pt(e),dx=p.x-drag.p0.x,dy=p.y-drag.p0.y,sn=$('snap').checked?10:1,m=drag.mode;
+  var r=drag.r!==undefined?drag.r*Math.PI/180:0,ux=Math.cos(r),uy=Math.sin(r),vx=-Math.sin(r),vy=Math.cos(r);
+  if(m==='move'){it.cx=Math.round((drag.cx+dx)/sn)*sn;it.cy=Math.round((drag.cy+dy)/sn)*sn;}
+  else if(m==='e'||m==='w'){var k=dx*ux+dy*uy,sg=m==='e'?1:-1,nw=Math.max(16,drag.w+sg*k),ch=(nw-drag.w)/2*sg;it.w=Math.round(nw);it.cx=drag.cx+ux*ch;it.cy=drag.cy+uy*ch;}
+  else if(m==='s'||m==='n'){var k2=dx*vx+dy*vy,sg2=m==='s'?1:-1,nh=Math.max(16,drag.h+sg2*k2),ch2=(nh-drag.h)/2*sg2;it.h=Math.round(nh);it.cx=drag.cx+vx*ch2;it.cy=drag.cy+vy*ch2;}
+  else if(m==='se'){var f=Math.max(.1,Math.hypot(p.x-drag.cx,p.y-drag.cy)/drag.d0);it.w=Math.round(drag.w*f);it.h=Math.round(drag.h*f);}
+  else if(m==='rot'){var a=Math.atan2(p.y-drag.cy,p.x-drag.cx)*180/Math.PI+90;if(e.shiftKey)a=Math.round(a/15)*15;it.r=Math.round(a*10)/10;}
+  refresh();
+});
+window.addEventListener('pointerup',function(){if(drag){drag=null;persist();}});
+function act(a){
+  if(!sel)return;
+  if(a==='rotm')sel.r=(sel.r||0)-5;else if(a==='rotp')sel.r=(sel.r||0)+5;
+  else if(a==='flip')sel.fl=!sel.fl;
+  else if(a==='big'){sel.w=Math.round(sel.w*1.1);sel.h=Math.round(sel.h*1.1);}
+  else if(a==='small'){sel.w=Math.max(16,Math.round(sel.w/1.1));sel.h=Math.max(16,Math.round(sel.h/1.1));}
+  else if(a==='del'){S.tabs[cur]=items().filter(function(x){return x!==sel;});sel=null;persist();render();return;}
+  else if(a==='dup'){var c=JSON.parse(JSON.stringify(sel));c.id=uid++;c.cx+=30;c.cy+=30;c.z=nz();items().push(c);sel=c;persist();render();return;}
+  else if(a==='front')sel.z=nz();else if(a==='back')sel.z=0;
+  persist();refresh();
+}
+document.querySelectorAll('#bar [data-a]').forEach(function(b){b.onclick=function(){act(b.dataset.a);};});
+$('rot').oninput=function(){if(sel){sel.r=+this.value;refresh();}};$('rot').onchange=persist;
+$('wid').oninput=function(){if(sel){sel.w=+this.value;refresh();}};$('wid').onchange=persist;
+$('hei').oninput=function(){if(sel){sel.h=+this.value;refresh();}};$('hei').onchange=persist;
+tabSel.onchange=function(){cur=+tabSel.value;sel=null;render();};
+$('q').oninput=renderList;$('blank').onclick=function(){addCircle('');};
+$('grid').onchange=function(){cv.classList.toggle('grid',this.checked);};
+document.addEventListener('keydown',function(e){
+  if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)&&e.target.type!=='range'&&e.target.type!=='checkbox')return;
+  if(!sel)return;var st=e.shiftKey?10:1,k=e.key,h=true;
+  if(k==='ArrowLeft')sel.cx-=st;else if(k==='ArrowRight')sel.cx+=st;else if(k==='ArrowUp')sel.cy-=st;else if(k==='ArrowDown')sel.cy+=st;
+  else if(k==='[')sel.r=(sel.r||0)-(e.shiftKey?15:5);else if(k===']')sel.r=(sel.r||0)+(e.shiftKey?15:5);
+  else if(k==='+'||k==='=')act('big');else if(k==='-')act('small');
+  else if(k==='Delete'||k==='Backspace')act('del');else if(k==='d'||k==='D')act('dup');else if(k==='f'||k==='F')act('flip');else h=false;
+  if(h){e.preventDefault();persist();refresh();}
+});
+$('save').onclick=function(){var blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='karta-raspored.json';a.click();toast('Sačuvano: karta-raspored.json');};
+$('load').onclick=function(){$('file').click();};
+$('file').onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var j=JSON.parse(r.result);if(j&&j.tabs){S=j;sel=null;persist();render();toast('Učitano');}}catch(e){toast('Fajl nije dobar');}};r.readAsText(f);};
+$('clr').onclick=function(){if(confirm('Obrisati sve u ovom tabu?')){S.tabs[cur]=[];sel=null;persist();render();}};
+window.__ed={S:function(){return S;}};
+render();
+})();
+</script></body></html>
