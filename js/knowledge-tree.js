@@ -347,17 +347,17 @@ function showBig(c,d){
   var top=cy-F/2-8,bot=(bh-8)-(cy+F/2+capH);if(top<0)dy=-top;else if(bot<0)dy=bot;
   var u=function(px){return (px/k).toFixed(2)+'px';};      // veličina u konačnim pikselima, preračunata za uvećanje
   // ime, zvezdice i cena (unutar diska)
-  var bi=el('div','kt-bi');bi.style.top=(D*.47)+'px';bi.style.width=(D*.62)+'px';
-  var bn=el('div','bn',c.n);bn.style.fontSize=u(c.n.length>14?20:25);bi.appendChild(bn);
-  var bs=el('div','bs');bs.style.margin=u(3)+' 0';for(var q=1;q<=5;q++){var si=el('i',q<=c.s?'f':'');si.style.width=si.style.height=u(20);bs.appendChild(si);}bi.appendChild(bs);
-  var bp=el('div','bp');bp.style.fontSize=u(23);
+  var bi=el('div','kt-bi');bi.style.top=(D*.4)+'px';bi.style.width=(D*.66)+'px';
+  var bn=el('div','bn',c.n);bn.style.fontSize=u(c.n.length>14?25:31);bi.appendChild(bn);
+  var bs=el('div','bs');bs.style.margin=u(4)+' 0';for(var q=1;q<=5;q++){var si=el('i',q<=c.s?'f':'');si.style.width=si.style.height=u(26);bs.appendChild(si);}bi.appendChild(bs);
+  var bp=el('div','bp');bp.style.fontSize=u(30);
   if(st==='done'){bp.appendChild(el('span','bk','Kupljeno'));}
   else{
     if(pc.z){var s1=el('span',S.zn<pc.z?'bad':'');var i1=el('img');i1.src=K+'ikona_zvezda.webp?v=2';s1.appendChild(i1);s1.appendChild(document.createTextNode(String(pc.z)));bp.appendChild(s1);}
     if(pc.d){var s2=el('span',S.din<pc.d?'bad':'');var i2=el('img');i2.src=K+'ikona_novac.webp?v=2';s2.appendChild(i2);s2.appendChild(document.createTextNode(pc.d>=1000?(pc.d/1000).toString().replace('.',',')+'k':String(pc.d)));bp.appendChild(s2);}
   }
   bi.appendChild(bp);
-  var bb=el('div','bb',st==='done'?'':'KUPI');bb.style.fontSize=u(17);bb.style.marginTop=u(5);bb.style.padding=u(3)+' '+u(16);bb.style.borderRadius=u(12);
+  var bb=el('div','bb',st==='done'?'':'KUPI');bb.style.fontSize=u(24);bb.style.marginTop=u(6);bb.style.padding=u(4)+' '+u(22);bb.style.borderRadius=u(12);
   if(st==='done')bb.style.display='none';else if(st!=='can'||!afford(c))bb.classList.add('off');
   bi.appendChild(bb);
   // opis i šta fali (ispod kruga, na platnu)
