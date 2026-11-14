@@ -1697,3 +1697,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## Kuhinjski elementi se odmotavaju iz ikonice (js/ke-unroll.js v1)
 - Pergament prozora "Kuhinjski elementi" raste iz mesta gde je kliknuta ikonica posuđa i otvara se od sredine na gore i dole, 0,5 s (GSAP; bez GSAP-a Web Animations). "Piće" je ostalo kako je bilo. `?bezanimacije` isključuje.
+
+## mo.js + GSAP za odmotavanje prozora (js/ke-unroll.js v2)
+- mo.js (@mojs/core 1.3.0, MIT; assets/vendor/mo.umd.js + mojs-LICENSE.md) dodaje iskre i prsten na ikonici na početku i prašinu na gornjim ćoškovima kad prozor sleti; GSAP pomera i otklapa pergament (0,5 s). Bez mo.js-a ostaje samo GSAP deo.
