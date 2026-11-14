@@ -1720,3 +1720,10 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Kuhinjski elementi: opet obično otvaranje, ostale samo šipke (js/ke-unroll.js v8)
 - Animacija otvaranja/zatvaranja je uklonjena (sjene su kasnile): prozor se otvara i zatvara odmah, sa svim sjenama i običnom tamnom pozadinom. Ostale su samo dve drvene šipke (pg_sipka.webp) na gornjoj i donjoj ivici dok je prozor otvoren. Slike se i dalje učitavaju unapred.
 - mo.js (assets/vendor/mo.umd.js) nije više učitan u index.html (fajl je ostao za kasnije).
+
+## Karta znanja (Savkina knjiga), probna verzija (js/knowledge-tree.js v2, css/knowledge-tree.css v2, js/data/knowledge-tree-data.js)
+- Novi prozor: dugme „Karta znanja" gore desno (ili `?karta` u adresi). Tri taba (Kuhinja, Kafana, Kuća), 4 reda × 16 kolona, vodoravno klizanje (točkić miša ili prevlačenje mišem, i sa kartice), zlatne linije između zvezdica, tamna polja i veliki katanac za zvezdice koje igrač još nema, strelice (pune i isprekidane), opis na lebdenje (Daje, Traži, Fali).
+- 180 kartica iz `KARTICE_ZNANJA.md`. Slike: `assets/ui/napredak/drvo` (kartice, tabovi, cijene) i `zvezde` (zvezdice, katanac, značka). Ikone predmeta se uzimaju iz igre gdje postoje (po imenu), ostalo je privremena oznaka (+15%, slovo).
+- **Samo probno:** brojači (znanje 42, novac 1250, ★2) i „kupljeno" se čuvaju u pregledaču (`cookster.tree.demo.v1`) i **ne mijenjaju igru**. Dugmad dolje (+10 znanja, +500 дин, zvezdica −/+, počni ispočetka) služe samo za gledanje stanja.
+- Treći tab koristi sliku „odrzavanje" (bez teksta) dok se ne nacrta nova; tekst je preko slike.
+- Pozadina i okvir prozora su privremeni (CSS), Miloš će nacrtati novi dizajn pozadine.

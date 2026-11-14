@@ -1,0 +1,196 @@
+/* Karta znanja (Savkina knjiga): PROBNA verzija da se vidi kako izgleda i kako radi. Ne mijenja igru: otključavanja ovdje nisu povezana sa predmetima u igri.
+   Prozor se otvara dugmetom "Karta znanja" (gore desno) ili dodajem ?karta u adresu. Podaci: js/data/knowledge-tree-data.js (180 kartica, 3 taba, 4 reda, 16 kolona).
+   Probni brojači (znanje, novac, zvezdica) i kupljeno se čuvaju u pregledaču (cookster.tree.demo.v1); dugmad dole služe samo za probu.
+   Slike: assets/ui/napredak/drvo (kartice, tabovi), zvezde (zvezdice, katanac, značka), ikone predmeta iz igre gdje postoje. */
+(function(){
+'use strict';
+if(window.CooksterTree)return;
+var D=window.CooksterTreeData;if(!D||!D.cards)return;
+var A='assets/ui/napredak/',KEY='cookster.tree.demo.v1';
+var TABS=[['Kuhinja','kuhinja'],['Kafana','kafana'],['Kuća','odrzavanje']];      // treći tab za sada koristi sliku "odrzavanje" (bez teksta) dok se ne nacrta nova
+var COLS=16,SEC={1:[1,3],2:[4,7],3:[8,10],4:[11,13],5:[14,16]};
+var cards=D.cards.map(function(c,i){c.id=c.t+'|'+c.n;c.i=i;return c;});
+var byId={};cards.forEach(function(c){byId[c.id]=c;});
+var S=load();
+function load(){var d={bought:{},zn:42,din:1250,star:2,tab:0};try{var j=JSON.parse(localStorage.getItem(KEY)||'null');if(j&&typeof j==='object'){for(var k in d)if(j[k]!==undefined)d[k]=j[k];}}catch(e){}return d;}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function el(t,c,txt){var e=document.createElement(t);if(c)e.className=c;if(txt!=null)e.textContent=txt;return e;}
+// ---- slike predmeta iz igre (ako postoje)
+function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'dj');}
+var artCache={};
+var ART_OVR={'Nož':'assets/new_props/daska_sa_nozem.png','Veća daska':'assets/new_props/daska_sa_nozem.png','Majstorska daska':'assets/new_props/daska_sa_nozem.png','Oštar nož':'assets/new_props/daska_sa_nozem.png','Majstorski nož':'assets/new_props/daska_sa_nozem.png','Nož za meso':'assets/new_props/daska_sa_nozem.png','Nož majstora kuvara':'assets/new_props/daska_sa_nozem.png'};
+function artFor(c){
+  if(c.y==='L'||c.y==='Q'||c.y==='S')return null;
+  if(artCache[c.id]!==undefined)return artCache[c.id];
+  var src=ART_OVR[c.n]||null;
+  if(!src)try{
+    var K=(typeof KITCHEN_EQUIPMENT!=='undefined')?KITCHEN_EQUIPMENT:[],A2=window.CooksterItemArt||{},n=norm(c.n),best=null;
+    K.forEach(function(d){var l=norm(d.label);if(l===n||(n.length>4&&(l.indexOf(n)>=0||n.indexOf(l)>=0&&l.length>5))){if(!best||l.length<norm(best.label).length)best=d;}});
+    if(best)src=A2[best.id]||best.src||null;
+  }catch(e){}
+  artCache[c.id]=src;return src;
+}
+function badgeText(c){
+  var m=/(\d+)\s*%/.exec(c.e);if(m)return '+'+m[1]+'%';
+  m=/\+(\d+)/.exec(c.e);if(m)return '+'+m[1];
+  m=/(\d+)\s*(mesta|gostiju|gosta|jela|stolova)/.exec(c.e);if(m)return m[1];
+  m=/(\d+)\s*(sat|dan)/.exec(c.e);if(m)return m[1];
+  return c.y==='S'?'S':c.y==='Q'?'!':(c.n.charAt(0));
+}
+// ---- stanje kartice
+function isBought(c){return c.y==='✓'||!!S.bought[c.id];}
+function prevInRow(c){var best=null;cards.forEach(function(x){if(x.t===c.t&&x.r===c.r&&x.c<c.c&&(!best||x.c>best.c))best=x;});return best;}
+function parents(c){
+  if(c.y==='✓')return [];
+  var out=[];
+  if(c.q){c.q.split(', ').forEach(function(nm){var p=byId[c.t+'|'+nm.trim()];if(p)out.push(p);});}
+  if(!out.length){var pv=prevInRow(c);if(pv)out.push(pv);}
+  return out;
+}
+function status(c){
+  if(isBought(c))return 'done';
+  var ps=parents(c),ok=ps.every(isBought);
+  return (ok&&c.s<=S.star)?'can':'lock';
+}
+function missing(c){
+  var m=[];
+  if(c.s>S.star)m.push('★'+c.s+' (imaš ★'+S.star+')');
+  parents(c).forEach(function(p){if(!isBought(p))m.push(p.n);});
+  return m;
+}
+function afford(c){return S.zn>=c.z&&S.din>=c.d;}
+// ---- DOM
+var root,panel,top,tabsEl,board,inner,tip,toast,foot,badgeEl,znEl,dinEl,svg,M={};
+function build(){
+  root=el('div');root.id='ktRoot';root.setAttribute('data-tool-ui','1');
+  panel=el('div');panel.id='ktPanel';
+  top=el('div');top.id='ktTop';
+  badgeEl=el('div','kt-badge');top.appendChild(badgeEl);
+  tabsEl=el('div');tabsEl.id='ktTabs';top.appendChild(tabsEl);
+  var res=el('div','kt-res');
+  var pz=el('div','kt-pl');pz.style.backgroundImage='url('+A+'drvo/cena_bodovi.png)';znEl=el('span');pz.appendChild(znEl);
+  var pd=el('div','kt-pl');pd.style.backgroundImage='url('+A+'drvo/cena_novac.png)';dinEl=el('span');pd.appendChild(dinEl);
+  res.appendChild(pz);res.appendChild(pd);
+  var x=el('button','kt-x','✕');x.onclick=close;res.appendChild(x);
+  top.appendChild(res);
+  board=el('div');board.id='ktBoard';inner=el('div');inner.id='ktInner';board.appendChild(inner);
+  foot=el('div');foot.id='ktFoot';
+  foot.innerHTML='<span>Probno (samo za gledanje):</span>';
+  [['+10 znanja',function(){S.zn+=10;}],['+500 дин',function(){S.din+=500;}],['Zvezdica −',function(){S.star=Math.max(1,S.star-1);}],['Zvezdica +',function(){S.star=Math.min(5,S.star+1);}],
+   ['Počni ispočetka',function(){S.bought={};S.zn=42;S.din=1250;S.star=2;}]].forEach(function(b){var bt=el('button','',b[0]);bt.onclick=function(){b[1]();save();refresh();};foot.appendChild(bt);});
+  foot.appendChild(el('span','sp'));foot.appendChild(el('span','','Klizanje: točkić miša ili prevlačenje · Esc zatvara'));
+  toast=el('div');toast.id='ktToast';
+  panel.appendChild(top);panel.appendChild(board);panel.appendChild(foot);panel.appendChild(toast);
+  root.appendChild(panel);
+  tip=el('div');tip.id='ktTip';root.appendChild(tip);
+  document.body.appendChild(root);
+  root.addEventListener('mousedown',function(e){if(e.target===root)close();});
+  board.addEventListener('wheel',function(e){e.preventDefault();e.stopPropagation();board.scrollLeft+=(Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY);},{passive:false});
+  var drag=null,moved=false;
+  board.addEventListener('pointerdown',function(e){if(e.button!==0)return;drag={x:e.clientX,l:board.scrollLeft};moved=false;});
+  window.addEventListener('pointermove',function(e){if(!drag)return;var dx=e.clientX-drag.x;if(!moved&&Math.abs(dx)>6){moved=true;board.classList.add('drag');hideTip();}if(moved)board.scrollLeft=drag.l-dx;});
+  window.addEventListener('pointerup',function(){drag=null;board.classList.remove('drag');setTimeout(function(){moved=false;},0);});
+  board.addEventListener('click',function(e){if(moved){e.stopPropagation();e.preventDefault();}},true);      // after a drag the card under the mouse is not clicked
+  window.addEventListener('resize',function(){if(isOpen())renderBoard();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen()){e.stopPropagation();close();}},true);
+}
+function isOpen(){return document.body.classList.contains('kt-open');}
+function metrics(){
+  var h=board.clientHeight||600,rowH=Math.floor((h-20)/4),ch=Math.max(96,rowH-12),cw=Math.round(ch*1.344),colW=cw+Math.round(ch*.36);
+  M={ch:ch,cw:cw,rowH:rowH,colW:colW,padL:30,padT:12};
+  M.w=M.padL+COLS*colW+30;
+}
+function pos(c){return {x:M.padL+(c.c-1)*M.colW,y:M.padT+c.r*M.rowH};}
+function renderTabs(){
+  tabsEl.innerHTML='';
+  TABS.forEach(function(tb,i){
+    var n=0,tot=0;cards.forEach(function(c){if(c.t===i){tot++;if(isBought(c))n++;}});
+    var d=el('div','kt-tab'+(S.tab===i?' on':''));
+    d.style.backgroundImage='url('+A+'drvo/drvo_kartica_'+tb[1]+(S.tab===i?'':'_neaktivna')+'.png)';
+    d.appendChild(el('span','',tb[0]));d.appendChild(el('small','',n+' / '+tot));
+    d.onclick=function(){S.tab=i;save();board.scrollLeft=0;refresh();};
+    tabsEl.appendChild(d);
+  });
+}
+function renderBoard(){
+  metrics();inner.innerHTML='';inner.style.width=M.w+'px';
+  inner.style.setProperty('--ch',M.ch+'px');inner.style.setProperty('--cw',M.cw+'px');
+  // odjeljci po zvezdici: tamno polje + katanac iznad dosegnute zvezdice, zlatne linije
+  for(var s=1;s<=5;s++){
+    var a=SEC[s][0],b=SEC[s][1],x0=M.padL+(a-1)*M.colW-(M.colW-M.cw)/2,x1=M.padL+b*M.colW-(M.colW-M.cw)/2+(s===5?60:0);
+    if(s>1){var g=el('div','kt-gate');g.style.left=x0+'px';inner.appendChild(g);}
+    if(s>S.star){
+      var dk=el('div','kt-dark');dk.style.left=x0+'px';dk.style.width=(x1-x0)+'px';inner.appendChild(dk);
+      var lk=el('div','kt-lock'),lw=Math.round(M.ch*.95);lk.style.width=lw+'px';lk.style.height=Math.round(lw*1.18)+'px';lk.style.left=Math.round((x0+x1)/2-lw/2)+'px';lk.style.top=Math.round(M.padT+M.rowH*2.05)+'px';
+      var b2=el('b','',String(s));b2.style.fontSize=Math.round(lw*.34)+'px';lk.appendChild(b2);inner.appendChild(lk);
+    }
+  }
+  // strelice
+  svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('width',M.w);svg.setAttribute('height',M.rowH*4+M.padT+10);inner.appendChild(svg);
+  var mine=cards.filter(function(c){return c.t===S.tab;});
+  mine.forEach(function(c){
+    parents(c).forEach(function(p){
+      var A1=pos(p),B1=pos(c),x1=A1.x+M.cw,y1=A1.y+M.ch/2,x2=B1.x-4,y2=B1.y+M.ch/2,mx=(x1+x2)/2,done=isBought(p),cant=status(c)==='lock'&&!done;
+      var path=document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d','M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+(x2-9)+','+y2);path.setAttribute('fill','none');
+      path.setAttribute('stroke',done?'#6a3f1c':'#8d8571');path.setAttribute('stroke-width',4);if(!done)path.setAttribute('stroke-dasharray','11 8');
+      svg.appendChild(path);
+      var h=document.createElementNS('http://www.w3.org/2000/svg','path');h.setAttribute('d','M'+(x2-11)+','+(y2-8)+' L'+x2+','+y2+' L'+(x2-11)+','+(y2+8)+' Z');h.setAttribute('fill',done?'#6a3f1c':'#8d8571');svg.appendChild(h);
+    });
+  });
+  // kartice
+  mine.forEach(function(c){
+    var st=status(c),p=pos(c),d=el('div','kt-card st-'+(st==='done'?'done':st==='can'?'can':'lock'));
+    d.style.left=p.x+'px';d.style.top=p.y+'px';d.style.width=M.cw+'px';d.style.height=M.ch+'px';d.dataset.id=c.id;
+    var sr=el('div','kt-sr');for(var k=1;k<=5;k++){var i=el('i',k<=c.s?'f':'');sr.appendChild(i);}d.appendChild(sr);
+    if(st==='done'&&c.y!=='✓')d.appendChild(el('div','kt-ok','✓'));
+    if(st==='done'&&c.y==='✓')d.appendChild(el('div','kt-ok','✓'));
+    var inn=el('div','kt-in'),ic=el('div','kt-ic'),src=artFor(c);
+    if(src){var im=el('img');im.src=src;im.alt='';im.draggable=false;ic.appendChild(im);}
+    else{var sp=el('span',c.y==='Q'?'q':c.y==='S'?'s':'',badgeText(c));ic.appendChild(sp);}
+    inn.appendChild(ic);inn.appendChild(el('div','kt-nm',c.n));
+    var co=el('div','kt-co');
+    if(st!=='done'&&(c.z||c.d)){
+      if(c.z){var a1=el('div','kt-pl'+(S.zn<c.z?' bad':''));a1.style.backgroundImage='url('+A+'drvo/cena_bodovi.png)';a1.appendChild(el('span','',String(c.z)));co.appendChild(a1);}
+      if(c.d){var a2=el('div','kt-pl'+(S.din<c.d?' bad':''));a2.style.backgroundImage='url('+A+'drvo/cena_novac.png)';a2.appendChild(el('span','',c.d>=1000?(c.d/1000).toString().replace('.',',')+'k':String(c.d)));co.appendChild(a2);}
+    }
+    inn.appendChild(co);d.appendChild(inn);
+    d.addEventListener('mouseenter',function(e){showTip(c,d);});d.addEventListener('mouseleave',hideTip);
+    d.addEventListener('click',function(){onCard(c,d);});
+    inner.appendChild(d);
+  });
+}
+function showTip(c,d){
+  var st=status(c),h='<b>'+c.n+'</b>'+c.o+'<em>Daje: '+c.e+'</em>';
+  if(c.q)h+='<em>Traži: ★'+c.s+(c.q?', '+c.q:'')+'</em>';else if(c.y!=='✓')h+='<em>Traži: ★'+c.s+'</em>';
+  if(st==='lock'){h+='<em class="need">Fali: '+missing(c).join(', ')+'</em>';}
+  else if(st==='can'&&!afford(c)){var f=[];if(S.zn<c.z)f.push('✦ '+(c.z-S.zn)+' znanja');if(S.din<c.d)f.push((c.d-S.din)+' дин');h+='<em class="need">Fali: '+f.join(', ')+'</em>';}
+  else if(st==='can')h+='<em>Klikni da kupiš.</em>';
+  if(c.g!=='OK'){h+='<em style="font-weight:400;font-size:12px;opacity:.75">'+(c.g==='NOVO'?'(u igri još ne postoji)':'(treba nacrtati sliku)')+'</em>';}
+  tip.innerHTML=h;tip.style.display='block';
+  var r=d.getBoundingClientRect(),w=300,x=r.right+8;if(x+w>innerWidth-8)x=r.left-w-8;
+  var y=Math.min(r.top,innerHeight-tip.offsetHeight-8);tip.style.left=Math.max(8,x)+'px';tip.style.top=Math.max(8,y)+'px';
+}
+function hideTip(){tip.style.display='none';}
+function say(m){toast.textContent=m;toast.classList.add('on');clearTimeout(say.t);say.t=setTimeout(function(){toast.classList.remove('on');},1900);}
+function onCard(c,d){
+  var st=status(c);
+  if(st==='done'){say('Već imaš: '+c.n+'.');return;}
+  if(st==='lock'){d.classList.remove('shake');void d.offsetWidth;d.classList.add('shake');say('Zaključano. Fali: '+missing(c).join(', ')+'.');return;}
+  if(!afford(c)){d.classList.remove('shake');void d.offsetWidth;d.classList.add('shake');say('Nemaš dovoljno za '+c.n+'.');return;}
+  S.zn-=c.z;S.din-=c.d;S.bought[c.id]=1;save();refresh();say('Kupljeno: '+c.n+'.');
+}
+function refresh(){
+  badgeEl.innerHTML='<b>★'+S.star+'</b>';
+  znEl.textContent=S.zn;dinEl.textContent=S.din+' дин';
+  renderTabs();renderBoard();hideTip();
+}
+function open(){if(!root)build();document.body.classList.add('kt-open');refresh();}
+function close(){document.body.classList.remove('kt-open');hideTip();}
+function init(){
+  var b=el('button','','Karta znanja');b.id='ktBtn';b.setAttribute('data-tool-ui','1');b.onclick=open;document.body.appendChild(b);
+  if(/[?&]karta/.test(location.search))setTimeout(open,400);
+}
+window.CooksterTree={open:open,close:close,state:function(){return S;}};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
