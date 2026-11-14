@@ -1,46 +1,39 @@
-/* The window "Kuhinjski elementi" (the parchment, js/ke-pergament.js) unrolls from the icon that was clicked (0.5 s), like a scroll: it appears folded on the icon and, while it travels to the middle, it unfolds (from the middle up and down).
-   Only for the dishes icon (dock-new.js, game-menu.js, old hud button); "Piće" stays as it was. The place of the last press is remembered, the open window is watched (class "open" of #kitchenElementsScene).
-   GSAP does the movement (if it is missing, the same is done with the Web Animations API); mo.js (assets/vendor/mo.umd.js, MIT) adds the little burst of sparks and a ring on the icon at the start and the dust at the corners of the page when it lands (only if it is loaded). ?bezanimacije switches it off. */
+/* The window "Kuhinjski elementi" (the parchment, js/ke-pergament.js): when the dishes icon is clicked the page is there AT ONCE, in the middle of the screen, and unrolls on the spot in 0.3 s:
+   it opens from the middle up and down, and two little rolls (the ends of the scroll) run to the top and the bottom edge. The screen does NOT darken first: only when the page has opened, the dark
+   background (and its blur) comes in, as it was before. GSAP does the movement; mo.js (assets/vendor/mo.umd.js, MIT) adds a few sparks of dust at the corners where the rolls arrive (only if loaded).
+   Only the equipment window, "Piće" stays as it was. ?bezanimacije switches it off. */
 (function(){
 if(/[?&]bezanimacije/.test(location.search))return;
-var DUR=.5,px=null,py=null,was=false;
-document.addEventListener('pointerdown',function(e){px=e.clientX;py=e.clientY;},true);
-function target(){return document.body.classList.contains('ke-pg-on')?document.getElementById('kePg'):null;}      // only the parchment (equipment), not the drinks window
-function iconCenter(){      // the dishes icon of the menu (its round hotspot); if it cannot be found, the place of the last press
-  var bs=document.querySelectorAll('button[aria-label="Kuhinjski elementi"]'),i,r;
-  for(i=0;i<bs.length;i++){r=bs[i].getBoundingClientRect();if(r.width>4&&r.height>4&&r.bottom>0&&r.right>0&&r.left<innerWidth&&r.top<innerHeight)return [r.left+r.width/2,r.top+r.height/2];}
-  return [px==null?60:px,py==null?innerHeight-60:py];
-}
-var fx=null,bIcon=null,rIcon=null,bL=null,bR=null;
-function fxLayer(){if(fx)return fx;fx=document.createElement('div');fx.id='keFx';fx.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:65001';document.body.appendChild(fx);return fx;}
-function sparks(x,y,n,rad,col,size,delay){return new mojs.Burst({parent:fxLayer(),left:0,top:0,x:x,y:y,radius:{[rad*.4]:rad},count:n,angle:{0:30},degree:360,timeline:{delay:delay||0},
-  children:{shape:'circle',fill:col,radius:{[size]:0},duration:480,easing:'cubic.out',delay:0}});}
-function fxStart(c){      // sparks and a ring on the icon
+var DUR=.3,DARK=.22,was=false,fx=null;
+function target(){return document.body.classList.contains('ke-pg-on')?document.getElementById('kePg'):null;}
+function layer(){if(fx)return fx;fx=document.createElement('div');fx.id='keFx';fx.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:65001';document.body.appendChild(fx);return fx;}
+function rod(){var d=document.createElement('div');d.style.cssText='position:fixed;height:13px;border-radius:7px;background:linear-gradient(#e2bb7c,#9a6a35 55%,#6e451d);box-shadow:0 3px 7px rgba(30,14,4,.55),inset 0 1px 0 rgba(255,238,200,.6);will-change:transform';layer().appendChild(d);return d;}
+function dust(x,y,delay){
   if(!window.mojs)return;
-  try{
-    sparks(c[0],c[1],9,60,['#f6e3b4','#f2c35b','#fff6dc'],5).replay();
-    new mojs.Shape({parent:fxLayer(),left:0,top:0,x:c[0],y:c[1],shape:'circle',fill:'none',stroke:'#f6d98a',strokeWidth:{5:0},radius:{14:48},opacity:{1:0},duration:420,easing:'cubic.out'}).replay();
-  }catch(e){}
-}
-function fxLand(r){      // dust at the two top corners of the page when it lands
-  if(!window.mojs)return;
-  try{
-    sparks(r.left+r.width*.04,r.top+r.height*.06,6,34,['#e9d7ad','#fff3dc'],4,0).replay();
-    sparks(r.right-r.width*.04,r.top+r.height*.06,6,34,['#e9d7ad','#fff3dc'],4,60).replay();
-  }catch(e){}
+  try{new mojs.Burst({parent:layer(),left:0,top:0,x:x,y:y,radius:{6:30},count:6,angle:{0:40},degree:360,timeline:{delay:delay||0},
+    children:{shape:'circle',fill:['#f3e3bd','#fff6dc','#e2bb7c'],radius:{4:0},duration:300,easing:'cubic.out'}}).replay();}catch(e){}
 }
 function unroll(sc){
   var el=target();if(!el)return;
   el.style.transform='';var r=el.getBoundingClientRect();if(!r.width)return;
-  var c=iconCenter(),dx=c[0]-(r.left+r.width/2),dy=c[1]-(r.top+r.height/2);
-  // it appears folded (small and thin) on the icon and travels to the middle while it unfolds
-  var from={x:dx,y:dy,scale:.08,opacity:1,clipPath:'inset(46% 0% 46% 0%)',transformOrigin:'50% 50%'},to={x:0,y:0,scale:1,clipPath:'inset(0% 0% 0% 0%)'};
-  var done=function(){el.style.transform='';el.style.opacity='';el.style.clipPath='';el.style.transformOrigin='';};
-  fxStart(c);
-  if(window.gsap){gsap.killTweensOf(el);
-    gsap.fromTo(el,from,Object.assign({duration:DUR,ease:'power2.inOut',onComplete:function(){done();fxLand(el.getBoundingClientRect());}},to));}
-  else if(el.animate){var a=el.animate([{transform:'translate('+dx+'px,'+dy+'px) scale(.08)',clipPath:from.clipPath},{transform:'none',clipPath:to.clipPath}],{duration:DUR*1000,easing:'cubic-bezier(.4,0,.2,1)'});a.onfinish=function(){done();fxLand(el.getBoundingClientRect());};}
-  if(window.gsap){gsap.fromTo(sc,{backgroundColor:'rgba(22,12,7,0)'},{backgroundColor:'rgba(22,12,7,.72)',duration:DUR*.8,ease:'none',onComplete:function(){sc.style.backgroundColor='';}});}
+  // the dark background comes only after the page has opened (a short delay, then it fades in; before that the scene is clear)
+  if(sc.animate)sc.animate([{backgroundColor:'rgba(22,12,7,0)',backdropFilter:'blur(0px)',webkitBackdropFilter:'blur(0px)'}],      // one keyframe: the end is the real look of the scene (what the game css gives it)
+    {duration:DARK*1000,delay:DUR*1000,easing:'linear',fill:'backwards',composite:'replace'});
+  var cy=r.top+r.height/2,done=function(){el.style.clipPath='';el.style.transform='';el.style.transformOrigin='';};
+  el.style.transformOrigin='50% 50%';
+  if(window.gsap){
+    var top=rod(),bot=rod();[top,bot].forEach(function(d){d.style.left=r.left-4+'px';d.style.width=r.width+8+'px';d.style.top=cy-6.5+'px';});
+    var o={p:0};gsap.killTweensOf(o);
+    var set=function(){var p=o.p,h=(1-p)*50;
+      el.style.clipPath='inset('+h+'% 0% '+h+'% 0%)';el.style.transform='scale('+(.96+.04*p)+')';
+      top.style.transform='translateY('+(-(r.height/2)*p)+'px)';bot.style.transform='translateY('+((r.height/2)*p)+'px)';};
+    set();
+    gsap.to(o,{p:1,duration:DUR,ease:'power2.out',onUpdate:set,onComplete:function(){
+      done();dust(r.left+8,r.top,0);dust(r.right-8,r.top,40);dust(r.left+8,r.bottom,60);dust(r.right-8,r.bottom,100);
+      gsap.to([top,bot],{opacity:0,duration:.12,onComplete:function(){top.remove();bot.remove();}});}});
+  }else if(el.animate){
+    var a=el.animate([{clipPath:'inset(50% 0% 50% 0%)',transform:'scale(.96)'},{clipPath:'inset(0% 0% 0% 0%)',transform:'scale(1)'}],{duration:DUR*1000,easing:'cubic-bezier(.2,.8,.2,1)'});a.onfinish=done;
+  }
 }
 function init(){
   var sc=document.getElementById('kitchenElementsScene');if(!sc)return;
