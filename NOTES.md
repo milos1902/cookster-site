@@ -1636,6 +1636,11 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Bez tamnih senki pri mešanju (nov PR umesto #707)
 - Senčenje traka ne ide ispod 0.88 (bilo 0.35), boja hrane ne tamni ispod 0.95 (bilo 0.80).
 
+## Vrata šporeta i fioka sa drvima: od pravih slika (zamena za #719)
+- Leva fioka vraćena na kadrove iz videa.
+- Vrata ložišta: postoje dve prave slike (zatvorena i otvorena/okrenuta); GSAP pomera okvir vrata sa jedne na drugu i preliva slike (game.js applyFireboxDoorTransition, FB_C/FB_O).
+- Vrata rerne: zatvorena vrata (isečak zatvorene scene) se savijaju nadole oko donje ivice, unutrašnjost rerne se pojavljuje, a spuštena vrata (donji deo oven_door_open.webp) padaju iz šarke (ovenDoorMorph).
+- Fioka sa drvima: prednja strana (donji deo drawer_open.webp) klizi napred sa mesta zatvorene prednje strane, a drva iznad se otkrivaju (ovenDrawerMorph). Bez GSAP-a staro ponašanje.
 ## GSAP za levu fioku i vrata šporeta
 - Leva fioka (kitchen-fixtures.js v814): isto kao desna: obrisani kadrovi assets/drawers/left_1..16.webp, umesto njih left_front.webp i left_inside.webp koje GSAP pomera (tegle, razdelnik i senka prate je preko postojećeg mapPoint-a).
 - Vrata ložišta (game.js v3.332, applyFireboxDoorTransition): vrata se zaokreću oko šarke (stisnu se, zameni se slika, otvore se uz blagi odskok).

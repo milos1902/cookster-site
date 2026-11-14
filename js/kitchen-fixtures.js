@@ -7,7 +7,7 @@ if(window.CooksterKitchenFx)return;
 var W=1672,H=941;
 var N=15;                                                       // the drawer is drawn in (20 steps (frames of the animation: assets/drawers/<left|right>_<1..15>.webp, 0 = closed)
 var DR={
-  left:{x:380,y:585,N:16,cont:true,p:0,idx:0,to:0,label:'leva fioka',x0:485,x1:825,dx0:-39,dx1:-3,dy:153,el:null,ims:[]},
+  left:{x:380,y:585,N:16,G:[0,0,.007,.03,.06,.10,.15,.18,.27,.33,.45,.54,.66,.77,.87,1,1.03],p:0,idx:0,to:0,label:'leva fioka',x0:485,x1:825,dx0:-39,dx1:-3,dy:153,el:null,ims:[]},
   right:{x:828,y:585,N:15,cont:true,p:0,idx:0,to:0,label:'desna fioka',x0:835,x1:1170,dx0:-8,dx1:31,dy:124,el:null,ims:[]}
 };
 var GRILL={l:225,t:20,r:760,b:235},ZOOM_SRC='assets/grill_zoom.webp?v=2';
@@ -43,7 +43,7 @@ function paintCont(k){
   if(!d.fr||!d.fr.isConnected){
     d.box=document.createElement('div');d.box.style.cssText='position:absolute;left:0;top:0;width:1672px;height:941px;z-index:26;pointer-events:none;display:none;overflow:visible';
     d.ins=document.createElement('img');d.fr=document.createElement('img');
-    d.ins.src='assets/drawers/'+k+'_inside.webp?v=1';d.fr.src='assets/drawers/'+k+'_front.webp?v=1';
+    d.ins.src='assets/drawers/right_inside.webp?v=1';d.fr.src='assets/drawers/right_front.webp?v=1';
     [d.ins,d.fr].forEach(function(e){e.draggable=false;e.style.cssText='position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none'});
     d.clip=document.createElement('div');d.clip.style.cssText='position:absolute;left:0;top:'+RF.lip+'px;width:1672px;height:400px;overflow:hidden';
     d.inner=document.createElement('div');d.inner.style.cssText='position:absolute;left:0;top:-'+RF.lip+'px;width:1672px;height:941px';
@@ -51,16 +51,11 @@ function paintCont(k){
   }
   var t=Math.max(0,Math.min(1,d.p));
   if(t<=0){d.box.style.display='none';d.vis=0;return}
-  var fx,fy,ix,iy,s_;
-  if(k==='left'){            // the left drawer: the same slide toward the camera as the jars (mapPoint): front top-left at (439,750) and inside top-left at (439,602) when open
-    var a=mapPoint(439,750,t),b=mapPoint(439,602,t);fx=a.x;fy=a.y;ix=b.x;iy=b.y;s_=scaleAt(t);
-  }else{
-    var L=d.x0+d.dx0*t,R=d.x1+d.dx1*t;s_=(R-L)/RF.w;fx=L;fy=605+107*t;ix=L;iy=fy-RF.ih*s_;
-  }
-  d.fr.style.transform='translate('+fx.toFixed(2)+'px,'+fy.toFixed(2)+'px) scale('+s_.toFixed(4)+')';
-  d.ins.style.transform='translate('+ix.toFixed(2)+'px,'+iy.toFixed(2)+'px) scale('+s_.toFixed(4)+')';
+  var L=d.x0+d.dx0*t,R=d.x1+d.dx1*t,s=(R-L)/RF.w,top=605+107*t;
+  d.fr.style.transform='translate('+L.toFixed(2)+'px,'+top.toFixed(2)+'px) scale('+s.toFixed(4)+')';
+  d.ins.style.transform='translate('+L.toFixed(2)+'px,'+(top-RF.ih*s).toFixed(2)+'px) scale('+s.toFixed(4)+')';
   d.box.style.display='block';d.vis=d.idx||1;
-  if(k==='left')updateJars();else updateTools();
+  updateTools();
 }
 function paint(k){
   var d=DR[k];if(d.cont)return paintCont(k);
@@ -132,7 +127,7 @@ function mapPoint(x,y,t){var cx=(x-TX)/SC,cy=(y-TY)/SC;return{x:cx+(x-cx)*t,y:cy
 function scaleAt(t){return 1/SC+(1-1/SC)*t}
 function updateJars(){
   var sc=document.getElementById('scene');if(!sc)return;
-  var d=DR.left,t=d.cont?gOf(d):(d.idx>=d.N?1:gOf(d)*.843),frontTop=597+155*t;      // the jars are placed on the last picture (the deeper drawer), the pictures from the video go a little less deep: .843
+  var d=DR.left,t=d.idx>=d.N?1:gOf(d)*.843,frontTop=597+155*t;      // the jars are placed on the last picture (the deeper drawer), the pictures from the video go a little less deep: .843
   if(!jarClip||!jarClip.isConnected){jarClip=document.createElement('div');jarClip.style.cssText='position:absolute;z-index:27;pointer-events:none;overflow:hidden;left:440px;top:603px;width:390px;height:0px';sc.appendChild(jarClip)}
   JARS.forEach(function(j){                                     // reconcile: a jar that is out of the drawer frees its compartment, a jar that is in the drawer gets one
     if(jarOut(j)){if(j.slot>=0){slotJar[j.slot]=null;j.slot=-1}}

@@ -1715,25 +1715,45 @@ function applySceneBackground(src,transition='none'){
    setTimeout(finish,duration+20);
  }
 }
+// The firebox door has two real pictures (closed: firebox_door_closed.png, open and turned: firebox_door_open.png). GSAP moves the box of the door from one picture to the other
+// and crosses the two pictures over, so the door seems to turn about its hinge. (Without GSAP: the old squeeze.)
+const FB_C=[1270,432,1391,557],FB_O=[1351,434,1424,597];
+function fbBox(t){return FB_C.map((v,i)=>v+(FB_O[i]-v)*t);}
+function fbTf(bb,box){const sx=(box[2]-box[0])/(bb[2]-bb[0]),sy=(box[3]-box[1])/(bb[3]-bb[1]);return `translate(${(box[0]-bb[0]*sx).toFixed(2)}px,${(box[1]-bb[1]*sy).toFixed(2)}px) scale(${sx.toFixed(4)},${sy.toFixed(4)})`;}
+function ensureFireboxMorphLayer(){
+ let l=document.getElementById('fireboxDoorMorph');if(l)return l;
+ const base=ensureFireboxDoorLayer();
+ l=document.createElement('div');l.id='fireboxDoorMorph';l.setAttribute('aria-hidden','true');
+ l.style.cssText=base.style.cssText;l.style.display='none';l.style.transformOrigin='0 0';
+ base.after(l);return l;
+}
 function applyFireboxDoorTransition(opening){
  const layer=ensureFireboxDoorLayer();
  layer.getAnimations?.().forEach(a=>a.cancel());
  scene.style.backgroundImage=`url("${new URL(window.CooksterKitchenFx?CooksterKitchenFx.compose(fireboxBaseSrc()):fireboxBaseSrc(),document.baseURI).href}")`;
  const urlOf=k=>`url("${new URL(DOOR_OVERLAYS[k],document.baseURI).href}")`;
- layer.style.display='block';layer.style.opacity='1';layer.style.transform='none';
- layer.style.transformOrigin=`${FIREBOX_HINGE_ORIGIN.x}px ${FIREBOX_HINGE_ORIGIN.y}px`;
  fireboxDoorLayerState=!!opening;
  const g=window.gsap;
  if(g){
-   // GSAP: the door turns about its hinge: the old picture is squeezed edge-on, the new one opens out again with a little spring
-   g.killTweensOf(layer);
-   layer.style.backgroundImage=urlOf(opening?'close':'open');
-   g.timeline()
-     .to(layer,{scaleX:.1,scaleY:1.012,duration:.2,ease:'power2.in'})
-     .add(()=>{layer.style.backgroundImage=urlOf(opening?'open':'close');})
-     .to(layer,{scaleX:1,scaleY:1,duration:.55,ease:'back.out(1.8)',clearProps:'transform'});
+   const closedL=layer,openL=ensureFireboxMorphLayer();
+   g.killTweensOf(closedL);g.killTweensOf(openL);
+   closedL.style.backgroundImage=urlOf('close');openL.style.backgroundImage=urlOf('open');
+   closedL.style.display='block';openL.style.display='block';closedL.style.transformOrigin='0 0';openL.style.transformOrigin='0 0';
+   const st={u:0};
+   const draw=()=>{
+     const t=opening?st.u:1-st.u,box=fbBox(t),m=Math.max(0,Math.min(1,(t-.3)/.4));
+     closedL.style.transform=fbTf(FB_C,box);openL.style.transform=fbTf(FB_O,box);
+     closedL.style.opacity=String(1-m);openL.style.opacity=String(m);
+   };
+   draw();
+   g.to(st,{u:1,duration:opening?.7:.5,ease:opening?'back.out(1.3)':'power2.inOut',onUpdate:draw,onComplete:()=>{
+     openL.style.display='none';openL.style.transform='none';
+     syncFireboxDoorLayer(!!opening,true);
+   }});
  }else{
    layer.style.backgroundImage=urlOf(opening?'open':'close');
+   layer.style.display='block';layer.style.opacity='1';layer.style.transform='none';
+   layer.style.transformOrigin=`${FIREBOX_HINGE_ORIGIN.x}px ${FIREBOX_HINGE_ORIGIN.y}px`;
    layer.animate?.([
      {transform:'scaleX(1) scaleY(1)'},
      {transform:'scaleX(1.09) scaleY(1.018)',offset:.18},
@@ -1930,25 +1950,76 @@ function updateFireboxEffects(){
 }
 
 // the open oven door is a small picture (assets/stove_states_v3/oven_door_open.webp) over the kitchen, not a whole new scene: the firebox, the fire and everything else are drawn exactly as when the oven is closed
-// GSAP: a picture that grows out of its hinge / edge when it opens and folds back when it closes (the oven door drops forward from the bottom edge of the opening, the wood drawer slides out from under the oven)
-function gsapPop(img,open,origin,from,dur){
- if(!img)return;
+// The oven door: the closed door is a cut-out of the closed kitchen picture and folds down about its bottom edge; at the same time the inside of the oven appears and the lowered door
+// (the lower part of oven_door_open.webp) drops out from the hinge. The drawer under the oven: its front (the lower part of drawer_open.webp) slides forward from the place of the closed front
+// and the wood inside is revealed above it. All from the real pictures; GSAP only moves them.
+const CLOSED_BG='assets/stove_states_v3/fire_off_closed.webp';
+function cutoutOf(id,rect,z){
+ let c=document.getElementById(id);if(c)return c;
+ c=document.createElement('div');c.id=id;c.setAttribute('aria-hidden','true');
+ c.style.cssText=`position:absolute;display:none;pointer-events:none;z-index:${z};left:${rect.left}px;top:${rect.top}px;width:${rect.right-rect.left}px;height:${rect.bottom-rect.top}px;background:url("${new URL(CLOSED_BG,document.baseURI).href}") no-repeat;background-position:-${rect.left}px -${rect.top}px;background-size:1672px 941px`;
+ scene.appendChild(c);return c;
+}
+function cloneOf(img,id){
+ let c=document.getElementById(id);if(c)return c;
+ const cs=getComputedStyle(img);
+ c=document.createElement('img');c.id=id;c.alt='';c.setAttribute('aria-hidden','true');c.draggable=false;c.src=img.src;
+ c.style.cssText=`position:absolute;display:none;pointer-events:none;user-select:none;left:${cs.left};top:${cs.top};width:${cs.width};height:${cs.height};z-index:${cs.zIndex}`;
+ scene.appendChild(c);return c;
+}
+const OVEN_FACE={left:1394,right:1579,top:450,bottom:552};
+function ovenDoorMorph(open){
+ const img=document.getElementById('ovenDoorOpen');if(!img)return;
  const g=window.gsap;
  if(!g){img.style.display=open?'block':'none';return;}
- if(img._popOpen===open&&(img.style.display==='block')===open)return;
- img._popOpen=open;
- g.killTweensOf(img);
- img.style.transformOrigin=origin;
+ if(img._mOpen===open&&(img.style.display==='block')===open)return;
+ img._mOpen=open;
+ const door=cloneOf(img,'ovenDoorLowered'),face=cutoutOf('ovenDoorFace',OVEN_FACE,31);
+ g.killTweensOf([img,door,face]);
+ img.style.clipPath='inset(0 0 99px 0)';door.style.clipPath='inset(105px 0 0 0)';       // the inside of the oven | the lowered door
+ const hinge='50% 105px';img.style.transformOrigin='50% 50%';door.style.transformOrigin=hinge;face.style.transformOrigin='50% 100%';
+ const tl=g.timeline();
  if(open){
-   img.style.display='block';
-   g.fromTo(img,{scaleY:from.y,scaleX:from.x,opacity:.2},{scaleY:1,scaleX:1,opacity:1,duration:dur,ease:'back.out(1.25)',clearProps:'transform,opacity'});
+   img.style.display='block';door.style.display='block';face.style.display='block';
+   g.set(img,{opacity:0});g.set(door,{scaleY:.03,opacity:1});g.set(face,{scaleY:1,opacity:1});
+   tl.to(face,{scaleY:.06,duration:.3,ease:'power2.in'},0)
+     .to(img,{opacity:1,duration:.25,ease:'none'},.12)
+     .to(door,{scaleY:1,duration:.55,ease:'back.out(1.4)'},.18)
+     .add(()=>{face.style.display='none';},.32);
  }else{
-   g.to(img,{scaleY:from.y,scaleX:from.x,opacity:.2,duration:dur*.7,ease:'power2.in',onComplete:()=>{if(img._popOpen===false){img.style.display='none';g.set(img,{clearProps:'transform,opacity'});}}});
+   face.style.display='block';g.set(face,{scaleY:.06});
+   tl.to(door,{scaleY:.03,duration:.35,ease:'power2.in'},0)
+     .to(face,{scaleY:1,duration:.4,ease:'back.out(1.2)'},.15)
+     .to(img,{opacity:0,duration:.2,ease:'none'},.3)
+     .add(()=>{if(img._mOpen===false){img.style.display='none';door.style.display='none';face.style.display='none';g.set([img,door,face],{clearProps:'transform,opacity'});}},.6);
  }
+}
+function ovenDrawerMorph(open,img,btn){
+ const g=window.gsap;
+ if(!img)return;
+ if(!g){img.style.display=open?'block':'none';return;}
+ if(img._mOpen===open&&(img.style.display==='block')===open)return;
+ img._mOpen=open;
+ const front=cloneOf(img,'ovenDrawerFront');
+ g.killTweensOf([img,front]);
+ img.style.clipPath='inset(0 0 92px 0)';front.style.clipPath='inset(62px 0 0 0)';        // the wood inside | the front with the handle
+ const OX=1386,OY=614,OW=232,OH=90,CX=1394,CY=556,CW=196,CH=84;
+ img.style.transformOrigin='50% 0px';front.style.transformOrigin=`${OX-1384}px ${OY-552}px`;
+ const st={t:open?0:1};
+ const draw=()=>{
+   const t=st.t,bw=CW+(OW-CW)*t,bh=CH+(OH-CH)*t,bx=CX+(OX-CX)*t,by=CY+(OY-CY)*t;
+   front.style.transform=`translate(${(bx-OX).toFixed(2)}px,${(by-OY).toFixed(2)}px) scale(${(bw/OW).toFixed(4)},${(bh/OH).toFixed(4)})`;
+   img.style.transform=`scaleY(${Math.max(.05,(by-552)/(OY-552)).toFixed(4)})`;     // the wood fills the space between the table and the front
+   const show=t>.02;img.style.display=show?'block':'none';front.style.display=show?'block':'none';
+ };
+ draw();
+ g.to(st,{t:open?1:0,duration:open?.62:.42,ease:open?'back.out(1.25)':'power2.in',onUpdate:draw,onComplete:()=>{
+   if(!open){img.style.display='none';front.style.display='none';}
+ }});
 }
 function syncOvenDoorPicture(){
  const img=document.getElementById('ovenDoorOpen');
- gsapPop(img,!!stoveState.ovenOpen,'50% 105px',{x:.96,y:.04},.6);
+ ovenDoorMorph(!!stoveState.ovenOpen);
  const l=document.getElementById('ovenItems');
  if(l)l.style.display=stoveState.ovenOpen?'block':'none';   // closed oven: what is inside is not seen and cannot be clicked
 }
@@ -1973,7 +2044,7 @@ function toggleCookstoveFirebox(){
 function setOvenDrawer(open){
  ovenDrawerOpen=!!open;
  const img=document.getElementById('ovenDrawerOpen'),btn=document.getElementById('drawerHotspot');
- gsapPop(img,ovenDrawerOpen,'50% 0px',{x:.9,y:.12},.55);
+ ovenDrawerMorph(ovenDrawerOpen,img,btn);
  if(btn){const r=ovenDrawerOpen?OVEN_DRAWER_RECT.open:OVEN_DRAWER_RECT.closed;btn.style.width=(r.right-r.left)+'px';btn.style.height=(r.bottom-r.top)+'px';}
  playImpactSound(drawerRightSoundTarget,ovenDrawerOpen?'open':'close');
 }
