@@ -1657,3 +1657,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Dim pri spuštanju (v3.338): po uzoru na Milošev snimak iz druge igre: pune (neprovidne) okrugle kuglice krem boje, po 4 + sitne tačkice sa svake strane predmeta, uz donju ivicu; razilaze se napolje i malo nadole i blede za ~0,4 s.
 
 - Dim pri spuštanju (v3.339): udaljenost oblačića od sredine prati širinu predmeta koji pada (nađe se predmet na tom mestu: offsetWidth x vis; bez njega staro računanje po vis); oblačići su mekši, dimasti (6 po strani, neravni oblici, mekani prelaz boje, blagi blur, uvijaju se napolje i gore, ~0,5 s).
+
+## Pregled uglova predmeta
+- docs/PREGLED_UGLOVA.md + docs/ugao/pregled_1..5.jpg: spisak predmeta po uglu (u redu / uspravni / sumnjivi / nisu vidljivi) sa slikama svakog na stolu. Samo dokumentacija, igra se ne menja.
