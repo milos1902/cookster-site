@@ -222,7 +222,7 @@ function renderBoard(){
     }
     if(c.x)d.appendChild(el('div','kt-or'+(groupOther(c)&&st!=='done'?' dbl':''),groupOther(c)&&st!=='done'?'×2':'ILI'));
     d.appendChild(co);
-    d.addEventListener('mouseenter',function(e){clearTimeout(TIPT);TIPT=setTimeout(function(){showTip(c,d);},1600);});d.addEventListener('mouseleave',function(){clearTimeout(TIPT);hideTip();});
+    d.addEventListener('mouseenter',function(e){clearTimeout(TIPT);TIPT=setTimeout(function(){showTip(c,d);},1000);});d.addEventListener('mouseleave',function(){clearTimeout(TIPT);hideTip();});
     d.addEventListener('click',function(){onCard(c,d);});
     inner.appendChild(d);
   });
