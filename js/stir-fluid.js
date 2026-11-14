@@ -981,7 +981,6 @@ window.CooksterJuiceCanvas=function(color,wpx,hpx){
 };
 // ---- WATER in the sink close-up (js/sink-zoom.js): a canvas with its own fluid; the stream and the splash are made by pushing water into it
 window.CooksterWaterFluid=function(cv,config){
-  if(failed)return null;
   var fl=createFluid(cv,{water:true,config:Object.assign({SIM_RESOLUTION:128,DYE_RESOLUTION:512,DENSITY_DISSIPATION:1.6,VELOCITY_DISSIPATION:2.6,CURL:0,SPLAT_RADIUS:0.01,PRESSURE_ITERATIONS:14},config||{})});
   if(!fl)return null;fl.setEnv(1);return fl;
 };
