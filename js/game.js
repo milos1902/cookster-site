@@ -15888,27 +15888,33 @@ function startHolding(el,pointerEvent=null){
 }
 
 function popArtPuff(cx,by,vis=1,opacity=.96,rot=0){
-  // a short stylized puff (about 0.3 s): little round clouds pop out of the lower left and the lower right corner of the thing and spread outward and a little up
+  // a short stylized puff (about 0.4 s), like in the reference video: flat, soft-coloured round blobs (3-4 in a group, a few tiny dots) pop out along the lower edge of the thing
+  // at its left and right side, spread outward and a little down and fade away
   try{
-    const v=Math.max(.5,Math.min(1.3,vis||1)),half=42+36*v;
+    const v=Math.max(.5,Math.min(1.3,vis||1)),half=34+40*v;
     const box=document.createElement('div');
     box.className='pop-puff-css';
     box.style.cssText=`position:absolute;left:${cx}px;top:${by}px;width:0;height:0;pointer-events:none;z-index:9997`;
+    const col='rgb(250,230,208)';      // solid: the blobs of a group overlap without showing through each other
     for(const side of [-1,1]){
-      for(let i=0;i<3;i++){
-        const r=(9+Math.random()*6+i*2)*v,dx=side*(half+i*6-4),dy=-2-i*2;
+      const n=4;
+      for(let i=0;i<n+2;i++){
+        const dot=i>=n,r=(dot?2.5+Math.random()*1.8:(9+Math.random()*6-i*1.5))*v;
+        const x0=side*(half-10+i*5+Math.random()*4),y0=-3+Math.random()*4;
         const c=document.createElement('div');
-        c.style.cssText=`position:absolute;left:${dx-r}px;top:${dy-r}px;width:${r*2}px;height:${r*2}px;border-radius:50%;background:radial-gradient(circle at 36% 30%,rgba(255,255,255,${opacity}) 0,rgba(244,236,222,${opacity*.92}) 52%,rgba(222,208,186,${opacity*.55}) 100%);box-shadow:inset -1px -2px 2px rgba(150,125,95,.28)`;
+        c.style.cssText=`position:absolute;left:${x0-r}px;top:${y0-r}px;width:${r*2}px;height:${r*2}px;border-radius:50%;background:${col}`;
         box.appendChild(c);
+        const dx=side*(10+Math.random()*14+i*3),dy=2+Math.random()*7;
         c.animate([
-          {transform:'translate(0,0) scale(.25)',opacity:0},
-          {transform:`translate(${side*5}px,-3px) scale(.9)`,opacity:1,offset:.28},
-          {transform:`translate(${side*(16+i*7)}px,${-9-i*4}px) scale(1.5)`,opacity:0}
-        ],{duration:300,delay:i*28,easing:'cubic-bezier(.2,.7,.3,1)',fill:'both'});
+          {transform:'translate(0,0) scale(.4)',opacity:0},
+          {transform:`translate(${dx*.4}px,${dy*.35}px) scale(1)`,opacity:1,offset:.14},
+          {transform:`translate(${dx*.8}px,${dy*.8}px) scale(1.15)`,opacity:1,offset:.6},
+          {transform:`translate(${dx}px,${dy}px) scale(${dot?.8:1.3})`,opacity:0}
+        ],{duration:dot?330:400,delay:i*14,easing:'cubic-bezier(.2,.7,.3,1)',fill:'both'});
       }
     }
     scene.appendChild(box);
-    setTimeout(()=>box.remove(),520);
+    setTimeout(()=>{if(!box.dataset.keep)box.remove()},700);
     return box;
   }catch(_){}
   // One transparent WebM contains the synchronized left/right impact puffs.
