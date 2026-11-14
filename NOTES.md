@@ -1765,3 +1765,9 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Raspored kartica po logici
 - Kartice su u krugovima raspoređene tako da svaka stoji iza svog uslova (q ili prethodna u redu) i u svojoj zvezdici (program: za svaku kolonu najbolje uparivanje, scipy linear_sum_assignment). Poklapanje uslova sa konцем u mapi: Kuhinja 41 od 61, Kafana 40/61, Kuća 35/58, Recepti 30/54, Izbori 14/24; ostalo ima uslov negde ranije na karti. Krugove možeš dalje da zameniš u uredniku.
 - Zeleni krug znači kupljeno, bez dodatne kvačice (obrisan znak ✓).
+
+## Napredak i lista zadataka (prvi deo, js/zadaci.js)
+- `CooksterProgress`: znanje i zvezdice (localStorage `cookster.napredak.v1`). Lista zadataka gore desno ("ZADACI"): salata (+3 znanja), tikvice (+5), otključaj kafanu. Zadatak se prepoznaje sam (komšinica primila salatu/tikvice, kafana otključana). Novac za salatu i tikvice daje komšinica (neighbor.js), zadatak daje samo znanje.
+- Karta znanja sada koristi prave brojeve: znanje iz `CooksterProgress`, novac iz igre (`money`/`setMoney`), kupovina troši oba. Kartica "Stara kafana" (tab Kafana) košta 5 znanja i otključava kafanu (`CooksterTavernLock.set(false)`).
+- Dugmad "Probno" u karti rade na pravim brojevima (+10 znanja, +500 din, zvezdica +/-, ispočetka = i zaključava kafanu).
+- Nije urađeno: zvezdica se puni iz zadataka (zasad je ★1), uputstvo (tutorial.js) se ne pali samo, ostale kartice ne otključavaju ništa u igri.
