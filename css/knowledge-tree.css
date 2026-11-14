@@ -165,3 +165,7 @@ body.kt-open #ktRoot{display:flex}
 .kt-card.kt-big .kt-in{top:calc(var(--D)*.19);height:calc(var(--D)*.62);width:calc(var(--D)*.62);margin-left:calc(var(--D)*-.31);z-index:4}
 .kt-card.kt-big .kt-ic{width:82%;height:82%}
 .kt-card.kt-big .kt-ic img{width:auto;height:auto;max-width:100%;max-height:100%}
+
+/* Bez zamućenja ikonice dok se kreće: nijedan sloj ne sme da se rasterizuje u maloj veličini pa uvećava */
+.kt-card.kt-big,.kt-card.kt-big .kt-in,.kt-card.kt-big .kt-ic,.kt-card.kt-big .kt-ic img,.kt-card.kt-big .kt-ring{will-change:auto;backface-visibility:visible}
+.kt-card.kt-big .kt-ic img{image-rendering:auto}
