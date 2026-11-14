@@ -141,7 +141,7 @@ function beginDrag(e,info){
     justDragged=Date.now();
     var sl=slotAt(ev.clientX,ev.clientY),L=document.getElementById('kePgList'),inList=!!(L&&L.contains(document.elementFromPoint(ev.clientX,ev.clientY)));
     try{
-      if(info.from==='list'){if(sl){var full=rackIds().length>=6&&rackIds().indexOf(info.id)<0;if(full)showToast('Ranac je pun.');else if(CooksterRecentItems.put(info.id,+sl.dataset.i))showToast('U ranac: '+(info.label||'')+'.');}}
+      if(info.from==='list'){if(sl){var full=rackIds().filter(Boolean).length>=6&&rackIds().indexOf(info.id)<0;if(full)showToast('Ranac je pun.');else if(CooksterRecentItems.put(info.id,+sl.dataset.i))showToast('U ranac: '+(info.label||'')+'.');}}
       else{if(sl)CooksterRecentItems.move(info.idx,+sl.dataset.i);else if(inList){CooksterRecentItems.remove(info.idx);showToast('Skinuto iz ranca.');}}
     }catch(_){}
     if(ghost)ghost.remove();DRAG=null;document.body.classList.remove('rk-dragging','rk-removing');

@@ -4,28 +4,34 @@
 (function(){
   'use strict';
   const KEY='cookster.rack.v2';let MAX=6;   // MAX = number of slots (3 at the start of the game later, then 6)
+  // Every thing has its OWN place (slot) and keeps it: a taken thing leaves an EMPTY slot, the others do not move; a thing put back can go into that empty slot again.
   let recent=[];
-  try{const r=JSON.parse(localStorage.getItem(KEY));if(Array.isArray(r))recent=r.filter(x=>typeof x==='string').slice(0,MAX);}catch(_){}
+  try{const r=JSON.parse(localStorage.getItem(KEY));if(Array.isArray(r))recent=r.slice(0,6).map(x=>typeof x==='string'?x:null);}catch(_){}
+  while(recent.length<6)recent.push(null);
   const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(recent));}catch(_){}};
   const defOf=id=>{try{return kitchenEquipmentDef(id);}catch(_){return null;}};
+  const firstEmpty=()=>{for(let i=0;i<MAX;i++)if(!recent[i])return i;return -1;};
+  const count=()=>recent.slice(0,MAX).filter(Boolean).length;
   function push(id){
     if(!id||!defOf(id))return;
-    if(recent[0]===id)return;
-    recent=[id].concat(recent.filter(x=>x!==id)).slice(0,MAX);
-    save();render(true);
+    if(recent.includes(id))return;
+    let at=firstEmpty();if(at<0)at=MAX-1;      // full: the last pocket is replaced
+    recent[at]=id;save();render(true);
   }
-  // put: id goes to the slot i (the others move aside; the last one drops out when the rack is full); move: a thing from the slot a to the slot b
+  // put: id goes to the slot i (if that pocket is taken, to the first empty one); move: a thing from the slot a to the slot b (if b is taken, they swap places)
   function put(id,i){
     if(!id||!defOf(id))return false;
-    const rest=recent.filter(x=>x!==id),at=Math.max(0,Math.min(rest.length,i|0));
-    rest.splice(at,0,id);recent=rest.slice(0,MAX);save();render(true);return true;
+    const old=recent.indexOf(id);if(old>=0)recent[old]=null;
+    let at=Math.max(0,Math.min(MAX-1,i|0));
+    if(recent[at]){const e=firstEmpty();if(e<0){if(old>=0)recent[old]=id;return false;}at=e;}
+    recent[at]=id;save();render(true);return true;
   }
   function move(a,b){
-    if(a<0||a>=recent.length||b<0||a===b)return;
-    const id=recent[a];recent.splice(a,1);recent.splice(Math.min(b,recent.length),0,id);recent=recent.slice(0,MAX);save();render(true);
+    if(a<0||a>=MAX||b<0||b>=MAX||a===b||!recent[a])return;
+    const t=recent[b];recent[b]=recent[a];recent[a]=t||null;save();render(true);
   }
-  function remove(i){if(i<0||i>=recent.length)return;recent.splice(i,1);save();render(true);}
-  function setSlots(n){MAX=Math.max(1,Math.min(6,n|0));recent=recent.slice(0,MAX);save();render(true);}
+  function remove(i){if(i<0||i>=MAX||!recent[i])return;recent[i]=null;save();render(true);}
+  function setSlots(n){MAX=Math.max(1,Math.min(6,n|0));for(let i=MAX;i<6;i++)recent[i]=null;save();render(true);}
   let menu=null;
   function closeMenu(){if(menu){menu.remove();menu=null;}}
   function openMenu(i,x,y){
@@ -50,7 +56,7 @@
   let lastSig='';
   function render(force){
     const bs=buttons();if(!bs.length)return;
-    const sig=recent.join('|');
+    const sig=recent.map(x=>x||'').join('|');
     const ok=bs.every((b,i)=>!!b.querySelector('.cookster-recent-icon')===!!recent[i]);
     if(!force&&sig===lastSig&&ok)return;
     lastSig=sig;
@@ -121,8 +127,8 @@
       const h=holding,hid=h.dataset&&h.dataset.itemId,hdef=hid&&defOf(hid);
       let hasFood=false;try{hasFood=Object.keys((window.CooksterPan&&CooksterPan.read&&CooksterPan.read(h)||{}).ingredients||{}).length>0;}catch(_){}
       if(!hdef||UNIQUE.test(hid)||hasFood||!window.CooksterReturnHeld){try{showToast(hasFood?'U njemu ima hrane: prvo ga spusti na sto.':'Ovo ne može u ranac: spusti ga na sto.');}catch(_){}return true;}
-      if(recent.length>=MAX&&!recent.includes(hid)&&slot>=recent.length){try{showToast('Ranac je pun.');}catch(_){}return true;}
-      const from=mousePt(60),at=Math.min(slot,recent.length),sc1=slotCenter(at);
+      if(!recent.includes(hid)&&firstEmpty()<0){try{showToast('Ranac je pun.');}catch(_){}return true;}
+      const from=mousePt(60),at=(slot<MAX&&!recent[slot])?slot:firstEmpty(),sc1=slotCenter(at);
       window.CooksterReturnHeld();
       put(hid,at);
       if(from&&sc1)fly(hid,from,sc1,{s0:1.4,s1:.8,o0:.9,o1:.9,ms:260});popSlot=at;
@@ -134,7 +140,7 @@
     const sc0=slotCenter(slot);
     // the things that exist once (the bell, the spike, the rail, the bin, the barrel, the mill, the spices) are taken from where they are
     const there=UNIQUE.test(id)?(window.items||items).find(el=>el.dataset.itemId===id&&el!==holding):null;
-    if(there){try{startHolding(there);}catch(_){}if(sc0)fly(id,sc0,mousePt(sc0.size),{s0:.9,s1:1.45,o0:1,o1:0,ms:300});recent.splice(slot,1);save();render(true);setGlow(Math.min(slot,MAX-1));return true;}
+    if(there){try{startHolding(there);}catch(_){}if(sc0)fly(id,sc0,mousePt(sc0.size),{s0:.9,s1:1.45,o0:1,o1:0,ms:300});recent[slot]=null;save();render(true);setGlow(Math.min(slot,MAX-1));return true;}
     const el=makeItem({...def,instanceId:nextItemInstanceId(id),x:700-def.w/2,y:560-def.h,z:++zCounter});
     if(!el)return false;
     el.dataset.surfaceZone='table';
@@ -143,7 +149,7 @@
     el.dataset.noFlash='1';el.style.visibility='hidden';setTimeout(()=>{delete el.dataset.noFlash;},1500);
     startHolding(el);
     if(sc0)fly(id,sc0,mousePt(sc0.size),{s0:.9,s1:1.45,o0:1,o1:0,ms:300});      // the picture flies from the pocket to the hand and melts into the thing that follows the mouse
-    recent.splice(slot,1);save();render(true);setGlow(Math.min(slot,MAX-1));      // the thing leaves the rack (it is in the hand)
+    recent[slot]=null;save();render(true);setGlow(Math.min(slot,MAX-1));      // the thing leaves the rack (it is in the hand)
     try{CooksterSave.schedule();}catch(_){}
     return true;
   }
