@@ -114,8 +114,8 @@ function build(){
   board=el('div');board.id='ktBoard';inner=el('div');inner.id='ktInner';board.appendChild(inner);
   foot=el('div');foot.id='ktFoot';
   
-  [['Probno:',null],['+10 znanja',function(){S.zn+=10;}],['+500 din',function(){S.din+=500;}],['Zvezdica −',function(){S.star=Math.max(1,S.star-1);}],['Zvezdica +',function(){S.star=Math.min(5,S.star+1);}],
-   ['Počni ispočetka',function(){S.bought={};S.zn=42;S.din=1250;S.star=2;}]].forEach(function(b){if(!b[1]){foot.appendChild(el('span','',b[0]));return;}var bt=el('button','',b[0]);bt.onclick=function(){b[1]();save();refresh();};foot.appendChild(bt);});
+  [['Probno:',null],['+10 znanja',function(){if(window.CooksterProgress)CooksterProgress.addZn(10);else S.zn+=10;}],['+500 din',function(){if(window.CooksterProgress){try{setMoney(money+500);}catch(e){}}else S.din+=500;}],['Zvezdica −',function(){if(window.CooksterProgress)CooksterProgress.setStar(S.star-1);else S.star=Math.max(1,S.star-1);}],['Zvezdica +',function(){if(window.CooksterProgress)CooksterProgress.setStar(S.star+1);else S.star=Math.min(5,S.star+1);}],
+   ['Počni ispočetka',function(){S.bought={};if(window.CooksterProgress){try{CooksterProgress.reset();CooksterTavernLock.set(true);}catch(e){}}else{S.zn=42;S.din=1250;S.star=2;}}]].forEach(function(b){if(!b[1]){foot.appendChild(el('span','',b[0]));return;}var bt=el('button','',b[0]);bt.onclick=function(){b[1]();save();refresh();};foot.appendChild(bt);});
   
   toast=el('div');toast.id='ktToast';
   panel.appendChild(board);panel.appendChild(foot);panel.appendChild(toast);
@@ -399,14 +399,18 @@ function onCard(c,d){
   if(st==='done'){say('Već imaš: '+c.n+'.');return;}
   if(st==='lock'){if(!d.classList.contains('kt-big')){d.classList.remove('shake');void d.offsetWidth;d.classList.add('shake');}say('Zaključano. Fali: '+missing(c).join(', ')+'.');return;}
   if(!afford(c)){d.classList.remove('shake');void d.offsetWidth;d.classList.add('shake');say('Nemaš dovoljno za '+c.n+'.');return;}
-  var pp=price(c);S.zn-=pp.z;S.din-=pp.d;S.bought[c.id]=1;save();refresh();say('Kupljeno: '+c.n+'.');
+  var pp=price(c);S.zn-=pp.z;S.din-=pp.d;S.bought[c.id]=1;
+  if(window.CooksterProgress){try{CooksterProgress.spendZn(pp.z);}catch(e){}try{setMoney(money-pp.d);}catch(e){}}
+  if(c.n==='Stara kafana'){try{CooksterTavernLock.set(false);say('Kafana je otključana!');}catch(e){}}      // karta otključava pravu igru
+  save();syncReal();refresh();if(c.n!=='Stara kafana')say('Kupljeno: '+c.n+'.');
 }
-function refresh(){
+function refresh(){syncReal();
   badgeEl.innerHTML='<b>★'+S.star+'</b>';
   znEl.textContent=S.zn;dinEl.textContent=S.din+' din';
   renderTabs();renderBoard();hideTip();
 }
-function open(){if(!root)build();document.body.classList.add('kt-open');fit();refresh();}
+function syncReal(){var P=window.CooksterProgress;if(!P)return;S.zn=P.zn();S.star=P.star();try{S.din=money;}catch(e){}}
+function open(){if(!root)build();document.body.classList.add('kt-open');syncReal();fit();refresh();}
 function close(){document.body.classList.remove('kt-open');hideTip();}
 function init(){
   var b=el('button','','Karta znanja');b.id='ktBtn';b.setAttribute('data-tool-ui','1');b.onclick=open;document.body.appendChild(b);
