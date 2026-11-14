@@ -1743,3 +1743,8 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## Karta znanja: kartice kao pločice iz Kuhinjskih elemenata (css/knowledge-tree.css v5, js/knowledge-tree.js v5)
 - Kartice u karti sada koriste istu pločicu kao Kuhinjski elementi (`pg_kartica_posude_n_bez.png` / `_h_bez.png`): kupljeno = zeleni vezeni rub + kvačica, može = zlatni sjaj, zaključano = sivo sa malim katancem. Kartica je malo šira (omjer 1,62).
+
+## Karta znanja: okvir iz nacrtane slike (assets/ui/karta)
+- Prozor je sada slika koju je Miloš nacrtao (okvir.webp, 1514x1014): gore zaglavlje i pet tabova, dole traka sa "Nazad". Fiksno.
+- Između gornje i donje linije klizi karta (papir.webp se ponavlja). Razdvojnica (crveni vez) stoji na granici svake zvezdice. Dok Miloš ne nacrta posebnu razdvojnicu, koristi se isječak sa desne ivice slike.
+- Prozor se skalira da stane na ekran (CSS --k).
