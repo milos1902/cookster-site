@@ -144,3 +144,5 @@ body.kt-open #ktRoot{display:flex}
 .kt-res .kt-pl{justify-content:flex-start;gap:0;min-width:0;padding-right:10px}
 .kt-res .kt-pl:nth-child(1){--pi:54px;padding-left:62px}
 .kt-res .kt-pl:nth-child(2){--pi:68px;padding-left:76px}
+/* Zastavica: zvezda i novčići su iste širine, ikonice poravnate levo jedna iznad druge, brojevi u istoj koloni */
+.kt-flag .fp .kt-pl{width:calc(var(--pl,22px) + 3.2em)!important;justify-content:flex-start!important}
