@@ -1675,3 +1675,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Sečenje na E: GSAP ritam, odskok, sok (game.js v3.341)
 - Nož ima pravi ritam (brzo spuštanje, kratko "zaglavljivanje" u povrću, sporije podizanje), na svakom udarcu povrće se malo trzne u stranu (GSAP, svojstvo translate), na kraju komadići iskoče (scale back.out).
 - Sok samo kod paradajza (crven) i luka (beličast, slabiji): kapljice lete uvis i padaju, a ispod ostaje mrlja koja posle ~7 s bledi. Daska se ne trese. Boja soka: tabela JUICE_COLORS po vegKey; za druge bi se uzimala prosečna boja slike.
+- v3.342: sok jače i odmah (veće i brojnije kapljice, prvi prsak čim nož krene); mrlja soka na dasci (veća, tamnija) ostaje i prati iseckani paradajz dok je na dasci; kad se uzme i spusti na sto, nestaje posle 2 s. Nož "ulazi" u povrće: kopija povrća (.cut-overlay) iznad noža pokazuje donji deo (granica ide naviše dok nož ide nadole), uklanja se na kraju sečenja.

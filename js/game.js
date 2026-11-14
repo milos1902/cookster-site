@@ -15454,12 +15454,12 @@ function juiceColorOf(target){
 function cutJuiceBurst(target,color,cx,cy,vis,strength){
   const g=window.gsap;if(!g)return;
   const z=(parseInt(target.style.zIndex||0,10)||11000)+2;
-  const n=5+Math.round(3*strength);
+  const n=9+Math.round(6*strength);
   for(let i=0;i<n;i++){
-    const d=document.createElement('div'),sz=(2.4+Math.random()*3.6)*Math.max(.8,vis);
-    d.style.cssText=`position:absolute;left:${cx-sz/2}px;top:${cy-sz/2}px;width:${sz}px;height:${sz}px;border-radius:50%;background:${color};pointer-events:none;z-index:${z};opacity:.92`;
+    const d=document.createElement('div'),sz=(3.6+Math.random()*5.2)*Math.max(.9,vis);
+    d.style.cssText=`position:absolute;left:${cx-sz/2}px;top:${cy-sz/2}px;width:${sz}px;height:${sz}px;border-radius:50%;background:${color};pointer-events:none;z-index:${z};opacity:1;box-shadow:inset -1px -1px 1.5px rgba(0,0,0,.18)`;
     scene.appendChild(d);
-    const dx=(Math.random()-.5)*70*vis,up=(10+Math.random()*26)*vis,down=(14+Math.random()*12)*vis;
+    const dx=(Math.random()-.5)*96*vis,up=(14+Math.random()*34)*vis,down=(16+Math.random()*16)*vis;
     g.timeline({onComplete:()=>d.remove()})
      .to(d,{x:dx*.6,y:-up,duration:.16,ease:'power2.out'})
      .to(d,{x:dx,y:down,opacity:0,scale:.5,duration:.32+Math.random()*.12,ease:'power2.in'});
@@ -15467,10 +15467,34 @@ function cutJuiceBurst(target,color,cx,cy,vis,strength){
 }
 function cutStain(target,color,cx,by,vis){
   const g=window.gsap;if(!g)return null;
-  const st=document.createElement('div'),w=70*vis;
-  st.style.cssText=`position:absolute;left:${cx-w/2}px;top:${by-w*.2}px;width:${w}px;height:${w*.34}px;border-radius:50%;pointer-events:none;z-index:${(parseInt(target.style.zIndex||0,10)||11000)-1};background:radial-gradient(ellipse at 50% 50%,${color} 0%,transparent 72%);opacity:0;filter:blur(1.5px);mix-blend-mode:multiply`;
-  scene.appendChild(st);g.to(st,{opacity:.34,scaleX:1.1,duration:.5,ease:'power1.out'});
+  const st=document.createElement('div'),w=96*vis;
+  st.style.cssText=`position:absolute;left:0;top:0;width:${w}px;height:${w*.4}px;margin:${-w*.2}px 0 0 ${-w/2}px;border-radius:50%;pointer-events:none;z-index:${(parseInt(target.style.zIndex||0,10)||11000)-1};background:radial-gradient(ellipse at 50% 50%,${color} 0%,${color} 38%,transparent 74%);opacity:0;filter:blur(1.2px);mix-blend-mode:multiply`;
+  scene.appendChild(st);
+  st._cx=cx;st._by=by;
+  g.to(st,{opacity:.62,scaleX:1.15,duration:.45,ease:'power1.out'});
+  // the stain lies under the cut thing: it follows it while it lies on the board, stays until the thing is picked up and, when the thing is put down somewhere else, fades after 2 s
+  let lifted=false,gone=false;
+  const tick=setInterval(()=>{
+    if(!st.isConnected||!target.isConnected){clearInterval(tick);st.remove();return;}
+    const onBoard=target.dataset.attachedToBoard==='1'&&holding!==target;
+    if(onBoard&&!lifted){st.style.transform=`translate(${(+target.dataset.cx).toFixed(1)}px,${(+target.dataset.by-4).toFixed(1)}px)`;st.style.zIndex=String((parseInt(target.style.zIndex||0,10)||11000)-1);}
+    else if(!onBoard&&!lifted){lifted=true;if(st._at==null)st.style.transform=st.style.transform||`translate(${st._cx}px,${st._by}px)`;}
+    if(lifted&&holding!==target&&!gone){gone=true;clearInterval(tick);g.to(st,{opacity:0,duration:.7,delay:2,ease:'none',onComplete:()=>st.remove()});}
+  },120);
+  st.style.transform=`translate(${cx}px,${by}px)`;
   return st;
+}
+// The part of the knife that is inside the vegetable is hidden: a copy of the vegetable lies above the knife and shows only the lower part (from a line that goes up when the knife goes down)
+function makeCutOverlay(target,knife){
+  try{
+    const ov=target.cloneNode(true);
+    ov.removeAttribute('id');ov.querySelectorAll('[id]').forEach(e=>e.removeAttribute('id'));
+    ov.classList.remove('held');ov.classList.add('cut-overlay');
+    delete ov.dataset.itemId;ov.dataset.cutOverlay='1';
+    ov.style.pointerEvents='none';ov.style.zIndex=String((parseInt(knife.style.zIndex||11050,10)||11050)+1);ov.style.clipPath='inset(100% 0 0 0)';
+    ov.querySelectorAll('.contact-shadow,[class*="shadow"]').forEach(e=>e.remove());
+    target.parentNode.appendChild(ov);return ov;
+  }catch(_){return null;}
 }
 function beginCutAction(mode='dice'){
  if(isCutting)return;
@@ -15532,6 +15556,7 @@ function beginCutAction(mode='dice'){
  // chopping (separate from the counter splash trigger while stirring).
  if(Math.random()<0.18)createFloorSpill(targetKey);
  const juicy=targetKey==='paradajz'||targetKey==='luk';      // juice only for the tomato (red) and a little for the onion (whitish)
+ const cutOv=makeCutOverlay(target,knife);
  const cutJuice=juicy?juiceColorOf(target):'';knife._contactCycle=-1;
  const cutStainEl=juicy?cutStain(target,cutJuice,tCx,tBy-4*tVis,tVis):null;
  function step(now){
@@ -15539,7 +15564,7 @@ function beginCutAction(mode='dice'){
    const cycle=Math.min(chopCount-1,Math.floor(p*chopCount));
    const within=(p*chopCount)-cycle;
    const chopWave=chopShape(within);
-   if(within>=.30&&knife._contactCycle!==cycle){      // the knife is in the vegetable: the jolt and the spray
+   if(within>=.20&&knife._contactCycle!==cycle){      // the knife is in the vegetable: the jolt and the spray
      knife._contactCycle=cycle;
      try{
        const body=target.querySelector('.body'),dir=(cycle%2?-1:1),g=window.gsap;
@@ -15552,6 +15577,7 @@ function beginCutAction(mode='dice'){
    const slide=-1.5*chopWave;
    knife.style.transform=`rotate(${baseAngle}deg) translateY(${(-lift+drop).toFixed(1)}px) translateX(${slide.toFixed(1)}px)`;
    animateCutTargetCompression(target,Math.pow(Math.max(0,chopWave),2.7));
+   if(cutOv){cutOv.style.clipPath=`inset(${(100-62*Math.max(0,chopWave)).toFixed(1)}% 0 0 0)`;const ob=cutOv.querySelector('.body'),tb=target.querySelector('.body');if(ob&&tb){ob.style.transform=tb.style.transform;ob.style.transformOrigin=tb.style.transformOrigin;}}
    updateCutProgress(p,tCx,progY);
    const newStrike=Math.floor(p*chopCount*1.0001);
    if(knife._lastStrike!==newStrike && newStrike<chopCount){knife._lastStrike=newStrike;}
@@ -15570,9 +15596,9 @@ function beginCutAction(mode='dice'){
      showToast(setVegetableDiced(target));
    }
    knife._contactCycle=-1;
+   if(cutOv)cutOv.remove();
    releaseCutTargetBounce(target);
-   try{const g=window.gsap,body=target.querySelector('.body');if(g&&body){const o={k:.8};g.to(o,{k:1,duration:.55,ease:'back.out(2.6)',onUpdate:()=>{body.style.scale=String(o.k);},onComplete:()=>{body.style.scale='';}});}
-     if(cutStainEl&&g)g.to(cutStainEl,{opacity:0,duration:2.2,delay:7,ease:'none',onComplete:()=>cutStainEl.remove()});}catch(_){}
+   try{const g=window.gsap,body=target.querySelector('.body');if(g&&body){const o={k:.8};g.to(o,{k:1,duration:.55,ease:'back.out(2.6)',onUpdate:()=>{body.style.scale=String(o.k);},onComplete:()=>{body.style.scale='';}});}}catch(_){}
    mountKnifeAsBoardChild(board);
    destroyCutProgress();
    isCutting=false;document.body.classList.remove('cutting-active');
