@@ -84,7 +84,7 @@ function card(){
   var c=root.querySelector('.pg-card');if(!c)return;
   Array.prototype.slice.call(c.children).forEach(function(x){if(!x.classList.contains('pg-rack'))c.removeChild(x);});
   var d=SEL;c.classList.toggle('empty',!d);
-  var bg=el('img','cbg');bg.src=P+'kartica_opis_bez_dugmeta.png';bg.alt='';c.insertBefore(bg,c.firstChild);
+  var bg=el('img','cbg');bg.src=P+'kartica_opis_ranac.png';bg.alt='';c.insertBefore(bg,c.firstChild);
   if(!d)return;
   var im=el('img','cim');im.src=ART[d.id]||d.src;im.alt='';c.insertBefore(im,c.querySelector('.pg-rack'));
   c.insertBefore(el('div','cnm','',d.label),c.querySelector('.pg-rack'));
@@ -97,7 +97,7 @@ function card(){
 // ---- the rack in the card: six transparent squares (3 above, 3 below) = the six pockets of the rack at the bottom of the screen.
 // Drag a card from the list onto a square: the thing goes into the rack (at that place). Drag a thing from a square onto another square: it moves; drag it out onto the list (or the right
 // mouse button on it: "Skloni iz ranca"): it leaves the rack. The rack at the bottom changes by itself (js/recent-items.js).
-var RK_X=[25.8,42.7,59.6],RK_Y=[73.9,85.0];
+var RK_X=[32.0,51.0,70.0],RK_Y=[71.3,82.9];      // the squares drawn in the card picture (percent of the card)
 function buildRack(cd){
   var rk=el('div','pg-rack');cd.appendChild(rk);
   for(var i=0;i<6;i++){
