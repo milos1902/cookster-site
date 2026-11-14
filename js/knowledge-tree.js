@@ -178,6 +178,7 @@ function renderBoard(){
   inner.style.setProperty('--D',M.D+'px');
   var LAYMODE=!!LT[S.tab],mine=cards.filter(function(c){return c.t===S.tab;});
   if(LAYMODE)layoutExtras();
+  if(LAYMODE){var k1=el('div','kt-corner');k1.style.left='4px';k1.style.top='4px';inner.appendChild(k1);var k2=el('div','kt-corner br');k2.style.left=(M.w-116)+'px';k2.style.top='570px';inner.appendChild(k2);}
   else{
   // odjeljci po zvezdici: tamno polje + katanac iznad dosegnute zvezdice, zlatne linije
   for(var s=1;s<=5;s++){
@@ -220,7 +221,7 @@ function renderBoard(){
     }
     if(c.x)d.appendChild(el('div','kt-or'+(groupOther(c)&&st!=='done'?' dbl':''),groupOther(c)&&st!=='done'?'×2':'ILI'));
     d.appendChild(co);
-    d.addEventListener('mouseenter',function(e){showTip(c,d);});d.addEventListener('mouseleave',hideTip);
+    d.addEventListener('mouseenter',function(e){clearTimeout(TIPT);TIPT=setTimeout(function(){showTip(c,d);},1600);});d.addEventListener('mouseleave',function(){clearTimeout(TIPT);hideTip();});
     d.addEventListener('click',function(){onCard(c,d);});
     inner.appendChild(d);
   });
@@ -247,7 +248,8 @@ function showTip(c,d){
   var r=d.getBoundingClientRect(),w=330,x=r.right+6;if(x+w>innerWidth-8)x=r.left-w-6;
   var y=Math.min(Math.max(8,r.top+r.height/2-tip.offsetHeight/2),innerHeight-tip.offsetHeight-8);tip.style.left=Math.max(8,x)+'px';tip.style.top=y+'px';
 }
-function hideTip(){tip.style.display='none';}
+var TIPT=0;
+function hideTip(){clearTimeout(TIPT);tip.style.display='none';}
 function say(m){toast.textContent=m;toast.classList.add('on');clearTimeout(say.t);say.t=setTimeout(function(){toast.classList.remove('on');},1900);}
 function onCard(c,d){
   var st=status(c);
