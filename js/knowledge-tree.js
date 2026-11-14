@@ -129,8 +129,8 @@ function build(){
   window.addEventListener('resize',function(){if(isOpen())fit();});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen()){e.stopPropagation();close();}},true);
 }
-var TABX=[[83,364],[372,636],[641,906],[912,1178],[1184,1451]];
-function kk(){return Math.min(innerWidth*.98/1536,innerHeight*.98/1024);}
+var TABX=[[233,514],[522,786],[791,1056],[1062,1328],[1334,1601]];
+function kk(){return Math.min(innerWidth*.98/1836,innerHeight*.98/1024);}
 function fit(){panel.style.setProperty('--k',kk());}
 function isOpen(){return document.body.classList.contains('kt-open');}
 function metrics(){
@@ -226,7 +226,7 @@ function renderBoard(){
     d.addEventListener('click',function(){onCard(c,d);});
     inner.appendChild(d);
   });
-  if(HOLDER){inner=HOLDER;HOLDER.style.width=(M.w+300)+'px';}
+  if(HOLDER){inner=HOLDER;HOLDER.style.width=M.w+'px';}
 }
 function showTip(c,d){
   var st=status(c),src=artFor(c),pc=price(c),h='';

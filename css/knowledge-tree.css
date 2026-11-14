@@ -4,10 +4,10 @@
 body.kt-open #ktBtn{display:none}
 #ktRoot{position:fixed;inset:0;overflow:hidden;z-index:2147483600;display:none;align-items:center;justify-content:center;background:rgba(22,12,7,.78);font-family:Georgia,'Times New Roman',serif;color:#3a1f10;user-select:none}
 body.kt-open #ktRoot{display:flex}
-#ktPanel{position:absolute;left:50%;top:50%;width:1536px;height:1024px;transform:translate(-50%,-50%) scale(var(--k,1));transform-origin:50% 50%;background:url(../assets/ui/karta/okvir.webp) 0 0/100% 100% no-repeat;overflow:hidden}
+#ktPanel{position:absolute;left:50%;top:50%;width:1836px;height:1024px;transform:translate(-50%,-50%) scale(var(--k,1));transform-origin:50% 50%;background:url(../assets/ui/karta/okvir_siroki.webp) 0 0/100% 100% no-repeat;overflow:hidden}
 .kt-badge{position:absolute;left:140px;top:30px;width:92px;height:93px;background:url(../assets/ui/napredak/zvezde/znacka_nivo.png) 0 0/100% 100% no-repeat;display:flex;align-items:center;justify-content:center}
 .kt-badge b{font-size:28px;line-height:1;margin-top:-2px}
-.kt-res{position:absolute;right:140px;top:36px;display:flex;gap:12px;align-items:center}
+.kt-res{position:absolute;right:440px;top:36px;display:flex;gap:12px;align-items:center}
 .kt-pl{position:relative;display:flex;align-items:center;justify-content:flex-end;background-size:100% 100%;background-repeat:no-repeat;font-weight:800;color:#3a1f10}
 .kt-res .kt-pl{width:200px;height:70px;padding-right:22px;font-size:24px;white-space:nowrap}
 .kt-x{width:50px;height:50px;border-radius:50%;border:4px solid #3a1f10;background:#e7c778;font:900 26px Arial;color:#3a1f10;cursor:pointer;box-shadow:0 3px 0 #765414;margin-left:8px}
@@ -16,7 +16,7 @@ body.kt-open #ktRoot{display:flex}
 .kt-tab.on{color:#fff3dc;background-image:url(../assets/ui/karta/tab_crveni.webp);text-shadow:0 1px 2px rgba(60,10,5,.7)}
 .kt-tab:not(.on):hover{filter:brightness(1.05)}
 #ktNazad{position:absolute;left:100px;top:928px;width:166px;height:48px;cursor:pointer}
-#ktBoard{position:absolute;left:66px;top:239px;width:1404px;height:674px;overflow-x:auto;overflow-y:hidden;cursor:grab;scrollbar-width:none;background:url(../assets/ui/karta/platno_siroko.webp) 0 0/auto 100% repeat-x}
+#ktBoard{position:absolute;left:66px;top:239px;width:1704px;height:674px;overflow-x:auto;overflow-y:hidden;cursor:grab;scrollbar-width:none;background:url(../assets/ui/karta/platno_siroko.webp) 0 0/auto 100% repeat-x}
 #ktBoard::-webkit-scrollbar{display:none}
 #ktBoard.drag{cursor:grabbing}
 #ktInner{position:relative;height:100%}
@@ -70,7 +70,7 @@ body.kt-open #ktRoot{display:flex}
 #ktTip .tp-need{color:#a3321c;font-weight:800}
 #ktTip .tp-n{font-weight:700}
 #ktTip .tp-s{font-size:12px;opacity:.7}
-#ktFoot{position:absolute;left:300px;right:90px;top:926px;height:56px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}
+#ktFoot{position:absolute;left:300px;right:390px;top:926px;height:56px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}
 #ktFoot button{padding:5px 11px;border-radius:9px;border:2px solid #3a1f10;background:#e7c778;color:#3a1f10;font:800 13px Georgia,serif;cursor:pointer}
 #ktFoot .sp{flex:1}
 #ktToast{position:absolute;left:50%;top:872px;transform:translateX(-50%);background:#3a1f10;color:#fff3dc;padding:8px 18px;border-radius:12px;font-weight:700;font-size:16px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:5}
@@ -110,7 +110,7 @@ body.kt-open #ktRoot{display:flex}
 /* Novi znaci: kvačica kad je kupljeno, katanac kad je zaključano (slike koje je Miloš nacrtao) */
 .kt-lay.st-done::after{content:'';position:absolute;left:calc(50% + var(--D)*.16);top:calc(var(--D)*.62);width:calc(var(--D)*.3);height:calc(var(--D)*.3);pointer-events:none;z-index:3;background:url(../assets/ui/karta/znak_kupljeno.webp) center/contain no-repeat;filter:drop-shadow(0 2px 2px rgba(40,22,6,.45))}
 .kt-card.st-lock.kt-lay::after{left:calc(50% + var(--D)*.16);top:calc(var(--D)*.62);width:calc(var(--D)*.3);height:calc(var(--D)*.3);background:url(../assets/ui/karta/znak_katanac.webp) center/contain no-repeat;filter:drop-shadow(0 2px 2px rgba(40,22,6,.45))}
-.kt-stage{position:absolute;left:150px;top:0;height:100%}
+.kt-stage{position:absolute;left:0;top:0;height:100%}
 
 /* Znaci (kvačica, katanac) su iste veličine na svakom krugu; položaj prati veličinu kruga */
 .kt-lay.st-done::after,.kt-card.st-lock.kt-lay::after{width:34px;height:34px}
