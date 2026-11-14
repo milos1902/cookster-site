@@ -340,7 +340,7 @@ function showBig(c,d){
   var top=cy-F/2-8,bot=(bh-8)-(cy+F/2+capH);if(top<0)dy=-top;else if(bot<0)dy=bot;
   var u=function(px){return (px/k).toFixed(2)+'px';};      // veličina u konačnim pikselima, preračunata za uvećanje
   // ime, zvezdice i cena (unutar diska)
-  var bi=el('div','kt-bi');bi.style.top=(D*.575)+'px';bi.style.width=(D*.62)+'px';
+  var bi=el('div','kt-bi');bi.style.top=(D*.535)+'px';bi.style.width=(D*.62)+'px';
   var bn=el('div','bn',c.n);bn.style.fontSize=u(c.n.length>14?20:25);bi.appendChild(bn);
   var bs=el('div','bs');bs.style.margin=u(3)+' 0';for(var q=1;q<=5;q++){var si=el('i',q<=c.s?'f':'');si.style.width=si.style.height=u(20);bs.appendChild(si);}bi.appendChild(bs);
   var bp=el('div','bp');bp.style.fontSize=u(23);
@@ -363,12 +363,12 @@ function showBig(c,d){
   if(window.gsap){
     var tl=gsap.timeline();
     tl.to(d,{scale:k,x:dx/1,y:dy/1,duration:.4,ease:'back.out(1.35)',force3D:true},0);
-    tl.to(icon,{y:-D*.085,scale:1.12,duration:.4,ease:'power2.out'},0);
+    tl.to(icon,{y:-D*.1,scale:1.06,duration:.4,ease:'power2.out'},0);
     tl.fromTo(ring,{filter:f0},{filter:f1,duration:.42,ease:'power2.out'},0);
     tl.fromTo(sh,{opacity:0,scale:.7},{opacity:1,scale:1,duration:.42,ease:'power2.out'},0);
     tl.fromTo(bi,{opacity:0},{opacity:1,duration:.25,ease:'power1.out'},.18);
     tl.fromTo(bc,{opacity:0},{opacity:1,duration:.3,ease:'power1.out'},.3);
-  }else{d.style.transform='translate('+dx+'px,'+dy+'px) scale('+k+')';icon.style.transform='translateY('+(-D*.085)+'px) scale(1.12)';ring.style.filter=f1;sh.style.opacity=1;}
+  }else{d.style.transform='translate('+dx+'px,'+dy+'px) scale('+k+')';icon.style.transform='translateY('+(-D*.1)+'px) scale(1.06)';ring.style.filter=f1;sh.style.opacity=1;}
 }
 function killBig(now){
   if(!BIG)return;var B=BIG;BIG=null;
