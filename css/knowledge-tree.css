@@ -146,3 +146,8 @@ body.kt-open #ktRoot{display:flex}
 .kt-res .kt-pl:nth-child(2){--pi:68px;padding-left:76px}
 /* Zastavica: zvezda i novčići su iste širine, ikonice poravnate levo jedna iznad druge, brojevi u istoj koloni */
 .kt-flag .fp .kt-pl{width:calc(var(--pl,22px) + 3.2em)!important;justify-content:flex-start!important}
+
+/* Ikonice se bolje vide: veće u krugu, a zaključane nisu skoro providne */
+.kt-lay .kt-ic{width:82%;height:82%}
+.st-lock .kt-ic img{filter:grayscale(.55) brightness(1.05);opacity:.92}
+.st-lock .kt-ic span{filter:grayscale(.6);opacity:.85}
