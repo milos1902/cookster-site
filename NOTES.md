@@ -1692,3 +1692,5 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## Sudopera: voda se obnavlja ako WebGL zakaže (sink-zoom.js v33, stir-fluid.js v42)
 - Voda više ne zavisi od `failed` zastavice drugih efekata (para, mešanje); ako ne uspe, pokušava još do 4 puta na 1,5 s; ako pregledač oduzme WebGL kontekst, pravi novi.
+
+- sink-zoom.js v34: ako se nova voda ne napravi, u konzoli piše razlog ([Cookster voda]) i u window.__waterDbg.
