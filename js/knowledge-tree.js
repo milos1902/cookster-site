@@ -347,7 +347,7 @@ function showBig(c,d){
   var top=cy-F/2-8,bot=(bh-8)-(cy+F/2+capH);if(top<0)dy=-top;else if(bot<0)dy=bot;
   var u=function(px){return (px/k).toFixed(2)+'px';};      // veličina u konačnim pikselima, preračunata za uvećanje
   // ime, zvezdice i cena (unutar diska)
-  var bi=el('div','kt-bi');bi.style.top=(D*.535)+'px';bi.style.width=(D*.62)+'px';
+  var bi=el('div','kt-bi');bi.style.top=(D*.47)+'px';bi.style.width=(D*.62)+'px';
   var bn=el('div','bn',c.n);bn.style.fontSize=u(c.n.length>14?20:25);bi.appendChild(bn);
   var bs=el('div','bs');bs.style.margin=u(3)+' 0';for(var q=1;q<=5;q++){var si=el('i',q<=c.s?'f':'');si.style.width=si.style.height=u(20);bs.appendChild(si);}bi.appendChild(bs);
   var bp=el('div','bp');bp.style.fontSize=u(23);
@@ -375,17 +375,19 @@ function showBig(c,d){
     tl.to(d,{scale:k,x:dx/1,y:dy/1,duration:.4,ease:'back.out(1.35)',force3D:true},0);
     tl.fromTo(ring,{filter:f0},{filter:f1,duration:.42,ease:'power2.out'},0);
     tl.fromTo(sh,{opacity:0,scale:.7},{opacity:1,scale:1,duration:.42,ease:'power2.out'},0);
-    tl.fromTo(bi,{opacity:0},{opacity:1,duration:.25,ease:'power1.out'},.18);
+    tl.to(icon,{y:-D*.38,scale:1.22,duration:.5,ease:'power2.inOut'},.4);
+    tl.fromTo(bi,{opacity:0,y:D*.05},{opacity:1,y:0,duration:.3,ease:'power1.out'},.72);
     tl.fromTo(bc,{opacity:0},{opacity:1,duration:.3,ease:'power1.out'},.3);
-  }else{d.style.transform='translate('+dx+'px,'+dy+'px) scale('+k+')';ring.style.filter=f1;sh.style.opacity=1;}
+  }else{d.style.transform='translate('+dx+'px,'+dy+'px) scale('+k+')';icon.style.transform='translateY('+(-D*.38)+'px) scale(1.22)';ring.style.filter=f1;sh.style.opacity=1;}
 }
 function killBig(now){
   if(!BIG)return;var B=BIG;BIG=null;
   var fin=function(){if(B.sh.parentNode)B.sh.remove();if(B.ring)B.ring.style.filter='';if(B.bi.parentNode)B.bi.remove();if(B.bc.parentNode)B.bc.remove();B.card.classList.remove('kt-big');if(window.gsap){gsap.set(B.card,{clearProps:'transform'});gsap.set(B.icon,{clearProps:'transform'});}else{B.card.style.transform='';B.icon.style.transform='';}};
   if(now||!window.gsap){if(window.gsap)gsap.killTweensOf([B.card,B.icon,B.bi,B.bc,B.ring,B.sh]);fin();return;}
-  gsap.killTweensOf([B.bi,B.bc]);gsap.to([B.bi,B.bc],{opacity:0,duration:.12});
-  gsap.to(B.icon,{y:0,scale:1,duration:.22,ease:'power2.in'});gsap.to(B.ring,{filter:B.f0,duration:.22});gsap.to(B.sh,{opacity:0,duration:.18});
-  gsap.to(B.card,{scale:1,x:0,y:0,duration:.22,ease:'power2.in',onComplete:fin});
+  gsap.killTweensOf([B.bi,B.bc,B.icon]);gsap.to([B.bi,B.bc],{opacity:0,duration:.12});
+  gsap.to(B.icon,{y:0,scale:1,duration:.26,ease:'power2.in'});
+  gsap.to(B.ring,{filter:B.f0,duration:.3,delay:.18});gsap.to(B.sh,{opacity:0,duration:.25,delay:.18});
+  gsap.to(B.card,{scale:1,x:0,y:0,duration:.26,delay:.2,ease:'power2.in',onComplete:fin});
 }
 function showTip(c,d){if(d.classList.contains('kt-lay'))return showBig(c,d);return showFlag(c,d);}
 function hideTip(){clearTimeout(TIPT);tip.style.display='none';killFlag(false);killBig(false);}
