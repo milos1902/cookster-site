@@ -24,22 +24,23 @@ var P=window.CooksterProgress={
   tasks:TASKS,isDone:function(id){return !!S.done[id];}
 };
 if(/[?&]zadaci=0\b/.test(location.search))return;
-var K='assets/ui/karta/';
+var K='assets/ui/karta/',Z='assets/ui/napredak/zadaci/';
 var css=document.createElement('style');
 css.textContent=[
 '@font-face{font-family:"Paytone One";src:url(assets/fonts/PaytoneOne-Regular.ttf) format("truetype");font-display:swap}',
-'#zadaciBox{position:fixed;right:12px;top:104px;width:262px;z-index:1895;padding:12px 14px 12px;border-radius:14px;background:linear-gradient(#f6e9c8,#ead7a6);border:3px solid #8a5a2a;box-shadow:inset 0 0 0 2px #f3e3b9,0 5px 14px rgba(30,15,5,.45);font-family:"Paytone One","CooksterSerif",Georgia,serif;font-weight:400;color:#3a1f10;user-select:none}',
-'#zadaciBox:before{content:"";position:absolute;inset:5px;border:2px dashed rgba(184,58,34,.55);border-radius:10px;pointer-events:none}',
-'#zadaciBox .zt{font-size:19px;color:#7a1e14;letter-spacing:.04em;margin:0 0 6px;display:flex;justify-content:space-between;align-items:center}',
-'#zadaciBox .zt small{font-size:15px;color:#3a1f10;display:flex;align-items:center;gap:4px}#zadaciBox .zt small img{height:20px}',
-'#zadaciBox .zr{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid rgba(138,90,42,.3);font-size:14px;line-height:1.15}',
-'#zadaciBox .zr .zc{flex:0 0 22px;height:22px;border-radius:50%;border:2.5px solid #8a5a2a;background:#fff8e3;display:flex;align-items:center;justify-content:center;color:#fff;font:900 15px Arial}',
-'#zadaciBox .zr.done .zc{background:#4f8a2e;border-color:#3b6a22}#zadaciBox .zr.done .zc:before{content:"✓"}',
+// tvoja tabla (zadaci_okvir.png 339x357): naslov je u ploči na vrhu, unutra su tri reda (zadatak_red_*.png 394x108)
+'#zadaciBox{position:fixed;right:12px;top:104px;width:300px;height:316px;z-index:1895;background:url('+Z+'zadaci_okvir.png) 0 0/100% 100% no-repeat;filter:drop-shadow(0 5px 8px rgba(30,15,5,.45));font-family:"Paytone One","CooksterSerif",Georgia,serif;font-weight:400;color:#3a1f10;user-select:none}',
+'#zadaciBox .zt{position:absolute;left:22%;right:22%;top:3.2%;height:11.5%;display:flex;align-items:center;justify-content:center;font-size:19px;color:#7a1e14;letter-spacing:.05em}',
+'#zadaciBox .zl{position:absolute;left:7.5%;right:7.5%;top:21%;display:flex;flex-direction:column;gap:4px}',
+'#zadaciBox .zr{position:relative;aspect-ratio:394/108;background:url('+Z+'zadatak_red_prazan.png) 0 0/100% 100% no-repeat;display:flex;align-items:center;padding:0 44px 0 62px;font-size:13px;line-height:1.1}',
+'#zadaciBox .zr.on{background-image:url('+Z+'zadatak_red_glavni.png)}',
+'#zadaciBox .zr.done{background-image:url('+Z+'zadatak_red_gotov.png)}',
 '#zadaciBox .zr.done .zx{text-decoration:line-through;opacity:.55}',
 '#zadaciBox .zr.on .zx{color:#7a1e14}',
-'#zadaciBox .zx{flex:1}',
-'#zadaciBox .zk{flex:0 0 auto;display:flex;align-items:center;gap:2px;font-size:14px}#zadaciBox .zk img{height:18px}',
+'#zadaciBox .zk{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:2px;font-size:14px}#zadaciBox .zk img{height:20px}',
 '#zadaciBox .zr.done .zk{opacity:.45}',
+// brojač znanja (brojac_okvir.png 364x123) ispod table
+'#zadaciBox .zb{position:absolute;right:6px;top:calc(100% + 4px);width:150px;height:51px;background:url('+Z+'brojac_okvir.png) 0 0/100% 100% no-repeat;display:flex;align-items:center;justify-content:center;gap:6px;font-size:21px}#zadaciBox .zb img{height:30px}',
 'body.menu-open #zadaciBox,body.main-menu-open #zadaciBox,body.kt-open #zadaciBox,body.market-open #zadaciBox,body.pantry-open #zadaciBox,body.garden-open #zadaciBox{display:none}'
 ].join('\n');
 document.head.appendChild(css);
@@ -48,10 +49,11 @@ var cur='';
 function render(){
   if(!box)return;
   var first=-1;TASKS.forEach(function(t,i){if(first<0&&!S.done[t.id])first=i;});
-  var h='<div class="zt">ZADACI<small><img src="'+K+'ikona_znanje.webp" alt="">'+S.zn+'</small></div>';
+  var h='<div class="zt">ZADACI</div><div class="zl">';
   TASKS.forEach(function(t,i){
-    h+='<div class="zr'+(S.done[t.id]?' done':(i===first?' on':''))+'"><span class="zc"></span><span class="zx">'+t.text+'</span>'+(t.zn?'<span class="zk"><img src="'+K+'ikona_znanje.webp" alt="">+'+t.zn+'</span>':'')+'</div>';
+    h+='<div class="zr'+(S.done[t.id]?' done':(i===first?' on':''))+'"><span class="zx">'+t.text+'</span>'+(t.zn?'<span class="zk"><img src="'+K+'ikona_znanje.webp" alt="">+'+t.zn+'</span>':'')+'</div>';
   });
+  h+='</div><div class="zb"><img src="'+K+'ikona_znanje.webp" alt="">'+S.zn+'</div>';
   if(h!==cur){cur=h;box.innerHTML=h;}
 }
 function check(){
