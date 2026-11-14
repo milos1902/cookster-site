@@ -15888,33 +15888,37 @@ function startHolding(el,pointerEvent=null){
 }
 
 function popArtPuff(cx,by,vis=1,opacity=.96,rot=0){
-  // a short stylized puff (about 0.4 s), like in the reference video: flat, soft-coloured round blobs (3-4 in a group, a few tiny dots) pop out along the lower edge of the thing
-  // at its left and right side, spread outward and a little down and fade away
+  // a short smoky puff (about 0.5 s): soft, slightly irregular puffs of dust come out along the lower edge of the thing, at its left and at its right side, curl outward and up and melt
+  // away. The distance from the middle follows the width of the thing that lands (a board far, a tomato close)
   try{
-    const v=Math.max(.5,Math.min(1.3,vis||1)),half=34+40*v;
+    const v=Math.max(.5,Math.min(1.3,vis||1));
+    let wpx=0;      // the width of the thing on the screen: the item at this place (its width times its size on the table)
+    try{let best=1e9;(window.items||items).forEach(e=>{if(!e||!e.dataset||e.dataset.cx==null)return;const d=Math.abs(+e.dataset.cx-cx)+Math.abs(+e.dataset.by-by)*.6;if(d<best&&d<50){best=d;wpx=(e.offsetWidth||0)*(+e.dataset.vis||1);}});}catch(_){}
+    const half=wpx>0?Math.max(14,Math.min(150,wpx*.5)):(34+40*v);
+    const sz=Math.max(.55,Math.min(1.25,(wpx>0?wpx/120:v)));
     const box=document.createElement('div');
     box.className='pop-puff-css';
-    box.style.cssText=`position:absolute;left:${cx}px;top:${by}px;width:0;height:0;pointer-events:none;z-index:9997`;
-    const col='rgb(250,230,208)';      // solid: the blobs of a group overlap without showing through each other
+    box.style.cssText=`position:absolute;left:${cx}px;top:${by}px;width:0;height:0;pointer-events:none;z-index:9997;filter:blur(.7px)`;
+    const tone=(l)=>`radial-gradient(circle at 38% 32%,rgba(255,250,240,${.95*Math.min(1,opacity+.2)}) 0,rgba(244,230,212,${.9*Math.min(1,opacity+.2)}) ${40+l}%,rgba(214,194,170,${.7*Math.min(1,opacity+.2)}) 78%,rgba(190,168,142,0) 100%)`;
     for(const side of [-1,1]){
-      const n=4;
-      for(let i=0;i<n+2;i++){
-        const dot=i>=n,r=(dot?2.5+Math.random()*1.8:(9+Math.random()*6-i*1.5))*v;
-        const x0=side*(half-10+i*5+Math.random()*4),y0=-3+Math.random()*4;
+      const n=6;
+      for(let i=0;i<n;i++){
+        const r=(8+Math.random()*7+(i<3?3:0)-i*.8)*sz,wob=()=>(42+Math.random()*16)+'%';
+        const x0=side*(half-6*sz+i*4*sz+Math.random()*3),y0=-2-Math.random()*4-(i%2)*3;
         const c=document.createElement('div');
-        c.style.cssText=`position:absolute;left:${x0-r}px;top:${y0-r}px;width:${r*2}px;height:${r*2}px;border-radius:50%;background:${col}`;
+        c.style.cssText=`position:absolute;left:${x0-r}px;top:${y0-r}px;width:${r*2}px;height:${r*(1.7+Math.random()*.3)}px;border-radius:${wob()} ${wob()} ${wob()} ${wob()};background:${tone(Math.random()*10)}`;
         box.appendChild(c);
-        const dx=side*(10+Math.random()*14+i*3),dy=2+Math.random()*7;
+        const dx=side*(10+Math.random()*16+i*3)*sz,dy=-(3+Math.random()*9+i*1.5)*sz,rot=side*(8+Math.random()*22);
         c.animate([
-          {transform:'translate(0,0) scale(.4)',opacity:0},
-          {transform:`translate(${dx*.4}px,${dy*.35}px) scale(1)`,opacity:1,offset:.14},
-          {transform:`translate(${dx*.8}px,${dy*.8}px) scale(1.15)`,opacity:1,offset:.6},
-          {transform:`translate(${dx}px,${dy}px) scale(${dot?.8:1.3})`,opacity:0}
-        ],{duration:dot?330:400,delay:i*14,easing:'cubic-bezier(.2,.7,.3,1)',fill:'both'});
+          {transform:'translate(0,2px) scale(.3) rotate(0deg)',opacity:0},
+          {transform:`translate(${dx*.35}px,${dy*.3}px) scale(.95) rotate(${rot*.4}deg)`,opacity:1,offset:.16},
+          {transform:`translate(${dx*.75}px,${dy*.75}px) scale(1.25) rotate(${rot*.8}deg)`,opacity:.8,offset:.55},
+          {transform:`translate(${dx}px,${dy}px) scale(1.6) rotate(${rot}deg)`,opacity:0}
+        ],{duration:480+Math.random()*120,delay:i*16,easing:'cubic-bezier(.2,.7,.3,1)',fill:'both'});
       }
     }
     scene.appendChild(box);
-    setTimeout(()=>{if(!box.dataset.keep)box.remove()},700);
+    setTimeout(()=>{if(!box.dataset.keep)box.remove()},800);
     return box;
   }catch(_){}
   // One transparent WebM contains the synchronized left/right impact puffs.

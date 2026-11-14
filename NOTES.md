@@ -1655,3 +1655,5 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - Dim pri spuštanju: kratak stilizovan oblačić (0,3 s): po tri okrugla oblaka iz donjeg levog i donjeg desnog ugla predmeta, šire se napolje i malo gore (CSS u game.js popArtPuff). Fluid dim (CooksterLandPuff) više nije u upotrebi; ostao u stir-fluid.js.
 
 - Dim pri spuštanju (v3.338): po uzoru na Milošev snimak iz druge igre: pune (neprovidne) okrugle kuglice krem boje, po 4 + sitne tačkice sa svake strane predmeta, uz donju ivicu; razilaze se napolje i malo nadole i blede za ~0,4 s.
+
+- Dim pri spuštanju (v3.339): udaljenost oblačića od sredine prati širinu predmeta koji pada (nađe se predmet na tom mestu: offsetWidth x vis; bez njega staro računanje po vis); oblačići su mekši, dimasti (6 po strani, neravni oblici, mekani prelaz boje, blagi blur, uvijaju se napolje i gore, ~0,5 s).
