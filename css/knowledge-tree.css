@@ -16,7 +16,7 @@ body.kt-open #ktRoot{display:flex}
 .kt-tab.on{color:#fff3dc;background-image:url(../assets/ui/karta/tab_crveni.webp);text-shadow:0 1px 2px rgba(60,10,5,.7)}
 .kt-tab:not(.on):hover{filter:brightness(1.05)}
 #ktNazad{position:absolute;left:100px;top:928px;width:166px;height:48px;cursor:pointer}
-#ktBoard{position:absolute;left:66px;top:239px;width:1704px;height:674px;overflow-x:auto;overflow-y:hidden;cursor:grab;scrollbar-width:none;background:url(../assets/ui/karta/platno_siroko.webp) 0 0/auto 100% repeat-x}
+#ktBoard{position:absolute;left:66px;top:239px;width:1704px;height:738px;overflow-x:auto;overflow-y:hidden;cursor:grab;scrollbar-width:none;background:url(../assets/ui/karta/platno_nova.webp) 0 0/1704px 100% repeat-x}
 #ktBoard::-webkit-scrollbar{display:none}
 #ktBoard.drag{cursor:grabbing}
 #ktInner{position:relative;height:100%}
@@ -114,3 +114,8 @@ body.kt-open #ktRoot{display:flex}
 
 /* Znaci (kvačica, katanac) su iste veličine na svakom krugu; položaj prati veličinu kruga */
 .kt-lay.st-done::after,.kt-card.st-lock.kt-lay::after{width:34px;height:34px}
+
+/* Donja traka je uklonjena: karta ide do donje šipke; probna dugmad su gore u zaglavlju */
+#ktFoot{top:92px;left:300px;right:520px;height:40px;z-index:5}
+.kt-stage{top:36px!important}
+.kt-corner{display:none}
