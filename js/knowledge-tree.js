@@ -378,7 +378,7 @@ function showBig(c,d){
     tl.to(icon,{y:-D*.4,duration:.4,ease:'back.out(1.7)',force3D:false},.1);      // krug "baci" ikonicu: ona izleti brzo, preleti i smiri se
     tl.to(icon,{scale:1.5,duration:.4,ease:'back.out(2.2)',force3D:false},.1);
     tl.fromTo(icon,{rotation:-9},{rotation:0,duration:.5,ease:'elastic.out(1,.45)',force3D:false,immediateRender:false},.1);      // ikonica je brža: ide istim tempom kao krug i ne zaostaje      // kreće zajedno sa krugom i ne staje ni na jedan frejm dok ne stigne van kruga
-    tl.fromTo(bi,{opacity:0,y:D*.05},{opacity:1,y:0,duration:.3,ease:'power1.out'},.41);
+    BIG.bt=gsap.fromTo(bi,{opacity:0,y:D*.05},{opacity:1,y:0,duration:.3,ease:'power1.out',delay:.41});
     tl.fromTo(bc,{opacity:0},{opacity:1,duration:.3,ease:'power1.out'},.3);
   }else{d.style.transform='translate('+dx+'px,'+dy+'px) scale('+k+')';icon.style.transform='translateY('+(-D*.4)+'px) scale(1.5)';ring.style.filter=f1;sh.style.opacity=1;}
 }
@@ -386,7 +386,7 @@ function killBig(now){
   if(!BIG)return;var B=BIG;BIG=null;
   var fin=function(){if(B.sh.parentNode)B.sh.remove();if(B.ring)B.ring.style.filter='';if(B.bi.parentNode)B.bi.remove();if(B.bc.parentNode)B.bc.remove();B.card.classList.remove('kt-big');if(window.gsap){gsap.set(B.card,{clearProps:'transform'});gsap.set(B.icon,{clearProps:'transform'});}else{B.card.style.transform='';B.icon.style.transform='';}};
   if(now||!window.gsap){if(window.gsap)gsap.killTweensOf([B.card,B.icon,B.bi,B.bc,B.ring,B.sh]);fin();return;}
-  if(B.tl){B.tl.eventCallback('onComplete',null);B.tl.eventCallback('onReverseComplete',fin);B.tl.timeScale(1).reverse();return;}      // spuštanje = isti pokret unazad, istom brzinom
+  if(B.tl){if(B.bt)B.bt.kill();gsap.killTweensOf(B.bi);gsap.to(B.bi,{opacity:0,duration:.14,delay:.34,ease:'none'});B.tl.eventCallback('onComplete',null);B.tl.eventCallback('onReverseComplete',fin);B.tl.timeScale(1).reverse();return;}      // spuštanje = isti pokret unazad, istom brzinom
   gsap.killTweensOf([B.bi,B.bc,B.icon,B.card,B.ring,B.sh]);fin();
 }
 function showTip(c,d){if(d.classList.contains('kt-lay'))return showBig(c,d);return showFlag(c,d);}
