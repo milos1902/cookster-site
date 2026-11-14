@@ -11,6 +11,22 @@ var TABS=[['Kuhinja','kuhinja'],['Kafana','kafana'],['Kuća','odrzavanje'],['Rec
 var COLS=16,SEC={1:[1,3],2:[4,7],3:[8,10],4:[11,13],5:[14,16]};
 var cards=D.cards.map(function(c,i){c.id=c.t+'|'+c.n;c.i=i;return c;});
 var byId={};cards.forEach(function(c){byId[c.id]=c;});
+// ---- raspored iz urednika (js/data/karta-raspored.js): krugovi i čipkasti konci stoje tamo gde si ih postavio
+var LAYOUT=(window.CooksterMapLayout&&window.CooksterMapLayout.tabs)||null,LC={},LP={},LT={},LW={},LCL={};
+function prepLayout(){
+  if(!LAYOUT)return;
+  Object.keys(LAYOUT).forEach(function(t){
+    var items=LAYOUT[t]||[],circ=[];
+    items.forEach(function(it){if(it.k==='c'){var c=byId[t+'|'+it.n];if(c){LC[c.id]={cx:it.cx,cy:it.cy,w:it.w,h:it.h,z:it.z||1,c:c};circ.push(LC[c.id]);}}});
+    if(!circ.length)return;
+    LT[t]=true;LW[t]=items.filter(function(it){return it.k==='w';});
+    var xs=circ.slice().sort(function(a,b){return a.cx-b.cx;}),cl=[];
+    xs.forEach(function(o){if(cl.length&&o.cx-cl[cl.length-1][cl[cl.length-1].length-1].cx<120)cl[cl.length-1].push(o);else cl.push([o]);});
+    LCL[t]=cl.map(function(g){return {x0:Math.min.apply(null,g.map(function(o){return o.cx-o.w/2;})),x1:Math.max.apply(null,g.map(function(o){return o.cx+o.w/2;})),minS:Math.min.apply(null,g.map(function(o){return o.c.s;}))};});
+    cl.forEach(function(g,gi){if(!gi)return;g.forEach(function(o){var pv=cl[gi-1][0];cl[gi-1].forEach(function(q){if(Math.abs(q.cy-o.cy)<Math.abs(pv.cy-o.cy))pv=q;});LP[o.c.id]=[pv.c];});});
+  });
+}
+prepLayout();
 var S=load();
 function load(){var d={bought:{},zn:42,din:1250,star:2,tab:0};try{var j=JSON.parse(localStorage.getItem(KEY)||'null');if(j&&typeof j==='object'){for(var k in d)if(j[k]!==undefined)d[k]=j[k];}}catch(e){}return d;}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
@@ -45,6 +61,7 @@ function parents(c){
   if(c.y==='✓')return [];
   var out=[];
   if(c.q){c.q.split(', ').forEach(function(nm){var p=byId[c.t+'|'+nm.trim()];if(p)out.push(p);});}
+  if(!out.length&&LP[c.id])return LP[c.id].slice();
   if(!out.length){var pv=prevInRow(c);
     if(pv&&hash(c.id)%100<45){      // neke veze idu u susedni red (račvanje), samo za izgled i redosled u probi
       var alt=[c.r-1,c.r+1].filter(function(r){return r>=0&&r<=3;}).map(function(r){return cards.filter(function(x){return x.t===c.t&&x.r===r&&x.c===pv.c;})[0];}).filter(Boolean);
@@ -133,9 +150,35 @@ function renderTabs(){
     panel.appendChild(d);
   });
 }
+function layoutExtras(){
+  var cl=cards.filter(function(c){return c.t===S.tab&&LC[c.id];}).map(function(c){return LC[c.id];}),gx={};
+  M.w=Math.max.apply(null,cl.map(function(o){return o.cx+o.w/2;}))+80;
+  var CL=LCL[S.tab]||[];
+  for(var s=2;s<=5;s++){for(var i=1;i<CL.length;i++){if(CL[i].minS>=s&&CL[i-1].minS<s){gx[s]=(CL[i-1].x1+CL[i].x0)/2;break;}}}
+  inner.style.width=M.w+'px';
+  for(var s2=1;s2<=5;s2++){
+    var x0=s2===1?0:gx[s2];if(x0===undefined)continue;var nx=null;for(var k=s2+1;k<=5;k++)if(gx[k]!==undefined){nx=gx[k];break;}var x1=nx===null?M.w:nx;
+    if(s2>1){var g=el('div','kt-gate');g.style.left=x0+'px';inner.appendChild(g);}
+    if(s2>S.star){
+      var dk=el('div','kt-dark');dk.style.left=x0+'px';dk.style.width=(x1-x0)+'px';inner.appendChild(dk);
+      var lk=el('div','kt-lock'),lw=150;lk.style.width=lw+'px';lk.style.height=Math.round(lw*1.18)+'px';lk.style.left=Math.round((x0+x1)/2-lw/2)+'px';lk.style.top='250px';
+      var b2=el('b','',String(s2));b2.style.fontSize=Math.round(lw*.34)+'px';lk.appendChild(b2);inner.appendChild(lk);
+    }
+  }
+  (LW[S.tab]||[]).forEach(function(w){
+    var lf=null,rt=null,dl=1e9,dr=1e9;
+    cl.forEach(function(o){var d=Math.hypot(o.cx-w.cx,o.cy-w.cy);if(o.cx<w.cx&&d<dl){dl=d;lf=o;}if(o.cx>=w.cx&&d<dr){dr=d;rt=o;}});
+    var d=el('div','kt-wire'+(lf&&isBought(lf.c)?'':' off'));
+    d.style.backgroundImage='url('+K+'konci/'+w.f+'.webp)';d.style.left=(w.cx-w.w/2)+'px';d.style.top=(w.cy-w.h/2)+'px';d.style.width=w.w+'px';d.style.height=w.h+'px';d.style.zIndex=w.z||1;
+    d.style.transform='rotate('+(w.r||0)+'deg)'+(w.fl?' scaleX(-1)':'');inner.appendChild(d);
+  });
+}
 function renderBoard(){
   metrics();inner.innerHTML='';inner.style.width=M.w+'px';
   inner.style.setProperty('--D',M.D+'px');
+  var LAYMODE=!!LT[S.tab],mine=cards.filter(function(c){return c.t===S.tab;});
+  if(LAYMODE)layoutExtras();
+  else{
   // odjeljci po zvezdici: tamno polje + katanac iznad dosegnute zvezdice, zlatne linije
   for(var s=1;s<=5;s++){
     var a=SEC[s][0],b=SEC[s][1],x0=M.padL+(a-1)*M.colW-(M.colW-M.cw)/2,x1=M.padL+b*M.colW-(M.colW-M.cw)/2+(s===5?60:0);
@@ -147,7 +190,6 @@ function renderBoard(){
     }
   }
   // konci (čipkaste trake) između kruga roditelja i kruga deteta; krugovi ih pokrivaju na krajevima
-  var mine=cards.filter(function(c){return c.t===S.tab;});
   mine.forEach(function(c){
     parents(c).forEach(function(p){
       var A1=pos(p),B1=pos(c),px=A1.x+M.cw/2,py=A1.y+M.D/2,cx=B1.x+M.cw/2,cy=B1.y+M.D/2,w=el('div','kt-wire'+(isBought(p)?'':' off')),dx=cx-px;
@@ -157,10 +199,13 @@ function renderBoard(){
       inner.appendChild(w);
     });
   });
+  }
   // kartice (čipkasti krugovi)
   mine.forEach(function(c){
-    var st=status(c),p=pos(c),d=el('div','kt-card st-'+(st==='done'?'done':st==='can'?'can':'lock'));
-    d.style.left=p.x+'px';d.style.top=p.y+'px';d.style.width=M.cw+'px';d.style.height=M.ch+'px';d.dataset.id=c.id;
+    var st=status(c),lc=LAYMODE?LC[c.id]:null,p=lc?null:pos(c),d=el('div','kt-card st-'+(st==='done'?'done':st==='can'?'can':'lock'));
+    if(lc){d.style.left=(lc.cx-lc.w/2)+'px';d.style.top=(lc.cy-lc.h/2)+'px';d.style.width=lc.w+'px';d.style.height=lc.h+'px';d.style.setProperty('--D',lc.w+'px');d.style.zIndex=lc.z;d.classList.add('kt-lay');}
+    else{d.style.left=p.x+'px';d.style.top=p.y+'px';d.style.width=M.cw+'px';d.style.height=M.ch+'px';}
+    d.dataset.id=c.id;
     d.appendChild(el('div','kt-ring'));
     d.appendChild(el('div','kt-st','★'+c.s));
     if(st==='done')d.appendChild(el('div','kt-ok','✓'));

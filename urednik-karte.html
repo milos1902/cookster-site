@@ -46,7 +46,7 @@ select,input[type=text]{width:100%;padding:4px;border:2px solid #8a5a2a;border-r
   <div id="list"></div>
   <div class="sec"><label>Čipkasti konci — klikni da dodaš</label></div>
   <div id="wires"></div>
-  <div class="sec"><button id="save">Sačuvaj fajl</button><button id="load">Učitaj fajl</button><button id="clr">Obriši sve u tabu</button>
+  <div class="sec"><button id="save">Sačuvaj fajl</button><button id="load">Učitaj fajl</button><button id="clr">Obriši sve u tabu</button><button id="game">Vrati raspored iz igre</button>
     <input type="file" id="file" accept=".json" style="display:none"></div>
 </div>
 <div id="main">
@@ -66,13 +66,15 @@ select,input[type=text]{width:100%;padding:4px;border:2px solid #8a5a2a;border-r
 </div>
 <div id="toast"></div>
 <script src="js/data/knowledge-tree-data.js"></script>
+<script src="js/data/karta-raspored.js"></script>
 <script>
 (function(){
-var TABS=['Kuhinja','Kafana','Kuća','Recepti','Izbori'],KEY='cookster.karta.raspored.v2',WIRES='a1 a2 a3 a4 a5 a6 b1 b2 b3 b4 b5 b6 c2 c_gore c_dole d1 d2 d3 d4 d5 d6'.split(' ');
+var TABS=['Kuhinja','Kafana','Kuća','Recepti','Izbori'],KEY='cookster.karta.raspored.v3',WIRES='a1 a2 a3 a4 a5 a6 b1 b2 b3 b4 b5 b6 c2 c_gore c_dole d1 d2 d3 d4 d5 d6'.split(' ');
 var cards=(window.CooksterTreeData||{cards:[]}).cards;
 var $=function(i){return document.getElementById(i);},cv=$('cv'),tabSel=$('tab'),cur=0,sel=null,drag=null,uid=1,ov;
 var S;try{S=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}
-if(!S||!S.tabs)S={v:2,tabs:{0:[],1:[],2:[],3:[],4:[]}};
+function fromGame(){return window.CooksterMapLayout?JSON.parse(JSON.stringify(window.CooksterMapLayout)):{v:2,tabs:{0:[],1:[],2:[],3:[],4:[]}};}
+if(!S||!S.tabs)S=fromGame();
 TABS.forEach(function(n,i){var o=document.createElement('option');o.value=i;o.textContent=n;tabSel.appendChild(o);});
 function toast(m){var t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove('on');},1600);}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
@@ -169,6 +171,7 @@ $('save').onclick=function(){var blob=new Blob([JSON.stringify(S,null,1)],{type:
 $('load').onclick=function(){$('file').click();};
 $('file').onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var j=JSON.parse(r.result);if(j&&j.tabs){S=j;sel=null;persist();render();toast('Učitano');}}catch(e){toast('Fajl nije dobar');}};r.readAsText(f);};
 $('clr').onclick=function(){if(confirm('Obrisati sve u ovom tabu?')){S.tabs[cur]=[];sel=null;persist();render();}};
+$('game').onclick=function(){if(confirm('Zameniti sve tvoje izmene rasporedom koji je sada u igri?')){S=fromGame();sel=null;persist();render();toast('Raspored iz igre učitan');}};
 window.__ed={S:function(){return S;}};
 render();
 })();

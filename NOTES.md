@@ -1757,3 +1757,7 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 ## Urednik karte znanja (urednik-karte.html)
 - Stranica za slaganje karte rukom: dodaš krug (kartica iz spiska) ili čipkasti konac, vučeš ga mišem, razvlačiš širinu i visinu ručkama sa strane, uvećavaš ugaonom ručkom i okrećeš gornjim kružićem (Shift = po 15°). Magnet 10px, kopiranje, okretanje levo-desno, redosled.
 - Raspored se čuva u pregledaču (cookster.karta.raspored.v2) i u fajl karta-raspored.json (dugme "Sačuvaj fajl"). Igra ga još ne čita; sledeći korak je da se taj fajl ubaci u kartu.
+
+## Karta znanja čita raspored iz urednika
+- js/data/karta-raspored.js (isto što i karta-raspored.json u korenu): svih 5 tabova. Tab Kuhinja počinje Miloševim rasporedom (1-3-5 krugova); nastavak (pet redova, isti stil, konci iz a/b delova) napravljen je programom i može da se popravi u urednik-karte.html (Učitaj fajl → ispravi → Sačuvaj fajl).
+- Kartice se spajaju sa krugovima po imenu (polje n). Ko je roditelj (otključavanje) uzima se iz najbližeg kruga u prethodnoj koloni; kapije zvezdica stoje između kolona.
