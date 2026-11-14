@@ -1,43 +1,63 @@
-/* The window "Kuhinjski elementi" (the parchment, js/ke-pergament.js): when the dishes icon is clicked the page is there AT ONCE, in the middle of the screen, and unrolls on the spot in 0.3 s:
-   it opens from the middle up and down, and two little rolls (the ends of the scroll) run to the top and the bottom edge. The screen does NOT darken first: only when the page has opened, the dark
-   background (and its blur) comes in, as it was before. GSAP does the movement; mo.js (assets/vendor/mo.umd.js, MIT) adds a few sparks of dust at the corners where the rolls arrive (only if loaded).
-   Only the equipment window, "Piće" stays as it was. ?bezanimacije switches it off. */
+/* The window "Kuhinjski elementi" (the parchment, js/ke-pergament.js) is a cloth stretched between two rolls. A click on the dishes icon: the page is there AT ONCE in the middle of the screen as a thin
+   strip between the two rolls, and the rolls run apart (0.3 s) and stretch the cloth; the rolls STAY on the top and the bottom edge while the window is open. When it is closed the rolls come together
+   and the cloth folds into them, and the window is gone the moment they meet (it does not stop in the middle). The screen does not darken first: the dark background comes in after the page has opened
+   and goes out while it closes. GSAP does the movement; mo.js (assets/vendor/mo.umd.js, MIT) adds a few sparks of dust at the corners when it opens (only if loaded).
+   Cloth in the picture (1600x1100): x 42..1559, y 44..1061. Only the equipment window; "Piće" stays as it was. ?bezanimacije switches it off. */
 (function(){
 if(/[?&]bezanimacije/.test(location.search))return;
-var DUR=.3,DARK=.22,was=false,fx=null;
+var DUR=.3,DARK=.22,CX0=42/1600,CX1=1559/1600,CY0=46/1100,CY1=1059/1100;
+var was=false,fx=null,top=null,bot=null,sc=null,closing=false,orig=null;
 function target(){return document.body.classList.contains('ke-pg-on')?document.getElementById('kePg'):null;}
 function layer(){if(fx)return fx;fx=document.createElement('div');fx.id='keFx';fx.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:65001';document.body.appendChild(fx);return fx;}
-function rod(){var d=document.createElement('div');d.style.cssText='position:fixed;height:13px;border-radius:7px;background:linear-gradient(#e2bb7c,#9a6a35 55%,#6e451d);box-shadow:0 3px 7px rgba(30,14,4,.55),inset 0 1px 0 rgba(255,238,200,.6);will-change:transform';layer().appendChild(d);return d;}
+function rod(){
+  var d=document.createElement('div');d.className='ke-rod';
+  d.style.cssText='position:fixed;border-radius:99px;background:linear-gradient(#ecc98c,#a8773d 50%,#6a431b);box-shadow:0 .35cqw .7cqw rgba(30,14,4,.55),inset 0 .12cqw 0 rgba(255,240,205,.65);will-change:transform';
+  ['left','right'].forEach(function(s){var k=document.createElement('div');k.style.cssText='position:absolute;top:50%;'+s+':-.55em;width:1.5em;height:1.5em;margin-top:-.75em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f3d9a4,#a8773d 60%,#5e3a16);box-shadow:0 2px 4px rgba(30,14,4,.5)';d.appendChild(k);});
+  layer().appendChild(d);return d;
+}
+function geom(el){var r=el.getBoundingClientRect(),W=r.width,H=r.height;
+  return {r:r,W:W,H:H,x0:r.left+W*CX0,x1:r.left+W*CX1,yT:r.top+H*CY0,yB:r.top+H*CY1,cy:r.top+H/2,h:Math.max(9,W*.0105)};}
+function put(g,p){      // p: 0 = the rolls together in the middle, 1 = at the edges; the cloth shows between them
+  var yT=g.cy+(g.yT-g.cy)*p,yB=g.cy+(g.yB-g.cy)*p;
+  [top,bot].forEach(function(d,i){var y=i?yB:yT;d.style.left=g.x0-g.W*.006+'px';d.style.width=g.x1-g.x0+g.W*.012+'px';d.style.height=g.h+'px';d.style.fontSize=g.h*.62+'px';
+    d.style.top=y-g.h/2+'px';});
+  var t=Math.max(0,yT-g.r.top),b=Math.max(0,g.r.bottom-yB);
+  g.el.style.clipPath='inset('+t+'px 0px '+b+'px 0px)';
+}
 function dust(x,y,delay){
   if(!window.mojs)return;
   try{new mojs.Burst({parent:layer(),left:0,top:0,x:x,y:y,radius:{6:30},count:6,angle:{0:40},degree:360,timeline:{delay:delay||0},
     children:{shape:'circle',fill:['#f3e3bd','#fff6dc','#e2bb7c'],radius:{4:0},duration:300,easing:'cubic.out'}}).replay();}catch(e){}
 }
-function unroll(sc){
-  var el=target();if(!el)return;
-  el.style.transform='';var r=el.getBoundingClientRect();if(!r.width)return;
-  // the dark background comes only after the page has opened (a short delay, then it fades in; before that the scene is clear)
-  if(sc.animate)sc.animate([{backgroundColor:'rgba(22,12,7,0)',backdropFilter:'blur(0px)',webkitBackdropFilter:'blur(0px)'}],      // one keyframe: the end is the real look of the scene (what the game css gives it)
+function clean(){if(top){top.remove();top=null;}if(bot){bot.remove();bot=null;}var el=document.getElementById('kePg');if(el){el.style.clipPath='';el.style.pointerEvents='';}closing=false;}
+function run(el,from,to,ease,done){
+  var g=geom(el);g.el=el;var o={p:from};
+  put(g,from);
+  return gsap.to(o,{p:to,duration:DUR,ease:ease,onUpdate:function(){put(g,o.p);},onComplete:done});
+}
+function open(){
+  var el=target();if(!el||!sc)return;
+  clean();el.style.clipPath='';var r=el.getBoundingClientRect();if(!r.width)return;
+  if(sc.animate)sc.animate([{backgroundColor:'rgba(22,12,7,0)',backdropFilter:'blur(0px)',webkitBackdropFilter:'blur(0px)'}],      // one keyframe: the end is the real look of the scene
     {duration:DARK*1000,delay:DUR*1000,easing:'linear',fill:'backwards',composite:'replace'});
-  var cy=r.top+r.height/2,done=function(){el.style.clipPath='';el.style.transform='';el.style.transformOrigin='';};
-  el.style.transformOrigin='50% 50%';
-  if(window.gsap){
-    var top=rod(),bot=rod();[top,bot].forEach(function(d){d.style.left=r.left-4+'px';d.style.width=r.width+8+'px';d.style.top=cy-6.5+'px';});
-    var o={p:0};gsap.killTweensOf(o);
-    var set=function(){var p=o.p,h=(1-p)*50;
-      el.style.clipPath='inset('+h+'% 0% '+h+'% 0%)';el.style.transform='scale('+(.96+.04*p)+')';
-      top.style.transform='translateY('+(-(r.height/2)*p)+'px)';bot.style.transform='translateY('+((r.height/2)*p)+'px)';};
-    set();
-    gsap.to(o,{p:1,duration:DUR,ease:'power2.out',onUpdate:set,onComplete:function(){
-      done();dust(r.left+8,r.top,0);dust(r.right-8,r.top,40);dust(r.left+8,r.bottom,60);dust(r.right-8,r.bottom,100);
-      gsap.to([top,bot],{opacity:0,duration:.12,onComplete:function(){top.remove();bot.remove();}});}});
-  }else if(el.animate){
-    var a=el.animate([{clipPath:'inset(50% 0% 50% 0%)',transform:'scale(.96)'},{clipPath:'inset(0% 0% 0% 0%)',transform:'scale(1)'}],{duration:DUR*1000,easing:'cubic-bezier(.2,.8,.2,1)'});a.onfinish=done;
-  }
+  if(!window.gsap){return;}
+  top=rod();bot=rod();
+  run(el,0,1,'back.out(1.15)',function(){var g=geom(el);dust(g.x0,g.yT,0);dust(g.x1,g.yT,40);dust(g.x0,g.yB,60);dust(g.x1,g.yB,100);});
+}
+function closeAnimated(){
+  var el=target();
+  if(!el||!sc||!sc.classList.contains('open')||!window.gsap||!top||closing||/[?&]bezanimacije/.test(location.search))return false;
+  closing=true;el.style.pointerEvents='none';
+  var an=sc.animate?sc.animate([{backgroundColor:'rgba(22,12,7,0)',backdropFilter:'blur(0px)',webkitBackdropFilter:'blur(0px)'}],{duration:DUR*1000,easing:'linear',fill:'forwards',composite:'replace'}):null;
+  run(el,1,0,'power2.in',function(){clean();orig.apply(window,[]);if(an)an.cancel();});      // it closes at the very moment the rolls meet
+  return true;
 }
 function init(){
-  var sc=document.getElementById('kitchenElementsScene');if(!sc)return;
-  new MutationObserver(function(){var o=sc.classList.contains('open');if(o&&!was)unroll(sc);was=o;}).observe(sc,{attributes:true,attributeFilter:['class']});
+  sc=document.getElementById('kitchenElementsScene');if(!sc)return;
+  orig=window.closeKitchenElements;
+  if(typeof orig==='function')window.closeKitchenElements=function(){if(closeAnimated())return;return orig.apply(this,arguments);};
+  new MutationObserver(function(){var o=sc.classList.contains('open');if(o&&!was)open();if(!o&&was)clean();was=o;}).observe(sc,{attributes:true,attributeFilter:['class']});
+  window.addEventListener('resize',function(){var el=target();if(el&&top&&!closing){var g=geom(el);g.el=el;put(g,1);}});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

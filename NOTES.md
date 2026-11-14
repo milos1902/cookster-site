@@ -1703,3 +1703,8 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## Kuhinjski elementi: pojavljuje se odmah na sredini (js/ke-unroll.js v3)
 - Klik na ikonicu posuđa: prozor je ODMAH na sredini ekrana i odmotava se na mestu 0,3 s (GSAP: otvara se od sredine gore/dole, dva valjka svitka idu do ivica; mo.js: prašina na ćoškovima). Ekran se NE zatamnjuje unapred; tek kad se prozor otvori, tamna pozadina i blur uđu za 0,22 s do uobičajenog izgleda.
+
+## Kuhinjski elementi: platno razvučeno između dva valjka (js/ke-unroll.js v4)
+- Valjci OSTAJU na gornjoj i donjoj ivici dok je prozor otvoren (platno je razvučeno između njih). Otvaranje: valjci se razmaknu iz sredine za 0,3 s (blagi prebačaj), zatvaranje: valjci se spoje i prozor nestane u istom trenutku kad se sretnu (ne staje u sredini). Pozadina se zatamni posle otvaranja i svetli pri zatvaranju.
+- Dve štipaljke gore su izbrisane iz slike strana_kuhinjski_elementi_prazna.webp (platno ide sa susednog dela slike); `?v=2` u ke-pergament.js zbog keša. Platno u slici: x 42..1559, y 44..1061 od 1600x1100.
+- Zatvaranje ide kroz `window.closeKitchenElements` (omotano); ako se zatvori nekim drugim putem, valjci se odmah uklone.
