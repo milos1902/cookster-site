@@ -1700,3 +1700,6 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## mo.js + GSAP za odmotavanje prozora (js/ke-unroll.js v2)
 - mo.js (@mojs/core 1.3.0, MIT; assets/vendor/mo.umd.js + mojs-LICENSE.md) dodaje iskre i prsten na ikonici na početku i prašinu na gornjim ćoškovima kad prozor sleti; GSAP pomera i otklapa pergament (0,5 s). Bez mo.js-a ostaje samo GSAP deo.
+
+## Kuhinjski elementi: pojavljuje se odmah na sredini (js/ke-unroll.js v3)
+- Klik na ikonicu posuđa: prozor je ODMAH na sredini ekrana i odmotava se na mestu 0,3 s (GSAP: otvara se od sredine gore/dole, dva valjka svitka idu do ivica; mo.js: prašina na ćoškovima). Ekran se NE zatamnjuje unapred; tek kad se prozor otvori, tamna pozadina i blur uđu za 0,22 s do uobičajenog izgleda.
