@@ -373,12 +373,11 @@ function showBig(c,d){
   if(window.gsap){
     var tl=gsap.timeline();
     tl.to(d,{scale:k,x:dx/1,y:dy/1,duration:.4,ease:'back.out(1.35)',force3D:true},0);
-    tl.to(icon,{y:-D*.1,scale:1.06,duration:.4,ease:'power2.out'},0);
     tl.fromTo(ring,{filter:f0},{filter:f1,duration:.42,ease:'power2.out'},0);
     tl.fromTo(sh,{opacity:0,scale:.7},{opacity:1,scale:1,duration:.42,ease:'power2.out'},0);
     tl.fromTo(bi,{opacity:0},{opacity:1,duration:.25,ease:'power1.out'},.18);
     tl.fromTo(bc,{opacity:0},{opacity:1,duration:.3,ease:'power1.out'},.3);
-  }else{d.style.transform='translate('+dx+'px,'+dy+'px) scale('+k+')';icon.style.transform='translateY('+(-D*.1)+'px) scale(1.06)';ring.style.filter=f1;sh.style.opacity=1;}
+  }else{d.style.transform='translate('+dx+'px,'+dy+'px) scale('+k+')';ring.style.filter=f1;sh.style.opacity=1;}
 }
 function killBig(now){
   if(!BIG)return;var B=BIG;BIG=null;
