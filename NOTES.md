@@ -1670,3 +1670,4 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 
 ## Animacija uzimanja iz ranca i vraćanja u ranac (recent-items.js v10)
 - Uzimanje: slika predmeta leti iz džepa do ruke (luk, raste i bledi ~0,3 s). Vraćanje: slika leti iz ruke u džep (~0,26 s), pa slika u džepu iskoči (pop). Zlatni sjaj džepa ugašen (setGlow ne radi ništa). Web Animations API, bez biblioteke (GSAP je uklonjen iz igre).
+- recent-items.js v11: animacije ranca sada idu preko GSAP-a (assets/vendor/gsap.min.js vraćen u igru, učitava se pre recent-items.js; GSAP 3.15.1, licenca "no charge"). Let po luku (podizanje na sredini), rast/gašenje, pop slike u džepu. Bez GSAP-a pada na Web Animations.
