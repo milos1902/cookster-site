@@ -89,3 +89,5 @@ body.kt-open #ktRoot{display:flex}
 .kt-lay .kt-nm,.kt-lay .kt-co,.kt-lay .kt-st{display:none}
 .kt-lay .kt-in{top:calc(var(--D)*.19);width:calc(var(--D)*.62);height:calc(var(--D)*.62);margin-left:calc(var(--D)*-.31)}
 .kt-lay .kt-ic span{font-size:calc(var(--D)*.2)}
+/* Crvene pregrade između zvezdica su uklonjene; granicu pokazuju samo tamno polje i katanac dok zvezdica nije dosegnuta */
+.kt-gate{display:none}
