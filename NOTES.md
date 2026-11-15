@@ -1782,3 +1782,7 @@ Završi dan (`js/day-report.js`, `CooksterDayReport`): dugme „🌙 Završi dan
 - `?novaigra` sada pri prvom ulasku kopira IZGLED i podešavanja iz obične igre (obrisani putokazi, svetla, pozicije), ali ne napredak (`PROGRESS` spisak u shim-u u `index.html`).
 - Gosti u probnoj igri naručuju samo ono što je kupljeno na karti (`NG_NEED` u `js/tavern-scene.js`, `CooksterTree.owns(tab,ime)`); kafa je uvek tu.
 - Nije potvrđeno: mrak u kafani / svetla posle otključavanja.
+
+## Probna igra: kopira se samo izgled (bela lista)
+- Umesto crne liste napretka, `index.html` shim sada kopira iz obične igre samo ključeve izgleda (`LOOK`: kalibracije, svetla, putokazi...), a `NOT` ih isključuje ako liči na napredak. Razlog: kod Miloša je probna igra počinjala sa otvorenom kafanom.
+- Test sa lažnim profilom (kafana otključana, znanje 99, zvezde 4): probna igra počinje zaključana, znanje 0, novac 1000, a svetla/putokazi/kalibracija se prenose.

@@ -9,11 +9,12 @@
   function mine(o){return o===window.localStorage;}
   var ng=[];function scan(){ng=[];for(var i=0;i<len();i++){var n=k.call(window.localStorage,i);if(n&&n.indexOf(P)===0)ng.push(n.slice(P.length));}return ng;}
   function len(){return L.get.call(window.localStorage);}
-  var PROGRESS=/neighbor|tutorial|tavern-locked|tavern-open|napredak|tree\.demo|kitchen-dirt|day-report|reputation|rack|menu|kitchen-orders|wall-bags|table-items|pantry-items|oven-items|sink-items|sink-dishes|hanging-bags|flour-piles|ashtrays|cookster\.save|trash|game-clock|recorder|intro-seen|istraga|damper|tavern-stove|board-in-drawer|tools-in-drawer|tools-back|ladle-load/;
+  var LOOK=/calibration|light|signpost|signtool|perspective|geometry|deleted|imported|ui-|hotspot|tray-scale|scene-volumes|wall-hooks|sprite-grade|shadow|sunShadows|nacve|vessel-|stain|chopped|waiter|guest-anim|impact|audio|board-shadow|contact|day-light|tools-on|sink-zoom|oil|dust/i;
+  var NOT=/tavern-locked|tavern-open|napredak|tree|save|tutorial|neighbor|dirt|report|reputation|menu|orders|money|clock/i;
   function seed(){      // preuzmi izgled i podešavanja iz obične igre (ne i napredak), samo prvi put
     var raw=window.localStorage;if(g.call(raw,P+'__seeded'))return;
     var names=[];for(var i=0;i<len();i++){names.push(k.call(raw,i));}
-    names.forEach(function(n){if(!n||n.indexOf(P)===0||PROGRESS.test(n)||!/^cookster/.test(n))return;if(g.call(raw,P+n)===null)s.call(raw,P+n,g.call(raw,n));});
+    names.forEach(function(n){if(!n||n.indexOf(P)===0||NOT.test(n)||!LOOK.test(n)||!/^cookster/.test(n))return;if(g.call(raw,P+n)===null)s.call(raw,P+n,g.call(raw,n));});
     s.call(raw,P+'__seeded','1');
   }
   if(/[?&]ispocetka\b/.test(location.search)){var del=[];for(var i=0;i<len();i++){var n=k.call(window.localStorage,i);if(n&&n.indexOf(P)===0)del.push(n);}del.forEach(function(n){r.call(window.localStorage,n);});}
